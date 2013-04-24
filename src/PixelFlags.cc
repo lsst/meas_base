@@ -96,6 +96,8 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(
                                         "Cosmic ray in the Source footprint");
     _anyKeys["BAD"] = schema.addField<afw::table::Flag>(name + "_flag_bad",
                                         "Bad pixel in the Source footprint");
+    _anyKeys["SUSPECT"] = schema.addField<afw::table::Flag>(name + "_flag_suspect",
+                                        "Source's footprint includes suspect pixels");
     // Flags that correspond to mask bits which occur in the center of the object
     _centerKeys["INTRP"] = schema.addField<afw::table::Flag>(name + "_flag_interpolatedCenter",
                                         "Interpolated pixel in the Source center");
@@ -103,6 +105,8 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(
                                         "Saturated pixel in the Source center");
     _centerKeys["CR"] = schema.addField<afw::table::Flag>(name + "_flag_crCenter",
                                         "Cosmic ray in the Source center");
+    _centerKeys["SUSPECT"] = schema.addField<afw::table::Flag>(name + "_flag_suspectCenter",
+                                        "Source's center is close to suspect pixels");
 
     // Read in the flags passed from the configuration, and add them to the schema
     for (auto const & i: _ctrl.masksFpCenter) {
