@@ -152,6 +152,7 @@ class NoiseReplacer(object):
         # We'll put the noisy footprints in a map from id -> HeavyFootprint:
         self.heavyNoise = {}
         noisegen = self.getNoiseGenerator(exposure, noiseImage, noiseMeanVar)
+        self.noiseGenerator = noisegen
         print 'Using noise generator: %s' % (str(noisegen))
         for id in footprints.keys():
             fp = footprints[id][1]

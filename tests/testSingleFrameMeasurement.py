@@ -131,17 +131,53 @@ SingleFrameAlgorithm.registry.register("test.flux", TestFlux)
 
 class SFMTestCase(lsst.utils.tests.TestCase):
 
+    def testANoiseReplacement(self):
+        print "testNoiseReplacement"
+        exposure = lsst.afw.image.ExposureF("data/exposure.fits.gz")
+        #  catalog with footprints, but not measurement fields added
+        srccat = SourceCatalog.readFits("data/measCatNull.fits.gz")
+        footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
+                      for measRecord in srccat}
+        sfm_config = lsst.meas.base.sfm_algorithms.SingleFrameMeasurementConfig()
+        replaced = lsst.afw.image.ExposureF("data/exposure.fits.gz")
+        noiseReplacer = NoiseReplacer(replaced, footprints, sfm_config.noiseSource,
+                          sfm_config.noiseOffset, sfm_config.noiseSeed) 
+        normtest = numpy.ndarray(len(srccat), numpy.float32)
+        for i in range(len(srccat)):
+            record = srccat[i]
+            # First check to be sure that the flux measured by the plug-in is correct
+            # This repeats the algorithm used by the NoiseReplacer, so not sure how useful it is
+            foot = record.getFootprint()
+            # get the sum of the footprint area
+            sumarray = numpy.ndarray((foot.getArea()), replaced.getMaskedImage().getImage().getArray().dtype)
+            lsst.afw.detection.flattenArray(foot, replaced.getMaskedImage().getImage().getArray(), sumarray, replaced.getMaskedImage().getXY0())
+            repflux = sumarray.sum(dtype=numpy.float64)
+
+            # Test 2:  the fill in of the area should be consistent with the noiseReplacer
+            # mean=0.702828, std=27.4483
+            noisemean = noiseReplacer.noiseGenerator.mean
+            noisestd = noiseReplacer.noiseGenerator.std
+            popstd = math.sqrt((noisestd*noisestd)/len(sumarray))  
+            normtest[i] = (sumarray.mean()-noisemean)/popstd
+        print normtest.max(), normtest.min(), normtest.mean(), normtest.std()
+        self.assertTrue(normtest.min() > -3.5)
+        self.assertTrue(normtest.max() < 3.5)
+        self.assertTrue(abs(normtest.mean()) < .02)
+        self.assertTrue(abs(normtest.std() - 1.0) < .02)
+
     #  Run the measurement (sfm) task with its default plugins
     #  Any run to completion is successful
     def testRunMeasurement(self):
-        exposure = lsst.afw.image.ExposureF("data/exposure.fits")
+
+        print "testRunMeasurement"
+        exposure = lsst.afw.image.ExposureF("data/exposure.fits.gz")
         flags = MeasurementDataFlags()
 
         # Read a catalog which should be the same as the catalog of processCcd
         # prior to measurement.  Create an empty catalog with the same schema
         # plus the schema items for the SFM task, then transfer the existing data
         # to the new catalog
-        srccat = SourceCatalog.readFits("data/measCatNull.fits")
+        srccat = SourceCatalog.readFits("data/measCatNull.fits.gz")
         schema = srccat.getSchema()
         config = lsst.meas.base.sfm_algorithms.SingleFrameMeasurementConfig()
         task = SingleFrameMeasurementTask(schema, flags, config=config)
@@ -162,22 +198,27 @@ class SFMTestCase(lsst.utils.tests.TestCase):
     #  default NoiseReplacer seed.  This test just checks to be sure that the
     #  base.py replacement mechanism is still working
 
-    def testNoiseReplacement(self):
-        exposure = lsst.afw.image.ExposureF("data/exposure.fits")
-        replaced = lsst.afw.image.MaskedImageF("data/replaced.fits")
-        config = lsst.meas.base.sfm_algorithms.SingleFrameMeasurementConfig()
-        config.algorithms.names.add("test.flux")  
-        flags = MeasurementDataFlags()
+    def testFluxPlugin(self):
 
+        print "testFluxPlugin"
+        exposure = lsst.afw.image.ExposureF("data/exposure.fits.gz")
         #  catalog with footprints, but not measurement fields added
-        srccat = SourceCatalog.readFits("data/measCatNull.fits")
-        mapper = SchemaMapper(srccat.getSchema())
-        mapper.addMinimalSchema(srccat.getSchema())
-
+        srccat = SourceCatalog.readFits("data/measCatNull.fits.gz")
+        footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
+                      for measRecord in srccat}
+        sfm_config = lsst.meas.base.sfm_algorithms.SingleFrameMeasurementConfig()
+        replaced = lsst.afw.image.ExposureF("data/exposure.fits.gz")
+        noiseReplacer = NoiseReplacer(replaced, footprints, sfm_config.noiseSource,
+                          sfm_config.noiseOffset, sfm_config.noiseSeed) 
+       
         # add the measurement fields to the outputSchema and mack a catalog with it
         # then extend with the mapper to copy the extant data
+        mapper = SchemaMapper(srccat.getSchema())
+        mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
-        task = SingleFrameMeasurementTask(outschema, flags, config=config)
+        flags = MeasurementDataFlags()
+        sfm_config.algorithms.names.add("test.flux")  
+        task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
         measCat.extend(srccat, mapper=mapper)
 
@@ -194,7 +235,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         fluxcountkey = schema.find("test.fluxcount").key
         backkey = schema.find("test.back").key
         backcountkey = schema.find("test.backcount").key
-        normtest = numpy.ndarray(len(measCat), numpy.float32)
 
         # Test all the records to be sure that the measurement mechanism works for total flux
         # And that the area surrounding the footprint has the expected replacement pixels
@@ -204,7 +244,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             # This repeats the algorithm used by the NoiseReplacer, so not sure how useful it is
             foot = record.getFootprint()
             heavy = lsst.afw.detection.makeHeavyFootprint(foot, mi)
-            noise = lsst.afw.detection.makeHeavyFootprint(foot, replaced)
+            noise = lsst.afw.detection.makeHeavyFootprint(foot, replaced.getMaskedImage())
             sumarray = numpy.ndarray((foot.getArea()), mi.getImage().getArray().dtype)
             lsst.afw.detection.flattenArray(foot, mi.getImage().getArray(), sumarray, mi.getImage().getXY0())
             sum = sumarray.sum(dtype=numpy.float64)
@@ -235,12 +275,12 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             if ymax > (exposure.getHeight()+y0): ymax = exposure.getHeight()+y0
         
             # get the sum of the entire bordered area 
-            arraysub = replaced.getImage().getArray()[ymin-y0:ymax-y0, xmin-x0:xmax-x0]
+            arraysub = replaced.getMaskedImage().getImage().getArray()[ymin-y0:ymax-y0, xmin-x0:xmax-x0]
             bigflux = arraysub.sum(dtype=numpy.float64)
             
             # get the sum of the footprint area
-            sumarray = numpy.ndarray((foot.getArea()), replaced.getImage().getArray().dtype)
-            lsst.afw.detection.flattenArray(foot, replaced.getImage().getArray(), sumarray, replaced.getXY0())
+            sumarray = numpy.ndarray((foot.getArea()), replaced.getMaskedImage().getImage().getArray().dtype)
+            lsst.afw.detection.flattenArray(foot, replaced.getMaskedImage().getImage().getArray(), sumarray, replaced.getMaskedImage().getXY0())
             repflux = sumarray.sum(dtype=numpy.float64)
 
             newbackcount = (ymax-ymin)*(xmax-xmin) - count
@@ -254,11 +294,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             self.assertEqual(backcount, newbackcount)
             self.assertEqual(back,newback)
 
-            # Test 2:  the fill in of the area should be consistent with the noiseReplacer
-            # mean=0.702828, std=27.4483
-            popstd = math.sqrt((27.4483*27.4483)/len(sumarray))  
-            normtest[i] = (sumarray.mean()-.702828)/popstd
-        print normtest.max(), normtest.min(), normtest.mean(), normtest.std()
 
 def suite():
     """Returns a suite containing all the test cases in this module."""

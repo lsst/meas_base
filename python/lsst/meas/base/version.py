@@ -2,15 +2,16 @@
 __version__ = 'unknown'
 __repo_version__ = 'unknown'
 __repo_version__ = 'unknown'
-__fingerprint__ = '0x0'
+__fingerprint__ = 'd7a08c2fa73c69cc94adde2bdc3126a145d0b24e *'
 __dependency_versions__ = {
     'boost': '1.51.0+3',
     'python': 'unknown',
     'boost_regex': '1.51.0+3',
-    'base': 'jbosch-lsst-w14',
-    'pex_exceptions': 'jbosch-lsst-w14',
-    'utils': 'jbosch-lsst-w14',
-    'daf_base': 'jbosch-lsst-w14',
+    'base': 'pgee-lsst-w14',
+    'pex_exceptions': 'pgee-lsst-w14',
+    'utils': 'pgee-lsst-w14',
+    'daf_base': 'pgee-lsst-w14',
     'boost_test': '1.51.0+3',
+    'swig': 'unknown',
 }
 __all__ = ('__version__', '__repo_version__', '__repo_version__', '__fingerprint__', '__dependency_versions__')
