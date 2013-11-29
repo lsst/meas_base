@@ -1,0 +1,33 @@
+file /sandbox2/pgee/mylsst7/Linux64/sconsUtils/python/lsst/sconsUtils/state.py,line 274:
+	Configure(confdir = .sconf_temp)
+scons: Configure: Checking who built the CC compiler...
+gcc --version | grep 'Free Software Foundation' > .sconf_temp/conftest_0
+scons: Configure: gcc
+
+
+file /sandbox2/pgee/mylsst7/Linux64/sconsUtils/python/lsst/sconsUtils/state.py,line 315:
+	Configure(confdir = .sconf_temp)
+scons: Configure: Checking for C++ header file tr1/unordered_map... 
+.sconf_temp/conftest_1.cpp <-
+  |
+  |#include "tr1/unordered_map"
+  |
+  |
+g++ -o .sconf_temp/conftest_1.o -c -g .sconf_temp/conftest_1.cpp
+scons: Configure: yes
+
+
+file /sandbox2/pgee/mylsst7/Linux64/sconsUtils/python/lsst/sconsUtils/dependencies.py,line 441:
+	Configure(confdir = .sconf_temp)
+scons: Configure: Checking whether int64_t is long ... 
+.sconf_temp/conftest_2.cc <-
+  |
+  |    #include <stdint.h>
+  |    void test(long long v) { }
+  |    void test(int64_t v) { }
+  |    int main() { return 0; }
+  |    
+g++ -o .sconf_temp/conftest_2.o -c -g -DLSST_HAVE_TR1=1 -DLSST_LITTLE_ENDIAN=1 -O3 -Wall -Wno-unknown-pragmas -I/sandbox2/pgee/mylsst7/Linux64/daf_base/include -I/sandbox2/pgee/mylsst7/Linux64/utils/include -I/sandbox2/pgee/mylsst7/Linux64/pex_exceptions/include -I/sandbox2/pgee/mylsst7/Linux64/base/include -I/sandbox/lsstshared/v6_2/Linux64/external/boost/1.51.0+3/include -I/sandbox/lsstshared/v6_2/Linux64/external/python/2.7.3+1/include/python2.7 .sconf_temp/conftest_2.cc
+scons: Configure: yes
+
+
