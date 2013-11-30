@@ -103,6 +103,9 @@ class NoiseReplacer(object):
         self.noiseSource = noiseSource
         self.noiseOffset = noiseOffset
         self.noiseSeed = noiseSeed
+        self.noiseGenMean = None
+        self.noiseGenStd = None
+
         # creates heavies, replaces all footprints with noise
         # We need the source table to be sorted by ID to do the parent lookups
         self.exposure = exposure
@@ -152,7 +155,9 @@ class NoiseReplacer(object):
         # We'll put the noisy footprints in a map from id -> HeavyFootprint:
         self.heavyNoise = {}
         noisegen = self.getNoiseGenerator(exposure, noiseImage, noiseMeanVar)
-        self.noiseGenerator = noisegen
+        #  The noiseGenMean and Std are used by the unit tests
+        self.noiseGenMean = noisegen.mean
+        self.noiseGenStd = noisegen.std
         print 'Using noise generator: %s' % (str(noisegen))
         for id in footprints.keys():
             fp = footprints[id][1]

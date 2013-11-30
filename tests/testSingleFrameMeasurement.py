@@ -130,18 +130,24 @@ class TestFlux(SingleFrameAlgorithm):
 SingleFrameAlgorithm.registry.register("test.flux", TestFlux)
 
 class SFMTestCase(lsst.utils.tests.TestCase):
-
+    # Test the Noise Replacement mechanism.  This is an extremely cursory test, just
+    # to be sure that the patterns used to fill in all of the footprints are more or
+    # less random and Gaussian.  Probably should have a really normality test here
     def testANoiseReplacement(self):
-        print "testNoiseReplacement"
         exposure = lsst.afw.image.ExposureF("data/exposure.fits.gz")
         #  catalog with footprints, but not measurement fields added
         srccat = SourceCatalog.readFits("data/measCatNull.fits.gz")
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
                       for measRecord in srccat}
         sfm_config = lsst.meas.base.sfm_algorithms.SingleFrameMeasurementConfig()
+
+        # create an exposure which is identical to the exposure created in actual measurement runs
+        # this has random noise in place of the source footprints
         replaced = lsst.afw.image.ExposureF("data/exposure.fits.gz")
         noiseReplacer = NoiseReplacer(replaced, footprints, sfm_config.noiseSource,
                           sfm_config.noiseOffset, sfm_config.noiseSeed) 
+
+        # accuulate the variation of the mean for each filled region in std units 
         normtest = numpy.ndarray(len(srccat), numpy.float32)
         for i in range(len(srccat)):
             record = srccat[i]
@@ -153,20 +159,23 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             lsst.afw.detection.flattenArray(foot, replaced.getMaskedImage().getImage().getArray(), sumarray, replaced.getMaskedImage().getXY0())
             repflux = sumarray.sum(dtype=numpy.float64)
 
-            # Test 2:  the fill in of the area should be consistent with the noiseReplacer
+            # Test: the fill in of the area should be consistent with the noiseReplacer
             # mean=0.702828, std=27.4483
-            noisemean = noiseReplacer.noiseGenerator.mean
-            noisestd = noiseReplacer.noiseGenerator.std
+            noisemean = noiseReplacer.noiseGenMean
+            noisestd = noiseReplacer.noiseGenStd
+            if noisemean == None or noisestd == None: 
+                return   # if the value is not available, skip this test
             popstd = math.sqrt((noisestd*noisestd)/len(sumarray))  
             normtest[i] = (sumarray.mean()-noisemean)/popstd
-        print normtest.max(), normtest.min(), normtest.mean(), normtest.std()
+
+        #  These values pass using the current noise generator.  Since the seed is fixed, it will always pass.
+        #  Probably should put a random seed and normality test in place of this. 
         self.assertTrue(normtest.min() > -3.5)
         self.assertTrue(normtest.max() < 3.5)
         self.assertTrue(abs(normtest.mean()) < .02)
         self.assertTrue(abs(normtest.std() - 1.0) < .02)
 
-    #  Run the measurement (sfm) task with its default plugins
-    #  Any run to completion is successful
+    #  Run the measurement (sfm) task with its default plugins.  Any run to completion is successful
     def testRunMeasurement(self):
 
         print "testRunMeasurement"
@@ -193,16 +202,15 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         task.run(exposure, measCat)
         
     #  This test really tests both that a plugin can measure things correctly,
-    #  and that the noise replacement mechanism work.  The test assumes that
-    #  the fits file replaced.fits is a correct noise replaced image with the
+    #  and that the noise replacement mechanism works in situ.
+    #  The test uses the same replacement image as the test above, with the
     #  default NoiseReplacer seed.  This test just checks to be sure that the
     #  base.py replacement mechanism is still working
 
     def testFluxPlugin(self):
 
-        print "testFluxPlugin"
         exposure = lsst.afw.image.ExposureF("data/exposure.fits.gz")
-        #  catalog with footprints, but not measurement fields added
+        #  catalog with footprints, but no measurement fields added
         srccat = SourceCatalog.readFits("data/measCatNull.fits.gz")
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
                       for measRecord in srccat}
@@ -226,9 +234,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         task.run(exposure, measCat)
 
         # The test plugin adds the footprint flux and the background (surrounding) flux
-        # to the schema.  This is not really a very interesting test, but we will do the
-        # same thing here with the replaced.fits image and the heavy footprint for each
-        # source to see if the SFM task gives the same results        
+        # to the schema.  This test then loops through the sources and tries to produce
+        # the same results        
         mi = exposure.getMaskedImage()
         schema = measCat.getSchema()
         fluxkey = schema.find("test.flux").key
@@ -252,6 +259,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             # get the values produced by the plugin 
             flux = record.get(fluxkey)
             fluxcount = record.get(fluxcountkey)
+            # Test 1:  the flux in the footprint area should measure the same as during the SFM run    
             self.assertEqual(count,fluxcount)
             self.assertEqual(sum,flux)
 
@@ -289,7 +297,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             backcount = record.get(backcountkey)
 
 
-            # Test 1:  the area surrounding the object should be the same as what was measured
+            # Test 2:  the area surrounding the object should be the same as what was measured
             #          during the actual run    
             self.assertEqual(backcount, newbackcount)
             self.assertEqual(back,newback)

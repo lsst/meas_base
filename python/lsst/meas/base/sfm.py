@@ -84,6 +84,8 @@ class SingleFrameMeasurementConfig(lsst.pex.config.Config):
         )
     doReplaceWithNoise = lsst.pex.config.Field(dtype=bool, default=True, optional=False,
                                          doc='When measuring, replace other detected footprints with noise?')
+
+    #  This is to allow the internal NoiseReplacer to be parameterized.
     noiseSource = lsst.pex.config.ChoiceField(doc='How do we choose the mean and variance of the Gaussian noise we generate?',
                                       dtype=str, allowed={
                                           'measure': 'Measure clipped mean and variance from the whole image',
@@ -105,6 +107,9 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
 
     ConfigClass = SingleFrameMeasurementConfig
     _DefaultName = "measurement"
+
+    # FIX:  The algMetadata parameter is currently required by the pipe_base running mechanism
+    #       Problem should be resolved when the plugins are converted.
     def __init__(self, schema, algMetadata=None, **kwds):
         flags = None
         lsst.pipe.base.Task.__init__(self, **kwds)
@@ -130,32 +135,27 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
         exposure.getMaskedImage().getImage().writeFits("image.fits")
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
                       for measRecord in measCat}
-
+        # noiseReplacer is used to fill the footprints with noise and save off heavy footprints
+        # of what was in the exposure beforehand
         noiseReplacer = NoiseReplacer(exposure, footprints, self.config.noiseSource, self.config.noiseOffset, self.config.noiseSeed)
-        exposure.getMaskedImage().writeFits("replaced.fits")
+
+        # loop through all the parent sources, processing the children then the parent
         measParentCat = measCat.getChildren(0)
-        print "There are %d parently sources"%len(measParentCat)
+        self.log.info("There are %d parent sources"%len(measParentCat))
         for parentIdx, measParentRecord in enumerate(measParentCat):
             measChildCat = measCat.getChildren(measParentRecord.getId())
             for measChildRecord in measChildCat:
                 noiseReplacer.insertSource(measChildRecord.getId())
                 for algorithm in self.algorithms.iterSingle():
                     algorithm.measureSingle(exposure, measChildRecord)
-                if measChildRecord.getParent() == 430536917519:
-                    exposure.getMaskedImage().getImage().writeFits("child." + str(measChildRecord.getId()) + ".fits")
                 noiseReplacer.removeSource(measChildRecord.getId())
             noiseReplacer.insertSource(measParentRecord.getId())
-            if measParentRecord.getId() == 430536920156:
-                exposure.getMaskedImage().getImage().writeFits("restored.o.fits")
             for algorithm in self.algorithms.iterSingle():
                 algorithm.measureSingle(exposure, measParentRecord)
             for algorithm in self.algorithms.iterMulti():
                 algorithm.measureMulti(exposure, measParentCat[parentIndex:parentIndex+1])
                 algorithm.measureMulti(exposure, measChildCat)
-                print measParentRecord.getId(), measParentRecord.getFootprint().getBBox()
             noiseReplacer.removeSource(measParentRecord.getId())
-            if measParentRecord.getId() == 430536917519:
-                exposure.getMaskedImage().getImage().writeFits("restored.fits")
         noiseReplacer.end()
 
 

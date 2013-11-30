@@ -7,7 +7,7 @@ class TestCentroidConfig(SingleFrameAlgorithmConfig):
                     doc="whether to center on fractional pixels")
 
 
-#  Algoritm which does nothing
+#  Algoritm which does nothing This is a placeholder for now
 class TestNull(SingleFrameAlgorithm):
 
     ConfigClass = SingleFrameAlgorithmConfig
