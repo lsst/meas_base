@@ -101,7 +101,7 @@ class TestFlux(SingleFrameAlgorithm):
         flux = sumarray.sum(dtype=numpy.float64)
         area = foot.getArea()
         source.set(fluxkey, flux)
-        source.set(fluxcountkey, area) 
+        source.set(fluxcountkey, area)
 
         # Now find an area which is 100 pixels larger in all directions than the foot.getBBox()
         fbbox = foot.getBBox()
@@ -121,7 +121,7 @@ class TestFlux(SingleFrameAlgorithm):
         bigarea = (ymax-ymin)*(xmax-xmin)
         source.set(backkey, bigflux - flux)
         source.set(backcountkey, bigarea - area)
-        
+
 
     def measureMulti(self, exposure, sources):
         return
@@ -139,15 +139,15 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         srccat = SourceCatalog.readFits("data/measCatNull.fits.gz")
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
                       for measRecord in srccat}
-        sfm_config = lsst.meas.base.sfm_algorithms.SingleFrameMeasurementConfig()
+        sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
 
         # create an exposure which is identical to the exposure created in actual measurement runs
         # this has random noise in place of the source footprints
         replaced = lsst.afw.image.ExposureF("data/exposure.fits.gz")
         noiseReplacer = NoiseReplacer(replaced, footprints, sfm_config.noiseSource,
-                          sfm_config.noiseOffset, sfm_config.noiseSeed) 
+                          sfm_config.noiseOffset, sfm_config.noiseSeed)
 
-        # accuulate the variation of the mean for each filled region in std units 
+        # accuulate the variation of the mean for each filled region in std units
         normtest = numpy.ndarray(len(srccat), numpy.float32)
         for i in range(len(srccat)):
             record = srccat[i]
@@ -163,13 +163,13 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             # mean=0.702828, std=27.4483
             noisemean = noiseReplacer.noiseGenMean
             noisestd = noiseReplacer.noiseGenStd
-            if noisemean == None or noisestd == None: 
+            if noisemean == None or noisestd == None:
                 return   # if the value is not available, skip this test
-            popstd = math.sqrt((noisestd*noisestd)/len(sumarray))  
+            popstd = math.sqrt((noisestd*noisestd)/len(sumarray))
             normtest[i] = (sumarray.mean()-noisemean)/popstd
 
         #  These values pass using the current noise generator.  Since the seed is fixed, it will always pass.
-        #  Probably should put a random seed and normality test in place of this. 
+        #  Probably should put a random seed and normality test in place of this.
         self.assertTrue(normtest.min() > -3.5)
         self.assertTrue(normtest.max() < 3.5)
         self.assertTrue(abs(normtest.mean()) < .02)
@@ -178,7 +178,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
     #  Run the measurement (sfm) task with its default plugins.  Any run to completion is successful
     def testRunMeasurement(self):
 
-        print "testRunMeasurement"
         exposure = lsst.afw.image.ExposureF("data/exposure.fits.gz")
         flags = MeasurementDataFlags()
 
@@ -188,7 +187,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         # to the new catalog
         srccat = SourceCatalog.readFits("data/measCatNull.fits.gz")
         schema = srccat.getSchema()
-        config = lsst.meas.base.sfm_algorithms.SingleFrameMeasurementConfig()
+        config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
         task = SingleFrameMeasurementTask(schema, flags, config=config)
         mapper = SchemaMapper(srccat.getSchema())
         mapper.addMinimalSchema(srccat.getSchema())
@@ -200,7 +199,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
 
         # Then run the default SFM task.  Results not checked
         task.run(exposure, measCat)
-        
+
     #  This test really tests both that a plugin can measure things correctly,
     #  and that the noise replacement mechanism works in situ.
     #  The test uses the same replacement image as the test above, with the
@@ -214,18 +213,18 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         srccat = SourceCatalog.readFits("data/measCatNull.fits.gz")
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
                       for measRecord in srccat}
-        sfm_config = lsst.meas.base.sfm_algorithms.SingleFrameMeasurementConfig()
+        sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
         replaced = lsst.afw.image.ExposureF("data/exposure.fits.gz")
         noiseReplacer = NoiseReplacer(replaced, footprints, sfm_config.noiseSource,
-                          sfm_config.noiseOffset, sfm_config.noiseSeed) 
-       
+                          sfm_config.noiseOffset, sfm_config.noiseSeed)
+
         # add the measurement fields to the outputSchema and mack a catalog with it
         # then extend with the mapper to copy the extant data
         mapper = SchemaMapper(srccat.getSchema())
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
-        sfm_config.algorithms.names.add("test.flux")  
+        sfm_config.algorithms.names.add("test.flux")
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
         measCat.extend(srccat, mapper=mapper)
@@ -235,7 +234,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
 
         # The test plugin adds the footprint flux and the background (surrounding) flux
         # to the schema.  This test then loops through the sources and tries to produce
-        # the same results        
+        # the same results
         mi = exposure.getMaskedImage()
         schema = measCat.getSchema()
         fluxkey = schema.find("test.flux").key
@@ -256,21 +255,21 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             lsst.afw.detection.flattenArray(foot, mi.getImage().getArray(), sumarray, mi.getImage().getXY0())
             sum = sumarray.sum(dtype=numpy.float64)
             count = foot.getArea()
-            # get the values produced by the plugin 
+            # get the values produced by the plugin
             flux = record.get(fluxkey)
             fluxcount = record.get(fluxcountkey)
-            # Test 1:  the flux in the footprint area should measure the same as during the SFM run    
+            # Test 1:  the flux in the footprint area should measure the same as during the SFM run
             self.assertEqual(count,fluxcount)
             self.assertEqual(sum,flux)
 
-        
+
             # Now find an area which is 100 pixels larger in all directions than the foot.getBBox()
             # Measure it against the replaced.fits image to be sure no extra flux is appearing
             # due to incorrect background fill in of any of the other objects
             #  heavy.insert(replaced)
             fbbox = foot.getBBox()
             border = 100
-            
+
             x0 = mi.getImage().getX0()
             y0 = mi.getImage().getY0()
             xmin = fbbox.getMinX() - border
@@ -281,11 +280,11 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             if ymin < y0: ymin = y0
             if xmax > (exposure.getWidth()+x0): xmax = exposure.getWidth()+y0
             if ymax > (exposure.getHeight()+y0): ymax = exposure.getHeight()+y0
-        
-            # get the sum of the entire bordered area 
+
+            # get the sum of the entire bordered area
             arraysub = replaced.getMaskedImage().getImage().getArray()[ymin-y0:ymax-y0, xmin-x0:xmax-x0]
             bigflux = arraysub.sum(dtype=numpy.float64)
-            
+
             # get the sum of the footprint area
             sumarray = numpy.ndarray((foot.getArea()), replaced.getMaskedImage().getImage().getArray().dtype)
             lsst.afw.detection.flattenArray(foot, replaced.getMaskedImage().getImage().getArray(), sumarray, replaced.getMaskedImage().getXY0())
@@ -298,7 +297,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
 
 
             # Test 2:  the area surrounding the object should be the same as what was measured
-            #          during the actual run    
+            #          during the actual run
             self.assertEqual(backcount, newbackcount)
             self.assertEqual(back,newback)
 
