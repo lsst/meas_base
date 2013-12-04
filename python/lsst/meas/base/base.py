@@ -26,8 +26,6 @@ class AlgorithmRegistry(lsst.pex.config.Registry):
         def __init__(self, name, AlgorithmClass):
             """ Initialize registry with Algorithm Class
            """
-            import pdb
-            pdb.set_trace() 
             self.name = name
             self.AlgorithmClass = AlgorithmClass
 
@@ -147,7 +145,7 @@ class NoiseReplacer(object):
                 % (maskname, plane, bitmask, bitmask))
         self.thisbitmask,self.otherbitmask = bitmasks
         del bitmasks
-
+        self.heavies = {}
         # Start by creating HeavyFootprints for each source.
         # and store in the dict heavies = {id:heavyfootprint}
         for id in footprints.keys():
