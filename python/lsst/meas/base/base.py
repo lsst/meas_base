@@ -49,13 +49,13 @@ class AlgorithmMap(collections.OrderedDict):
     def iterSingle(self):
         """ Call each algorithm in the map which has a measureSingle """
         for algorithm in self.itervalues():
-            if algorithm.doMeasureSingle:
+            if algorithm.config.doMeasureSingle:
                 yield algorithm
 
     def iterMulti(self):
         """ Call each algorithm in the map which has a measureMulti """
         for algorithm in self.itervalues():
-            if algorithm.doMeasureMulti:
+            if algorithm.config.doMeasureMulti:
                 yield algorithm
 
 class BaseAlgorithmConfig(lsst.pex.config.Config):

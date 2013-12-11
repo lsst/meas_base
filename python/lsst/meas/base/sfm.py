@@ -10,9 +10,11 @@ to avoid information loss (this should, of course, be indicated in the field doc
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.daf.base
+import lsst.meas.algorithms
 from .base import *
-__all__ = ("SingleFrameAlgorithmConfig", "SingleFrameAlgorithm", "SingleFrameMeasurementConfig",
-           "SingleFrameMeasurementTask")
+__all__ = ("SingleFrameAlgorithmConfig", "SingleFrameAlgorithm", "SingleFrameAlgorithmCpp",
+"SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
+
 class SingleFrameAlgorithmConfig(BaseAlgorithmConfig):
     """Base class for configs of single-frame plugin algorithms."""
     pass
@@ -72,15 +74,49 @@ class SingleFrameAlgorithm(BaseAlgorithm):
         """
         raise NotImplementedError()
 
+class SingleFrameAlgorithmCpp(SingleFrameAlgorithm):
+
+    def __init__(self, config, name, schema, flags, others, metadata):
+        SingleFrameAlgorithm.__init__(self, config, name, schema, flags, others, metadata)
+        any = lsst.meas.algorithms.AlgorithmRegistry.all.makeField(
+            "field that accepts any algorithm"
+        )
+        find =  any.registry[name]
+        control = find(find.ConfigClass())
+        self.alg = control.makeAlgorithm(schema)
+
+    def measureSingle(self, exposure, source):
+        try: 
+            if not 'centroidkey' in self.__dict__.keys():
+                self.centroidkey = source.getSchema().find("centroid.sdss").key
+            center = source.get(self.centroidkey)
+            self.alg.apply(source, exposure, center)
+        except Exception as e:
+            pass #print "err in %s = %s" % (type(self), e.message)
+
+    def measureMulti(self, exposure, sources):
+        return
+
 class SingleFrameMeasurementConfig(lsst.pex.config.Config):
     """Config class for single-frame measurement driver task."""
 
     algorithms = SingleFrameAlgorithm.registry.makeField(
         multi=True,
-        default=[], #TODO
+        default=["centroid.sdss",
+                 "flags.pixel",
+                 "centroid.gaussian",
+                 "centroid.naive",
+                 "shape.sdss",
+                 "flux.gaussian",
+                 "flux.naive",
+                 "flux.psf",
+                 "flux.sinc",
+                 "classification.extendedness",
+                 "skycoord",
+                 ],
+
         doc="Plugin algorithms to be run and their configuration"
         )
-
     doReplaceWithNoise = lsst.pex.config.Field(dtype=bool, default=True, optional=False,
         doc='When measuring, replace other detected footprints with noise?')
 
@@ -95,6 +131,7 @@ class SingleFrameMeasurementConfig(lsst.pex.config.Config):
                                   doc='Add ann offset to the generated noise.')
     noiseSeed = lsst.pex.config.Field(dtype=int, default=0,
         doc='The seed value to use for random number generation.')
+
 
 class SingleFrameMeasurementTask(lsst.pipe.base.Task):
     """Single-frame measurement driver task"""
@@ -133,6 +170,10 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
         assert measCat.getSchema().contains(self.schema)
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
             for measRecord in measCat}
+        import time
+        starttime = time.time()
+        print "Start time = ", starttime
+
         # noiseReplacer is used to fill the footprints with noise and save off heavy footprints
         # of what was in the exposure beforehand.
         noiseReplacer = NoiseReplacer(exposure, footprints, self.config.noiseSource,
@@ -160,4 +201,7 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
         # when done, restore the exposure to its original state
         noiseReplacer.end()
 
+        endtime = time.time()
+        print "end time = ", endtime
+        print "elapsed time = ", endtime-starttime
 
