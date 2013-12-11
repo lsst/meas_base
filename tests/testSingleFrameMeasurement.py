@@ -81,7 +81,8 @@ class TestFlux(SingleFrameAlgorithm):
             schema.addField("test.flux", type=float, doc="sum of flux in object footprint", units="")
             schema.addField("test.fluxcount", type=int, doc="number of pixels in object footprint", units="")
             schema.addField("test.back", type=float, doc="avg of flux in background", units="")
-            schema.addField("test.backcount", type=int, doc="number of pixels in surrounding background", units="")
+            schema.addField("test.backcount", type=int, doc="number of pixels in surrounding background",
+                units="")
 
     def measureSingle(self, exposure, source):
 
@@ -156,7 +157,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             foot = record.getFootprint()
             # get the sum of the footprint area
             sumarray = numpy.ndarray((foot.getArea()), replaced.getMaskedImage().getImage().getArray().dtype)
-            lsst.afw.detection.flattenArray(foot, replaced.getMaskedImage().getImage().getArray(), sumarray, replaced.getMaskedImage().getXY0())
+            lsst.afw.detection.flattenArray(foot, replaced.getMaskedImage().getImage().getArray(),
+                sumarray, replaced.getMaskedImage().getXY0())
             repflux = sumarray.sum(dtype=numpy.float64)
 
             # Test: the fill in of the area should be consistent with the noiseReplacer
@@ -287,7 +289,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
 
             # get the sum of the footprint area
             sumarray = numpy.ndarray((foot.getArea()), replaced.getMaskedImage().getImage().getArray().dtype)
-            lsst.afw.detection.flattenArray(foot, replaced.getMaskedImage().getImage().getArray(), sumarray, replaced.getMaskedImage().getXY0())
+            lsst.afw.detection.flattenArray(foot, replaced.getMaskedImage().getImage().getArray(),
+                sumarray, replaced.getMaskedImage().getXY0())
             repflux = sumarray.sum(dtype=numpy.float64)
 
             newbackcount = (ymax-ymin)*(xmax-xmin) - count
