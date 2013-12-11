@@ -21,18 +21,12 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import os
 import math
 from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
 from lsst.meas.base.sfm import *
 from lsst.meas.base.base import *
-from lsst.daf.persistence.butler import *
 import unittest
 import lsst.utils.tests
-import numpy
-
-from lsst.meas.base.sfm import *
-import lsst.afw.detection
 import numpy
 
 class TestCentroidConfig(SingleFrameAlgorithmConfig):
@@ -78,11 +72,12 @@ class TestFlux(SingleFrameAlgorithm):
 
     def __init__(self, config, name, schema=None, flags=None, others=None, metadata=None):
 
-            schema.addField("test.flux", type=float, doc="sum of flux in object footprint", units="")
-            schema.addField("test.fluxcount", type=int, doc="number of pixels in object footprint", units="")
-            schema.addField("test.back", type=float, doc="avg of flux in background", units="")
-            schema.addField("test.backcount", type=int, doc="number of pixels in surrounding background",
-                units="")
+        schema.addField("test.flux", type=float, doc="sum of flux in object footprint", units="")
+        schema.addField("test.fluxcount", type=int, doc="number of pixels in object footprint", units="")
+        schema.addField("test.back", type=float, doc="avg of flux in background", units="")
+        schema.addField("test.backcount", type=int, doc="number of pixels in surrounding background",
+            units="")
+        self.config = config
 
     def measureSingle(self, exposure, source):
 
