@@ -140,7 +140,6 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
 
         # loop through all the parent sources, processing the children, then the parent
         measParentCat = measCat.getChildren(0)
-        self.log.info("There are %d parent sources"%len(measParentCat))
         for parentIdx, measParentRecord in enumerate(measParentCat):
             # first get all the children of this parent, insert footprint in turn, and measure
             measChildCat = measCat.getChildren(measParentRecord.getId())

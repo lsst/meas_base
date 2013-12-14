@@ -22,6 +22,7 @@
 #
 
 import math
+import os
 from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
 from lsst.meas.base.sfm import *
 from lsst.meas.base.base import *
@@ -125,21 +126,26 @@ class TestFlux(SingleFrameAlgorithm):
 
 SingleFrameAlgorithm.registry.register("test.flux", TestFlux)
 
+DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests", "data")
+
 class SFMTestCase(lsst.utils.tests.TestCase):
     # Test the Noise Replacement mechanism.  This is an extremely cursory test, just
     # to be sure that the patterns used to fill in all of the footprints are more or
     # less random and Gaussian.  Probably should have a really normality test here
     def testANoiseReplacement(self):
-        exposure = lsst.afw.image.ExposureF("data/exposure.fits.gz")
+        path = os.path.join(DATA_DIR, 'exposure.fits.gz')
+        exposure = lsst.afw.image.ExposureF(path)
         #  catalog with footprints, but not measurement fields added
-        srccat = SourceCatalog.readFits("data/measCatNull.fits.gz")
+        path = os.path.join(DATA_DIR, 'measCatNull.fits.gz')
+        srccat = SourceCatalog.readFits(path)
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
                       for measRecord in srccat}
         sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
 
         # create an exposure which is identical to the exposure created in actual measurement runs
         # this has random noise in place of the source footprints
-        replaced = lsst.afw.image.ExposureF("data/exposure.fits.gz")
+        path = os.path.join(DATA_DIR, 'exposure.fits.gz')
+        replaced = lsst.afw.image.ExposureF(path)
         noiseReplacer = NoiseReplacer(replaced, footprints, sfm_config.noiseSource,
                           sfm_config.noiseOffset, sfm_config.noiseSeed)
 
@@ -175,14 +181,17 @@ class SFMTestCase(lsst.utils.tests.TestCase):
     #  Run the measurement (sfm) task with its default plugins.  Any run to completion is successful
     def testRunMeasurement(self):
 
-        exposure = lsst.afw.image.ExposureF("data/exposure.fits.gz")
+        path = os.path.join(DATA_DIR, 'exposure.fits.gz')
+        exposure = lsst.afw.image.ExposureF(path)
+        #  catalog with footprints, but not measurement fields added
+        path = os.path.join(DATA_DIR, 'measCatNull.fits.gz')
+        srccat = SourceCatalog.readFits(path)
         flags = MeasurementDataFlags()
 
         # Read a catalog which should be the same as the catalog of processCcd
         # prior to measurement.  Create an empty catalog with the same schema
         # plus the schema items for the SFM task, then transfer the existing data
         # to the new catalog
-        srccat = SourceCatalog.readFits("data/measCatNull.fits.gz")
         schema = srccat.getSchema()
         config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
         task = SingleFrameMeasurementTask(schema, flags, config=config)
@@ -205,13 +214,17 @@ class SFMTestCase(lsst.utils.tests.TestCase):
 
     def testFluxPlugin(self):
 
-        exposure = lsst.afw.image.ExposureF("data/exposure.fits.gz")
+        path = os.path.join(DATA_DIR, 'exposure.fits.gz')
+        exposure = lsst.afw.image.ExposureF(path)
+        #  catalog with footprints, but not measurement fields added
+        path = os.path.join(DATA_DIR, 'measCatNull.fits.gz')
+        srccat = SourceCatalog.readFits(path)
         #  catalog with footprints, but no measurement fields added
-        srccat = SourceCatalog.readFits("data/measCatNull.fits.gz")
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
                       for measRecord in srccat}
         sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        replaced = lsst.afw.image.ExposureF("data/exposure.fits.gz")
+        path = os.path.join(DATA_DIR, 'exposure.fits.gz')
+        replaced = lsst.afw.image.ExposureF(path)
         noiseReplacer = NoiseReplacer(replaced, footprints, sfm_config.noiseSource,
                           sfm_config.noiseOffset, sfm_config.noiseSeed)
 
