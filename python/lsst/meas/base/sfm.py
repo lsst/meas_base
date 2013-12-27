@@ -147,8 +147,7 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
     """
     #   The algMetadata parameter is currently required by the pipe_base running mechanism
     #   This is a termporary state untile the plugins are converted.
-    def __init__(self, schema, algMetadata=None, **kwds):
-        flags = None
+    def __init__(self, schema, algMetadata=None, flags=None, **kwds):
         lsst.pipe.base.Task.__init__(self, **kwds)
         self.schema = schema
         self.algMetadata = lsst.daf.base.PropertyList()

@@ -146,26 +146,34 @@ class NoiseReplacer(object):
         self.thisbitmask,self.otherbitmask = bitmasks
         del bitmasks
         self.heavies = {}
-        # Start by creating HeavyFootprints for each source.
-        # and store in the dict heavies = {id:heavyfootprint}
+        # Start by creating HeavyFootprints for each source which has no parent
+        # and just use them for children which already have heavy footprints.
+        # Store in the dict heavies = {id:heavyfootprint}
         for id in footprints.keys():
-            fp = footprints[id][1]
-            heavy = afwDet.makeHeavyFootprint(fp, mi)
-            self.heavies[id] = heavy
-
+            fp = footprints[id]
+            if fp[1].isHeavy():
+                self.heavies[id] = afwDet.castHeavyFootprintF(fp[1])
+            elif fp[0] == 0:
+                self.heavies[id] = afwDet.makeHeavyFootprint(fp[1], mi)
         # We now create a noise HeavyFootprint for each top-level Source.
         # We'll put the noisy footprints in a dict heavyNoise = {id:heavyNoiseFootprint}
+
+        # top-level source: copy pixels from the input
+        # image.
+        ### FIXME: the heavy footprint includes the mask
+        ### and variance planes, which we shouldn't need
+        ### (I don't think we ever want to modify them in
+        ### the input image).  Copying them around is
+        ### wasteful.
+
         self.heavyNoise = {}
         noisegen = self.getNoiseGenerator(exposure, noiseImage, noiseMeanVar)
         #  The noiseGenMean and Std are used by the unit tests
         self.noiseGenMean = noisegen.mean
         self.noiseGenStd = noisegen.std
         if self.log: self.log.logdebug('Using noise generator: %s' % (str(noisegen)))
-        for id in footprints.keys():
+        for id in self.heavies.keys():
             fp = footprints[id][1]
-            parent = footprints[id][0]
-            if parent:
-                continue
             noiseFp = noisegen.getHeavyFootprint(fp) 
             self.heavyNoise[id] = noiseFp
             # Also insert the noisy footprint into the image now.
@@ -185,8 +193,21 @@ class NoiseReplacer(object):
         mi = self.exposure.getMaskedImage()
         im = mi.getImage()
         mask = mi.getMask()
-        fp = self.heavies[id]
-        fp.insert(im)
+        # usedid can point either to this source, or to the topmost parent 
+        usedid = id
+        while self.footprints[usedid][0] != 0 and not usedid in self.heavies.keys():
+            usedid = self.footprints[usedid][0]
+        # Perhaps we should assert this case?
+        if not usedid in self.heavies.keys():
+            print "footprint not found for ", id
+            return
+        fp = self.heavies[usedid]
+        try:
+            fp.insert(im)
+        except Exception, e:
+            print "BAD"
+            import pdb
+            pdb.set_trace()
         afwDet.setMaskFromFootprint(mask, fp, self.thisbitmask)
         afwDet.clearMaskFromFootprint(mask, fp, self.otherbitmask)
 
@@ -202,16 +223,16 @@ class NoiseReplacer(object):
         mi = self.exposure.getMaskedImage()
         im = mi.getImage()
         mask = mi.getMask()
-        # uses the footprints to find the topmost parent
-        topId = id
-        while topId:
-            parentId = self.footprints[topId][0]
-            if parentId == 0:
-                break
-            topId = parentId
-
+        # usedid can point either to this source, or to the topmost parent 
+        usedid = id
+        while self.footprints[usedid][0] != 0 and not usedid in self.heavies.keys():
+            usedid = self.footprints[usedid][0]
+        # Perhaps we should assert this case?
+        if not usedid in self.heavies.keys():
+            print "footprint not found for ", id
+            return
         # Re-insert the noise pixels
-        fp = self.heavyNoise[topId]
+        fp = self.heavyNoise[usedid]
         fp.insert(im)
         # Clear the THISDET mask plane.
         afwDet.clearMaskFromFootprint(mask, fp, self.thisbitmask)
@@ -229,8 +250,7 @@ class NoiseReplacer(object):
         mask = mi.getMask()
         for id in self.footprints.keys():
             fp = self.footprints[id][1]
-            parentId = self.footprints[id][0]
-            if parentId:
+            if self.footprints[id][0] != 0:
                 continue
             self.heavies[id].insert(im)
         for maskname in self.removeplanes:
