@@ -33,9 +33,11 @@ Basic routines to talk to lsst::meas::base classes
 %{
 #include "lsst/pex/logging.h"
 #include "lsst/afw/geom.h"
+#include "lsst/afw/math.h"
 #include "lsst/afw/table.h"
 #include "lsst/afw/cameraGeom.h"
 #include "lsst/afw/image.h"
+#include "lsst/afw/detection.h"
 #include "lsst/meas/base.h"
 #define PY_ARRAY_UNIQUE_SYMBOL LSST_MEAS_BASE_NUMPY_ARRAY_API
 #include "numpy/arrayobject.h"
@@ -61,7 +63,34 @@ Basic routines to talk to lsst::meas::base classes
 %import "lsst/afw/geom/geomLib.i"
 %import "lsst/afw/table/tableLib.i"
 %import "lsst/afw/image/imageLib.i"
+%import "lsst/afw/detection/detectionLib.i"
 %import "lsst/pex/config.h"
 
 %include "lsst/meas/base/Results.h"
 %include "lsst/meas/base/ResultMappers.h"
+%include "lsst/afw/image/Exposure.h"
+%include "lsst/meas/base/Inputs.h"
+%include "lsst/meas/base/PsfFlux.h"
+%include "lsst/meas/base/SdssShape.h"
+
+%template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<double>;
+%template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
+
+%template(PsfFluxInputVector) std::vector<lsst::meas::base::PsfFluxAlgorithm::Input>;
+
+// Turn C++ typedefs into equivalent Python attributes - it's a shame Swig doesn't do this for us.
+%pythoncode %{
+
+PsfFluxAlgorithm.Control = None
+PsfFluxAlgorithm.Result = FluxAlgorithmResult
+PsfFluxAlgorithm.ResultMapper = FluxAlgorithmMapper
+PsfFluxAlgorithm.Input = AlgorithmInput2
+
+SdssShapeAlgorithm.Control = SdssShapeControl
+SdssShapeAlgorithm.Result = SdssShapeAlgorithmResult
+SdssShapeAlgorithm.ResultMapper = SdssShapeAlgorithmResultMapper
+SdssShapeAlgorithm.Input = AlgorithmInput2
+
+%}

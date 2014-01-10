@@ -26,5 +26,8 @@
 
 #include "lsst/meas/base/Results.h"
 #include "lsst/meas/base/ResultMappers.h"
+#include "lsst/meas/base/Inputs.h"
+#include "lsst/meas/base/PsfFlux.h"
+#include "lsst/meas/base/SdssShape.h"
 
 #endif // !LSST_MEAS_base_h_INCLUDED
