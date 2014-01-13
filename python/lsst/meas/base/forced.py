@@ -1,4 +1,4 @@
-"""Base classes for forced measurement plugin algorithms and the driver task for these.
+"""Base classes for forced measurement plugins and the driver task for these.
 
 In forced measurement, a reference catalog is used to define restricted measurements (usually just fluxes)
 on an image.  As the reference catalog may be deeper than the detection limit of the measurement image, we
@@ -15,10 +15,10 @@ neighbors when run on objects with parent != 0.
 Measurements are generally recorded in the coordinate system of the image being measured (and all
 slot-eligible fields must be), but non-slot fields may be recorded in other coordinate systems if necessary
 to avoid information loss (this should, of course, be indicated in the field documentation).  Note that
-the reference catalog may be in a different coordinate system; it is the responsibility of algorithms
-to transform the data they need themselves, using the reference WCS provided.  However, for algorithms
+the reference catalog may be in a different coordinate system; it is the responsibility of plugins
+to transform the data they need themselves, using the reference WCS provided.  However, for plugins
 that only require a position, they may simply use output SourceCatalog's centroid slot, which will generally
-be set to the transformed position of the reference object before any algorithms are run, and hence avoid
+be set to the transformed position of the reference object before any plugins are run, and hence avoid
 using the reference catalog at all.
 """
 
@@ -38,7 +38,7 @@ using the reference catalog at all.
 # task in meas_base and let the CCD- and coadd-specialized subclasses continue to be in pipe_tasks
 # to avoid dependency issues.
 #
-
+import math
 import lsst.pex.config
 from lsst.pipe.base import Task, CmdLineTask, Struct, timeMethod, ArgumentParser, ButlerInitializedTaskRunner
 import lsst.daf.base
@@ -46,32 +46,34 @@ from lsst.pex.config import DictField,ConfigurableField
 from lsst.pipe.tasks.references import CoaddSrcReferencesTask
 from lsst.pipe.tasks.coaddBase import CoaddDataIdContainer
 from .base import *
-__all__ = ("ForcedAlgorithmConfig", "ForcedAlgorithm", "ForcedMeasurementConfig", "ForcedMeasurementTask")
-class ForcedAlgorithmConfig(BaseAlgorithmConfig):
-    """Base class for configs of forced measurement plugin algorithms."""
+
+__all__ = ("ForcedPluginConfig", "ForcedPlugin", "ForcedMeasurementConfig", "ForcedMeasurementTask")
+
+class ForcedPluginConfig(BasePluginConfig):
+    """Base class for configs of forced measurement plugins."""
     pass
 
-class ForcedAlgorithm(BaseAlgorithm):
+class ForcedPlugin(BasePlugin):
 
-    # All subclasses of ForcedAlgorithm should be registered here
-    registry = AlgorithmRegistry(ForcedAlgorithmConfig)
+    # All subclasses of ForcedPlugin should be registered here
+    registry = PluginRegistry(ForcedPluginConfig)
 
-    ConfigClass = ForcedAlgorithmConfig
+    ConfigClass = ForcedPluginConfig
 
     def __init__(self, config, name, schemaMapper, flags, others, metadata):
         """Initialize the measurement object.
 
         @param[in]  config       An instance of this class's ConfigClass.
-        @param[in]  name         The string the algorithm was registered with.
+        @param[in]  name         The string the plugin was registered with.
         @param[in,out]  schemaMapper  A SchemaMapper that maps reference catalog fields to output
                                       catalog fields.  Output fields should be added to the
-                                      output schema.  While most algorithms will not need to map
+                                      output schema.  While most plugins will not need to map
                                       fields from the reference schema, if they do so, those fields
-                                      will be transferred before any algorithms are run.
-        @param[in]  flags        A set of bitflags describing the data that the algorithm
+                                      will be transferred before any plugins are run.
+        @param[in]  flags        A set of bitflags describing the data that the plugin
                                  should check to see if it supports.  See MeasuremntDataFlags.
-        @param[in]  others       An AlgorithmMap of previously-initialized algorithms
-        @param[in]  metadata     Algorithm metadata that will be attached to the output catalog
+        @param[in]  others       An PluginMap of previously-initialized plugns 
+        @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
         self.config = config
 
@@ -95,7 +97,7 @@ class ForcedAlgorithm(BaseAlgorithm):
                                   a pixel scale.
 
         In the normal mode of operation, the source centroid will be set to the
-        WCS-transformed position of the reference object, so algorithms that only
+        WCS-transformed position of the reference object, so plugins that only
         require a reference position should not have to access the reference object
         at all.
         """
@@ -123,22 +125,33 @@ class ForcedAlgorithm(BaseAlgorithm):
                                  a pixel scale.
 
         In the normal mode of operation, the source centroids will be set to the
-        WCS-transformed position of the reference object, so algorithms that only
+        WCS-transformed position of the reference object, so plugins that only
         require a reference position should not have to access the reference object
         at all.
         """
         raise NotImplementedError()
 
-class ForcedMeasurementConfig(lsst.pex.config.Config):
+class ForcedMeasurementConfig(BaseMeasurementConfig):
     """Config class for forced measurement driver task."""
 
-    algorithms = ForcedAlgorithm.registry.makeField(
+    plugins = ForcedPlugin.registry.makeField(
         multi=True,
-        default=['forced.flux'
-            ],
-        doc="Plugin algorithms to be run and their configuration"
+        default=["centroid.sdss",
+                 "flags.pixel",
+                 "centroid.gaussian",
+                 "centroid.naive",
+                 "shape.sdss",
+                 "flux.gaussian",
+                 "flux.naive",
+                 "flux.psf",
+                 "flux.sinc",
+                 "classification.extendedness",
+                 "skycoord",
+                 ],
+        doc="Plugins to be run and their configuration"
         )
-    references = ConfigurableField(target=CoaddSrcReferencesTask, doc="Retrieve reference source catalog")
+    references = ConfigurableField(target=CoaddSrcReferencesTask,
+        doc="Retrieve reference source catalog")
 
     copyColumns = DictField(
         keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
@@ -152,23 +165,12 @@ class ForcedMeasurementConfig(lsst.pex.config.Config):
         dtype = str,
         default = "goodSeeing",
     )
-
-    doReplaceWithNoise = lsst.pex.config.Field(dtype=bool, default=True, optional=False,
-        doc='When measuring, replace other detected footprints with noise?')
-
-    #  These parameters are to allow the internal NoiseReplacer to be parameterized.
-    noiseSource = lsst.pex.config.ChoiceField(
-        doc='How to choose mean and variance of the Gaussian noise we generate?',
-        dtype=str, allowed={'measure': 'Measure clipped mean and variance from the whole image',
-        'meta': 'Mean = 0, variance = the "BGMEAN" metadata entry',
-        'variance': "Mean = 0, variance = the image's variance",},
-        default='measure', optional=False)
-    noiseOffset = lsst.pex.config.Field(dtype=float, optional=False, default=0.,
-                                  doc='Add ann offset to the generated noise.')
-    noiseSeed = lsst.pex.config.Field(dtype=int, default=0,
-        doc='The seed value to use for random number generation.')
-
-
+    def setDefaults(self):
+        self.slots.shape = None
+        self.slots.apFlux = None
+        self.slots.modelFlux = None
+        self.slots.psfFlux = None
+        self.slots.instFlux = None
 
 class ForcedMeasurementTask(CmdLineTask):
     """Forced measurement driver task
@@ -187,7 +189,7 @@ class ForcedMeasurementTask(CmdLineTask):
         CmdLineTask.__init__(self, **kwds)
         self.makeSubtask("references")
         self.algMetadata = lsst.daf.base.PropertyList()
-        self.algorithms = AlgorithmMap()
+        self.plugins = PluginMap()
         if not refSchema:
             refSchema = self.references.getSchema(butler)
         self.mapper = lsst.afw.table.SchemaMapper(refSchema)
@@ -197,10 +199,10 @@ class ForcedMeasurementTask(CmdLineTask):
             refItem = refSchema.find(refName)
             self.mapper.addMapping(refItem.key, targetName)
 
-        flags = MeasurementDataFlags() 
-        for executionOrder, name, config, AlgorithmClass in sorted(self.config.algorithms.apply()):
-            self.algorithms[name] = AlgorithmClass(config, name, self.mapper, flags=flags,
-                                                   others=self.algorithms, metadata=self.algMetadata)
+        flags = MeasurementDataFlags()
+        for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
+            self.plugins[name] = PluginClass(config, name, self.mapper, flags=flags,
+                                                   others=self.plugins, metadata=self.algMetadata)
 
     def run(self, dataRef):  #exposure, measCat, refCat, refWcs):
         refWcs = self.references.getWcs(dataRef)
@@ -209,16 +211,15 @@ class ForcedMeasurementTask(CmdLineTask):
         mapper = self.mapper
         retStruct = self.forcedMeasure(exposure, references, refWcs, dataRef)
         self.writeOutput(dataRef, retStruct.sources)
-        return retStruct
 
     def forcedMeasure(self, exposure, references, refWcs, dataRef):
 
         targetWcs = exposure.getWcs()
         expregion = lsst.afw.geom.Box2I(exposure.getXY0(),
             lsst.afw.geom.Extent2I(exposure.getWidth(), exposure.getHeight()))
-        footprints = {refRecord.getId(): (refRecord.getParent(), 
-            refRecord.getFootprint().transform(refWcs, targetWcs, expregion, True)) 
-            for refRecord in references} 
+        footprints = {refRecord.getId(): (refRecord.getParent(),
+            refRecord.getFootprint().transform(refWcs, targetWcs, expregion, True))
+            for refRecord in references}
         for ref in references:
             if ref.getParent():
                 if not ref.getParent() in footprints.keys():
@@ -237,6 +238,7 @@ class ForcedMeasurementTask(CmdLineTask):
         referenceCat.extend(references)
 
         sources = self.generateSources(dataRef, references)
+        self.config.slots.setupTable(sources.table)
         outSchema = self.mapper.getOutputSchema()
         # convert the footprints to the coordinate system of the exposure 
 
@@ -248,23 +250,21 @@ class ForcedMeasurementTask(CmdLineTask):
         refParentCat, measParentCat = referenceCat.getChildren(0, sources)
         for parentIdx, (refParentRecord, measParentRecord) in enumerate(zip(refParentCat,measParentCat)):
             refChildCat, measChildCat = referenceCat.getChildren(refParentRecord.getId(), sources)
-            # TODO: skip this loop if there are no algorithms configured for single-object mode
+            # TODO: skip this loop if there are no plugins configured for single-object mode
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
-                #noiseReplacer.insertSource(refChildRecord.getId())
-                for algorithm in self.algorithms.iterSingle():
-                    algorithm.measureSingle(exposure, measChildRecord, refChildRecord, refWcs)
+                noiseReplacer.insertSource(refChildRecord.getId())
+                for plugin in self.plugins.iterSingle():
+                    plugin.measureSingle(exposure, measChildRecord, refChildRecord, refWcs)
                 noiseReplacer.removeSource(refChildRecord.getId())
             noiseReplacer.insertSource(refParentRecord.getId())
-            for algorithm in self.algorithms.iterSingle():
-                algorithm.measureSingle(exposure, measParentRecord, refParentRecord, refWcs)
-            for algorithm in self.algorithms.iterMulti():
-                algorithm.measureMulti(exposure, measChildCat, refChildCat)
-                algorithm.measureMulti(exposure, measParentCat[parentIdx:parentIdx+1],
+            for plugin in self.plugins.iterSingle():
+                plugin.measureSingle(exposure, measParentRecord, refParentRecord, refWcs)
+            for plugin in self.plugins.iterMulti():
+                plugin.measureMulti(exposure, measChildCat, refChildCat)
+                plugin.measureMulti(exposure, measParentCat[parentIdx:parentIdx+1],
                                        refParentCat[parentIdx:parentIdx+1])
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()
-
-        #self.measurement.run(exposure, sources, references=references, refWcs=refWcs)
         return Struct(sources=sources)
 
     def makeIdFactory(self, dataRef):

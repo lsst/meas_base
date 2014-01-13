@@ -1,47 +1,46 @@
 import collections
-
 import lsst.afw.detection as afwDet
 import lsst.afw.math as afwMath
 import lsst.afw.image as afwImage
 import lsst.pipe.base
-import lsst.pex.config
-
+import lsst.pex.config as pexConfig
+import lsst.meas.algorithms
 import lsst.afw.table
 
 """ Base class for algorithm registries.
-    The Algorithm class allowed in the registry is defined on the ctor of the registry
+    The Plugin class allowed in the registry is defined on the ctor of the registry
     The intention is that single frame and multi frame algorithms will have different
     registries.
 """
-class AlgorithmRegistry(lsst.pex.config.Registry):
+class PluginRegistry(lsst.pex.config.Registry):
 
     class Configurable(object):
         """ Class used as the actual element in the registry; rather
-        than constructing an Algorithm instance, it returns a tuple
-        of (runlevel, name, config, AlgorithmClass), which can then
+        than constructing an Plugin instance, it returns a tuple
+        of (runlevel, name, config, PluginClass), which can then
         be sorted before the algorithms are instantiated.
         """
 
-        __slots__ = "AlgorithmClass", "name"
-        def __init__(self, name, AlgorithmClass):
-            """ Initialize registry with Algorithm Class
+        __slots__ = "PluginClass", "name"
+        def __init__(self, name, PluginClass):
+            """ Initialize registry with Plugin Class
            """
             self.name = name
-            self.AlgorithmClass = AlgorithmClass
+            self.PluginClass = PluginClass
 
         @property
-        def ConfigClass(self): return self.AlgorithmClass.ConfigClass
+        def ConfigClass(self): return self.PluginClass.ConfigClass
 
         def __call__(self, config):
-            return (config.executionOrder, self.name, config, self.AlgorithmClass)
+            return (config.executionOrder, self.name, config, self.PluginClass)
 
-    def register(self, name, AlgorithmClass):
-        lsst.pex.config.Registry.register(self, name, self.Configurable(name, AlgorithmClass))
+    def register(self, name, PluginClass):
+        lsst.pex.config.Registry.register(self, name, self.Configurable(name, PluginClass))
 
     def makeField(self, doc, default=None, optional=False, multi=False):
         return lsst.pex.config.RegistryField(doc, self, default, optional, multi)
 
-class AlgorithmMap(collections.OrderedDict):
+class PluginMap(collections.OrderedDict):
     """ Map of algorithms to be run for a task 
         Should later be implemented as Swigged C++ class based on std::map
     """
@@ -58,7 +57,7 @@ class AlgorithmMap(collections.OrderedDict):
             if algorithm.config.doMeasureMulti:
                 yield algorithm
 
-class BaseAlgorithmConfig(lsst.pex.config.Config):
+class BasePluginConfig(lsst.pex.config.Config):
     """Base class for config which should be defined for each measurement algorithm."""
 
     executionOrder = lsst.pex.config.Field(dtype=float, default=1.0, doc="sets relative order of algorithms")
@@ -66,7 +65,7 @@ class BaseAlgorithmConfig(lsst.pex.config.Config):
                       doc="whether to run this algorithm in single-object mode")
     doMeasureMulti = False  # replace this class attribute with a Field if measureMulti-capable
 
-class BaseAlgorithm(object):
+class BasePlugin(object):
     """Base class for measurement algorithms."""
     pass
 
@@ -86,6 +85,76 @@ class MeasurementDataFlags(object):
     NO_PSF = 0x08 # the image has no Psf object attached
 
     NO_WCS = 0x10 # the image has no Wcs object attached
+
+class SourceSlotConfig(pexConfig.Config):
+
+    centroid = pexConfig.Field(dtype=str, default="centroid.sdss", optional=True,
+                             doc="the name of the centroiding algorithm used to set source x,y")
+    shape = pexConfig.Field(dtype=str, default="shape.sdss", optional=True,
+                          doc="the name of the algorithm used to set source moments parameters")
+    apFlux = pexConfig.Field(dtype=str, default="flux.sinc", optional=True,
+                           doc="the name of the algorithm used to set the source aperture flux slot")
+    modelFlux = pexConfig.Field(dtype=str, default="flux.gaussian", optional=True,
+                           doc="the name of the algorithm used to set the source model flux slot")
+    psfFlux = pexConfig.Field(dtype=str, default="flux.naive", optional=True,
+                            doc="the name of the algorithm used to set the source psf flux slot")
+    instFlux = pexConfig.Field(dtype=str, default="flux.gaussian", optional=True,
+                             doc="the name of the algorithm used to set the source inst flux slot")
+
+    def setupTable(self, table, prefix=None):
+        """Convenience method to setup a table's slots according to the config definition.
+
+        This is defined in the Config class to support use in unit tests without needing
+        to construct a Task object.
+        """
+        if prefix is None: prefix = ""
+        if self.centroid is not None: table.defineCentroid(prefix + self.centroid)
+        if self.shape is not None: table.defineShape(prefix + self.shape)
+        if self.apFlux is not None: table.defineApFlux(prefix + self.apFlux)
+        if self.modelFlux is not None: table.defineModelFlux(prefix + self.modelFlux)
+        if self.psfFlux is not None: table.definePsfFlux(prefix + self.psfFlux)
+        if self.instFlux is not None: table.defineInstFlux(prefix + self.instFlux)
+
+
+class BaseMeasurementConfig(lsst.pex.config.Config):
+    """Config class for single-frame measurement driver task."""
+    prefix = None
+
+    slots = pexConfig.ConfigField(
+        dtype = SourceSlotConfig,
+        doc="Mapping from algorithms to special aliases in Source.\n"
+        )
+
+    doReplaceWithNoise = lsst.pex.config.Field(dtype=bool, default=True, optional=False,
+        doc='When measuring, replace other detected footprints with noise?')
+
+    #  These parameters are to allow the internal NoiseReplacer to be parameterized.
+    noiseSource = lsst.pex.config.ChoiceField(
+        doc='How to choose mean and variance of the Gaussian noise we generate?',
+        dtype=str, allowed={'measure': 'Measure clipped mean and variance from the whole image',
+        'meta': 'Mean = 0, variance = the "BGMEAN" metadata entry',
+        'variance': "Mean = 0, variance = the image's variance",},
+        default='measure', optional=False)
+
+    noiseOffset = lsst.pex.config.Field(dtype=float, optional=False, default=0.,
+                                  doc='Add ann offset to the generated noise.')
+
+    noiseSeed = lsst.pex.config.Field(dtype=int, default=0,
+        doc='The seed value to use for random number generation.')
+
+    def validate(self):
+        pexConfig.Config.validate(self)
+        if self.slots.centroid is not None and self.slots.centroid not in self.plugins.names:
+            raise ValueError("source centroid slot algorithm is not being run.")
+        if self.slots.shape is not None and self.slots.shape not in self.plugins.names:
+            raise ValueError("source shape slot algorithm '%s' is not being run." % self.slots.shape)
+        for slot in (self.slots.psfFlux, self.slots.apFlux, self.slots.modelFlux, self.slots.instFlux):
+            if slot is not None:
+                for name in self.plugins.names:
+                    if len(name) <= len(slot) and name == slot[:len(name)]:
+                        break
+                else:
+                    raise ValueError("source flux slot algorithm '%s' is not being run." % slot)
 
 class NoiseReplacer(object):
     """ Class that handles replacing sources with noise during measurement.
@@ -152,7 +221,7 @@ class NoiseReplacer(object):
         for id in footprints.keys():
             fp = footprints[id]
             if fp[1].isHeavy():
-                self.heavies[id] = afwDet.castHeavyFootprintF(fp[1])
+                self.heavies[id] = afwDet.cast_HeavyFootprintF(fp[1])
             elif fp[0] == 0:
                 self.heavies[id] = afwDet.makeHeavyFootprint(fp[1], mi)
         # We now create a noise HeavyFootprint for each top-level Source.
@@ -206,8 +275,6 @@ class NoiseReplacer(object):
             fp.insert(im)
         except Exception, e:
             print "BAD"
-            import pdb
-            pdb.set_trace()
         afwDet.setMaskFromFootprint(mask, fp, self.thisbitmask)
         afwDet.clearMaskFromFootprint(mask, fp, self.otherbitmask)
 
@@ -314,8 +381,6 @@ class NoiseReplacer(object):
         if self.log: self.log.logdebug("Measured from image: clipped mean = %g, stdev = %g"
             % (noiseMean,noiseStd))
         return FixedGaussianNoiseGenerator(noiseMean + offset, noiseStd, rand=rand)
-
-
 
 class NoiseReplacerList(list):
     """Syntactic sugar that makes a list of NoiseReplacers (for multiple exposures)
