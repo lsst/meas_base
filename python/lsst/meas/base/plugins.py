@@ -299,7 +299,7 @@ class PeakCentroid(SingleFramePlugin):
     ConfigClass = SingleFramePeakCentroidConfig
 
     def __init__(self, config, name, schema, flags, others, metadata):
-        SingleFrameCentroidPlugin.__init__(self, config, name, schema, flags, others, metadata)
+        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
         mapper = CentroidAlgorithmMapper(schema, name)
         self.config = config
         
