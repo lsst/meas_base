@@ -22,6 +22,9 @@
  */
 
 #include "lsst/meas/base/SdssShape.h"
+#include "lsst/meas/algorithms/detail/SdssShape.h"
+
+namespace detail=lsst::meas::algorithms::detail;
 
 namespace lsst { namespace meas { namespace base {
 
@@ -52,23 +55,75 @@ SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(afw::table
 
 template <typename T>
 SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
-    Control const & ctrl,
-    afw::image::MaskedImage<T> const & exposure,
+    Control const & control,
+    afw::image::MaskedImage<T> const & mimage,
     afw::detection::Footprint const & footprint,
-    afw::geom::Point2D const & position
+    afw::geom::Point2D const & center
 ) {
-    throw LSST_EXCEPT(
-        pex::exceptions::LogicErrorException,
-        "Not implemented"
-    );
+
+    Result result = SdssShapeAlgorithmResult();
+    //xsource.set(getKeys().flag, true); // say we've failed so that's the result if we throw
+    //xsource.set(_centroidKeys.flag, true); // say we've failed so that's the result if we throw
+    typedef typename afw::image::Exposure<T>::MaskedImageT MaskedImageT;
+
+    double xcen = center.getX();         // object's column position
+    double ycen = center.getY();         // object's row position
+
+    xcen -= mimage.getX0();             // work in image Pixel coordinates
+    ycen -= mimage.getY0();
+    
+    float shiftmax = 1;                 // Max allowed centroid shift \todo XXX set shiftmax from Policy
+    if (shiftmax < 2) {
+        shiftmax = 2;
+    } else if (shiftmax > 10) {
+        shiftmax = 10;
+    }
+
+    detail::SdssShapeImpl shapeImpl;
+    bool anyFlags = false;
+    try {
+        (void)detail::getAdaptiveMoments(mimage, control.background, xcen, ycen, shiftmax, &shapeImpl,
+                                         control.maxIter, control.tol1, control.tol2);
+    } catch (pex::exceptions::Exception & err) {
+        for (int n = 0; n < detail::SdssShapeImpl::N_FLAGS; ++n) {
+             //source.set(_flagKeys[n], shapeImpl.getFlag(detail::SdssShapeImpl::Flag(n)));
+             //anyFlags = anyFlags || source.get(_flagKeys[n]);
+        }
+        throw;
+    }
+/*
+ * We need to measure the PSF's moments even if we failed on the object
+ * N.b. This isn't yet implemented (but the code's available from SDSS)
+ */
+    for (int n = 0; n < detail::SdssShapeImpl::N_FLAGS; ++n) {
+        //x source.set(_flagKeys[n], shapeImpl.getFlag(detail::SdssShapeImpl::Flag(n)));
+        //x anyFlags = anyFlags || source.get(_flagKeys[n]);
+    }
+    
+    result.centroid.value = lsst::afw::geom::Point2D(shapeImpl.getX(), shapeImpl.getY());
+    result.centroid.cov(0,0) = shapeImpl.getXErr();
+    result.centroid.cov(1,1) = shapeImpl.getYErr();
+    result.centroid.cov(0,1) = 0,0;
+    result.centroid.cov(1,0) = 0,0;
+    result.flux.value = shapeImpl.getI0();
+    result.flux.err = shapeImpl.getI0Err();
+    //x source.set(_centroidKeys.flag, anyFlags);
+    //result.shape = afw::geom::ellipses::Quadrupole(shapeImpl.getIxx(), shapeImpl.getIyy(), shapeImpl.getIxy())
+    // FIXME: should do off-diagonal covariance elements too
+    //xsource.set(getKeys().err(0,0), shapeImpl.getIxxErr() * shapeImpl.getIxxErr());
+    //xsource.set(getKeys().err(1,1), shapeImpl.getIyyErr() * shapeImpl.getIyyErr());
+    //xsource.set(getKeys().err(2,2), shapeImpl.getIxyErr() * shapeImpl.getIxyErr());
+    //xsource.set(getKeys().flag, anyFlags);
+    return result;
+
 }
 
 template <typename T>
 SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
     Control const & ctrl,
-    afw::image::Image<T> const & exposure,
+    afw::image::Image<T> const & image,
     afw::detection::Footprint const & footprint,
-    afw::geom::Point2D const & position
+    afw::geom::Point2D const & center
 ) {
     throw LSST_EXCEPT(
         pex::exceptions::LogicErrorException,

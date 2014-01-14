@@ -84,19 +84,19 @@ public:
     // Main implementation
     template <typename T>
     static Result apply(
-        Control const & ctrl,
-        afw::image::MaskedImage<T> const & exposure,
+        Control const & control,
+        afw::image::MaskedImage<T> const & mimage,
         afw::detection::Footprint const & footprint,
-        afw::geom::Point2D const & position
+        afw::geom::Point2D const & center
     );
 
     // Limited implementation - no variance plane, and hence no uncertainties
     template <typename T>
     static Result apply(
-        Control const & ctrl,
-        afw::image::Image<T> const & exposure,
+        Control const & control,
+        afw::image::Image<T> const & image,
         afw::detection::Footprint const & footprint,
-        afw::geom::Point2D const & position
+        afw::geom::Point2D const & center
     );
 
     // Forwarding overload called by plugin framework
@@ -108,6 +108,9 @@ public:
     ) {
         return apply(ctrl, exposure.getMaskedImage(), *inputs.footprint, inputs.position);
     }
+
+    //boost::array< afw::table::Key<afw::table::Flag>, detail::SdssShapeImpl::N_FLAGS > _flagKeys;
+    //afw::table::KeyTuple<afw::table::Centroid> _centroidKeys;
 };
 
 }}} // namespace lsst::meas::base

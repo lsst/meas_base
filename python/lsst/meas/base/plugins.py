@@ -197,17 +197,6 @@ class ForcedSdssCentroid(ForcedPluginCpp):
 
 ForcedPlugin.registry.register("centroid.sdss", ForcedSdssCentroid)
 
-class ForcedSdssShapeConfig(ForcedPluginConfig):
-    doMeasureSingle = True
-    doMeasureMulti = False
-    executionOrder = lsst.pex.config.Field(dtype=float, default=1.0, doc="sets relative order of algorithms")
-
-class ForcedSdssShape(ForcedPluginCpp):
-
-    ConfigClass = ForcedSdssShapeConfig
-
-ForcedPlugin.registry.register("shape.sdss", ForcedSdssShape)
-
 class ForcedFluxGaussianConfig(ForcedPluginConfig):
     executionOrder = lsst.pex.config.Field(dtype=float, default=2.0, doc="sets relative order of algorithms")
 
@@ -362,7 +351,8 @@ class SdssShape(SingleFramePlugin):
     def measureSingle(self, exposure, source):
         try: 
             center = source.getCentroid()
-            result = self.algorithm.apply(self.control, exposure, source, center)
+            result = self.algorithm.apply(self.control, exposure.getMaskedImage(),
+                source.getFootprint(), center)
             self.resultMapper.apply(source, result)
 
         except LsstCppException as e:
@@ -449,5 +439,46 @@ class ForcedPsfFlux(ForcedPlugin):
     def measureMulti(self, exposure, sources):
         raise NotImplementedError()
 
-
 ForcedPlugin.registry.register("flux.psf", ForcedPsfFlux)
+
+class ForcedSdssShapeConfig(ForcedPluginConfig):
+    doMeasureSingle = True
+    doMeasureMulti = False
+    executionOrder = lsst.pex.config.Field(dtype=float, default=1.0, doc="sets relative order of algorithms")
+
+
+
+class ForcedSdssShape(ForcedPlugin):
+
+    ConfigClass = ForcedSdssShapeConfig
+
+    def __init__(self, config, name, schemaMapper, flags, others, metadata):
+        ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
+        self.algorithm = lsst.meas.base.baseLib.SdssShapeAlgorithm()
+        schema = schemaMapper.getOutputSchema()
+        self.resultMapper = self.algorithm.makeResultMapper(schema)
+        beginlen = len(schema.asList())
+        SdssShapeAlgorithmMapper(schema, name)   # add the names of the output fields to the schema
+        newlist = schema.asList()
+        for i in range(beginlen, len(newlist)):
+            schemaMapper.addOutputField(newlist[i].getField())
+        
+    def measureSingle(self, exposure, source, refRecord, referenceWcs):
+        try:
+            center = source.getCentroid()
+            expregion = lsst.afw.geom.Box2I(exposure.getXY0(),
+                lsst.afw.geom.Extent2I(exposure.getWidth(), exposure.getHeight()))
+            footprint = source.getFootprint()
+            if footprint.isHeavy(): footprint = lsst.afw.detection.Footprint(footprint)
+            footprint = footprint.transform(referenceWcs, exposure.getWcs(), expregion, True)
+            result = self.algorithm.apply(self.control, exposure.getMaskedImage(),
+                footprint, center)
+            self.resultMapper.apply(source, result)
+        except LsstCppException as e:
+            pass
+
+    def measureMulti(self, exposure, sources):
+        raise NotImplementedError()
+
+
+ForcedPlugin.registry.register("shape.sdss", ForcedSdssShape)
