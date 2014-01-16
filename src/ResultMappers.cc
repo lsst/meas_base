@@ -32,7 +32,7 @@ BaseAlgorithmMapper::BaseAlgorithmMapper(
     _flag(
         schema.addField(
             afw::table::Field<afw::table::Flag>(
-                prefix + ".flag",
+                prefix + "_flag",
                 "general failure flag for " + prefix + " measurement"
             ),
             true // replace existing fields if present
@@ -46,79 +46,187 @@ void BaseAlgorithmMapper::fail(afw::table::BaseRecord & record) {
 
 FluxAlgorithmMapper::FluxAlgorithmMapper(
     afw::table::Schema & schema,
-    std::string const & prefix
-) : BaseAlgorithmMapper(schema, prefix),
-    _value(schema.addField(
-               afw::table::Field<Flux>(prefix + ".value", "measured flux", "dn"),
-               true
-           )),
-    _err(schema.addField(
-             afw::table::Field<FluxErr>(
-                 prefix + ".err", "1-sigma uncertainty on " + prefix + ".value", "dn"
-             ),
-             true
-         ))
-{}
+    std::string const & prefix,
+    ResultMapperUncertaintyEnum uncertainty
+) : BaseAlgorithmMapper(schema, prefix) {
+    _flux = schema.addField(
+        afw::table::Field<Flux>(prefix + "_flux", "measured flux", "dn"),
+        true
+    );
+    if (uncertainty != NO_UNCERTAINTY) {
+        _fluxSigma = schema.addField(
+            afw::table::Field<ErrElement>(
+                prefix + "_fluxSigma", "1-sigma uncertainty on " + prefix + "_flux", "dn"
+            ),
+            true
+         );
+    }
+}
 
 void FluxAlgorithmMapper::apply(afw::table::BaseRecord & record, FluxAlgorithmResult const & result) {
-    record.set(_value, result.value);
-    record.set(_err, result.err);
+    record.set(_flux, result.flux);
+    if (_fluxSigma.isValid()) {
+        record.set(_fluxSigma, result.fluxSigma);
+    }
     record.set(_flag, false);
 }
 
 CentroidAlgorithmMapper::CentroidAlgorithmMapper(
     afw::table::Schema & schema,
-    std::string const & prefix
-) : BaseAlgorithmMapper(schema, prefix),
-    _value(schema.addField(
-               afw::table::Field< afw::table::Point<double> >(
-                   prefix + ".value",
-                   "measured centroid",
-                   "pixels"
-               ),
-               true // replace existing fields if present
-           )),
-    _cov(schema.addField(
-             afw::table::Field< afw::table::Covariance<afw::table::Point<float> > >(
-                 prefix + ".cov",
-                 "uncertainty covariance matrix for " + prefix + ".value",
-                 "pixels^2"
-             ),
-             true // replace existing fields if present
-         ))
-{}
+    std::string const & prefix,
+    ResultMapperUncertaintyEnum uncertainty
+) : BaseAlgorithmMapper(schema, prefix) {
+    _x = schema.addField(
+        afw::table::Field<CentroidElement>(
+            prefix + "_x",
+            "x coordinate of position",
+            "pixels"
+        ),
+        true // replace existing fields if present
+    );
+    _y = schema.addField(
+        afw::table::Field<CentroidElement>(
+            prefix + "_y",
+            "y coordinate of position",
+            "pixels"
+        ),
+        true // replace existing fields if present
+    );
+    if (uncertainty != NO_UNCERTAINTY) {
+        _xSigma = schema.addField(
+            afw::table::Field<ErrElement>(
+                prefix + "_xSigma", "1-sigma uncertainty on " + prefix + "_x", "pixels"
+            ),
+            true
+         );
+        _ySigma = schema.addField(
+            afw::table::Field<ErrElement>(
+                prefix + "_ySigma", "1-sigma uncertainty on " + prefix + "_y", "pixels"
+            ),
+            true
+        );
+        if (uncertainty == FULL_COVARIANCE) {
+            _x_y_Cov = schema.addField(
+                afw::table::Field<ErrElement>(
+                    prefix + "_x_y_Cov",
+                    "uncertainty covariance between " + prefix + "_x and " + prefix + "_y",
+                    "pixels^2"
+                ),
+                true
+            );
+        }
+    }
+}
 
 void CentroidAlgorithmMapper::apply(afw::table::BaseRecord & record, CentroidAlgorithmResult const & result) {
-    record.set(_value, result.value);
-    record.set(_cov, result.cov);
+    record.set(_x, result.x);
+    record.set(_y, result.y);
+    if (_xSigma.isValid()) {
+        assert(_ySigma.isValid());
+        record.set(_xSigma, result.xSigma);
+        record.set(_ySigma, result.ySigma);
+        if (_x_y_Cov.isValid()) {
+            record.set(_x_y_Cov, result.x_y_Cov);
+        }
+    }
     record.set(_flag, false);
 }
 
 ShapeAlgorithmMapper::ShapeAlgorithmMapper(
     afw::table::Schema & schema,
-    std::string const & prefix
-) : BaseAlgorithmMapper(schema, prefix),
-    _value(schema.addField(
-               afw::table::Field< afw::table::Moments<double> >(
-                   prefix + ".value",
-                   "measured shape",
-                   "pixels^2"
-               ),
-               true // replace existing fields if present
-           )),
-    _cov(schema.addField(
-             afw::table::Field< afw::table::Covariance<afw::table::Moments<float> > >(
-                 prefix + ".cov",
-                 "uncertainty covariance matrix for " + prefix + ".value",
-                 "pixels^4"
-             ),
-             true // replace existing fields if present
-         ))
-{}
+    std::string const & prefix,
+    ResultMapperUncertaintyEnum uncertainty
+) : BaseAlgorithmMapper(schema, prefix) {
+    _xx = schema.addField(
+        afw::table::Field<ShapeElement>(
+            prefix + "_xx",
+            "x-x second moment of ellipse",
+            "pixels^2"
+        ),
+        true // replace existing fields if present
+    );
+    _yy = schema.addField(
+        afw::table::Field<ShapeElement>(
+            prefix + "_yy",
+            "y-y second moment of ellipse",
+            "pixels^2"
+        ),
+        true // replace existing fields if present
+    );
+    _xy = schema.addField(
+        afw::table::Field<ShapeElement>(
+            prefix + "_xy",
+            "x-y second moment of ellipse",
+            "pixels^2"
+        ),
+        true // replace existing fields if present
+    );
+    if (uncertainty != NO_UNCERTAINTY) {
+        _xxSigma = schema.addField(
+            afw::table::Field<ErrElement>(
+                prefix + "_xxSigma", "1-sigma uncertainty on " + prefix + "_xx", "pixels^2"
+            ),
+            true
+         );
+        _yySigma = schema.addField(
+            afw::table::Field<ErrElement>(
+                prefix + "_yySigma", "1-sigma uncertainty on " + prefix + "_yy", "pixels^2"
+            ),
+            true
+        );
+        _xySigma = schema.addField(
+            afw::table::Field<ErrElement>(
+                prefix + "_xySigma", "1-sigma uncertainty on " + prefix + "_xy", "pixels^2"
+            ),
+            true
+        );
+        if (uncertainty == FULL_COVARIANCE) {
+            _xx_yy_Cov = schema.addField(
+                afw::table::Field<ErrElement>(
+                    prefix + "_xx_yy_Cov",
+                    "uncertainty covariance between " + prefix + "_xx and " + prefix + "_yy",
+                    "pixels^4"
+                ),
+                true
+            );
+            _xx_xy_Cov = schema.addField(
+                afw::table::Field<ErrElement>(
+                    prefix + "_xx_xy_Cov",
+                    "uncertainty covariance between " + prefix + "_xx and " + prefix + "_xy",
+                    "pixels^4"
+                ),
+                true
+            );
+            _yy_xy_Cov = schema.addField(
+                afw::table::Field<ErrElement>(
+                    prefix + "_yy_xy_Cov",
+                    "uncertainty covariance between " + prefix + "_yy and " + prefix + "_xy",
+                    "pixels^4"
+                ),
+                true
+            );
+        }
+    }
+}
 
 void ShapeAlgorithmMapper::apply(afw::table::BaseRecord & record, ShapeAlgorithmResult const & result) {
-    record.set(_value, result.value);
-    record.set(_cov, result.cov);
+    record.set(_xx, result.xx);
+    record.set(_yy, result.yy);
+    record.set(_xy, result.xy);
+    if (_xxSigma.isValid()) {
+        assert(_yySigma.isValid());
+        assert(_xySigma.isValid());
+        record.set(_xxSigma, result.xxSigma);
+        record.set(_yySigma, result.yySigma);
+        record.set(_xySigma, result.xySigma);
+        if (_xx_yy_Cov.isValid()) {
+            assert(_xx_xy_Cov.isValid());
+            assert(_yy_xy_Cov.isValid());
+            record.set(_xx_yy_Cov, result.xx_yy_Cov);
+            record.set(_xx_xy_Cov, result.xx_xy_Cov);
+            record.set(_yy_xy_Cov, result.yy_xy_Cov);
+        }
+    }
     record.set(_flag, false);
 }
 

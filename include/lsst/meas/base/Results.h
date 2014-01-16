@@ -34,46 +34,67 @@ namespace lsst { namespace meas { namespace base {
 // Typedefs that define the C++ types we typically use for common measurements
 
 typedef float Flux;
-typedef float FluxErr;
-typedef afw::geom::Point2D Centroid;
-typedef Eigen::Matrix<float,2,2,Eigen::DontAlign> CentroidCov;
+typedef float ErrElement;
+typedef double CentroidElement;
+typedef double ShapeElement;
+typedef afw::geom::Point<CentroidElement,2> Centroid;
+typedef Eigen::Matrix<ErrElement,2,2,Eigen::DontAlign> CentroidCov;
 typedef afw::geom::ellipses::Quadrupole Shape;
-typedef Eigen::Matrix<float,3,3,Eigen::DontAlign> ShapeCov;
+typedef Eigen::Matrix<ErrElement,3,3,Eigen::DontAlign> ShapeCov;
 
 // We expect the structs below will be reused (used directly, subclassed, or composition) by most algorithms.
 // In the measurement framework, each algorithm should also have at least one flag field, but that will be
 // added by the plugin wrapper layer and set when the algorithm code here throws an exception.
 
 struct FluxAlgorithmResult {
-    Flux value;
-    FluxErr err;
-
-    FluxAlgorithmResult(Flux value_, FluxErr err_) : value(value_), err(err_) {}
+    Flux flux;
+    ErrElement fluxSigma;
 
     FluxAlgorithmResult();
 };
 
 struct CentroidAlgorithmResult {
-    Centroid value;
-    CentroidCov cov;
+    CentroidElement x;
+    CentroidElement y;
+    ErrElement xSigma;
+    ErrElement ySigma;
+    ErrElement x_y_Cov;
 
-    CentroidAlgorithmResult(
-        Centroid const & value_,
-        CentroidCov const & cov_
-    ) : value(value_), cov(cov_) {}
+    Centroid const getCentroid() const { return Centroid(x, y); }
+
+    CentroidCov const getCov() const {
+        CentroidCov m;
+        m <<
+            xSigma*xSigma, x_y_Cov,
+            x_y_Cov, ySigma*ySigma;
+        return m;
+    }
 
     CentroidAlgorithmResult();
 
 };
 
 struct ShapeAlgorithmResult {
-    Shape value;
-    ShapeCov cov;
+    ShapeElement xx;
+    ShapeElement yy;
+    ShapeElement xy;
+    ErrElement xxSigma;
+    ErrElement yySigma;
+    ErrElement xySigma;
+    ErrElement xx_yy_Cov;
+    ErrElement xx_xy_Cov;
+    ErrElement yy_xy_Cov;
 
-    ShapeAlgorithmResult(
-        Shape const & value_,
-        ShapeCov const & cov_
-    ) : value(value_), cov(cov_) {}
+    Shape const getShape() const { return Shape(xx, yy, xy); }
+
+    ShapeCov const getCov() const {
+        ShapeCov m;
+        m <<
+            xxSigma*xxSigma, xx_yy_Cov, xx_xy_Cov,
+            xx_yy_Cov, yySigma*yySigma, yy_xy_Cov,
+            xx_xy_Cov, yy_xy_Cov, xySigma*xySigma;
+        return m;
+    }
 
     ShapeAlgorithmResult();
 

@@ -36,31 +36,37 @@ class ResultMappersTestCase(lsst.utils.tests.TestCase):
 
     def testFluxAlgorithmMapper(self):
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        mapper = lsst.meas.base.FluxAlgorithmMapper(schema, "test")
+        mapper = lsst.meas.base.FluxAlgorithmMapper(schema, "test", lsst.meas.base.DIAGONAL_ONLY)
         table = lsst.afw.table.SourceTable.make(schema)
-        result = lsst.meas.base.FluxAlgorithmResult(34.5, 3.25)
+        result = lsst.meas.base.FluxAlgorithmResult()
+        result.flux = 34.5
+        result.fluxSigma = 3.25
         record = table.makeRecord()
         mapper.apply(record, result)
-        self.assertEqual(record.get("test.value"), result.value)
-        self.assertEqual(record.get("test.err"), result.err)
-        self.assertEqual(record.get("test.flag"), False)
+        self.assertEqual(record.get("test_flux"), result.flux)
+        self.assertEqual(record.get("test_fluxSigma"), result.fluxSigma)
+        self.assertEqual(record.get("test_flag"), False)
         mapper.fail(record)
-        self.assertEqual(record.get("test.flag"), True)
+        self.assertEqual(record.get("test_flag"), True)
 
     def testCentroidAlgorithmMapper(self):
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        mapper = lsst.meas.base.CentroidAlgorithmMapper(schema, "test")
+        mapper = lsst.meas.base.CentroidAlgorithmMapper(schema, "test", lsst.meas.base.DIAGONAL_ONLY)
         table = lsst.afw.table.SourceTable.make(schema)
-        result = lsst.meas.base.CentroidAlgorithmResult(lsst.afw.geom.Point2D(1.2, 3.4),
-                                                        numpy.array([[2.0, 0.1], [0.1, 3.0]],
-                                                                    dtype=numpy.float32))
+        result = lsst.meas.base.CentroidAlgorithmResult()
+        result.x = 1.2
+        result.y = 3.4
+        result.xSigma = 2.0
+        result.ySigma = 3.0
         record = table.makeRecord()
         mapper.apply(record, result)
-        self.assertEqual(record.get("test.value"), result.value)
-        self.assertClose(record.get("test.cov"), result.cov, rtol=0.0, atol=0.0)
-        self.assertEqual(record.get("test.flag"), False)
+        self.assertEqual(record.get("test_x"), result.x)
+        self.assertEqual(record.get("test_y"), result.y)
+        self.assertEqual(record.get("test_xSigma"), result.xSigma)
+        self.assertEqual(record.get("test_ySigma"), result.ySigma)
+        self.assertEqual(record.get("test_flag"), False)
         mapper.fail(record)
-        self.assertEqual(record.get("test.flag"), True)
+        self.assertEqual(record.get("test_flag"), True)
 
 
 def suite():

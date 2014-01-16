@@ -26,9 +26,9 @@
 namespace lsst { namespace meas { namespace base {
 
 SdssShapeAlgorithmResultMapper::SdssShapeAlgorithmResultMapper(afw::table::Schema & schema) :
-    ShapeAlgorithmMapper(schema, "shape.sdss"),
-    _centroid(schema, "shape.sdss.centroid"),
-    _flux(schema, "shape.sdss.flux")
+    ShapeAlgorithmMapper(schema, "base_SdssShape", DIAGONAL_ONLY),
+    CentroidAlgorithmMapper(schema, "base_SdssShape", DIAGONAL_ONLY),
+    FluxAlgorithmMapper(schema, "base_SdssShape", DIAGONAL_ONLY)
 {}
 
 void SdssShapeAlgorithmResultMapper::apply(
@@ -36,14 +36,14 @@ void SdssShapeAlgorithmResultMapper::apply(
     SdssShapeAlgorithmResult const & result
 ) {
     ShapeAlgorithmMapper::apply(record, result);
-    _centroid.apply(record, result.centroid);
-    _flux.apply(record, result.flux);
+    CentroidAlgorithmMapper::apply(record, result);
+    FluxAlgorithmMapper::apply(record, result);
 }
 
 void SdssShapeAlgorithmResultMapper::fail(afw::table::BaseRecord & record) {
+    // don't need to call all base classes - one is sufficient,
+    // since they all refer to the same field.
     ShapeAlgorithmMapper::fail(record);
-    _centroid.fail(record);
-    _flux.fail(record);
 }
 
 SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(afw::table::Schema & schema) {

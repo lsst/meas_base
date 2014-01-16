@@ -30,6 +30,12 @@
 
 namespace lsst { namespace meas { namespace base {
 
+enum ResultMapperUncertaintyEnum {
+    NO_UNCERTAINTY = 0,
+    DIAGONAL_ONLY = 1,
+    FULL_COVARIANCE = 2
+};
+
 // Base class for classes that transfer values from Result structs to record objects
 struct BaseAlgorithmMapper {
 
@@ -52,15 +58,16 @@ public:
     // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
     FluxAlgorithmMapper(
         afw::table::Schema & schema,
-        std::string const & prefix
+        std::string const & prefix,
+        ResultMapperUncertaintyEnum uncertainty
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
     void apply(afw::table::BaseRecord & record, FluxAlgorithmResult const & result);
 
 private:
-    afw::table::Key<Flux> _value;
-    afw::table::Key<FluxErr> _err;
+    afw::table::Key<Flux> _flux;
+    afw::table::Key<ErrElement> _fluxSigma;
 };
 
 // Object that transfers values from CentroidAlgorithmResult to a record object.
@@ -70,17 +77,19 @@ public:
     // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
     CentroidAlgorithmMapper(
         afw::table::Schema & schema,
-        std::string const & prefix
+        std::string const & prefix,
+        ResultMapperUncertaintyEnum uncertainty
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
     void apply(afw::table::BaseRecord & record, CentroidAlgorithmResult const & result);
 
 private:
-    // We should be able to derive these Key types from the typedefs at the top of the file,
-    // but that's a problem for afw::table to solve.
-    afw::table::Key< afw::table::Point<double> > _value;
-    afw::table::Key< afw::table::Covariance< afw::table::Point<float> > > _cov;
+    afw::table::Key<CentroidElement> _x;
+    afw::table::Key<CentroidElement> _y;
+    afw::table::Key<ErrElement> _xSigma;
+    afw::table::Key<ErrElement> _ySigma;
+    afw::table::Key<ErrElement> _x_y_Cov;
 };
 
 // Object that transfers values from ShapeAlgorithmResult to a record object.
@@ -90,17 +99,23 @@ public:
     // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
     ShapeAlgorithmMapper(
         afw::table::Schema & schema,
-        std::string const & prefix
+        std::string const & prefix,
+        ResultMapperUncertaintyEnum uncertainty
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
     void apply(afw::table::BaseRecord & record, ShapeAlgorithmResult const & result);
 
 private:
-    // We should be able to derive these Key types from the typedefs at the top of the file,
-    // but that's a problem for afw::table to solve.
-    afw::table::Key< afw::table::Moments<double> > _value;
-    afw::table::Key< afw::table::Covariance< afw::table::Moments<float> > > _cov;
+    afw::table::Key<ShapeElement> _xx;
+    afw::table::Key<ShapeElement> _yy;
+    afw::table::Key<ShapeElement> _xy;
+    afw::table::Key<ErrElement> _xxSigma;
+    afw::table::Key<ErrElement> _yySigma;
+    afw::table::Key<ErrElement> _xySigma;
+    afw::table::Key<ErrElement> _xx_yy_Cov;
+    afw::table::Key<ErrElement> _xx_xy_Cov;
+    afw::table::Key<ErrElement> _yy_xy_Cov;
 };
 
 }}} // lsst::meas::base
