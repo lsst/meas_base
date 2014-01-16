@@ -35,13 +35,18 @@ import lsst.pex.config as pexConfig
 import lsst.meas.algorithms
 import lsst.afw.table
 
+""" Base class for plugin registries.
+    The Plugin class allowed in the registry is defined on the ctor of the registry
+    The intention is that single-frame and multi-frame plugins will have different
+    registries.
+"""
 class PluginRegistry(lsst.pex.config.Registry):
 
     class Configurable(object):
         """ Class used as the actual element in the registry; rather
         than constructing a Plugin instance, it returns a tuple
         of (runlevel, name, config, PluginClass), which can then
-        be sorted before the algorithms are instantiated.
+        be sorted before the plugins are instantiated.
         """
 
         __slots__ = "PluginClass", "name"
@@ -64,32 +69,33 @@ class PluginRegistry(lsst.pex.config.Registry):
         return lsst.pex.config.RegistryField(doc, self, default, optional, multi)
 
 class PluginMap(collections.OrderedDict):
-    """ Map of algorithms to be run for a task
+    """ Map of plugins to be run for a task
+
         Should later be implemented as Swigged C++ class based on std::map
     """
 
     def iterSingle(self):
-        """ Call each algorithm in the map which has a measureSingle """
-        for algorithm in self.itervalues():
-            if algorithm.config.doMeasureSingle:
-                yield algorithm
+        """ Call each plugin in the map which has a measureSingle """
+        for plugin in self.itervalues():
+            if plugin.config.doMeasureSingle:
+                yield plugin
 
     def iterMulti(self):
-        """ Call each algorithm in the map which has a measureMulti """
-        for algorithm in self.itervalues():
-            if algorithm.config.doMeasureMulti:
-                yield algorithm
+        """ Call each plugin in the map which has a measureMulti """
+        for plugin in self.itervalues():
+            if plugin.config.doMeasureMulti:
+                yield plugin
 
 class BasePluginConfig(lsst.pex.config.Config):
-    """Base class for config which should be defined for each measurement algorithm."""
+    """Base class for config which should be defined for each measurement plugin."""
 
-    executionOrder = lsst.pex.config.Field(dtype=float, default=1.0, doc="sets relative order of algorithms")
+    executionOrder = lsst.pex.config.Field(dtype=float, default=1.0, doc="sets relative order of plugins")
     doMeasureSingle = lsst.pex.config.Field(dtype=bool, default=True,
-                      doc="whether to run this algorithm in single-object mode")
+                      doc="whether to run this plugin in single-object mode")
     doMeasureMulti = False  # replace this class attribute with a Field if measureMulti-capable
 
 class BasePlugin(object):
-    """Base class for measurement algorithms."""
+    """Base class for measurement plugins."""
     pass
 
 class MeasurementDataFlags(object):
@@ -368,7 +374,7 @@ class NoiseReplacer(object):
             return ImageNoiseGenerator(noiseImage)
         rand = None
         if self.noiseSeed:
-            # default algorithm, our seed
+            # default plugin, our seed
             rand = afwMath.Random(afwMath.Random.MT19937, self.noiseSeed)
         if noiseMeanVar is not None:
             try:

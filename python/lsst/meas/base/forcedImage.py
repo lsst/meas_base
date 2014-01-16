@@ -76,7 +76,7 @@ class ForcedPlugin(BasePlugin):
                                       will be transferred before any plugins are run.
         @param[in]  flags        A set of bitflags describing the data that the plugin
                                  should check to see if it supports.  See MeasuremntDataFlags.
-        @param[in]  others       An PluginMap of previously-initialized plugns
+        @param[in]  others       A PluginMap of previously-initialized plugins
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
         self.config = config

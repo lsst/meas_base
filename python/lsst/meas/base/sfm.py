@@ -33,16 +33,16 @@ import lsst.pipe.base
 import lsst.daf.base
 import lsst.meas.algorithms
 from .base import *
-__all__ = ("SingleFramePluginConfig", "SingleFramePlugin",
-    "SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
+
+__all__ = ("SingleFramePluginConfig", "SingleFramePlugin", "SingleFrameMeasurementConfig",
+           "SingleFrameMeasurementTask")
 
 class SingleFramePluginConfig(BasePluginConfig):
-    """Base class for configs of single-frame plugins."""
+    """Base class for configs of single-frame plugin algorithms."""
     pass
 
 class SingleFramePlugin(BasePlugin):
-    """Base class for single-frame plugins."""
-
+    """Base class for single-frame plugin algorithms."""
 
     # All subclasses of SingleFramePlugin should be registered here
     registry = PluginRegistry(SingleFramePluginConfig)
@@ -57,7 +57,7 @@ class SingleFramePlugin(BasePlugin):
                                  hold measurements produced by this plugin.
         @param[in]  flags        A set of bitflags describing the data that the plugin
                                  should check to see if it supports.  See MeasuremntDataFlags.
-        @param[in]  others       An PluginMap of previously-initialized plugins
+        @param[in]  others       A PluginMap of previously-initialized plugins
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
         self.config = config
@@ -111,20 +111,19 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
     ConfigClass = SingleFrameMeasurementConfig
     _DefaultName = "measurement"
 
-    #   The algMetadata parameter is currently required by the pipe_base running mechanism
-    #   This is a temporary state until pipe_base is converted to the new plugin framework.
+    #   The algMetadata parameter is currently required by the pipe_tasks running mechanism
+    #   This is a temporary state until pipe_tasks is converted to the new plugin framework.
     def __init__(self, schema, algMetadata=None, flags=None, **kwds):
         """Initialize the task, including setting up the execution order of the plugins
-            and providing the task with the metadata and schema objects
+        and providing the task with the metadata and schema objects
 
-            @param[in] schema      lsst.afw.table.Schema, which will be initialized to include
-                               the measurement fields when the PluginClass is constructed
+        @param[in] schema      lsst.afw.table.Schema, which should have been initialized
+                               to include the measurement fields from the plugins already
         """
         lsst.pipe.base.Task.__init__(self, **kwds)
         self.schema = schema
         self.algMetadata = lsst.daf.base.PropertyList()
         self.plugins = PluginMap()
-
         # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
             self.plugins[name] = PluginClass(config, name, schema=schema, flags=flags,

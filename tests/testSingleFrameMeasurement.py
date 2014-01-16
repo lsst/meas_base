@@ -35,7 +35,7 @@ class TestCentroidConfig(SingleFramePluginConfig):
                     doc="whether to center on fractional pixels")
 
 
-class TestCentroid(lsst.meas.base.sfm.SingleFramePlugin):
+class TestCentroid(SingleFramePlugin):
 
     ConfigClass = TestCentroidConfig
     doMeasureSingle = True
@@ -247,7 +247,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         sfm_config.plugins = ["centroid.peak", "test.flux"]
         sfm_config.slots.centroid = "centroid.peak"
         sfm_config.slots.shape = None
-        sfm_config.slots.psfFlux = None 
+        sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
