@@ -35,6 +35,24 @@ import lsst.pex.config as pexConfig
 import lsst.meas.algorithms
 import lsst.afw.table
 
+def generateAlgorithmName(AlgClass):
+    """Generate a string name for an algorithm class that strips away terms that are generally redundant
+    while (hopefully) remaining easy to trace to the code.
+    """
+    name = AlgClass.__name__
+    pkg = AlgClass.__module__
+    name.strip("Algorithm")
+    terms = pkg.split(".")
+    if terms[-1].endswith("Lib"):
+        terms = terms[:-1]
+    if terms[0] == "lsst":
+        terms = terms[1:]
+    if terms[0] == "meas":
+        terms = terms[1:]
+    if name.lower().startswith(terms[-1].lower()):
+        terms = terms[:-1]
+    return "%s_%s" % ("_".join(terms), name)
+
 """ Base class for plugin registries.
     The Plugin class allowed in the registry is defined on the ctor of the registry
     The intention is that single-frame and multi-frame plugins will have different
@@ -91,7 +109,7 @@ class BasePluginConfig(lsst.pex.config.Config):
 
     executionOrder = lsst.pex.config.Field(dtype=float, default=1.0, doc="sets relative order of plugins")
     doMeasure = lsst.pex.config.Field(dtype=bool, default=True,
-                      doc="whether to run this plugin in single-object mode")
+                                      doc="whether to run this plugin in single-object mode")
     doMeasureN = False  # replace this class attribute with a Field if measureN-capable
 
 class BasePlugin(object):
