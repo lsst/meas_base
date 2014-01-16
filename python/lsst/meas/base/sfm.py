@@ -63,7 +63,7 @@ class SingleFramePlugin(BasePlugin):
         self.config = config
         self.name = name
 
-    def measure(self, exposure, source):
+    def measure(self, exposure, measRecord):
         """Measure the properties of a source on a single image
         (single-epoch image or coadd).
 
@@ -79,7 +79,7 @@ class SingleFramePlugin(BasePlugin):
         """
         raise NotImplementedError()
 
-    def measureN(self, exposure, sources):
+    def measureN(self, exposure, measCat):
         """Measure the properties of a group of blended sources on a single image
         (single-epoch image or coadd).
 
@@ -96,7 +96,62 @@ class SingleFramePlugin(BasePlugin):
         """
         raise NotImplementedError()
 
+class WrappedSingleFramePlugin(SingleFramePlugin):
+
+    AlgClass = None
+
+    def __init__(self, config, name, schema, flags, others, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
+        self.resultMapper = self.AlgClass.makeResultMapper(config.makeControl(), schema, name)
+        # TODO: check flags
+
+    def measure(self, exposure, measRecord):
+        inputs = self.AlgClass.Input(measRecord)
+        try:
+            results = self.AlgClass.apply(self.config.makeControl(), exposure, inputs)
+        except Exception as err:  # TODO: tighten up matching exceptions
+            self.resultMapper.fail(measRecord)
+        else:
+            self.resultMapper.apply(measRecord, result)
+
+    def measureN(self, exposure, measCat):
+        """Measure the properties of a group of blended sources on a single image
+        (single-epoch image or coadd).
+
+        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
+                                 be measured and the associated Psf, Wcs, etc.  Sources
+                                 not in the blended hierarchy to be measured will have
+                                 been replaced with noise using deblender outputs.
+
+        @param[in,out] measCat   lsst.afw.table.SourceCatalog to be filled with outputs,
+                                 and from which previously-measured quantities can be
+                                 retrieved, containing only the sources that should be
+                                 measured together in this call.
+
+        """
+        inputs = self.AlgClass.Input.Vector(measCat)
+        try:
+            results = self.AlgClass.applyN(self.config.makeControl(), exposure, inputs)
+        except Exception as err:  # TODO: tighten up matching exceptions
+            self.resultMapper.fail(measRecord)
+        else:
+            self.resultMapper.apply(measRecord, result)
+
+    @classmethod
+    def generate(Base, AlgClass, name=None, doRegister=True, ConfigClass=None):
+        if ConfigClass is None:
+            ConfigClass = lsst.pex.config.makeConfigClass(AlgClass.Control, base=Base.ConfigClass,
+                                                          module=AlgClass.__module__)
+        PluginClass = type(AlgClass.__name__ + "SingleFramePlugin", (Base,),
+                           dict(AlgClass=AlgClass, ConfigClass=ConfigClass))
+        if doRegister:
+            if name is None:
+                name = generateAlgorithmName(AlgClass)
+            Base.registry.register(name, PluginClass)
+        return PluginClass
+
 class SingleFrameMeasurementConfig(BaseMeasurementConfig):
+    """Config class for single-frame measurement driver task."""
 
     plugins = SingleFramePlugin.registry.makeField(
         multi=True,
