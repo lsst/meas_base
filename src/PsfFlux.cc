@@ -26,7 +26,7 @@
 namespace lsst { namespace meas { namespace base {
 
 PsfFluxAlgorithm::ResultMapper PsfFluxAlgorithm::makeResultMapper(afw::table::Schema & schema) {
-    return ResultMapper(schema, "flux.psf");
+    return ResultMapper(schema, "base_PsfFlux", DIAGONAL_ONLY);
 }
 
 template <typename T>

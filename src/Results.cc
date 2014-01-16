@@ -26,20 +26,28 @@
 namespace lsst { namespace meas { namespace base {
 
 FluxAlgorithmResult::FluxAlgorithmResult() :
-    value(std::numeric_limits<Flux>::quiet_NaN()),
-    err(std::numeric_limits<FluxErr>::quiet_NaN())
+    flux(std::numeric_limits<Flux>::quiet_NaN()),
+    fluxSigma(std::numeric_limits<ErrElement>::quiet_NaN())
 {}
 
 CentroidAlgorithmResult::CentroidAlgorithmResult() :
-    value(std::numeric_limits<double>::quiet_NaN()),
-    cov(CentroidCov::Constant(std::numeric_limits<float>::quiet_NaN()))
+    x(std::numeric_limits<CentroidElement>::quiet_NaN()),
+    y(std::numeric_limits<CentroidElement>::quiet_NaN()),
+    xSigma(std::numeric_limits<ErrElement>::quiet_NaN()),
+    ySigma(std::numeric_limits<ErrElement>::quiet_NaN()),
+    x_y_Cov(std::numeric_limits<ErrElement>::quiet_NaN())
 {}
 
 ShapeAlgorithmResult::ShapeAlgorithmResult() :
-    value(std::numeric_limits<double>::quiet_NaN(),
-          std::numeric_limits<double>::quiet_NaN(),
-          std::numeric_limits<double>::quiet_NaN()),
-    cov(ShapeCov::Constant(std::numeric_limits<float>::quiet_NaN()))
+    xx(std::numeric_limits<ShapeElement>::quiet_NaN()),
+    yy(std::numeric_limits<ShapeElement>::quiet_NaN()),
+    xy(std::numeric_limits<ShapeElement>::quiet_NaN()),
+    xxSigma(std::numeric_limits<ErrElement>::quiet_NaN()),
+    yySigma(std::numeric_limits<ErrElement>::quiet_NaN()),
+    xySigma(std::numeric_limits<ErrElement>::quiet_NaN()),
+    xx_yy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
+    xx_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
+    yy_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN())
 {}
 
 }}} // namespace lsst::meas::base
