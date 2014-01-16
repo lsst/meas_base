@@ -44,7 +44,7 @@ public:
     static bool const HAS_CONTROL = false;
 
     // Create an object that transfers Result values to a record associated with the given schema.
-    static ResultMapper makeResultMapper(afw::table::Schema & schema);
+    static ResultMapper makeResultMapper(afw::table::Schema & schema, std::string const & prefix);
 
     // On the apply() methods: I think it makes sense to template them, and do explicit instantation
     // for both double and float.  But the plugin framework will only use the float versions of apply.
