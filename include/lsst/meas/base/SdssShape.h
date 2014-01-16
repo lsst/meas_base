@@ -66,7 +66,7 @@ class SdssShapeAlgorithmResultMapper : public ShapeAlgorithmMapper,
 {
 public:
 
-    explicit SdssShapeAlgorithmResultMapper(afw::table::Schema & schema);
+    explicit SdssShapeAlgorithmResultMapper(afw::table::Schema & schema, std::string const & name);
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
     void apply(afw::table::BaseRecord & record, SdssShapeAlgorithmResult const & result);
@@ -88,7 +88,11 @@ public:
 
     static bool const HAS_CONTROL = true;
 
-    static ResultMapper makeResultMapper(afw::table::Schema & schema);
+    static ResultMapper makeResultMapper(
+        Control const & ctrl,
+        afw::table::Schema & schema,
+        std::string const & name
+    );
 
     // Main implementation
     template <typename T>

@@ -25,8 +25,10 @@
 
 namespace lsst { namespace meas { namespace base {
 
-PsfFluxAlgorithm::ResultMapper PsfFluxAlgorithm::makeResultMapper(afw::table::Schema & schema) {
-    return ResultMapper(schema, "base_PsfFlux", DIAGONAL_ONLY);
+PsfFluxAlgorithm::ResultMapper PsfFluxAlgorithm::makeResultMapper(
+    afw::table::Schema & schema, std::string const & name
+) {
+    return ResultMapper(schema, name, DIAGONAL_ONLY);
 }
 
 template <typename T>

@@ -25,10 +25,12 @@
 
 namespace lsst { namespace meas { namespace base {
 
-SdssShapeAlgorithmResultMapper::SdssShapeAlgorithmResultMapper(afw::table::Schema & schema) :
-    ShapeAlgorithmMapper(schema, "base_SdssShape", DIAGONAL_ONLY),
-    CentroidAlgorithmMapper(schema, "base_SdssShape", DIAGONAL_ONLY),
-    FluxAlgorithmMapper(schema, "base_SdssShape", DIAGONAL_ONLY)
+SdssShapeAlgorithmResultMapper::SdssShapeAlgorithmResultMapper(
+    afw::table::Schema & schema, std::string const & name
+) :
+    ShapeAlgorithmMapper(schema, name, DIAGONAL_ONLY),
+    CentroidAlgorithmMapper(schema, name, DIAGONAL_ONLY),
+    FluxAlgorithmMapper(schema, name, DIAGONAL_ONLY)
 {}
 
 void SdssShapeAlgorithmResultMapper::apply(
@@ -46,8 +48,12 @@ void SdssShapeAlgorithmResultMapper::fail(afw::table::BaseRecord & record) {
     ShapeAlgorithmMapper::fail(record);
 }
 
-SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(afw::table::Schema & schema) {
-    return ResultMapper(schema);
+SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(
+    Control const & ctrl,
+    afw::table::Schema & schema,
+    std::string const & name
+) {
+    return ResultMapper(schema, name);
 }
 
 template <typename T>
