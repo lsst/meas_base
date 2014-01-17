@@ -26,7 +26,7 @@
 namespace lsst { namespace meas { namespace base {
 
 PsfFluxAlgorithm::ResultMapper PsfFluxAlgorithm::makeResultMapper(
-    afw::table::Schema & schema, std::string const & name
+    afw::table::Schema & schema, std::string const & name, Control const & ctrl
 ) {
     return ResultMapper(schema, name, DIAGONAL_ONLY);
 }
@@ -46,7 +46,8 @@ PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
 template <typename T>
 std::vector<PsfFluxAlgorithm::Result> PsfFluxAlgorithm::applyN(
     afw::image::Exposure<T> const & exposure,
-    std::vector<Input> const & inputs
+    std::vector<Input> const & inputs,
+    Control const & ctrl
 ) {
     throw LSST_EXCEPT(
         pex::exceptions::LogicErrorException,
@@ -63,12 +64,14 @@ std::vector<PsfFluxAlgorithm::Result> PsfFluxAlgorithm::applyN(
     template                                                            \
     PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(                   \
         afw::image::Exposure<T> const & exposure,                       \
-        Input const & inputs                                            \
+        Input const & inputs,                                           \
+        Control const & ctrl                                            \
     );                                                                  \
     template                                                            \
     std::vector<PsfFluxAlgorithm::Result> PsfFluxAlgorithm::applyN(     \
         afw::image::Exposure<T> const & exposure,                       \
-        std::vector<Input> const & inputs                               \
+        std::vector<Input> const & inputs,                              \
+        Control const & ctrl                                            \
     )
 
 INSTANTIATE(float);

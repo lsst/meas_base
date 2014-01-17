@@ -86,40 +86,38 @@ public:
     typedef SdssShapeAlgorithmResultMapper ResultMapper;
     typedef AlgorithmInput2 Input;
 
-    static bool const HAS_CONTROL = true;
-
     static ResultMapper makeResultMapper(
-        Control const & ctrl,
         afw::table::Schema & schema,
-        std::string const & name
+        std::string const & name,
+        Control const & ctrl=Control()
     );
 
     // Main implementation
     template <typename T>
     static Result apply(
-        Control const & ctrl,
         afw::image::MaskedImage<T> const & exposure,
         afw::detection::Footprint const & footprint,
-        afw::geom::Point2D const & position
+        afw::geom::Point2D const & position,
+        Control const & ctrl=Control()
     );
 
     // Limited implementation - no variance plane, and hence no uncertainties
     template <typename T>
     static Result apply(
-        Control const & ctrl,
         afw::image::Image<T> const & exposure,
         afw::detection::Footprint const & footprint,
-        afw::geom::Point2D const & position
+        afw::geom::Point2D const & position,
+        Control const & ctrl=Control()
     );
 
     // Forwarding overload called by plugin framework
     template <typename T>
     static Result apply(
-        Control const & ctrl,
         afw::image::Exposure<T> const & exposure,
-        Input const & inputs
+        Input const & inputs,
+        Control const & ctrl=Control()
     ) {
-        return apply(ctrl, exposure.getMaskedImage(), *inputs.footprint, inputs.position);
+        return apply(exposure.getMaskedImage(), *inputs.footprint, inputs.position, ctrl);
     }
 
 };

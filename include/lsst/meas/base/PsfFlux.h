@@ -36,15 +36,14 @@ public:
     typedef FluxAlgorithmResult Result; // we can use this directly; we don't need to add to it
     typedef FluxAlgorithmMapper ResultMapper; // return type of makeResultMapper()
     typedef AlgorithmInput2 Input; // type passed to apply in addition to Exposure.
-
-    // PsfFlux doesn't actually need a Control object; if it did, it'd take that as the first argument
-    // to all the static methods, and it would typedef it as "Control".
-    // The corresponding plugin will need a Config object, but all it will have is executionOrder, and
-    // that's something we'd add in the plugin wrapper layer.
-    static bool const HAS_CONTROL = false;
+    typedef NullControl Control; // control object - we don't have any configuration, so we use NullControl
 
     // Create an object that transfers Result values to a record associated with the given schema.
-    static ResultMapper makeResultMapper(afw::table::Schema & schema, std::string const & prefix);
+    static ResultMapper makeResultMapper(
+        afw::table::Schema & schema,
+        std::string const & prefix,
+        Control const & ctrl=Control()
+    );
 
     // On the apply() methods: I think it makes sense to template them, and do explicit instantation
     // for both double and float.  But the plugin framework will only use the float versions of apply.
@@ -68,7 +67,11 @@ public:
     // This is the version that will be called by both the SFM framework and the forced measurement
     // framework, in single-object mode.  It will delegate to the above.
     template <typename T>
-    static Result apply(afw::image::Exposure<T> const & exposure, Input const & inputs) {
+    static Result apply(
+        afw::image::Exposure<T> const & exposure,
+        Input const & inputs,
+        Control const & ctrl=Control()
+    ) {
         return apply(exposure, *inputs.footprint, inputs.position);
     }
 
@@ -80,7 +83,8 @@ public:
     template <typename T>
     static std::vector<Result> applyN(
         afw::image::Exposure<T> const & exposure,
-        std::vector<Input> const & inputs
+        std::vector<Input> const & inputs,
+        Control const & ctrl=Control()
     );
 
     // I'm not gonna add apply() methods for multifit just yet.  They're trickier in multifit-specific

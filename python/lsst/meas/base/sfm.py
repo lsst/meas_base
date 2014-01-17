@@ -102,13 +102,13 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
 
     def __init__(self, config, name, schema, flags, others, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
-        self.resultMapper = self.AlgClass.makeResultMapper(config.makeControl(), schema, name)
+        self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
         # TODO: check flags
 
     def measure(self, exposure, measRecord):
         inputs = self.AlgClass.Input(measRecord)
         try:
-            results = self.AlgClass.apply(self.config.makeControl(), exposure, inputs)
+            results = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
         except Exception as err:  # TODO: tighten up matching exceptions
             self.resultMapper.fail(measRecord)
         else:
@@ -129,9 +129,10 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
                                  measured together in this call.
 
         """
+        assert hasattr(AlgClass, "applyN")  # would be better if we could delete this method somehow
         inputs = self.AlgClass.Input.Vector(measCat)
         try:
-            results = self.AlgClass.applyN(self.config.makeControl(), exposure, inputs)
+            results = self.AlgClass.applyN(exposure, inputs, self.config.makeControl())
         except Exception as err:  # TODO: tighten up matching exceptions
             self.resultMapper.fail(measRecord)
         else:

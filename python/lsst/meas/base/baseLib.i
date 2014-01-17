@@ -83,7 +83,7 @@ Basic routines to talk to lsst::meas::base classes
 // Turn C++ typedefs into equivalent Python attributes - it's a shame Swig doesn't do this for us.
 %pythoncode %{
 
-PsfFluxAlgorithm.Control = None
+PsfFluxAlgorithm.Control = NullControl
 PsfFluxAlgorithm.Result = FluxAlgorithmResult
 PsfFluxAlgorithm.ResultMapper = FluxAlgorithmMapper
 PsfFluxAlgorithm.Input = AlgorithmInput2
