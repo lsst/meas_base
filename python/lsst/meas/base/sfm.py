@@ -1,4 +1,4 @@
-"""Base classes for single-frame measurement plugin algorithms and the driver task for these.
+"""Base classes for single-frame measurement plugins and the driver task for these.
 
 In single-frame measurement, we assumes that detection and probably deblending have already been run on
 the same frame, so a SourceCatalog has already been created with Footprints (which may be HeavyFootprints).
@@ -10,34 +10,37 @@ to avoid information loss (this should, of course, be indicated in the field doc
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.daf.base
+import lsst.meas.algorithms
 from .base import *
-__all__ = ("SingleFrameAlgorithmConfig", "SingleFrameAlgorithm", "SingleFrameMeasurementConfig",
-           "SingleFrameMeasurementTask")
-class SingleFrameAlgorithmConfig(BaseAlgorithmConfig):
-    """Base class for configs of single-frame plugin algorithms."""
+__all__ = ("SingleFramePluginConfig", "SingleFramePlugin",
+"SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
+
+class SingleFramePluginConfig(BasePluginConfig):
+    """Base class for configs of single-frame plugins."""
     pass
 
-class SingleFrameAlgorithm(BaseAlgorithm):
-    """Base class for single-frame plugin algorithms."""
+class SingleFramePlugin(BasePlugin):
+    """Base class for single-frame plugins."""
 
 
-    # All subclasses of SingleFrameAlgorithm should be registered here
-    registry = AlgorithmRegistry(SingleFrameAlgorithmConfig)
-    ConfigClass = SingleFrameAlgorithmConfig
+    # All subclasses of SingleFramePlugin should be registered here
+    registry = PluginRegistry(SingleFramePluginConfig)
+    ConfigClass = SingleFramePluginConfig
 
     def __init__(self, config, name, schema, flags, others, metadata):
         """Initialize the measurement object.
 
         @param[in]  config       An instance of this class's ConfigClass.
-        @param[in]  name         The string the algorithm was registered with.
+        @param[in]  name         The string the plugin was registered with.
         @param[in,out]  schema   The Source schema.  New fields should be added here to
-                                 hold measurements produced by this algorithm.
-        @param[in]  flags        A set of bitflags describing the data that the algorithm
+                                 hold measurements produced by this plugin.
+        @param[in]  flags        A set of bitflags describing the data that the plugin
                                  should check to see if it supports.  See MeasuremntDataFlags.
-        @param[in]  others       An AlgorithmMap of previously-initialized algorithms
-        @param[in]  metadata     Algorithm metadata that will be attached to the output catalog
+        @param[in]  others       An PluginMap of previously-initialized plugins
+        @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
         self.config = config
+        self.name = name
 
     def measureSingle(self, exposure, source):
         """Measure the properties of a source on a single image
@@ -72,29 +75,14 @@ class SingleFrameAlgorithm(BaseAlgorithm):
         """
         raise NotImplementedError()
 
-class SingleFrameMeasurementConfig(lsst.pex.config.Config):
-    """Config class for single-frame measurement driver task."""
+class SingleFrameMeasurementConfig(BaseMeasurementConfig):
 
-    algorithms = SingleFrameAlgorithm.registry.makeField(
+    plugins = SingleFramePlugin.registry.makeField(
         multi=True,
-        default=[], #TODO
-        doc="Plugin algorithms to be run and their configuration"
+        default=["centroid.peak",
+                 ],
+        doc="Plugin plugins to be run and their configuration"
         )
-
-    doReplaceWithNoise = lsst.pex.config.Field(dtype=bool, default=True, optional=False,
-        doc='When measuring, replace other detected footprints with noise?')
-
-    #  These parameters are to allow the internal NoiseReplacer to be parameterized.
-    noiseSource = lsst.pex.config.ChoiceField(
-        doc='How to choose mean and variance of the Gaussian noise we generate?',
-        dtype=str, allowed={'measure': 'Measure clipped mean and variance from the whole image',
-        'meta': 'Mean = 0, variance = the "BGMEAN" metadata entry',
-        'variance': "Mean = 0, variance = the image's variance",},
-        default='measure', optional=False)
-    noiseOffset = lsst.pex.config.Field(dtype=float, optional=False, default=0.,
-                                  doc='Add ann offset to the generated noise.')
-    noiseSeed = lsst.pex.config.Field(dtype=int, default=0,
-        doc='The seed value to use for random number generation.')
 
 class SingleFrameMeasurementTask(lsst.pipe.base.Task):
     """Single-frame measurement driver task"""
@@ -102,23 +90,24 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
     ConfigClass = SingleFrameMeasurementConfig
     _DefaultName = "measurement"
 
-    """ Initialize the task, including setting up the execution order of the algorithms
+    """ Initialize the task, including setting up the execution order of the plugins
         and providing the task with the metadata and schema objects
 
-        @param[in] schema      lsst.afw.table.Schema, which should have been initialized
-                               to include the measurement fields from the algorithms already
+        @param[in] schema      lsst.afw.table.Schema, which will be initialized to include
+                               the measurement fields when the PluginClass is constructed
     """
     #   The algMetadata parameter is currently required by the pipe_base running mechanism
-    #   This is a termporary state untile the plugins are converted.
-    def __init__(self, schema, algMetadata=None, **kwds):
-        flags = None
+    #   This is a temporary state until pipe_base is converted to the new plugin framework.
+    def __init__(self, schema, algMetadata=None, flags=None, **kwds):
         lsst.pipe.base.Task.__init__(self, **kwds)
         self.schema = schema
         self.algMetadata = lsst.daf.base.PropertyList()
-        self.algorithms = AlgorithmMap()
-        for executionOrder, name, config, AlgorithmClass in sorted(self.config.algorithms.apply()):
-            self.algorithms[name] = AlgorithmClass(config, name, schema=schema, flags=flags,
-                others=self.algorithms, metadata=self.algMetadata)
+        self.plugins = PluginMap()
+
+        # Init the plugins, sorted by execution order.  At the same time add to the schema
+        for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
+            self.plugins[name] = PluginClass(config, name, schema=schema, flags=flags,
+                others=self.plugins, metadata=self.algMetadata)
 
     """ Run single frame measurement over an exposure and source catalog
 
@@ -131,32 +120,38 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
     """
     def run(self, exposure, measCat):
         assert measCat.getSchema().contains(self.schema)
+        self.config.slots.setupTable(measCat.table, prefix=self.config.prefix)
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
             for measRecord in measCat}
+
         # noiseReplacer is used to fill the footprints with noise and save off heavy footprints
-        # of what was in the exposure beforehand.
+        # of the source pixels so that they can re restored one at a time for measurement.
+        # After the NoiseReplacer is constructed, all pixels in the exposure.getMaskedImage()
+        # which belong to objects in measCat will be replaced with noise
         noiseReplacer = NoiseReplacer(exposure, footprints, self.config.noiseSource,
            self.config.noiseOffset, self.config.noiseSeed, log=self.log)
 
-        # loop through all the parent sources, processing the children, then the parent
+        # First, create a catalog of all parentless sources
+        # Loop through all the parent sources, first processing the children, then the parent
         measParentCat = measCat.getChildren(0)
+        self.log.info("There are %d parent sources"%len(measParentCat))
         for parentIdx, measParentRecord in enumerate(measParentCat):
             # first get all the children of this parent, insert footprint in turn, and measure
             measChildCat = measCat.getChildren(measParentRecord.getId())
             for measChildRecord in measChildCat:
                 noiseReplacer.insertSource(measChildRecord.getId())
-                for algorithm in self.algorithms.iterSingle():
-                    algorithm.measureSingle(exposure, measChildRecord)
+                for plugin in self.plugins.iterSingle():
+                    plugin.measureSingle(exposure, measChildRecord)
                 noiseReplacer.removeSource(measChildRecord.getId())
             # Then insert the parent footprint, and measure that
             noiseReplacer.insertSource(measParentRecord.getId())
-            for algorithm in self.algorithms.iterSingle():
-                algorithm.measureSingle(exposure, measParentRecord)
-            for algorithm in self.algorithms.iterMulti():
-                algorithm.measureMulti(exposure, measParentCat[parentIndex:parentIndex+1])
-                algorithm.measureMulti(exposure, measChildCat)
+            for plugin in self.plugins.iterSingle():
+                plugin.measureSingle(exposure, measParentRecord)
+            # Finally, process both the parent and the child set through measureMulti
+            for plugin in self.plugins.iterMulti():
+                plugin.measureMulti(exposure, measParentCat[parentIndex:parentIndex+1])
+                plugin.measureMulti(exposure, measChildCat)
             noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
         noiseReplacer.end()
-
 

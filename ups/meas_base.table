@@ -1,5 +1,6 @@
 setupRequired(afw >= 5.0.1.0)
 setupRequired(pipe_base >= 5.0.0.1)
+setupRequired(pipe_tasks >= 5.0.0.1)
 setupRequired(daf_base >= 5.0.0.1)
 setupRequired(pex_config >= 5.0.0.1)
 

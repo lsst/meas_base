@@ -24,18 +24,18 @@
 import math
 import os
 from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
-from lsst.meas.base.sfm import *
+from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
 from lsst.meas.base.base import *
 import unittest
 import lsst.utils.tests
 import numpy
 
-class TestCentroidConfig(SingleFrameAlgorithmConfig):
+class TestCentroidConfig(SingleFramePluginConfig):
     fractional = lsst.pex.config.Field(dtype=bool, default=True,
                     doc="whether to center on fractional pixels")
 
 
-class TestCentroid(SingleFrameAlgorithm):
+class TestCentroid(lsst.meas.base.sfm.SingleFramePlugin):
 
     ConfigClass = TestCentroidConfig
     doMeasureSingle = True
@@ -43,7 +43,7 @@ class TestCentroid(SingleFrameAlgorithm):
     def __init__(self, config, name, schema=None, flags=None, others=None, metadata=None):
 
             schema.addField("centroid.x", type=float, doc="x component relative to image", units="pixels")
-            schema.addField("centroid.y", type=float, doc="x component relative to image", units="pixels")
+            schema.addField("centroid.y", type=float, doc="y component relative to image", units="pixels")
 
     def measureSingle(self, exposure, source):
         schema = source.getSchema()
@@ -58,7 +58,7 @@ class TestCentroid(SingleFrameAlgorithm):
     def measureMulti(self, exposure, sources):
         return
 
-class TestFluxConfig(SingleFrameAlgorithmConfig):
+class TestFluxConfig(SingleFramePluginConfig):
     pass
 
 #  Test SFM plugin, which is used to test that the plugin mechanism works correctly,
@@ -66,7 +66,7 @@ class TestFluxConfig(SingleFrameAlgorithmConfig):
 #  flux for each source within its footprint, as well as the total flux in a box which
 #  completely surrounds the object (providing an indication of any bad replacement nearby
 
-class TestFlux(SingleFrameAlgorithm):
+class TestFlux(SingleFramePlugin):
     ConfigClass = TestFluxConfig
     doMeasureSingle = True
     doMeasureMulti = False
@@ -124,7 +124,7 @@ class TestFlux(SingleFrameAlgorithm):
         return
 
 
-SingleFrameAlgorithm.registry.register("test.flux", TestFlux)
+SingleFramePlugin.registry.register("test.flux", TestFlux)
 
 DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests", "data")
 
@@ -133,6 +133,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
     # to be sure that the patterns used to fill in all of the footprints are more or
     # less random and Gaussian.  Probably should have a really normality test here
     def testANoiseReplacement(self):
+        print "testANoiseReplacement"
         path = os.path.join(DATA_DIR, 'exposure.fits.gz')
         exposure = lsst.afw.image.ExposureF(path)
         #  catalog with footprints, but not measurement fields added
@@ -181,6 +182,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
     #  Run the measurement (sfm) task with its default plugins.  Any run to completion is successful
     def testRunMeasurement(self):
 
+        print "testRunMeasurement"
         path = os.path.join(DATA_DIR, 'exposure.fits.gz')
         exposure = lsst.afw.image.ExposureF(path)
         #  catalog with footprints, but not measurement fields added
@@ -199,7 +201,14 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mapper.addMinimalSchema(srccat.getSchema())
         schema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
-        task = SingleFrameMeasurementTask(schema, flags)
+        config.plugins = ["centroid.peak", "test.flux"]
+        config.slots.centroid = "centroid.peak"
+        config.slots.shape = None
+        config.slots.psfFlux = None 
+        config.slots.modelFlux = None
+        config.slots.apFlux = None
+        config.slots.instFlux = None
+        task = SingleFrameMeasurementTask(schema, flags, config=config)
         measCat = SourceCatalog(schema)
         measCat.extend(srccat, mapper=mapper)
 
@@ -214,6 +223,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
 
     def testFluxPlugin(self):
 
+        print "testFluxPlugin"
         path = os.path.join(DATA_DIR, 'exposure.fits.gz')
         exposure = lsst.afw.image.ExposureF(path)
         #  catalog with footprints, but not measurement fields added
@@ -228,13 +238,19 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         noiseReplacer = NoiseReplacer(replaced, footprints, sfm_config.noiseSource,
                           sfm_config.noiseOffset, sfm_config.noiseSeed)
 
-        # add the measurement fields to the outputSchema and mack a catalog with it
+        # add the measurement fields to the outputSchema and make a catalog with it
         # then extend with the mapper to copy the extant data
         mapper = SchemaMapper(srccat.getSchema())
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
-        sfm_config.algorithms.names.add("test.flux")
+        sfm_config.plugins = ["centroid.peak", "test.flux"]
+        sfm_config.slots.centroid = "centroid.peak"
+        sfm_config.slots.shape = None
+        sfm_config.slots.psfFlux = None 
+        sfm_config.slots.modelFlux = None
+        sfm_config.slots.apFlux = None
+        sfm_config.slots.instFlux = None
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
         measCat.extend(srccat, mapper=mapper)
@@ -310,7 +326,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             # Test 2:  the area surrounding the object should be the same as what was measured
             #          during the actual run
             self.assertEqual(backcount, newbackcount)
-            self.assertEqual(back,newback)
+            self.assertClose(back,newback, atol=None, rtol=.1)
 
 
 def suite():
