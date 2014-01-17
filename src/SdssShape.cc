@@ -49,19 +49,19 @@ void SdssShapeAlgorithmResultMapper::fail(afw::table::BaseRecord & record) {
 }
 
 SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(
-    Control const & ctrl,
     afw::table::Schema & schema,
-    std::string const & name
+    std::string const & name,
+    Control const & ctrl
 ) {
     return ResultMapper(schema, name);
 }
 
 template <typename T>
 SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
-    Control const & ctrl,
     afw::image::MaskedImage<T> const & exposure,
     afw::detection::Footprint const & footprint,
-    afw::geom::Point2D const & position
+    afw::geom::Point2D const & position,
+    Control const & ctrl
 ) {
     throw LSST_EXCEPT(
         pex::exceptions::LogicErrorException,
@@ -71,10 +71,10 @@ SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
 
 template <typename T>
 SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
-    Control const & ctrl,
     afw::image::Image<T> const & exposure,
     afw::detection::Footprint const & footprint,
-    afw::geom::Point2D const & position
+    afw::geom::Point2D const & position,
+    Control const & ctrl
 ) {
     throw LSST_EXCEPT(
         pex::exceptions::LogicErrorException,
@@ -84,22 +84,22 @@ SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
 
 #define INSTANTIATE(T)                                                  \
     template SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(      \
-        Control const & ctrl,                                           \
         afw::image::MaskedImage<T> const & exposure,                    \
         afw::detection::Footprint const & footprint,                    \
-        afw::geom::Point2D const & position                             \
+        afw::geom::Point2D const & position,                            \
+        Control const & ctrl                                            \
     );                                                                  \
     template SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(      \
-        Control const & ctrl,                                           \
         afw::image::Image<T> const & exposure,                          \
         afw::detection::Footprint const & footprint,                    \
-        afw::geom::Point2D const & position                             \
+        afw::geom::Point2D const & position,                            \
+        Control const & ctrl                                            \
     );                                                                  \
     template                                                            \
     SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(               \
-        Control const & ctrl,                                           \
         afw::image::Exposure<T> const & exposure,                       \
-        Input const & inputs                                            \
+        Input const & inputs,                                           \
+        Control const & ctrl                                            \
     )
 
 INSTANTIATE(float);
