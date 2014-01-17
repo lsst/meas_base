@@ -78,7 +78,18 @@ Basic routines to talk to lsst::meas::base classes
 %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
 
-%template(PsfFluxInputVector) std::vector<lsst::meas::base::PsfFluxAlgorithm::Input>;
+%define %instantiateInput(T)
+%ignore std::vector<lsst::meas::base::T>::vector(size_type);
+%ignore std::vector<lsst::meas::base::T>::resize(size_type);
+%template(T ## Vector) std::vector<lsst::meas::base::T>;
+%pythoncode %{
+T.Vector = T ## Vector
+%}
+%enddef
+
+%instantiateInput(AlgorithmInput1)
+%instantiateInput(AlgorithmInput2)
+%instantiateInput(AlgorithmInput3)
 
 // Turn C++ typedefs into equivalent Python attributes - it's a shame Swig doesn't do this for us.
 %pythoncode %{
