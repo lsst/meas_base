@@ -184,10 +184,10 @@ class ForcedMeasurementTask(CmdLineTask):
         exposure = self.getExposure(dataRef)
         references = list(self.fetchReferences(dataRef, exposure))
         mapper = self.mapper
-        retStruct = self.forcedMeasure(exposure, references, refWcs, dataRef)
+        retStruct = self.forcedMeasure(exposure, references, refWcs, dataRef=dataRef)
         self.writeOutput(dataRef, retStruct.sources)
 
-    def forcedMeasure(self, exposure, references, refWcs, dataRef):
+    def forcedMeasure(self, exposure, references, refWcs, dataRef=None):
         """This is a service routine which allows a forced measurement to be made without
         constructing the reference list.  The reference list and refWcs can then be passed in.
         """
@@ -321,8 +321,9 @@ class ForcedMeasurementTask(CmdLineTask):
             footprint = newsource.getFootprint()
             # if heavy, just transform the "light footprint" and leave the rest behind
             if footprint.isHeavy():
-                 footprint = lsst.afw.detection.Footprint(footprint)
-            footprint = footprint.transform(refWcs, targetWcs, expregion, True)
+                footprint = lsst.afw.detection.Footprint(footprint)
+            if not refWcs == targetWcs:
+                footprint = footprint.transform(refWcs, targetWcs, expregion, True)
             newsource.setFootprint(footprint)
         return sources
 

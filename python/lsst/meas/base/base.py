@@ -207,7 +207,6 @@ class NoiseReplacer(object):
         mi = exposure.getMaskedImage()
         im = mi.getImage()
         mask = mi.getMask()
-
         # Add temporary Mask planes for THISDET and OTHERDET
         self.removeplanes = []
         bitmasks = []
