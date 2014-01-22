@@ -4,12 +4,12 @@
 
 import lsst.pex.config
 from lsst.pipe.base import Task, CmdLineTask, Struct, timeMethod, ArgumentParser, ButlerInitializedTaskRunner
+from lsst.pipe.tasks.coaddBase import CoaddDataIdContainer
 import lsst.daf.base
 from lsst.pex.config import DictField,ConfigurableField
-from lsst.pipe.tasks.references import CoaddSrcReferencesTask
-from lsst.pipe.tasks.coaddBase import CoaddDataIdContainer
 from .forced import *
 from .base import *
+from .references import CoaddSrcReferencesTask
 __all__ = ("ForcedCoaddMeasurementConfig", "ForcedCoaddMeasurementTask")
 
 class ForcedCoaddMeasurementConfig(ForcedMeasurementConfig):
@@ -42,4 +42,37 @@ class ForcedCoaddMeasurementTask(ForcedMeasurementTask):
         expId = long(dataRef.get(self.config.coaddName + "CoaddId"))
         return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
 
+    def writeOutput(self, dataRef, sources):
+        """Write forced source table
 
+        @param dataRef  Data reference from butler
+        @param sources  SourceCatalog to save
+        """
+        dataRef.put(sources, self.dataPrefix + "forced_src")
+
+    def getExposure(self, dataRef):
+        """Read input exposure on which to perform the measurements
+
+        @param dataRef       Data reference from butler
+        """
+        return dataRef.get(self.dataPrefix + "calexp", immediate=True)
+
+    @classmethod
+    def _makeArgumentParser(cls):
+        parser = ArgumentParser(name=cls._DefaultName)
+        parser.add_id_argument("--id", "deepCoadd", help="data ID, e.g. --id tract=12345 patch=1,2",
+                               ContainerClass=CoaddDataIdContainer)
+        return parser
+
+    def getPreviousTaskClass(self):
+        return MeasureCoaddTask
+
+    def _getConfigName(self):
+        """Return the name of the config dataset
+        """
+        return "%sCoadd_forced_config" % (self.config.coaddName,)
+
+    def _getMetadataName(self):
+        """Return the name of the metadata dataset
+        """
+        return "%sCoadd_forced_metadata" % (self.config.coaddName,)

@@ -27,9 +27,8 @@ import lsst.pex.config
 from lsst.pipe.base import Task, CmdLineTask, Struct, timeMethod, ArgumentParser, ButlerInitializedTaskRunner
 import lsst.daf.base
 from lsst.pex.config import DictField,ConfigurableField
-from lsst.pipe.tasks.references import CoaddSrcReferencesTask
-from lsst.pipe.tasks.coaddBase import CoaddDataIdContainer
 from .base import *
+from .references import CoaddSrcReferencesTask, BaseReferencesTask
 
 __all__ = ("ForcedPluginConfig", "ForcedPlugin", "ForcedMeasurementConfig", "ForcedMeasurementTask")
 
@@ -138,7 +137,7 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
     coaddName = lsst.pex.config.Field(
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,
-        default = "goodSeeing",
+        default = "deep",
     )
     def setDefaults(self):
         self.slots.shape = None
@@ -232,7 +231,6 @@ class ForcedMeasurementTask(CmdLineTask):
         # convert the footprints to the coordinate system of the exposure 
         noiseReplacer = NoiseReplacer(exposure, footprints, self.config.noiseSource,
            self.config.noiseOffset, self.config.noiseSeed, log=self.log)
-        exposure.getMaskedImage().getImage().writeFits("replaced.fits")
         
         # Create parent cat which slices both the referenceCat and measCat (sources)
         # first, get the reference and source records which have no parent
@@ -284,7 +282,7 @@ class ForcedMeasurementTask(CmdLineTask):
 
         @param dataRef       Data reference from butler
         """
-        return dataRef.get(self.dataPrefix + "calexp", immediate=True)
+        raise NotImplementedError()
 
     def writeOutput(self, dataRef, sources):
         """Write forced source table
@@ -292,7 +290,7 @@ class ForcedMeasurementTask(CmdLineTask):
         @param dataRef  Data reference from butler
         @param sources  SourceCatalog to save
         """
-        dataRef.put(sources, self.dataPrefix + "forced_src")
+        raise NotImplementedError()
 
     def generateSources(self, dataRef, references, exposure, refWcs):
         """Generate sources to be measured, copying any fields in self.config.copyColumns
@@ -327,22 +325,4 @@ class ForcedMeasurementTask(CmdLineTask):
             newsource.setFootprint(footprint)
         return sources
 
-    @classmethod
-    def _makeArgumentParser(cls):
-        parser = ArgumentParser(name=cls._DefaultName)
-        parser.add_id_argument("--id", "deepCoadd", help="data ID, e.g. --id tract=12345 patch=1,2",
-                               ContainerClass=CoaddDataIdContainer)
-        return parser
 
-    def getPreviousTaskClass(self):
-        return MeasureCoaddTask
-
-    def _getConfigName(self):
-        """Return the name of the config dataset
-        """
-        return None  #"%s_measureCoadd_config" % (self.config.coaddName,)
-
-    def _getMetadataName(self):
-        """Return the name of the metadata dataset
-        """
-        return None   #"%s_measureCoadd_metadata" % (self.config.coaddName,)
