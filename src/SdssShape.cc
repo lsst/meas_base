@@ -105,14 +105,15 @@ SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
     result.centroid.cov(1,1) = shapeImpl.getYErr();
     result.centroid.cov(0,1) = 0,0;
     result.centroid.cov(1,0) = 0,0;
+    // Jim:  So I need to save the fluxScale?  or multiply by?
     result.flux.value = shapeImpl.getI0();
     result.flux.err = shapeImpl.getI0Err();
     //x source.set(_centroidKeys.flag, anyFlags);
-    //result.shape = afw::geom::ellipses::Quadrupole(shapeImpl.getIxx(), shapeImpl.getIyy(), shapeImpl.getIxy())
+    result.value = afw::geom::ellipses::Quadrupole(shapeImpl.getIxx(), shapeImpl.getIyy(), shapeImpl.getIxy());
     // FIXME: should do off-diagonal covariance elements too
-    //xsource.set(getKeys().err(0,0), shapeImpl.getIxxErr() * shapeImpl.getIxxErr());
-    //xsource.set(getKeys().err(1,1), shapeImpl.getIyyErr() * shapeImpl.getIyyErr());
-    //xsource.set(getKeys().err(2,2), shapeImpl.getIxyErr() * shapeImpl.getIxyErr());
+    result.cov(0,0) = shapeImpl.getIxxErr() * shapeImpl.getIxxErr();
+    result.cov(1,1) = shapeImpl.getIyyErr() * shapeImpl.getIyyErr();
+    result.cov(2,2) = shapeImpl.getIxyErr() * shapeImpl.getIxyErr();
     //xsource.set(getKeys().flag, anyFlags);
     return result;
 
