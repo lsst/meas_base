@@ -44,7 +44,7 @@ class ForcedCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
                 forcedDataId = srcDataRef.dataId.copy()
                 forcedDataId['tract'] = tract
                 dataRef = namespace.butler.dataRef(
-                    datasetType = "forcedCcd_src",
+                    datasetType = "forced_src",
                     dataId = forcedDataId,
                     )
                 self.refList.append(dataRef)
@@ -81,14 +81,6 @@ class ForcedCcdMeasurementTask(ForcedMeasurementTask):
         bbox = exposure.getBBox(lsst.afw.image.PARENT)
         return self.references.fetchInBox(dataRef, bbox, exposure.getWcs())
 
-    def writeOutput(self, dataRef, sources):
-        """Write forced source table
-
-        @param dataRef  Data reference from butler
-        @param sources  SourceCatalog to save
-        """
-        dataRef.put(sources, self.dataPrefix + "forcedCcd_src")
-
     def getExposure(self, dataRef):
         """Read input exposure to measure
 
@@ -109,16 +101,8 @@ class ForcedCcdMeasurementTask(ForcedMeasurementTask):
     @classmethod
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
-        parser.add_id_argument("--id", "forcedCcd_src", help="data ID, with raw CCD keys + tract",
+        parser.add_id_argument("--id", "forced_src", help="data ID, with raw CCD keys + tract",
                                ContainerClass=ForcedCcdDataIdContainer)
         return parser
 
-    def _getConfigName(self):
-        """Return the name of the config dataset
-        """
-        return "forcedCcd_config"
 
-    def _getMetadataName(self):
-        """Return the name of the metadata dataset
-        """
-        return "forcedCcd_metadata"

@@ -156,7 +156,7 @@ class ForcedMeasurementTask(CmdLineTask):
     ConfigClass = ForcedMeasurementConfig
     RunnerClass = ButlerInitializedTaskRunner
     _DefaultName = "forcedMeasurementTask"
-    dataPrefix = "deepCoadd_"
+
     #  The primary input to this init is the butler, which is a keyword argument, 
     #  
     def __init__(self, butler=None, refSchema=None, **kwds):
@@ -290,7 +290,12 @@ class ForcedMeasurementTask(CmdLineTask):
         @param dataRef  Data reference from butler
         @param sources  SourceCatalog to save
         """
-        raise NotImplementedError()
+        dataRef.put(sources, self.dataPrefix + "forced_src")
+
+    def getSchemaCatalogs(self):
+        catalog = lsst.afw.table.SourceCatalog(self.mapper.getOutputSchema())
+        datasetType = self.dataPrefix + "forced"
+        return {datasetType:catalog}
 
     def generateSources(self, dataRef, references, exposure, refWcs):
         """Generate sources to be measured, copying any fields in self.config.copyColumns
@@ -325,4 +330,20 @@ class ForcedMeasurementTask(CmdLineTask):
             newsource.setFootprint(footprint)
         return sources
 
+    def _getConfigName(self):
+        """Return the name of the config dataset
+        """
+        return self.dataPrefix + "forced_config"
+
+    def _getMetadataName(self):
+        """Return the name of the metadata dataset
+        """
+        return self.dataPrefix + "forced_metadata"
+
+    def getExposure(self, dataRef):
+        """Read input exposure on which to perform the measurements
+
+        @param dataRef       Data reference from butler
+        """
+        return dataRef.get(self.dataPrefix + "calexp", immediate=True)
 
