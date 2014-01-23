@@ -25,16 +25,19 @@ New plugins written purely in Python, based on meas_base plugin model
 Plugins written purely in python.  Basis for the unit tests for this module,
 and also a fall-back when no other Centroid algorithm is available.
 """
-from lsst.meas.base.sfm import *
-from lsst.meas.base.forcedImage import *
-from lsst.afw.table import *
-import lsst.afw.table.tableLib as tableLib
-from lsst.pex.exceptions.exceptionsLib import LsstCppException,LengthErrorException
-import lsst.meas.base.base
-import lsst.afw.detection
 import numpy
+
+from lsst.pex.exceptions import LsstCppException, LengthErrorException
+from lsst.afw.table import tableLib
+import lsst.afw.detection
 import lsst.meas.algorithms
 
+from .base import *
+from .baseLib import *
+from .sfm import *
+from .forcedImage import *
+
+WrappedSingleFramePlugin.generate(PsfFluxAlgorithm)
 
 class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
     executionOrder = lsst.pex.config.Field(dtype=float, default=0.0, doc="sets relative order of algorithms")
@@ -134,4 +137,3 @@ class ForcedTransformedCentroid(ForcedPlugin):
 # prior to any constructor requests (these are done in the __init__ of the measurement Task.
 # will be executed during module initialization.
 ForcedPlugin.registry.register("centroid.transformed", ForcedTransformedCentroid)
-
