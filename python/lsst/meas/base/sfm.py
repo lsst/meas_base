@@ -34,8 +34,8 @@ import lsst.daf.base
 import lsst.meas.algorithms
 from .base import *
 
-__all__ = ("SingleFramePluginConfig", "SingleFramePlugin", "SingleFrameMeasurementConfig",
-           "SingleFrameMeasurementTask")
+__all__ = ("SingleFramePluginConfig", "SingleFramePlugin", "WrappedSingleFramePlugin",
+           "SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
 
 class SingleFramePluginConfig(BasePluginConfig):
     """Base class for configs of single-frame plugin algorithms."""
@@ -142,6 +142,11 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
         if ConfigClass is None:
             ConfigClass = lsst.pex.config.makeConfigClass(AlgClass.Control, base=Base.ConfigClass,
                                                           module=AlgClass.__module__)
+            if hasattr(AlgClass, "applyN"):
+                ConfigClass.doMeasureN = lsst.pex.config.Field(
+                    dtype=bool, default=True,
+                    doc="whether to run this plugin multi-object mode"
+                    )
         PluginClass = type(AlgClass.__name__ + "SingleFramePlugin", (Base,),
                            dict(AlgClass=AlgClass, ConfigClass=ConfigClass))
         if doRegister:
