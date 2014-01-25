@@ -130,7 +130,7 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
 
         path = os.path.join(DATA_DIR, 'calexp/v100-fi/R22/S11.fits')
         exposure = lsst.afw.image.ExposureF(path)
-        refCat = SourceCatalog.readFits("data/ref.fits")
+        refCat = SourceCatalog.readFits(os.path.join(DATA_DIR, "ref.fits"))
         path = os.path.join(DATA_DIR, 'deepCoadd/i/3/84,56.fits')
         ref = lsst.afw.image.ExposureF(path)
         refWcs = ref.getWcs()
