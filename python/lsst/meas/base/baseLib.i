@@ -65,18 +65,11 @@ Basic routines to talk to lsst::meas::base classes
 %import "lsst/afw/image/imageLib.i"
 %import "lsst/afw/detection/detectionLib.i"
 %import "lsst/pex/config.h"
+%import "lsst/afw/image/Exposure.h"
 
 %include "lsst/meas/base/Results.h"
 %include "lsst/meas/base/ResultMappers.h"
-%include "lsst/afw/image/Exposure.h"
 %include "lsst/meas/base/Inputs.h"
-%include "lsst/meas/base/PsfFlux.h"
-%include "lsst/meas/base/SdssShape.h"
-
-%template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<double>;
-%template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
 
 %define %instantiateInput(T)
 %ignore std::vector<lsst::meas::base::T>::vector(size_type);
@@ -90,6 +83,39 @@ T.Vector = T ## Vector
 %instantiateInput(AlgorithmInput1)
 %instantiateInput(AlgorithmInput2)
 %instantiateInput(AlgorithmInput3)
+
+%pythoncode %{
+    FlagsResult = {}
+    FlagsResultMapper = {}
+%}
+
+%define %instantiateFlags(N)
+%template(FlagsResult ## N) lsst::meas::base::FlagsResult<N>;
+%template(FlagsResultMapper ## N) lsst::meas::base::FlagsResultMapper<N>;
+%pythoncode %{
+    FlagsResult[N] = FlagsResult ## N
+    FlagsResultMapper[N] = FlagsResultMapper ## N
+%}
+%enddef
+
+%instantiateFlags(0)
+%instantiateFlags(1)
+%instantiateFlags(2)
+%instantiateFlags(3)
+%instantiateFlags(4)
+%instantiateFlags(5)
+%instantiateFlags(6)
+%instantiateFlags(7)
+%instantiateFlags(8)
+
+
+%include "lsst/meas/base/PsfFlux.h"
+%include "lsst/meas/base/SdssShape.h"
+
+%template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<double>;
+%template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
 
 // Turn C++ typedefs into equivalent Python attributes - it's a shame Swig doesn't do this for us.
 %pythoncode %{

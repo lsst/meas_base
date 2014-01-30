@@ -24,6 +24,9 @@
 #ifndef LSST_MEAS_BASE_Results_h_INCLUDED
 #define LSST_MEAS_BASE_Results_h_INCLUDED
 
+#include <bitset>
+
+#include "boost/array.hpp"
 #include "Eigen/Core"
 
 #include "lsst/afw/geom/Point.h"
@@ -45,6 +48,19 @@ typedef Eigen::Matrix<ErrElement,3,3,Eigen::DontAlign> ShapeCov;
 // We expect the structs below will be reused (used directly, subclassed, or composition) by most algorithms.
 // In the measurement framework, each algorithm should also have at least one flag field, but that will be
 // added by the plugin wrapper layer and set when the algorithm code here throws an exception.
+
+// Simple POD struct used to define flags for use by the ResultMapper classes later.
+// When we switch to C++11, we can make these std::string, but for now we'll use
+// C-strings so we can initialize arrays of these using initializer lists.
+struct FlagDef {
+    char const * name;
+    char const * doc;
+};
+
+template <std::size_t N>
+struct FlagsResult {
+    std::bitset<N> flags;
+};
 
 struct FluxResult {
     Flux flux;

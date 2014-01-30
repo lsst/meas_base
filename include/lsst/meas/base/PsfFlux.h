@@ -30,11 +30,18 @@
 
 namespace lsst { namespace meas { namespace base {
 
+class PsfFluxResult;
+class PsfFluxResultMapper;
+
 class PsfFluxAlgorithm {
 public:
 
-    typedef FluxResult Result; // we can use this directly; we don't need to add to it
-    typedef FluxResultMapper ResultMapper; // return type of makeResultMapper()
+    enum FlagBits { N_FLAGS=0 };
+
+    static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions();
+
+    typedef PsfFluxResult Result; // we can use this directly; we don't need to add to it
+    typedef PsfFluxResultMapper ResultMapper; // return type of makeResultMapper()
     typedef AlgorithmInput2 Input; // type passed to apply in addition to Exposure.
     typedef NullControl Control; // control object - we don't have any configuration, so we use NullControl
 
@@ -71,9 +78,7 @@ public:
         afw::image::Exposure<T> const & exposure,
         Input const & inputs,
         Control const & ctrl=Control()
-    ) {
-        return apply(exposure, *inputs.footprint, inputs.position);
-    }
+    );
 
     // This is the version that will be called by both the SFM framework and the forced measurement
     // framework, in multi-object mode.  It will have its own implementation, as that will be distinct
@@ -90,6 +95,25 @@ public:
     // I'm not gonna add apply() methods for multifit just yet.  They're trickier in multifit-specific
     // ways that I don't think will affect the overall plugin-wrapper-layer design.
 
+};
+
+class PsfFluxResult : public FluxResult, public FlagsResult<PsfFluxAlgorithm::N_FLAGS> {};
+
+class PsfFluxResultMapper : public FluxResultMapper, public FlagsResultMapper<PsfFluxAlgorithm::N_FLAGS> {
+public:
+
+    PsfFluxResultMapper(
+        afw::table::Schema & schema,
+        std::string const & prefix,
+        ResultMapperUncertaintyEnum uncertainty
+    ) : FluxResultMapper(schema, prefix, uncertainty),
+        FlagsResultMapper<PsfFluxAlgorithm::N_FLAGS>(schema, prefix, PsfFluxAlgorithm::getFlagDefinitions())
+    {}
+
+    void apply(afw::table::BaseRecord & record, PsfFluxResult const & result) const {
+        FluxResultMapper::apply(record, result);
+        FlagsResultMapper<PsfFluxAlgorithm::N_FLAGS>::apply(record, result);
+    }
 };
 
 }}} // namespace lsst::meas::base

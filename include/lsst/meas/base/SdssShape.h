@@ -44,42 +44,15 @@ public:
 
 };
 
-// SdssShape actually measures a flux and a centroid as well, so our result struct includes all three
-class SdssShapeResult : public ShapeResult,
-                        public CentroidResult,
-                        public FluxResult
-{
-public:
-    SdssShapeResult() {}
-};
-
-class SdssShapeResultMapper : public ShapeResultMapper,
-                              public CentroidResultMapper,
-                              public FluxResultMapper
-// n.b. Multiple inheritance here is ok even though there's a diamond and we didn't use virtual inheritance:
-// BaseAlgorithmMapper is designed such that if you inherit it multiple times, and you hence get multiple
-// "copies" of it, those copies all refer to the same Schema entry, so you just end up with a couple of
-// extra lightweight Key data members that don't do anything: a small price to pay for the boilerplate
-// reduction we get by using multiple inheritance here.
-// Also, sometimes we might want to get multiple copies of the base class (if we pass different prefixes
-// to different constructors); that works fine too.
-{
-public:
-
-    explicit SdssShapeResultMapper(afw::table::Schema & schema, std::string const & name);
-    
-    // Transfer values from the result struct to the record, and clear the failure flag field.
-    void apply(afw::table::BaseRecord & record, SdssShapeResult const & result);
-
-    // Set the failure flag field.
-    void fail(afw::table::BaseRecord & record);
-
-private:
-    // TODO: more flags
-};
+class SdssShapeResult;
+class SdssShapeResultMapper;
 
 class SdssShapeAlgorithm {
 public:
+
+    enum FlagBits { N_FLAGS=0 };
+
+    static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions();
 
     typedef SdssShapeControl Control;
     typedef SdssShapeResult Result;
@@ -116,9 +89,31 @@ public:
         afw::image::Exposure<T> const & exposure,
         Input const & inputs,
         Control const & ctrl=Control()
-    ) {
-        return apply(exposure.getMaskedImage(), *inputs.footprint, inputs.position, ctrl);
-    }
+    );
+
+};
+
+// SdssShape actually measures a flux and a centroid as well, so our result struct includes all three
+class SdssShapeResult : public ShapeResult,
+                        public CentroidResult,
+                        public FluxResult,
+                        public FlagsResult<SdssShapeAlgorithm::N_FLAGS>
+{
+public:
+    SdssShapeResult() {}
+};
+
+class SdssShapeResultMapper : public ShapeResultMapper,
+                              public CentroidResultMapper,
+                              public FluxResultMapper,
+                              public FlagsResultMapper<SdssShapeAlgorithm::N_FLAGS>
+{
+public:
+
+    explicit SdssShapeResultMapper(afw::table::Schema & schema, std::string const & name);
+    
+    // Transfer values from the result struct to the record, and clear the failure flag field.
+    void apply(afw::table::BaseRecord & record, SdssShapeResult const & result) const;
 
 };
 

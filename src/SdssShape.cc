@@ -25,27 +25,28 @@
 
 namespace lsst { namespace meas { namespace base {
 
+boost::array<FlagDef,SdssShapeAlgorithm::N_FLAGS> const & SdssShapeAlgorithm::getFlagDefinitions() {
+    static boost::array<FlagDef,N_FLAGS> const flagDefs = {};
+    return flagDefs;
+}
+
 SdssShapeResultMapper::SdssShapeResultMapper(
     afw::table::Schema & schema, std::string const & name
 ) :
     ShapeResultMapper(schema, name, DIAGONAL_ONLY),
     CentroidResultMapper(schema, name, DIAGONAL_ONLY),
-    FluxResultMapper(schema, name, DIAGONAL_ONLY)
+    FluxResultMapper(schema, name, DIAGONAL_ONLY),
+    FlagsResultMapper<0>(schema, name, SdssShapeAlgorithm::getFlagDefinitions())
 {}
 
 void SdssShapeResultMapper::apply(
     afw::table::BaseRecord & record,
     SdssShapeResult const & result
-) {
+) const {
     ShapeResultMapper::apply(record, result);
     CentroidResultMapper::apply(record, result);
     FluxResultMapper::apply(record, result);
-}
-
-void SdssShapeResultMapper::fail(afw::table::BaseRecord & record) {
-    // don't need to call all base classes - one is sufficient,
-    // since they all refer to the same field.
-    ShapeResultMapper::fail(record);
+    FlagsResultMapper<0>::apply(record, result);
 }
 
 SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(
@@ -80,6 +81,15 @@ SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
         pex::exceptions::LogicErrorException,
         "Not implemented"
     );
+}
+
+template <typename T>
+SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
+    afw::image::Exposure<T> const & exposure,
+    Input const & inputs,
+    Control const & ctrl
+) {
+    return apply(exposure.getMaskedImage(), *inputs.footprint, inputs.position, ctrl);
 }
 
 #define INSTANTIATE(T)                                                  \

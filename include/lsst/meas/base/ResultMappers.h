@@ -37,22 +37,27 @@ enum ResultMapperUncertaintyEnum {
 };
 
 // Base class for classes that transfer values from Result structs to record objects
-struct BaseResultMapper {
+template <std::size_t N>
+struct FlagsResultMapper {
 
-    BaseResultMapper(
+    FlagsResultMapper(
         afw::table::Schema & schema,
-        std::string const & prefix
+        std::string const & prefix,
+        boost::array<FlagDef,N> const & flagDefs
     );
 
     // Set the failure flag field.
-    void fail(afw::table::BaseRecord & record);
+    void fail(afw::table::BaseRecord & record) const;
+
+    // Transfer values from the result struct to the record, and clear the failure flag field.
+    void apply(afw::table::BaseRecord & record, FlagsResult<N> const & result) const;
 
 protected:
-    afw::table::Key<afw::table::Flag> _flag;
+    boost::array<afw::table::Key<afw::table::Flag>,N+1> _flags;
 };
 
 // Object that transfers values from FluxResultResult to a record object.
-class FluxResultMapper : public BaseResultMapper {
+class FluxResultMapper {
 public:
 
     // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
@@ -63,7 +68,7 @@ public:
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
-    void apply(afw::table::BaseRecord & record, FluxResult const & result);
+    void apply(afw::table::BaseRecord & record, FluxResult const & result) const;
 
 private:
     afw::table::Key<Flux> _flux;
@@ -71,7 +76,7 @@ private:
 };
 
 // Object that transfers values from CentroidResultResult to a record object.
-class CentroidResultMapper : public BaseResultMapper {
+class CentroidResultMapper {
 public:
 
     // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
@@ -82,7 +87,7 @@ public:
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
-    void apply(afw::table::BaseRecord & record, CentroidResult const & result);
+    void apply(afw::table::BaseRecord & record, CentroidResult const & result) const;
 
 private:
     afw::table::Key<CentroidElement> _x;
@@ -93,7 +98,7 @@ private:
 };
 
 // Object that transfers values from ShapeResultResult to a record object.
-class ShapeResultMapper : public BaseResultMapper {
+class ShapeResultMapper {
 public:
 
     // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
@@ -104,7 +109,7 @@ public:
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
-    void apply(afw::table::BaseRecord & record, ShapeResult const & result);
+    void apply(afw::table::BaseRecord & record, ShapeResult const & result) const;
 
 private:
     afw::table::Key<ShapeElement> _xx;
