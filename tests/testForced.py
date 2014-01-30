@@ -153,16 +153,16 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         result = task.forcedMeasure(exposure, list(newRefCat), refWcs)
         sources = result.sources
         mismatches = 0
-        key = sources.getSchema().find("centroid.peak").key
-        for source in sources:
-            centroid = source.getFootprint().getPeaks()[0].getCentroid()
+	key = sources.getSchema().find("centroid.peak").key
+        for i, source in enumerate(sources):
             peakcentroid = source.get(key)
+            sky = refWcs.pixelToSky(refCat[i].getFootprint().getPeaks()[0].getF())
+            centroid = exposure.getWcs().skyToPixel(sky) 
             distance = math.sqrt(centroid.distanceSquared(peakcentroid))
-            if distance > .001:
+            if distance > .01:
                 mismatches = mismatches + 1
                 distX = centroid.getX()-peakcentroid.getX()
                 distY = centroid.getY()-peakcentroid.getY()
-                print "Mismatch: ", source.getId(), distance, distX, distY
         self.assertEqual(mismatches, 0) 
 
     #  Run the measurement (forcedCcd) task with the centroid peak plugin.
