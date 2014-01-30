@@ -45,9 +45,6 @@ class ResultMappersTestCase(lsst.utils.tests.TestCase):
         mapper.apply(record, result)
         self.assertEqual(record.get("test_flux"), result.flux)
         self.assertEqual(record.get("test_fluxSigma"), result.fluxSigma)
-        self.assertEqual(record.get("test_flag"), False)
-        mapper.fail(record)
-        self.assertEqual(record.get("test_flag"), True)
 
     def testCentroidResultMapper(self):
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
@@ -64,9 +61,6 @@ class ResultMappersTestCase(lsst.utils.tests.TestCase):
         self.assertEqual(record.get("test_y"), result.y)
         self.assertEqual(record.get("test_xSigma"), result.xSigma)
         self.assertEqual(record.get("test_ySigma"), result.ySigma)
-        self.assertEqual(record.get("test_flag"), False)
-        mapper.fail(record)
-        self.assertEqual(record.get("test_flag"), True)
 
 
 def suite():

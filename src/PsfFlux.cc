@@ -25,6 +25,11 @@
 
 namespace lsst { namespace meas { namespace base {
 
+boost::array<FlagDef,PsfFluxAlgorithm::N_FLAGS> const & PsfFluxAlgorithm::getFlagDefinitions() {
+    static boost::array<FlagDef,N_FLAGS> const flagDefs = {};
+    return flagDefs;
+}
+
 PsfFluxAlgorithm::ResultMapper PsfFluxAlgorithm::makeResultMapper(
     afw::table::Schema & schema, std::string const & name, Control const & ctrl
 ) {
@@ -41,6 +46,15 @@ PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
         pex::exceptions::LogicErrorException,
         "Not implemented"
     );
+}
+
+template <typename T>
+PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
+    afw::image::Exposure<T> const & exposure,
+    Input const & inputs,
+    Control const & ctrl
+) {
+    return apply(exposure, *inputs.footprint, inputs.position);
 }
 
 template <typename T>

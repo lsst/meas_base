@@ -25,30 +25,45 @@
 
 namespace lsst { namespace meas { namespace base {
 
-BaseResultMapper::BaseResultMapper(
+template <std::size_t N>
+FlagsResultMapper<N>::FlagsResultMapper(
     afw::table::Schema & schema,
-    std::string const & prefix
-) :
-    _flag(
-        schema.addField(
-            afw::table::Field<afw::table::Flag>(
-                prefix + "_flag",
-                "general failure flag for " + prefix + " measurement"
-            ),
+    std::string const & prefix,
+    boost::array<FlagDef,N> const & flagDefs
+) {
+    _flags[0] = schema.addField(
+        afw::table::Field<afw::table::Flag>(
+            prefix + "_flag",
+            "general failure flag for " + prefix + " measurement"
+        ),
+        true // replace existing fields if present
+    );
+    for (std::size_t i = 0; i < N; ++i) {
+        _flags[i+1] = schema.addField(
+            afw::table::Field<afw::table::Flag>(flagDefs[i].name, flagDefs[i].doc),
             true // replace existing fields if present
-        )
-    )
-{}
+        );
+    }
+}
 
-void BaseResultMapper::fail(afw::table::BaseRecord & record) {
-    record.set(_flag, true);
+template <std::size_t N>
+void FlagsResultMapper<N>::fail(afw::table::BaseRecord & record) const {
+    record.set(_flags[0], true);
+}
+
+template <std::size_t N>
+void FlagsResultMapper<N>::apply(afw::table::BaseRecord & record, FlagsResult<N> const & result) const {
+    for (std::size_t i = 0; i < N; ++i) {
+        record.set(_flags[i+1], result.flags[i]);
+    }
+    record.set(_flags[0], false);
 }
 
 FluxResultMapper::FluxResultMapper(
     afw::table::Schema & schema,
     std::string const & prefix,
     ResultMapperUncertaintyEnum uncertainty
-) : BaseResultMapper(schema, prefix) {
+) {
     _flux = schema.addField(
         afw::table::Field<Flux>(prefix + "_flux", "measured flux", "dn"),
         true
@@ -63,19 +78,18 @@ FluxResultMapper::FluxResultMapper(
     }
 }
 
-void FluxResultMapper::apply(afw::table::BaseRecord & record, FluxResult const & result) {
+void FluxResultMapper::apply(afw::table::BaseRecord & record, FluxResult const & result) const {
     record.set(_flux, result.flux);
     if (_fluxSigma.isValid()) {
         record.set(_fluxSigma, result.fluxSigma);
     }
-    record.set(_flag, false);
 }
 
 CentroidResultMapper::CentroidResultMapper(
     afw::table::Schema & schema,
     std::string const & prefix,
     ResultMapperUncertaintyEnum uncertainty
-) : BaseResultMapper(schema, prefix) {
+) {
     _x = schema.addField(
         afw::table::Field<CentroidElement>(
             prefix + "_x",
@@ -118,7 +132,7 @@ CentroidResultMapper::CentroidResultMapper(
     }
 }
 
-void CentroidResultMapper::apply(afw::table::BaseRecord & record, CentroidResult const & result) {
+void CentroidResultMapper::apply(afw::table::BaseRecord & record, CentroidResult const & result) const {
     record.set(_x, result.x);
     record.set(_y, result.y);
     if (_xSigma.isValid()) {
@@ -129,14 +143,13 @@ void CentroidResultMapper::apply(afw::table::BaseRecord & record, CentroidResult
             record.set(_x_y_Cov, result.x_y_Cov);
         }
     }
-    record.set(_flag, false);
 }
 
 ShapeResultMapper::ShapeResultMapper(
     afw::table::Schema & schema,
     std::string const & prefix,
     ResultMapperUncertaintyEnum uncertainty
-) : BaseResultMapper(schema, prefix) {
+) {
     _xx = schema.addField(
         afw::table::Field<ShapeElement>(
             prefix + "_xx",
@@ -209,7 +222,7 @@ ShapeResultMapper::ShapeResultMapper(
     }
 }
 
-void ShapeResultMapper::apply(afw::table::BaseRecord & record, ShapeResult const & result) {
+void ShapeResultMapper::apply(afw::table::BaseRecord & record, ShapeResult const & result) const {
     record.set(_xx, result.xx);
     record.set(_yy, result.yy);
     record.set(_xy, result.xy);
@@ -227,7 +240,16 @@ void ShapeResultMapper::apply(afw::table::BaseRecord & record, ShapeResult const
             record.set(_yy_xy_Cov, result.yy_xy_Cov);
         }
     }
-    record.set(_flag, false);
 }
+
+template class FlagsResultMapper<0>;
+template class FlagsResultMapper<1>;
+template class FlagsResultMapper<2>;
+template class FlagsResultMapper<3>;
+template class FlagsResultMapper<4>;
+template class FlagsResultMapper<5>;
+template class FlagsResultMapper<6>;
+template class FlagsResultMapper<7>;
+template class FlagsResultMapper<8>;
 
 }}} // namespace lsst::meas::base
