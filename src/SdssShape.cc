@@ -30,31 +30,12 @@ boost::array<FlagDef,SdssShapeAlgorithm::N_FLAGS> const & SdssShapeAlgorithm::ge
     return flagDefs;
 }
 
-SdssShapeResultMapper::SdssShapeResultMapper(
-    afw::table::Schema & schema, std::string const & name
-) :
-    ShapeResultMapper(schema, name, DIAGONAL_ONLY),
-    CentroidResultMapper(schema, name, DIAGONAL_ONLY),
-    FluxResultMapper(schema, name, DIAGONAL_ONLY),
-    FlagsResultMapper<0>(schema, name, SdssShapeAlgorithm::getFlagDefinitions())
-{}
-
-void SdssShapeResultMapper::apply(
-    afw::table::BaseRecord & record,
-    SdssShapeResult const & result
-) const {
-    ShapeResultMapper::apply(record, result);
-    CentroidResultMapper::apply(record, result);
-    FluxResultMapper::apply(record, result);
-    FlagsResultMapper<0>::apply(record, result);
-}
-
 SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(
     afw::table::Schema & schema,
     std::string const & name,
     Control const & ctrl
 ) {
-    return ResultMapper(schema, name);
+    return ResultMapper(schema, name, NO_UNCERTAINTY, NO_UNCERTAINTY, NO_UNCERTAINTY);
 }
 
 template <typename T>

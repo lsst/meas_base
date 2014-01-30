@@ -116,6 +116,15 @@ struct ShapeResult {
 
 };
 
+template <typename Algorithm, typename T1>
+struct SimpleResult1 : public T1, public FlagsResult<Algorithm::N_FLAGS> {};
+
+template <typename Algorithm, typename T1, typename T2>
+struct SimpleResult2 : public T1, public T2, public FlagsResult<Algorithm::N_FLAGS> {};
+
+template <typename Algorithm, typename T1, typename T2, typename T3>
+struct SimpleResult3 : public T1, public T2, public T3, public FlagsResult<Algorithm::N_FLAGS> {};
+
 }}} // lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_Results_h_INCLUDED
