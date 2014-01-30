@@ -95,13 +95,13 @@ T.Vector = T ## Vector
 %pythoncode %{
 
 PsfFluxAlgorithm.Control = NullControl
-PsfFluxAlgorithm.Result = FluxAlgorithmResult
-PsfFluxAlgorithm.ResultMapper = FluxAlgorithmMapper
+PsfFluxAlgorithm.Result = FluxResult
+PsfFluxAlgorithm.ResultMapper = FluxResultMapper
 PsfFluxAlgorithm.Input = AlgorithmInput2
 
 SdssShapeAlgorithm.Control = SdssShapeControl
-SdssShapeAlgorithm.Result = SdssShapeAlgorithmResult
-SdssShapeAlgorithm.ResultMapper = SdssShapeAlgorithmResultMapper
+SdssShapeAlgorithm.Result = SdssShapeResult
+SdssShapeAlgorithm.ResultMapper = SdssShapeResultMapper
 SdssShapeAlgorithm.Input = AlgorithmInput2
 
 %}

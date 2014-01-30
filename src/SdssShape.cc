@@ -25,27 +25,27 @@
 
 namespace lsst { namespace meas { namespace base {
 
-SdssShapeAlgorithmResultMapper::SdssShapeAlgorithmResultMapper(
+SdssShapeResultMapper::SdssShapeResultMapper(
     afw::table::Schema & schema, std::string const & name
 ) :
-    ShapeAlgorithmMapper(schema, name, DIAGONAL_ONLY),
-    CentroidAlgorithmMapper(schema, name, DIAGONAL_ONLY),
-    FluxAlgorithmMapper(schema, name, DIAGONAL_ONLY)
+    ShapeResultMapper(schema, name, DIAGONAL_ONLY),
+    CentroidResultMapper(schema, name, DIAGONAL_ONLY),
+    FluxResultMapper(schema, name, DIAGONAL_ONLY)
 {}
 
-void SdssShapeAlgorithmResultMapper::apply(
+void SdssShapeResultMapper::apply(
     afw::table::BaseRecord & record,
-    SdssShapeAlgorithmResult const & result
+    SdssShapeResult const & result
 ) {
-    ShapeAlgorithmMapper::apply(record, result);
-    CentroidAlgorithmMapper::apply(record, result);
-    FluxAlgorithmMapper::apply(record, result);
+    ShapeResultMapper::apply(record, result);
+    CentroidResultMapper::apply(record, result);
+    FluxResultMapper::apply(record, result);
 }
 
-void SdssShapeAlgorithmResultMapper::fail(afw::table::BaseRecord & record) {
+void SdssShapeResultMapper::fail(afw::table::BaseRecord & record) {
     // don't need to call all base classes - one is sufficient,
     // since they all refer to the same field.
-    ShapeAlgorithmMapper::fail(record);
+    ShapeResultMapper::fail(record);
 }
 
 SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(
