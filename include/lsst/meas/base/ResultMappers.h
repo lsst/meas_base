@@ -46,7 +46,7 @@ struct FlagsResultMapper {
         boost::array<FlagDef,N> const & flagDefs
     );
 
-    // Set the failure flag field.
+    // Transfer values from the result struct to the record, and set the failure flag field.
     void fail(afw::table::BaseRecord & record) const;
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
@@ -121,6 +121,69 @@ private:
     afw::table::Key<ErrElement> _xx_yy_Cov;
     afw::table::Key<ErrElement> _xx_xy_Cov;
     afw::table::Key<ErrElement> _yy_xy_Cov;
+};
+
+template <typename Algorithm, typename T1>
+struct SimpleResultMapper1 : public T1, public FlagsResultMapper<Algorithm::N_FLAGS> {
+
+    SimpleResultMapper1(
+        afw::table::Schema & schema,
+        std::string const & prefix,
+        ResultMapperUncertaintyEnum uncertainty1
+    ) : T1(schema, prefix, uncertainty1),
+        FlagsResultMapper<Algorithm::N_FLAGS>(schema, prefix, Algorithm::getFlagDefinitions())
+    {}
+
+    void apply(afw::table::BaseRecord & record, typename Algorithm::Result const & result) {
+        T1::apply(record, result);
+        FlagsResultMapper<Algorithm::N_FLAGS>(record, result);
+    }
+
+};
+
+template <typename Algorithm, typename T1, typename T2>
+struct SimpleResultMapper2 : public T1, public T2, public FlagsResultMapper<Algorithm::N_FLAGS> {
+
+    SimpleResultMapper2(
+        afw::table::Schema & schema,
+        std::string const & prefix,
+        ResultMapperUncertaintyEnum uncertainty1,
+        ResultMapperUncertaintyEnum uncertainty2
+    ) : T1(schema, prefix, uncertainty1),
+        T2(schema, prefix, uncertainty2),
+        FlagsResultMapper<Algorithm::N_FLAGS>(schema, prefix, Algorithm::getFlagDefinitions())
+    {}
+
+    void apply(afw::table::BaseRecord & record, typename Algorithm::Result const & result) {
+        T1::apply(record, result);
+        T2::apply(record, result);
+        FlagsResultMapper<Algorithm::N_FLAGS>(record, result);
+    }
+
+};
+
+template <typename Algorithm, typename T1, typename T2, typename T3>
+struct SimpleResultMapper3 : public T1, public T2, public T3, public FlagsResultMapper<Algorithm::N_FLAGS> {
+
+    SimpleResultMapper3(
+        afw::table::Schema & schema,
+        std::string const & prefix,
+        ResultMapperUncertaintyEnum uncertainty1,
+        ResultMapperUncertaintyEnum uncertainty2,
+        ResultMapperUncertaintyEnum uncertainty3
+    ) : T1(schema, prefix, uncertainty1),
+        T2(schema, prefix, uncertainty2),
+        T3(schema, prefix, uncertainty3),
+        FlagsResultMapper<Algorithm::N_FLAGS>(schema, prefix, Algorithm::getFlagDefinitions())
+    {}
+
+    void apply(afw::table::BaseRecord & record, typename Algorithm::Result const & result) {
+        T1::apply(record, result);
+        T2::apply(record, result);
+        T3::apply(record, result);
+        FlagsResultMapper<Algorithm::N_FLAGS>(record, result);
+    }
+
 };
 
 }}} // lsst::meas::base

@@ -30,9 +30,6 @@
 
 namespace lsst { namespace meas { namespace base {
 
-class PsfFluxResult;
-class PsfFluxResultMapper;
-
 class PsfFluxAlgorithm {
 public:
 
@@ -40,8 +37,8 @@ public:
 
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions();
 
-    typedef PsfFluxResult Result; // we can use this directly; we don't need to add to it
-    typedef PsfFluxResultMapper ResultMapper; // return type of makeResultMapper()
+    typedef SimpleResult1<PsfFluxAlgorithm,FluxResult> Result;
+    typedef SimpleResultMapper1<PsfFluxAlgorithm,FluxResultMapper> ResultMapper;
     typedef AlgorithmInput2 Input; // type passed to apply in addition to Exposure.
     typedef NullControl Control; // control object - we don't have any configuration, so we use NullControl
 
@@ -95,25 +92,6 @@ public:
     // I'm not gonna add apply() methods for multifit just yet.  They're trickier in multifit-specific
     // ways that I don't think will affect the overall plugin-wrapper-layer design.
 
-};
-
-class PsfFluxResult : public FluxResult, public FlagsResult<PsfFluxAlgorithm::N_FLAGS> {};
-
-class PsfFluxResultMapper : public FluxResultMapper, public FlagsResultMapper<PsfFluxAlgorithm::N_FLAGS> {
-public:
-
-    PsfFluxResultMapper(
-        afw::table::Schema & schema,
-        std::string const & prefix,
-        ResultMapperUncertaintyEnum uncertainty
-    ) : FluxResultMapper(schema, prefix, uncertainty),
-        FlagsResultMapper<PsfFluxAlgorithm::N_FLAGS>(schema, prefix, PsfFluxAlgorithm::getFlagDefinitions())
-    {}
-
-    void apply(afw::table::BaseRecord & record, PsfFluxResult const & result) const {
-        FluxResultMapper::apply(record, result);
-        FlagsResultMapper<PsfFluxAlgorithm::N_FLAGS>::apply(record, result);
-    }
 };
 
 }}} // namespace lsst::meas::base

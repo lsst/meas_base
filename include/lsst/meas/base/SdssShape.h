@@ -44,9 +44,6 @@ public:
 
 };
 
-class SdssShapeResult;
-class SdssShapeResultMapper;
-
 class SdssShapeAlgorithm {
 public:
 
@@ -55,8 +52,9 @@ public:
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions();
 
     typedef SdssShapeControl Control;
-    typedef SdssShapeResult Result;
-    typedef SdssShapeResultMapper ResultMapper;
+    typedef SimpleResult3<SdssShapeAlgorithm,ShapeResult,CentroidResult,FluxResult> Result;
+    typedef SimpleResultMapper3<SdssShapeAlgorithm,ShapeResultMapper,CentroidResultMapper,FluxResultMapper>
+                ResultMapper;
     typedef AlgorithmInput2 Input;
 
     static ResultMapper makeResultMapper(
@@ -90,30 +88,6 @@ public:
         Input const & inputs,
         Control const & ctrl=Control()
     );
-
-};
-
-// SdssShape actually measures a flux and a centroid as well, so our result struct includes all three
-class SdssShapeResult : public ShapeResult,
-                        public CentroidResult,
-                        public FluxResult,
-                        public FlagsResult<SdssShapeAlgorithm::N_FLAGS>
-{
-public:
-    SdssShapeResult() {}
-};
-
-class SdssShapeResultMapper : public ShapeResultMapper,
-                              public CentroidResultMapper,
-                              public FluxResultMapper,
-                              public FlagsResultMapper<SdssShapeAlgorithm::N_FLAGS>
-{
-public:
-
-    explicit SdssShapeResultMapper(afw::table::Schema & schema, std::string const & name);
-    
-    // Transfer values from the result struct to the record, and clear the failure flag field.
-    void apply(afw::table::BaseRecord & record, SdssShapeResult const & result) const;
 
 };
 
