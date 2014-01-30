@@ -37,9 +37,9 @@ enum ResultMapperUncertaintyEnum {
 };
 
 // Base class for classes that transfer values from Result structs to record objects
-struct BaseAlgorithmMapper {
+struct BaseResultMapper {
 
-    BaseAlgorithmMapper(
+    BaseResultMapper(
         afw::table::Schema & schema,
         std::string const & prefix
     );
@@ -51,38 +51,38 @@ protected:
     afw::table::Key<afw::table::Flag> _flag;
 };
 
-// Object that transfers values from FluxAlgorithmResult to a record object.
-class FluxAlgorithmMapper : public BaseAlgorithmMapper {
+// Object that transfers values from FluxResultResult to a record object.
+class FluxResultMapper : public BaseResultMapper {
 public:
 
     // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
-    FluxAlgorithmMapper(
+    FluxResultMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
         ResultMapperUncertaintyEnum uncertainty
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
-    void apply(afw::table::BaseRecord & record, FluxAlgorithmResult const & result);
+    void apply(afw::table::BaseRecord & record, FluxResult const & result);
 
 private:
     afw::table::Key<Flux> _flux;
     afw::table::Key<ErrElement> _fluxSigma;
 };
 
-// Object that transfers values from CentroidAlgorithmResult to a record object.
-class CentroidAlgorithmMapper : public BaseAlgorithmMapper {
+// Object that transfers values from CentroidResultResult to a record object.
+class CentroidResultMapper : public BaseResultMapper {
 public:
 
     // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
-    CentroidAlgorithmMapper(
+    CentroidResultMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
         ResultMapperUncertaintyEnum uncertainty
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
-    void apply(afw::table::BaseRecord & record, CentroidAlgorithmResult const & result);
+    void apply(afw::table::BaseRecord & record, CentroidResult const & result);
 
 private:
     afw::table::Key<CentroidElement> _x;
@@ -92,19 +92,19 @@ private:
     afw::table::Key<ErrElement> _x_y_Cov;
 };
 
-// Object that transfers values from ShapeAlgorithmResult to a record object.
-class ShapeAlgorithmMapper : public BaseAlgorithmMapper {
+// Object that transfers values from ShapeResultResult to a record object.
+class ShapeResultMapper : public BaseResultMapper {
 public:
 
     // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
-    ShapeAlgorithmMapper(
+    ShapeResultMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
         ResultMapperUncertaintyEnum uncertainty
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
-    void apply(afw::table::BaseRecord & record, ShapeAlgorithmResult const & result);
+    void apply(afw::table::BaseRecord & record, ShapeResult const & result);
 
 private:
     afw::table::Key<ShapeElement> _xx;

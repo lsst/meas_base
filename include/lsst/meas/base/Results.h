@@ -46,14 +46,14 @@ typedef Eigen::Matrix<ErrElement,3,3,Eigen::DontAlign> ShapeCov;
 // In the measurement framework, each algorithm should also have at least one flag field, but that will be
 // added by the plugin wrapper layer and set when the algorithm code here throws an exception.
 
-struct FluxAlgorithmResult {
+struct FluxResult {
     Flux flux;
     ErrElement fluxSigma;
 
-    FluxAlgorithmResult();
+    FluxResult();
 };
 
-struct CentroidAlgorithmResult {
+struct CentroidResult {
     CentroidElement x;
     CentroidElement y;
     ErrElement xSigma;
@@ -70,11 +70,11 @@ struct CentroidAlgorithmResult {
         return m;
     }
 
-    CentroidAlgorithmResult();
+    CentroidResult();
 
 };
 
-struct ShapeAlgorithmResult {
+struct ShapeResult {
     ShapeElement xx;
     ShapeElement yy;
     ShapeElement xy;
@@ -96,7 +96,7 @@ struct ShapeAlgorithmResult {
         return m;
     }
 
-    ShapeAlgorithmResult();
+    ShapeResult();
 
 };
 

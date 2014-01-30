@@ -25,7 +25,7 @@
 
 namespace lsst { namespace meas { namespace base {
 
-BaseAlgorithmMapper::BaseAlgorithmMapper(
+BaseResultMapper::BaseResultMapper(
     afw::table::Schema & schema,
     std::string const & prefix
 ) :
@@ -40,15 +40,15 @@ BaseAlgorithmMapper::BaseAlgorithmMapper(
     )
 {}
 
-void BaseAlgorithmMapper::fail(afw::table::BaseRecord & record) {
+void BaseResultMapper::fail(afw::table::BaseRecord & record) {
     record.set(_flag, true);
 }
 
-FluxAlgorithmMapper::FluxAlgorithmMapper(
+FluxResultMapper::FluxResultMapper(
     afw::table::Schema & schema,
     std::string const & prefix,
     ResultMapperUncertaintyEnum uncertainty
-) : BaseAlgorithmMapper(schema, prefix) {
+) : BaseResultMapper(schema, prefix) {
     _flux = schema.addField(
         afw::table::Field<Flux>(prefix + "_flux", "measured flux", "dn"),
         true
@@ -63,7 +63,7 @@ FluxAlgorithmMapper::FluxAlgorithmMapper(
     }
 }
 
-void FluxAlgorithmMapper::apply(afw::table::BaseRecord & record, FluxAlgorithmResult const & result) {
+void FluxResultMapper::apply(afw::table::BaseRecord & record, FluxResult const & result) {
     record.set(_flux, result.flux);
     if (_fluxSigma.isValid()) {
         record.set(_fluxSigma, result.fluxSigma);
@@ -71,11 +71,11 @@ void FluxAlgorithmMapper::apply(afw::table::BaseRecord & record, FluxAlgorithmRe
     record.set(_flag, false);
 }
 
-CentroidAlgorithmMapper::CentroidAlgorithmMapper(
+CentroidResultMapper::CentroidResultMapper(
     afw::table::Schema & schema,
     std::string const & prefix,
     ResultMapperUncertaintyEnum uncertainty
-) : BaseAlgorithmMapper(schema, prefix) {
+) : BaseResultMapper(schema, prefix) {
     _x = schema.addField(
         afw::table::Field<CentroidElement>(
             prefix + "_x",
@@ -118,7 +118,7 @@ CentroidAlgorithmMapper::CentroidAlgorithmMapper(
     }
 }
 
-void CentroidAlgorithmMapper::apply(afw::table::BaseRecord & record, CentroidAlgorithmResult const & result) {
+void CentroidResultMapper::apply(afw::table::BaseRecord & record, CentroidResult const & result) {
     record.set(_x, result.x);
     record.set(_y, result.y);
     if (_xSigma.isValid()) {
@@ -132,11 +132,11 @@ void CentroidAlgorithmMapper::apply(afw::table::BaseRecord & record, CentroidAlg
     record.set(_flag, false);
 }
 
-ShapeAlgorithmMapper::ShapeAlgorithmMapper(
+ShapeResultMapper::ShapeResultMapper(
     afw::table::Schema & schema,
     std::string const & prefix,
     ResultMapperUncertaintyEnum uncertainty
-) : BaseAlgorithmMapper(schema, prefix) {
+) : BaseResultMapper(schema, prefix) {
     _xx = schema.addField(
         afw::table::Field<ShapeElement>(
             prefix + "_xx",
@@ -209,7 +209,7 @@ ShapeAlgorithmMapper::ShapeAlgorithmMapper(
     }
 }
 
-void ShapeAlgorithmMapper::apply(afw::table::BaseRecord & record, ShapeAlgorithmResult const & result) {
+void ShapeResultMapper::apply(afw::table::BaseRecord & record, ShapeResult const & result) {
     record.set(_xx, result.xx);
     record.set(_yy, result.yy);
     record.set(_xy, result.xy);

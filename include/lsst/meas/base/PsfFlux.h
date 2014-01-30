@@ -33,8 +33,8 @@ namespace lsst { namespace meas { namespace base {
 class PsfFluxAlgorithm {
 public:
 
-    typedef FluxAlgorithmResult Result; // we can use this directly; we don't need to add to it
-    typedef FluxAlgorithmMapper ResultMapper; // return type of makeResultMapper()
+    typedef FluxResult Result; // we can use this directly; we don't need to add to it
+    typedef FluxResultMapper ResultMapper; // return type of makeResultMapper()
     typedef AlgorithmInput2 Input; // type passed to apply in addition to Exposure.
     typedef NullControl Control; // control object - we don't have any configuration, so we use NullControl
 
