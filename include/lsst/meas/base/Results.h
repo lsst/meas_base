@@ -29,10 +29,31 @@
 #include "boost/array.hpp"
 #include "Eigen/Core"
 
+#include "lsst/pex/exceptions.h"
 #include "lsst/afw/geom/Point.h"
 #include "lsst/afw/geom/ellipses/Quadrupole.h"
 
 namespace lsst { namespace meas { namespace base {
+
+class MeasurementError : public pex::exceptions::RuntimeErrorException {
+public:
+    MeasurementError(LSST_EARGS_TYPED, std::size_t flagBit) :
+        pex::exceptions::RuntimeErrorException(LSST_EARGS_UNTYPED),
+        _flagBit(flagBit)
+    {}
+
+    std::size_t getFlagBit() const { return _flagBit; }
+
+    virtual char const* getType(void) const throw() { return "lsst::meas::base::MeasurementError *"; };
+
+    virtual lsst::pex::exceptions::Exception* clone(void) const {
+        return new MeasurementError(*this);
+    };
+    
+private:
+    std::size_t _flagBit;
+};
+
 
 // Typedefs that define the C++ types we typically use for common measurements
 
