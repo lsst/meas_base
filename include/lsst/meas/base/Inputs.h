@@ -47,6 +47,8 @@ struct AlgorithmInput1 {
 
     PTR(afw::detection::Footprint) footprint;
 
+    explicit AlgorithmInput1(PTR(afw::detection::Footprint) footprint_) : footprint(footprint_) {}
+
     explicit AlgorithmInput1(afw::table::SourceRecord const & record) : footprint(record.getFootprint()) {}
 
     static Vector makeVector(afw::table::SourceCatalog const & catalog);
@@ -58,7 +60,11 @@ struct AlgorithmInput2 : public AlgorithmInput1 {
 
     afw::geom::Point2D position;
 
-    explicit AlgorithmInput2(afw::table::SourceRecord const & record) :
+    explicit AlgorithmInput2(
+        PTR(afw::detection::Footprint) footprint_, afw::geom::Point2D const & position_
+    ) : AlgorithmInput1(footprint_), position(position_) {}
+
+    AlgorithmInput2(afw::table::SourceRecord const & record) :
         AlgorithmInput1(record), position(record.getCentroid())
     {}
 
@@ -70,6 +76,12 @@ struct AlgorithmInput3 : public AlgorithmInput2 {
     typedef std::vector<AlgorithmInput3> Vector;
 
     afw::geom::ellipses::Quadrupole shape;
+
+    AlgorithmInput3(
+        PTR(afw::detection::Footprint) footprint_,
+        afw::geom::Point2D const & position_,
+        afw::geom::ellipses::Quadrupole const & shape_
+    ) : AlgorithmInput2(footprint_, position_), shape(shape_) {}
 
     explicit AlgorithmInput3(afw::table::SourceRecord const & record) :
         AlgorithmInput2(record), shape(record.getShape())
