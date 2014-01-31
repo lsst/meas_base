@@ -102,18 +102,6 @@ public:
         Control const & ctrl=Control()
     );
 
-    // This is the version that will be called by both the SFM framework and the forced measurement
-    // framework, in multi-object mode.  It will have its own implementation, as that will be distinct
-    // from the single-object case (well, we could actually implement the single-object case using
-    // the multi-object code, but it's easy enough to write the single-object version in this case
-    // that I won't).
-    template <typename T>
-    static std::vector<Result> applyN(
-        afw::image::Exposure<T> const & exposure,
-        std::vector<Input> const & inputs,
-        Control const & ctrl=Control()
-    );
-
     // I'm not gonna add apply() methods for multifit just yet.  They're trickier in multifit-specific
     // ways that I don't think will affect the overall plugin-wrapper-layer design.
 
