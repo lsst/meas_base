@@ -65,7 +65,7 @@ PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
     afw::geom::Box2I fitBBox = psfImage->getBBox(afw::image::PARENT);
     fitBBox.clip(exposure.getBBox(afw::image::PARENT));
     if (fitBBox != psfImage->getBBox(afw::image::PARENT)) {
-        result.flags[EDGE] = true;
+        result.setFlag(EDGE);
     }
     afw::detection::Footprint fitRegion(fitBBox);
     if (!ctrl.badMaskPlanes.empty()) {
