@@ -36,7 +36,6 @@ enum ResultMapperUncertaintyEnum {
     FULL_COVARIANCE = 2
 };
 
-// Base class for classes that transfer values from Result structs to record objects
 template <std::size_t N>
 struct FlagsResultMapper {
 
@@ -46,8 +45,8 @@ struct FlagsResultMapper {
         boost::array<FlagDef,N> const & flagDefs
     );
 
-    // Transfer values from the result struct to the record, and set the failure flag field.
-    void fail(afw::table::BaseRecord & record) const;
+    // Set the general failure flag field and the specific bit held by the given exception.
+    void fail(afw::table::BaseRecord & record, MeasurementError const & error) const;
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
     void apply(afw::table::BaseRecord & record, FlagsResult<N> const & result) const;

@@ -47,8 +47,10 @@ FlagsResultMapper<N>::FlagsResultMapper(
 }
 
 template <std::size_t N>
-void FlagsResultMapper<N>::fail(afw::table::BaseRecord & record) const {
+void FlagsResultMapper<N>::fail(afw::table::BaseRecord & record, MeasurementError const & error) const {
+    assert(error.getFlagBit() < N);
     record.set(_flags[0], true);
+    record.set(_flags[error.getFlagBit() + 1], true);
 }
 
 template <std::size_t N>
