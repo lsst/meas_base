@@ -67,6 +67,9 @@ Basic routines to talk to lsst::meas::base classes
 %import "lsst/pex/config.h"
 %import "lsst/afw/image/Exposure.h"
 
+%immutable lsst::meas::base::FlagDef::name;
+%immutable lsst::meas::base::FlagDef::doc;
+
 %include "lsst/meas/base/Results.h"
 %include "lsst/meas/base/ResultMappers.h"
 %include "lsst/meas/base/Inputs.h"
