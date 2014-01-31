@@ -112,18 +112,42 @@ T.Vector = T ## Vector
 %instantiateFlags(8)
 
 %define %instantiateSimpleResult1(NAMESPACE, ALGORITHM, T1)
-%template(ALGORITHM##SimpleResult1) lsst::meas::base::SimpleResult1<NAMESPACE::ALGORITHM, lsst::meas::base::T1##Result>;
-%template(ALGORITHM##SimpleResultMapper1) lsst::meas::base::SimpleResult1<NAMESPACE::ALGORITHM, lsst::meas::base::T1##ResultMapper>;
+%template(ALGORITHM##SimpleResult1) lsst::meas::base::SimpleResult1<
+    NAMESPACE::ALGORITHM,
+    lsst::meas::base::T1##Result
+    >;
+%template(ALGORITHM##SimpleResultMapper1) lsst::meas::base::SimpleResult1<
+    NAMESPACE::ALGORITHM,
+    lsst::meas::base::T1##ResultMapper
+    >;
 %enddef
 
 %define %instantiateSimpleResult2(NAMESPACE, ALGORITHM, T1, T2)
-%template(ALGORITHM##SimpleResult2) lsst::meas::base::SimpleResult2<NAMESPACE::ALGORITHM, lsst::meas::base::T1##Result, lsst::meas::base::T2##Result>;
-%template(ALGORITHM##SimpleResultMapper2) lsst::meas::base::SimpleResult2<NAMESPACE::ALGORITHM, lsst::meas::base::T1##ResultMapper, lsst::meas::base::T2##ResultMapper>;
+%template(ALGORITHM##SimpleResult2) lsst::meas::base::SimpleResult2<
+    NAMESPACE::ALGORITHM,
+    lsst::meas::base::T1##Result,
+    lsst::meas::base::T2##Result
+    >;
+%template(ALGORITHM##SimpleResultMapper2) lsst::meas::base::SimpleResult2<
+    NAMESPACE::ALGORITHM,
+    lsst::meas::base::T1##ResultMapper,
+    lsst::meas::base::T2##ResultMapper
+    >;
 %enddef
 
 %define %instantiateSimpleResult3(NAMESPACE, ALGORITHM, T1, T2, T3)
-%template(ALGORITHM##SimpleResult3) lsst::meas::base::SimpleResult3<NAMESPACE::ALGORITHM, lsst::meas::base::T1##Result, lsst::meas::base::T2##Result, lsst::meas::base::T3##Result>;
-%template(ALGORITHM##SimpleResultMapper3) lsst::meas::base::SimpleResult3<NAMESPACE::ALGORITHM, lsst::meas::base::T1##ResultMapper, lsst::meas::base::T2##ResultMapper, lsst::meas::base::T3##ResultMapper>;
+%template(ALGORITHM##SimpleResult3) lsst::meas::base::SimpleResult3<
+    NAMESPACE::ALGORITHM,
+    lsst::meas::base::T1##Result,
+    lsst::meas::base::T2##Result,
+    lsst::meas::base::T3##Result
+    >;
+%template(ALGORITHM##SimpleResultMapper3) lsst::meas::base::SimpleResult3<
+    NAMESPACE::ALGORITHM,
+    lsst::meas::base::T1##ResultMapper,
+    lsst::meas::base::T2##ResultMapper,
+    lsst::meas::base::T3##ResultMapper
+    >;
 %enddef
 
 %define %wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT, RESULT, RESULT_MAPPER)
@@ -139,17 +163,20 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 
 %define %wrapMeasurementAlgorithm1(NAMESPACE, ALGORITHM, CONTROL, INPUT, T1)
 %instantiateSimpleResult1(NAMESPACE, ALGORITHM, T1)
-%wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT, ALGORITHM##SimpleResult1, ALGORITHM##SimpleResultMapper1)
+%wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT,
+                            ALGORITHM##SimpleResult1, ALGORITHM##SimpleResultMapper1)
 %enddef
 
 %define %wrapMeasurementAlgorithm2(NAMESPACE, ALGORITHM, CONTROL, INPUT, T1, T2)
 %instantiateSimpleResult2(NAMESPACE, ALGORITHM, T1, T2)
-%wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT, ALGORITHM##SimpleResult2, ALGORITHM##SimpleResultMapper2)
+%wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT,
+                            ALGORITHM##SimpleResult2, ALGORITHM##SimpleResultMapper2)
 %enddef
 
 %define %wrapMeasurementAlgorithm3(NAMESPACE, ALGORITHM, CONTROL, INPUT, T1, T2, T3)
 %instantiateSimpleResult3(NAMESPACE, ALGORITHM, T1, T2, T3)
-%wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT, ALGORITHM##SimpleResult3, ALGORITHM##SimpleResultMapper3)
+%wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT,
+                            ALGORITHM##SimpleResult3, ALGORITHM##SimpleResultMapper3)
 %enddef
 
 %include "lsst/meas/base/PsfFlux.h"
