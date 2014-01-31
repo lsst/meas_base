@@ -24,23 +24,47 @@
 #ifndef LSST_MEAS_BASE_PsfFlux_h_INCLUDED
 #define LSST_MEAS_BASE_PsfFlux_h_INCLUDED
 
+#include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Inputs.h"
 #include "lsst/meas/base/ResultMappers.h"
 
 namespace lsst { namespace meas { namespace base {
 
+class PsfFluxControl {
+public:
+    LSST_CONTROL_FIELD(usePixelWeights, bool, "Whether to use per-pixel inverse variance as weights");
+    LSST_CONTROL_FIELD(badMaskPlanes, std::vector<std::string>,
+                       "Mask planes that indicate pixels that should be excluded from the fit");
+
+    PsfFluxControl() : usePixelWeights(false) {}
+};
+
 class PsfFluxAlgorithm {
 public:
 
-    enum FlagBits { N_FLAGS=0 };
+    /**
+     *  @brief Flag bits to be used with the 'flags' data member of the Result object.
+     *
+     *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
+     */
+    enum FlagBits {
+        NO_PSF=0,
+        NO_GOOD_PIXELS,
+        EDGE,
+        N_FLAGS
+    };
 
+    /**
+     *  @brief Return an array of (name, doc) tuples that describes the flags and sets the names used
+     *         in catalog schemas.
+     */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions();
 
     typedef SimpleResult1<PsfFluxAlgorithm,FluxResult> Result;
     typedef SimpleResultMapper1<PsfFluxAlgorithm,FluxResultMapper> ResultMapper;
     typedef AlgorithmInput2 Input; // type passed to apply in addition to Exposure.
-    typedef NullControl Control; // control object - we don't have any configuration, so we use NullControl
+    typedef PsfFluxControl Control;
 
     // Create an object that transfers Result values to a record associated with the given schema.
     static ResultMapper makeResultMapper(
@@ -65,7 +89,8 @@ public:
     static Result apply(
         afw::image::Exposure<T> const & exposure,
         afw::detection::Footprint const & footprint,
-        afw::geom::Point2D const & position
+        afw::geom::Point2D const & position,
+        Control const & ctrl=Control()
     );
 
     // This is the version that will be called by both the SFM framework and the forced measurement
