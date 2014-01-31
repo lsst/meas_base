@@ -182,8 +182,6 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %include "lsst/meas/base/PsfFlux.h"
 %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<double>;
-%template(applyN) lsst::meas::base::PsfFluxAlgorithm::applyN<float>;
-%template(applyN) lsst::meas::base::PsfFluxAlgorithm::applyN<double>;
 %wrapMeasurementAlgorithm1(lsst::meas::base, PsfFluxAlgorithm, NullControl, AlgorithmInput2, Flux)
 
 %include "lsst/meas/base/SdssShape.h"

@@ -141,18 +141,6 @@ PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
     return apply(exposure, *inputs.footprint, inputs.position);
 }
 
-template <typename T>
-std::vector<PsfFluxAlgorithm::Result> PsfFluxAlgorithm::applyN(
-    afw::image::Exposure<T> const & exposure,
-    std::vector<Input> const & inputs,
-    Control const & ctrl
-) {
-    throw LSST_EXCEPT(
-        pex::exceptions::LogicErrorException,
-        "Not implemented"
-    );
-}
-
 #define INSTANTIATE(T)                                                  \
     template PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(          \
         afw::image::Exposure<T> const & exposure,                       \
@@ -164,12 +152,6 @@ std::vector<PsfFluxAlgorithm::Result> PsfFluxAlgorithm::applyN(
     PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(                   \
         afw::image::Exposure<T> const & exposure,                       \
         Input const & inputs,                                           \
-        Control const & ctrl                                            \
-    );                                                                  \
-    template                                                            \
-    std::vector<PsfFluxAlgorithm::Result> PsfFluxAlgorithm::applyN(     \
-        afw::image::Exposure<T> const & exposure,                       \
-        std::vector<Input> const & inputs,                              \
         Control const & ctrl                                            \
     )
 
