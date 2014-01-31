@@ -78,9 +78,17 @@ struct FlagDef {
     char const * doc;
 };
 
-template <std::size_t N>
+template <typename Algorithm>
 struct FlagsResult {
-    std::bitset<N> flags;
+
+    bool getFlag(typename Algorithm::FlagBits bit) const { return _flags[bit]; }
+    void setFlag(typename Algorithm::FlagBits bit, bool value=true) { _flags[bit] = value; }
+    void unsetFlag(typename Algorithm::FlagBits bit) { _flags[bit] = false; }
+
+    template <typename A> friend class FlagsResultMapper;
+
+private:
+    std::bitset<Algorithm::N_FLAGS> _flags;
 };
 
 struct FluxResult {
@@ -138,13 +146,13 @@ struct ShapeResult {
 };
 
 template <typename Algorithm, typename T1>
-struct SimpleResult1 : public T1, public FlagsResult<Algorithm::N_FLAGS> {};
+struct SimpleResult1 : public T1, public FlagsResult<Algorithm> {};
 
 template <typename Algorithm, typename T1, typename T2>
-struct SimpleResult2 : public T1, public T2, public FlagsResult<Algorithm::N_FLAGS> {};
+struct SimpleResult2 : public T1, public T2, public FlagsResult<Algorithm> {};
 
 template <typename Algorithm, typename T1, typename T2, typename T3>
-struct SimpleResult3 : public T1, public T2, public T3, public FlagsResult<Algorithm::N_FLAGS> {};
+struct SimpleResult3 : public T1, public T2, public T3, public FlagsResult<Algorithm> {};
 
 }}} // lsst::meas::base
 

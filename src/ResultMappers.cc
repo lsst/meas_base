@@ -25,42 +25,6 @@
 
 namespace lsst { namespace meas { namespace base {
 
-template <std::size_t N>
-FlagsResultMapper<N>::FlagsResultMapper(
-    afw::table::Schema & schema,
-    std::string const & prefix,
-    boost::array<FlagDef,N> const & flagDefs
-) {
-    _flags[0] = schema.addField(
-        afw::table::Field<afw::table::Flag>(
-            prefix + "_flag",
-            "general failure flag for " + prefix + " measurement"
-        ),
-        true // replace existing fields if present
-    );
-    for (std::size_t i = 0; i < N; ++i) {
-        _flags[i+1] = schema.addField(
-            afw::table::Field<afw::table::Flag>(flagDefs[i].name, flagDefs[i].doc),
-            true // replace existing fields if present
-        );
-    }
-}
-
-template <std::size_t N>
-void FlagsResultMapper<N>::fail(afw::table::BaseRecord & record, MeasurementError const & error) const {
-    assert(error.getFlagBit() < N);
-    record.set(_flags[0], true);
-    record.set(_flags[error.getFlagBit() + 1], true);
-}
-
-template <std::size_t N>
-void FlagsResultMapper<N>::apply(afw::table::BaseRecord & record, FlagsResult<N> const & result) const {
-    for (std::size_t i = 0; i < N; ++i) {
-        record.set(_flags[i+1], result.flags[i]);
-    }
-    record.set(_flags[0], false);
-}
-
 FluxResultMapper::FluxResultMapper(
     afw::table::Schema & schema,
     std::string const & prefix,
@@ -243,15 +207,5 @@ void ShapeResultMapper::apply(afw::table::BaseRecord & record, ShapeResult const
         }
     }
 }
-
-template class FlagsResultMapper<0>;
-template class FlagsResultMapper<1>;
-template class FlagsResultMapper<2>;
-template class FlagsResultMapper<3>;
-template class FlagsResultMapper<4>;
-template class FlagsResultMapper<5>;
-template class FlagsResultMapper<6>;
-template class FlagsResultMapper<7>;
-template class FlagsResultMapper<8>;
 
 }}} // namespace lsst::meas::base

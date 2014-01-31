@@ -87,48 +87,28 @@ T.Vector = T ## Vector
 %instantiateInput(AlgorithmInput2)
 %instantiateInput(AlgorithmInput3)
 
-%pythoncode %{
-    FlagsResult = {}
-    FlagsResultMapper = {}
-%}
-
-%define %instantiateFlags(N)
-%template(FlagsResult ## N) lsst::meas::base::FlagsResult<N>;
-%template(FlagsResultMapper ## N) lsst::meas::base::FlagsResultMapper<N>;
-%pythoncode %{
-    FlagsResult[N] = FlagsResult ## N
-    FlagsResultMapper[N] = FlagsResultMapper ## N
-%}
-%enddef
-
-%instantiateFlags(0)
-%instantiateFlags(1)
-%instantiateFlags(2)
-%instantiateFlags(3)
-%instantiateFlags(4)
-%instantiateFlags(5)
-%instantiateFlags(6)
-%instantiateFlags(7)
-%instantiateFlags(8)
-
 %define %instantiateSimpleResult1(NAMESPACE, ALGORITHM, T1)
+%template(ALGORITHM##FlagsResult) lsst::meas::base::FlagsResult<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##FlagsResultMapper) lsst::meas::base::FlagsResultMapper<NAMESPACE::ALGORITHM>;
 %template(ALGORITHM##SimpleResult1) lsst::meas::base::SimpleResult1<
     NAMESPACE::ALGORITHM,
     lsst::meas::base::T1##Result
     >;
-%template(ALGORITHM##SimpleResultMapper1) lsst::meas::base::SimpleResult1<
+%template(ALGORITHM##SimpleResultMapper1) lsst::meas::base::SimpleResultMapper1<
     NAMESPACE::ALGORITHM,
     lsst::meas::base::T1##ResultMapper
     >;
 %enddef
 
 %define %instantiateSimpleResult2(NAMESPACE, ALGORITHM, T1, T2)
+%template(ALGORITHM##FlagsResult) lsst::meas::base::FlagsResult<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##FlagsResultMapper) lsst::meas::base::FlagsResultMapper<NAMESPACE::ALGORITHM>;
 %template(ALGORITHM##SimpleResult2) lsst::meas::base::SimpleResult2<
     NAMESPACE::ALGORITHM,
     lsst::meas::base::T1##Result,
     lsst::meas::base::T2##Result
     >;
-%template(ALGORITHM##SimpleResultMapper2) lsst::meas::base::SimpleResult2<
+%template(ALGORITHM##SimpleResultMapper2) lsst::meas::base::SimpleResultMapper2<
     NAMESPACE::ALGORITHM,
     lsst::meas::base::T1##ResultMapper,
     lsst::meas::base::T2##ResultMapper
@@ -136,13 +116,15 @@ T.Vector = T ## Vector
 %enddef
 
 %define %instantiateSimpleResult3(NAMESPACE, ALGORITHM, T1, T2, T3)
+%template(ALGORITHM##FlagsResult) lsst::meas::base::FlagsResult<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##FlagsResultMapper) lsst::meas::base::FlagsResultMapper<NAMESPACE::ALGORITHM>;
 %template(ALGORITHM##SimpleResult3) lsst::meas::base::SimpleResult3<
     NAMESPACE::ALGORITHM,
     lsst::meas::base::T1##Result,
     lsst::meas::base::T2##Result,
     lsst::meas::base::T3##Result
     >;
-%template(ALGORITHM##SimpleResultMapper3) lsst::meas::base::SimpleResult3<
+%template(ALGORITHM##SimpleResultMapper3) lsst::meas::base::SimpleResultMapper3<
     NAMESPACE::ALGORITHM,
     lsst::meas::base::T1##ResultMapper,
     lsst::meas::base::T2##ResultMapper,
