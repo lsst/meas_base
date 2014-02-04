@@ -129,6 +129,9 @@ PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
         alpha = model.matrix().squaredNorm();
     }
     result.fluxSigma = std::sqrt(1.0 / alpha);
+    if (!utils::isfinite(result.flux) || !utils::isfinite(result.fluxSigma)) {
+        throw LSST_EXCEPT(PixelValueError, "Invalid pixel value detected in image.");
+    }
     return result;
 }
 
