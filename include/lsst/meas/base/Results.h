@@ -49,11 +49,18 @@ public:
     virtual lsst::pex::exceptions::Exception* clone(void) const {
         return new MeasurementError(*this);
     };
-    
+
 private:
     std::size_t _flagBit;
 };
 
+/**
+ *  @brief Exception to be thrown when a measurement algorithm encounters a NaN or infinite pixel.
+ *
+ *  When caught by the plugin framework, this exception will generate a log message.
+ */
+LSST_EXCEPTION_TYPE(PixelValueError, lsst::pex::exceptions::DomainErrorException,
+                    lsst::meas::base::PixelValueError);
 
 // Typedefs that define the C++ types we typically use for common measurements
 
