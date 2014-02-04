@@ -85,15 +85,21 @@ class ForcedCcdMeasurementTask(ForcedMeasurementTask):
     _DefaultName = "forcedCcdMeasurementTask"
     dataPrefix = ""
 
-    # For the output table, make a source id for each output from the
-    # exposure and ccd ids
     def makeIdFactory(self, dataRef):
+        """For the output table, make a source id for each output from the # exposure and ccd ids
+
+        @param dataRef       Data reference from butler
+        """
         expBits = dataRef.get("ccdExposureId_bits")
         expId = long(dataRef.get("ccdExposureId"))
         return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
 
-    # get the references which overlap the exposure
     def fetchReferences(self, dataRef, exposure):
+        """Return an iterable of reference sources which overlap the exposure
+
+        @param dataRef       Data reference from butler
+        @param exposure      afw Exposure
+        """
         bbox = exposure.getBBox(lsst.afw.image.PARENT)
         return self.references.fetchInBox(dataRef, bbox, exposure.getWcs())
 

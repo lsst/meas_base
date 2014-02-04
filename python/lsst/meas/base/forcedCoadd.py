@@ -50,9 +50,10 @@ class ForcedCoaddMeasurementTask(ForcedMeasurementTask):
     _DefaultName = "forcedCoaddMeasurementTask"
     dataPrefix = "deepCoadd_"
 
-    # Find references which overlap a skyMap made up of one or more patches.
-    # The references in each patch correspond to measurements from individual coadss.
     def fetchReferences(self, dataRef, exposure):
+        """Find references which overlap a skyMap made up of one or more patches.
+        The references in each patch correspond to measurements from individual coadss.
+        """
         skyMap = dataRef.get(self.dataPrefix + "skyMap", immediate=True)
         tractInfo = skyMap[dataRef.dataId["tract"]]
         patch = tuple(int(v) for v in dataRef.dataId["patch"].split(","))
@@ -60,6 +61,9 @@ class ForcedCoaddMeasurementTask(ForcedMeasurementTask):
         return self.references.fetchInPatches(dataRef, patchList=[patchInfo])
 
     def makeIdFactory(self, dataRef):
+        """An Id Factory is used to convert ids from the previous pipelines into an id,
+        using specific bit field which the dataRef butler knows about (camera specific)
+        """
         expBits = dataRef.get(self.config.coaddName + "CoaddId_bits")
         expId = long(dataRef.get(self.config.coaddName + "CoaddId"))
         return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)

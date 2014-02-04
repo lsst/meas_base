@@ -201,6 +201,8 @@ class ForcedMeasurementTask(CmdLineTask):
                                                    others=self.plugins, metadata=self.algMetadata)
 
     def run(self, dataRef):
+        """
+        """
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
         references = list(self.fetchReferences(dataRef, exposure))
@@ -313,6 +315,10 @@ class ForcedMeasurementTask(CmdLineTask):
         dataRef.put(sources, self.dataPrefix + "forced_src")
 
     def getSchemaCatalogs(self):
+        """Get a dict of Schema catalogs that will be used by this Task.
+        In the case of forced taks, there is only one schema for each type of forced measurement.
+        The dataset type for this measurement is defined in the mapper.
+        """
         catalog = lsst.afw.table.SourceCatalog(self.mapper.getOutputSchema())
         datasetType = self.dataPrefix + "forced"
         return {datasetType:catalog}
@@ -351,12 +357,12 @@ class ForcedMeasurementTask(CmdLineTask):
         return sources
 
     def _getConfigName(self):
-        """Return the name of the config dataset
+        """Return the name of the config dataset.  Forces config comparison from run-to-run
         """
         return self.dataPrefix + "forced_config"
 
     def _getMetadataName(self):
-        """Return the name of the metadata dataset
+        """Return the name of the metadata dataset.  Forced metadata to be saved
         """
         return self.dataPrefix + "forced_metadata"
 
