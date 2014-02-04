@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2013 LSST Corporation.
+# Copyright 2008-2014 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -20,10 +20,16 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-
+"""
+references.py provides a task which can find the references in a reference catalog which
+lie within the boundaries of an exposure, either a coadd or a single exposure calexp.
+It is assumed that the reference catalog has come from processing the image in question
+through the measurement task, and that the areas on the sky can be figured out from the
+tract and patch, with a coadd, or from the calexp exposure bounds, in the case of a single
+frame
+"""
 import lsst.afw.geom
 
-from lsst.pipe.tasks.coaddBase import CoaddDataIdContainer
 from lsst.pex.config import Config, Field, FieldValidationError
 from lsst.pipe.base import Task, TaskError
 

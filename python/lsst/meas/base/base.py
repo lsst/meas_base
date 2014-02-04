@@ -1,4 +1,32 @@
+#!/usr/bin/env python
+#
+# LSST Data Management System
+# Copyright 2008, 2009, 2010, 2014 LSST Corporation.
+#
+# This product includes software developed by the
+# LSST Project (http://www.lsst.org/).
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
+# see <http://www.lsstcorp.org/LegalNotices/>.
+#
+""" Base class for plugin registries.
+    The Plugin class allowed in the registry is defined on the ctor of the registry
+    The intention is that single frame and multi frame algorithms will have different
+    registries.
+"""
 import collections
+import math
 import lsst.afw.detection as afwDet
 import lsst.afw.math as afwMath
 import lsst.afw.image as afwImage
@@ -7,11 +35,6 @@ import lsst.pex.config as pexConfig
 import lsst.meas.algorithms
 import lsst.afw.table
 
-""" Base class for plugin registries.
-    The Plugin class allowed in the registry is defined on the ctor of the registry
-    The intention is that single frame and multi frame algorithms will have different
-    registries.
-"""
 class PluginRegistry(lsst.pex.config.Registry):
 
     class Configurable(object):
@@ -41,7 +64,7 @@ class PluginRegistry(lsst.pex.config.Registry):
         return lsst.pex.config.RegistryField(doc, self, default, optional, multi)
 
 class PluginMap(collections.OrderedDict):
-    """ Map of algorithms to be run for a task 
+    """ Map of algorithms to be run for a task
         Should later be implemented as Swigged C++ class based on std::map
     """
 
@@ -87,7 +110,7 @@ class MeasurementDataFlags(object):
     NO_WCS = 0x10 # the image has no Wcs object attached
 
 class SourceSlotConfig(pexConfig.Config):
-    """Slot configuration which assigns a particular named plugin to each of a set of 
+    """Slot configuration which assigns a particular named plugin to each of a set of
     slots.  Each slot allows a type of measurement to be fetched from the SourceTable
     without knowing which algorithm was used to produced the data.  For example, getCentroid()
     and setCentroid() can be used if the centroid slot is setup, without know that the correct
@@ -130,7 +153,7 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
 
     slots = pexConfig.ConfigField(
         dtype = SourceSlotConfig,
-        doc="Mapping from algorithms to special aliases in Source.\n"
+        doc="Mapping from algorithms to special aliases in Source."
         )
 
     doReplaceWithNoise = lsst.pex.config.Field(dtype=bool, default=True, optional=False,
@@ -232,7 +255,7 @@ class NoiseReplacer(object):
         # If a heavy footprint is available for a child, we will use it. Otherwise,
         # we use the first parent in the parent chain which has a heavy footprint,
         # which with the one level deblender will alway be the topmost parent
-        # NOTE: heavy footprints get destroyed by the transform process in forced.py,
+        # NOTE: heavy footprints get destroyed by the transform process in forcedImage.py,
         # so they are never available for forced measurements.
 
         # Create in the dict heavies = {id:heavyfootprint}
@@ -259,7 +282,7 @@ class NoiseReplacer(object):
         if self.log: self.log.logdebug('Using noise generator: %s' % (str(noisegen)))
         for id in self.heavies.keys():
             fp = footprints[id][1]
-            noiseFp = noisegen.getHeavyFootprint(fp) 
+            noiseFp = noisegen.getHeavyFootprint(fp)
             self.heavyNoise[id] = noiseFp
             # Also insert the noisy footprint into the image now.
             # Notice that we're just inserting it into "im", ie,
@@ -280,7 +303,7 @@ class NoiseReplacer(object):
         mask = mi.getMask()
         # usedid can point either to this source, or to the first parent in the
         # parent chain which has a heavy footprint (or to the topmost parent,
-        # which always has one) 
+        # which always has one)
         usedid = id
         while self.footprints[usedid][0] != 0 and not usedid in self.heavies.keys():
             usedid = self.footprints[usedid][0]
@@ -358,7 +381,7 @@ class NoiseReplacer(object):
                      % (noiseMean, noiseVar, noiseStd))
                 return FixedGaussianNoiseGenerator(noiseMean, noiseStd, rand=rand)
             except:
-                if self.log: self.log.logdebug('Failed to cast passed-in noiseMeanVar to floats: %s' 
+                if self.log: self.log.logdebug('Failed to cast passed-in noiseMeanVar to floats: %s'
                     % (str(noiseMeanVar)))
         offset = self.noiseOffset
         noiseSource = self.noiseSource
@@ -407,12 +430,18 @@ class NoiseReplacerList(list):
             self.append(NoiseReplacer(exposure, footprintsByExp[expId]))
 
     def insertSource(self, id):
+        """Insert the original pixels for a given source (by id) into the original exposure.
+        """
         for item in self: self.insertSource(id)
 
     def removeSource(self, id):
+        """Insert the noise pixels for a given source (by id) into the original exposure.
+        """
         for item in self: self.removeSource(id)
 
     def end(self):
+        """Cleanup when the use of the Noise replacer is done.
+        """
         for item in self: self.end()
 
 class NoiseGenerator(object):

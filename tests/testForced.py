@@ -25,7 +25,7 @@ import os
 import math
 from lsst.afw.table import IdFactory,Schema,SchemaMapper,SourceCatalog,SourceTable
 from lsst.meas.base.base import *
-from lsst.meas.base.forced import *
+from lsst.meas.base.forcedImage import *
 from lsst.meas.base.forcedCcd import ForcedCcdMeasurementTask, ForcedCcdMeasurementConfig
 from lsst.daf.persistence.butler import *
 import unittest
@@ -50,7 +50,8 @@ class TestForcedCcdMeasurementConfig(ForcedCcdMeasurementConfig):
 class TestForcedCcdMeasurementTask(ForcedCcdMeasurementTask):
 
     ConfigClass = TestForcedCcdMeasurementConfig
-
+    # Since this is a test and we are not building a real output catalog
+    # we can use create Ids without using camera dependent code.
     def makeIdFactory(self, butler):
         return IdFactory.makeSimple()
 
@@ -143,7 +144,7 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         # prior to measurement.  Create an empty catalog with the same schema
         # plus the schema items for the SFM task, then transfer the existing data
         # to the new catalog
-        srccat = SourceCatalog.readFits("data/measCatNull.fits.gz")
+        srccat = SourceCatalog.readFits(os.path.join(DATA_DIR, "measCatNull.fits.gz"))
         schema = srccat.getSchema()
         flags = MeasurementDataFlags()
         
@@ -170,8 +171,8 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
     #  So in this case, the centroid.peak should be exactly equal the peak[0] centroid
     def testOnCoadd(self):
 
-        refCat = SourceCatalog.readFits("data/ref.fits")
-        butler = lsst.daf.persistence.Butler(DATA_DIR)
+        refCat = SourceCatalog.readFits(os.path.join(DATA_DIR, "ref.fits"))
+        #butler = lsst.daf.persistence.Butler(DATA_DIR)
         
         path = os.path.join(DATA_DIR, 'deepCoadd/i/3/84,56.fits')
         exposure = lsst.afw.image.ExposureF(path)
@@ -179,8 +180,8 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         ref = lsst.afw.image.ExposureF(path)
         refWcs = ref.getWcs()
 
-        task = TestForcedCcdMeasurementTask(butler=butler)
-        result = task.forcedMeasure(exposure, refCat, refWcs, butler)
+        task = TestForcedCcdMeasurementTask(butler=None, refSchema=refCat.getSchema())
+        result = task.forcedMeasure(exposure, refCat, refWcs) #butler
         sources = result.sources
         mismatches = 0
         key = sources.getSchema().find("centroid.peak").key

@@ -1,19 +1,35 @@
+#!/usr/bin/env python
+#
+# LSST Data Management System
+# Copyright 2008, 2009, 2010, 2014 LSST Corporation.
+#
+# This product includes software developed by the
+# LSST Project (http://www.lsst.org/).
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
+# see <http://www.lsstcorp.org/LegalNotices/>.
+#
 """Class to measure a Ccd calexp exposure, using a reference catalog from a Coadd
    See the comment in the parent class in forced.py for more information.
 """
-
 import argparse
-import lsst.pex.config
-from lsst.pipe.base import Task, CmdLineTask, Struct, timeMethod, ArgumentParser, ButlerInitializedTaskRunner
-import lsst.daf.base
-from lsst.pex.config import DictField,ConfigurableField
-from .forced import *
-from .base import *
-
-import lsst.afw.table
-import lsst.afw.image
-import lsst.pipe.base
 from lsst.pex.config import Config, ConfigurableField, DictField, Field
+from lsst.pipe.base import ArgumentParser,ButlerInitializedTaskRunner,DataIdContainer
+import lsst.afw.image
+
+from .forcedImage import *
+from .base import *
 
 try:
     from lsst.meas.mosaic import applyMosaicResults
@@ -22,9 +38,9 @@ except ImportError:
 
 __all__ = ("ForcedCcdMeasurementConfig", "ForcedCcdMeasurementTask")
 
-class ForcedCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
-    """A version of lsst.pipe.base.DataIdContainer specialized for forced photometry on CCDs.
-    
+class ForcedCcdDataIdContainer(DataIdContainer):
+    """A version of DataIdContainer specialized for forced photometry on CCDs.
+
     Required because we need to add "tract" to the raw data ID keys, and that's tricky.
     This IdContainer assumes that a calexp is being measured using the detection information
     from the set of coadds which intersect with the calexp.  a set of reference catalog
@@ -69,12 +85,12 @@ class ForcedCcdMeasurementTask(ForcedMeasurementTask):
     _DefaultName = "forcedCcdMeasurementTask"
     dataPrefix = ""
 
-    # For the output table, make a source id for each output from the 
-    # exposure and ccd ids  
+    # For the output table, make a source id for each output from the
+    # exposure and ccd ids
     def makeIdFactory(self, dataRef):
         expBits = dataRef.get("ccdExposureId_bits")
         expId = long(dataRef.get("ccdExposureId"))
-        return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)        
+        return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
 
     # get the references which overlap the exposure
     def fetchReferences(self, dataRef, exposure):
@@ -86,7 +102,7 @@ class ForcedCcdMeasurementTask(ForcedMeasurementTask):
 
         @param dataRef       Data reference from butler
         """
-        exposure = dataRef.get("calexp", immediate=True)
+        exposure = ForcedMeasurementTask.getExposure(dataRef)
         if not self.config.doApplyUberCal:
             return exposure
         if applyMosaicResults is None:
@@ -100,7 +116,7 @@ class ForcedCcdMeasurementTask(ForcedMeasurementTask):
 
     @classmethod
     def _makeArgumentParser(cls):
-        parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
+        parser = ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "forced_src", help="data ID, with raw CCD keys + tract",
                                ContainerClass=ForcedCcdDataIdContainer)
         return parser

@@ -1,3 +1,25 @@
+#!/usr/bin/env python
+#
+# LSST Data Management System
+# Copyright 2008, 2009, 2010, 2014 LSST Corporation.
+#
+# This product includes software developed by the
+# LSST Project (http://www.lsst.org/).
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
+# see <http://www.lsstcorp.org/LegalNotices/>.
+#
 """Base classes for single-frame measurement plugins and the driver task for these.
 
 In single-frame measurement, we assumes that detection and probably deblending have already been run on
@@ -6,14 +28,13 @@ Measurements are generally recorded in the coordinate system of the image being 
 slot-eligible fields must be), but non-slot fields may be recorded in other coordinate systems if necessary
 to avoid information loss (this should, of course, be indicated in the field documentation).
 """
-
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.daf.base
 import lsst.meas.algorithms
 from .base import *
 __all__ = ("SingleFramePluginConfig", "SingleFramePlugin",
-"SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
+    "SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
 
 class SingleFramePluginConfig(BasePluginConfig):
     """Base class for configs of single-frame plugins."""
@@ -90,15 +111,15 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
     ConfigClass = SingleFrameMeasurementConfig
     _DefaultName = "measurement"
 
-    """ Initialize the task, including setting up the execution order of the plugins
-        and providing the task with the metadata and schema objects
-
-        @param[in] schema      lsst.afw.table.Schema, which will be initialized to include
-                               the measurement fields when the PluginClass is constructed
-    """
     #   The algMetadata parameter is currently required by the pipe_base running mechanism
     #   This is a temporary state until pipe_base is converted to the new plugin framework.
     def __init__(self, schema, algMetadata=None, flags=None, **kwds):
+        """Initialize the task, including setting up the execution order of the plugins
+            and providing the task with the metadata and schema objects
+
+            @param[in] schema      lsst.afw.table.Schema, which will be initialized to include
+                               the measurement fields when the PluginClass is constructed
+        """
         lsst.pipe.base.Task.__init__(self, **kwds)
         self.schema = schema
         self.algMetadata = lsst.daf.base.PropertyList()
@@ -109,16 +130,16 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
             self.plugins[name] = PluginClass(config, name, schema=schema, flags=flags,
                 others=self.plugins, metadata=self.algMetadata)
 
-    """ Run single frame measurement over an exposure and source catalog
-
-        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
-                                 be measured and the associated Psf, Wcs, etc.
-
-        @param[in, out] measCat  lsst.afw.table.SourceCatalog to be filled with outputs,
-                                 and from which previously-measured quantities can be retreived.
-
-    """
     def run(self, exposure, measCat):
+        """ Run single frame measurement over an exposure and source catalog
+
+            @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
+                                     be measured and the associated Psf, Wcs, etc.
+
+            @param[in, out] measCat  lsst.afw.table.SourceCatalog to be filled with outputs,
+                                     and from which previously-measured quantities can be retreived.
+
+        """
         assert measCat.getSchema().contains(self.schema)
         self.config.slots.setupTable(measCat.table, prefix=self.config.prefix)
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
@@ -149,7 +170,7 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
                 plugin.measureSingle(exposure, measParentRecord)
             # Finally, process both the parent and the child set through measureMulti
             for plugin in self.plugins.iterMulti():
-                plugin.measureMulti(exposure, measParentCat[parentIndex:parentIndex+1])
+                plugin.measureMulti(exposure, measParentCat[parentIdx:parentIdx+1])
                 plugin.measureMulti(exposure, measChildCat)
             noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
