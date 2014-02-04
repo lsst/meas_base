@@ -132,6 +132,25 @@ T.Vector = T ## Vector
     >;
 %enddef
 
+%define %instantiateSimpleResult4(NAMESPACE, ALGORITHM, T1, T2, T3, T4)
+%template(ALGORITHM##FlagsResult) lsst::meas::base::FlagsResult<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##FlagsResultMapper) lsst::meas::base::FlagsResultMapper<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##SimpleResult4) lsst::meas::base::SimpleResult4<
+    NAMESPACE::ALGORITHM,
+    lsst::meas::base::T1##Result,
+    lsst::meas::base::T2##Result,
+    lsst::meas::base::T3##Result,
+    lsst::meas::base::T4##Result
+    >;
+%template(ALGORITHM##SimpleResultMapper3) lsst::meas::base::SimpleResultMapper3<
+    NAMESPACE::ALGORITHM,
+    lsst::meas::base::T1##ResultMapper,
+    lsst::meas::base::T2##ResultMapper,
+    lsst::meas::base::T3##ResultMapper,
+    lsst::meas::base::T4##ResultMapper
+    >;
+%enddef
+
 %define %wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT, RESULT, RESULT_MAPPER)
 // Turn C++ typedefs into equivalent Python attributes - it's a shame Swig doesn't do this for us,
 // or even give us a way to look up the Python class name for a C++ class we've already wrapped.
@@ -159,6 +178,12 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %instantiateSimpleResult3(NAMESPACE, ALGORITHM, T1, T2, T3)
 %wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT,
                             ALGORITHM##SimpleResult3, ALGORITHM##SimpleResultMapper3)
+%enddef
+
+%define %wrapMeasurementAlgorithm4(NAMESPACE, ALGORITHM, CONTROL, INPUT, T1, T2, T3, T4)
+%instantiateSimpleResult4(NAMESPACE, ALGORITHM, T1, T2, T3, T4)
+%wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT,
+                            ALGORITHM##SimpleResult4, ALGORITHM##SimpleResultMapper4)
 %enddef
 
 %include "lsst/meas/base/PsfFlux.h"

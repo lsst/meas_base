@@ -226,6 +226,33 @@ struct SimpleResultMapper3 : public T1, public T2, public T3, public FlagsResult
 
 };
 
+template <typename Algorithm, typename T1, typename T2, typename T3, typename T4>
+struct SimpleResultMapper4 : public T1, public T2, public T3, public T4, public FlagsResultMapper<Algorithm> {
+
+    SimpleResultMapper4(
+        afw::table::Schema & schema,
+        std::string const & prefix,
+        ResultMapperUncertaintyEnum uncertainty1,
+        ResultMapperUncertaintyEnum uncertainty2,
+        ResultMapperUncertaintyEnum uncertainty3,
+        ResultMapperUncertaintyEnum uncertainty4
+    ) : T1(schema, prefix, uncertainty1),
+        T2(schema, prefix, uncertainty2),
+        T3(schema, prefix, uncertainty3),
+        T4(schema, prefix, uncertainty4),
+        FlagsResultMapper<Algorithm>(schema, prefix)
+    {}
+
+    void apply(afw::table::BaseRecord & record, typename Algorithm::Result const & result) {
+        T1::apply(record, result);
+        T2::apply(record, result);
+        T3::apply(record, result);
+        T4::apply(record, result);
+        FlagsResultMapper<Algorithm>::apply(record, result);
+    }
+
+};
+
 }}} // lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_ResultMappers_h_INCLUDED

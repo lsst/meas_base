@@ -161,6 +161,9 @@ struct SimpleResult2 : public T1, public T2, public FlagsResult<Algorithm> {};
 template <typename Algorithm, typename T1, typename T2, typename T3>
 struct SimpleResult3 : public T1, public T2, public T3, public FlagsResult<Algorithm> {};
 
+template <typename Algorithm, typename T1, typename T2, typename T3, typename T4>
+struct SimpleResult4 : public T1, public T2, public T3, public T4, public FlagsResult<Algorithm> {};
+
 }}} // lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_Results_h_INCLUDED
