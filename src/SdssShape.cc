@@ -21,13 +21,110 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+#include "lsst/utils/PowFast.h"
 #include "lsst/meas/base/SdssShape.h"
 
 namespace lsst { namespace meas { namespace base {
 
+namespace {
+
+/*
+ * The exponential function that we use, which may be only an approximation to the true value of e^x
+ */
+#define USE_APPROXIMATE_EXP 1
+#if USE_APPROXIMATE_EXP
+    lsst::utils::PowFast const& powFast = lsst::utils::getPowFast<11>();
+#endif
+
+inline float
+approxExp(float x)
+{
+#if USE_APPROXIMATE_EXP
+    return powFast.exp(x);
+#else
+    return std::exp(x);
+#endif
+}
+
+} // anonymous
+
 boost::array<FlagDef,SdssShapeAlgorithm::N_FLAGS> const & SdssShapeAlgorithm::getFlagDefinitions() {
-    static boost::array<FlagDef,N_FLAGS> const flagDefs = {};
+    static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
+            {"unweightedBad", "Both weighted and unweighted moments were invalid"},
+            {"unweighted", "Weighted moments converged to an invalid value; using unweighted moments"},
+            {"shift", "centroid shifted by more than the maximum allowed amount"},
+            {"maxIter", "Too many iterations in adaptive moments"}
+        }};
     return flagDefs;
+}
+
+SdssShapeExtras::SdssShapeExtras() :
+    xy4(std::numeric_limits<ShapeElement>::quiet_NaN()),
+    xy4Sigma(std::numeric_limits<ShapeElement>::quiet_NaN()),
+    flux_xx_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
+    flux_yy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
+    flux_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN())
+{}
+
+SdssShapeExtrasMapper::SdssShapeExtrasMapper(
+    afw::table::Schema & schema,
+    std::string const & prefix,
+    ResultMapperUncertaintyEnum
+) :
+    _xy4(
+        schema.addField(
+            afw::table::Field<ShapeElement>(
+                // TODO: get more mathematically precise documentation on this from RHL
+                prefix + "_xy4", "4th moment used in certain shear-estimation algorithms", "pixels^4"
+            ), true // doReplace
+        )
+    ),
+    _xy4Sigma(
+        schema.addField(
+            afw::table::Field<ErrElement>(
+                prefix + "_xy4Sigma", "uncertainty on " + prefix + "_xy4", "pixels^4"
+            ),
+            true
+        )
+    ),
+    _flux_xx_Cov(
+        schema.addField(
+            afw::table::Field<ErrElement>(
+                prefix + "_flux_xx_Cov",
+                "uncertainty covariance between " + prefix + "_flux and " + prefix + "_xx",
+                "dn*pixels^2"
+            ),
+            true
+        )
+    ),
+    _flux_yy_Cov(
+        schema.addField(
+            afw::table::Field<ErrElement>(
+                prefix + "_flux_yy_Cov",
+                "uncertainty covariance between " + prefix + "_flux and " + prefix + "_yy",
+                "dn*pixels^2"
+            ),
+            true
+        )
+    ),
+    _flux_xy_Cov(
+        schema.addField(
+            afw::table::Field<ErrElement>(
+                prefix + "_flux_xy_Cov",
+                "uncertainty covariance between " + prefix + "_flux and " + prefix + "_xy",
+                "dn*pixels^2"
+            ),
+            true
+        )
+    )
+{}
+
+void SdssShapeExtrasMapper::apply(afw::table::BaseRecord & record, SdssShapeExtras const & result) const {
+    record.set(_xy4, result.xy4);
+    record.set(_xy4Sigma, result.xy4Sigma);
+    record.set(_flux_xx_Cov, result.flux_xx_Cov);
+    record.set(_flux_yy_Cov, result.flux_yy_Cov);
+    record.set(_flux_xy_Cov, result.flux_xy_Cov);
 }
 
 SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(
@@ -35,7 +132,7 @@ SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(
     std::string const & name,
     Control const & ctrl
 ) {
-    return ResultMapper(schema, name, NO_UNCERTAINTY, NO_UNCERTAINTY, NO_UNCERTAINTY);
+    return ResultMapper(schema, name, FULL_COVARIANCE, DIAGONAL_ONLY, FULL_COVARIANCE, DIAGONAL_ONLY);
 }
 
 template <typename T>

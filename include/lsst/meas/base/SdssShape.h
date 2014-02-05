@@ -44,17 +44,77 @@ public:
 
 };
 
+class SdssShapeExtras {
+public:
+    ShapeElement xy4;
+    ErrElement xy4Sigma;
+    ErrElement flux_xx_Cov;
+    ErrElement flux_yy_Cov;
+    ErrElement flux_xy_Cov;
+
+    SdssShapeExtras();
+};
+
+class SdssShapeExtrasMapper {
+public:
+
+    SdssShapeExtrasMapper(
+        afw::table::Schema & schema,
+        std::string const & prefix,
+        ResultMapperUncertaintyEnum // unused
+    );
+
+    // Transfer values from the result struct to the record, and clear the failure flag field.
+    void apply(afw::table::BaseRecord & record, SdssShapeExtras const & result) const;
+
+private:
+    afw::table::Key<ShapeElement> _xy4;
+    afw::table::Key<ErrElement> _xy4Sigma;
+    afw::table::Key<ErrElement> _flux_xx_Cov;
+    afw::table::Key<ErrElement> _flux_yy_Cov;
+    afw::table::Key<ErrElement> _flux_xy_Cov;
+};
+
 class SdssShapeAlgorithm {
 public:
 
-    enum FlagBits { N_FLAGS=0 };
+    /**
+     *  @brief Flag bits to be used with the 'flags' data member of the Result object.
+     *
+     *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
+     */
+    enum FlagBits {
+        UNWEIGHTED_BAD=0,
+        UNWEIGHTED,
+        SHIFT,
+        MAXITER,
+        N_FLAGS
+    };
 
+    /**
+     *  @brief Return an array of (name, doc) tuples that describes the flags and sets the names used
+     *         in catalog schemas.
+     */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions();
 
     typedef SdssShapeControl Control;
-    typedef Result3<SdssShapeAlgorithm,ShapeComponent,CentroidComponent,FluxComponent> Result;
-    typedef ResultMapper3<SdssShapeAlgorithm,ShapeComponentMapper,CentroidComponentMapper,FluxComponentMapper>
-                ResultMapper;
+
+    typedef Result4<
+        SdssShapeAlgorithm,
+        ShapeComponent,
+        CentroidComponent,
+        FluxComponent,
+        SdssShapeExtras
+    > Result;
+
+    typedef ResultMapper4<
+        SdssShapeAlgorithm,
+        ShapeComponentMapper,
+        CentroidComponentMapper,
+        FluxComponentMapper,
+        SdssShapeExtrasMapper
+    > ResultMapper;
+
     typedef AlgorithmInput2 Input;
 
     static ResultMapper makeResultMapper(
