@@ -74,25 +74,25 @@ class PluginMap(collections.OrderedDict):
         Should later be implemented as Swigged C++ class based on std::map
     """
 
-    def iterSingle(self):
-        """ Call each plugin in the map which has a measureSingle """
+    def iter(self):
+        """ Call each plugin in the map which has a measure """
         for plugin in self.itervalues():
-            if plugin.config.doMeasureSingle:
+            if plugin.config.doMeasure:
                 yield plugin
 
-    def iterMulti(self):
-        """ Call each plugin in the map which has a measureMulti """
+    def iterN(self):
+        """ Call each plugin in the map which has a measureN """
         for plugin in self.itervalues():
-            if plugin.config.doMeasureMulti:
+            if plugin.config.doMeasureN:
                 yield plugin
 
 class BasePluginConfig(lsst.pex.config.Config):
     """Base class for config which should be defined for each measurement plugin."""
 
     executionOrder = lsst.pex.config.Field(dtype=float, default=1.0, doc="sets relative order of plugins")
-    doMeasureSingle = lsst.pex.config.Field(dtype=bool, default=True,
+    doMeasure = lsst.pex.config.Field(dtype=bool, default=True,
                       doc="whether to run this plugin in single-object mode")
-    doMeasureMulti = False  # replace this class attribute with a Field if measureMulti-capable
+    doMeasureN = False  # replace this class attribute with a Field if measureN-capable
 
 class BasePlugin(object):
     """Base class for measurement plugins."""

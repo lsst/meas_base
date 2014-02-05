@@ -42,7 +42,7 @@ PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
 }
 
 template <typename T>
-std::vector<PsfFluxAlgorithm::Result> PsfFluxAlgorithm::apply(
+std::vector<PsfFluxAlgorithm::Result> PsfFluxAlgorithm::applyN(
     afw::image::Exposure<T> const & exposure,
     std::vector<Input> const & inputs
 ) {
@@ -64,7 +64,7 @@ std::vector<PsfFluxAlgorithm::Result> PsfFluxAlgorithm::apply(
         Input const & inputs                                            \
     );                                                                  \
     template                                                            \
-    std::vector<PsfFluxAlgorithm::Result> PsfFluxAlgorithm::apply(      \
+    std::vector<PsfFluxAlgorithm::Result> PsfFluxAlgorithm::applyN(     \
         afw::image::Exposure<T> const & exposure,                       \
         std::vector<Input> const & inputs                               \
     )

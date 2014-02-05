@@ -82,7 +82,7 @@ class ForcedPlugin(BasePlugin):
         self.config = config
         self.name = name
 
-    def measureSingle(self, exposure, measRecord, refRecord, referenceWcs):
+    def measure(self, exposure, measRecord, refRecord, referenceWcs):
         """Measure the properties of a source on a single image, given data from a
         reference record.
 
@@ -108,7 +108,7 @@ class ForcedPlugin(BasePlugin):
         """
         raise NotImplementedError()
 
-    def measureMulti(self, exposure, measCat, refCat, refWcs):
+    def measureN(self, exposure, measCat, refCat, refWcs):
         """Measure the properties of a group of blended sources on a single image,
         given data from a reference record.
 
@@ -264,17 +264,17 @@ class ForcedMeasurementTask(CmdLineTask):
             # TODO: skip this loop if there are no plugins configured for single-object mode
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
                 noiseReplacer.insertSource(refChildRecord.getId())
-                for plugin in self.plugins.iterSingle():
-                    plugin.measureSingle(exposure, measChildRecord, refChildRecord, refWcs)
+                for plugin in self.plugins.iter():
+                    plugin.measure(exposure, measChildRecord, refChildRecord, refWcs)
                 noiseReplacer.removeSource(refChildRecord.getId())
 
             # then process the parent record
             noiseReplacer.insertSource(refParentRecord.getId())
-            for plugin in self.plugins.iterSingle():
-                plugin.measureSingle(exposure, measParentRecord, refParentRecord, refWcs)
-            for plugin in self.plugins.iterMulti():
-                plugin.measureMulti(exposure, measChildCat, refChildCat)
-                plugin.measureMulti(exposure, measParentCat[parentIdx:parentIdx+1],
+            for plugin in self.plugins.iter():
+                plugin.measure(exposure, measParentRecord, refParentRecord, refWcs)
+            for plugin in self.plugins.iterN():
+                plugin.measureN(exposure, measChildCat, refChildCat)
+                plugin.measureN(exposure, measParentCat[parentIdx:parentIdx+1],
                                        refParentCat[parentIdx:parentIdx+1])
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()

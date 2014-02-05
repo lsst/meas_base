@@ -51,14 +51,15 @@ class PeakCentroid(SingleFramePlugin):
         schema.addField("centroid.peak", "PointD", doc="measured centroid", units="pixels")
         schema.addField("centroid.peak.cov", "CovPointF", doc="covariance of measured centroid",
             units="pixels^2")
-    def measureSingle(self, exposure, source):
+
+    def measure(self, exposure, source):
         peak = source.getFootprint().getPeaks()[0]
         result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
         schema = source.getSchema()
         key = schema.find("centroid.peak").key
         source.set(key, result)
 
-    def measureMulti(self, exposure, sources):
+    def measureN(self, exposure, sources):
         raise NotImplementedError()
 
 # plugin class must be registered to the singleton Registry class of the same type
@@ -87,7 +88,7 @@ class ForcedPeakCentroid(ForcedPlugin):
         field = tableLib.Field_CovPointF("centroid.peak.cov", "measured peak centroid covariance", "pixels")
         self.covkey = schemaMapper.addOutputField(field)
 
-    def measureSingle(self, exposure, source, refRecord, referenceWcs):
+    def measure(self, exposure, source, refRecord, referenceWcs):
         targetWcs = exposure.getWcs()
         peak = refRecord.getFootprint().getPeaks()[0]
         result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
@@ -95,7 +96,7 @@ class ForcedPeakCentroid(ForcedPlugin):
             result = targetWcs.skyToPixel(referenceWcs.pixelToSky(result))
         source.set(self.peakkey, result)
 
-    def measureMulti(self, exposure, measCat, refCat, refWcs):
+    def measureN(self, exposure, measCat, refCat, refWcs):
         raise NotImplementedError()
 
 
@@ -116,7 +117,7 @@ class ForcedTransformedCentroid(ForcedPlugin):
             "pixels")
         self.covkey = schemaMapper.addOutputField(field)
 
-    def measureSingle(self, exposure, source, refRecord, referenceWcs):
+    def measure(self, exposure, source, refRecord, referenceWcs):
         targetWcs = exposure.getWcs()
         footprint = refRecord.getFootprint()
         peak = footprint.getPeaks()[0]
@@ -125,8 +126,9 @@ class ForcedTransformedCentroid(ForcedPlugin):
             result = targetWcs.skyToPixel(referenceWcs.pixelToSky(result))
         source.set(self.peakkey, result)
 
-    def measureMulti(self, exposure, measCat, refCat, refWcs):
+    def measureN(self, exposure, measCat, refCat, refWcs):
         raise NotImplementedError()
+
 
 # plugin class must be registered prior the singleton Registry class of the same type
 # prior to any constructor requests (these are done in the __init__ of the measurement Task.

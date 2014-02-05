@@ -38,14 +38,14 @@ class TestCentroidConfig(SingleFramePluginConfig):
 class TestCentroid(SingleFramePlugin):
 
     ConfigClass = TestCentroidConfig
-    doMeasureSingle = True
-    doMeasureMulti = False
+    doMeasure = True
+    doMeasureN = False
     def __init__(self, config, name, schema=None, flags=None, others=None, metadata=None):
 
             schema.addField("centroid.x", type=float, doc="x component relative to image", units="pixels")
             schema.addField("centroid.y", type=float, doc="y component relative to image", units="pixels")
 
-    def measureSingle(self, exposure, source):
+    def measure(self, exposure, source):
         schema = source.getSchema()
         ckey = schema.find("centroid.sdss").key
         ykey = schema.find("centroid.y").key
@@ -55,7 +55,7 @@ class TestCentroid(SingleFramePlugin):
         source.set(ykey, c.getY())
         return
 
-    def measureMulti(self, exposure, sources):
+    def measureN(self, exposure, sources):
         return
 
 class TestFluxConfig(SingleFramePluginConfig):
@@ -68,8 +68,8 @@ class TestFluxConfig(SingleFramePluginConfig):
 
 class TestFlux(SingleFramePlugin):
     ConfigClass = TestFluxConfig
-    doMeasureSingle = True
-    doMeasureMulti = False
+    doMeasure = True
+    doMeasureN = False
 
     def __init__(self, config, name, schema=None, flags=None, others=None, metadata=None):
 
@@ -80,7 +80,7 @@ class TestFlux(SingleFramePlugin):
             units="")
         self.config = config
 
-    def measureSingle(self, exposure, source):
+    def measure(self, exposure, source):
 
         schema = source.getSchema()
         fluxkey = schema.find("test.flux").key
@@ -120,7 +120,7 @@ class TestFlux(SingleFramePlugin):
         source.set(backcountkey, bigarea - area)
 
 
-    def measureMulti(self, exposure, sources):
+    def measureN(self, exposure, sources):
         return
 
 

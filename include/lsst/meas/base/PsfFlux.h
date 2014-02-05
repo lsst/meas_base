@@ -78,7 +78,7 @@ public:
     // the multi-object code, but it's easy enough to write the single-object version in this case
     // that I won't).
     template <typename T>
-    static std::vector<Result> apply(
+    static std::vector<Result> applyN(
         afw::image::Exposure<T> const & exposure,
         std::vector<Input> const & inputs
     );
