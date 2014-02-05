@@ -61,8 +61,8 @@ public:
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions();
 
-    typedef SimpleResult1<PsfFluxAlgorithm,FluxResult> Result;
-    typedef SimpleResultMapper1<PsfFluxAlgorithm,FluxResultMapper> ResultMapper;
+    typedef Result1<PsfFluxAlgorithm,FluxComponent> Result;
+    typedef ResultMapper1<PsfFluxAlgorithm,FluxComponentMapper> ResultMapper;
     typedef AlgorithmInput2 Input; // type passed to apply in addition to Exposure.
     typedef PsfFluxControl Control;
 

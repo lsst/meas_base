@@ -87,67 +87,67 @@ T.Vector = T ## Vector
 %instantiateInput(AlgorithmInput2)
 %instantiateInput(AlgorithmInput3)
 
-%define %instantiateSimpleResult1(NAMESPACE, ALGORITHM, T1)
-%template(ALGORITHM##FlagsResult) lsst::meas::base::FlagsResult<NAMESPACE::ALGORITHM>;
-%template(ALGORITHM##FlagsResultMapper) lsst::meas::base::FlagsResultMapper<NAMESPACE::ALGORITHM>;
-%template(ALGORITHM##SimpleResult1) lsst::meas::base::SimpleResult1<
+%define %instantiateResult1(NAMESPACE, ALGORITHM, T1)
+%template(ALGORITHM##FlagsComponent) lsst::meas::base::FlagsComponent<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##FlagsComponentMapper) lsst::meas::base::FlagsComponentMapper<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##Result1) lsst::meas::base::Result1<
     NAMESPACE::ALGORITHM,
-    lsst::meas::base::T1##Result
+    lsst::meas::base::T1
     >;
-%template(ALGORITHM##SimpleResultMapper1) lsst::meas::base::SimpleResultMapper1<
+%template(ALGORITHM##ResultMapper1) lsst::meas::base::ResultMapper1<
     NAMESPACE::ALGORITHM,
-    lsst::meas::base::T1##ResultMapper
-    >;
-%enddef
-
-%define %instantiateSimpleResult2(NAMESPACE, ALGORITHM, T1, T2)
-%template(ALGORITHM##FlagsResult) lsst::meas::base::FlagsResult<NAMESPACE::ALGORITHM>;
-%template(ALGORITHM##FlagsResultMapper) lsst::meas::base::FlagsResultMapper<NAMESPACE::ALGORITHM>;
-%template(ALGORITHM##SimpleResult2) lsst::meas::base::SimpleResult2<
-    NAMESPACE::ALGORITHM,
-    lsst::meas::base::T1##Result,
-    lsst::meas::base::T2##Result
-    >;
-%template(ALGORITHM##SimpleResultMapper2) lsst::meas::base::SimpleResultMapper2<
-    NAMESPACE::ALGORITHM,
-    lsst::meas::base::T1##ResultMapper,
-    lsst::meas::base::T2##ResultMapper
+    lsst::meas::base::T1##Mapper
     >;
 %enddef
 
-%define %instantiateSimpleResult3(NAMESPACE, ALGORITHM, T1, T2, T3)
-%template(ALGORITHM##FlagsResult) lsst::meas::base::FlagsResult<NAMESPACE::ALGORITHM>;
-%template(ALGORITHM##FlagsResultMapper) lsst::meas::base::FlagsResultMapper<NAMESPACE::ALGORITHM>;
-%template(ALGORITHM##SimpleResult3) lsst::meas::base::SimpleResult3<
+%define %instantiateResult2(NAMESPACE, ALGORITHM, T1, T2)
+%template(ALGORITHM##FlagsComponent) lsst::meas::base::FlagsComponent<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##FlagsComponentMapper) lsst::meas::base::FlagsComponentMapper<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##Result2) lsst::meas::base::Result2<
     NAMESPACE::ALGORITHM,
-    lsst::meas::base::T1##Result,
-    lsst::meas::base::T2##Result,
-    lsst::meas::base::T3##Result
+    lsst::meas::base::T1,
+    lsst::meas::base::T2
     >;
-%template(ALGORITHM##SimpleResultMapper3) lsst::meas::base::SimpleResultMapper3<
+%template(ALGORITHM##ResultMapper2) lsst::meas::base::ResultMapper2<
     NAMESPACE::ALGORITHM,
-    lsst::meas::base::T1##ResultMapper,
-    lsst::meas::base::T2##ResultMapper,
-    lsst::meas::base::T3##ResultMapper
+    lsst::meas::base::T1##Mapper,
+    lsst::meas::base::T2##Mapper
     >;
 %enddef
 
-%define %instantiateSimpleResult4(NAMESPACE, ALGORITHM, T1, T2, T3, T4)
-%template(ALGORITHM##FlagsResult) lsst::meas::base::FlagsResult<NAMESPACE::ALGORITHM>;
-%template(ALGORITHM##FlagsResultMapper) lsst::meas::base::FlagsResultMapper<NAMESPACE::ALGORITHM>;
-%template(ALGORITHM##SimpleResult4) lsst::meas::base::SimpleResult4<
+%define %instantiateResult3(NAMESPACE, ALGORITHM, T1, T2, T3)
+%template(ALGORITHM##FlagsComponent) lsst::meas::base::FlagsComponent<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##FlagsComponentMapper) lsst::meas::base::FlagsComponentMapper<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##Result3) lsst::meas::base::Result3<
     NAMESPACE::ALGORITHM,
-    lsst::meas::base::T1##Result,
-    lsst::meas::base::T2##Result,
-    lsst::meas::base::T3##Result,
-    lsst::meas::base::T4##Result
+    lsst::meas::base::T1,
+    lsst::meas::base::T2,
+    lsst::meas::base::T3
     >;
-%template(ALGORITHM##SimpleResultMapper3) lsst::meas::base::SimpleResultMapper3<
+%template(ALGORITHM##ResultMapper3) lsst::meas::base::ResultMapper3<
     NAMESPACE::ALGORITHM,
-    lsst::meas::base::T1##ResultMapper,
-    lsst::meas::base::T2##ResultMapper,
-    lsst::meas::base::T3##ResultMapper,
-    lsst::meas::base::T4##ResultMapper
+    lsst::meas::base::T1##Mapper,
+    lsst::meas::base::T2##Mapper,
+    lsst::meas::base::T3##Mapper
+    >;
+%enddef
+
+%define %instantiateResult4(NAMESPACE, ALGORITHM, T1, T2, T3, T4)
+%template(ALGORITHM##FlagsComponent) lsst::meas::base::FlagsComponent<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##FlagsComponentMapper) lsst::meas::base::FlagsComponentMapper<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##Result4) lsst::meas::base::Result4<
+    NAMESPACE::ALGORITHM,
+    lsst::meas::base::T1,
+    lsst::meas::base::T2,
+    lsst::meas::base::T3,
+    lsst::meas::base::T4
+    >;
+%template(ALGORITHM##ResultMapper4) lsst::meas::base::ResultMapper4<
+    NAMESPACE::ALGORITHM,
+    lsst::meas::base::T1##Mapper,
+    lsst::meas::base::T2##Mapper,
+    lsst::meas::base::T3##Mapper,
+    lsst::meas::base::T4##Mapper
     >;
 %enddef
 
@@ -163,36 +163,36 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %enddef
 
 %define %wrapMeasurementAlgorithm1(NAMESPACE, ALGORITHM, CONTROL, INPUT, T1)
-%instantiateSimpleResult1(NAMESPACE, ALGORITHM, T1)
+%instantiateResult1(NAMESPACE, ALGORITHM, T1)
 %wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT,
-                            ALGORITHM##SimpleResult1, ALGORITHM##SimpleResultMapper1)
+                            ALGORITHM##Result1, ALGORITHM##ResultMapper1)
 %enddef
 
 %define %wrapMeasurementAlgorithm2(NAMESPACE, ALGORITHM, CONTROL, INPUT, T1, T2)
-%instantiateSimpleResult2(NAMESPACE, ALGORITHM, T1, T2)
+%instantiateResult2(NAMESPACE, ALGORITHM, T1, T2)
 %wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT,
-                            ALGORITHM##SimpleResult2, ALGORITHM##SimpleResultMapper2)
+                            ALGORITHM##Result2, ALGORITHM##ResultMapper2)
 %enddef
 
 %define %wrapMeasurementAlgorithm3(NAMESPACE, ALGORITHM, CONTROL, INPUT, T1, T2, T3)
-%instantiateSimpleResult3(NAMESPACE, ALGORITHM, T1, T2, T3)
+%instantiateResult3(NAMESPACE, ALGORITHM, T1, T2, T3)
 %wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT,
-                            ALGORITHM##SimpleResult3, ALGORITHM##SimpleResultMapper3)
+                            ALGORITHM##Result3, ALGORITHM##ResultMapper3)
 %enddef
 
 %define %wrapMeasurementAlgorithm4(NAMESPACE, ALGORITHM, CONTROL, INPUT, T1, T2, T3, T4)
-%instantiateSimpleResult4(NAMESPACE, ALGORITHM, T1, T2, T3, T4)
+%instantiateResult4(NAMESPACE, ALGORITHM, T1, T2, T3, T4)
 %wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT,
-                            ALGORITHM##SimpleResult4, ALGORITHM##SimpleResultMapper4)
+                            ALGORITHM##Result4, ALGORITHM##ResultMapper4)
 %enddef
 
 %include "lsst/meas/base/PsfFlux.h"
 %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, PsfFluxAlgorithm, PsfFluxControl, AlgorithmInput2, Flux)
+%wrapMeasurementAlgorithm1(lsst::meas::base, PsfFluxAlgorithm, PsfFluxControl, AlgorithmInput2, FluxComponent)
 
 %include "lsst/meas/base/SdssShape.h"
 %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm3(lsst::meas::base, SdssShapeAlgorithm, SdssShapeControl, AlgorithmInput2,
-                           Shape, Centroid, Flux)
+%wrapMeasurementAlgorithm4(lsst::meas::base, SdssShapeAlgorithm, SdssShapeControl, AlgorithmInput2,
+                           ShapeComponent, CentroidComponent, FluxComponent, SdssShapeExtras)

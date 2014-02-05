@@ -52,8 +52,8 @@ public:
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions();
 
     typedef SdssShapeControl Control;
-    typedef SimpleResult3<SdssShapeAlgorithm,ShapeResult,CentroidResult,FluxResult> Result;
-    typedef SimpleResultMapper3<SdssShapeAlgorithm,ShapeResultMapper,CentroidResultMapper,FluxResultMapper>
+    typedef Result3<SdssShapeAlgorithm,ShapeComponent,CentroidComponent,FluxComponent> Result;
+    typedef ResultMapper3<SdssShapeAlgorithm,ShapeComponentMapper,CentroidComponentMapper,FluxComponentMapper>
                 ResultMapper;
     typedef AlgorithmInput2 Input;
 

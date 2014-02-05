@@ -25,7 +25,7 @@
 
 namespace lsst { namespace meas { namespace base {
 
-FluxResultMapper::FluxResultMapper(
+FluxComponentMapper::FluxComponentMapper(
     afw::table::Schema & schema,
     std::string const & prefix,
     ResultMapperUncertaintyEnum uncertainty
@@ -44,14 +44,14 @@ FluxResultMapper::FluxResultMapper(
     }
 }
 
-void FluxResultMapper::apply(afw::table::BaseRecord & record, FluxResult const & result) const {
+void FluxComponentMapper::apply(afw::table::BaseRecord & record, FluxComponent const & result) const {
     record.set(_flux, result.flux);
     if (_fluxSigma.isValid()) {
         record.set(_fluxSigma, result.fluxSigma);
     }
 }
 
-CentroidResultMapper::CentroidResultMapper(
+CentroidComponentMapper::CentroidComponentMapper(
     afw::table::Schema & schema,
     std::string const & prefix,
     ResultMapperUncertaintyEnum uncertainty
@@ -98,7 +98,7 @@ CentroidResultMapper::CentroidResultMapper(
     }
 }
 
-void CentroidResultMapper::apply(afw::table::BaseRecord & record, CentroidResult const & result) const {
+void CentroidComponentMapper::apply(afw::table::BaseRecord & record, CentroidComponent const & result) const {
     record.set(_x, result.x);
     record.set(_y, result.y);
     if (_xSigma.isValid()) {
@@ -111,7 +111,7 @@ void CentroidResultMapper::apply(afw::table::BaseRecord & record, CentroidResult
     }
 }
 
-ShapeResultMapper::ShapeResultMapper(
+ShapeComponentMapper::ShapeComponentMapper(
     afw::table::Schema & schema,
     std::string const & prefix,
     ResultMapperUncertaintyEnum uncertainty
@@ -188,7 +188,7 @@ ShapeResultMapper::ShapeResultMapper(
     }
 }
 
-void ShapeResultMapper::apply(afw::table::BaseRecord & record, ShapeResult const & result) const {
+void ShapeComponentMapper::apply(afw::table::BaseRecord & record, ShapeComponent const & result) const {
     record.set(_xx, result.xx);
     record.set(_yy, result.yy);
     record.set(_xy, result.xy);
