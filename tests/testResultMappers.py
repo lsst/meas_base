@@ -34,11 +34,11 @@ class ResultMappersTestCase(lsst.utils.tests.TestCase):
     """Test case for utility classes used in plugin wrappers
     """
 
-    def testFluxResultMapper(self):
+    def testFluxComponentMapper(self):
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        mapper = lsst.meas.base.FluxResultMapper(schema, "test", lsst.meas.base.DIAGONAL_ONLY)
+        mapper = lsst.meas.base.FluxComponentMapper(schema, "test", lsst.meas.base.DIAGONAL_ONLY)
         table = lsst.afw.table.SourceTable.make(schema)
-        result = lsst.meas.base.FluxResult()
+        result = lsst.meas.base.FluxComponent()
         result.flux = 34.5
         result.fluxSigma = 3.25
         record = table.makeRecord()
@@ -46,11 +46,11 @@ class ResultMappersTestCase(lsst.utils.tests.TestCase):
         self.assertEqual(record.get("test_flux"), result.flux)
         self.assertEqual(record.get("test_fluxSigma"), result.fluxSigma)
 
-    def testCentroidResultMapper(self):
+    def testCentroidComponentMapper(self):
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        mapper = lsst.meas.base.CentroidResultMapper(schema, "test", lsst.meas.base.DIAGONAL_ONLY)
+        mapper = lsst.meas.base.CentroidComponentMapper(schema, "test", lsst.meas.base.DIAGONAL_ONLY)
         table = lsst.afw.table.SourceTable.make(schema)
-        result = lsst.meas.base.CentroidResult()
+        result = lsst.meas.base.CentroidComponent()
         result.x = 1.2
         result.y = 3.4
         result.xSigma = 2.0

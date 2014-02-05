@@ -37,9 +37,9 @@ enum ResultMapperUncertaintyEnum {
 };
 
 template <typename Algorithm>
-struct FlagsResultMapper {
+struct FlagsComponentMapper {
 
-    FlagsResultMapper(
+    FlagsComponentMapper(
         afw::table::Schema & schema,
         std::string const & prefix
     );
@@ -48,14 +48,14 @@ struct FlagsResultMapper {
     void fail(afw::table::BaseRecord & record, MeasurementError const & error) const;
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
-    void apply(afw::table::BaseRecord & record, FlagsResult<Algorithm> const & result) const;
+    void apply(afw::table::BaseRecord & record, FlagsComponent<Algorithm> const & result) const;
 
 protected:
     boost::array<afw::table::Key<afw::table::Flag>,Algorithm::N_FLAGS+1> _flags;
 };
 
 template <typename Algorithm>
-FlagsResultMapper<Algorithm>::FlagsResultMapper(
+FlagsComponentMapper<Algorithm>::FlagsComponentMapper(
     afw::table::Schema & schema,
     std::string const & prefix
 ) {
@@ -76,7 +76,7 @@ FlagsResultMapper<Algorithm>::FlagsResultMapper(
 }
 
 template <typename Algorithm>
-void FlagsResultMapper<Algorithm>::fail(
+void FlagsComponentMapper<Algorithm>::fail(
     afw::table::BaseRecord & record,
     MeasurementError const & error
 ) const {
@@ -86,9 +86,9 @@ void FlagsResultMapper<Algorithm>::fail(
 }
 
 template <typename Algorithm>
-void FlagsResultMapper<Algorithm>::apply(
+void FlagsComponentMapper<Algorithm>::apply(
     afw::table::BaseRecord & record,
-    FlagsResult<Algorithm> const & result
+    FlagsComponent<Algorithm> const & result
 ) const {
     for (std::size_t i = 0; i < Algorithm::N_FLAGS; ++i) {
         record.set(_flags[i+1], result._flags[i]);
@@ -96,38 +96,38 @@ void FlagsResultMapper<Algorithm>::apply(
     record.set(_flags[0], false);
 }
 
-// Object that transfers values from FluxResultResult to a record object.
-class FluxResultMapper {
+// Object that transfers values from FluxComponent to a record object.
+class FluxComponentMapper {
 public:
 
     // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
-    FluxResultMapper(
+    FluxComponentMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
         ResultMapperUncertaintyEnum uncertainty
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
-    void apply(afw::table::BaseRecord & record, FluxResult const & result) const;
+    void apply(afw::table::BaseRecord & record, FluxComponent const & result) const;
 
 private:
     afw::table::Key<Flux> _flux;
     afw::table::Key<ErrElement> _fluxSigma;
 };
 
-// Object that transfers values from CentroidResultResult to a record object.
-class CentroidResultMapper {
+// Object that transfers values from CentroidComponent to a record object.
+class CentroidComponentMapper {
 public:
 
     // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
-    CentroidResultMapper(
+    CentroidComponentMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
         ResultMapperUncertaintyEnum uncertainty
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
-    void apply(afw::table::BaseRecord & record, CentroidResult const & result) const;
+    void apply(afw::table::BaseRecord & record, CentroidComponent const & result) const;
 
 private:
     afw::table::Key<CentroidElement> _x;
@@ -137,19 +137,19 @@ private:
     afw::table::Key<ErrElement> _x_y_Cov;
 };
 
-// Object that transfers values from ShapeResultResult to a record object.
-class ShapeResultMapper {
+// Object that transfers values from ShapeComponent to a record object.
+class ShapeComponentMapper {
 public:
 
     // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
-    ShapeResultMapper(
+    ShapeComponentMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
         ResultMapperUncertaintyEnum uncertainty
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
-    void apply(afw::table::BaseRecord & record, ShapeResult const & result) const;
+    void apply(afw::table::BaseRecord & record, ShapeComponent const & result) const;
 
 private:
     afw::table::Key<ShapeElement> _xx;
@@ -164,48 +164,48 @@ private:
 };
 
 template <typename Algorithm, typename T1>
-struct SimpleResultMapper1 : public T1, public FlagsResultMapper<Algorithm> {
+struct ResultMapper1 : public T1, public FlagsComponentMapper<Algorithm> {
 
-    SimpleResultMapper1(
+    ResultMapper1(
         afw::table::Schema & schema,
         std::string const & prefix,
         ResultMapperUncertaintyEnum uncertainty1
     ) : T1(schema, prefix, uncertainty1),
-        FlagsResultMapper<Algorithm>(schema, prefix)
+        FlagsComponentMapper<Algorithm>(schema, prefix)
     {}
 
     void apply(afw::table::BaseRecord & record, typename Algorithm::Result const & result) {
         T1::apply(record, result);
-        FlagsResultMapper<Algorithm>::apply(record, result);
+        FlagsComponentMapper<Algorithm>::apply(record, result);
     }
 
 };
 
 template <typename Algorithm, typename T1, typename T2>
-struct SimpleResultMapper2 : public T1, public T2, public FlagsResultMapper<Algorithm> {
+struct ResultMapper2 : public T1, public T2, public FlagsComponentMapper<Algorithm> {
 
-    SimpleResultMapper2(
+    ResultMapper2(
         afw::table::Schema & schema,
         std::string const & prefix,
         ResultMapperUncertaintyEnum uncertainty1,
         ResultMapperUncertaintyEnum uncertainty2
     ) : T1(schema, prefix, uncertainty1),
         T2(schema, prefix, uncertainty2),
-        FlagsResultMapper<Algorithm>(schema, prefix)
+        FlagsComponentMapper<Algorithm>(schema, prefix)
     {}
 
     void apply(afw::table::BaseRecord & record, typename Algorithm::Result const & result) {
         T1::apply(record, result);
         T2::apply(record, result);
-        FlagsResultMapper<Algorithm>::apply(record, result);
+        FlagsComponentMapper<Algorithm>::apply(record, result);
     }
 
 };
 
 template <typename Algorithm, typename T1, typename T2, typename T3>
-struct SimpleResultMapper3 : public T1, public T2, public T3, public FlagsResultMapper<Algorithm> {
+struct ResultMapper3 : public T1, public T2, public T3, public FlagsComponentMapper<Algorithm> {
 
-    SimpleResultMapper3(
+    ResultMapper3(
         afw::table::Schema & schema,
         std::string const & prefix,
         ResultMapperUncertaintyEnum uncertainty1,
@@ -214,22 +214,22 @@ struct SimpleResultMapper3 : public T1, public T2, public T3, public FlagsResult
     ) : T1(schema, prefix, uncertainty1),
         T2(schema, prefix, uncertainty2),
         T3(schema, prefix, uncertainty3),
-        FlagsResultMapper<Algorithm>(schema, prefix)
+        FlagsComponentMapper<Algorithm>(schema, prefix)
     {}
 
     void apply(afw::table::BaseRecord & record, typename Algorithm::Result const & result) {
         T1::apply(record, result);
         T2::apply(record, result);
         T3::apply(record, result);
-        FlagsResultMapper<Algorithm>::apply(record, result);
+        FlagsComponentMapper<Algorithm>::apply(record, result);
     }
 
 };
 
 template <typename Algorithm, typename T1, typename T2, typename T3, typename T4>
-struct SimpleResultMapper4 : public T1, public T2, public T3, public T4, public FlagsResultMapper<Algorithm> {
+struct ResultMapper4 : public T1, public T2, public T3, public T4, public FlagsComponentMapper<Algorithm> {
 
-    SimpleResultMapper4(
+    ResultMapper4(
         afw::table::Schema & schema,
         std::string const & prefix,
         ResultMapperUncertaintyEnum uncertainty1,
@@ -240,7 +240,7 @@ struct SimpleResultMapper4 : public T1, public T2, public T3, public T4, public 
         T2(schema, prefix, uncertainty2),
         T3(schema, prefix, uncertainty3),
         T4(schema, prefix, uncertainty4),
-        FlagsResultMapper<Algorithm>(schema, prefix)
+        FlagsComponentMapper<Algorithm>(schema, prefix)
     {}
 
     void apply(afw::table::BaseRecord & record, typename Algorithm::Result const & result) {
@@ -248,7 +248,7 @@ struct SimpleResultMapper4 : public T1, public T2, public T3, public T4, public 
         T2::apply(record, result);
         T3::apply(record, result);
         T4::apply(record, result);
-        FlagsResultMapper<Algorithm>::apply(record, result);
+        FlagsComponentMapper<Algorithm>::apply(record, result);
     }
 
 };

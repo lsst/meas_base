@@ -25,12 +25,12 @@
 
 namespace lsst { namespace meas { namespace base {
 
-FluxResult::FluxResult() :
+FluxComponent::FluxComponent() :
     flux(std::numeric_limits<Flux>::quiet_NaN()),
     fluxSigma(std::numeric_limits<ErrElement>::quiet_NaN())
 {}
 
-CentroidResult::CentroidResult() :
+CentroidComponent::CentroidComponent() :
     x(std::numeric_limits<CentroidElement>::quiet_NaN()),
     y(std::numeric_limits<CentroidElement>::quiet_NaN()),
     xSigma(std::numeric_limits<ErrElement>::quiet_NaN()),
@@ -38,7 +38,7 @@ CentroidResult::CentroidResult() :
     x_y_Cov(std::numeric_limits<ErrElement>::quiet_NaN())
 {}
 
-ShapeResult::ShapeResult() :
+ShapeComponent::ShapeComponent() :
     xx(std::numeric_limits<ShapeElement>::quiet_NaN()),
     yy(std::numeric_limits<ShapeElement>::quiet_NaN()),
     xy(std::numeric_limits<ShapeElement>::quiet_NaN()),
