@@ -63,7 +63,7 @@ class SingleFramePlugin(BasePlugin):
         self.config = config
         self.name = name
 
-    def measureSingle(self, exposure, source):
+    def measure(self, exposure, source):
         """Measure the properties of a source on a single image
         (single-epoch image or coadd).
 
@@ -79,7 +79,7 @@ class SingleFramePlugin(BasePlugin):
         """
         raise NotImplementedError()
 
-    def measureMulti(self, exposure, sources):
+    def measureN(self, exposure, sources):
         """Measure the properties of a group of blended sources on a single image
         (single-epoch image or coadd).
 
@@ -160,17 +160,17 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
             measChildCat = measCat.getChildren(measParentRecord.getId())
             for measChildRecord in measChildCat:
                 noiseReplacer.insertSource(measChildRecord.getId())
-                for plugin in self.plugins.iterSingle():
-                    plugin.measureSingle(exposure, measChildRecord)
+                for plugin in self.plugins.iter():
+                    plugin.measure(exposure, measChildRecord)
                 noiseReplacer.removeSource(measChildRecord.getId())
             # Then insert the parent footprint, and measure that
             noiseReplacer.insertSource(measParentRecord.getId())
-            for plugin in self.plugins.iterSingle():
-                plugin.measureSingle(exposure, measParentRecord)
-            # Finally, process both the parent and the child set through measureMulti
-            for plugin in self.plugins.iterMulti():
-                plugin.measureMulti(exposure, measParentCat[parentIdx:parentIdx+1])
-                plugin.measureMulti(exposure, measChildCat)
+            for plugin in self.plugins.iter():
+                plugin.measure(exposure, measParentRecord)
+            # Finally, process both the parent and the child set through measureN
+            for plugin in self.plugins.iterN():
+                plugin.measureN(exposure, measParentCat[parentIndex:parentIndex+1])
+                plugin.measureN(exposure, measChildCat)
             noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
         noiseReplacer.end()

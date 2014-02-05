@@ -75,7 +75,7 @@ class TestFlux(ForcedPlugin):
         schemaMapper.addOutputField(lsst.afw.table.Field_I("test.backcount", "number of pixels in surrounding background", ""))
         self.config = config
 
-    def measureSingle(self, exposure, source, refRecord, referenceWcs):
+    def measure(self, exposure, source, refRecord, referenceWcs):
 
         schema = source.getSchema()
         fluxkey = schema.find("test.flux").key
@@ -114,9 +114,6 @@ class TestFlux(ForcedPlugin):
         source.set(backkey, bigflux - flux)
         source.set(backcountkey, bigarea - area)
 
-
-    def measureMulti(self, exposure, sources):
-        return
 
 
 ForcedPlugin.registry.register("test.flux", TestFlux)
