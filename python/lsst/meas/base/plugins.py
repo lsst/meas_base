@@ -38,6 +38,7 @@ from .sfm import *
 from .forcedImage import *
 
 WrappedSingleFramePlugin.generate(PsfFluxAlgorithm)
+WrappedSingleFramePlugin.generate(SdssShapeAlgorithm)
 
 class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
     executionOrder = lsst.pex.config.Field(dtype=float, default=0.0, doc="sets relative order of algorithms")
