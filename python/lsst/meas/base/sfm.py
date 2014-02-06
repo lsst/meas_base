@@ -22,7 +22,7 @@
 #
 """Base classes for single-frame measurement plugins and the driver task for these.
 
-In single-frame measurement, we assumes that detection and probably deblending have already been run on
+In single-frame measurement, we assume that detection and probably deblending have already been run on
 the same frame, so a SourceCatalog has already been created with Footprints (which may be HeavyFootprints).
 Measurements are generally recorded in the coordinate system of the image being measured (and all
 slot-eligible fields must be), but non-slot fields may be recorded in other coordinate systems if necessary
@@ -93,10 +93,22 @@ class SingleFramePlugin(BasePlugin):
                                  retrieved, containing only the sources that should be
                                  measured together in this call.
 
+        Derived classes that do not implement measureN() should just inherit this
+        disabled version.  Derived classes that do implement measureN() should additionally
+        add a bool doMeasureN config field to their config class to signal that measureN-mode
+        is available.
         """
         raise NotImplementedError()
 
 class WrappedSingleFramePlugin(SingleFramePlugin):
+    """A base class for SingleFramePlugins that delegate the algorithmic work to a C++
+    Algorithm class.
+
+    Derived classes of WrappedSingleFramePlugin must set the AlgClass class attribute
+    to the C++ class being wrapped, which must meet the requirements defined in the
+    "Adding New Algorithms" section of the meas_base documentation.  This is usually done
+    by calling the generate() class method.
+    """
 
     AlgClass = None
 
@@ -106,6 +118,17 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
         # TODO: check flags
 
     def measure(self, exposure, measRecord):
+        """Measure the properties of a single object on a single image.
+
+        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
+                                 be measured and the associated Psf, Wcs, etc.  All
+                                 other sources in the image will have been replaced by
+                                 noise according to deblender outputs.
+
+        @param[in,out] measRecord  lsst.afw.table.SourceRecord to be filled with outputs,
+                                   and from which previously-measured quantities can be
+                                   retreived.
+        """
         inputs = self.AlgClass.Input(measRecord)
         try:
             results = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
@@ -140,6 +163,20 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
 
     @classmethod
     def generate(Base, AlgClass, name=None, doRegister=True, ConfigClass=None):
+        """Create a new derived class of WrappedSingleFramePlugin from a C++ Algorithm class.
+
+        @param[in]   AlgClass   The name of the (Swigged) C++ Algorithm class this Plugin will delegate to.
+        @param[in]   name       The name to use when registering the Plugin (ignored if doRegister=False).
+                                Defaults to the result of generateAlgorithmName(AlgClass).
+        @param[in]   doRegister   If True (default), register the new Plugin so it can be configured to be
+                                  run by SingleFrameMeasurementTask.
+        @param[in]   ConfigClass  The ConfigClass associated with the new Plugin.  This should have a
+                                  makeControl() method that returns the Control object used by the C++
+                                  Algorithm class.
+
+        For more information, please see the "Adding New Algorithms" section of the main meas_base
+        documentation.
+        """
         if ConfigClass is None:
             ConfigClass = lsst.pex.config.makeConfigClass(AlgClass.Control, base=Base.ConfigClass,
                                                           module=AlgClass.__module__)
@@ -193,12 +230,12 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
     def run(self, exposure, measCat):
         """ Run single frame measurement over an exposure and source catalog
 
-            @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
-                                     be measured and the associated Psf, Wcs, etc.
+        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
+                                 be measured and the associated Psf, Wcs, etc.
 
-            @param[in, out] measCat  lsst.afw.table.SourceCatalog to be filled with outputs,
-                                     and from which previously-measured quantities can be retreived.
-
+        @param[in, out] measCat  lsst.afw.table.SourceCatalog to be filled with outputs.  Must
+                                 contain all the SourceRecords to be measured (with Footprints
+                                 attached), and have a schema that is a superset of self.schema.
         """
         assert measCat.getSchema().contains(self.schema)
         self.config.slots.setupTable(measCat.table, prefix=self.config.prefix)
