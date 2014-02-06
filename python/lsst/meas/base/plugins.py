@@ -61,7 +61,7 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
         SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
         self.key = schema.addField(name, type="PointD", doc="peak centroid", units="pixels")
 
-    def measure(self, exposure, measRecord):
+    def measure(self, measRecord, exposure):
         peak = measRecord.getFootprint().getPeaks()[0]
         result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
         measRecord.set(self.key, result)
@@ -92,7 +92,7 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
         schema = schemaMapper.editOutputSchema()
         self.key = schema.addField(name, type="PointD", doc="peak centroid", units="pixels")
 
-    def measure(self, exposure, measRecord, refRecord, referenceWcs):
+    def measure(self, measRecord, exposure, refRecord, referenceWcs):
         targetWcs = exposure.getWcs()
         peak = refRecord.getFootprint().getPeaks()[0]
         result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
@@ -123,7 +123,7 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
         schema = schemaMapper.editOutputSchema()
         self.key = schema.addField(name, type="PointD", doc="transformed reference centroid", units="pixels")
 
-    def measure(self, exposure, measRecord, refRecord, referenceWcs):
+    def measure(self, measRecord, exposure, refRecord, referenceWcs):
         targetWcs = exposure.getWcs()
         # Note: may be better to transform refRecord.getCentroid() all the way once slots are working better
         result = targetWcs.skyToPixel(refRecord.getCoord())

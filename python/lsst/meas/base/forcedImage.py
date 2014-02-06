@@ -85,7 +85,7 @@ class ForcedPlugin(BasePlugin):
         self.config = config
         self.name = name
 
-    def measure(self, exposure, measRecord, refRecord, refWcs):
+    def measure(self, measRecord, exposure, refRecord, refWcs):
         """Measure the properties of a source on a single image, given data from a
         reference record.
 
@@ -111,7 +111,7 @@ class ForcedPlugin(BasePlugin):
         """
         raise NotImplementedError()
 
-    def measureN(self, exposure, measCat, refCat, refWcs):
+    def measureN(self, measCat, exposure, refCat, refWcs):
         """Measure the properties of a group of blended sources on a single image,
         given data from a reference record.
 
@@ -207,11 +207,11 @@ class ForcedMeasurementTask(CmdLineTask):
         """
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
-        references = list(self.fetchReferences(dataRef, exposure))
-        retStruct = self.forcedMeasure(exposure, references, refWcs, dataRef=dataRef)
+        refCat = list(self.fetchReferences(dataRef, exposure))
+        retStruct = self.forcedMeasure(exposure, refCat, refWcs, dataRef=dataRef)
         self.writeOutput(dataRef, retStruct.sources)
 
-    def forcedMeasure(self, exposure, references, refWcs, dataRef=None):
+    def forcedMeasure(self, exposure, refCat, refWcs, dataRef=None):
         """This is a service routine which allows a forced measurement to be made without
         constructing the reference list.  The reference list and refWcs can then be passed in.
         """
@@ -223,9 +223,9 @@ class ForcedMeasurementTask(CmdLineTask):
 
         # Construct a footprints dict which does not contain the footprint, just the parentID
         # We will add the footprint from the transformed sources from generateSources later.
-        footprints = {ref.getId(): ref.getParent() for ref in references}
+        footprints = {ref.getId(): ref.getParent() for ref in refCat}
         refList = list()
-        for ref in references:
+        for ref in refCat:
             refId = ref.getId()
             topId = refId
             while(topId > 0):
@@ -237,7 +237,7 @@ class ForcedMeasurementTask(CmdLineTask):
                 refList.append(ref)
 
         # now generate transformed source corresponding to the cleanup up refLst
-        sources = self.generateSources(dataRef, refList, exposure, refWcs)
+        sources = self.generateSources(dataRef, exposure, refList, refWcs)
 
         # Steal the transformed source footprint and use it to complete the footprints dict,
         # which then looks like {ref.getId(): (ref.getParent(), source.getFootprint())}
@@ -267,17 +267,17 @@ class ForcedMeasurementTask(CmdLineTask):
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
                 noiseReplacer.insertSource(refChildRecord.getId())
                 for plugin in self.plugins.iter():
-                    plugin.measure(exposure, measChildRecord, refChildRecord, refWcs)
+                    plugin.measure(measChildRecord, exposure, refChildRecord, refWcs)
                 noiseReplacer.removeSource(refChildRecord.getId())
 
             # then process the parent record
             noiseReplacer.insertSource(refParentRecord.getId())
             for plugin in self.plugins.iter():
-                plugin.measure(exposure, measParentRecord, refParentRecord, refWcs)
+                plugin.measure(measParentRecord, exposure, refParentRecord, refWcs)
             for plugin in self.plugins.iterN():
-                plugin.measureN(exposure, measChildCat, refChildCat)
-                plugin.measureN(exposure, measParentCat[parentIdx:parentIdx+1],
-                                       refParentCat[parentIdx:parentIdx+1])
+                plugin.measureN(measChildCat, exposure, refChildCat)
+                plugin.measureN(measParentCat[parentIdx:parentIdx+1], exposure,
+                                refParentCat[parentIdx:parentIdx+1])
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()
         return Struct(sources=sources)
@@ -325,7 +325,7 @@ class ForcedMeasurementTask(CmdLineTask):
         datasetType = self.dataPrefix + "forced"
         return {datasetType:catalog}
 
-    def generateSources(self, dataRef, references, exposure, refWcs):
+    def generateSources(self, dataRef, exposure, refCat, refWcs):
         """Generate sources to be measured, copying any fields in self.config.copyColumns
         Also, transform footprints to the measurement coordinate system, noting that
         we do not currently have the ability to transform heavy footprints because they
@@ -333,7 +333,8 @@ class ForcedMeasurementTask(CmdLineTask):
         WCS are different, we won't be able to use the heavyFootprint child info at all.
 
         @param dataRef     Data reference from butler
-        @param references  Sequence (not necessarily a SourceCatalog) of reference sources
+        @param exposure    Exposure to be measured
+        @param refCat      Sequence (not necessarily a SourceCatalog) of reference sources
         @param idFactory   Factory to generate unique ids for forced sources
         @return Source catalog ready for measurement
         """
@@ -342,11 +343,10 @@ class ForcedMeasurementTask(CmdLineTask):
         sources = lsst.afw.table.SourceCatalog(table)
         table = sources.table
         table.setMetadata(self.algMetadata)
-        table.preallocate(len(references))
-        expregion = lsst.afw.geom.Box2I(exposure.getXY0(),
-            lsst.afw.geom.Extent2I(exposure.getWidth(), exposure.getHeight()))
+        table.preallocate(len(refCat))
+        expregion = exposure.getBBox(lsst.afw.image.PARENT)
         targetWcs = exposure.getWcs()
-        for ref in references:
+        for ref in refCat:
             newsource = sources.addNew()
             newsource.assign(ref, self.mapper)
             footprint = newsource.getFootprint()
