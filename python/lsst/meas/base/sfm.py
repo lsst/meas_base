@@ -63,35 +63,35 @@ class SingleFramePlugin(BasePlugin):
         self.config = config
         self.name = name
 
-    def measure(self, exposure, measRecord):
+    def measure(self, measRecord, exposure):
         """Measure the properties of a source on a single image
         (single-epoch image or coadd).
+
+        @param[in,out] measRecord  lsst.afw.table.SourceRecord to be filled with outputs,
+                                   and from which previously-measured quantities can be
+                                   retreived.
 
         @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
                                  be measured and the associated Psf, Wcs, etc.  All
                                  other sources in the image will have been replaced by
                                  noise according to deblender outputs.
 
-        @param[in,out] measRecord  lsst.afw.table.SourceRecord to be filled with outputs,
-                                   and from which previously-measured quantities can be
-                                   retreived.
-
         """
         raise NotImplementedError()
 
-    def measureN(self, exposure, measCat):
+    def measureN(self, measCat, exposure):
         """Measure the properties of a group of blended sources on a single image
         (single-epoch image or coadd).
-
-        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
-                                 be measured and the associated Psf, Wcs, etc.  Sources
-                                 not in the blended hierarchy to be measured will have
-                                 been replaced with noise using deblender outputs.
 
         @param[in,out] measCat   lsst.afw.table.SourceCatalog to be filled with outputs,
                                  and from which previously-measured quantities can be
                                  retrieved, containing only the sources that should be
                                  measured together in this call.
+
+        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
+                                 be measured and the associated Psf, Wcs, etc.  Sources
+                                 not in the blended hierarchy to be measured will have
+                                 been replaced with noise using deblender outputs.
 
         Derived classes that do not implement measureN() should just inherit this
         disabled version.  Derived classes that do implement measureN() should additionally
@@ -117,18 +117,7 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
         self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
         # TODO: check flags
 
-    def measure(self, exposure, measRecord):
-        """Measure the properties of a single object on a single image.
-
-        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
-                                 be measured and the associated Psf, Wcs, etc.  All
-                                 other sources in the image will have been replaced by
-                                 noise according to deblender outputs.
-
-        @param[in,out] measRecord  lsst.afw.table.SourceRecord to be filled with outputs,
-                                   and from which previously-measured quantities can be
-                                   retreived.
-        """
+    def measure(self, measRecord, exposure):
         inputs = self.AlgClass.Input(measRecord)
         try:
             results = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
@@ -137,21 +126,7 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
         else:
             self.resultMapper.apply(measRecord, result)
 
-    def measureN(self, exposure, measCat):
-        """Measure the properties of a group of blended sources on a single image
-        (single-epoch image or coadd).
-
-        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
-                                 be measured and the associated Psf, Wcs, etc.  Sources
-                                 not in the blended hierarchy to be measured will have
-                                 been replaced with noise using deblender outputs.
-
-        @param[in,out] measCat   lsst.afw.table.SourceCatalog to be filled with outputs,
-                                 and from which previously-measured quantities can be
-                                 retrieved, containing only the sources that should be
-                                 measured together in this call.
-
-        """
+    def measureN(self, measCat, exposure):
         assert hasattr(AlgClass, "applyN")  # would be better if we could delete this method somehow
         inputs = self.AlgClass.Input.Vector(measCat)
         try:
@@ -227,15 +202,15 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
             self.plugins[name] = PluginClass(config, name, schema=schema, flags=flags,
                 others=self.plugins, metadata=self.algMetadata)
 
-    def run(self, exposure, measCat):
+    def run(self, measCat, exposure):
         """ Run single frame measurement over an exposure and source catalog
-
-        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
-                                 be measured and the associated Psf, Wcs, etc.
 
         @param[in, out] measCat  lsst.afw.table.SourceCatalog to be filled with outputs.  Must
                                  contain all the SourceRecords to be measured (with Footprints
                                  attached), and have a schema that is a superset of self.schema.
+
+        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
+                                 be measured and the associated Psf, Wcs, etc.
         """
         assert measCat.getSchema().contains(self.schema)
         self.config.slots.setupTable(measCat.table, prefix=self.config.prefix)
@@ -259,16 +234,16 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
             for measChildRecord in measChildCat:
                 noiseReplacer.insertSource(measChildRecord.getId())
                 for plugin in self.plugins.iter():
-                    plugin.measure(exposure, measChildRecord)
+                    plugin.measure(measChildRecord, exposure)
                 noiseReplacer.removeSource(measChildRecord.getId())
             # Then insert the parent footprint, and measure that
             noiseReplacer.insertSource(measParentRecord.getId())
             for plugin in self.plugins.iter():
-                plugin.measure(exposure, measParentRecord)
+                plugin.measure(measParentRecord, exposure)
             # Finally, process both the parent and the child set through measureN
             for plugin in self.plugins.iterN():
-                plugin.measureN(exposure, measParentCat[parentIndex:parentIndex+1])
-                plugin.measureN(exposure, measChildCat)
+                plugin.measureN(measParentCat[parentIndex:parentIndex+1], exposure)
+                plugin.measureN(measChildCat, exposure)
             noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
         noiseReplacer.end()
