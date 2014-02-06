@@ -31,7 +31,8 @@ import lsst.afw.detection as afwDet
 import lsst.afw.math as afwMath
 import lsst.afw.image as afwImage
 import lsst.pipe.base
-import lsst.pex.config as pexConfig
+import lsst.pex.config
+import lsst.pex.exceptions
 import lsst.meas.algorithms
 import lsst.afw.table
 
@@ -181,7 +182,7 @@ class MeasurementDataFlags(object):
 
     NO_WCS = 0x10 # the image has no Wcs object attached
 
-class SourceSlotConfig(pexConfig.Config):
+class SourceSlotConfig(lsst.pex.config.Config):
     """Slot configuration which assigns a particular named plugin to each of a set of
     slots.  Each slot allows a type of measurement to be fetched from the SourceTable
     without knowing which algorithm was used to produced the data.  For example, getCentroid()
@@ -191,18 +192,18 @@ class SourceSlotConfig(pexConfig.Config):
     NOTE: default for each slot must be registered, even if the default is not used.
     """
 
-    centroid = pexConfig.Field(dtype=str, default="centroid.sdss", optional=True,
-                             doc="the name of the centroiding algorithm used to set source x,y")
-    shape = pexConfig.Field(dtype=str, default="shape.sdss", optional=True,
-                          doc="the name of the algorithm used to set source moments parameters")
-    apFlux = pexConfig.Field(dtype=str, default="flux.sinc", optional=True,
-                           doc="the name of the algorithm used to set the source aperture flux slot")
-    modelFlux = pexConfig.Field(dtype=str, default="flux.gaussian", optional=True,
-                           doc="the name of the algorithm used to set the source model flux slot")
-    psfFlux = pexConfig.Field(dtype=str, default="flux.naive", optional=True,
-                            doc="the name of the algorithm used to set the source psf flux slot")
-    instFlux = pexConfig.Field(dtype=str, default="flux.gaussian", optional=True,
-                             doc="the name of the algorithm used to set the source inst flux slot")
+    centroid = lsst.pex.config.Field(dtype=str, default="centroid.sdss", optional=True,
+                                     doc="the name of the centroiding algorithm used to set source x,y")
+    shape = lsst.pex.config.Field(dtype=str, default="shape.sdss", optional=True,
+                                  doc="the name of the algorithm used to set source moments parameters")
+    apFlux = lsst.pex.config.Field(dtype=str, default="flux.sinc", optional=True,
+                                   doc="the name of the algorithm used to set the source aperture flux slot")
+    modelFlux = lsst.pex.config.Field(dtype=str, default="flux.gaussian", optional=True,
+                                      doc="the name of the algorithm used to set the source model flux slot")
+    psfFlux = lsst.pex.config.Field(dtype=str, default="flux.naive", optional=True,
+                                    doc="the name of the algorithm used to set the source psf flux slot")
+    instFlux = lsst.pex.config.Field(dtype=str, default="flux.gaussian", optional=True,
+                                     doc="the name of the algorithm used to set the source inst flux slot")
 
     def setupTable(self, table, prefix=None):
         """Convenience method to setup a table's slots according to the config definition.
@@ -224,7 +225,7 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
 
     prefix = None
 
-    slots = pexConfig.ConfigField(
+    slots = lsst.pex.config.ConfigField(
         dtype = SourceSlotConfig,
         doc="Mapping from algorithms to special aliases in Source."
         )
@@ -247,7 +248,7 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
         doc='The seed value to use for random number generation.')
 
     def validate(self):
-        pexConfig.Config.validate(self)
+        lsst.pex.config.Config.validate(self)
         if self.slots.centroid is not None and self.slots.centroid not in self.plugins.names:
             raise ValueError("source centroid slot algorithm is not being run.")
         if self.slots.shape is not None and self.slots.shape not in self.plugins.names:
