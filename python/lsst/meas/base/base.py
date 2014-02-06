@@ -36,6 +36,10 @@ import lsst.pex.exceptions
 import lsst.meas.algorithms
 import lsst.afw.table
 
+from .baseLib import *
+
+FATAL_EXCEPTIONS = (MemoryError,)  # Exceptions that the framework should always propagate up
+
 def generateAlgorithmName(AlgClass):
     """Generate a string name for an algorithm class that strips away terms that are generally redundant
     while (hopefully) remaining easy to trace to the code.
@@ -53,6 +57,54 @@ def generateAlgorithmName(AlgClass):
     if name.lower().startswith(terms[-1].lower()):
         terms = terms[:-1]
     return "%s_%s" % ("_".join(terms), name)
+
+def callMeasure(task, measRecord, *args, **kwds):
+    """Call the measure() method on all plugins in the given task, handling exceptions in a consistent way.
+
+    If all measurement tasks had a common base class, this would probably go there.
+    """
+    for plugin in task.plugins.iter():
+        try:
+            plugin.measure(measRecord, *args, **kwds)
+        except FATAL_EXCEPTIONS:
+            raise
+        except lsst.pex.exceptions.LsstCppException as cppError:
+            if isinstance(cppError.args[0], MeasurementError):
+                error = cppError.args[0]
+            else:
+                task.log.warn("Error in %s.measure on record %s: %s"
+                              % (plugin.name, measRecord.getId(), cppErr))
+                error = None
+            plugin.fail(measRecord, error)
+        except Exception as error:
+            task.log.warn("Error in %s.measure on record %s: %s"
+                          % (plugin.name, measRecord.getId(), error))
+            plugin.fail(measRecord)
+
+def callMeasureN(task, measCat, *args, **kwds):
+    """Call the measureN() method on all plugins in the given task, handling exceptions in a consistent way.
+
+    If all measurement tasks had a common base class, this would probably go there.
+    """
+    for plugin in task.plugins.iterN():
+        try:
+            plugin.measureN(measCat, *args, **kwds)
+        except FATAL_EXCEPTIONS:
+            raise
+        except lsst.pex.exceptions.LsstCppException as cppError:
+            if isinstance(cppError.args[0], MeasurementError):
+                error = cppError.args[0]
+            else:
+                task.log.warn("Error in %s.measureN on records %s-%s: %s"
+                              % (plugin.name, measCat[0].getId(), measCat[-1].getId(), cppError))
+                error = None
+            for measRecord in measCat:
+                plugin.fail(measRecord, error)
+        except Exception as error:
+            for measRecord in measCat:
+                plugin.fail(measRecord)
+            task.log.warn("Error in %s.measureN on records %s-%s: %s"
+                          % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
 
 class PluginRegistry(lsst.pex.config.Registry):
     """ Base class for plugin registries

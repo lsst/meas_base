@@ -267,17 +267,17 @@ class ForcedMeasurementTask(CmdLineTask):
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
                 noiseReplacer.insertSource(refChildRecord.getId())
                 for plugin in self.plugins.iter():
-                    plugin.measure(measChildRecord, exposure, refChildRecord, refWcs)
+                    callMeasure(self, measChildRecord, exposure, refChildRecord, refWcs)
                 noiseReplacer.removeSource(refChildRecord.getId())
 
             # then process the parent record
             noiseReplacer.insertSource(refParentRecord.getId())
             for plugin in self.plugins.iter():
-                plugin.measure(measParentRecord, exposure, refParentRecord, refWcs)
+                callMeasure(self, measParentRecord, exposure, refParentRecord, refWcs)
             for plugin in self.plugins.iterN():
-                plugin.measureN(measChildCat, exposure, refChildCat)
-                plugin.measureN(measParentCat[parentIdx:parentIdx+1], exposure,
-                                refParentCat[parentIdx:parentIdx+1])
+                callMeasureN(self, measChildCat, exposure, refChildCat)
+                callMeasureN(self, measParentCat[parentIdx:parentIdx+1], exposure,
+                             refParentCat[parentIdx:parentIdx+1])
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()
         return Struct(sources=sources)

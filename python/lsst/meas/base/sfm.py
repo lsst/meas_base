@@ -229,17 +229,16 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
             measChildCat = measCat.getChildren(measParentRecord.getId())
             for measChildRecord in measChildCat:
                 noiseReplacer.insertSource(measChildRecord.getId())
-                for plugin in self.plugins.iter():
-                    plugin.measure(measChildRecord, exposure)
+                callMeasure(self, measChildRecord, exposure)
                 noiseReplacer.removeSource(measChildRecord.getId())
             # Then insert the parent footprint, and measure that
             noiseReplacer.insertSource(measParentRecord.getId())
             for plugin in self.plugins.iter():
-                plugin.measure(measParentRecord, exposure)
+                callMeasure(self, measParentRecord, exposure)
             # Finally, process both the parent and the child set through measureN
             for plugin in self.plugins.iterN():
-                plugin.measureN(measParentCat[parentIndex:parentIndex+1], exposure)
-                plugin.measureN(measChildCat, exposure)
+                callMeasureN(self, measParentCat[parentIndex:parentIndex+1], exposure)
+                callMeasureN(self, measChildCat, exposure)
             noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
         noiseReplacer.end()

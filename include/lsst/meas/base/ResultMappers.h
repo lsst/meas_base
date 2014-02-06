@@ -45,7 +45,7 @@ struct FlagsComponentMapper {
     );
 
     // Set the general failure flag field and the specific bit held by the given exception.
-    void fail(afw::table::BaseRecord & record, MeasurementError const & error) const;
+    void fail(afw::table::BaseRecord & record, MeasurementError const * error=NULL) const;
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
     void apply(afw::table::BaseRecord & record, FlagsComponent<Algorithm> const & result) const;
@@ -78,11 +78,13 @@ FlagsComponentMapper<Algorithm>::FlagsComponentMapper(
 template <typename Algorithm>
 void FlagsComponentMapper<Algorithm>::fail(
     afw::table::BaseRecord & record,
-    MeasurementError const & error
+    MeasurementError const * error
 ) const {
-    assert(error.getFlagBit() < Algorithm::N_FLAGS);
+    if (error) {
+        assert(error->getFlagBit() < Algorithm::N_FLAGS);
+        record.set(_flags[error->getFlagBit() + 1], true);
+    }
     record.set(_flags[0], true);
-    record.set(_flags[error.getFlagBit() + 1], true);
 }
 
 template <typename Algorithm>
