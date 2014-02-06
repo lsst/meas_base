@@ -43,6 +43,7 @@ that only require a position or shape, they may simply use output SourceCatalog'
 which will generally be set to the transformed position of the reference object before any other plugins are
 run, and hence avoid using the reference catalog at all.
 """
+
 import math
 
 import lsst.pex.config
@@ -84,7 +85,7 @@ class ForcedPlugin(BasePlugin):
         self.config = config
         self.name = name
 
-    def measure(self, exposure, measRecord, refRecord, referenceWcs):
+    def measure(self, exposure, measRecord, refRecord, refWcs):
         """Measure the properties of a source on a single image, given data from a
         reference record.
 
@@ -147,21 +148,20 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
                  ],
         doc="Plugins to be run and their configuration"
         )
-    references = ConfigurableField(target=CoaddSrcReferencesTask,
-        doc="Retrieve reference source catalog")
-
+    references = ConfigurableField(
+        target=CoaddSrcReferencesTask,
+        doc="Retrieve reference source catalog"
+        )
     copyColumns = DictField(
         keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
         default={"id": "objectId", "parent":"parentObjectId"}
         )
-
-
-    """Config for ProcessCoadd"""
     coaddName = lsst.pex.config.Field(
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,
         default = "deep",
     )
+
     def setDefaults(self):
         self.slots.shape = None
         self.slots.apFlux = None
@@ -173,7 +173,7 @@ class ForcedMeasurementTask(CmdLineTask):
     """Forced measurement driver task
 
     This task is intended as a command-line script base class, in the model of ProcessImageTask
-    (i.e. it should be subclasses for running on CCDs and Coadds).
+    (i.e. it should be subclassed for running on CCDs and Coadds).
     """
 
     ConfigClass = ForcedMeasurementConfig
@@ -203,7 +203,7 @@ class ForcedMeasurementTask(CmdLineTask):
                                                    others=self.plugins, metadata=self.algMetadata)
 
     def run(self, dataRef):
-        """
+        """Main driver method called once for each measurement image by the command-line interface.
         """
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
