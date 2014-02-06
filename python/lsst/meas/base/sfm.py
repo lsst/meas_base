@@ -118,48 +118,19 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
         # TODO: check flags
 
     def measure(self, exposure, measRecord):
-        """Measure the properties of a single object on a single image.
-
-        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
-                                 be measured and the associated Psf, Wcs, etc.  All
-                                 other sources in the image will have been replaced by
-                                 noise according to deblender outputs.
-
-        @param[in,out] measRecord  lsst.afw.table.SourceRecord to be filled with outputs,
-                                   and from which previously-measured quantities can be
-                                   retreived.
-        """
         inputs = self.AlgClass.Input(measRecord)
-        try:
-            results = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
-        except Exception as err:  # TODO: tighten up matching exceptions
-            self.resultMapper.fail(measRecord)
-        else:
-            self.resultMapper.apply(measRecord, result)
+        results = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
+        self.resultMapper.apply(measRecord, result)
 
     def measureN(self, exposure, measCat):
-        """Measure the properties of a group of blended sources on a single image
-        (single-epoch image or coadd).
-
-        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
-                                 be measured and the associated Psf, Wcs, etc.  Sources
-                                 not in the blended hierarchy to be measured will have
-                                 been replaced with noise using deblender outputs.
-
-        @param[in,out] measCat   lsst.afw.table.SourceCatalog to be filled with outputs,
-                                 and from which previously-measured quantities can be
-                                 retrieved, containing only the sources that should be
-                                 measured together in this call.
-
-        """
         assert hasattr(AlgClass, "applyN")  # would be better if we could delete this method somehow
         inputs = self.AlgClass.Input.Vector(measCat)
-        try:
-            results = self.AlgClass.applyN(exposure, inputs, self.config.makeControl())
-        except Exception as err:  # TODO: tighten up matching exceptions
-            self.resultMapper.fail(measRecord)
-        else:
+        results = self.AlgClass.applyN(exposure, inputs, self.config.makeControl())
+        for result, measRecord in zip(results, measCat):
             self.resultMapper.apply(measRecord, result)
+
+    def fail(self, measRecord, error=None):
+        self.resultMapper.fail(measRecord, error)
 
     @classmethod
     def generate(Base, AlgClass, name=None, doRegister=True, ConfigClass=None):

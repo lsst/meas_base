@@ -162,7 +162,22 @@ are also allowed, but should be avoided unless they are needed):
 
 class BasePlugin(object):
     """Base class for measurement plugins."""
-    pass
+
+    def fail(self, measRecord, error=None):
+        """Record a failure of the measure or measureN() method.
+
+        When measure() raises an exception, the measurement framework
+        will call fail() to allow the plugin to set its failure flag
+        field(s).  When measureN() raises an exception, fail() will be
+        called repeatedly with all the records that were being
+        measured.
+
+        If the exception is a MeasurementError, it will be passed as
+        the error argument; in all other cases the error argument will
+        be None, and the failure will be logged by the measurement
+        framework unless it has been explicitly squashed in config.
+        """
+        raise NotImplementedError("This algorithm thinks it cannot fail; please report this as a bug.")
 
 class MeasurementDataFlags(object):
     """Flags that describe data to be measured, allowing plugins with the same signature but
