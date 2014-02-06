@@ -119,22 +119,18 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
 
     def measure(self, measRecord, exposure):
         inputs = self.AlgClass.Input(measRecord)
-        try:
-            results = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
-        except Exception as err:  # TODO: tighten up matching exceptions
-            self.resultMapper.fail(measRecord)
-        else:
-            self.resultMapper.apply(measRecord, result)
+        results = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
+        self.resultMapper.apply(measRecord, result)
 
     def measureN(self, measCat, exposure):
         assert hasattr(AlgClass, "applyN")  # would be better if we could delete this method somehow
         inputs = self.AlgClass.Input.Vector(measCat)
-        try:
-            results = self.AlgClass.applyN(exposure, inputs, self.config.makeControl())
-        except Exception as err:  # TODO: tighten up matching exceptions
-            self.resultMapper.fail(measRecord)
-        else:
+        results = self.AlgClass.applyN(exposure, inputs, self.config.makeControl())
+        for result, measRecord in zip(results, measCat):
             self.resultMapper.apply(measRecord, result)
+
+    def fail(self, measRecord, error=None):
+        self.resultMapper.fail(measRecord, error)
 
     @classmethod
     def generate(Base, AlgClass, name=None, doRegister=True, ConfigClass=None):
@@ -233,17 +229,16 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
             measChildCat = measCat.getChildren(measParentRecord.getId())
             for measChildRecord in measChildCat:
                 noiseReplacer.insertSource(measChildRecord.getId())
-                for plugin in self.plugins.iter():
-                    plugin.measure(measChildRecord, exposure)
+                callMeasure(self, measChildRecord, exposure)
                 noiseReplacer.removeSource(measChildRecord.getId())
             # Then insert the parent footprint, and measure that
             noiseReplacer.insertSource(measParentRecord.getId())
             for plugin in self.plugins.iter():
-                plugin.measure(measParentRecord, exposure)
+                callMeasure(self, measParentRecord, exposure)
             # Finally, process both the parent and the child set through measureN
             for plugin in self.plugins.iterN():
-                plugin.measureN(measParentCat[parentIndex:parentIndex+1], exposure)
-                plugin.measureN(measChildCat, exposure)
+                callMeasureN(self, measParentCat[parentIndex:parentIndex+1], exposure)
+                callMeasureN(self, measChildCat, exposure)
             noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
         noiseReplacer.end()
