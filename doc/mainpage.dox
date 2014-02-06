@@ -1,19 +1,23 @@
-/**
-\mainpage lsst::meas::base;  redesigned support for measurement tasks and algorithm plugins
-
-\section measAlgSecIntro Introduction
-
-The meas_base package is a replacement for code in meas_algorthims.  Eventually, we expect to replace the existing code with two packages:  meas_base, which will supply to logic for looping through sources with a set of algorithms (currently in MeasureSources), and meas_core, which will provide the plugin mechanisms for algorithms as well as an up-to-date implementation in C++ of the algorithms already defined in meas_algorithms.
-
-The current design for these packages can be found at:
-
-    https://dev.lsstcorp.org/trac/wiki/Winter2014/Design/Measurement
-*/
-
-//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+// -*- lsst-c++ -*-
 
 namespace lsst { namespace meas { namespace base {
 /**
+@mainpage lsst::meas::base;  redesigned support for measurement tasks and algorithm plugins
 
+@section measBaseIntroduction Introduction to meas_base
+
+The meas_base package is the new home of the source measurement framework, which was formerly part of
+meas_algorithms.  This includes:
+ - SingleFrameMeasurementTask, a subtask that measures sources after detection and deblending on the same
+   frame.
+ - ForcedMeasurementTask, a command-line task for performing constrained measurements on a frame other than
+   the detection frame.
+ - (coming soon) MultiFitTask, a command-line task for performing measurements on many exposures
+   simultaneously.
+ - Python Plugin base classes (SingleFramePlugin, ForcedPlugin, MultiFitPlugin) for each of the above, which
+   define the API for measurements that will be run by the tasks, along with a single registry mechanism for
+   making them available to the Tasks via config.
+ - Helper code to reduce boilerplate, standardize outputs, and make algorithm code easy to reuse when
+   implementing new measurement algorithms.
 */
-}}}
+}}} // namespace lsst::meas::base

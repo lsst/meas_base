@@ -25,7 +25,7 @@
 In forced measurement, a reference catalog is used to define restricted measurements (usually just fluxes)
 on an image.  As the reference catalog may be deeper than the detection limit of the measurement image, we
 do not assume that we can use detection and deblend information from the measurement image.  Instead, we
-assume this information is present in the reference catalog and has been "transformed" in some sense to
+assume this information is present in the reference catalog and can be "transformed" in some sense to
 the measurement frame.  At the very least, this means that Footprints from the reference catalog should
 be transformed and installed as Footprints in the output measurement catalog.  If we have a procedure that
 can transform HeavyFootprints, we can then proceed with measurement as usual, but using the reference
@@ -39,15 +39,17 @@ slot-eligible fields must be), but non-slot fields may be recorded in other coor
 to avoid information loss (this should, of course, be indicated in the field documentation).  Note that
 the reference catalog may be in a different coordinate system; it is the responsibility of plugins
 to transform the data they need themselves, using the reference WCS provided.  However, for plugins
-that only require a position, they may simply use output SourceCatalog's centroid slot, which will generally
-be set to the transformed position of the reference object before any plugins are run, and hence avoid
-using the reference catalog at all.
+that only require a position or shape, they may simply use output SourceCatalog's centroid or shape slots,
+which will generally be set to the transformed position of the reference object before any other plugins are
+run, and hence avoid using the reference catalog at all.
 """
 import math
+
 import lsst.pex.config
-from lsst.pipe.base import Task, CmdLineTask, Struct, timeMethod, ArgumentParser, ButlerInitializedTaskRunner
 import lsst.daf.base
-from lsst.pex.config import DictField,ConfigurableField
+from lsst.pipe.base import Task, CmdLineTask, Struct, timeMethod, ArgumentParser, ButlerInitializedTaskRunner
+from lsst.pex.config import DictField, ConfigurableField
+
 from .base import *
 from .references import CoaddSrcReferencesTask, BaseReferencesTask
 

@@ -53,24 +53,27 @@ def generateAlgorithmName(AlgClass):
         terms = terms[:-1]
     return "%s_%s" % ("_".join(terms), name)
 
-""" Base class for plugin registries.
+class PluginRegistry(lsst.pex.config.Registry):
+    """ Base class for plugin registries
+
     The Plugin class allowed in the registry is defined on the ctor of the registry
     The intention is that single-frame and multi-frame plugins will have different
     registries.
-"""
-class PluginRegistry(lsst.pex.config.Registry):
+    """
 
     class Configurable(object):
-        """ Class used as the actual element in the registry; rather
-        than constructing a Plugin instance, it returns a tuple
+        """Class used as the actual element in the registry
+
+        Rather than constructing a Plugin instance, it returns a tuple
         of (runlevel, name, config, PluginClass), which can then
         be sorted before the plugins are instantiated.
         """
 
         __slots__ = "PluginClass", "name"
+
         def __init__(self, name, PluginClass):
             """ Initialize registry with Plugin Class
-           """
+            """
             self.name = name
             self.PluginClass = PluginClass
 
@@ -81,6 +84,15 @@ class PluginRegistry(lsst.pex.config.Registry):
             return (config.executionOrder, self.name, config, self.PluginClass)
 
     def register(self, name, PluginClass):
+        """Register a Plugin class with the given name.
+
+        The same Plugin may be registered multiple times with different names; this can
+        be useful if we often want to run it multiple times with different configuration.
+
+        The name will be used as a prefix for all fields produced by the Plugin, and it
+        should generally contain the name of the Plugin or Algorithm class itself
+        as well as enough of the namespace to make it clear where to find the code.
+        """
         lsst.pex.config.Registry.register(self, name, self.Configurable(name, PluginClass))
 
     def makeField(self, doc, default=None, optional=False, multi=False):
@@ -89,27 +101,62 @@ class PluginRegistry(lsst.pex.config.Registry):
 class PluginMap(collections.OrderedDict):
     """ Map of plugins to be run for a task
 
-        Should later be implemented as Swigged C++ class based on std::map
+    We assume Plugins are added to the PluginMap according to their executionOrder, so this
+    class doesn't actually do any of the sorting (though it does have to maintain that order).
+
+    Should later be implemented as Swigged C++ class so we can pass it to C++-implemented Plugins
+    in the future.
     """
 
     def iter(self):
-        """ Call each plugin in the map which has a measure """
+        """Call each plugin in the map which has a measure() method
+        """
         for plugin in self.itervalues():
             if plugin.config.doMeasure:
                 yield plugin
 
     def iterN(self):
-        """ Call each plugin in the map which has a measureN """
+        """Call each plugin in the map which has a measureN() method
+        """
         for plugin in self.itervalues():
             if plugin.config.doMeasureN:
                 yield plugin
 
 class BasePluginConfig(lsst.pex.config.Config):
-    """Base class for config which should be defined for each measurement plugin."""
+    """Base class for config which should be defined for each measurement plugin.
 
-    executionOrder = lsst.pex.config.Field(dtype=float, default=1.0, doc="sets relative order of plugins")
+    Most derived classes will want to override setDefaults() in order to customize
+    the default exceutionOrder.
+
+    A derived class whose correspoding Plugin class implements measureN() should
+    additionally add a bool doMeasureN field to replace the bool class attribute
+    defined here.
+    """
+
+    executionOrder = lsst.pex.config.Field(
+        dtype=float, default=2.0,
+        doc="""Sets the relative order of plugins (smaller numbers run first).
+
+In general, the following values should be used (intermediate values
+are also allowed, but should be avoided unless they are needed):
+   0.0 ------ centroids and other algorithms that require only a Footprint and
+              its Peaks as input
+   1.0 ------ shape measurements and other algorithms that require
+              getCentroid() to return a good centroid in addition to a
+              Footprint and its Peaks.
+   2.0 ------ flux algorithms that require both getShape() and getCentroid()
+              in addition to the Footprint and its Peaks
+   3.0 ------ Corrections applied to fluxes (i.e. aperture corrections, tying
+              model to PSF fluxes). All flux measurements should have an
+              executionOrder < 3.0, while all algorithms that rely on corrected
+              fluxes (i.e. classification) should have executionOrder > 3.0.
+"""
+        )
+
+
     doMeasure = lsst.pex.config.Field(dtype=bool, default=True,
                                       doc="whether to run this plugin in single-object mode")
+
     doMeasureN = False  # replace this class attribute with a Field if measureN-capable
 
 class BasePlugin(object):
@@ -119,6 +166,7 @@ class BasePlugin(object):
 class MeasurementDataFlags(object):
     """Flags that describe data to be measured, allowing plugins with the same signature but
     different requirements to assert their appropriateness for the data they will be run on.
+
     This should later be implemented as a Swigged C++ enum
     """
 
@@ -172,7 +220,8 @@ class SourceSlotConfig(pexConfig.Config):
 
 
 class BaseMeasurementConfig(lsst.pex.config.Config):
-    """Config class for single-frame measurement driver task."""
+    """Baseconfig class for all measurement driver tasks."""
+
     prefix = None
 
     slots = pexConfig.ConfigField(
