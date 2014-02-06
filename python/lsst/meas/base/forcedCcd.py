@@ -24,6 +24,7 @@
    See the comment in the parent class in forced.py for more information.
 """
 import argparse
+
 from lsst.pex.config import Config, ConfigurableField, DictField, Field
 from lsst.pipe.base import ArgumentParser,ButlerInitializedTaskRunner,DataIdContainer
 import lsst.afw.image
