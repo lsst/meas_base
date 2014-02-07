@@ -24,6 +24,11 @@
 #include "lsst/utils/PowFast.h"
 #include "lsst/meas/base/SdssShape.h"
 
+// Doxygen gets confused and generates warnings when trying to map the definitions here to their
+// declarations, but we want to put the source code itself in the HTML docs, so we just tell it
+// not to look for any documentation comments here.
+/// @cond SOURCE_FILE
+
 namespace lsst { namespace meas { namespace base {
 
 namespace {
@@ -194,3 +199,5 @@ INSTANTIATE(float);
 INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
+
+/// @endcond
