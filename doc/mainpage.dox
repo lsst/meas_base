@@ -10,8 +10,9 @@ The meas_base package is the new home of the source measurement framework, which
 meas_algorithms.  This includes:
  - SingleFrameMeasurementTask, a subtask that measures sources after detection and deblending on the same
    frame.
- - ForcedMeasurementTask, a command-line task for performing constrained measurements on a frame other than
-   the detection frame.
+ - ForcedCcdTask and ForcedCoaddTask, a command-line task for performing constrained measurements on a
+   frame other than the detection frame.  These delegate most of their work to their base class,
+   ForcedMeasurementTask.
  - (coming soon) MultiFitTask, a command-line task for performing measurements on many exposures
    simultaneously.
  - Python Plugin base classes (SingleFramePlugin, ForcedPlugin, MultiFitPlugin) for each of the above, which
@@ -19,5 +20,99 @@ meas_algorithms.  This includes:
    making them available to the Tasks via config.
  - Helper code to reduce boilerplate, standardize outputs, and make algorithm code easy to reuse when
    implementing new measurement algorithms.
+
+@section measBaseImplementingNew Implementing New Plugins and Algorithms
+
+The "Plugin" interfaces used directly by the measurement tasks are defined completely in Python, and are
+rooted in the abstract base classes sfm.SingleFramePlugin and forcedImage.ForcedPlugin.  Creating a new
+Plugin is quite straightforward:
+ - Subclass one of sfm.SingleFramePlugin or forcedImage.ForcedPlugin (a single class cannot inherit from
+   both, as they have different method signatures).
+ - Implement an @c %__init__ method with the same signature as the base class, in which fields saved by the
+   the Plugin should be added to the schema passed to @c %__init__, with keys saved as instance attributes
+   for future use.
+ - Reimplement @c measure() to perform the actual measurement and save the result in the measRecord argument.
+ - Reimplement @c fail() unless the Plugin cannot fail (except for environment errors).
+ - Reimplement @c measureN() if the Plugin supports measuring multiple sources simultaneously.
+ - Register the Plugin with the config mechanism by calling e.g. @c SingleFramePlugin.registry.register()
+   at module scope (so the registration happens at import-time).
+
+Defining a Plugin directly has several disadvantages, however.  Using this approach, it is difficult to share
+code between single-frame and forced plugins, and the definition and filling of fields often involves a lot
+of boilerplate.  Perhaps more importantly, the Plugin interface is difficult to utilize outside of typical
+pipeline usage; when one simply wants to apply a measurement to a postage stamp image, for instance, we'd
+like to avoid the overhead of constructing a SourceCatalog to store the outputs.  Finally, most measurement
+algorithms should generally be implemented in C++ for performance reasons, and inheriting from an existing
+pure-Python class via Swig is difficult at best (it may in fact be impossible).
+
+Instead of implementing Plugins directly, then, we generally advice new Plugins to be creating by defining
+what we will refer to as an "Algorithm" class in C++ (in the future, Algorithm classes may also be created
+in Python, but this is not yet supported).  Algorithm is not a polymorphic class hierarchy; it is perhaps
+more like a C++ <a href="http://en.cppreference.com/w/cpp/concept">Concept </a> .  If a C++ class meets the
+Algorithm requirements (see below), one can create
+a Plugin (a subclass of sfm.WrappedSingleFramePlugin or sfm.WrappedForcedPlugin) automatically.  The Algorithm
+interface is designed to be easy-to-use outside of the measurement framework, while still consistent enough
+to allow Plugins that delegate to the Algorithm to be machine-generated.  Once can also define both a
+SingleFramePlugin and a ForcedPlugin that delegate to the same Algorithm method in most cases.
+
+The best way to learn how to write a new Algorithm
+is by example, and for this purpose two of the Algorithms defined in meas_base have been supplemented with
+additional documentation intended to allow them to be used as tutorials.  PsfFluxAlgorithm is an example
+of an extremely simple algorithm - it measures only one standard quantity, has few configuration options,
+and has very standard inputs.  SdssShapeAlgorithm provides a much more complex example.
+
+While much more documentation can be found in the examples and in the auxiliary classes (see
+@ref measBaseResults in particular), here is a summary of the Algorithm requirements:
+
+ - a static apply() method that performs the actual measurement, or delegates to one that does.  It should
+   have the signature @code Result apply(Exposure<float> const &, Input const &, Control const &) @endcode
+   @c Result, @c Inputs, and @c Control are class typedefs described below.  The method may be
+   templated on the type of exposure, but only the @c Exposure<float> instantiation will be called.  It is
+   recommended (but not required) that the Control argument have a default value.
+
+ - an @c Input typedef to one of AlgorithmInput1, AlgorithmInput2, or AlgorithmInput3, or a custom class
+   that has a constructor and makeVector() method with the same signature as those classes.
+
+ - a @c Result typedef to one of @ref measBaseResultTemplates that defines the type returned by apply().
+
+ - a @c ResultMapper typedef to one of @ref measBaseResultMapperTemplates that defines how to transfer the
+   @c Result struct to an output record.
+
+ - a @c Control typedef to a C++ "control object" (a struct that uses the LSST_CONFIG_FIELD macro;
+   see lsst.pex.config.wrap.makeConfigClass for more information).
+
+ - a static makeResultMapper() method, responsible for creating a ResultMapper instance that will be used
+   to transfer Result outputs to output records.  Its signature must be
+   @code ResultMapper makeResultMapper(afw::table::Schema &, std::string &, Control const &) @endcode
+
+ - a FlagBits enum with a value for each flag the measurement can set (see FlagsComponent), as well as
+   a final N_FLAGS enum value that sets the total number of flags.
+
+ - a static getFlagDefinitions() method that returns a const reference to,
+   @c boost::array<FlagDef,N_FLAGS>, describing the flags in greater detail.
+
+ - Optional: if a measureN() Plugin method is to be provided, an applyN() method with signature
+   @code std::vector<Result> applyN(Exposure<float> const &, std::vector<Input> const &, Control const &)
+   @endcode
+
+In addition, Algorithm classes should generally be wrapped using one of the @c %%wrapMeasurementAlgorithmN
+Swig macros (where @c N is one of 1, 2, 3, or 4, matching the numbers in the Result and ResultMapper
+templates). This should be invoked after %%including the C++ header file that defines the algorithm.
+The signature for these macros is
+@code %wrapMeasurementAlgorithm[N](NAMESPACE, ALGORITHM, CONTROL, INPUT, T1, ...) @endcode
+where @c NAMESPACE is the namespace the algorithm is defined in, ALGORITHM is the unqualified name of the
+algorithm class, @c CONTROL and @c INPUT are the namespace-unqualified classes referred to by the class
+typedefs of the same name, and @c T1, ... are the list of Component objects used to instantiate the Result
+template.
+This macro will handle @c %%template instantiation of the @c Result and @c ResultMapper classes and their
+corresponding @c FlagComponent and @c FlagComponentMapper classes, and install Python class attributes that
+mimic the C++ typedefs in the Algorithm class.  These macros do not instantiate templated @c apply() or
+@c applyN() methods in Swig, however, and this must be done manually if those methods are templated in C++.
+
+Finally, to actually create a Plugin class from the Swigged Algorithm, one should call
+sfm.WrappedSingleFramePlugin.generate() or forcedImage.WrappedForcedPlugin.generate() at module scope
+(i.e. so it is invoked at module-import time) to create the Plugin classes themselves and register them with
+the config mechanism.
+
 */
 }}} // namespace lsst::meas::base

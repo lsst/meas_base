@@ -53,7 +53,6 @@ PsfFluxAlgorithm::ResultMapper PsfFluxAlgorithm::makeResultMapper(
 template <typename T>
 PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
-    afw::detection::Footprint const & footprint,
     afw::geom::Point2D const & position,
     Control const & ctrl
 ) {
@@ -146,13 +145,12 @@ PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
     Input const & inputs,
     Control const & ctrl
 ) {
-    return apply(exposure, *inputs.footprint, inputs.position);
+    return apply(exposure, inputs.position);
 }
 
 #define INSTANTIATE(T)                                                  \
     template PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(          \
         afw::image::Exposure<T> const & exposure,                       \
-        afw::detection::Footprint const & footprint,                    \
         afw::geom::Point2D const & position,                            \
         Control const & ctrl                                            \
     );                                                                  \

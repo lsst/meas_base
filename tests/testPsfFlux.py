@@ -64,10 +64,7 @@ class PsfFluxTestCase(lsst.utils.tests.TestCase):
         """Verify that we get reasonable answers when we call apply() directly on an isolated source,
         and that these results are identical regardless of which overload we use.
         """
-        result1 = lsst.meas.base.PsfFluxAlgorithm.apply(
-            self.calexp, self.record.getFootprint(),
-            self.record.get(self.centroidKey)
-            )
+        result1 = lsst.meas.base.PsfFluxAlgorithm.apply(self.calexp, self.record.get(self.centroidKey))
         result2 = lsst.meas.base.PsfFluxAlgorithm.apply(
             self.calexp,
             lsst.meas.base.PsfFluxAlgorithm.Input(self.record.getFootprint(),
@@ -95,14 +92,14 @@ class PsfFluxTestCase(lsst.utils.tests.TestCase):
         lsst.utils.tests.assertRaisesLsstCpp(
             self, lsst.meas.base.PixelValueError,
             lsst.meas.base.PsfFluxAlgorithm.apply,
-            self.calexp, self.record.getFootprint(),
+            self.calexp,
             self.record.get(self.centroidKey)
             )
         # If we do mask it, we should get a reasonable result
         ctrl = lsst.meas.base.PsfFluxAlgorithm.Control()
         ctrl.badMaskPlanes = ["BAD"]
         result = lsst.meas.base.PsfFluxAlgorithm.apply(
-            self.calexp, self.record.getFootprint(),
+            self.calexp,
             self.record.get(self.centroidKey),
             ctrl
             )
@@ -113,7 +110,7 @@ class PsfFluxTestCase(lsst.utils.tests.TestCase):
         lsst.utils.tests.assertRaisesLsstCpp(
             self, lsst.meas.base.MeasurementError,
             lsst.meas.base.PsfFluxAlgorithm.apply,
-            self.calexp, self.record.getFootprint(),
+            self.calexp,
             self.record.get(self.centroidKey),
             ctrl
             )
@@ -127,7 +124,7 @@ class PsfFluxTestCase(lsst.utils.tests.TestCase):
         bbox.grow(-1)
         subExposure = self.calexp.Factory(self.calexp, bbox)
         result = lsst.meas.base.PsfFluxAlgorithm.apply(
-            subExposure, self.record.getFootprint(),
+            subExposure,
             self.record.get(self.centroidKey),
             )
         self.assertClose(result.flux, self.record.get(self.fluxKey), atol=result.fluxSigma)
@@ -140,7 +137,7 @@ class PsfFluxTestCase(lsst.utils.tests.TestCase):
         lsst.utils.tests.assertRaisesLsstCpp(
             self, lsst.meas.base.MeasurementError,
             lsst.meas.base.PsfFluxAlgorithm.apply,
-            self.calexp, self.record.getFootprint(),
+            self.calexp,
             self.record.get(self.centroidKey),
             )
 
@@ -156,7 +153,7 @@ class PsfFluxTestCase(lsst.utils.tests.TestCase):
         exposure1 = lsst.afw.image.ExposureD(lsst.afw.image.MaskedImageD(image))
         exposure1.setPsf(psf)
         footprint = lsst.afw.detection.Footprint(image.getBBox(lsst.afw.image.PARENT))
-        result1 = lsst.meas.base.PsfFluxAlgorithm.apply(exposure1, footprint, position)
+        result1 = lsst.meas.base.PsfFluxAlgorithm.apply(exposure1, position)
         self.assertClose(result1.flux, 1.0)
         self.assertClose(result1.fluxSigma, 0.0)
         width = image.getWidth()
@@ -170,7 +167,7 @@ class PsfFluxTestCase(lsst.utils.tests.TestCase):
                 exposure2.getMaskedImage().getVariance().set(pixelNoiseSigma**2)
                 noise = numpy.random.randn(height, width)* pixelNoiseSigma
                 exposure2.getMaskedImage().getImage().getArray()[:,:] += noise
-                result2 = lsst.meas.base.PsfFluxAlgorithm.apply(exposure2, footprint, position)
+                result2 = lsst.meas.base.PsfFluxAlgorithm.apply(exposure2, position)
                 fluxes.append(result2.flux)
                 fluxSigmas.append(result2.fluxSigma)
             fluxMean = numpy.mean(fluxes)
