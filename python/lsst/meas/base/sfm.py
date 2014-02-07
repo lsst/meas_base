@@ -106,7 +106,7 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
 
     Derived classes of WrappedSingleFramePlugin must set the AlgClass class attribute
     to the C++ class being wrapped, which must meet the requirements defined in the
-    "Adding New Algorithms" section of the meas_base documentation.  This is usually done
+    "Implementing New Plugins and Algorithms" section of the meas_base documentation.  This is usually done
     by calling the generate() class method.
     """
 

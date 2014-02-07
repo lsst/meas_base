@@ -24,6 +24,16 @@
 #ifndef LSST_MEAS_BASE_SdssShape_h_INCLUDED
 #define LSST_MEAS_BASE_SdssShape_h_INCLUDED
 
+/**
+ *  @file lsst/meas/base/SdssShape.h
+ *
+ *  This file is one of two (the other is PsfFlux.h) intended to serve as an tutorial example on
+ *  how to implement new Algorithms.  PsfFluxAlgorithm is a particularly simple algorithm, while
+ *  SdssShapeAlgorithm is more complex.
+ *
+ *  See @ref measBaseImplementingNew for a general overview of the steps required.
+ */
+
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Inputs.h"
@@ -31,6 +41,11 @@
 
 namespace lsst { namespace meas { namespace base {
 
+/**
+ *  @brief A C++ control class to handle SdssShapeAlgorithm's configuration
+ *
+ *  @copydetails PsfFluxControl
+ */
 class SdssShapeControl {
 public:
 
@@ -40,31 +55,61 @@ public:
     LSST_CONTROL_FIELD(tol1, float, "Convergence tolerance for e1,e2");
     LSST_CONTROL_FIELD(tol2, float, "Convergence tolerance for FWHM");
 
+    /// @copydoc PsfFluxControl::PsfFluxControl
     SdssShapeControl() : background(0.0), maxIter(100), maxShift(), tol1(1E-5), tol2(1E-4) {}
 
 };
 
+/**
+ *  @brief Additional results for SdssShapeAlgorithm
+ *
+ *  Unlike PsfFlux, some of SdssShape's outputs aren't handled by the standard FluxComponent,
+ *  CentroidComponent, and ShapeComponent classes, so we have to define our own Component class here
+ *  (and a ComponentMapper class below).
+ *
+ *  Note: for what I guess are historical reasons, SdssShape computes covariance terms between the flux
+ *  and the shape, but not between the flux and centroid or centroid and shape.
+ *
+ *  This should logically be an inner class, but Swig doesn't know how to parse those.
+ */
 class SdssShapeExtras {
 public:
-    ShapeElement xy4;
-    ErrElement xy4Sigma;
-    ErrElement flux_xx_Cov;
-    ErrElement flux_yy_Cov;
-    ErrElement flux_xy_Cov;
+    ShapeElement xy4;       ///< A fourth moment used in lensing (RHL needs to clarify; not in the old docs)
+    ErrElement xy4Sigma;    ///< 1-Sigma uncertainty on xy4
+    ErrElement flux_xx_Cov; ///< flux, xx term in the uncertainty covariance matrix
+    ErrElement flux_yy_Cov; ///< flux, yy term in the uncertainty covariance matrix
+    ErrElement flux_xy_Cov; ///< flux, xy term in the uncertainty covariance matrix
 
-    SdssShapeExtras();
+    SdssShapeExtras(); ///< Constructor; initializes everything to NaN
 };
 
+/**
+ *  @brief Object that transfers additional SdssShapeAlgorithm results to afw::table records
+ *
+ *  Because we have custom outputs, we also have to define how to transfer those outputs to
+ *  records.  We just follow the pattern established by the other ComponentMapper classes.
+ *
+ *  This should logically be an inner class, but Swig doesn't know how to parse those.
+ */
 class SdssShapeExtrasMapper {
 public:
 
+    /**
+     *  @brief Allocate fields in the schema and save keys for future use.
+     *
+     *  Unlike the standard ComponentMappers, we don't care about the UncertaintyEnum value
+     *  because the outputs of SdssShapeExtras are fixed, but we have to leave an unused argument
+     *  here to adhere to the standard construction pattern.
+     *
+     *  All fields should start with the given prefix and an underscore.
+     */
     SdssShapeExtrasMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
         UncertaintyEnum // unused
     );
 
-    // Transfer values from the result struct to the record, and clear the failure flag field.
+    /// Transfer values from the result struct to the record.
     void apply(afw::table::BaseRecord & record, SdssShapeExtras const & result) const;
 
 private:
@@ -75,14 +120,37 @@ private:
     afw::table::Key<ErrElement> _flux_xy_Cov;
 };
 
+/**
+ *  @brief Measure the image moments of source using adaptive Gaussian weights.
+ *
+ *  This algorithm measures the weighted second moments of an image using a Gaussian weight function, which
+ *  is iteratively updated to match the current weights.  If this iteration does not converge, it can fall
+ *  back to using unweighted moments, which can be significantly noisier.
+ *
+ *  As an Algorithm class, all of SdssShapeAlgorithm's core functionality is availabe via static methods
+ *  (in fact, there should be no reason to ever construct an instance).
+ *
+ *  Almost all of the implementation of SdssShapeAlgorithm is here and in SdssShapeAlgorithm.cc, but there
+ *  are also a few key lines in the Swig .i file:
+ *  @code
+ *  %include "lsst/meas/base/SdssShape.h"
+ *  %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
+ *  %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
+ *  %wrapMeasurementAlgorithm4(lsst::meas::base, SdssShapeAlgorithm, SdssShapeControl, AlgorithmInput2,
+ *                             ShapeComponent, CentroidComponent, FluxComponent, SdssShapeExtras)
+ *  @endcode
+ *  and in the pure Python layer:
+ *  @code
+ *  WrappedSingleFramePlugin.generate(SdssShapeAlgorithm)
+ *  @endcode
+ *  The former ensure the Algorithm class is fully wrapped via Swig (including @c %%template instantiations
+ *  of its @c Result and @c ResultMapper classes), and the latter actually generates the Config class and
+ *  the Plugin classes and registers them.
+ */
 class SdssShapeAlgorithm {
 public:
 
-    /**
-     *  @brief Flag bits to be used with the 'flags' data member of the Result object.
-     *
-     *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
-     */
+    /// @copydoc PsfFluxAlgorithm::FlagBits
     enum FlagBits {
         UNWEIGHTED_BAD=0,
         UNWEIGHTED,
@@ -91,14 +159,17 @@ public:
         N_FLAGS
     };
 
-    /**
-     *  @brief Return an array of (name, doc) tuples that describes the flags and sets the names used
-     *         in catalog schemas.
-     */
+    /// @copydoc PsfFluxAlgorithm::getFlagDefinitions()
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions();
 
+    /// Just a typedef to the Control object defined above.
     typedef SdssShapeControl Control;
 
+    /**
+     *  This is the type returned by apply().  Because SdssShapeAlgorithm measures a flux, a centroid, a
+     *  shape, and some other things, we concatenate all those together using the 4-parameter Result
+     *  template.
+     */
     typedef Result4<
         SdssShapeAlgorithm,
         ShapeComponent,
@@ -107,6 +178,7 @@ public:
         SdssShapeExtras
     > Result;
 
+    /// @copydoc PsfFluxAlgorithm::ResultMapper
     typedef ResultMapper4<
         SdssShapeAlgorithm,
         ShapeComponentMapper,
@@ -115,24 +187,39 @@ public:
         SdssShapeExtrasMapper
     > ResultMapper;
 
+    /**
+     *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
+     *  Exposure being measured.  SdssShapeAlgorithm only needs a centroid, so we use AlgorithmInput2.
+     */
     typedef AlgorithmInput2 Input;
 
+    /// @copydoc PsfFluxAlgorithm::makeResultMapper
     static ResultMapper makeResultMapper(
         afw::table::Schema & schema,
         std::string const & name,
         Control const & ctrl=Control()
     );
 
-    // Main implementation
+    /**
+     *  @brief Measure the shape of a source using the SdssShape algorithm.
+     *
+     *  This is the overload of apply() that does all the work, and it's designed to be as easy to use
+     *  as possible outside the Plugin framework (since the Plugin framework calls another other one).  The
+     *  arguments are all the things we need, and nothing more; we use a MaskedImage instead of an
+     *  Exposure because we just need the pixel data.
+     */
     template <typename T>
     static Result apply(
-        afw::image::MaskedImage<T> const & exposure,
+        afw::image::MaskedImage<T> const & image,
         afw::detection::Footprint const & footprint,
         afw::geom::Point2D const & position,
         Control const & ctrl=Control()
     );
 
-    // Limited implementation - no variance plane, and hence no uncertainties
+    /**
+     *  @brief A limited implementation of SdssShape that runs on images with no variance plane, and
+     *         hence reports no uncertainties.
+     */
     template <typename T>
     static Result apply(
         afw::image::Image<T> const & exposure,
@@ -141,7 +228,12 @@ public:
         Control const & ctrl=Control()
     );
 
-    // Forwarding overload called by plugin framework
+    /**
+     *  @brief Apply the SdssShape algorithm to a single source using the Plugin API.
+     *
+     *  This is the version that will be called by both the SFM framework.  It will delegate to the other
+     *  overload of apply().
+     */
     template <typename T>
     static Result apply(
         afw::image::Exposure<T> const & exposure,
