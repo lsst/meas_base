@@ -30,24 +30,47 @@
 
 namespace lsst { namespace meas { namespace base {
 
-enum UncertaintyEnum {
-    NO_UNCERTAINTY = 0,
-    SIGMA_ONLY = 1,
-    FULL_COVARIANCE = 2
-};
+/**
+ *  @addtogroup measBaseResults
+ *  @{
+ */
 
+/**
+ *  @brief An object that transfers values from FlagsComponent to afw::table::BaseRecord
+ *
+ *  This is implicitly included in all of @ref measBaseResultMapperTemplates, and will generally only be
+ *  used (directly) by these.  It provides the fail() method to those templates.
+ */
 template <typename Algorithm>
 struct FlagsComponentMapper {
 
+    /**
+     *  @brief Construct the mapper, adding fields to the given schema and saving their keys
+     *
+     *  Field names will have the form "<prefix>_flag_<FlagDef.doc>", where "<prefix>" is the prefix
+     *  argument to this constructor, and "<FlagDef.doc>" is the string documentation for this flag
+     *  obtained by a call to Algorithm::getFlagDefinitions().
+     */
     FlagsComponentMapper(
         afw::table::Schema & schema,
         std::string const & prefix
     );
 
-    // Set the general failure flag field and the specific bit held by the given exception.
+    /**
+     *  @brief Record a failure for the algorithm in the given record.
+     *
+     *  Sets the general failure flag field, and if error is not null, the specific bit held by the given
+     *  exception.
+     *
+     *  This method is called by the measurement framework when an algorithm throws an exception, but
+     *  the error argument is only non-null when that exception is a MeasurementError.  Algorithms that
+     *  wish to set flags that do not indicate complete failure should set them themselves directly in the
+     *  result object, as throwing MeasurementError (and hence invoking fail()) does not allow other values
+     *  to be returned.
+     */
     void fail(afw::table::BaseRecord & record, MeasurementError const * error=NULL) const;
 
-    // Transfer values from the result struct to the record, and clear the failure flag field.
+    /// Transfer values from the result struct to the record, and clear the general failure flag field.
     void apply(afw::table::BaseRecord & record, FlagsComponent<Algorithm> const & result) const;
 
 protected:
@@ -98,18 +121,30 @@ void FlagsComponentMapper<Algorithm>::apply(
     record.set(_flags[0], false);
 }
 
-// Object that transfers values from FluxComponent to a record object.
+
+/**
+ *  @brief An object that transfers values from FluxComponent to afw::table::BaseRecord
+ *
+ *  This should be included in one of @ref measBaseResultMapperTemplates to correspond with using
+ *  FluxComponent in the same position in one of @ref measBaseResultTemplates, and will otherwise
+ *  not be used directly by users.
+ */
 class FluxComponentMapper {
 public:
 
-    // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
+    /**
+     *  @brief Construct the mapper, adding fields to the given schema and saving their keys
+     *
+     *  The given prefix will form the first part of all fields, and the uncertainty argument
+     *  sets which uncertainty fields will be added to the schema and transferred during apply().
+     */
     FluxComponentMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
         UncertaintyEnum uncertainty
     );
 
-    // Transfer values from the result struct to the record, and clear the failure flag field.
+    /// Transfer values from the result struct to the record
     void apply(afw::table::BaseRecord & record, FluxComponent const & result) const;
 
 private:
@@ -117,18 +152,30 @@ private:
     afw::table::Key<ErrElement> _fluxSigma;
 };
 
-// Object that transfers values from CentroidComponent to a record object.
+
+/**
+ *  @brief An object that transfers values from CentroidComponent to afw::table::BaseRecord
+ *
+ *  This should be included in one of @ref measBaseResultMapperTemplates to correspond with using
+ *  CentroidComponent in the same position in one of @ref measBaseResultTemplates, and will otherwise
+ *  not be used directly by users.
+ */
 class CentroidComponentMapper {
 public:
 
-    // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
+    /**
+     *  @brief Construct the mapper, adding fields to the given schema and saving their keys
+     *
+     *  The given prefix will form the first part of all fields, and the uncertainty argument
+     *  sets which uncertainty fields will be added to the schema and transferred during apply().
+     */
     CentroidComponentMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
         UncertaintyEnum uncertainty
     );
 
-    // Transfer values from the result struct to the record, and clear the failure flag field.
+    // Transfer values from the result struct to the record
     void apply(afw::table::BaseRecord & record, CentroidComponent const & result) const;
 
 private:
@@ -139,18 +186,30 @@ private:
     afw::table::Key<ErrElement> _x_y_Cov;
 };
 
-// Object that transfers values from ShapeComponent to a record object.
+
+/**
+ *  @brief An object that transfers values from CentroidComponent to afw::table::BaseRecord
+ *
+ *  This should be included in one of @ref measBaseResultMapperTemplates to correspond with using
+ *  CentroidComponent in the same position in one of @ref measBaseResultTemplates, and will otherwise
+ *  not be used directly by users.
+ */
 class ShapeComponentMapper {
 public:
 
-    // Construct the mapper, creating fields by prepending the prefix to a set of standard names.
+    /**
+     *  @brief Construct the mapper, adding fields to the given schema and saving their keys
+     *
+     *  The given prefix will form the first part of all fields, and the uncertainty argument
+     *  sets which uncertainty fields will be added to the schema and transferred during apply().
+     */
     ShapeComponentMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
         UncertaintyEnum uncertainty
     );
 
-    // Transfer values from the result struct to the record, and clear the failure flag field.
+    /// Transfer values from the result struct to the record
     void apply(afw::table::BaseRecord & record, ShapeComponent const & result) const;
 
 private:
@@ -164,6 +223,24 @@ private:
     afw::table::Key<ErrElement> _xx_xy_Cov;
     afw::table::Key<ErrElement> _yy_xy_Cov;
 };
+
+/**
+ *  @defgroup measBaseResultMapperTemplates the ResultMapperN templates
+ *
+ *  These templates aggregate ComponentMapper objects in the same way that the @ref measBaseResultTemplates
+ *  aggregate the Components themselves.  Each Algorithm class should define a @c ResultMapper typedef
+ *  to one of these templates, with argments that correspond to the arguments in the @c Result typedef.
+ *
+ *  When an Algorithm defines a custom Component, it must also define a custom ComponentMapper.  This class
+ *  must meet the following requirements (the standard ComponentMapper classes can all serve as examples):
+ *    - It must be copyable (simply because ResultMappers are returned by value).
+ *    - It must have a constructor with the same signature as FluxComponentMapper::FluxComponentMapper,
+ *      which should add fields to the Schema object and save the returned keys for later use.
+ *    - It must have an apply() method that takes a non-const reference to afw::table::BaseRecord and
+ *      a const reference to the corresponding Component object, which transfers values from the custom
+ *      Component to the record.
+ *  @{
+ */
 
 template <typename Algorithm, typename T1>
 struct ResultMapper1 : public T1, public FlagsComponentMapper<Algorithm> {
@@ -254,6 +331,10 @@ struct ResultMapper4 : public T1, public T2, public T3, public T4, public FlagsC
     }
 
 };
+
+/** @} */ // end of measBaseResultMapperTemplates group
+
+/** @} */ // end of measBaseResults group
 
 }}} // lsst::meas::base
 
