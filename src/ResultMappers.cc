@@ -28,7 +28,7 @@ namespace lsst { namespace meas { namespace base {
 FluxComponentMapper::FluxComponentMapper(
     afw::table::Schema & schema,
     std::string const & prefix,
-    ResultMapperUncertaintyEnum uncertainty
+    UncertaintyEnum uncertainty
 ) {
     _flux = schema.addField(
         afw::table::Field<Flux>(prefix + "_flux", "measured flux", "dn"),
@@ -54,7 +54,7 @@ void FluxComponentMapper::apply(afw::table::BaseRecord & record, FluxComponent c
 CentroidComponentMapper::CentroidComponentMapper(
     afw::table::Schema & schema,
     std::string const & prefix,
-    ResultMapperUncertaintyEnum uncertainty
+    UncertaintyEnum uncertainty
 ) {
     _x = schema.addField(
         afw::table::Field<CentroidElement>(
@@ -114,7 +114,7 @@ void CentroidComponentMapper::apply(afw::table::BaseRecord & record, CentroidCom
 ShapeComponentMapper::ShapeComponentMapper(
     afw::table::Schema & schema,
     std::string const & prefix,
-    ResultMapperUncertaintyEnum uncertainty
+    UncertaintyEnum uncertainty
 ) {
     _xx = schema.addField(
         afw::table::Field<ShapeElement>(

@@ -30,9 +30,9 @@
 
 namespace lsst { namespace meas { namespace base {
 
-enum ResultMapperUncertaintyEnum {
+enum UncertaintyEnum {
     NO_UNCERTAINTY = 0,
-    DIAGONAL_ONLY = 1,
+    SIGMA_ONLY = 1,
     FULL_COVARIANCE = 2
 };
 
@@ -106,7 +106,7 @@ public:
     FluxComponentMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
-        ResultMapperUncertaintyEnum uncertainty
+        UncertaintyEnum uncertainty
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
@@ -125,7 +125,7 @@ public:
     CentroidComponentMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
-        ResultMapperUncertaintyEnum uncertainty
+        UncertaintyEnum uncertainty
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
@@ -147,7 +147,7 @@ public:
     ShapeComponentMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
-        ResultMapperUncertaintyEnum uncertainty
+        UncertaintyEnum uncertainty
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
@@ -171,7 +171,7 @@ struct ResultMapper1 : public T1, public FlagsComponentMapper<Algorithm> {
     ResultMapper1(
         afw::table::Schema & schema,
         std::string const & prefix,
-        ResultMapperUncertaintyEnum uncertainty1
+        UncertaintyEnum uncertainty1
     ) : T1(schema, prefix, uncertainty1),
         FlagsComponentMapper<Algorithm>(schema, prefix)
     {}
@@ -189,8 +189,8 @@ struct ResultMapper2 : public T1, public T2, public FlagsComponentMapper<Algorit
     ResultMapper2(
         afw::table::Schema & schema,
         std::string const & prefix,
-        ResultMapperUncertaintyEnum uncertainty1,
-        ResultMapperUncertaintyEnum uncertainty2
+        UncertaintyEnum uncertainty1,
+        UncertaintyEnum uncertainty2
     ) : T1(schema, prefix, uncertainty1),
         T2(schema, prefix, uncertainty2),
         FlagsComponentMapper<Algorithm>(schema, prefix)
@@ -210,9 +210,9 @@ struct ResultMapper3 : public T1, public T2, public T3, public FlagsComponentMap
     ResultMapper3(
         afw::table::Schema & schema,
         std::string const & prefix,
-        ResultMapperUncertaintyEnum uncertainty1,
-        ResultMapperUncertaintyEnum uncertainty2,
-        ResultMapperUncertaintyEnum uncertainty3
+        UncertaintyEnum uncertainty1,
+        UncertaintyEnum uncertainty2,
+        UncertaintyEnum uncertainty3
     ) : T1(schema, prefix, uncertainty1),
         T2(schema, prefix, uncertainty2),
         T3(schema, prefix, uncertainty3),
@@ -234,10 +234,10 @@ struct ResultMapper4 : public T1, public T2, public T3, public T4, public FlagsC
     ResultMapper4(
         afw::table::Schema & schema,
         std::string const & prefix,
-        ResultMapperUncertaintyEnum uncertainty1,
-        ResultMapperUncertaintyEnum uncertainty2,
-        ResultMapperUncertaintyEnum uncertainty3,
-        ResultMapperUncertaintyEnum uncertainty4
+        UncertaintyEnum uncertainty1,
+        UncertaintyEnum uncertainty2,
+        UncertaintyEnum uncertainty3,
+        UncertaintyEnum uncertainty4
     ) : T1(schema, prefix, uncertainty1),
         T2(schema, prefix, uncertainty2),
         T3(schema, prefix, uncertainty3),

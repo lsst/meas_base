@@ -42,7 +42,7 @@ boost::array<FlagDef,PsfFluxAlgorithm::N_FLAGS> const & PsfFluxAlgorithm::getFla
 PsfFluxAlgorithm::ResultMapper PsfFluxAlgorithm::makeResultMapper(
     afw::table::Schema & schema, std::string const & name, Control const & ctrl
 ) {
-    return ResultMapper(schema, name, DIAGONAL_ONLY);
+    return ResultMapper(schema, name, SIGMA_ONLY);
 }
 
 template <typename T>
