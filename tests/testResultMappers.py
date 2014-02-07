@@ -36,7 +36,7 @@ class ResultMappersTestCase(lsst.utils.tests.TestCase):
 
     def testFluxComponentMapper(self):
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        mapper = lsst.meas.base.FluxComponentMapper(schema, "test", lsst.meas.base.DIAGONAL_ONLY)
+        mapper = lsst.meas.base.FluxComponentMapper(schema, "test", lsst.meas.base.SIGMA_ONLY)
         table = lsst.afw.table.SourceTable.make(schema)
         result = lsst.meas.base.FluxComponent()
         result.flux = 34.5
@@ -48,7 +48,7 @@ class ResultMappersTestCase(lsst.utils.tests.TestCase):
 
     def testCentroidComponentMapper(self):
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        mapper = lsst.meas.base.CentroidComponentMapper(schema, "test", lsst.meas.base.DIAGONAL_ONLY)
+        mapper = lsst.meas.base.CentroidComponentMapper(schema, "test", lsst.meas.base.SIGMA_ONLY)
         table = lsst.afw.table.SourceTable.make(schema)
         result = lsst.meas.base.CentroidComponent()
         result.x = 1.2

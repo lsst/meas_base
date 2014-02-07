@@ -61,7 +61,7 @@ public:
     SdssShapeExtrasMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
-        ResultMapperUncertaintyEnum // unused
+        UncertaintyEnum // unused
     );
 
     // Transfer values from the result struct to the record, and clear the failure flag field.
