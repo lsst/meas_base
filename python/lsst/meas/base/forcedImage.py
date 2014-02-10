@@ -160,7 +160,7 @@ class WrappedForcedPlugin(ForcedPlugin):
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
         inputs = self.AlgClass.Input(measRecord)
-        results = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
+        result = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
         self.resultMapper.apply(measRecord, result)
 
     def measureN(self, measCat, exposure, refCat, refWcs):

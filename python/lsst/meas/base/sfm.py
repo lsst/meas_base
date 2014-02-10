@@ -119,7 +119,7 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
 
     def measure(self, measRecord, exposure):
         inputs = self.AlgClass.Input(measRecord)
-        results = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
+        result = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
         self.resultMapper.apply(measRecord, result)
 
     def measureN(self, measCat, exposure):
