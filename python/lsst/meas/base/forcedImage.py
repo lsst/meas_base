@@ -54,7 +54,8 @@ from lsst.pex.config import DictField, ConfigurableField
 from .base import *
 from .references import CoaddSrcReferencesTask, BaseReferencesTask
 
-__all__ = ("ForcedPluginConfig", "ForcedPlugin", "ForcedMeasurementConfig", "ForcedMeasurementTask")
+__all__ = ("ForcedPluginConfig", "ForcedPlugin", "WrappedForcedPlugin",
+           "ForcedMeasurementConfig", "ForcedMeasurementTask")
 
 class ForcedPluginConfig(BasePluginConfig):
     """Base class for configs of forced measurement plugins."""
@@ -138,6 +139,71 @@ class ForcedPlugin(BasePlugin):
         at all.
         """
         raise NotImplementedError()
+
+class WrappedForcedPlugin(ForcedPlugin):
+    """A base class for ForcedPlugins that delegates the algorithmic work to a C++
+    Algorithm class.
+
+    Derived classes of WrappedForcedPlugin must set the AlgClass class attribute
+    to the C++ class being wrapped, which must meet the requirements defined in the
+    "Implementing New Plugins and Algorithms" section of the meas_base documentation.  This is usually done
+    by calling the generate() class method.
+    """
+
+    AlgClass = None
+
+    def __init__(self, config, name, schemaMapper, flags, others, metadata):
+        ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
+        schema = schemaMapper.editOutputSchema()
+        self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
+        # TODO: check flags
+
+    def measure(self, measRecord, exposure, refRecord, refWcs):
+        inputs = self.AlgClass.Input(measRecord)
+        results = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
+        self.resultMapper.apply(measRecord, result)
+
+    def measureN(self, measCat, exposure, refCat, refWcs):
+        assert hasattr(AlgClass, "applyN")  # would be better if we could delete this method somehow
+        inputs = self.AlgClass.Input.Vector(measCat)
+        results = self.AlgClass.applyN(exposure, inputs, self.config.makeControl())
+        for result, measRecord in zip(results, measCat):
+            self.resultMapper.apply(measRecord, result)
+
+    def fail(self, measRecord, error=None):
+        self.resultMapper.fail(measRecord, error)
+
+    @classmethod
+    def generate(Base, AlgClass, name=None, doRegister=True, ConfigClass=None):
+        """Create a new derived class of WrappedForcedPlugin from a C++ Algorithm class.
+
+        @param[in]   AlgClass   The name of the (Swigged) C++ Algorithm class this Plugin will delegate to.
+        @param[in]   name       The name to use when registering the Plugin (ignored if doRegister=False).
+                                Defaults to the result of generateAlgorithmName(AlgClass).
+        @param[in]   doRegister   If True (default), register the new Plugin so it can be configured to be
+                                  run by ForcedMeasurementTask.
+        @param[in]   ConfigClass  The ConfigClass associated with the new Plugin.  This should have a
+                                  makeControl() method that returns the Control object used by the C++
+                                  Algorithm class.
+
+        For more information, please see the "Adding New Algorithms" section of the main meas_base
+        documentation.
+        """
+        if ConfigClass is None:
+            ConfigClass = lsst.pex.config.makeConfigClass(AlgClass.Control, base=Base.ConfigClass,
+                                                          module=AlgClass.__module__)
+            if hasattr(AlgClass, "applyN"):
+                ConfigClass.doMeasureN = lsst.pex.config.Field(
+                    dtype=bool, default=True,
+                    doc="whether to run this plugin multi-object mode"
+                    )
+        PluginClass = type(AlgClass.__name__ + "ForcedPlugin", (Base,),
+                           dict(AlgClass=AlgClass, ConfigClass=ConfigClass))
+        if doRegister:
+            if name is None:
+                name = generateAlgorithmName(AlgClass)
+            Base.registry.register(name, PluginClass)
+        return PluginClass
 
 class ForcedMeasurementConfig(BaseMeasurementConfig):
     """Config class for forced measurement driver task."""

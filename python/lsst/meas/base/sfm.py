@@ -101,7 +101,7 @@ class SingleFramePlugin(BasePlugin):
         raise NotImplementedError()
 
 class WrappedSingleFramePlugin(SingleFramePlugin):
-    """A base class for SingleFramePlugins that delegate the algorithmic work to a C++
+    """A base class for SingleFramePlugins that delegates the algorithmic work to a C++
     Algorithm class.
 
     Derived classes of WrappedSingleFramePlugin must set the AlgClass class attribute
