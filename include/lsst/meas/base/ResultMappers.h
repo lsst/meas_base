@@ -92,7 +92,7 @@ FlagsComponentMapper<Algorithm>::FlagsComponentMapper(
     boost::array<FlagDef,Algorithm::N_FLAGS> const & flagDefs = Algorithm::getFlagDefinitions();
     for (std::size_t i = 0; i < Algorithm::N_FLAGS; ++i) {
         _flags[i+1] = schema.addField(
-            afw::table::Field<afw::table::Flag>(flagDefs[i].name, flagDefs[i].doc),
+            afw::table::Field<afw::table::Flag>((prefix + "_flag_") + flagDefs[i].name, flagDefs[i].doc),
             true // replace existing fields if present
         );
     }
