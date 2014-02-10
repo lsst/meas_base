@@ -28,11 +28,9 @@ import numpy
 import lsst.afw.geom
 import lsst.afw.table
 import lsst.utils.tests
-import lsst.meas.base
+import lsst.meas.base.tests
 
 numpy.random.randn(500)
-
-DATA_DIR = os.path.join(os.path.split(__file__)[0], "data")
 
 # n.b. Some tests here depend on the noise realization in the test data
 # or from the numpy random number generator.
@@ -42,23 +40,17 @@ DATA_DIR = os.path.join(os.path.split(__file__)[0], "data")
 # the measured flux lies within 2 sigma of the correct value, which we
 # should expect to fail sometimes.
 
-class PsfFluxTestCase(lsst.utils.tests.TestCase):
+class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
     """Test case for the PsfFlux algorithm/plugins
     """
 
     def setUp(self):
-        self.truth = lsst.afw.table.SourceCatalog.readFits(os.path.join(DATA_DIR, "truthcat-01.fits"))
-        self.calexp = lsst.afw.image.ExposureF.readFits(os.path.join(DATA_DIR, "calexp-01.fits"))
+        lsst.meas.base.tests.AlgorithmTestCase.setUp(self)
         self.record = self.truth[0]
-        self.fluxKey = self.truth.schema.find("truth.flux").key
-        self.centroidKey = self.truth.schema.find("truth.centroid").key
 
     def tearDown(self):
-        del self.truth
-        del self.calexp
+        lsst.meas.base.tests.AlgorithmTestCase.tearDown(self)
         del self.record
-        del self.fluxKey
-        del self.centroidKey
 
     def testOverloads(self):
         """Verify that we get reasonable answers when we call apply() directly on an isolated source,
@@ -175,6 +167,17 @@ class PsfFluxTestCase(lsst.utils.tests.TestCase):
             fluxStandardDeviation = numpy.std(fluxes)
             self.assertClose(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)   # rng dependent
             self.assertLess(fluxMean - 1.0, 2.0*fluxSigmaMean / nSamples**0.5)   # rng dependent
+
+    def testSingleFramePlugin(self):
+        measCat = self.runSingleFrameMeasurementTask("base_PsfFlux")
+        for record in measCat:
+            self.assertFalse(record.get("base_PsfFlux_flag"))
+            self.assertFalse(record.get("base_PsfFlux_flag_noPsf"))
+            self.assertFalse(record.get("base_PsfFlux_flag_noGoodPixels"))
+            self.assertFalse(record.get("base_PsfFlux_flag_edge"))
+            if record.get("truth.isstar"):
+                self.assertClose(record.get("truth.flux"), record.get("base_PsfFlux_flux"),
+                                 atol=record.get("base_PsfFlux_fluxSigma"))
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
