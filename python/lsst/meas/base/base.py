@@ -46,7 +46,7 @@ def generateAlgorithmName(AlgClass):
     """
     name = AlgClass.__name__
     pkg = AlgClass.__module__
-    name.strip("Algorithm")
+    name = name.strip("Algorithm")
     terms = pkg.split(".")
     if terms[-1].endswith("Lib"):
         terms = terms[:-1]
