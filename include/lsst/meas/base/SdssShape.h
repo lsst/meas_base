@@ -97,16 +97,18 @@ public:
     /**
      *  @brief Allocate fields in the schema and save keys for future use.
      *
-     *  Unlike the standard ComponentMappers, we don't care about the UncertaintyEnum value
-     *  because the outputs of SdssShapeExtras are fixed, but we have to leave an unused argument
-     *  here to adhere to the standard construction pattern.
+     *  Unlike the standard ComponentMappers, SdssShapeExtrasMappers takes a Control instance
+     *  as its third argument.  It doesn't actually need it, but this is a good pattern to
+     *  establish as some algorithms outputs *will* depend on the Control object's values, and
+     *  the mapper needs to have some kind of third argument in order to work with
+     *  @ref measBaseResultMapperTemplates.
      *
      *  All fields should start with the given prefix and an underscore.
      */
     SdssShapeExtrasMapper(
         afw::table::Schema & schema,
         std::string const & prefix,
-        UncertaintyEnum // unused
+        SdssShapeControl const & control=SdssShapeControl()
     );
 
     /// Transfer values from the result struct to the record.

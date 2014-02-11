@@ -74,7 +74,7 @@ SdssShapeExtras::SdssShapeExtras() :
 SdssShapeExtrasMapper::SdssShapeExtrasMapper(
     afw::table::Schema & schema,
     std::string const & prefix,
-    UncertaintyEnum
+    SdssShapeControl const &
 ) :
     _xy4(
         schema.addField(
@@ -137,7 +137,7 @@ SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(
     std::string const & name,
     Control const & ctrl
 ) {
-    return ResultMapper(schema, name, FULL_COVARIANCE, SIGMA_ONLY, FULL_COVARIANCE, SIGMA_ONLY);
+    return ResultMapper(schema, name, FULL_COVARIANCE, SIGMA_ONLY, FULL_COVARIANCE, ctrl);
 }
 
 template <typename T>

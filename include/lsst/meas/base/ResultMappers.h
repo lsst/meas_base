@@ -245,11 +245,12 @@ private:
 template <typename Algorithm, typename T1>
 struct ResultMapper1 : public T1, public FlagsComponentMapper<Algorithm> {
 
+    template <typename A1>
     ResultMapper1(
         afw::table::Schema & schema,
         std::string const & prefix,
-        UncertaintyEnum uncertainty1
-    ) : T1(schema, prefix, uncertainty1),
+        A1 a1
+    ) : T1(schema, prefix, a1),
         FlagsComponentMapper<Algorithm>(schema, prefix)
     {}
 
@@ -263,13 +264,13 @@ struct ResultMapper1 : public T1, public FlagsComponentMapper<Algorithm> {
 template <typename Algorithm, typename T1, typename T2>
 struct ResultMapper2 : public T1, public T2, public FlagsComponentMapper<Algorithm> {
 
+    template <typename A1, typename A2>
     ResultMapper2(
         afw::table::Schema & schema,
         std::string const & prefix,
-        UncertaintyEnum uncertainty1,
-        UncertaintyEnum uncertainty2
-    ) : T1(schema, prefix, uncertainty1),
-        T2(schema, prefix, uncertainty2),
+        A1 a1, A2 a2
+    ) : T1(schema, prefix, a1),
+        T2(schema, prefix, a2),
         FlagsComponentMapper<Algorithm>(schema, prefix)
     {}
 
@@ -284,15 +285,14 @@ struct ResultMapper2 : public T1, public T2, public FlagsComponentMapper<Algorit
 template <typename Algorithm, typename T1, typename T2, typename T3>
 struct ResultMapper3 : public T1, public T2, public T3, public FlagsComponentMapper<Algorithm> {
 
+    template <typename A1, typename A2, typename A3>
     ResultMapper3(
         afw::table::Schema & schema,
         std::string const & prefix,
-        UncertaintyEnum uncertainty1,
-        UncertaintyEnum uncertainty2,
-        UncertaintyEnum uncertainty3
-    ) : T1(schema, prefix, uncertainty1),
-        T2(schema, prefix, uncertainty2),
-        T3(schema, prefix, uncertainty3),
+        A1 a1, A2 a2, A3 a3
+    ) : T1(schema, prefix, a1),
+        T2(schema, prefix, a2),
+        T3(schema, prefix, a3),
         FlagsComponentMapper<Algorithm>(schema, prefix)
     {}
 
@@ -308,17 +308,15 @@ struct ResultMapper3 : public T1, public T2, public T3, public FlagsComponentMap
 template <typename Algorithm, typename T1, typename T2, typename T3, typename T4>
 struct ResultMapper4 : public T1, public T2, public T3, public T4, public FlagsComponentMapper<Algorithm> {
 
+    template <typename A1, typename A2, typename A3, typename A4>
     ResultMapper4(
         afw::table::Schema & schema,
         std::string const & prefix,
-        UncertaintyEnum uncertainty1,
-        UncertaintyEnum uncertainty2,
-        UncertaintyEnum uncertainty3,
-        UncertaintyEnum uncertainty4
-    ) : T1(schema, prefix, uncertainty1),
-        T2(schema, prefix, uncertainty2),
-        T3(schema, prefix, uncertainty3),
-        T4(schema, prefix, uncertainty4),
+        A1 a1, A2 a2, A3 a3, A4 a4
+    ) : T1(schema, prefix, a1),
+        T2(schema, prefix, a2),
+        T3(schema, prefix, a3),
+        T4(schema, prefix, a4),
         FlagsComponentMapper<Algorithm>(schema, prefix)
     {}
 
