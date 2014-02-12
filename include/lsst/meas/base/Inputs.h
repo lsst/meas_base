@@ -51,31 +51,31 @@ struct NullControl {};
  */
 
 /// An Input struct for algorithms that require only a Footprint
-struct AlgorithmInput1 {
-    typedef std::vector<AlgorithmInput1> Vector;
+struct FootprintInput {
+    typedef std::vector<FootprintInput> Vector;
 
     PTR(afw::detection::Footprint) footprint;
 
-    explicit AlgorithmInput1(PTR(afw::detection::Footprint) footprint_) : footprint(footprint_) {}
+    explicit FootprintInput(PTR(afw::detection::Footprint) footprint_) : footprint(footprint_) {}
 
-    explicit AlgorithmInput1(afw::table::SourceRecord const & record) : footprint(record.getFootprint()) {}
+    explicit FootprintInput(afw::table::SourceRecord const & record) : footprint(record.getFootprint()) {}
 
     static Vector makeVector(afw::table::SourceCatalog const & catalog);
 
 };
 
 /// An Input struct for algorithms that require a position as well as a Footprint
-struct AlgorithmInput2 : public AlgorithmInput1 {
-    typedef std::vector<AlgorithmInput2> Vector;
+struct FootprintCentroidInput : public FootprintInput {
+    typedef std::vector<FootprintCentroidInput> Vector;
 
     afw::geom::Point2D position;
 
-    explicit AlgorithmInput2(
+    explicit FootprintCentroidInput(
         PTR(afw::detection::Footprint) footprint_, afw::geom::Point2D const & position_
-    ) : AlgorithmInput1(footprint_), position(position_) {}
+    ) : FootprintInput(footprint_), position(position_) {}
 
-    AlgorithmInput2(afw::table::SourceRecord const & record) :
-        AlgorithmInput1(record), position(record.getCentroid())
+    FootprintCentroidInput(afw::table::SourceRecord const & record) :
+        FootprintInput(record), position(record.getCentroid())
     {}
 
     static Vector makeVector(afw::table::SourceCatalog const & catalog);
@@ -83,19 +83,19 @@ struct AlgorithmInput2 : public AlgorithmInput1 {
 };
 
 /// An Input struct for algorithms that require a position and shape as well as a Footprint
-struct AlgorithmInput3 : public AlgorithmInput2 {
-    typedef std::vector<AlgorithmInput3> Vector;
+struct FootprintCentroidShapeInput : public FootprintCentroidInput {
+    typedef std::vector<FootprintCentroidShapeInput> Vector;
 
     afw::geom::ellipses::Quadrupole shape;
 
-    AlgorithmInput3(
+    FootprintCentroidShapeInput(
         PTR(afw::detection::Footprint) footprint_,
         afw::geom::Point2D const & position_,
         afw::geom::ellipses::Quadrupole const & shape_
-    ) : AlgorithmInput2(footprint_, position_), shape(shape_) {}
+    ) : FootprintCentroidInput(footprint_, position_), shape(shape_) {}
 
-    explicit AlgorithmInput3(afw::table::SourceRecord const & record) :
-        AlgorithmInput2(record), shape(record.getShape())
+    explicit FootprintCentroidShapeInput(afw::table::SourceRecord const & record) :
+        FootprintCentroidInput(record), shape(record.getShape())
     {}
 
     static Vector makeVector(afw::table::SourceCatalog const & catalog);

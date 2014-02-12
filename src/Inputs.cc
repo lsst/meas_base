@@ -25,29 +25,29 @@
 
 namespace lsst { namespace meas { namespace base {
 
-AlgorithmInput1::Vector AlgorithmInput1::makeVector(afw::table::SourceCatalog const & catalog) {
+FootprintInput::Vector FootprintInput::makeVector(afw::table::SourceCatalog const & catalog) {
     Vector r;
     r.reserve(catalog.size());
     for (afw::table::SourceCatalog::const_iterator i = catalog.begin(), end=catalog.end(); i != end; ++i) {
-        r.push_back(AlgorithmInput1(*i));
+        r.push_back(FootprintInput(*i));
     }
     return r;
 }
 
-AlgorithmInput2::Vector AlgorithmInput2::makeVector(afw::table::SourceCatalog const & catalog) {
+FootprintCentroidInput::Vector FootprintCentroidInput::makeVector(afw::table::SourceCatalog const & catalog) {
     Vector r;
     r.reserve(catalog.size());
     for (afw::table::SourceCatalog::const_iterator i = catalog.begin(), end=catalog.end(); i != end; ++i) {
-        r.push_back(AlgorithmInput2(*i));
+        r.push_back(FootprintCentroidInput(*i));
     }
     return r;
 }
 
-AlgorithmInput3::Vector AlgorithmInput3::makeVector(afw::table::SourceCatalog const & catalog) {
+FootprintCentroidShapeInput::Vector FootprintCentroidShapeInput::makeVector(afw::table::SourceCatalog const & catalog) {
     Vector r;
     r.reserve(catalog.size());
     for (afw::table::SourceCatalog::const_iterator i = catalog.begin(), end=catalog.end(); i != end; ++i) {
-        r.push_back(AlgorithmInput3(*i));
+        r.push_back(FootprintCentroidShapeInput(*i));
     }
     return r;
 }

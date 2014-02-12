@@ -78,7 +78,7 @@ public:
  *  %include "lsst/meas/base/PsfFlux.h"
  *  %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<float>;
  *  %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<double>;
- *  %wrapMeasurementAlgorithm1(lsst::meas::base, PsfFluxAlgorithm, PsfFluxControl, AlgorithmInput2,
+ *  %wrapMeasurementAlgorithm1(lsst::meas::base, PsfFluxAlgorithm, PsfFluxControl, FootprintCentroidInput,
  *                             FluxComponent)
  *  @endcode
  *  and in the pure Python layer:
@@ -135,9 +135,9 @@ public:
 
     /**
      *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  PsfFluxAlgorithm only needs a centroid, so we use AlgorithmInput2.
+     *  Exposure being measured.  PsfFluxAlgorithm only needs a centroid, so we use FootprintCentroidInput.
      */
-    typedef AlgorithmInput2 Input; // type passed to apply in addition to Exposure.
+    typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
 
     /**
      *  @brief Create an object that transfers Result values to a record associated with the given schema

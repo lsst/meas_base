@@ -138,7 +138,7 @@ private:
  *  %include "lsst/meas/base/SdssShape.h"
  *  %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
  *  %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
- *  %wrapMeasurementAlgorithm4(lsst::meas::base, SdssShapeAlgorithm, SdssShapeControl, AlgorithmInput2,
+ *  %wrapMeasurementAlgorithm4(lsst::meas::base, SdssShapeAlgorithm, SdssShapeControl, FootprintCentroidInput,
  *                             ShapeComponent, CentroidComponent, FluxComponent, SdssShapeExtras)
  *  @endcode
  *  and in the pure Python layer:
@@ -191,9 +191,9 @@ public:
 
     /**
      *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  SdssShapeAlgorithm only needs a centroid, so we use AlgorithmInput2.
+     *  Exposure being measured.  SdssShapeAlgorithm only needs a centroid, so we use FootprintCentroidInput.
      */
-    typedef AlgorithmInput2 Input;
+    typedef FootprintCentroidInput Input;
 
     /// @copydoc PsfFluxAlgorithm::makeResultMapper
     static ResultMapper makeResultMapper(

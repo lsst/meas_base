@@ -83,9 +83,9 @@ T.Vector = T ## Vector
 %}
 %enddef
 
-%instantiateInput(AlgorithmInput1)
-%instantiateInput(AlgorithmInput2)
-%instantiateInput(AlgorithmInput3)
+%instantiateInput(FootprintInput)
+%instantiateInput(FootprintCentroidInput)
+%instantiateInput(FootprintCentroidShapeInput)
 
 %define %instantiateResult1(NAMESPACE, ALGORITHM, T1)
 %template(ALGORITHM##FlagsComponent) lsst::meas::base::FlagsComponent<NAMESPACE::ALGORITHM>;
@@ -189,10 +189,10 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %include "lsst/meas/base/PsfFlux.h"
 %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, PsfFluxAlgorithm, PsfFluxControl, AlgorithmInput2, FluxComponent)
+%wrapMeasurementAlgorithm1(lsst::meas::base, PsfFluxAlgorithm, PsfFluxControl, FootprintCentroidInput, FluxComponent)
 
 %include "lsst/meas/base/SdssShape.h"
 %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm4(lsst::meas::base, SdssShapeAlgorithm, SdssShapeControl, AlgorithmInput2,
+%wrapMeasurementAlgorithm4(lsst::meas::base, SdssShapeAlgorithm, SdssShapeControl, FootprintCentroidInput,
                            ShapeComponent, CentroidComponent, FluxComponent, SdssShapeExtras)
