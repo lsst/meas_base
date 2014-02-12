@@ -115,8 +115,18 @@ public:
      *  Each element of the returned array should correspond to one of the FlagBits enum values, but the
      *  names should follow conventions; FlagBits should be ALL_CAPS_WITH_UNDERSCORES, while FlagDef names
      *  should be camelCaseStartingWithLowercase.  @sa FlagsComponentMapper.
+     *
+     *  The implementation of getFlagDefinitions() should generally go in the header file so it is easy
+     *  to keep in sync with the FlagBits enum.
      */
-    static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions();
+    static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
+        static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
+                {"noPsf", "No Psf object attached to the Exposure object being measured"},
+                {"noGoodPixels", "No usable pixels in fit region"},
+                {"edge", "Could not use full PSF model image in fit because of proximity to exposure border"}
+            }};
+        return flagDefs;
+    }
 
     /// Just a typedef to the Control object defined above.
     typedef PsfFluxControl Control;

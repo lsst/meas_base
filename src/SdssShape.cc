@@ -53,16 +53,6 @@ approxExp(float x)
 
 } // anonymous
 
-boost::array<FlagDef,SdssShapeAlgorithm::N_FLAGS> const & SdssShapeAlgorithm::getFlagDefinitions() {
-    static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
-            {"unweightedBad", "Both weighted and unweighted moments were invalid"},
-            {"unweighted", "Weighted moments converged to an invalid value; using unweighted moments"},
-            {"shift", "centroid shifted by more than the maximum allowed amount"},
-            {"maxIter", "Too many iterations in adaptive moments"}
-        }};
-    return flagDefs;
-}
-
 SdssShapeExtras::SdssShapeExtras() :
     xy4(std::numeric_limits<ShapeElement>::quiet_NaN()),
     xy4Sigma(std::numeric_limits<ShapeElement>::quiet_NaN()),

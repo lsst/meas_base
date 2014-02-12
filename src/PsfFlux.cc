@@ -35,15 +35,6 @@
 
 namespace lsst { namespace meas { namespace base {
 
-boost::array<FlagDef,PsfFluxAlgorithm::N_FLAGS> const & PsfFluxAlgorithm::getFlagDefinitions() {
-    static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
-            {"noPsf", "No Psf object attached to the Exposure object being measured"},
-            {"noGoodPixels", "No usable pixels in fit region"},
-            {"edge", "Could not use full PSF model image in fit because of proximity to exposure border"}
-        }};
-    return flagDefs;
-}
-
 PsfFluxAlgorithm::ResultMapper PsfFluxAlgorithm::makeResultMapper(
     afw::table::Schema & schema, std::string const & name, Control const & ctrl
 ) {

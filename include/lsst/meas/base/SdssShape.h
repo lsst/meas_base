@@ -162,7 +162,15 @@ public:
     };
 
     /// @copydoc PsfFluxAlgorithm::getFlagDefinitions()
-    static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions();
+    static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
+        static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
+                {"unweightedBad", "Both weighted and unweighted moments were invalid"},
+                {"unweighted", "Weighted moments converged to an invalid value; using unweighted moments"},
+                {"shift", "centroid shifted by more than the maximum allowed amount"},
+                {"maxIter", "Too many iterations in adaptive moments"}
+            }};
+        return flagDefs;
+    }
 
     /// Just a typedef to the Control object defined above.
     typedef SdssShapeControl Control;
