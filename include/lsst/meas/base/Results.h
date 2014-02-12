@@ -35,6 +35,16 @@
 
 namespace lsst { namespace meas { namespace base {
 
+template <typename Algorithm, typename T1> struct ResultMapper1;
+template <typename Algorithm, typename T1, typename T2> struct ResultMapper2;
+template <typename Algorithm, typename T1, typename T2, typename T3> struct ResultMapper3;
+template <typename Algorithm, typename T1, typename T2, typename T3, typename T4> struct ResultMapper4;
+
+template <typename Algorithm> struct FlagsComponentMapper;
+struct FluxComponentMapper;
+struct CentroidComponentMapper;
+struct ShapeComponentMapper;
+
 /**
  *  @brief Exception to be thrown when a measurement algorithm experiences a known failure mode.
  *
@@ -170,6 +180,8 @@ struct FlagDef {
 template <typename Algorithm>
 struct FlagsComponent {
 
+    typedef FlagsComponentMapper<Algorithm> Mapper;
+
     /// Return the flag value associated with the given bit
     bool getFlag(typename Algorithm::FlagBits bit) const { return _flags[bit]; }
 
@@ -194,6 +206,9 @@ private:
  *  @todo figure out how to handle arrays of fluxes from e.g. aperture photometry
  */
 struct FluxComponent {
+
+    typedef FluxComponentMapper Mapper;
+
     Flux flux; ///< Measured flux in DN.
     ErrElement fluxSigma; ///< 1-Sigma error (sqrt of variance) on flux in DN.
 
@@ -206,6 +221,9 @@ struct FluxComponent {
  *  Centroid measurements and their errors should always be in pixels, relative to the image's xy0.
  */
 struct CentroidComponent {
+
+    typedef CentroidComponentMapper Mapper;
+
     CentroidElement x; ///< x (column) coordinate of the measured position
     CentroidElement y; ///< y (row) coordinate of the measured position
     ErrElement xSigma; ///< 1-Sigma uncertainty on x (sqrt of variance)
@@ -237,6 +255,9 @@ struct CentroidComponent {
  *  obfuscate the results of the measurement (i.e. use this one unless you have a good reason not to).
  */
 struct ShapeComponent {
+
+    typedef ShapeComponentMapper Mapper;
+
     ShapeElement xx; // image or model second moment for x^2
     ShapeElement yy; // image or model second moment for y^2
     ShapeElement xy; // image or model second moment for xy^2
@@ -303,16 +324,30 @@ struct ShapeComponent {
  * @{
  */
 template <typename Algorithm, typename T1>
-struct Result1 : public T1, public FlagsComponent<Algorithm> {};
+struct Result1 : public T1, public FlagsComponent<Algorithm> {
+    typedef ResultMapper1<Algorithm, typename T1::Mapper> Mapper;
+};
 
 template <typename Algorithm, typename T1, typename T2>
-struct Result2 : public T1, public T2, public FlagsComponent<Algorithm> {};
+struct Result2 : public T1, public T2, public FlagsComponent<Algorithm> {
+    typedef ResultMapper2<Algorithm, typename T1::Mapper, typename T2::Mapper> Mapper;
+};
 
 template <typename Algorithm, typename T1, typename T2, typename T3>
-struct Result3 : public T1, public T2, public T3, public FlagsComponent<Algorithm> {};
+struct Result3 : public T1, public T2, public T3, public FlagsComponent<Algorithm> {
+    typedef ResultMapper3<Algorithm, typename T1::Mapper, typename T2::Mapper, typename T3::Mapper> Mapper;
+};
 
 template <typename Algorithm, typename T1, typename T2, typename T3, typename T4>
-struct Result4 : public T1, public T2, public T3, public T4, public FlagsComponent<Algorithm> {};
+struct Result4 : public T1, public T2, public T3, public T4, public FlagsComponent<Algorithm> {
+    typedef ResultMapper4<
+        Algorithm,
+        typename T1::Mapper,
+        typename T2::Mapper,
+        typename T3::Mapper,
+        typename T4::Mapper
+        > Mapper;
+};
 
 /** @} */ // end of measBaseResultTemplates group
 

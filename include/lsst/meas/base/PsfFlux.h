@@ -131,7 +131,7 @@ public:
      *  The ResultMapper typedef here exactly corresponds to the the Result typedef defined above: there's
      *  a corresponding ComponentMapper for each Component.
      */
-    typedef ResultMapper1<PsfFluxAlgorithm,FluxComponentMapper> ResultMapper;
+    typedef Result::Mapper ResultMapper;
 
     /**
      *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the

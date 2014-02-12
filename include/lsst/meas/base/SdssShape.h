@@ -60,6 +60,8 @@ public:
 
 };
 
+class SdssShapeExtrasMapper;
+
 /**
  *  @brief Additional results for SdssShapeAlgorithm
  *
@@ -74,6 +76,9 @@ public:
  */
 class SdssShapeExtras {
 public:
+
+    typedef SdssShapeExtrasMapper Mapper;
+
     ShapeElement xy4;       ///< A fourth moment used in lensing (RHL needs to clarify; not in the old docs)
     ErrElement xy4Sigma;    ///< 1-Sigma uncertainty on xy4
     ErrElement flux_xx_Cov; ///< flux, xx term in the uncertainty covariance matrix
@@ -181,13 +186,7 @@ public:
     > Result;
 
     /// @copydoc PsfFluxAlgorithm::ResultMapper
-    typedef ResultMapper4<
-        SdssShapeAlgorithm,
-        ShapeComponentMapper,
-        CentroidComponentMapper,
-        FluxComponentMapper,
-        SdssShapeExtrasMapper
-    > ResultMapper;
+    typedef Result::Mapper ResultMapper;
 
     /**
      *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
