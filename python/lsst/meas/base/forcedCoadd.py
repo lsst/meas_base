@@ -25,7 +25,7 @@
 """
 import lsst.pex.config
 from lsst.pipe.base import Task, CmdLineTask, Struct, timeMethod, ArgumentParser, ButlerInitializedTaskRunner
-from lsst.pipe.tasks.coaddBase import CoaddDataIdContainer
+from lsst.coadd.utils import CoaddDataIdContainer
 import lsst.daf.base
 from lsst.pex.config import DictField,ConfigurableField
 from .forcedImage import *
