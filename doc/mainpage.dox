@@ -5,11 +5,22 @@ namespace lsst { namespace meas { namespace base {
 @mainpage lsst::meas::base;  redesigned support for measurement tasks and algorithm plugins
 
 @section measBaseIntroduction Introduction to meas_base
-
 The meas_base package is the new home of the source measurement framework, which was formerly part of
-meas_algorithms.  This includes:
- - SingleFrameMeasurementTask, a subtask that measures sources after detection and deblending on the same
-   frame.
+meas_algorithms.
+
+The source measurement framework is a set of Python modules which allow measurements to be performed on
+calibrated exposures. The framework assumes that a detection catalog has been prepared to identify the
+objects to be measured.  The detection catalog may have been produced with a detection pass on the exposure
+itself, but it might also be produced from other exposures, stacks, or even multiple exposures.
+Deblending may or may not have been performed during the creation of the detection catalog.
+
+The framework steps through the detection catalog and performs a set of measurements, object by object,
+supplying each measurement plugin with the exposure and catalog information needed for its measurement.
+The measurement results (values, errors, and flags) are then placed in an output catalog.
+
+The measurement framework includes the following features:
+ 
+ - SingleFrameMeasurementTask, a subtask that measures after detection and deblending on the same frame.
  - ForcedCcdTask and ForcedCoaddTask, a command-line task for performing constrained measurements on a
    frame other than the detection frame.  These delegate most of their work to their base class,
    ForcedMeasurementTask.
@@ -25,9 +36,11 @@ meas_algorithms.  This includes:
 
 The "Plugin" interfaces used directly by the measurement tasks are defined completely in Python, and are
 rooted in the abstract base classes sfm.SingleFramePlugin and forcedImage.ForcedPlugin.  Creating a new
-Plugin is quite straightforward:
- - Subclass one of sfm.SingleFramePlugin or forcedImage.ForcedPlugin (a single class cannot inherit from
-   both, as they have different method signatures).
+Plugin is quite straightforward.
+
+For a SingleFramePlugin:
+ - Subclass sfm.SingleFramePlugin (a forcedPlugin must be defined separately, as it has different
+   method signatures.
  - Implement an @c %__init__ method with the same signature as the base class, in which fields saved by the
    the Plugin should be added to the schema passed to @c %__init__, with keys saved as instance attributes
    for future use.
@@ -35,6 +48,18 @@ Plugin is quite straightforward:
  - Reimplement @c fail() unless the Plugin cannot fail (except for environment errors).
  - Reimplement @c measureN() if the Plugin supports measuring multiple sources simultaneously.
  - Register the Plugin with the config mechanism by calling e.g. @c SingleFramePlugin.registry.register()
+   at module scope (so the registration happens at import-time).
+
+For a ForcedPlugin
+ - Subclass forceImage.ForcedPlugin
+ - Implement an @c %__init__ method with the same signature as the base class, in which fields saved by the
+   the Plugin should be added to the outputSchema of the schemaMapper passed to @c %__init__,
+   with keys saved as instance attributes for future use.
+ - Reimplement @c measure() to perform the actual measurement and save the result in the measRecord argument.
+   Note that the refRecord and refWcs are available during the measurement if needed.
+ - Reimplement @c fail() unless the Plugin cannot fail (except for environment errors).
+ - Reimplement @c measureN() if the Plugin supports measuring multiple sources simultaneously.
+ - Register the Plugin with the config mechanism by calling e.g. @c ForcedPlugin.registry.register()
    at module scope (so the registration happens at import-time).
 
 Defining a Plugin directly has several disadvantages, however.  Using this approach, it is difficult to share
@@ -45,7 +70,7 @@ like to avoid the overhead of constructing a SourceCatalog to store the outputs.
 algorithms should generally be implemented in C++ for performance reasons, and inheriting from an existing
 pure-Python class via Swig is difficult at best (it may in fact be impossible).
 
-Instead of implementing Plugins directly, then, we generally advice new Plugins to be creating by defining
+Instead of implementing Plugins directly, then, we generally advise that new Plugins be created by defining
 what we will refer to as an "Algorithm" class in C++ (in the future, Algorithm classes may also be created
 in Python, but this is not yet supported).  Algorithm is not a polymorphic class hierarchy; it is perhaps
 more like a C++ <a href="http://en.cppreference.com/w/cpp/concept">Concept </a> .  If a C++ class meets the
@@ -56,7 +81,7 @@ to allow Plugins that delegate to the Algorithm to be machine-generated.  Once c
 SingleFramePlugin and a ForcedPlugin that delegate to the same Algorithm method in most cases.
 
 The best way to learn how to write a new Algorithm
-is by example, and for this purpose two of the Algorithms defined in meas_base have been supplemented with
+is by example, and for this purpose two of the Algorithms defined in meas_base have been supplied with
 additional documentation intended to allow them to be used as tutorials.  PsfFluxAlgorithm is an example
 of an extremely simple algorithm - it measures only one standard quantity, has few configuration options,
 and has very standard inputs.  SdssShapeAlgorithm provides a much more complex example.

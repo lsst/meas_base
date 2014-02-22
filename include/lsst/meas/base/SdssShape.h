@@ -64,8 +64,10 @@ public:
  *  @brief Additional results for SdssShapeAlgorithm
  *
  *  Unlike PsfFlux, some of SdssShape's outputs aren't handled by the standard FluxComponent,
- *  CentroidComponent, and ShapeComponent classes, so we have to define our own Component class here
- *  (and a ComponentMapper class below).
+ *  CentroidComponent, and ShapeComponent classes, so we have to define a Component class here
+ *  to handle just those output which require special handling.
+ *
+ *  A corresponding ComponentMapper class is also required (see below).
  *
  *  Note: for what I guess are historical reasons, SdssShape computes covariance terms between the flux
  *  and the shape, but not between the flux and centroid or centroid and shape.
@@ -99,7 +101,7 @@ public:
      *
      *  Unlike the standard ComponentMappers, SdssShapeExtrasMappers takes a Control instance
      *  as its third argument.  It doesn't actually need it, but this is a good pattern to
-     *  establish as some algorithms outputs *will* depend on the Control object's values, and
+     *  establish as some algorithms' outputs *will* depend on the Control object's values, and
      *  the mapper needs to have some kind of third argument in order to work with
      *  @ref measBaseResultMapperTemplates.
      *
@@ -129,7 +131,7 @@ private:
  *  is iteratively updated to match the current weights.  If this iteration does not converge, it can fall
  *  back to using unweighted moments, which can be significantly noisier.
  *
- *  As an Algorithm class, all of SdssShapeAlgorithm's core functionality is availabe via static methods
+ *  As an Algorithm class, all of SdssShapeAlgorithm's core functionality is available via static methods
  *  (in fact, there should be no reason to ever construct an instance).
  *
  *  Almost all of the implementation of SdssShapeAlgorithm is here and in SdssShapeAlgorithm.cc, but there
@@ -172,13 +174,14 @@ public:
         return flagDefs;
     }
 
-    /// Just a typedef to the Control object defined above.
+    /// A typedef to the Control object for this algorithm, defined above.
+    /// The control object contains the configuration parameters for this algorithm.
     typedef SdssShapeControl Control;
 
     /**
      *  This is the type returned by apply().  Because SdssShapeAlgorithm measures a flux, a centroid, a
      *  shape, and some other things, we concatenate all those together using the 4-parameter Result
-     *  template.
+     *  template. A Flags component is always included with these templates as well.
      */
     typedef Result4<
         SdssShapeAlgorithm,
@@ -199,7 +202,7 @@ public:
 
     /**
      *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  SdssShapeAlgorithm only needs a centroid, so we use FootprintCentroidInput.
+     *  Exposure being measured.  SdssShapeAlgorithm needs a centroid, so we can use FootprintCentroidInput.
      */
     typedef FootprintCentroidInput Input;
 
@@ -214,9 +217,9 @@ public:
      *  @brief Measure the shape of a source using the SdssShape algorithm.
      *
      *  This is the overload of apply() that does all the work, and it's designed to be as easy to use
-     *  as possible outside the Plugin framework (since the Plugin framework calls another other one).  The
-     *  arguments are all the things we need, and nothing more; we use a MaskedImage instead of an
-     *  Exposure because we just need the pixel data.
+     *  as possible outside the Plugin framework (since the Plugin framework calls another other one).
+     *  The arguments contain everything needed.; a MaskedImage is supplied (not an Exposure)
+     *  because we just need the pixel data and mask.
      */
     template <typename T>
     static Result apply(

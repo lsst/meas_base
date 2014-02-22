@@ -69,7 +69,7 @@ public:
 /**
  *  @brief A measurement algorithm that estimates flux using a linear least-squares fit with the Psf model
  *
- *  As an Algorithm class, all of PsfFluxAlgorithm's core functionality is availabe via static methods
+ *  As an Algorithm class, all of PsfFluxAlgorithm's core functionality is available via static methods
  *  (in fact, there should be no reason to ever construct an instance).
  *
  *  Almost all of the implementation of PsfFluxAlgorithm is here and in PsfFluxAlgorithm.cc, but there
@@ -128,18 +128,20 @@ public:
         return flagDefs;
     }
 
-    /// Just a typedef to the Control object defined above.
+    /// A typedef to the Control object for this algorithm, defined above.
+    /// The control object contains the configuration parameters for this algorithm.
     typedef PsfFluxControl Control;
 
     /**
-     *  This is the type returned by apply().  Because PsfFluxAlgorithm only measures a flux and its
-     *  uncertainty, we can use one of the predefined components, FluxComponent, without any modification.
+     *  Result is the type returned by apply().  Because PsfFluxAlgorithm only measures a flux and its
+     *  uncertainty, we can use the single predefined component, FluxComponent, without any modification.
+     *  Result1 is a template for algorithms with one result component, in addition to flags.
      */
     typedef Result1<PsfFluxAlgorithm,FluxComponent> Result;
 
     /**
-     *  The ResultMapper typedef here exactly corresponds to the the Result typedef defined above: there's
-     *  a corresponding ComponentMapper for each Component.
+     *  The ResultMapper typedef here must exactly corresponds to the the Result typedef defined above:
+     *  There is a ComponentMapper corresponding to each Component.
      */
     typedef ResultMapper1<PsfFluxAlgorithm,FluxComponentMapper> ResultMapper;
 

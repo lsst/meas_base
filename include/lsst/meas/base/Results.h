@@ -84,7 +84,9 @@ LSST_EXCEPTION_TYPE(PixelValueError, lsst::pex::exceptions::DomainErrorException
  *  @brief An enum used to specify how much uncertainty information measurement algorithms provide.
  *
  *  Currently, only ResultMappers (not Results) make use of these distinctions; Result structs always
- *  have data members that could hold the full-covariance, but may set some of these to NaN.
+ *  have data members that could hold the full-covariance, but may set some of these to NaN.  The
+ *  ResultMapper knows that their individual compoents may only produce a sigma, or no error field
+ *  at all.  When the Results are written to the output record, this information is heeded.
  */
 enum UncertaintyEnum {
     NO_UNCERTAINTY = 0, ///< Algorithm provides no uncertainy information at all
@@ -123,21 +125,29 @@ struct FlagDef {
  *  @defgroup measBaseResults Results and ResultMappers
  *
  *  In order to be wrapped as Plugins, Algorithm classes must have apply() (and optionally applyN()) methods
- *  that return a Result struct with the outputs of the algorithm.  In most cases, Algorithms will create a
- *  Result struct by instantiating one of @ref measBaseResultTemplates, which can
- *  be used to aggregate one or more common kinds of measurements (FluxComponent, CentroidComponent,
- *  ShapeComponent) with a set flags (FlagsComponent).  Classes whose outputs cannot be categorized this way
- *  (See SdssShapeAlgorithm as an example, or @ref measBaseResultTemplates for more documentation) should
- *  generally defined their own custom "extras" component to be used with the standard components in one of
- *  @ref measBaseResultTemplates.
+ *  that return a Result containing the outputs of the algorithm. A Result struct is an aggregation of
+ *  one or more "Components". A Component is a single measurement, such as a position and position error,
+ *  or a flux and flux error.  
  *
- *  In order to transfer the result values to a afw::table::SourceRecord in the Plugin wrapper, an Algorithm
- *  must also provide a ResultMapper typedef that points to one of the ResultMapperN templates, and provide
- *  a makeResultMapper static method to create one.  There are standard ComponentMappers for each of of the
- *  standard result components (FluxComponentMapper, CentroidComponentMapper, ShapeComponentMapper, and
- *  FlagsComponentMapper), so if an Algorithm only uses these standardized results, creating a ResultMapper
- *  will be trivial.  If not, they'll need to provide a mapper for their "extras" (again, see
- *  SdssShapeAlgorithm) for an example.
+ *  A standard set of Components (Flux, Centroid, Shape) are defined in the lsst::meas::base namespace.
+ *  A FlagsComponent is also defined for returning error flags.
+ *
+ *  In most cases, Algorithms will create their Result from Components by instantiating one of the 
+ *  @ref measBaseResultTemplates, which can be used to aggregate one or more standard Components
+ *  (FluxComponent, CentroidComponent, ShapeComponent) with a set flags (FlagsComponent).  Classes whose
+ *  outputs cannot be categorized this way should define their own custom "Extras" Component.
+ *  (See SdssShapeAlgorithm as an example, or @ref measBaseResultTemplates for more documentation.)
+ *
+ *  A ResultMapper transfers the Result values to a afw::table::SourceRecord in the Plugin wrapper.
+ *  An algorithm must therefore also provide a ResultMapper typedef corresponding to its Result typedef.
+ *  And it must provide a makeResultMapper static method to create its ResultMapper.
+ *
+ *  When the Result is one of the standard ResultN templates, the ResultMapper should be one of the standard
+ *  ResultMapperN templates with the same Components.  Note that if the Result is made up of standard
+ *  Components, a corresponding ComponentMapper (FluxComponentMapper, CentroidComponentMapper,
+ *  ShapeComponentMapper, and FlagsComponentMapper) is supplied, and creating a ResultMapper is trivial.
+ *  If the Component is not one of the Standard Componets, you will also need to provide a mapper for
+ *  the "extras" (again, see SdssShapeAlgorithm) for an example.
  *
  *  @{
  */
@@ -147,13 +157,13 @@ struct FlagDef {
  *
  *  All algorithms should include a FlagsComponent in their Result struct (all of the ResultN templates do)
  *  to provide detailed information about different failure modes.  In general, however, an Algorithm should
- *  only set flags directly in the Result struct for non-fatal errors, even thought the Result struct should
- *  have bits for both fatal and non-fatal errors.  Instead, for fatal errors, the MeasurementError
- *  exception should be thrown, with the appropriate bit set on the exception.
+ *  only set flags directly in the Result struct for non-fatal errors, even if the Result struct should
+ *  have bits for both fatal and non-fatal errors.  For fatal errors, the MeasurementError exception
+ *  should be thrown, and the appropriate bit set should be set by the exception handler.
  *
  *  In addition, while the afw::table::Schema for each Plugin will contain a Flag that indicates a general
  *  failure of that plugin, such a Flag should NOT be defined explicitly by the Algorithm, and will not be
- *  included in the FlagsComponent; instead, the Algorithm should simpy throw an exception, and the Plugin
+ *  included in the FlagsComponent; instead, the Algorithm should simply throw an exception, and the Plugin
  *  framework will ensure that the general failure bit is set in this case (in addition to any other bit
  *  attached to the MeasurementError, if that is what is thrown).
  *
@@ -162,7 +172,7 @@ struct FlagDef {
  *     value that declares the total number of flags.  Note that the enum values should be the bit index,
  *     NOT an integer bitmask.
  *   - Define a static makeFlagDefinitions() method that returns a const reference to
- *     @c boost::array<FlagDef,N_FLAGS>, containing schema-appropriate names and descriptions for
+ *     @c boost::array<FlagDef,N_FLAGS>. This contains schema-appropriate names and descriptions for
  *     each flag (to create the actual schema field name, these names will be appended to a
  *     "<PluginName>_flag_" prefix).  Schema-appropriate flag names begin with a lower-case letter
  *     and are camelCase with no spaces.
@@ -272,9 +282,10 @@ struct ShapeComponent {
 /**
  *  @defgroup measBaseResultTemplates the ResultN templates
  *
- *  All Algorithm classes should typedef one of these as Result to declare to the Plugin wrapper system
- *  the type returned by their apply() method.  There are a few requirements and recommendationson fo
- *  classes that can be used as components (i.e. template arguments):
+ *  All Algorithm classes should declare a typedef 'Result'.  This typedef tells the Plugin wrapper system
+ *  the type which will be returned by their apply() method.  A Result is typically an instantiation of
+ *  one of ResultN templates, with N Components (the template arguments).  There are a few requirements
+ *  and recommendations for classes that can be used as Components:
  *   - They must be default constructable, copyable, and assignable.
  *   - The default constructor should initialize all data members to sensible values (usually NaN for
  *     floating point values).
@@ -282,22 +293,22 @@ struct ShapeComponent {
  *   - When possible the typedefs used in the standard Component structs should used (i.e. ErrElement for
  *     uncertainty values).
  *
- *  Each custom Component must be accompanied by an associated ComponentMapper (see
- *  @ref measBaseResultMapperTemplates), however, which is somewhat more complicated than the Component
- *  itself.
+ *  Custom Components must be accompanied by an associated ComponentMapper (see
+ *  @ref measBaseResultMapperTemplates).  The ComponentMapper is somewhat more complicated than the
+ *  Component itself.
  *
  *  Note that these templates all implicitly include a FlagsComponent.
  *
  *  @internal
  *  We use multiple inheritance here (following a pattern commonly used in implementations of std::tuple)
  *  rather than composition to keep user code concise and boilerplate-free,
- *  and also to allow the Python/C++ code for accessing a result struct to more closely resemble the
- *  afw::table fields the result struct data members correspond to.  Because all of the component classes
+ *  and also to allow the Python/C++ code for accessing a Result struct to more closely resemble the
+ *  afw::table fields the Result struct data members correspond to.  Because all of the component classes
  *  are strictly nonpolymorphic, it's better to just think of this as a language-specific technique for
  *  struct concatenation that true OO multiple-inheritance.
  *
  *  In C++11, we could consider making these variadic, but the fact that we'll likely never need more than
- *  four components means the implementation of a variadic version (let alone its Swig wrappers) would
+ *  four Components means the implementation of a variadic version (let alone its Swig wrappers) would
  *  almost certainly require more code (and be harder to maintain) than the explicit version here.
  *  @endinternal
  * @{
