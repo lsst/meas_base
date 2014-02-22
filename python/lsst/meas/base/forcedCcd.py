@@ -109,7 +109,7 @@ class ForcedCcdMeasurementTask(ForcedMeasurementTask):
 
         @param dataRef       Data reference from butler
         """
-        exposure = ForcedMeasurementTask.getExposure(dataRef)
+        exposure = ForcedMeasurementTask.getExposure(self, dataRef)
         if not self.config.doApplyUberCal:
             return exposure
         if applyMosaicResults is None:

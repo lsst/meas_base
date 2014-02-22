@@ -36,18 +36,18 @@ namespace lsst { namespace meas { namespace base {
 /**
  *  @brief Empty control object used by algorithm classes that don't have any configuration parameters.
  *
- *  It'd be a bit cleaner in C++ just to not have one, but having a null one makes the Python side
+ *  It would be a bit cleaner in C++ just to not have one, but having a null one makes the Python side
  *  much cleaner.
  */
 struct NullControl {};
 
 //@{
 /**
- *  These reusable structs represent the inputs for most algorithms.
+ *  These reusable structs represent predefined Inputs which will work for most algorithms.
  *
- *  Each of these can be constructed directly from its constituents, or constructed from a SourceRecord.
- *  The latter lets us use these interchangeably in Python.  Similarly, they all provide a static method
- *  to create a std::vector of Inputs from a SourceCatalog.
+ *  Each Input can be constructed directly from its constituents, or from a SourceRecord.
+ *  The latter lets us use these interchangeably in Python.  They all also provide a static
+ *  method to create a std::vector of Inputs from a SourceCatalog.
  */
 
 /// An Input struct for algorithms that require only a Footprint

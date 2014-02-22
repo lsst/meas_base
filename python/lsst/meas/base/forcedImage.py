@@ -372,7 +372,7 @@ class ForcedMeasurementTask(CmdLineTask):
 
         @param dataRef       Data reference from butler
         """
-        raise NotImplementedError()
+        return dataRef.get(self.dataPrefix + "calexp", immediate=True)
 
     def writeOutput(self, dataRef, sources):
         """Write forced source table
