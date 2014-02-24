@@ -171,6 +171,8 @@ class WrappedForcedPlugin(ForcedPlugin):
             self.resultMapper.apply(measRecord, result)
 
     def fail(self, measRecord, error=None):
+        # The ResultMapper will set detailed flag bits describing the error if error is not None,
+        # and set a general failure bit otherwise.
         self.resultMapper.fail(measRecord, error)
 
     @classmethod
@@ -332,18 +334,15 @@ class ForcedMeasurementTask(CmdLineTask):
             # TODO: skip this loop if there are no plugins configured for single-object mode
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
                 noiseReplacer.insertSource(refChildRecord.getId())
-                for plugin in self.plugins.iter():
-                    callMeasure(self, measChildRecord, exposure, refChildRecord, refWcs)
+                callMeasure(self, measChildRecord, exposure, refChildRecord, refWcs)
                 noiseReplacer.removeSource(refChildRecord.getId())
 
             # then process the parent record
             noiseReplacer.insertSource(refParentRecord.getId())
-            for plugin in self.plugins.iter():
-                callMeasure(self, measParentRecord, exposure, refParentRecord, refWcs)
-            for plugin in self.plugins.iterN():
-                callMeasureN(self, measChildCat, exposure, refChildCat)
-                callMeasureN(self, measParentCat[parentIdx:parentIdx+1], exposure,
-                             refParentCat[parentIdx:parentIdx+1])
+            callMeasure(self, measParentRecord, exposure, refParentRecord, refWcs)
+            callMeasureN(self, measChildCat, exposure, refChildCat)
+            callMeasureN(self, measParentCat[parentIdx:parentIdx+1], exposure,
+                         refParentCat[parentIdx:parentIdx+1])
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()
         return Struct(sources=sources)

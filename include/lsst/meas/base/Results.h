@@ -32,53 +32,9 @@
 #include "lsst/pex/exceptions.h"
 #include "lsst/afw/geom/Point.h"
 #include "lsst/afw/geom/ellipses/Quadrupole.h"
+#include "lsst/meas/base/exceptions.h"
 
 namespace lsst { namespace meas { namespace base {
-
-/**
- *  @brief Exception to be thrown when a measurement algorithm experiences a known failure mode.
- *
- *  In addition to the usual message, MeasurementError must be constructed with the bit of the
- *  algorithm-specific flag that indicates the known failure mode.  This allows the measurement
- *  framework to set that flag upon failure.  Typically, this flag bit is also used to look up
- *  the message from the algorithm classes FlagDefinition list; the common pattern is:
- *  @code
- *      if (badThingHappened) {
- *          // BAD_THING is an enum value from the Algorithm's FlagBits enum; getFlagDefinitions()
- *          // is a static method algorithms are expected to define.
- *          throw LSST_EXCEPT(MeasurementError, getFlagDefinitions()[BAD_THING), BAD_THING);
- *       }
- *  @endcode
- */
-class MeasurementError : public pex::exceptions::RuntimeErrorException {
-public:
-
-    /// Constructor; should only be invoked by the LSST_EXCEPT macro (see class docs)
-    MeasurementError(LSST_EARGS_TYPED, std::size_t flagBit) :
-        pex::exceptions::RuntimeErrorException(LSST_EARGS_UNTYPED),
-        _flagBit(flagBit)
-    {}
-
-    /// Return the flag bit associated with the error.
-    std::size_t getFlagBit() const { return _flagBit; }
-
-    virtual char const* getType(void) const throw() { return "lsst::meas::base::MeasurementError *"; };
-
-    virtual lsst::pex::exceptions::Exception* clone(void) const {
-        return new MeasurementError(*this);
-    };
-
-private:
-    std::size_t _flagBit;
-};
-
-/**
- *  @brief Exception to be thrown when a measurement algorithm encounters a NaN or infinite pixel.
- *
- *  When caught by the plugin framework, this exception will generate a log message.
- */
-LSST_EXCEPTION_TYPE(PixelValueError, lsst::pex::exceptions::DomainErrorException,
-                    lsst::meas::base::PixelValueError);
 
 /**
  *  @brief An enum used to specify how much uncertainty information measurement algorithms provide.

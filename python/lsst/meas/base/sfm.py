@@ -130,6 +130,8 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
             self.resultMapper.apply(measRecord, result)
 
     def fail(self, measRecord, error=None):
+        # The ResultMapper will set detailed flag bits describing the error if error is not None,
+        # and set a general failure bit otherwise.
         self.resultMapper.fail(measRecord, error)
 
     @classmethod
@@ -236,12 +238,10 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
                 noiseReplacer.removeSource(measChildRecord.getId())
             # Then insert the parent footprint, and measure that
             noiseReplacer.insertSource(measParentRecord.getId())
-            for plugin in self.plugins.iter():
-                callMeasure(self, measParentRecord, exposure)
+            callMeasure(self, measParentRecord, exposure)
             # Finally, process both the parent and the child set through measureN
-            for plugin in self.plugins.iterN():
-                callMeasureN(self, measParentCat[parentIndex:parentIndex+1], exposure)
-                callMeasureN(self, measChildCat, exposure)
+            callMeasureN(self, measParentCat[parentIdx:parentIdx+1], exposure)
+            callMeasureN(self, measChildCat, exposure)
             noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
         noiseReplacer.end()

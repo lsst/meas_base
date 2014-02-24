@@ -34,6 +34,8 @@ The measurement framework includes the following features:
 
 @section measBaseImplementingNew Implementing New Plugins and Algorithms
 
+@subsection measBasePlugins Pure Python: The Plugin Interface
+
 The "Plugin" interfaces used directly by the measurement tasks are defined completely in Python, and are
 rooted in the abstract base classes sfm.SingleFramePlugin and forcedImage.ForcedPlugin.  Creating a new
 Plugin is quite straightforward.
@@ -70,6 +72,8 @@ like to avoid the overhead of constructing a SourceCatalog to store the outputs.
 algorithms should generally be implemented in C++ for performance reasons, and inheriting from an existing
 pure-Python class via Swig is difficult at best (it may in fact be impossible).
 
+@subsection measBaseAlgorithms Introducing Algorithms
+
 Instead of implementing Plugins directly, then, we generally advise that new Plugins be created by defining
 what we will refer to as an "Algorithm" class in C++ (in the future, Algorithm classes may also be created
 in Python, but this is not yet supported).  Algorithm is not a polymorphic class hierarchy; it is perhaps
@@ -85,6 +89,8 @@ is by example, and for this purpose two of the Algorithms defined in meas_base h
 additional documentation intended to allow them to be used as tutorials.  PsfFluxAlgorithm is an example
 of an extremely simple algorithm - it measures only one standard quantity, has few configuration options,
 and has very standard inputs.  SdssShapeAlgorithm provides a much more complex example.
+
+@subsection measBaseAlgorithmConcept The Algorithm Concept
 
 While much more documentation can be found in the examples and in the auxiliary classes (see
 @ref measBaseResults in particular), here is a summary of the Algorithm requirements:
@@ -120,6 +126,8 @@ While much more documentation can be found in the examples and in the auxiliary 
    @code std::vector<Result> applyN(Exposure<float> const &, std::vector<Input> const &, Control const &)
    @endcode
 
+@subsection measBaseAlgorithmSwig Swig Interfaces for Algorithms
+
 In addition, Algorithm classes should generally be wrapped using one of the @c %%wrapMeasurementAlgorithmN
 Swig macros (where @c N is one of 1, 2, 3, or 4, matching the numbers in the Result and ResultMapper
 templates). This should be invoked after %%including the C++ header file that defines the algorithm.
@@ -138,6 +146,27 @@ Finally, to actually create a Plugin class from the Swigged Algorithm, one shoul
 sfm.WrappedSingleFramePlugin.generate() or forcedImage.WrappedForcedPlugin.generate() at module scope
 (i.e. so it is invoked at module-import time) to create the Plugin classes themselves and register them with
 the config mechanism.
+
+@section measBaseErrorHandling Error Handling
+
+When a Plugin (or the Algorithm it delegates to) raises any exception, the Task calling it will catch the
+exception, and call the fail() method of the Plugin, which should cause the plugin to set one or more
+flags in the output record.  If the exception is MeasurementError (note that in Python, this
+will be raised as lsst.pex.exceptions.LsstCppException; see @ref secExcPython), the Task will pass this
+exception back to the fail() method, as MeasurementError contains additional Plugin-specific information
+indicating the kind of failure.  For most other exceptions, the Task will log the exception message
+as a warning, and pass None as the exception to fail().  In this case, the Plugin should just set the
+primary failure flag.  This is handled automatically by the FlagsComponentMapoper in Algorithm-based
+Plugins.
+Certain exceptions (in particular, out-of-memory errors) are considered fatal and will always be propagated
+up out of the Task.
+
+Plugin/Algorithm code should endeavor to only throw MeasurementError for known failure modes, unless the
+problem is in the data and can always be fixed there before the measurement framework is invoked.  In other
+words, we want warnings to appear in the logs only when there's a bug, whether that's in the processing
+before the measurement framework or in a particular Plugin/Algorithm not knowing and documenting its own
+failure modes.  This means that Plugin/Algorithm implementations should generally have a global try/catch
+block that re-throwns lower-level exceptions corresponding to known failure modes as MeasurementErrors.
 
 */
 }}} // namespace lsst::meas::base

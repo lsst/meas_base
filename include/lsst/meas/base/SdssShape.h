@@ -217,9 +217,10 @@ public:
      *  @brief Measure the shape of a source using the SdssShape algorithm.
      *
      *  This is the overload of apply() that does all the work, and it's designed to be as easy to use
-     *  as possible outside the Plugin framework (since the Plugin framework calls another other one).
-     *  The arguments contain everything needed.; a MaskedImage is supplied (not an Exposure)
-     *  because we just need the pixel data and mask.
+     *  as possible. The arguments contain everything needed, and nothing more: a MaskedImage is supplied
+     *  (not an Exposure) because we just need the pixel data and mask.  Because the Plugin framework
+     *  calls a different overload of apply() (the one that takes an Input object), it doesn't care what
+     *  the signature of this one is.
      */
     template <typename T>
     static Result apply(

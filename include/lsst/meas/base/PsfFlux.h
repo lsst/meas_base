@@ -69,6 +69,16 @@ public:
 /**
  *  @brief A measurement algorithm that estimates flux using a linear least-squares fit with the Psf model
  *
+ *  The PsfFlux algorithm is extremely simple: we do a least-squares fit of the Psf model (evaluated
+ *  at a given position) to the data.  For point sources, this provides the optimal flux measurement
+ *  in the limit where the Psf model is correct.  We do not use per-pixel weights in the fit by default
+ *  (see PsfFluxControl::usePixelWeights), as this results in bright stars being fit with a different
+ *  effective profile than faint stairs.
+ *
+ *  As one of the simplest Algorithms, PsfFlux is documented to serve as an example in implementing new
+ *  algorithms.  For an overview of the interface Algorithms should adhere to, see
+ *  @ref measBaseAlgorithmConcept.
+ *
  *  As an Algorithm class, all of PsfFluxAlgorithm's core functionality is available via static methods
  *  (in fact, there should be no reason to ever construct an instance).
  *

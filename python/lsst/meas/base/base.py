@@ -181,7 +181,7 @@ class BasePluginConfig(lsst.pex.config.Config):
     Most derived classes will want to override setDefaults() in order to customize
     the default exceutionOrder.
 
-    A derived class whose correspoding Plugin class implements measureN() should
+    A derived class whose corresponding Plugin class implements measureN() should
     additionally add a bool doMeasureN field to replace the bool class attribute
     defined here.
     """

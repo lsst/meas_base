@@ -24,6 +24,7 @@
 #ifndef LSST_MEAS_base_h_INCLUDED
 #define LSST_MEAS_base_h_INCLUDED
 
+#include "lsst/meas/base/exceptions.h"
 #include "lsst/meas/base/Results.h"
 #include "lsst/meas/base/ResultMappers.h"
 #include "lsst/meas/base/Inputs.h"
