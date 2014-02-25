@@ -128,8 +128,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         # this has random noise in place of the source footprints
         path = os.path.join(DATA_DIR, 'calexp/v100-fi/R22/S11.fits')
         replaced = lsst.afw.image.ExposureF(path)
-        noiseReplacer = NoiseReplacer(replaced, footprints, sfm_config.noiseSource,
-                          sfm_config.noiseOffset, sfm_config.noiseSeed)
+        noiseReplacer = NoiseReplacer(replaced, footprints)
 
         # accuulate the variation of the mean for each filled region in std units
         normtest = numpy.ndarray(len(srccat), numpy.float32)
@@ -216,8 +215,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
         path = os.path.join(DATA_DIR, 'calexp/v100-fi/R22/S11.fits')
         replaced = lsst.afw.image.ExposureF(path)
-        noiseReplacer = NoiseReplacer(replaced, footprints, sfm_config.noiseSource,
-                          sfm_config.noiseOffset, sfm_config.noiseSeed)
+        noiseReplacer = NoiseReplacer(replaced, footprints)
 
         # add the measurement fields to the outputSchema and make a catalog with it
         # then extend with the mapper to copy the extant data
