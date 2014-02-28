@@ -20,14 +20,18 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+
 """Class for force measuring a Coadd exposure using a reference catalog made from measuring Coadds.
    See comments in the parent class in forcedImage.py for more information.
 """
+
 import lsst.pex.config
+
 from lsst.pipe.base import Task, CmdLineTask, Struct, timeMethod, ArgumentParser, ButlerInitializedTaskRunner
 from lsst.coadd.utils import CoaddDataIdContainer
 import lsst.daf.base
 from lsst.pex.config import DictField,ConfigurableField
+
 from .forcedImage import *
 from .base import *
 from .references import CoaddSrcReferencesTask

@@ -31,23 +31,112 @@ import lsst.afw.detection as afwDet
 import lsst.afw.math as afwMath
 import lsst.afw.image as afwImage
 import lsst.pipe.base
-import lsst.pex.config as pexConfig
+import lsst.pex.config
+import lsst.pex.exceptions
 import lsst.meas.algorithms
 import lsst.afw.table
 
+from .baseLib import *
+
+FATAL_EXCEPTIONS = (MemoryError,)  # Exceptions that the framework should always propagate up
+
+def generateAlgorithmName(AlgClass):
+    """Generate a string name for an algorithm class that strips away terms that are generally redundant
+    while (hopefully) remaining easy to trace to the code.
+    """
+    name = AlgClass.__name__
+    pkg = AlgClass.__module__
+    name = name.strip("Algorithm")
+    terms = pkg.split(".")
+    if terms[-1].endswith("Lib"):
+        terms = terms[:-1]
+    if terms[0] == "lsst":
+        terms = terms[1:]
+    if terms[0] == "meas":
+        terms = terms[1:]
+    if name.lower().startswith(terms[-1].lower()):
+        terms = terms[:-1]
+    return "%s_%s" % ("_".join(terms), name)
+
+def callMeasure(task, measRecord, *args, **kwds):
+    """Call the measure() method on all plugins in the given task, handling exceptions in a consistent way.
+
+    This function can be used with plugins that have different signatures; the only requirement is that
+    'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are forwarded
+    directly to the plugin.  This allows callMeasure() to be used by both SingleFrameMeasurementTask and
+    ForcedMeasurementTask.
+
+    If all measurement tasks had a common base class, this would probably go there.
+    """
+    for plugin in task.plugins.iter():
+        try:
+            plugin.measure(measRecord, *args, **kwds)
+        except FATAL_EXCEPTIONS:
+            raise
+        except lsst.pex.exceptions.LsstCppException as cppError:
+            if isinstance(cppError.args[0], MeasurementError):
+                error = cppError.args[0]
+            else:
+                task.log.warn("Error in %s.measure on record %s: %s"
+                              % (plugin.name, measRecord.getId(), cppErr))
+                error = None
+            plugin.fail(measRecord, error)
+        except Exception as error:
+            task.log.warn("Error in %s.measure on record %s: %s"
+                          % (plugin.name, measRecord.getId(), error))
+            plugin.fail(measRecord)
+
+def callMeasureN(task, measCat, *args, **kwds):
+    """Call the measureN() method on all plugins in the given task, handling exceptions in a consistent way.
+
+    This function can be used with plugins that have different signatures; the only requirement is that
+    'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are forwarded
+    directly to the plugin.  This allows callMeasureN() to be used by both SingleFrameMeasurementTask and
+    ForcedMeasurementTask.
+
+    If all measurement tasks had a common base class, this would probably go there.
+    """
+    for plugin in task.plugins.iterN():
+        try:
+            plugin.measureN(measCat, *args, **kwds)
+        except FATAL_EXCEPTIONS:
+            raise
+        except lsst.pex.exceptions.LsstCppException as cppError:
+            if isinstance(cppError.args[0], MeasurementError):
+                error = cppError.args[0]
+            else:
+                task.log.warn("Error in %s.measureN on records %s-%s: %s"
+                              % (plugin.name, measCat[0].getId(), measCat[-1].getId(), cppError))
+                error = None
+            for measRecord in measCat:
+                plugin.fail(measRecord, error)
+        except Exception as error:
+            for measRecord in measCat:
+                plugin.fail(measRecord)
+            task.log.warn("Error in %s.measureN on records %s-%s: %s"
+                          % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
+
 class PluginRegistry(lsst.pex.config.Registry):
+    """ Base class for plugin registries
+
+    The Plugin class allowed in the registry is defined on the ctor of the registry
+    The intention is that single-frame and multi-frame plugins will have different
+    registries.
+    """
 
     class Configurable(object):
-        """ Class used as the actual element in the registry; rather
-        than constructing a Plugin instance, it returns a tuple
+        """Class used as the actual element in the registry
+
+        Rather than constructing a Plugin instance, it returns a tuple
         of (runlevel, name, config, PluginClass), which can then
-        be sorted before the algorithms are instantiated.
+        be sorted before the plugins are instantiated.
         """
 
         __slots__ = "PluginClass", "name"
+
         def __init__(self, name, PluginClass):
             """ Initialize registry with Plugin Class
-           """
+            """
             self.name = name
             self.PluginClass = PluginClass
 
@@ -58,43 +147,104 @@ class PluginRegistry(lsst.pex.config.Registry):
             return (config.executionOrder, self.name, config, self.PluginClass)
 
     def register(self, name, PluginClass):
+        """Register a Plugin class with the given name.
+
+        The same Plugin may be registered multiple times with different names; this can
+        be useful if we often want to run it multiple times with different configuration.
+
+        The name will be used as a prefix for all fields produced by the Plugin, and it
+        should generally contain the name of the Plugin or Algorithm class itself
+        as well as enough of the namespace to make it clear where to find the code.
+        """
         lsst.pex.config.Registry.register(self, name, self.Configurable(name, PluginClass))
 
     def makeField(self, doc, default=None, optional=False, multi=False):
         return lsst.pex.config.RegistryField(doc, self, default, optional, multi)
 
 class PluginMap(collections.OrderedDict):
-    """ Map of algorithms to be run for a task
-        Should later be implemented as Swigged C++ class based on std::map
+    """ Map of plugins to be run for a task
+
+    We assume Plugins are added to the PluginMap according to their executionOrder, so this
+    class doesn't actually do any of the sorting (though it does have to maintain that order).
+
+    Should later be implemented as Swigged C++ class so we can pass it to C++-implemented Plugins
+    in the future.
     """
 
-    def iterSingle(self):
-        """ Call each algorithm in the map which has a measureSingle """
-        for algorithm in self.itervalues():
-            if algorithm.config.doMeasureSingle:
-                yield algorithm
+    def iter(self):
+        """Call each plugin in the map which has a measure() method
+        """
+        for plugin in self.itervalues():
+            if plugin.config.doMeasure:
+                yield plugin
 
-    def iterMulti(self):
-        """ Call each algorithm in the map which has a measureMulti """
-        for algorithm in self.itervalues():
-            if algorithm.config.doMeasureMulti:
-                yield algorithm
+    def iterN(self):
+        """Call each plugin in the map which has a measureN() method
+        """
+        for plugin in self.itervalues():
+            if plugin.config.doMeasureN:
+                yield plugin
 
 class BasePluginConfig(lsst.pex.config.Config):
-    """Base class for config which should be defined for each measurement algorithm."""
+    """Base class for config which should be defined for each measurement plugin.
 
-    executionOrder = lsst.pex.config.Field(dtype=float, default=1.0, doc="sets relative order of algorithms")
-    doMeasureSingle = lsst.pex.config.Field(dtype=bool, default=True,
-                      doc="whether to run this algorithm in single-object mode")
-    doMeasureMulti = False  # replace this class attribute with a Field if measureMulti-capable
+    Most derived classes will want to override setDefaults() in order to customize
+    the default exceutionOrder.
+
+    A derived class whose corresponding Plugin class implements measureN() should
+    additionally add a bool doMeasureN field to replace the bool class attribute
+    defined here.
+    """
+
+    executionOrder = lsst.pex.config.Field(
+        dtype=float, default=2.0,
+        doc="""Sets the relative order of plugins (smaller numbers run first).
+
+In general, the following values should be used (intermediate values
+are also allowed, but should be avoided unless they are needed):
+   0.0 ------ centroids and other algorithms that require only a Footprint and
+              its Peaks as input
+   1.0 ------ shape measurements and other algorithms that require
+              getCentroid() to return a good centroid in addition to a
+              Footprint and its Peaks.
+   2.0 ------ flux algorithms that require both getShape() and getCentroid()
+              in addition to the Footprint and its Peaks
+   3.0 ------ Corrections applied to fluxes (i.e. aperture corrections, tying
+              model to PSF fluxes). All flux measurements should have an
+              executionOrder < 3.0, while all algorithms that rely on corrected
+              fluxes (i.e. classification) should have executionOrder > 3.0.
+"""
+        )
+
+
+    doMeasure = lsst.pex.config.Field(dtype=bool, default=True,
+                                      doc="whether to run this plugin in single-object mode")
+
+    doMeasureN = False  # replace this class attribute with a Field if measureN-capable
 
 class BasePlugin(object):
-    """Base class for measurement algorithms."""
-    pass
+    """Base class for measurement plugins."""
+
+    def fail(self, measRecord, error=None):
+        """Record a failure of the measure or measureN() method.
+
+        When measure() raises an exception, the measurement framework
+        will call fail() to allow the plugin to set its failure flag
+        field(s).  When measureN() raises an exception, fail() will be
+        called repeatedly with all the records that were being
+        measured.
+
+        If the exception is a MeasurementError, it will be passed as
+        the error argument; in all other cases the error argument will
+        be None, and the failure will be logged by the measurement
+        framework as a warning.
+        """
+        raise NotImplementedError("This algorithm thinks it cannot fail; please report this as a bug.")
 
 class MeasurementDataFlags(object):
     """Flags that describe data to be measured, allowing plugins with the same signature but
     different requirements to assert their appropriateness for the data they will be run on.
+
     This should later be implemented as a Swigged C++ enum
     """
 
@@ -109,7 +259,7 @@ class MeasurementDataFlags(object):
 
     NO_WCS = 0x10 # the image has no Wcs object attached
 
-class SourceSlotConfig(pexConfig.Config):
+class SourceSlotConfig(lsst.pex.config.Config):
     """Slot configuration which assigns a particular named plugin to each of a set of
     slots.  Each slot allows a type of measurement to be fetched from the SourceTable
     without knowing which algorithm was used to produced the data.  For example, getCentroid()
@@ -119,18 +269,18 @@ class SourceSlotConfig(pexConfig.Config):
     NOTE: default for each slot must be registered, even if the default is not used.
     """
 
-    centroid = pexConfig.Field(dtype=str, default="centroid.sdss", optional=True,
-                             doc="the name of the centroiding algorithm used to set source x,y")
-    shape = pexConfig.Field(dtype=str, default="shape.sdss", optional=True,
-                          doc="the name of the algorithm used to set source moments parameters")
-    apFlux = pexConfig.Field(dtype=str, default="flux.sinc", optional=True,
-                           doc="the name of the algorithm used to set the source aperture flux slot")
-    modelFlux = pexConfig.Field(dtype=str, default="flux.gaussian", optional=True,
-                           doc="the name of the algorithm used to set the source model flux slot")
-    psfFlux = pexConfig.Field(dtype=str, default="flux.naive", optional=True,
-                            doc="the name of the algorithm used to set the source psf flux slot")
-    instFlux = pexConfig.Field(dtype=str, default="flux.gaussian", optional=True,
-                             doc="the name of the algorithm used to set the source inst flux slot")
+    centroid = lsst.pex.config.Field(dtype=str, default="centroid.sdss", optional=True,
+                                     doc="the name of the centroiding algorithm used to set source x,y")
+    shape = lsst.pex.config.Field(dtype=str, default="shape.sdss", optional=True,
+                                  doc="the name of the algorithm used to set source moments parameters")
+    apFlux = lsst.pex.config.Field(dtype=str, default="flux.sinc", optional=True,
+                                   doc="the name of the algorithm used to set the source aperture flux slot")
+    modelFlux = lsst.pex.config.Field(dtype=str, default="flux.gaussian", optional=True,
+                                      doc="the name of the algorithm used to set the source model flux slot")
+    psfFlux = lsst.pex.config.Field(dtype=str, default="flux.naive", optional=True,
+                                    doc="the name of the algorithm used to set the source psf flux slot")
+    instFlux = lsst.pex.config.Field(dtype=str, default="flux.gaussian", optional=True,
+                                     doc="the name of the algorithm used to set the source inst flux slot")
 
     def setupTable(self, table, prefix=None):
         """Convenience method to setup a table's slots according to the config definition.
@@ -148,10 +298,11 @@ class SourceSlotConfig(pexConfig.Config):
 
 
 class BaseMeasurementConfig(lsst.pex.config.Config):
-    """Config class for single-frame measurement driver task."""
+    """Baseconfig class for all measurement driver tasks."""
+
     prefix = None
 
-    slots = pexConfig.ConfigField(
+    slots = lsst.pex.config.ConfigField(
         dtype = SourceSlotConfig,
         doc="Mapping from algorithms to special aliases in Source."
         )
@@ -174,7 +325,7 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
         doc='The seed value to use for random number generation.')
 
     def validate(self):
-        pexConfig.Config.validate(self)
+        lsst.pex.config.Config.validate(self)
         if self.slots.centroid is not None and self.slots.centroid not in self.plugins.names:
             raise ValueError("source centroid slot algorithm is not being run.")
         if self.slots.shape is not None and self.slots.shape not in self.plugins.names:
@@ -368,7 +519,7 @@ class NoiseReplacer(object):
             return ImageNoiseGenerator(noiseImage)
         rand = None
         if self.noiseSeed:
-            # default algorithm, our seed
+            # default plugin, our seed
             rand = afwMath.Random(afwMath.Random.MT19937, self.noiseSeed)
         if noiseMeanVar is not None:
             try:

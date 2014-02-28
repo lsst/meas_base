@@ -21,60 +21,68 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 """
-New plugins written purely in Python, based on meas_base plugin model
-Plugins written purely in python.  Basis for the unit tests for this module,
-and also a fall-back when no other Centroid algorithm is available.
+Definitions and registration of pure-Python plugins with trivial implementations,
+and automatic plugin-from-algorithm calls for those implemented in C++.
 """
-from lsst.meas.base.sfm import *
-from lsst.meas.base.forcedImage import *
-from lsst.afw.table import *
-import lsst.afw.table.tableLib as tableLib
-from lsst.pex.exceptions.exceptionsLib import LsstCppException,LengthErrorException
-import lsst.meas.base.base
-import lsst.afw.detection
 import numpy
+
+from lsst.pex.exceptions import LsstCppException, LengthErrorException
+from lsst.afw.table import tableLib
+import lsst.afw.detection
 import lsst.meas.algorithms
 
+from .base import *
+from .baseLib import *
+from .sfm import *
+from .forcedImage import *
+
+# --- Wrapped C++ Plugins ---
+
+WrappedSingleFramePlugin.generate(PsfFluxAlgorithm)
+WrappedSingleFramePlugin.generate(SdssShapeAlgorithm)
+
+WrappedForcedPlugin.generate(PsfFluxAlgorithm)
+
+# --- Single-Frame Measurement Plugins ---
 
 class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
-    executionOrder = lsst.pex.config.Field(dtype=float, default=0.0, doc="sets relative order of algorithms")
 
-class PeakCentroid(SingleFramePlugin):
+    def setDefaults(self):
+        SingleFramePluginConfig.setDefaults(self)
+        self.executionOrder = 0.0
+
+class SingleFramePeakCentroidPlugin(SingleFramePlugin):
     """
-    This is an easy to implement centroid algorithm, based on the peak pixel of the source
+    This is an easy-to-implement centroid algorithm, based on the peak pixel of the source
     footprint.  It is not the best centroid estimatation, but it is always available.
     """
     ConfigClass = SingleFramePeakCentroidConfig
 
     def __init__(self, config, name, schema, flags, others, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
-        schema.addField("centroid.peak", "PointD", doc="measured centroid", units="pixels")
-        schema.addField("centroid.peak.cov", "CovPointF", doc="covariance of measured centroid",
-            units="pixels^2")
-    def measureSingle(self, exposure, source):
-        peak = source.getFootprint().getPeaks()[0]
+        self.key = schema.addField(name, type="PointD", doc="peak centroid", units="pixels")
+
+    def measure(self, measRecord, exposure):
+        peak = measRecord.getFootprint().getPeaks()[0]
         result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
-        schema = source.getSchema()
-        key = schema.find("centroid.peak").key
-        source.set(key, result)
+        measRecord.set(self.key, result)
 
-    def measureMulti(self, exposure, sources):
-        raise NotImplementedError()
+# Plugin class must be registered to the singleton Registry class of the same type in order to
+# be available for use with the corresponding measurement Task.
+SingleFramePlugin.registry.register("centroid.peak", SingleFramePeakCentroidPlugin)
 
-# plugin class must be registered to the singleton Registry class of the same type
-# prior to any constructor requests (these are done in the __init__ of the measurement Task.
-# will be executed during module initialization.
-
-SingleFramePlugin.registry.register("centroid.peak", PeakCentroid)
 
 # --- Forced Plugins ---
 
 class ForcedPeakCentroidConfig(ForcedPluginConfig):
-    executionOrder = lsst.pex.config.Field(dtype=float, default=0.0, doc="sets relative order of algorithms")
 
-class ForcedPeakCentroid(ForcedPlugin):
+    def setDefaults(self):
+        ForcedPluginConfig.setDefaults(self)
+        self.executionOrder = 0.0
+
+class ForcedPeakCentroidPlugin(ForcedPlugin):
     """
-    The forced peak centroid is like the sfm peak centroid plugin, except that it must transform
+    The forced peak centroid is like the SFM peak centroid plugin, except that it must transform
     the peak coordinate from the original (reference) coordinate system to the coordinate system
     of the exposure being measured.
     """
@@ -82,54 +90,45 @@ class ForcedPeakCentroid(ForcedPlugin):
 
     def __init__(self, config, name, schemaMapper, flags, others, metadata):
         ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
-        field = tableLib.Field_PointD("centroid.peak", "measured peak centroid", "pixels")
-        self.peakkey = schemaMapper.addOutputField(field)
-        field = tableLib.Field_CovPointF("centroid.peak.cov", "measured peak centroid covariance", "pixels")
-        self.covkey = schemaMapper.addOutputField(field)
+        schema = schemaMapper.editOutputSchema()
+        self.key = schema.addField(name, type="PointD", doc="peak centroid", units="pixels")
 
-    def measureSingle(self, exposure, source, refRecord, referenceWcs):
+    def measure(self, measRecord, exposure, refRecord, referenceWcs):
         targetWcs = exposure.getWcs()
         peak = refRecord.getFootprint().getPeaks()[0]
         result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
         if not referenceWcs == targetWcs:
             result = targetWcs.skyToPixel(referenceWcs.pixelToSky(result))
-        source.set(self.peakkey, result)
+        measRecord.set(self.key, result)
 
-    def measureMulti(self, exposure, measCat, refCat, refWcs):
-        raise NotImplementedError()
+ForcedPlugin.registry.register("centroid.peak", ForcedPeakCentroidPlugin)
 
-
-ForcedPlugin.registry.register("centroid.peak", ForcedPeakCentroid)
 
 class ForcedTransformedCentroidConfig(ForcedPluginConfig):
-    executionOrder = lsst.pex.config.Field(dtype=float, default=0.0, doc="sets relative order of algorithms")
 
-class ForcedTransformedCentroid(ForcedPlugin):
+    def setDefaults(self):
+        ForcedPluginConfig.setDefaults(self)
+        self.executionOrder = 0.0
+
+class ForcedTransformedCentroidPlugin(ForcedPlugin):
+    """A centroid "algorithm" for forced measurement that simply transforms the centroid
+    from the reference catalog to the measurement coordinate system.  This is used as
+    the slot centroid by default in forced measurement, allowing subsequent measurements
+    to simply refer to the slot value just as they would in single-frame measurement.
+    """
 
     ConfigClass = ForcedTransformedCentroidConfig
 
     def __init__(self, config, name, schemaMapper, flags, others, metadata):
         ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
-        field = tableLib.Field_PointD("transformed.peak", "measured peak centroid", "pixels")
-        self.peakkey = schemaMapper.addOutputField(field)
-        field = tableLib.Field_CovPointF("transformed.peak.cov", "measured peak centroid covariance",
-            "pixels")
-        self.covkey = schemaMapper.addOutputField(field)
+        schema = schemaMapper.editOutputSchema()
+        self.key = schema.addField(name, type="PointD", doc="transformed reference centroid", units="pixels")
 
-    def measureSingle(self, exposure, source, refRecord, referenceWcs):
+    def measure(self, measRecord, exposure, refRecord, referenceWcs):
         targetWcs = exposure.getWcs()
-        footprint = refRecord.getFootprint()
-        peak = footprint.getPeaks()[0]
-        result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
-        if not targetWcs == referenceWcs:
-            result = targetWcs.skyToPixel(referenceWcs.pixelToSky(result))
-        source.set(self.peakkey, result)
+        # Note: may be better to transform refRecord.getCentroid() all the way once slots are working better
+        result = targetWcs.skyToPixel(refRecord.getCoord())
+        measRecord.set(self.key, result)
 
-    def measureMulti(self, exposure, measCat, refCat, refWcs):
-        raise NotImplementedError()
-
-# plugin class must be registered prior the singleton Registry class of the same type
-# prior to any constructor requests (these are done in the __init__ of the measurement Task.
-# will be executed during module initialization.
-ForcedPlugin.registry.register("centroid.transformed", ForcedTransformedCentroid)
+ForcedPlugin.registry.register("centroid.transformed", ForcedTransformedCentroidPlugin)
 

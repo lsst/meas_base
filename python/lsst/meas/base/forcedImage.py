@@ -25,7 +25,7 @@
 In forced measurement, a reference catalog is used to define restricted measurements (usually just fluxes)
 on an image.  As the reference catalog may be deeper than the detection limit of the measurement image, we
 do not assume that we can use detection and deblend information from the measurement image.  Instead, we
-assume this information is present in the reference catalog and has been "transformed" in some sense to
+assume this information is present in the reference catalog and can be "transformed" in some sense to
 the measurement frame.  At the very least, this means that Footprints from the reference catalog should
 be transformed and installed as Footprints in the output measurement catalog.  If we have a procedure that
 can transform HeavyFootprints, we can then proceed with measurement as usual, but using the reference
@@ -39,19 +39,23 @@ slot-eligible fields must be), but non-slot fields may be recorded in other coor
 to avoid information loss (this should, of course, be indicated in the field documentation).  Note that
 the reference catalog may be in a different coordinate system; it is the responsibility of plugins
 to transform the data they need themselves, using the reference WCS provided.  However, for plugins
-that only require a position, they may simply use output SourceCatalog's centroid slot, which will generally
-be set to the transformed position of the reference object before any plugins are run, and hence avoid
-using the reference catalog at all.
+that only require a position or shape, they may simply use output SourceCatalog's centroid or shape slots,
+which will generally be set to the transformed position of the reference object before any other plugins are
+run, and hence avoid using the reference catalog at all.
 """
+
 import math
+
 import lsst.pex.config
-from lsst.pipe.base import Task, CmdLineTask, Struct, timeMethod, ArgumentParser, ButlerInitializedTaskRunner
 import lsst.daf.base
-from lsst.pex.config import DictField,ConfigurableField
+from lsst.pipe.base import Task, CmdLineTask, Struct, timeMethod, ArgumentParser, ButlerInitializedTaskRunner
+from lsst.pex.config import DictField, ConfigurableField
+
 from .base import *
 from .references import CoaddSrcReferencesTask, BaseReferencesTask
 
-__all__ = ("ForcedPluginConfig", "ForcedPlugin", "ForcedMeasurementConfig", "ForcedMeasurementTask")
+__all__ = ("ForcedPluginConfig", "ForcedPlugin", "WrappedForcedPlugin",
+           "ForcedMeasurementConfig", "ForcedMeasurementTask")
 
 class ForcedPluginConfig(BasePluginConfig):
     """Base class for configs of forced measurement plugins."""
@@ -76,13 +80,13 @@ class ForcedPlugin(BasePlugin):
                                       will be transferred before any plugins are run.
         @param[in]  flags        A set of bitflags describing the data that the plugin
                                  should check to see if it supports.  See MeasuremntDataFlags.
-        @param[in]  others       An PluginMap of previously-initialized plugns
+        @param[in]  others       A PluginMap of previously-initialized plugins
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
         self.config = config
         self.name = name
 
-    def measureSingle(self, exposure, measRecord, refRecord, referenceWcs):
+    def measure(self, measRecord, exposure, refRecord, refWcs):
         """Measure the properties of a source on a single image, given data from a
         reference record.
 
@@ -108,7 +112,7 @@ class ForcedPlugin(BasePlugin):
         """
         raise NotImplementedError()
 
-    def measureMulti(self, exposure, measCat, refCat, refWcs):
+    def measureN(self, measCat, exposure, refCat, refWcs):
         """Measure the properties of a group of blended sources on a single image,
         given data from a reference record.
 
@@ -136,6 +140,73 @@ class ForcedPlugin(BasePlugin):
         """
         raise NotImplementedError()
 
+class WrappedForcedPlugin(ForcedPlugin):
+    """A base class for ForcedPlugins that delegates the algorithmic work to a C++
+    Algorithm class.
+
+    Derived classes of WrappedForcedPlugin must set the AlgClass class attribute
+    to the C++ class being wrapped, which must meet the requirements defined in the
+    "Implementing New Plugins and Algorithms" section of the meas_base documentation.  This is usually done
+    by calling the generate() class method.
+    """
+
+    AlgClass = None
+
+    def __init__(self, config, name, schemaMapper, flags, others, metadata):
+        ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
+        schema = schemaMapper.editOutputSchema()
+        self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
+        # TODO: check flags
+
+    def measure(self, measRecord, exposure, refRecord, refWcs):
+        inputs = self.AlgClass.Input(measRecord)
+        result = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
+        self.resultMapper.apply(measRecord, result)
+
+    def measureN(self, measCat, exposure, refCat, refWcs):
+        assert hasattr(AlgClass, "applyN")  # would be better if we could delete this method somehow
+        inputs = self.AlgClass.Input.Vector(measCat)
+        results = self.AlgClass.applyN(exposure, inputs, self.config.makeControl())
+        for result, measRecord in zip(results, measCat):
+            self.resultMapper.apply(measRecord, result)
+
+    def fail(self, measRecord, error=None):
+        # The ResultMapper will set detailed flag bits describing the error if error is not None,
+        # and set a general failure bit otherwise.
+        self.resultMapper.fail(measRecord, error)
+
+    @classmethod
+    def generate(Base, AlgClass, name=None, doRegister=True, ConfigClass=None):
+        """Create a new derived class of WrappedForcedPlugin from a C++ Algorithm class.
+
+        @param[in]   AlgClass   The name of the (Swigged) C++ Algorithm class this Plugin will delegate to.
+        @param[in]   name       The name to use when registering the Plugin (ignored if doRegister=False).
+                                Defaults to the result of generateAlgorithmName(AlgClass).
+        @param[in]   doRegister   If True (default), register the new Plugin so it can be configured to be
+                                  run by ForcedMeasurementTask.
+        @param[in]   ConfigClass  The ConfigClass associated with the new Plugin.  This should have a
+                                  makeControl() method that returns the Control object used by the C++
+                                  Algorithm class.
+
+        For more information, please see the "Adding New Algorithms" section of the main meas_base
+        documentation.
+        """
+        if ConfigClass is None:
+            ConfigClass = lsst.pex.config.makeConfigClass(AlgClass.Control, base=Base.ConfigClass,
+                                                          module=AlgClass.__module__)
+            if hasattr(AlgClass, "applyN"):
+                ConfigClass.doMeasureN = lsst.pex.config.Field(
+                    dtype=bool, default=True,
+                    doc="whether to run this plugin multi-object mode"
+                    )
+        PluginClass = type(AlgClass.__name__ + "ForcedPlugin", (Base,),
+                           dict(AlgClass=AlgClass, ConfigClass=ConfigClass))
+        if doRegister:
+            if name is None:
+                name = generateAlgorithmName(AlgClass)
+            Base.registry.register(name, PluginClass)
+        return PluginClass
+
 class ForcedMeasurementConfig(BaseMeasurementConfig):
     """Config class for forced measurement driver task."""
 
@@ -145,21 +216,20 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
                  ],
         doc="Plugins to be run and their configuration"
         )
-    references = ConfigurableField(target=CoaddSrcReferencesTask,
-        doc="Retrieve reference source catalog")
-
+    references = ConfigurableField(
+        target=CoaddSrcReferencesTask,
+        doc="Retrieve reference source catalog"
+        )
     copyColumns = DictField(
         keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
         default={"id": "objectId", "parent":"parentObjectId"}
         )
-
-
-    """Config for ProcessCoadd"""
     coaddName = lsst.pex.config.Field(
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,
         default = "deep",
     )
+
     def setDefaults(self):
         self.slots.shape = None
         self.slots.apFlux = None
@@ -171,7 +241,7 @@ class ForcedMeasurementTask(CmdLineTask):
     """Forced measurement driver task
 
     This task is intended as a command-line script base class, in the model of ProcessImageTask
-    (i.e. it should be subclasses for running on CCDs and Coadds).
+    (i.e. it should be subclassed for running on CCDs and Coadds).
     """
 
     ConfigClass = ForcedMeasurementConfig
@@ -201,15 +271,15 @@ class ForcedMeasurementTask(CmdLineTask):
                                                    others=self.plugins, metadata=self.algMetadata)
 
     def run(self, dataRef):
-        """
+        """Main driver method called once for each measurement image by the command-line interface.
         """
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
-        references = list(self.fetchReferences(dataRef, exposure))
-        retStruct = self.forcedMeasure(exposure, references, refWcs, dataRef=dataRef)
+        refCat = list(self.fetchReferences(dataRef, exposure))
+        retStruct = self.forcedMeasure(exposure, refCat, refWcs, dataRef=dataRef)
         self.writeOutput(dataRef, retStruct.sources)
 
-    def forcedMeasure(self, exposure, references, refWcs, dataRef=None):
+    def forcedMeasure(self, exposure, refCat, refWcs, dataRef=None):
         """This is a service routine which allows a forced measurement to be made without
         constructing the reference list.  The reference list and refWcs can then be passed in.
         """
@@ -221,9 +291,9 @@ class ForcedMeasurementTask(CmdLineTask):
 
         # Construct a footprints dict which does not contain the footprint, just the parentID
         # We will add the footprint from the transformed sources from generateSources later.
-        footprints = {ref.getId(): ref.getParent() for ref in references}
+        footprints = {ref.getId(): ref.getParent() for ref in refCat}
         refList = list()
-        for ref in references:
+        for ref in refCat:
             refId = ref.getId()
             topId = refId
             while(topId > 0):
@@ -235,7 +305,7 @@ class ForcedMeasurementTask(CmdLineTask):
                 refList.append(ref)
 
         # now generate transformed source corresponding to the cleanup up refLst
-        sources = self.generateSources(dataRef, refList, exposure, refWcs)
+        sources = self.generateSources(dataRef, exposure, refList, refWcs)
 
         # Steal the transformed source footprint and use it to complete the footprints dict,
         # which then looks like {ref.getId(): (ref.getParent(), source.getFootprint())}
@@ -264,18 +334,15 @@ class ForcedMeasurementTask(CmdLineTask):
             # TODO: skip this loop if there are no plugins configured for single-object mode
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
                 noiseReplacer.insertSource(refChildRecord.getId())
-                for plugin in self.plugins.iterSingle():
-                    plugin.measureSingle(exposure, measChildRecord, refChildRecord, refWcs)
+                callMeasure(self, measChildRecord, exposure, refChildRecord, refWcs)
                 noiseReplacer.removeSource(refChildRecord.getId())
 
             # then process the parent record
             noiseReplacer.insertSource(refParentRecord.getId())
-            for plugin in self.plugins.iterSingle():
-                plugin.measureSingle(exposure, measParentRecord, refParentRecord, refWcs)
-            for plugin in self.plugins.iterMulti():
-                plugin.measureMulti(exposure, measChildCat, refChildCat)
-                plugin.measureMulti(exposure, measParentCat[parentIdx:parentIdx+1],
-                                       refParentCat[parentIdx:parentIdx+1])
+            callMeasure(self, measParentRecord, exposure, refParentRecord, refWcs)
+            callMeasureN(self, measChildCat, exposure, refChildCat)
+            callMeasureN(self, measParentCat[parentIdx:parentIdx+1], exposure,
+                         refParentCat[parentIdx:parentIdx+1])
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()
         return Struct(sources=sources)
@@ -304,7 +371,7 @@ class ForcedMeasurementTask(CmdLineTask):
 
         @param dataRef       Data reference from butler
         """
-        raise NotImplementedError()
+        return dataRef.get(self.dataPrefix + "calexp", immediate=True)
 
     def writeOutput(self, dataRef, sources):
         """Write forced source table
@@ -323,7 +390,7 @@ class ForcedMeasurementTask(CmdLineTask):
         datasetType = self.dataPrefix + "forced"
         return {datasetType:catalog}
 
-    def generateSources(self, dataRef, references, exposure, refWcs):
+    def generateSources(self, dataRef, exposure, refCat, refWcs):
         """Generate sources to be measured, copying any fields in self.config.copyColumns
         Also, transform footprints to the measurement coordinate system, noting that
         we do not currently have the ability to transform heavy footprints because they
@@ -331,7 +398,8 @@ class ForcedMeasurementTask(CmdLineTask):
         WCS are different, we won't be able to use the heavyFootprint child info at all.
 
         @param dataRef     Data reference from butler
-        @param references  Sequence (not necessarily a SourceCatalog) of reference sources
+        @param exposure    Exposure to be measured
+        @param refCat      Sequence (not necessarily a SourceCatalog) of reference sources
         @param idFactory   Factory to generate unique ids for forced sources
         @return Source catalog ready for measurement
         """
@@ -340,11 +408,10 @@ class ForcedMeasurementTask(CmdLineTask):
         sources = lsst.afw.table.SourceCatalog(table)
         table = sources.table
         table.setMetadata(self.algMetadata)
-        table.preallocate(len(references))
-        expregion = lsst.afw.geom.Box2I(exposure.getXY0(),
-            lsst.afw.geom.Extent2I(exposure.getWidth(), exposure.getHeight()))
+        table.preallocate(len(refCat))
+        expregion = exposure.getBBox(lsst.afw.image.PARENT)
         targetWcs = exposure.getWcs()
-        for ref in references:
+        for ref in refCat:
             newsource = sources.addNew()
             newsource.assign(ref, self.mapper)
             footprint = newsource.getFootprint()
