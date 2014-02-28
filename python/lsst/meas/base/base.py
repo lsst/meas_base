@@ -61,6 +61,11 @@ def generateAlgorithmName(AlgClass):
 def callMeasure(task, measRecord, *args, **kwds):
     """Call the measure() method on all plugins in the given task, handling exceptions in a consistent way.
 
+    This function can be used with plugins that have different signatures; the only requirement is that
+    'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are forwarded
+    directly to the plugin.  This allows callMeasure() to be used by both SingleFrameMeasurementTask and
+    ForcedMeasurementTask.
+
     If all measurement tasks had a common base class, this would probably go there.
     """
     for plugin in task.plugins.iter():
@@ -83,6 +88,11 @@ def callMeasure(task, measRecord, *args, **kwds):
 
 def callMeasureN(task, measCat, *args, **kwds):
     """Call the measureN() method on all plugins in the given task, handling exceptions in a consistent way.
+
+    This function can be used with plugins that have different signatures; the only requirement is that
+    'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are forwarded
+    directly to the plugin.  This allows callMeasureN() to be used by both SingleFrameMeasurementTask and
+    ForcedMeasurementTask.
 
     If all measurement tasks had a common base class, this would probably go there.
     """
@@ -227,7 +237,7 @@ class BasePlugin(object):
         If the exception is a MeasurementError, it will be passed as
         the error argument; in all other cases the error argument will
         be None, and the failure will be logged by the measurement
-        framework unless it has been explicitly squashed in config.
+        framework as a warning.
         """
         raise NotImplementedError("This algorithm thinks it cannot fail; please report this as a bug.")
 
