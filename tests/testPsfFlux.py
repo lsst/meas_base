@@ -30,7 +30,7 @@ import lsst.afw.table
 import lsst.utils.tests
 import lsst.meas.base.tests
 
-numpy.random.randn(500)
+numpy.random.seed(1234567)
 
 # n.b. Some tests here depend on the noise realization in the test data
 # or from the numpy random number generator.
