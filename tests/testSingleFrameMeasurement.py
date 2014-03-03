@@ -115,9 +115,9 @@ DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests", "data")
 class SFMTestCase(lsst.utils.tests.TestCase):
 
     def setUp(self):
-        catalog, bbox = makeCatalog()
-        exposure = makeEmptyExposure(bbox)
-        fillImages(catalog, exposure)
+        catalog, bbox = MakeTestData.makeCatalog()
+        exposure = MakeTestData.makeEmptyExposure(bbox)
+        MakeTestData.fillImages(catalog, exposure)
         catalog.writeFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
         exposure.writeFits(os.path.join(DATA_DIR, "calexp-0A.fits"))
         exposure.writeFits(os.path.join(DATA_DIR, "ref-0A.fits"))

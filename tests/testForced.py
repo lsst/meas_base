@@ -125,9 +125,9 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
 
     def setUp(self):
         crval = lsst.afw.coord.IcrsCoord(45.0*lsst.afw.geom.degrees, 45.005*lsst.afw.geom.degrees)
-        catalog, bbox = makeCatalog()
-        exposure = makeEmptyExposure(bbox, crval)
-        fillImages(catalog, exposure)
+        catalog, bbox = MakeTestData.makeCatalog()
+        exposure = MakeTestData.makeEmptyExposure(bbox, crval)
+        MakeTestData.fillImages(catalog, exposure)
         catalog.writeFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
         exposure.writeFits(os.path.join(DATA_DIR, "calexp-0A.fits"))
         refcatalog = lsst.afw.table.SourceCatalog(catalog.getSchema())
@@ -160,9 +160,9 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
             coord = rec.get(coordkey)
             cent = rec.get(centkey)
         crval = lsst.afw.coord.IcrsCoord(45.0*lsst.afw.geom.degrees, 44.995*lsst.afw.geom.degrees)
-        catalog, bbox = makeCatalog()
-        exposure = makeEmptyExposure(bbox, crval)
-        fillImages(catalog, exposure)
+        catalog, bbox = MakeTestData.makeCatalog()
+        exposure = MakeTestData.makeEmptyExposure(bbox, crval)
+        MakeTestData.fillImages(catalog, exposure)
         catalog.writeFits(os.path.join(DATA_DIR, "truthcat-0B.fits"))
         exposure.writeFits(os.path.join(DATA_DIR, "calexp-0B.fits"))
     

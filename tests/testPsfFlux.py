@@ -177,7 +177,7 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             self.assertFalse(record.get("base_PsfFlux_flag_edge"))
             if record.get("truth.isstar"):
                 self.assertClose(record.get("truth.flux"), record.get("base_PsfFlux_flux"),
-                                 atol=record.get("base_PsfFlux_fluxSigma"))
+                                 atol=3*record.get("base_PsfFlux_fluxSigma"))
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
