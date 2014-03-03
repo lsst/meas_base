@@ -35,11 +35,15 @@ import numpy
 import lsst.afw.detection
 import numpy
 
+from lsst.meas.base.tests import *
+
+numpy.random.seed(123)
+
 class TestForcedCcdMeasurementConfig(ForcedCcdMeasurementConfig):
 
     def setDefaults(self):
         ForcedCcdMeasurementConfig.setDefaults(self)
-        self.plugins = ["centroid.peak", "centroid.transformed", "test.flux"]
+        self.plugins = ["centroid.peak", "test.flux"]
         self.slots.centroid = "centroid.peak"
         self.slots.shape = None
         self.slots.psfFlux = None 
@@ -116,18 +120,74 @@ ForcedPlugin.registry.register("test.flux", TestFlux)
 
 DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests", "data")
 
+
 class ForcedTestCase(lsst.utils.tests.TestCase):
+
+    def setUp(self):
+        crval = lsst.afw.coord.IcrsCoord(45.0*lsst.afw.geom.degrees, 45.005*lsst.afw.geom.degrees)
+        catalog, bbox = MakeTestData.makeCatalog()
+        exposure = MakeTestData.makeEmptyExposure(bbox, crval)
+        MakeTestData.fillImages(catalog, exposure)
+        catalog.writeFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
+        exposure.writeFits(os.path.join(DATA_DIR, "calexp-0A.fits"))
+        refCatalog = lsst.afw.table.SourceCatalog(catalog.getSchema())
+        wcs = exposure.getWcs().clone()
+        exposure.getWcs().shiftReferencePixel(lsst.afw.geom.Extent2D(1000,1000))
+        refwcs = exposure.getWcs()
+        exposure.writeFits(os.path.join(DATA_DIR, "ref-0A.fits"))
+        centkey = catalog.getSchema().find("truth.centroid").key 
+        coordkey = catalog.getSchema().find("coord").key 
+        for rec in catalog:
+            expregion = exposure.getBBox(lsst.afw.image.PARENT)
+            expregion.shift(lsst.afw.geom.Extent2I(1000,1000))
+            ref_footprint = rec.getFootprint().transform(wcs, refwcs, expregion, True)
+            peaks = rec.getFootprint().getPeaks()
+            for i, peak in enumerate(peaks):
+                newpeak = refwcs.skyToPixel(wcs.pixelToSky(lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())))
+                ref_footprint.getPeaks().push_back(lsst.afw.detection.Peak(newpeak.getX(), newpeak.getY()))
+            rec.setFootprint(ref_footprint)
+            rfoot = rec.getFootprint()
+            centroid = rec.get(centkey)
+            sky = wcs.pixelToSky(centroid)
+            rec.set(centkey, refwcs.skyToPixel(sky)) 
+            rec.set(coordkey, sky) 
+        catalog.writeFits(os.path.join(DATA_DIR, "refcat-0A.fits"))
+        refCat = lsst.afw.table.SourceCatalog.readFits(os.path.join(DATA_DIR, 'refcat-0A.fits'))
+        centkey = catalog.getSchema().find("truth.centroid").key 
+        coordkey = catalog.getSchema().find("coord").key 
+        for rec in refCat:
+            foot = rec.getFootprint()
+            coord = rec.get(coordkey)
+            cent = rec.get(centkey)
+        crval = lsst.afw.coord.IcrsCoord(45.0*lsst.afw.geom.degrees, 44.995*lsst.afw.geom.degrees)
+        catalog, bbox = MakeTestData.makeCatalog()
+        exposure = MakeTestData.makeEmptyExposure(bbox, crval)
+        MakeTestData.fillImages(catalog, exposure)
+        catalog.writeFits(os.path.join(DATA_DIR, "truthcat-0B.fits"))
+        exposure.writeFits(os.path.join(DATA_DIR, "calexp-0B.fits"))
+    
+
+    def tearDown(self):
+        os.unlink(os.path.join(DATA_DIR, "calexp-0B.fits"))
+        os.unlink(os.path.join(DATA_DIR, "truthcat-0B.fits"))
+        os.unlink(os.path.join(DATA_DIR, "truthcat-0A.fits"))
+        os.unlink(os.path.join(DATA_DIR, "calexp-0A.fits"))
+        os.unlink(os.path.join(DATA_DIR, "ref-0A.fits"))
+        os.unlink(os.path.join(DATA_DIR, "refcat-0A.fits"))
+
     #  Run the measurement (forcedCcd) task with the centroid peak plugin.
     #  Measurement is done on a Ccd, which means that the coordinates will have
     #  been transformed in generateSources.  Allow some tolerance for this
     def testOnCcd(self):
 
-        path = os.path.join(DATA_DIR, 'calexp/v100-fi/R22/S11.fits')
+        path = os.path.join(DATA_DIR, 'calexp-0A.fits')
         exposure = lsst.afw.image.ExposureF(path)
-        refCat = SourceCatalog.readFits(os.path.join(DATA_DIR, "ref.fits"))
-        path = os.path.join(DATA_DIR, 'deepCoadd/i/3/84,56.fits')
+        refCat = SourceCatalog.readFits(os.path.join(DATA_DIR, "refcat-0A.fits"))
+        path = os.path.join(DATA_DIR, 'ref-0A.fits')
         ref = lsst.afw.image.ExposureF(path)
         refWcs = ref.getWcs()
+        rec = refCat[1]
+        foot = rec.getFootprint()
         mapper = lsst.afw.table.SchemaMapper(refCat.getSchema())
         minimalSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
         mapper.addMinimalSchema(minimalSchema)
@@ -137,7 +197,7 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         # prior to measurement.  Create an empty catalog with the same schema
         # plus the schema items for the SFM task, then transfer the existing data
         # to the new catalog
-        srccat = SourceCatalog.readFits(os.path.join(DATA_DIR, "measCatNull.fits.gz"))
+        srccat = SourceCatalog.readFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
         schema = srccat.getSchema()
         flags = MeasurementDataFlags()
         
@@ -147,31 +207,29 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         result = task.forcedMeasure(exposure, list(newRefCat), refWcs)
         sources = result.sources
         mismatches = 0
-	key = sources.getSchema().find("centroid.peak").key
+	testidkey = sources.getSchema().find("objectId").key
+	testFluxKey = sources.getSchema().find("test.flux").key
+	truthFluxKey = refCat.getSchema().find("truth.flux").key
         for i, source in enumerate(sources):
-            peakcentroid = source.get(key)
-            sky = refWcs.pixelToSky(refCat[i].getFootprint().getPeaks()[0].getF())
-            centroid = exposure.getWcs().skyToPixel(sky) 
-            distance = math.sqrt(centroid.distanceSquared(peakcentroid))
-            if distance > .01:
-                mismatches = mismatches + 1
-                distX = centroid.getX()-peakcentroid.getX()
-                distY = centroid.getY()-peakcentroid.getY()
+            testFlux = sources[i].get(testFluxKey)
+            truthFlux = refCat[i].get(truthFluxKey)
+            parent = refCat[i].getParent()
+            if parent==0 and abs((truthFlux-testFlux)/testFlux) > .03:
+                mismatches += 1
         self.assertEqual(mismatches, 0) 
 
     #  Run the measurement (forcedCcd) task with the centroid peak plugin.
-    #  Measurement is done on the same Coadd as was used for the reference catalog
+    #  Measurement is done on the same exposure as was used for the reference catalog
     #  So in this case, the centroid.peak should be exactly equal the peak[0] centroid
-    def testOnCoadd(self):
+    #  Not that this does not have to be run on a Coadd for this test, just an exposure
+    #  with the same Wcs as the refCat exposure
+    def testOnSameWcs(self):
 
-        refCat = SourceCatalog.readFits(os.path.join(DATA_DIR, "ref.fits"))
-        #butler = lsst.daf.persistence.Butler(DATA_DIR)
+        refCat = SourceCatalog.readFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
         
-        path = os.path.join(DATA_DIR, 'deepCoadd/i/3/84,56.fits')
+        path = os.path.join(DATA_DIR, 'calexp-0A.fits')
         exposure = lsst.afw.image.ExposureF(path)
-        path = os.path.join(DATA_DIR, 'deepCoadd/i/3/84,56.fits')
-        ref = lsst.afw.image.ExposureF(path)
-        refWcs = ref.getWcs()
+        refWcs = exposure.getWcs()
 
         task = TestForcedCcdMeasurementTask(butler=None, refSchema=refCat.getSchema())
         result = task.forcedMeasure(exposure, refCat, refWcs) #butler
