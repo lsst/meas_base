@@ -130,7 +130,7 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         MakeTestData.fillImages(catalog, exposure)
         catalog.writeFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
         exposure.writeFits(os.path.join(DATA_DIR, "calexp-0A.fits"))
-        refcatalog = lsst.afw.table.SourceCatalog(catalog.getSchema())
+        refCatalog = lsst.afw.table.SourceCatalog(catalog.getSchema())
         wcs = exposure.getWcs().clone()
         exposure.getWcs().shiftReferencePixel(lsst.afw.geom.Extent2D(1000,1000))
         refwcs = exposure.getWcs()
@@ -208,14 +208,13 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         sources = result.sources
         mismatches = 0
 	testidkey = sources.getSchema().find("objectId").key
-	truthidkey = refCat.getSchema().find("id").key
-	testfluxkey = sources.getSchema().find("test.flux").key
-	truthfluxkey = refCat.getSchema().find("truth.flux").key
+	testFluxKey = sources.getSchema().find("test.flux").key
+	truthFluxKey = refCat.getSchema().find("truth.flux").key
         for i, source in enumerate(sources):
-            testflux = sources[i].get(testfluxkey)
-            truthflux = refCat[i].get(truthfluxkey)
+            testFlux = sources[i].get(testFluxKey)
+            truthFlux = refCat[i].get(truthFluxKey)
             parent = refCat[i].getParent()
-            if parent==0 and abs((truthflux-testflux)/testflux) > .03:
+            if parent==0 and abs((truthFlux-testFlux)/testFlux) > .03:
                 mismatches += 1
         self.assertEqual(mismatches, 0) 
 

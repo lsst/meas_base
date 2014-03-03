@@ -69,10 +69,10 @@ class TestFlux(SingleFramePlugin):
         SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
         self.fluxKey = schema.addField("test.flux", type=float, doc="sum of flux in object footprint",
                                        units="dn")
-        self.fluxCountKey = schema.addField("test.fluxcount", type=int,
+        self.fluxCountKey = schema.addField("test.fluxCount", type=int,
                                             doc="number of pixels in object footprint", units="pixels^2")
         self.backKey = schema.addField("test.back", type=float, doc="avg of flux in background", units="dn")
-        self.backCountKey = schema.addField("test.backcount", type=int,
+        self.backCountKey = schema.addField("test.backCount", type=int,
                                             doc="number of pixels in surrounding background",
                                             units="pixels^2")
 
@@ -209,10 +209,10 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mi = exposure.getMaskedImage()
         schema = measCat.getSchema()
         fluxkey = schema.find("test.flux").key
-        fluxcountkey = schema.find("test.fluxcount").key
-        backkey = schema.find("test.back").key
-        backcountkey = schema.find("test.backcount").key
-        truthfluxkey = srccat.getSchema().find("truth.flux").key
+        fluxCountKey = schema.find("test.fluxCount").key
+        backKey = schema.find("test.back").key
+        backCountKey = schema.find("test.backCount").key
+        truthFluxkey = srccat.getSchema().find("truth.flux").key
    
         # Test all the records to be sure that the measurement mechanism works for total flux
         # And that the area surrounding the footprint has the expected replacement pixels
@@ -229,17 +229,17 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             count = foot.getArea()
             # get the values produced by the plugin
             flux = record.get(fluxkey)
-            fluxcount = record.get(fluxcountkey)
+            fluxCount = record.get(fluxCountKey)
             # Test 1:  the flux in the footprint area should measure the same as during the SFM run
-            self.assertEqual(count,fluxcount)
-            truthflux = srccat[i].get(truthfluxkey)
+            self.assertEqual(count,fluxCount)
+            truthFlux = srccat[i].get(truthFluxkey)
 
             #  The flux reported by the test.flux plugin should be VERY close to the footprint sum
             #      the two differing only because of noise
-            #  The flux reported by the test.flux plugin should be close to the truthflux, but could
+            #  The flux reported by the test.flux plugin should be close to the truthFlux, but could
             #      differ due to finite aperature effects. 
             self.assertClose(sum, flux, atol=None, rtol=.0001)
-            self.assertClose(sum, truthflux, atol=None, rtol=.03)
+            self.assertClose(sum, truthFlux, atol=None, rtol=.03)
 
 
             # Now find an area which is 100 pixels larger in all directions than the foot.getBBox()
@@ -262,24 +262,24 @@ class SFMTestCase(lsst.utils.tests.TestCase):
 
             # get the sum of the entire bordered area
             arraysub = replaced.getMaskedImage().getImage().getArray()[ymin-y0:ymax-y0, xmin-x0:xmax-x0]
-            bigflux = arraysub.sum(dtype=numpy.float64)
+            bigFlux = arraysub.sum(dtype=numpy.float64)
 
             # get the sum of the footprint area
             sumarray = numpy.ndarray((foot.getArea()), replaced.getMaskedImage().getImage().getArray().dtype)
             lsst.afw.detection.flattenArray(foot, replaced.getMaskedImage().getImage().getArray(),
                 sumarray, replaced.getMaskedImage().getXY0())
-            repflux = sumarray.sum(dtype=numpy.float64)
+            repFlux = sumarray.sum(dtype=numpy.float64)
 
-            newbackcount = (ymax-ymin)*(xmax-xmin) - count
-            newback = bigflux - repflux
-            back = record.get(backkey)
-            backcount = record.get(backcountkey)
+            newBackCount = (ymax-ymin)*(xmax-xmin) - count
+            newBack = bigFlux - repFlux
+            back = record.get(backKey)
+            backCount = record.get(backCountKey)
 
 
             # Test 2:  the area surrounding the object should be the same as what was measured
             #          during the actual run
-            self.assertEqual(backcount, newbackcount)
-            #self.assertClose(back,newback, atol=None, rtol=.03)
+            self.assertEqual(backCount, newBackCount)
+            #self.assertClose(back,newBack, atol=None, rtol=.03)
 
 
 def suite():
