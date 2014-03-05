@@ -118,22 +118,22 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         catalog, bbox = MakeTestData.makeCatalog()
         exposure = MakeTestData.makeEmptyExposure(bbox)
         MakeTestData.fillImages(catalog, exposure)
-        catalog.writeFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
-        exposure.writeFits(os.path.join(DATA_DIR, "calexp-0A.fits"))
-        exposure.writeFits(os.path.join(DATA_DIR, "ref-0A.fits"))
+        catalog.writeFits(os.path.join(DATA_DIR, "truthcat-0C.fits"))
+        exposure.writeFits(os.path.join(DATA_DIR, "calexp-0C.fits"))
+        exposure.writeFits(os.path.join(DATA_DIR, "ref-0C.fits"))
     
 
     def tearDown(self):
-        os.unlink(os.path.join(DATA_DIR, "truthcat-0A.fits"))
-        os.unlink(os.path.join(DATA_DIR, "calexp-0A.fits"))
-        os.unlink(os.path.join(DATA_DIR, "ref-0A.fits"))
+        os.unlink(os.path.join(DATA_DIR, "truthcat-0C.fits"))
+        os.unlink(os.path.join(DATA_DIR, "calexp-0C.fits"))
+        os.unlink(os.path.join(DATA_DIR, "ref-0C.fits"))
 
     #  Run the measurement (sfm) task with its default plugins.  Any run to completion is successful
     def testRunMeasurement(self):
-        path = os.path.join(DATA_DIR, 'calexp-0A.fits')
+        path = os.path.join(DATA_DIR, 'calexp-0C.fits')
         exposure = lsst.afw.image.ExposureF(path)
         #  catalog with footprints, but not measurement fields added
-        path = os.path.join(DATA_DIR, 'truthcat-0A.fits')
+        path = os.path.join(DATA_DIR, 'truthcat-0C.fits')
         srccat = SourceCatalog.readFits(path)
         flags = MeasurementDataFlags()
 
@@ -170,16 +170,16 @@ class SFMTestCase(lsst.utils.tests.TestCase):
     def testFluxPlugin(self):
 
         print "testFluxPlugin"
-        path = os.path.join(DATA_DIR, 'calexp-0A.fits')
+        path = os.path.join(DATA_DIR, 'calexp-0C.fits')
         exposure = lsst.afw.image.ExposureF(path)
         #  catalog with footprints, but not measurement fields added
-        path = os.path.join(DATA_DIR, 'truthcat-0A.fits')
+        path = os.path.join(DATA_DIR, 'truthcat-0C.fits')
         srccat = SourceCatalog.readFits(path)
         #  catalog with footprints, but no measurement fields added
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
                       for measRecord in srccat}
         sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        path = os.path.join(DATA_DIR, 'calexp-0A.fits')
+        path = os.path.join(DATA_DIR, 'calexp-0C.fits')
         replaced = lsst.afw.image.ExposureF(path)
         noiseReplacer = NoiseReplacer(replaced, footprints, sfm_config.noiseSource,
                           sfm_config.noiseOffset, sfm_config.noiseSeed)
