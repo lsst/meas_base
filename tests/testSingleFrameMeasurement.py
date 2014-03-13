@@ -110,7 +110,7 @@ class TestFlux(SingleFramePlugin):
 
 SingleFramePlugin.registry.register("test.flux", TestFlux)
 
-DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests", "data")
+DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
 
 class SFMTestCase(lsst.utils.tests.TestCase):
 

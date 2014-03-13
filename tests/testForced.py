@@ -118,7 +118,7 @@ class TestFlux(ForcedPlugin):
 
 ForcedPlugin.registry.register("test.flux", TestFlux)
 
-DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests", "data")
+DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
 
 
 class ForcedTestCase(lsst.utils.tests.TestCase):
