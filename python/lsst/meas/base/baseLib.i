@@ -69,7 +69,6 @@ Basic routines to talk to lsst::meas::base classes
 
 %immutable lsst::meas::base::FlagDef::name;
 %immutable lsst::meas::base::FlagDef::doc;
-
 %include "lsst/meas/base/exceptions.h"
 %include "lsst/meas/base/Results.h"
 %include "lsst/meas/base/ResultMappers.h"
@@ -192,8 +191,27 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<double>;
 %wrapMeasurementAlgorithm1(lsst::meas::base, PsfFluxAlgorithm, PsfFluxControl, FootprintCentroidInput, FluxComponent)
 
+%shared_ptr(lsst::meas::base::ApFluxComponent)
+%include "lsst/meas/base/ApFluxComponent.h"
+%include "lsst/meas/base/ApertureFlux.h"
+%template(FluxComponentVector) std::vector< boost::shared_ptr<lsst::meas::base::ApFluxComponent> >;
+%template(apply) lsst::meas::base::ApertureFluxAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::ApertureFluxAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, ApertureFluxAlgorithm, ApertureFluxControl, FootprintCentroidInput, ApertureFluxExtras)
+
 %include "lsst/meas/base/SdssShape.h"
 %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
 %wrapMeasurementAlgorithm4(lsst::meas::base, SdssShapeAlgorithm, SdssShapeControl, FootprintCentroidInput,
-                           ShapeComponent, CentroidComponent, FluxComponent, SdssShapeExtras)
+                          ShapeComponent, CentroidComponent, FluxComponent, SdssShapeExtras)
+
+%include "lsst/meas/base/NaiveCentroid.h"
+%template(apply) lsst::meas::base::NaiveCentroidAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::NaiveCentroidAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, NaiveCentroidAlgorithm, NaiveCentroidControl, FootprintCentroidInput, CentroidComponent)
+%include "lsst/meas/base/NaiveCentroid.h"
+
+//%include "lsst/meas/base/SdssCentroid.h"
+//%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<float>;
+//%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<double>;
+//%wrapMeasurementAlgorithm1(lsst::meas::base, SdssCentroidAlgorithm, SdssCentroidControl, FootprintCentroidInput, CentroidComponent)

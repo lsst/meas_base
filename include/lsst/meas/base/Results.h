@@ -51,6 +51,7 @@ enum UncertaintyEnum {
 };
 
 //@{ Typedefs that define the C++ types we typically use for common measurements
+typedef int ElementCount;
 typedef float Flux;
 typedef float ErrElement;
 typedef double CentroidElement;

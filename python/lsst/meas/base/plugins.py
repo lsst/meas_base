@@ -40,6 +40,9 @@ from .forcedImage import *
 
 WrappedSingleFramePlugin.generate(PsfFluxAlgorithm)
 WrappedSingleFramePlugin.generate(SdssShapeAlgorithm)
+WrappedSingleFramePlugin.generate(ApertureFluxAlgorithm)
+WrappedSingleFramePlugin.generate(NaiveCentroidAlgorithm)
+#WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm)
 
 WrappedForcedPlugin.generate(PsfFluxAlgorithm)
 

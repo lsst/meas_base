@@ -29,6 +29,11 @@
 #include "lsst/meas/base/ResultMappers.h"
 #include "lsst/meas/base/Inputs.h"
 #include "lsst/meas/base/PsfFlux.h"
+#include "lsst/meas/base/ApFluxComponent.h"
+#include "lsst/meas/base/ApertureFlux.h"
+#include "lsst/meas/base/NaiveCentroid.h"
+#include "lsst/meas/base/SdssCentroid.h"
+
 #include "lsst/meas/base/SdssShape.h"
 
 #endif // !LSST_MEAS_base_h_INCLUDED

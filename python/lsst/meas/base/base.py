@@ -46,7 +46,7 @@ def generateAlgorithmName(AlgClass):
     """
     name = AlgClass.__name__
     pkg = AlgClass.__module__
-    name = name.strip("Algorithm")
+    name = name.replace("Algorithm", "")
     terms = pkg.split(".")
     if terms[-1].endswith("Lib"):
         terms = terms[:-1]
@@ -78,7 +78,7 @@ def callMeasure(task, measRecord, *args, **kwds):
                 error = cppError.args[0]
             else:
                 task.log.warn("Error in %s.measure on record %s: %s"
-                              % (plugin.name, measRecord.getId(), cppErr))
+                              % (plugin.name, measRecord.getId(), cppError))
                 error = None
             plugin.fail(measRecord, error)
         except Exception as error:
