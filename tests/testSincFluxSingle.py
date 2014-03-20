@@ -80,14 +80,15 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
-        sfm_config.plugins = ["centroid.peak", "base_ApertureFlux"]
+        sfm_config.plugins = ["centroid.peak", "base_SincFlux"]
         sfm_config.slots.centroid = "centroid.peak"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
-        sfm_config.plugins["base_ApertureFlux"].radii = [3,6,12,100]
+        sfm_config.plugins["base_SincFlux"].radius1 = 0.0
+        sfm_config.plugins["base_SincFlux"].radius2 = 16.0
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
         measCat.extend(srccat, mapper=mapper)
@@ -103,33 +104,15 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         radii = [3,6,12,100]
         for i in range(len(measCat)):
             record = measCat[i]
-            nApertures = record.get(record.getSchema().find("base_ApertureFlux_nApertures").key)
-            print "Displaying " + str(nApertures) + " apertures for object"
-            print record.get("base_ApertureFlux_flag")
-            print record.get("base_ApertureFlux_flag_noPsf")
-            print record.get("base_ApertureFlux_flag_noGoodPixels")
-            print record.get("base_ApertureFlux_flag_edge")
-            for ap in range(nApertures): 
-                fluxKey = schema.find("base_ApertureFlux." + str(ap) + "_flux").key
-                fluxErrKey = schema.find("base_ApertureFlux." + str(ap) + "_fluxSigma").key
-            # Test all the records to be sure that the measurement mechanism works for total flux
-            # And that the area surrounding the footprint has the expected replacement pixels
-                # First check to be sure that the flux measured by the plug-in is correct
-                # get the values produced by the plugin
-                flux = record.get(fluxKey)
-                fluxErr = record.get(fluxErrKey)
-                truthFlux = srccat[i].get(truthFluxkey)
-                #  The flux reported by the test.flux plugin should be close to the truthFlux, but could
-                #      differ due to finite aperature effects. 
-                print truthFlux, flux
-                if radii[ap] < 5:
-                    self.assertClose(truthFlux, flux, atol=None, rtol=.8)
-                elif radii[ap] < 8:
-                    self.assertClose(truthFlux, flux, atol=None, rtol=.6)
-                elif radii[ap] < 10:
-                    self.assertClose(truthFlux, flux, atol=None, rtol=.3)
-                elif radii[ap] < 100:
-                    self.assertClose(truthFlux, flux, atol=None, rtol=.22)
+            print record.get("base_SincFlux_flag")
+            print record.get("base_SincFlux_flag_noPsf")
+            print record.get("base_SincFlux_flag_noGoodPixels")
+            print record.get("base_SincFlux_flag_edge")
+            flux = record.get("base_SincFlux_flux")
+            fluxerr = record.get("base_SincFlux_fluxSigma")
+            truthFlux = srccat[i].get(truthFluxkey)
+            print flux, fluxerr, truthFlux 
+            self.assertClose(truthFlux, flux, atol=None, rtol=.22)
     
 
 

@@ -45,7 +45,7 @@ namespace meas {
 namespace base {
 namespace algorithms {
     
-namespace {
+//namespace {
 
 /************************************************************************************************************/
 
@@ -117,11 +117,13 @@ float astrom_errors(float skyVar,       // variance of pixels at the sky level
     return(xVar >= 0 ? sqrt(xVar) : NAN);
 }
 
+//}
+
 /************************************************************************************************************/
 /*
  * Estimate the position of an object, assuming we know that it's approximately the size of the PSF 
  */
-namespace {
+//namespace {
 
 #if 1
 template<typename ImageXy_locatorT, typename VarImageXy_locatorT>
@@ -389,5 +391,5 @@ smoothAndBinImage(CONST_PTR(lsst::afw::detection::Psf) psf,
     return std::make_pair(smoothedImage, smoothingSigma);
 }
 
-}}
+//}
 }}}} // namespace lsst::meas::base::algorithms

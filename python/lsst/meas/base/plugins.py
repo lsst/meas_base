@@ -39,10 +39,14 @@ from .forcedImage import *
 # --- Wrapped C++ Plugins ---
 
 WrappedSingleFramePlugin.generate(PsfFluxAlgorithm)
+WrappedSingleFramePlugin.generate(GaussianFluxAlgorithm)
 WrappedSingleFramePlugin.generate(SdssShapeAlgorithm)
 WrappedSingleFramePlugin.generate(ApertureFluxAlgorithm)
 WrappedSingleFramePlugin.generate(NaiveCentroidAlgorithm)
-#WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm)
+WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm)
+WrappedSingleFramePlugin.generate(ClassificationAlgorithm)
+WrappedSingleFramePlugin.generate(SincFluxAlgorithm)
+WrappedSingleFramePlugin.generate(NaiveFluxAlgorithm)
 
 WrappedForcedPlugin.generate(PsfFluxAlgorithm)
 

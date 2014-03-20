@@ -33,6 +33,10 @@ import numpy
 
 numpy.random.seed(1234)
 
+#  Test SFM plugin, which is used to test that the plugin mechanism works correctly,
+#  and that the noise replacement mechanism is working.  This plugin measures the total
+#  flux for each measRecord within its footprint, as well as the total flux in a box which
+#  completely surrounds the object (providing an indication of any bad replacement nearby
 
 DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
 
@@ -52,14 +56,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         os.unlink(os.path.join(DATA_DIR, "calexp-0A.fits"))
         os.unlink(os.path.join(DATA_DIR, "ref-0A.fits"))
 
-    #  This test really tests both that a plugin can measure things correctly,
-    #  and that the noise replacement mechanism works in situ.
-    #  The test uses the same replacement image as the test above, with the
-    #  default NoiseReplacer seed.  This test just checks to be sure that the
-    #  base.py replacement mechanism is still working
-    def testFluxPlugin(self):
+    def testAlgorithm(self):
 
-        print "testFluxPlugin"
         path = os.path.join(DATA_DIR, 'calexp-0A.fits')
         exposure = lsst.afw.image.ExposureF(path)
         #  catalog with footprints, but not measurement fields added
@@ -80,14 +78,13 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
-        sfm_config.plugins = ["centroid.peak", "base_ApertureFlux"]
+        sfm_config.plugins = ["centroid.peak", "base_Classification"]
         sfm_config.slots.centroid = "centroid.peak"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
-        sfm_config.plugins["base_ApertureFlux"].radii = [3,6,12,100]
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
         measCat.extend(srccat, mapper=mapper)
@@ -100,36 +97,11 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mi = exposure.getMaskedImage()
         truthFluxkey = srccat.getSchema().find("truth.flux").key
         schema = measCat.getSchema()
-        radii = [3,6,12,100]
         for i in range(len(measCat)):
             record = measCat[i]
-            nApertures = record.get(record.getSchema().find("base_ApertureFlux_nApertures").key)
-            print "Displaying " + str(nApertures) + " apertures for object"
-            print record.get("base_ApertureFlux_flag")
-            print record.get("base_ApertureFlux_flag_noPsf")
-            print record.get("base_ApertureFlux_flag_noGoodPixels")
-            print record.get("base_ApertureFlux_flag_edge")
-            for ap in range(nApertures): 
-                fluxKey = schema.find("base_ApertureFlux." + str(ap) + "_flux").key
-                fluxErrKey = schema.find("base_ApertureFlux." + str(ap) + "_fluxSigma").key
-            # Test all the records to be sure that the measurement mechanism works for total flux
-            # And that the area surrounding the footprint has the expected replacement pixels
-                # First check to be sure that the flux measured by the plug-in is correct
-                # get the values produced by the plugin
-                flux = record.get(fluxKey)
-                fluxErr = record.get(fluxErrKey)
-                truthFlux = srccat[i].get(truthFluxkey)
-                #  The flux reported by the test.flux plugin should be close to the truthFlux, but could
-                #      differ due to finite aperature effects. 
-                print truthFlux, flux
-                if radii[ap] < 5:
-                    self.assertClose(truthFlux, flux, atol=None, rtol=.8)
-                elif radii[ap] < 8:
-                    self.assertClose(truthFlux, flux, atol=None, rtol=.6)
-                elif radii[ap] < 10:
-                    self.assertClose(truthFlux, flux, atol=None, rtol=.3)
-                elif radii[ap] < 100:
-                    self.assertClose(truthFlux, flux, atol=None, rtol=.22)
+            centroid = record.getCentroid() 
+            x = record.get("base_Classification_probability")
+            print centroid, x
     
 
 

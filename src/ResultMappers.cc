@@ -208,4 +208,30 @@ void ShapeComponentMapper::apply(afw::table::BaseRecord & record, ShapeComponent
     }
 }
 
+FloatComponentMapper::FloatComponentMapper(
+    afw::table::Schema & schema,
+    std::string const & prefix,
+    UncertaintyEnum uncertainty
+) {
+    _floatValue = schema.addField(
+        afw::table::Field<float>(prefix + "_floatValue", "measured value", "dn"),
+        true
+    );
+    if (uncertainty != NO_UNCERTAINTY) {
+        _floatValueSigma = schema.addField(
+            afw::table::Field<ErrElement>(
+                prefix + "_floatValueSigma", "1-sigma uncertainty on " + prefix + "_floatValue", "dn"
+            ),
+            true
+         );
+    }
+}
+
+void FloatComponentMapper::apply(afw::table::BaseRecord & record, FloatComponent const & result) const {
+    record.set(_floatValue, result.floatValue);
+    if (_floatValueSigma.isValid()) {
+        record.set(_floatValueSigma, result.floatValueSigma);
+    }
+}
+
 }}} // namespace lsst::meas::base

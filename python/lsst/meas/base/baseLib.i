@@ -211,7 +211,32 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %wrapMeasurementAlgorithm1(lsst::meas::base, NaiveCentroidAlgorithm, NaiveCentroidControl, FootprintCentroidInput, CentroidComponent)
 %include "lsst/meas/base/NaiveCentroid.h"
 
-//%include "lsst/meas/base/SdssCentroid.h"
-//%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<float>;
-//%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<double>;
-//%wrapMeasurementAlgorithm1(lsst::meas::base, SdssCentroidAlgorithm, SdssCentroidControl, FootprintCentroidInput, CentroidComponent)
+%include "lsst/meas/base/GaussianCentroid.h"
+%template(apply) lsst::meas::base::GaussianCentroidAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::GaussianCentroidAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, GaussianCentroidAlgorithm, GaussianCentroidControl, FootprintCentroidInput, CentroidComponent)
+
+%include "lsst/meas/base/GaussianFlux.h"
+%template(apply) lsst::meas::base::GaussianFluxAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::GaussianFluxAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, GaussianFluxAlgorithm, GaussianFluxControl, FootprintCentroidInput, FloatComponent)
+
+%include "lsst/meas/base/NaiveFlux.h"
+%template(apply) lsst::meas::base::NaiveFluxAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::NaiveFluxAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, NaiveFluxAlgorithm, NaiveFluxControl, FootprintCentroidInput, FluxComponent)
+
+%include "lsst/meas/base/SincFlux.h"
+%template(apply) lsst::meas::base::SincFluxAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::SincFluxAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, SincFluxAlgorithm, SincFluxControl, FootprintCentroidInput, FluxComponent)
+
+%include "lsst/meas/base/SdssCentroid.h"
+%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, SdssCentroidAlgorithm, SdssCentroidControl, FootprintCentroidInput, CentroidComponent)
+
+%include "lsst/meas/base/Classification.h"
+%template(apply) lsst::meas::base::ClassificationAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::ClassificationAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, ClassificationAlgorithm, ClassificationControl, ClassificationInput, ClassificationExtras)

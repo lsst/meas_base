@@ -225,6 +225,36 @@ private:
 };
 
 /**
+ *  @brief An object that transfers values from FloatComponent to afw::table::BaseRecord
+ *
+ *  This should be included in one of @ref measBaseResultMapperTemplates to correspond with using
+ *  FluxComponent in the same position in one of @ref measBaseResultTemplates, and will otherwise
+ *  not be used directly by users.
+ */
+class FloatComponentMapper {
+public:
+
+    /**
+     *  @brief Construct the mapper, adding fields to the given schema and saving their keys
+     *
+     *  The given prefix will form the first part of all fields, and the uncertainty argument
+     *  sets which uncertainty fields will be added to the schema and transferred during apply().
+     */
+    FloatComponentMapper(
+        afw::table::Schema & schema,
+        std::string const & prefix,
+        UncertaintyEnum uncertainty
+    );
+
+    /// Transfer values from the result struct to the record
+    void apply(afw::table::BaseRecord & record, FloatComponent const & result) const;
+
+private:
+    afw::table::Key<Flux> _floatValue;
+    afw::table::Key<ErrElement> _floatValueSigma;
+};
+
+/**
  *  @defgroup measBaseResultMapperTemplates the ResultMapperN templates
  *
  *  These templates aggregate ComponentMapper objects in the same way that the @ref measBaseResultTemplates
