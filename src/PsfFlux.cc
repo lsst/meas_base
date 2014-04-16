@@ -136,7 +136,7 @@ PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
     Input const & inputs,
     Control const & ctrl
 ) {
-    return apply(exposure, inputs.position);
+    return apply(exposure, inputs.position, ctrl);
 }
 
 #define INSTANTIATE(T)                                                  \

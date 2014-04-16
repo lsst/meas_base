@@ -20,8 +20,9 @@
  * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
-
+#include <iostream>
 #include "lsst/meas/base/Inputs.h"
+#include "lsst/utils/ieee.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -32,6 +33,16 @@ FootprintInput::Vector FootprintInput::makeVector(afw::table::SourceCatalog cons
         r.push_back(FootprintInput(*i));
     }
     return r;
+}
+
+FootprintCentroidInput::FootprintCentroidInput(afw::table::SourceRecord const & record) : FootprintInput(record) 
+{
+        if (record.getTable()->getCentroidDefinition().size() == 0 || lsst::utils::isnan(record.getCentroid().getX())) {
+            position.setX(record.getFootprint()->getPeaks()[0]->getFx());
+            position.setY(record.getFootprint()->getPeaks()[0]->getFy());
+        } else {
+            position = record.getCentroid();
+        }
 }
 
 FootprintCentroidInput::Vector FootprintCentroidInput::makeVector(afw::table::SourceCatalog const & catalog) {

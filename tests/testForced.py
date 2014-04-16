@@ -235,10 +235,11 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         result = task.forcedMeasure(exposure, refCat, refWcs) #butler
         sources = result.sources
         mismatches = 0
-        key = sources.getSchema().find("centroid.peak").key
+        keyX = sources.getSchema().find("centroid.peak_x").key
+        keyY = sources.getSchema().find("centroid.peak_y").key
         for source in sources:
             centroid = source.getFootprint().getPeaks()[0].getCentroid()
-            peakcentroid = source.get(key)
+            peakcentroid = lsst.afw.geom.geomLib.Point2D(source.get(keyX), source.get(keyY))
             distance = math.sqrt(centroid.distanceSquared(peakcentroid))
             if distance > .00001:
                 mismatches = mismatches + 1

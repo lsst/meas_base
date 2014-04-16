@@ -40,6 +40,8 @@ from .forcedImage import *
 
 WrappedSingleFramePlugin.generate(PsfFluxAlgorithm)
 WrappedSingleFramePlugin.generate(SdssShapeAlgorithm)
+WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm)
+WrappedSingleFramePlugin.generate(SincFluxAlgorithm)
 
 WrappedForcedPlugin.generate(PsfFluxAlgorithm)
 
@@ -60,12 +62,16 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
 
     def __init__(self, config, name, schema, flags, others, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
-        self.key = schema.addField(name, type="PointD", doc="peak centroid", units="pixels")
+        self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixels")
+        self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixels")
+        self.keyXerr = schema.addField(name + "_xSigma", type="D", doc="peak centroid", units="pixels")
+        self.keyYerr = schema.addField(name + "_ySigma", type="D", doc="peak centroid", units="pixels")
 
     def measure(self, measRecord, exposure):
         peak = measRecord.getFootprint().getPeaks()[0]
-        result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
-        measRecord.set(self.key, result)
+        measRecord.set(self.keyX, peak.getFx())
+        measRecord.set(self.keyY, peak.getFy())
+        #result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
 
 # Plugin class must be registered to the singleton Registry class of the same type in order to
 # be available for use with the corresponding measurement Task.
@@ -91,7 +97,10 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
     def __init__(self, config, name, schemaMapper, flags, others, metadata):
         ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
         schema = schemaMapper.editOutputSchema()
-        self.key = schema.addField(name, type="PointD", doc="peak centroid", units="pixels")
+        self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixels")
+        self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixels")
+        self.keyXerr = schema.addField(name + "_xSigma", type="D", doc="peak centroid", units="pixels")
+        self.keyYerr = schema.addField(name + "_ySigma", type="D", doc="peak centroid", units="pixels")
 
     def measure(self, measRecord, exposure, refRecord, referenceWcs):
         targetWcs = exposure.getWcs()
@@ -99,7 +108,8 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
         result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
         if not referenceWcs == targetWcs:
             result = targetWcs.skyToPixel(referenceWcs.pixelToSky(result))
-        measRecord.set(self.key, result)
+        measRecord.set(self.keyX, result.getX())
+        measRecord.set(self.keyY, result.getY())
 
 ForcedPlugin.registry.register("centroid.peak", ForcedPeakCentroidPlugin)
 

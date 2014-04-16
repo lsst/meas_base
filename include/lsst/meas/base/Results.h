@@ -51,7 +51,9 @@ enum UncertaintyEnum {
 };
 
 //@{ Typedefs that define the C++ types we typically use for common measurements
-typedef float Flux;
+typedef int ElementCount;
+typedef double Flux;
+typedef double FluxErrElement;
 typedef float ErrElement;
 typedef double CentroidElement;
 typedef double ShapeElement;
@@ -161,7 +163,7 @@ private:
  */
 struct FluxComponent {
     Flux flux; ///< Measured flux in DN.
-    ErrElement fluxSigma; ///< 1-Sigma error (sqrt of variance) on flux in DN.
+    FluxErrElement fluxSigma; ///< 1-Sigma error (sqrt of variance) on flux in DN.
 
     FluxComponent(); ///< Constructor; initializes everything to NaN.
 };
@@ -234,6 +236,20 @@ struct ShapeComponent {
     ShapeComponent(); ///< Constructor; initializes everything to NaN.
 
 };
+
+/**
+ *  @brief A reusable component for result structs for flux measurements.
+ *
+ *  Flux measurements and their errors should always be in DN.
+ *
+ *  @todo figure out how to handle arrays of fluxes from e.g. aperture photometry
+ */
+//struct FloatComponent {
+//    float floatValue; ///< Measured flux in DN.
+//    ErrElement floatValueSigma; ///< 1-Sigma error (sqrt of variance) on flux in DN.
+//
+//    FloatComponent(); ///< Constructor; initializes everything to NaN.
+//};
 
 /**
  *  @defgroup measBaseResultTemplates the ResultN templates

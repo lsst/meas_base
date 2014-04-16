@@ -74,9 +74,7 @@ struct FootprintCentroidInput : public FootprintInput {
         PTR(afw::detection::Footprint) footprint_, afw::geom::Point2D const & position_
     ) : FootprintInput(footprint_), position(position_) {}
 
-    FootprintCentroidInput(afw::table::SourceRecord const & record) :
-        FootprintInput(record), position(record.getCentroid())
-    {}
+    FootprintCentroidInput(afw::table::SourceRecord const & record);
 
     static Vector makeVector(afw::table::SourceCatalog const & catalog);
 
