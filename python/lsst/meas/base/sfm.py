@@ -211,7 +211,7 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
                                  be measured and the associated Psf, Wcs, etc.
         """
         assert measCat.getSchema().contains(self.schema)
-        self.config.slots.setupTable(measCat.table, prefix=self.config.prefix)
+        #self.config.slots.setupTable(measCat.table, prefix=self.config.prefix)
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
             for measRecord in measCat}
 

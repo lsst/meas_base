@@ -79,8 +79,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         outschema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
         sfm_config.plugins = ["centroid.peak", "base_SdssShape"]
-        sfm_config.slots.centroid = "centroid.peak"
-        sfm_config.slots.shape = "base_SdssShape"
+        sfm_config.slots.centroid = None #"centroid.peak"
+        sfm_config.slots.shape = None #"base_SdssShape"
         sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
         sfm_config.slots.apFlux = None
@@ -108,9 +108,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             xxyyCov = record.get("base_SdssShape_xx_yy_Cov")
             xxxyCov = record.get("base_SdssShape_xx_xy_Cov")
             yyxyCov = record.get("base_SdssShape_yy_xy_Cov")
-            centroid = record.getCentroid() 
-            shape = record.getShape() 
-            print centroid, xx, yy, xy, shape #, xxSigma, yySigma, xySigma
+            print xx, yy, xy, xxSigma, yySigma, xySigma
             self.assertFalse(record.get("base_SdssShape_flag"))
             self.assertFalse(record.get("base_SdssShape_flag_unweightedBad"))
             self.assertFalse(record.get("base_SdssShape_flag_unweighted"))

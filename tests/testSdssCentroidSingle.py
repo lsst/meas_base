@@ -101,15 +101,12 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             record = measCat[i]
             x = record.get("base_SdssCentroid_x")
             y = record.get("base_SdssCentroid_y")
-            centroid = record.getCentroid() 
-            print x,y, centroid
+            xerr = record.get("base_SdssCentroid_xSigma")
+            yerr = record.get("base_SdssCentroid_ySigma")
             self.assertFalse(record.get("base_SdssCentroid_flag"))
             self.assertFalse(record.get("base_SdssCentroid_flag_badData"))
             self.assertFalse(record.get("base_SdssCentroid_flag_edge"))
-            centroid = record.getCentroid() 
-            self.assertClose(x, centroid.getX(), atol=None, rtol=.01)
-            self.assertClose(y, centroid.getY(), atol=None, rtol=.01)
-    
+            print x,y,xerr,yerr 
 
 
 def suite():
