@@ -168,7 +168,6 @@ SdssCentroidAlgorithm::Result SdssCentroidAlgorithm::apply(
     Input const & inputs,
     Control const & ctrl
 ) {
-    std::cout << "Sdss Centroid Input: " << inputs.position << std::endl;
     return apply(exposure, inputs.position, ctrl);
 }
 

@@ -140,7 +140,7 @@ public:
 
     /**
      *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  SdssCentroidAlgorithm only needs a beginning centroid, so we use FootprintCentroidInput.
+     *  Exposure being measured.  SdssCentroidAlgorithm needs a beginning centroid, so we use FootprintCentroidInput.
      */
     typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
 

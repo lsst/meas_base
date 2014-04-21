@@ -38,20 +38,6 @@ DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
 
 class SFMTestCase(lsst.utils.tests.TestCase):
 
-    def setUp(self):
-        catalog, bbox = MakeTestData.makeCatalog()
-        exposure = MakeTestData.makeEmptyExposure(bbox)
-        MakeTestData.fillImages(catalog, exposure)
-        catalog.writeFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
-        exposure.writeFits(os.path.join(DATA_DIR, "calexp-0A.fits"))
-        exposure.writeFits(os.path.join(DATA_DIR, "ref-0A.fits"))
-    
-
-    def tearDown(self):
-        os.unlink(os.path.join(DATA_DIR, "truthcat-0A.fits"))
-        os.unlink(os.path.join(DATA_DIR, "calexp-0A.fits"))
-        os.unlink(os.path.join(DATA_DIR, "ref-0A.fits"))
-
     #  This test really tests both that a plugin can measure things correctly,
     #  and that the noise replacement mechanism works in situ.
     #  The test uses the same replacement image as the test above, with the
@@ -59,60 +45,45 @@ class SFMTestCase(lsst.utils.tests.TestCase):
     #  base.py replacement mechanism is still working
     def testFluxPlugin(self):
 
-        print "testFluxPlugin"
-        path = os.path.join(DATA_DIR, 'calexp-0A.fits')
-        exposure = lsst.afw.image.ExposureF(path)
-        #  catalog with footprints, but not measurement fields added
-        path = os.path.join(DATA_DIR, 'truthcat-0A.fits')
-        srccat = SourceCatalog.readFits(path)
-        #  catalog with footprints, but no measurement fields added
-        footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
-                      for measRecord in srccat}
+        srccat, bbox = MakeTestData.makeCatalog()
+        exposure = MakeTestData.makeEmptyExposure(bbox)
+        MakeTestData.fillImages(srccat, exposure)
+
         sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        path = os.path.join(DATA_DIR, 'calexp-0A.fits')
-        replaced = lsst.afw.image.ExposureF(path)
-        noiseReplacer = NoiseReplacer(replaced, footprints, sfm_config.noiseSource,
-                          sfm_config.noiseOffset, sfm_config.noiseSeed)
-        
-        # add the measurement fields to the outputSchema and make a catalog with it
-        # then extend with the mapper to copy the extant data
         mapper = SchemaMapper(srccat.getSchema())
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
-        sfm_config.plugins = ["centroid.peak", "base_SincFlux"]
+
+        #  Basic test of PsfFlux algorithm, no C++ slots
+        sfm_config.plugins = ["centroid.peak", "base_PsfFlux"]
         sfm_config.slots.centroid = "centroid.peak"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
-        sfm_config.plugins["base_SincFlux"].radius1 = 0.0
-        sfm_config.plugins["base_SincFlux"].radius2 = 16.0
+        sfm_config.plugins["base_PsfFlux"].usePixelWeights = True
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
         measCat.extend(srccat, mapper=mapper)
+
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
-
-        # The test plugin adds the footprint flux and the background (surrounding) flux
-        # to the schema.  This test then loops through the sources and tries to produce
-        # the same results
-        mi = exposure.getMaskedImage()
-        truthFluxkey = srccat.getSchema().find("truth.flux").key
-        schema = measCat.getSchema()
-        radii = [3,6,12,100]
         for i in range(len(measCat)):
             record = measCat[i]
-            print record.get("base_SincFlux_flag")
-            print record.get("base_SincFlux_flag_noPsf")
-            print record.get("base_SincFlux_flag_noGoodPixels")
-            print record.get("base_SincFlux_flag_edge")
-            flux = record.get("base_SincFlux_flux")
-            fluxerr = record.get("base_SincFlux_fluxSigma")
-            truthFlux = srccat[i].get(truthFluxkey)
-            print flux, fluxerr, truthFlux 
-            self.assertClose(truthFlux, flux, atol=None, rtol=.22)
+            srcRec = srccat[i]
+            # check all the flags
+            self.assertFalse(record.get("base_PsfFlux_flag"))
+            self.assertFalse(record.get("base_PsfFlux_flag_noPsf"))
+            self.assertFalse(record.get("base_PsfFlux_flag_noGoodPixels"))
+            self.assertFalse(record.get("base_PsfFlux_flag_edge"))
+            flux = record.get("base_PsfFlux_flux")
+            fluxerr = record.get("base_PsfFlux_fluxSigma")
+            truthFlux = srcRec.get("truth.flux")
+            # if a star, see if the flux measured is decent
+            if srcRec.get("truth.isstar"):
+                self.assertClose(truthFlux, flux, atol=None, rtol=.1)
     
 
 
