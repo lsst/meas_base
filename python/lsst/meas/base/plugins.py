@@ -71,11 +71,33 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
         peak = measRecord.getFootprint().getPeaks()[0]
         measRecord.set(self.keyX, peak.getFx())
         measRecord.set(self.keyY, peak.getFy())
-        #result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
+
+SingleFramePlugin.registry.register("centroid.peak", SingleFramePeakCentroidPlugin)
+
+
+class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
+
+    def setDefaults(self):
+        SingleFramePluginConfig.setDefaults(self)
+        self.executionOrder = 5.0
+
+class SingleFrameSkyCoordPlugin(SingleFramePlugin):
+    """
+    This is an easy-to-implement centroid algorithm, based on the peak pixel of the source
+    footprint.  It is not the best centroid estimatation, but it is always available.
+    """
+
+    def measure(self, measRecord, exposure):
+        # there should be a base class method for handling this exception. Put this on a later ticket 
+        # Also, there should be a python Exception of the appropriate type for this error
+        if not exposure.hasWcs():
+            raise Exception("Wcs not attached to exposure.  Required for " + self.name + " algorithm")
+        measRecord.updateCoord(exposure.getWcs())
 
 # Plugin class must be registered to the singleton Registry class of the same type in order to
 # be available for use with the corresponding measurement Task.
-SingleFramePlugin.registry.register("centroid.peak", SingleFramePeakCentroidPlugin)
+
+SingleFramePlugin.registry.register("skycoord", SingleFrameSkyCoordPlugin)
 
 
 # --- Forced Plugins ---

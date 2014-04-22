@@ -44,42 +44,34 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         exposure = MakeTestData.makeEmptyExposure(bbox)
         MakeTestData.fillImages(srccat, exposure)
        
-        sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
+        sfm_config = lsst.meas.base.plugins.SingleFrameMeasurementConfig()
         mapper = SchemaMapper(srccat.getSchema())
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
-
-        #  Basic test of SincFlux algorithm, no C++ slots
-        sfm_config.plugins = ["centroid.peak", "base_SincFlux"]
+        #  Basic test of SkyCoord algorithm, no C++ slots
+        sfm_config.plugins = ["centroid.peak", "skycoord"]
         sfm_config.slots.centroid = "centroid.peak"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
-        sfm_config.plugins["base_SincFlux"].radius1 = 0.0
-        sfm_config.plugins["base_SincFlux"].radius2 = 16.0
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
         measCat.extend(srccat, mapper=mapper)
-
+        measCat.getTable().defineCentroid("centroid.peak")
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
+        wcs = exposure.getWcs()
         for i in range(len(measCat)):
             record = measCat[i]
             srcRec = srccat[i]
-            # check all the flags
-            self.assertFalse(record.get("base_SincFlux_flag"))
-            self.assertFalse(record.get("base_SincFlux_flag_noPsf"))
-            self.assertFalse(record.get("base_SincFlux_flag_noGoodPixels"))
-            self.assertFalse(record.get("base_SincFlux_flag_edge"))
-            flux = record.get("base_SincFlux_flux")
-            fluxerr = record.get("base_SincFlux_fluxSigma")
-            truthFlux = srcRec.get("truth.flux")
-            # if a star, see if the flux measured is decent
+            trueCentroid = srcRec.get("truth.centroid")
+            skyPos = wcs.pixelToSky(trueCentroid)
+            # check to see if the skycoord is withing .5 arcseconds of the true centroid
             if srcRec.get("truth.isstar"):
-                self.assertClose(truthFlux, flux, atol=None, rtol=.1)
+                self.assertLess(skyPos.angularSeparation(record.getCoord()).asArcseconds(), 1)
     
 
 
