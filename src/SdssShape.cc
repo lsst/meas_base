@@ -23,11 +23,7 @@
 
 #include "lsst/utils/PowFast.h"
 #include "lsst/meas/base/SdssShape.h"
-
-// Doxygen gets confused and generates warnings when trying to map the definitions here to their
-// declarations, but we want to put the source code itself in the HTML docs, so we just tell it
-// not to look for any documentation comments here.
-/// @cond SOURCE_FILE
+#include "lsst/meas/base/algorithms/SdssShapeImpl.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -132,10 +128,10 @@ SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(
 
 template <typename T>
 SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
-    afw::image::MaskedImage<T> const & exposure,
+    afw::image::Image<T> const & exposure,
     afw::detection::Footprint const & footprint,
-    afw::geom::Point2D const & position,
-    Control const & ctrl
+    afw::geom::Point2D const & center,
+    Control const & control
 ) {
     throw LSST_EXCEPT(
         pex::exceptions::LogicErrorException,
@@ -145,15 +141,64 @@ SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
 
 template <typename T>
 SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
-    afw::image::Image<T> const & exposure,
+    afw::image::MaskedImage<T> const & mimage,
     afw::detection::Footprint const & footprint,
-    afw::geom::Point2D const & position,
-    Control const & ctrl
+    afw::geom::Point2D const & center,
+    Control const & control
 ) {
-    throw LSST_EXCEPT(
-        pex::exceptions::LogicErrorException,
-        "Not implemented"
-    );
+    Result result;
+    typedef typename afw::image::MaskedImage<T> MaskedImageT;
+    double xcen = center.getX();         // object's column position
+    double ycen = center.getY();         // object's row position
+
+    xcen -= mimage.getX0();             // work in image Pixel coordinates
+    ycen -= mimage.getY0();
+    
+    float shiftmax = 1;                 // Max allowed centroid shift \todo XXX set shiftmax from Policy
+    if (shiftmax < 2) {
+        shiftmax = 2;
+    } else if (shiftmax > 10) {
+        shiftmax = 10;
+    }
+
+    algorithms::SdssShapeImpl shapeImpl;
+
+    try {
+        algorithms::getAdaptiveMoments(mimage, control.background, xcen, ycen, shiftmax, &shapeImpl,
+                                         control.maxIter, control.tol1, control.tol2);
+    } catch (pex::exceptions::Exception & err) {
+            
+        for (int n = 0; n < algorithms::SdssShapeImpl::N_FLAGS; ++n) {
+            if (shapeImpl.getFlag(algorithms::SdssShapeImpl::Flag(n))) {
+                result.setFlag(FlagBits(n));
+            }
+        }
+        throw;
+    }
+/*
+ * We need to measure the PSF's moments even if we failed on the object
+ * N.b. This isn't yet implemented (but the code's available from SDSS)
+ */
+    for (int n = 0; n < algorithms::SdssShapeImpl::N_FLAGS; ++n) {
+        if (shapeImpl.getFlag(algorithms::SdssShapeImpl::Flag(n))) {
+            result.setFlag(FlagBits(n));
+        }
+    }
+    
+    result.x = shapeImpl.getX();
+    result.y = shapeImpl.getY();
+    // FIXME: should do off-diagonal covariance elements too
+    result.xSigma = shapeImpl.getXErr();
+    result.ySigma = shapeImpl.getYErr();
+    
+    result.xx = shapeImpl.getIxx();
+    result.yy = shapeImpl.getIyy();
+    result.xy = shapeImpl.getIxy();
+    // FIXME: should do off-diagonal covariance elements too
+    result.xxSigma = shapeImpl.getIxxErr();
+    result.yySigma = shapeImpl.getIyyErr();
+    result.xySigma = shapeImpl.getIxyErr();
+    return result;
 }
 
 template <typename T>
@@ -183,11 +228,10 @@ SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
         afw::image::Exposure<T> const & exposure,                       \
         Input const & inputs,                                           \
         Control const & ctrl                                            \
-    )
+    );
 
 INSTANTIATE(float);
 INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
 
-/// @endcond

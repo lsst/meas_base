@@ -149,7 +149,7 @@ public:
 
 private:
     afw::table::Key<Flux> _flux;
-    afw::table::Key<ErrElement> _fluxSigma;
+    afw::table::Key<FluxErrElement> _fluxSigma;
 };
 
 

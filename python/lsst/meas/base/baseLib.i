@@ -69,7 +69,6 @@ Basic routines to talk to lsst::meas::base classes
 
 %immutable lsst::meas::base::FlagDef::name;
 %immutable lsst::meas::base::FlagDef::doc;
-
 %include "lsst/meas/base/exceptions.h"
 %include "lsst/meas/base/Results.h"
 %include "lsst/meas/base/ResultMappers.h"
@@ -196,4 +195,14 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
 %wrapMeasurementAlgorithm4(lsst::meas::base, SdssShapeAlgorithm, SdssShapeControl, FootprintCentroidInput,
-                           ShapeComponent, CentroidComponent, FluxComponent, SdssShapeExtras)
+                          ShapeComponent, CentroidComponent, FluxComponent, SdssShapeExtras)
+
+%include "lsst/meas/base/SincFlux.h"
+%template(apply) lsst::meas::base::SincFluxAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::SincFluxAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, SincFluxAlgorithm, SincFluxControl, FootprintCentroidInput, FluxComponent)
+
+%include "lsst/meas/base/SdssCentroid.h"
+%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, SdssCentroidAlgorithm, SdssCentroidControl, FootprintCentroidInput, CentroidComponent)

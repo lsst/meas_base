@@ -27,7 +27,7 @@ namespace lsst { namespace meas { namespace base {
 
 FluxComponent::FluxComponent() :
     flux(std::numeric_limits<Flux>::quiet_NaN()),
-    fluxSigma(std::numeric_limits<ErrElement>::quiet_NaN())
+    fluxSigma(std::numeric_limits<FluxErrElement>::quiet_NaN())
 {}
 
 CentroidComponent::CentroidComponent() :

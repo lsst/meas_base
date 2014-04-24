@@ -40,6 +40,8 @@ from .forcedImage import *
 
 WrappedSingleFramePlugin.generate(PsfFluxAlgorithm)
 WrappedSingleFramePlugin.generate(SdssShapeAlgorithm)
+WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm)
+WrappedSingleFramePlugin.generate(SincFluxAlgorithm)
 
 WrappedForcedPlugin.generate(PsfFluxAlgorithm)
 
@@ -52,6 +54,7 @@ class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
         self.executionOrder = 0.0
 
 class SingleFramePeakCentroidPlugin(SingleFramePlugin):
+
     """
     This is an easy-to-implement centroid algorithm, based on the peak pixel of the source
     footprint.  It is not the best centroid estimatation, but it is always available.
@@ -60,16 +63,52 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
 
     def __init__(self, config, name, schema, flags, others, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
-        self.key = schema.addField(name, type="PointD", doc="peak centroid", units="pixels")
+        self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixels")
+        self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixels")
 
     def measure(self, measRecord, exposure):
         peak = measRecord.getFootprint().getPeaks()[0]
-        result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
-        measRecord.set(self.key, result)
+        measRecord.set(self.keyX, peak.getFx())
+        measRecord.set(self.keyY, peak.getFy())
+
+SingleFramePlugin.registry.register("centroid.peak", SingleFramePeakCentroidPlugin)
+
+
+class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
+
+    usePeak = lsst.pex.config.Field(dtype=bool, default=False, optional=True,
+                                  doc="use footprint peak instead of centroid slot ")
+    def setDefaults(self):
+        SingleFramePluginConfig.setDefaults(self)
+        self.executionOrder = 5.0
+
+class SingleFrameSkyCoordPlugin(SingleFramePlugin):
+    """
+    This is an easy-to-implement centroid algorithm, based on the peak pixel of the source
+    footprint.  It is not the best centroid estimatation, but it is always available.
+    """
+    ConfigClass = SingleFrameSkyCoordConfig
+
+    def measure(self, measRecord, exposure):
+        # there should be a base class method for handling this exception. Put this on a later ticket 
+        # Also, there should be a python Exception of the appropriate type for this error
+        if not exposure.hasWcs():
+            raise Exception("Wcs not attached to exposure.  Required for " + self.name + " algorithm")
+        # this is a temporary hack around, since centroid don't work yet
+        if self.config.usePeak:
+            peak = measRecord.getFootprint().getPeaks()[0]
+            coord = exposure.getWcs().pixelToSky(peak.getFx(), peak.getFy())
+            measRecord.setCoord(coord)
+        else:
+            measRecord.updateCoord(exposure.getWcs())
+
+    def fail(self, measRecord, error=None):
+        pass
 
 # Plugin class must be registered to the singleton Registry class of the same type in order to
 # be available for use with the corresponding measurement Task.
-SingleFramePlugin.registry.register("centroid.peak", SingleFramePeakCentroidPlugin)
+
+SingleFramePlugin.registry.register("skycoord", SingleFrameSkyCoordPlugin)
 
 
 # --- Forced Plugins ---
@@ -91,7 +130,8 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
     def __init__(self, config, name, schemaMapper, flags, others, metadata):
         ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
         schema = schemaMapper.editOutputSchema()
-        self.key = schema.addField(name, type="PointD", doc="peak centroid", units="pixels")
+        self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixels")
+        self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixels")
 
     def measure(self, measRecord, exposure, refRecord, referenceWcs):
         targetWcs = exposure.getWcs()
@@ -99,7 +139,8 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
         result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
         if not referenceWcs == targetWcs:
             result = targetWcs.skyToPixel(referenceWcs.pixelToSky(result))
-        measRecord.set(self.key, result)
+        measRecord.set(self.keyX, result.getX())
+        measRecord.set(self.keyY, result.getY())
 
 ForcedPlugin.registry.register("centroid.peak", ForcedPeakCentroidPlugin)
 
