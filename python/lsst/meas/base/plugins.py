@@ -54,6 +54,7 @@ class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
         self.executionOrder = 0.0
 
 class SingleFramePeakCentroidPlugin(SingleFramePlugin):
+
     """
     This is an easy-to-implement centroid algorithm, based on the peak pixel of the source
     footprint.  It is not the best centroid estimatation, but it is always available.
@@ -64,8 +65,6 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
         SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
         self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixels")
         self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixels")
-        self.keyXerr = schema.addField(name + "_xSigma", type="D", doc="peak centroid", units="pixels")
-        self.keyYerr = schema.addField(name + "_ySigma", type="D", doc="peak centroid", units="pixels")
 
     def measure(self, measRecord, exposure):
         peak = measRecord.getFootprint().getPeaks()[0]
@@ -77,6 +76,8 @@ SingleFramePlugin.registry.register("centroid.peak", SingleFramePeakCentroidPlug
 
 class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
 
+    usePeak = lsst.pex.config.Field(dtype=bool, default=False, optional=True,
+                                  doc="use footprint peak instead of centroid slot ")
     def setDefaults(self):
         SingleFramePluginConfig.setDefaults(self)
         self.executionOrder = 5.0
@@ -86,13 +87,23 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
     This is an easy-to-implement centroid algorithm, based on the peak pixel of the source
     footprint.  It is not the best centroid estimatation, but it is always available.
     """
+    ConfigClass = SingleFrameSkyCoordConfig
 
     def measure(self, measRecord, exposure):
         # there should be a base class method for handling this exception. Put this on a later ticket 
         # Also, there should be a python Exception of the appropriate type for this error
         if not exposure.hasWcs():
             raise Exception("Wcs not attached to exposure.  Required for " + self.name + " algorithm")
-        measRecord.updateCoord(exposure.getWcs())
+        # this is a temporary hack around, since centroid don't work yet
+        if self.config.usePeak:
+            peak = measRecord.getFootprint().getPeaks()[0]
+            coord = exposure.getWcs().pixelToSky(peak.getFx(), peak.getFy())
+            measRecord.setCoord(coord)
+        else:
+            measRecord.updateCoord(exposure.getWcs())
+
+    def fail(self, measRecord, error=None):
+        pass
 
 # Plugin class must be registered to the singleton Registry class of the same type in order to
 # be available for use with the corresponding measurement Task.
@@ -121,8 +132,6 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
         schema = schemaMapper.editOutputSchema()
         self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixels")
         self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixels")
-        self.keyXerr = schema.addField(name + "_xSigma", type="D", doc="peak centroid", units="pixels")
-        self.keyYerr = schema.addField(name + "_ySigma", type="D", doc="peak centroid", units="pixels")
 
     def measure(self, measRecord, exposure, refRecord, referenceWcs):
         targetWcs = exposure.getWcs()

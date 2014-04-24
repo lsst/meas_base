@@ -30,12 +30,6 @@ FluxComponent::FluxComponent() :
     fluxSigma(std::numeric_limits<FluxErrElement>::quiet_NaN())
 {}
 
-//FloatComponent::FloatComponent() :
-//    floatValue(std::numeric_limits<Flux>::quiet_NaN()),
-//    floatValueSigma(std::numeric_limits<ErrElement>::quiet_NaN())
-//{}
-
-
 CentroidComponent::CentroidComponent() :
     x(std::numeric_limits<CentroidElement>::quiet_NaN()),
     y(std::numeric_limits<CentroidElement>::quiet_NaN()),

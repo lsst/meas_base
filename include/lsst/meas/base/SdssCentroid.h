@@ -31,11 +31,6 @@
  *
  */
 
-#include <stdio.h>
-#include <execinfo.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Inputs.h"
@@ -45,11 +40,6 @@ namespace lsst { namespace meas { namespace base {
 
 /**
  *  @brief A C++ control class to handle SdssCentroidAlgorithm's configuration
- *
- *  In C++, we define Control objects to handle configuration information.  Using the LSST_CONTROL_FIELD
- *  macro and lsst.pex.config.wrap.makeConfigClass, we can turn these into more full-featured Config classes
- *  in Python.  While the user will usually interact with the Config class, the plugin wrapper system will
- *  turn Config instances into Control instances when passing them to C++.
  *
  */
 class SdssCentroidControl {
@@ -67,15 +57,6 @@ public:
 
     SdssCentroidControl() : binmax(16), peakMin(-1.0), wfac(1.5) {}
 };
-
-/**
- *  @brief An object that transfers values from FluxComponent to afw::table::BaseRecord
- *
- *  This should be included in one of @ref measBaseResultMapperTemplates to correspond with using
- *  FluxComponent in the same position in one of @ref measBaseResultTemplates, and will otherwise
- *  not be used directly by users.
- */
-
 
 /**
  *  @brief The Sdss Centroid Algorithm
@@ -102,13 +83,6 @@ public:
     /**
      *  @brief Return an array of (name, doc) tuples that describes the flags and sets the names used
      *         in catalog schemas.
-     *
-     *  Each element of the returned array should correspond to one of the FlagBits enum values, but the
-     *  names should follow conventions; FlagBits should be ALL_CAPS_WITH_UNDERSCORES, while FlagDef names
-     *  should be camelCaseStartingWithLowercase.  @sa FlagsComponentMapper.
-     *
-     *  The implementation of getFlagDefinitions() should generally go in the header file so it is easy
-     *  to keep in sync with the FlagBits enum.
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
         static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
@@ -139,17 +113,13 @@ public:
 
 
     /**
-     *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  SdssCentroidAlgorithm needs a beginning centroid, so we use FootprintCentroidInput.
+     *  Input for measurement framework. SdssCentroidAlgorithm needs a beginning centroid and footprint,
+     *  so we use FootprintCentroidInput. The input centroid may be an approximation
      */
     typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
 
     /**
      *  @brief Create an object that transfers Result values to a record associated with the given schema
-     *
-     *  This is called by the Plugin wrapper system to create a ResultMapper.  It's responsible for calling
-     *  the ResultMapper constructor, forwarding the schema and prefix arguments and providing the correct
-     *  values for the uncertainty arguments.
      */
     static ResultMapper makeResultMapper(
         afw::table::Schema & schema,

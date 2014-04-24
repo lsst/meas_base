@@ -44,7 +44,7 @@ class TestForcedCcdMeasurementConfig(ForcedCcdMeasurementConfig):
     def setDefaults(self):
         ForcedCcdMeasurementConfig.setDefaults(self)
         self.plugins = ["centroid.peak", "test.flux"]
-        self.slots.centroid = "centroid.peak"
+        self.slots.centroid = None #"centroid.peak"
         self.slots.shape = None
         self.slots.psfFlux = None 
         self.slots.modelFlux = None

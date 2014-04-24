@@ -20,10 +20,10 @@
  * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
-#include "ndarray/eigen.h"
 #include <iostream>
 #include <cmath>
 #include <numeric>
+#include "ndarray/eigen.h"
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/pex/exceptions.h"
 #include "lsst/pex/logging/Trace.h"
@@ -33,11 +33,6 @@
 #include "lsst/meas/base/SdssCentroid.h"
 #include "lsst/meas/base/algorithms/SdssCentroidTemplates.h"
 
-
-// Doxygen gets confused and generates warnings when trying to map the definitions here to their
-// declarations, but we want to put the source code itself in the HTML docs, so we just tell it
-// not to look for any documentation comments here.
-/// @cond SOURCE_FILE
 
 namespace lsst { namespace meas { namespace base {
 
@@ -188,6 +183,4 @@ INSTANTIATE(float);
 INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
-
-/// @endcond
 

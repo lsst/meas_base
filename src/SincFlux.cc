@@ -30,11 +30,6 @@
 #include "lsst/meas/base/algorithms/detail/SincPhotometry.h"
 #include "lsst/meas/base/SincFlux.h"
 
-// Doxygen gets confused and generates warnings when trying to map the definitions here to their
-// declarations, but we want to put the source code itself in the HTML docs, so we just tell it
-// not to look for any documentation comments here.
-/// @cond SOURCE_FILE
-
 namespace lsst { namespace meas { namespace base {
 
 SincFluxAlgorithm::ResultMapper SincFluxAlgorithm::makeResultMapper(
@@ -62,7 +57,6 @@ SincFluxAlgorithm::Result SincFluxAlgorithm::apply(
         );
     }
     Result result;
-
     afw::geom::ellipses::Axes const axes(ctrl.radius2, ctrl.radius2*(1.0 - ctrl.ellipticity), ctrl.angle);
     std::pair<double, double> fluxes =
         algorithms::photometry::calculateSincApertureFlux(exposure.getMaskedImage(),
@@ -113,4 +107,3 @@ INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
 
-/// @endcond

@@ -238,20 +238,6 @@ struct ShapeComponent {
 };
 
 /**
- *  @brief A reusable component for result structs for flux measurements.
- *
- *  Flux measurements and their errors should always be in DN.
- *
- *  @todo figure out how to handle arrays of fluxes from e.g. aperture photometry
- */
-//struct FloatComponent {
-//    float floatValue; ///< Measured flux in DN.
-//    ErrElement floatValueSigma; ///< 1-Sigma error (sqrt of variance) on flux in DN.
-//
-//    FloatComponent(); ///< Constructor; initializes everything to NaN.
-//};
-
-/**
  *  @defgroup measBaseResultTemplates the ResultN templates
  *
  *  All Algorithm classes should declare a typedef 'Result'.  This typedef tells the Plugin wrapper system

@@ -28,11 +28,6 @@
 #include "lsst/afw/detection/FootprintArray.cc"
 #include "lsst/meas/base/PsfFlux.h"
 
-// Doxygen gets confused and generates warnings when trying to map the definitions here to their
-// declarations, but we want to put the source code itself in the HTML docs, so we just tell it
-// not to look for any documentation comments here.
-/// @cond SOURCE_FILE
-
 namespace lsst { namespace meas { namespace base {
 
 PsfFluxAlgorithm::ResultMapper PsfFluxAlgorithm::makeResultMapper(
@@ -157,4 +152,3 @@ INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
 
-/// @endcond

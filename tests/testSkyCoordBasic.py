@@ -51,7 +51,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         flags = MeasurementDataFlags()
         #  Basic test of SkyCoord algorithm, no C++ slots
         sfm_config.plugins = ["centroid.peak", "skycoord"]
-        sfm_config.slots.centroid = "centroid.peak"
+        sfm_config.plugins["skycoord"].usePeak = True
+        sfm_config.slots.centroid = None
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
@@ -60,7 +61,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
         measCat.extend(srccat, mapper=mapper)
-        measCat.getTable().defineCentroid("centroid.peak")
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
         wcs = exposure.getWcs()

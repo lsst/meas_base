@@ -39,11 +39,6 @@ namespace lsst { namespace meas { namespace base {
 
 /**
  *  @brief A C++ control class to handle SincFluxAlgorithm's configuration
- *
- *  In C++, we define Control objects to handle configuration information.  Using the LSST_CONTROL_FIELD
- *  macro and lsst.pex.config.wrap.makeConfigClass, we can turn these into more full-featured Config classes
- *  in Python.  While the user will usually interact with the Config class, the plugin wrapper system will
- *  turn Config instances into Control instances when passing them to C++.
  */
 class SincFluxControl {
 public:
@@ -73,10 +68,6 @@ public:
      *  @brief Flag bits to be used with the 'flags' data member of the Result object.
      *
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
-     *
-     *  Note that we've included a final N_FLAGS value that isn't a valid flag; this is a common C++
-     *  idiom for automatically counting the number of enum values, and it's required for Algorithms
-     *  as the N_FLAGS value is used by the Result and ResultMapper objects.
      */
     enum FlagBits {
         NO_PSF=0,
@@ -88,13 +79,6 @@ public:
     /**
      *  @brief Return an array of (name, doc) tuples that describes the flags and sets the names used
      *         in catalog schemas.
-     *
-     *  Each element of the returned array should correspond to one of the FlagBits enum values, but the
-     *  names should follow conventions; FlagBits should be ALL_CAPS_WITH_UNDERSCORES, while FlagDef names
-     *  should be camelCaseStartingWithLowercase.  @sa FlagsComponentMapper.
-     *
-     *  The implementation of getFlagDefinitions() should generally go in the header file so it is easy
-     *  to keep in sync with the FlagBits enum.
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
         static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
@@ -106,13 +90,11 @@ public:
     }
 
     /// A typedef to the Control object for this algorithm, defined above.
-    /// The control object contains the configuration parameters for this algorithm.
     typedef SincFluxControl Control;
 
     /**
      *  Result is the type returned by apply().  Because SincFluxAlgorithm only measures a flux and its
      *  uncertainty, we can use the single predefined component, FluxComponent, without any modification.
-     *  Result1 is a template for algorithms with one result component, in addition to flags.
      */
     typedef Result1<SincFluxAlgorithm,FluxComponent> Result;
 
@@ -130,10 +112,6 @@ public:
 
     /**
      *  @brief Create an object that transfers Result values to a record associated with the given schema
-     *
-     *  This is called by the Plugin wrapper system to create a ResultMapper.  It's responsible for calling
-     *  the ResultMapper constructor, forwarding the schema and prefix arguments and providing the correct
-     *  values for the uncertainty arguments.
      */
     static ResultMapper makeResultMapper(
         afw::table::Schema & schema,

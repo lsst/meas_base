@@ -52,7 +52,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
 
         #  Basic test of SincFlux algorithm, no C++ slots
         sfm_config.plugins = ["centroid.peak", "base_SincFlux"]
-        sfm_config.slots.centroid = "centroid.peak"
+        sfm_config.slots.centroid = None
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
@@ -63,7 +63,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
         measCat.extend(srccat, mapper=mapper)
-
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
         for i in range(len(measCat)):

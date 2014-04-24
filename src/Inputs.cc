@@ -20,7 +20,6 @@
  * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
-#include <iostream>
 #include "lsst/meas/base/Inputs.h"
 #include "lsst/utils/ieee.h"
 
@@ -37,7 +36,8 @@ FootprintInput::Vector FootprintInput::makeVector(afw::table::SourceCatalog cons
 
 FootprintCentroidInput::FootprintCentroidInput(afw::table::SourceRecord const & record) : FootprintInput(record) 
 {
-        if (record.getTable()->getCentroidDefinition().size() == 0 || lsst::utils::isnan(record.getCentroid().getX())) {
+        
+        if (!record.getTable()->getCentroidKey().isValid() || lsst::utils::isnan(record.getCentroid().getX())) {
             position.setX(record.getFootprint()->getPeaks()[0]->getFx());
             position.setY(record.getFootprint()->getPeaks()[0]->getFy());
         } else {
