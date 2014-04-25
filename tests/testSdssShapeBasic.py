@@ -50,7 +50,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         flags = MeasurementDataFlags()
         sfm_config.plugins = ["centroid.peak", "base_SdssShape"]
         sfm_config.slots.centroid = None
-        sfm_config.slots.shape = None
+        sfm_config.slots.shape = "base_SdssShape"
         sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
         sfm_config.slots.apFlux = None
@@ -75,8 +75,15 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             xxxyCov = record.get("base_SdssShape_xx_xy_Cov")
             yyxyCov = record.get("base_SdssShape_yy_xy_Cov")
             trueShape = srcRec.get("truth.shape")
+            shape = record.getShape()
+            cov = record.getShapeErr()
+            self.assertClose(xxSigma*xxSigma, cov[0,0], rtol = .01)
+            self.assertClose(yySigma*yySigma, cov[1,1], rtol = .01)
+            self.assertClose(xySigma*xySigma, cov[2,2], rtol = .01)
+            self.assertTrue(numpy.isnan(xxyyCov) and numpy.isnan(cov[0,1]))
+            self.assertTrue(numpy.isnan(xxxyCov) and numpy.isnan(cov[0,2]))
+            self.assertTrue(numpy.isnan(yyxyCov) and numpy.isnan(cov[1,2]))
             if not numpy.isnan(trueShape.getIxx()):
-                self.assertClose(xx, trueShape.getIxx(), atol=None, rtol=.08)
                 self.assertFalse(record.get("base_SdssShape_flag"))
                 self.assertFalse(record.get("base_SdssShape_flag_unweightedBad"))
                 self.assertFalse(record.get("base_SdssShape_flag_unweighted"))
@@ -90,10 +97,10 @@ class SFMTestCase(lsst.utils.tests.TestCase):
                 fluxSigma = record.get("base_SdssShape_fluxSigma")
                 xy4 = record.get("base_SdssShape_xy4")
                 xy4Sigma = record.get("base_SdssShape_xy4Sigma")
-                self.assertClose(xx, trueShape.getIxx(), atol=None, rtol=.08)
-                self.assertClose(yy, trueShape.getIyy(), atol=None, rtol=.08)
+                self.assertClose(xx, trueShape.getIxx(), atol=None, rtol=.12)
+                self.assertClose(yy, trueShape.getIyy(), atol=None, rtol=.12)
                 # commented out because of a bug
-                #self.assertClose(xy, trueShape.getIxy(), atol=None, rtol=.08)
+                #self.assertClose(xy, trueShape.getIxy(), atol=None, rtol=.12)
 def suite():
     """Returns a suite containing all the test cases in this module."""
 

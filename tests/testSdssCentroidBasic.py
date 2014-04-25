@@ -52,7 +52,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         outschema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
         sfm_config.plugins = ["centroid.peak", "base_SdssCentroid"]
-        sfm_config.slots.centroid = None
+        sfm_config.slots.centroid = "base_SdssCentroid"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
@@ -60,6 +60,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         sfm_config.slots.instFlux = None
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
+        measCat.defineCentroid("base_SdssCentroid")
         measCat.extend(srccat, mapper=mapper)
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
@@ -67,18 +68,27 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         truthFluxkey = srccat.getSchema().find("truth.flux").key
         for i in range(len(measCat)):
             record = measCat[i]
+            centroid = record.getCentroid()
+            cov = record.getCentroidErr()
             peakX = record.get("centroid.peak_x")
             peakY = record.get("centroid.peak_y")
             x = record.get("base_SdssCentroid_x")
             y = record.get("base_SdssCentroid_y")
             xerr = record.get("base_SdssCentroid_xSigma")
             yerr = record.get("base_SdssCentroid_ySigma")
+            xycov = record.get("base_SdssCentroid_x_y_Cov")
+
             self.assertFalse(record.get("base_SdssCentroid_flag"))
             self.assertFalse(record.get("base_SdssCentroid_flag_noPsf"))
             self.assertFalse(record.get("base_SdssCentroid_flag_badData"))
             self.assertFalse(record.get("base_SdssCentroid_flag_edge"))
             self.assertClose(peakX, x, atol=None, rtol=.02)
             self.assertClose(peakY, y, atol=None, rtol=.02)
+
+            self.assertEqual(x, record.getCentroid().getX())
+            self.assertEqual(y, record.getCentroid().getY())
+            self.assertClose(xerr*xerr, cov[0,0], rtol=.01)
+            self.assertClose(yerr*yerr, cov[1,1], rtol=.01)
 
 
 def suite():

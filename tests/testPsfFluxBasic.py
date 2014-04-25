@@ -57,9 +57,9 @@ class SFMTestCase(lsst.utils.tests.TestCase):
 
         #  Basic test of PsfFlux algorithm, no C++ slots
         sfm_config.plugins = ["centroid.peak", "base_PsfFlux"]
-        sfm_config.slots.centroid = None
+        sfm_config.slots.centroid = "centroid.peak"
         sfm_config.slots.shape = None
-        sfm_config.slots.psfFlux = None
+        sfm_config.slots.psfFlux = "base_PsfFlux"
         sfm_config.slots.modelFlux = None
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
@@ -84,7 +84,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             # if a star, see if the flux measured is decent
             if srcRec.get("truth.isstar"):
                 self.assertClose(truthFlux, flux, atol=None, rtol=.1)
-    
+            self.assertEqual(flux, record.getPsfFlux()) 
+            self.assertEqual(fluxerr, record.getPsfFluxErr()) 
 
 
 def suite():

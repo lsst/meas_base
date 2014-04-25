@@ -175,6 +175,7 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
                  ],
         doc="Plugin plugins to be run and their configuration"
         )
+    algorithms = property(lambda self: self.plugins, doc="backwards-compatibility alias for plugins")
 
 class SingleFrameMeasurementTask(lsst.pipe.base.Task):
     """Single-frame measurement driver task"""
@@ -210,6 +211,10 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
         @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
                                  be measured and the associated Psf, Wcs, etc.
         """
+        if exposure.__class__.__name__ == "SourceCatalog":
+            temp = exposure
+            exposure = measCat
+            measCat = temp
         assert measCat.getSchema().contains(self.schema)
         self.config.slots.setupTable(measCat.table, prefix=self.config.prefix)
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
