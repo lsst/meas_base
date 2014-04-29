@@ -44,6 +44,10 @@ WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm)
 WrappedSingleFramePlugin.generate(SincFluxAlgorithm)
 WrappedSingleFramePlugin.generate(PixelFlagsAlgorithm)
 WrappedSingleFramePlugin.generate(ClassificationAlgorithm)
+WrappedSingleFramePlugin.generate(GaussianFluxAlgorithm)
+WrappedSingleFramePlugin.generate(NaiveFluxAlgorithm)
+WrappedSingleFramePlugin.generate(GaussianCentroidAlgorithm)
+WrappedSingleFramePlugin.generate(NaiveCentroidAlgorithm)
 WrappedForcedPlugin.generate(PsfFluxAlgorithm)
 
 # --- Single-Frame Measurement Plugins ---

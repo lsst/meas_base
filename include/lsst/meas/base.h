@@ -34,5 +34,9 @@
 #include "lsst/meas/base/SdssShape.h"
 #include "lsst/meas/base/PixelFlags.h"
 #include "lsst/meas/base/Classification.h"
+#include "lsst/meas/base/GaussianFlux.h"
+#include "lsst/meas/base/GaussianCentroid.h"
+#include "lsst/meas/base/NaiveFlux.h"
+#include "lsst/meas/base/NaiveCentroid.h"
 
 #endif // !LSST_MEAS_base_h_INCLUDED
