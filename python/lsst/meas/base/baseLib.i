@@ -206,3 +206,15 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<double>;
 %wrapMeasurementAlgorithm1(lsst::meas::base, SdssCentroidAlgorithm, SdssCentroidControl, FootprintCentroidInput, CentroidComponent)
+
+%include "lsst/meas/base/PixelFlags.h"
+%template(apply) lsst::meas::base::PixelFlagsAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::PixelFlagsAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, PixelFlagsAlgorithm, PixelFlagsControl, FootprintCentroidInput, FluxComponent)
+%include "lsst/meas/base/PixelFlags.h"
+
+%include "lsst/meas/base/Classification.h"
+%template(apply) lsst::meas::base::ClassificationAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::ClassificationAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, ClassificationAlgorithm, ClassificationControl, ClassificationInput, ClassificationExtras)
+%include "lsst/meas/base/Classification.h"
