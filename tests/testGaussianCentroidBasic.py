@@ -97,7 +97,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         # to the schema.  This test then loops through the sources and tries to produce
         # the same results
         mi = exposure.getMaskedImage()
-        truthFluxkey = srccat.getSchema().find("truth.flux").key
+        truthFluxkey = srccat.getSchema().find("truth_flux").key
         schema = measCat.getSchema()
         for i in range(len(measCat)):
             record = measCat[i]
