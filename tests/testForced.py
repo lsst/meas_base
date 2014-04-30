@@ -135,8 +135,9 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         exposure.getWcs().shiftReferencePixel(lsst.afw.geom.Extent2D(1000,1000))
         refwcs = exposure.getWcs()
         exposure.writeFits(os.path.join(DATA_DIR, "ref-0A.fits"))
-        centkey = catalog.getSchema().find("truth.centroid").key 
-        coordkey = catalog.getSchema().find("coord").key 
+        centkey = lsst.afw.table.Point2DKey(catalog.getSchema().find("truth_x").key,
+                                            catalog.getSchema().find("truth_y").key)
+        coordkey = catalog.getSchema().find("coord").key
         for rec in catalog:
             expregion = exposure.getBBox(lsst.afw.image.PARENT)
             expregion.shift(lsst.afw.geom.Extent2I(1000,1000))
@@ -153,7 +154,8 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
             rec.set(coordkey, sky) 
         catalog.writeFits(os.path.join(DATA_DIR, "refcat-0A.fits"))
         refCat = lsst.afw.table.SourceCatalog.readFits(os.path.join(DATA_DIR, 'refcat-0A.fits'))
-        centkey = catalog.getSchema().find("truth.centroid").key 
+        centkey = lsst.afw.table.Point2DKey(catalog.getSchema().find("truth_x").key,
+                                            catalog.getSchema().find("truth_y").key)
         coordkey = catalog.getSchema().find("coord").key 
         for rec in refCat:
             foot = rec.getFootprint()
@@ -209,7 +211,7 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         mismatches = 0
 	testidkey = sources.getSchema().find("objectId").key
 	testFluxKey = sources.getSchema().find("test.flux").key
-	truthFluxKey = refCat.getSchema().find("truth.flux").key
+	truthFluxKey = refCat.getSchema().find("truth_flux").key
         for i, source in enumerate(sources):
             testFlux = sources[i].get(testFluxKey)
             truthFlux = refCat[i].get(truthFluxKey)

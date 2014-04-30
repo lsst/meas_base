@@ -66,7 +66,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
 
-        truthFluxkey = srccat.getSchema().find("truth.flux").key
+        truthFluxkey = srccat.getSchema().find("truth_flux").key
         for i in range(len(measCat)):
             record = measCat[i]
             centroid = record.getCentroid()
