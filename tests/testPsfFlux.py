@@ -175,8 +175,8 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             self.assertFalse(record.get("base_PsfFlux_flag_noPsf"))
             self.assertFalse(record.get("base_PsfFlux_flag_noGoodPixels"))
             self.assertFalse(record.get("base_PsfFlux_flag_edge"))
-            if record.get("truth.isstar"):
-                self.assertClose(record.get("truth.flux"), record.get("base_PsfFlux_flux"),
+            if record.get("truth_isStar"):
+                self.assertClose(record.get("truth_flux"), record.get("base_PsfFlux_flux"),
                                  atol=3*record.get("base_PsfFlux_fluxSigma"))
 
 def suite():

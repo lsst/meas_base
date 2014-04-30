@@ -51,8 +51,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         flags = MeasurementDataFlags()
         #  Basic test of SkyCoord algorithm, no C++ slots
         sfm_config.plugins = ["centroid.peak", "skycoord"]
-        sfm_config.plugins["skycoord"].usePeak = True
-        sfm_config.slots.centroid = None
+        sfm_config.plugins["skycoord"].usePeak = False
+        sfm_config.slots.centroid = "centroid.peak"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
@@ -60,17 +60,20 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         sfm_config.slots.instFlux = None
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
+        measCat.getTable().setVersion(1)
         measCat.extend(srccat, mapper=mapper)
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
         wcs = exposure.getWcs()
+        truthCentroidKey = lsst.afw.table.Point2DKey(srccat.schema.find("truth_x").key,
+                                                     srccat.schema.find("truth_y").key)
         for i in range(len(measCat)):
             record = measCat[i]
             srcRec = srccat[i]
-            trueCentroid = srcRec.get("truth.centroid")
+            trueCentroid = srcRec.get(truthCentroidKey)
             skyPos = wcs.pixelToSky(trueCentroid)
             # check to see if the skycoord is withing .5 arcseconds of the true centroid
-            if srcRec.get("truth.isstar"):
+            if srcRec.get("truth_isStar"):
                 self.assertLess(skyPos.angularSeparation(record.getCoord()).asArcseconds(), 1)
     
 

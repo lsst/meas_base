@@ -52,16 +52,17 @@ class SFMTestCase(lsst.utils.tests.TestCase):
 
         #  Basic test of SincFlux algorithm, no C++ slots
         sfm_config.plugins = ["centroid.peak", "base_SincFlux"]
-        sfm_config.slots.centroid = None
+        sfm_config.slots.centroid = "centroid.peak"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
         sfm_config.slots.apFlux = None
-        sfm_config.slots.instFlux = None
+        sfm_config.slots.instFlux = "base_SincFlux"
         sfm_config.plugins["base_SincFlux"].radius1 = 0.0
         sfm_config.plugins["base_SincFlux"].radius2 = 16.0
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
+        measCat.getTable().setVersion(1)
         measCat.extend(srccat, mapper=mapper)
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
@@ -73,13 +74,16 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             self.assertFalse(record.get("base_SincFlux_flag_noPsf"))
             self.assertFalse(record.get("base_SincFlux_flag_noGoodPixels"))
             self.assertFalse(record.get("base_SincFlux_flag_edge"))
+            # check the slots
+            centroid = record.getCentroid() 
             flux = record.get("base_SincFlux_flux")
             fluxerr = record.get("base_SincFlux_fluxSigma")
-            truthFlux = srcRec.get("truth.flux")
+            truthFlux = srcRec.get("truth_flux")
             # if a star, see if the flux measured is decent
-            if srcRec.get("truth.isstar"):
+            if srcRec.get("truth_isStar"):
                 self.assertClose(truthFlux, flux, atol=None, rtol=.1)
-    
+            self.assertEqual(record.getInstFlux(), flux) 
+            self.assertEqual(record.getInstFluxErr(), fluxerr) 
 
 
 def suite():

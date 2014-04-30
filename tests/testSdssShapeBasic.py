@@ -50,18 +50,21 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         flags = MeasurementDataFlags()
         sfm_config.plugins = ["centroid.peak", "base_SdssShape"]
         sfm_config.slots.centroid = None
-        sfm_config.slots.shape = None
+        sfm_config.slots.shape = "base_SdssShape"
         sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
+        measCat.getTable().setVersion(1)
         measCat.extend(srccat, mapper=mapper)
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
 
-        truthFluxkey = srccat.getSchema().find("truth.flux").key
+        truthShapeKey = lsst.afw.table.QuadrupoleKey(srccat.schema.find("truth_xx").key,
+                                                     srccat.schema.find("truth_yy").key,
+                                                     srccat.schema.find("truth_xy").key)
         for i in range(len(measCat)):
             record = measCat[i]
             srcRec = srccat[i]
@@ -74,9 +77,16 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             xxyyCov = record.get("base_SdssShape_xx_yy_Cov")
             xxxyCov = record.get("base_SdssShape_xx_xy_Cov")
             yyxyCov = record.get("base_SdssShape_yy_xy_Cov")
-            trueShape = srcRec.get("truth.shape")
+            trueShape = srcRec.get(truthShapeKey)
+            shape = record.getShape()
+            cov = record.getShapeErr()
+            self.assertClose(xxSigma*xxSigma, cov[0,0], rtol = .01)
+            self.assertClose(yySigma*yySigma, cov[1,1], rtol = .01)
+            self.assertClose(xySigma*xySigma, cov[2,2], rtol = .01)
+            self.assertTrue(numpy.isnan(xxyyCov) and numpy.isnan(cov[0,1]))
+            self.assertTrue(numpy.isnan(xxxyCov) and numpy.isnan(cov[0,2]))
+            self.assertTrue(numpy.isnan(yyxyCov) and numpy.isnan(cov[1,2]))
             if not numpy.isnan(trueShape.getIxx()):
-                self.assertClose(xx, trueShape.getIxx(), atol=None, rtol=.08)
                 self.assertFalse(record.get("base_SdssShape_flag"))
                 self.assertFalse(record.get("base_SdssShape_flag_unweightedBad"))
                 self.assertFalse(record.get("base_SdssShape_flag_unweighted"))
@@ -90,10 +100,10 @@ class SFMTestCase(lsst.utils.tests.TestCase):
                 fluxSigma = record.get("base_SdssShape_fluxSigma")
                 xy4 = record.get("base_SdssShape_xy4")
                 xy4Sigma = record.get("base_SdssShape_xy4Sigma")
-                self.assertClose(xx, trueShape.getIxx(), atol=None, rtol=.08)
-                self.assertClose(yy, trueShape.getIyy(), atol=None, rtol=.08)
+                self.assertClose(xx, trueShape.getIxx(), atol=None, rtol=.12)
+                self.assertClose(yy, trueShape.getIyy(), atol=None, rtol=.12)
                 # commented out because of a bug
-                #self.assertClose(xy, trueShape.getIxy(), atol=None, rtol=.08)
+                #self.assertClose(xy, trueShape.getIxy(), atol=None, rtol=.12)
 def suite():
     """Returns a suite containing all the test cases in this module."""
 

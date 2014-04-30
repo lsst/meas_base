@@ -57,17 +57,17 @@ class SFMTestCase(lsst.utils.tests.TestCase):
 
         #  Basic test of PsfFlux algorithm, no C++ slots
         sfm_config.plugins = ["centroid.peak", "base_PsfFlux"]
-        sfm_config.slots.centroid = None
+        sfm_config.slots.centroid = "centroid.peak"
         sfm_config.slots.shape = None
-        sfm_config.slots.psfFlux = None
+        sfm_config.slots.psfFlux = "base_PsfFlux"
         sfm_config.slots.modelFlux = None
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
         sfm_config.plugins["base_PsfFlux"].usePixelWeights = True
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
+        measCat.getTable().setVersion(1)
         measCat.extend(srccat, mapper=mapper)
-
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
         for i in range(len(measCat)):
@@ -80,11 +80,12 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             self.assertFalse(record.get("base_PsfFlux_flag_edge"))
             flux = record.get("base_PsfFlux_flux")
             fluxerr = record.get("base_PsfFlux_fluxSigma")
-            truthFlux = srcRec.get("truth.flux")
+            truthFlux = srcRec.get("truth_flux")
             # if a star, see if the flux measured is decent
-            if srcRec.get("truth.isstar"):
+            if srcRec.get("truth_isStar"):
                 self.assertClose(truthFlux, flux, atol=None, rtol=.1)
-    
+            self.assertEqual(flux, record.getPsfFlux()) 
+            self.assertEqual(fluxerr, record.getPsfFluxErr()) 
 
 
 def suite():
