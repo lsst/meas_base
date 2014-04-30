@@ -80,9 +80,9 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             self.assertFalse(record.get("base_PsfFlux_flag_edge"))
             flux = record.get("base_PsfFlux_flux")
             fluxerr = record.get("base_PsfFlux_fluxSigma")
-            truthFlux = srcRec.get("truth.flux")
+            truthFlux = srcRec.get("truth_flux")
             # if a star, see if the flux measured is decent
-            if srcRec.get("truth.isstar"):
+            if srcRec.get("truth_isStar"):
                 self.assertClose(truthFlux, flux, atol=None, rtol=.1)
             self.assertEqual(flux, record.getPsfFlux()) 
             self.assertEqual(fluxerr, record.getPsfFluxErr()) 

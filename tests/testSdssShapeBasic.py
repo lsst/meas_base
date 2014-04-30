@@ -62,7 +62,9 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
 
-        truthFluxkey = srccat.getSchema().find("truth.flux").key
+        truthShapeKey = lsst.afw.table.QuadrupoleKey(srccat.schema.find("truth_xx").key,
+                                                     srccat.schema.find("truth_yy").key,
+                                                     srccat.schema.find("truth_xy").key)
         for i in range(len(measCat)):
             record = measCat[i]
             srcRec = srccat[i]
@@ -75,7 +77,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             xxyyCov = record.get("base_SdssShape_xx_yy_Cov")
             xxxyCov = record.get("base_SdssShape_xx_xy_Cov")
             yyxyCov = record.get("base_SdssShape_yy_xy_Cov")
-            trueShape = srcRec.get("truth.shape")
+            trueShape = srcRec.get(truthShapeKey)
             shape = record.getShape()
             cov = record.getShapeErr()
             self.assertClose(xxSigma*xxSigma, cov[0,0], rtol = .01)
