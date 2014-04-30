@@ -53,13 +53,21 @@ class MakeTestData(object):
         The simulated records will be in image coordinates, and no footprints will be attached.
         """
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        nChildKey = schema.addField("deblend.nchild", type=int)
-        centroidKey = schema.addField("truth.centroid", type="PointD",
-                                      doc="true simulated centroid", units="pixels")
-        fluxKey = schema.addField("truth.flux", type=float, doc="true flux", units="dn")
-        shapeKey = schema.addField("truth.shape", type="MomentsD",
-                                   doc="true shape after PSF convolution", units="pixels^2")
-        starFlagKey = schema.addField("truth.isstar", type="Flag", doc="set if the object is a star")
+        nChildKey = schema.addField("deblend_nchild", type=int)
+        xKey = schema.addField("truth_x", type=float,
+                               doc="true simulated centroid x", units="pixels")
+        yKey = schema.addField("truth_y", type=float,
+                               doc="true simulated centroid y", units="pixels")
+        centroidKey = lsst.afw.table.Point2DKey(xKey, yKey)
+        fluxKey = schema.addField("truth_flux", type=float, doc="true flux", units="dn")
+        xxKey = schema.addField("truth_xx", type=float,
+                                doc="true shape after PSF convolution", units="pixels^2")
+        yyKey = schema.addField("truth_yy", type=float,
+                                doc="true shape after PSF convolution", units="pixels^2")
+        xyKey = schema.addField("truth_xy", type=float,
+                                doc="true shape after PSF convolution", units="pixels^2")
+        shapeKey = lsst.afw.table.QuadrupoleKey(xxKey, yyKey, xyKey)
+        starFlagKey = schema.addField("truth_isStar", type="Flag", doc="set if the object is a star")
         catalog = lsst.afw.table.SourceCatalog(schema)
         catalog.getTable().setVersion(1)
         bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0), lsst.afw.geom.Point2I(200, 200))
@@ -154,10 +162,11 @@ class MakeTestData(object):
 
         psf = lsst.afw.detection.GaussianPsf.cast(exposure.getPsf())
         schema = catalog.schema
-        nChildKey = schema.find("deblend.nchild").key
-        centroidKey = schema.find("truth.centroid").key
-        fluxKey = schema.find("truth.flux").key
-        shapeKey = schema.find("truth.shape").key
+        nChildKey = schema.find("deblend_nchild").key
+        centroidKey = lsst.afw.table.Point2DKey(schema.find("truth_x").key, schema.find("truth_y").key)
+        shapeKey = lsst.afw.table.QuadrupoleKey(schema.find("truth_xx").key, schema.find("truth_yy").key,
+                                                schema.find("truth_xy").key)
+        fluxKey = schema.find("truth_flux").key
 
         # First pass: generate full-size images, each containing a single object, and add them into
         # the Exposure
@@ -206,17 +215,20 @@ class AlgorithmTestCase(lsst.utils.tests.TestCase):
         catalog, bbox = MakeTestData.makeCatalog()
         exposure = MakeTestData.makeEmptyExposure(bbox)
         MakeTestData.fillImages(catalog, exposure)
+        schema = catalog.schema
         self.truth = catalog
         self.calexp = exposure
-        self.fluxKey = self.truth.schema.find("truth.flux").key
-        self.centroidKey = self.truth.schema.find("truth.centroid").key
-        self.shapeKey = self.truth.schema.find("truth.shape").key
+        self.centroidKey = lsst.afw.table.Point2DKey(schema.find("truth_x").key, schema.find("truth_y").key)
+        self.shapeKey = lsst.afw.table.QuadrupoleKey(schema.find("truth_xx").key, schema.find("truth_yy").key,
+                                                     schema.find("truth_xy").key)
+        self.fluxKey = schema.find("truth_flux").key
 
     def tearDown(self):
+        del self.centroidKey
+        del self.shapeKey
+        del self.fluxKey
         del self.truth
         del self.calexp
-        del self.fluxKey
-        del self.centroidKey
 
     def runSingleFrameMeasurementTask(self, plugin, dependencies=(), flags=None, config=None):
         if config is None:
@@ -234,8 +246,8 @@ class AlgorithmTestCase(lsst.utils.tests.TestCase):
         measCat = lsst.afw.table.SourceCatalog(task.schema)
         measCat.getTable().setVersion(1)
         measCat.extend(self.truth, schemaMapper)
-        measCat.getTable().defineModelFlux(self.fluxKey)
-        measCat.getTable().defineCentroid(self.centroidKey)
-        measCat.getTable().defineShape(self.shapeKey)
+        measCat.getTable().defineModelFlux("truth")
+        measCat.getTable().defineCentroid("truth")
+        measCat.getTable().defineShape("truth")
         task.run(measCat, self.calexp)
         return measCat

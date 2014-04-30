@@ -78,9 +78,9 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             centroid = record.getCentroid() 
             flux = record.get("base_SincFlux_flux")
             fluxerr = record.get("base_SincFlux_fluxSigma")
-            truthFlux = srcRec.get("truth.flux")
+            truthFlux = srcRec.get("truth_flux")
             # if a star, see if the flux measured is decent
-            if srcRec.get("truth.isstar"):
+            if srcRec.get("truth_isStar"):
                 self.assertClose(truthFlux, flux, atol=None, rtol=.1)
             self.assertEqual(record.getInstFlux(), flux) 
             self.assertEqual(record.getInstFluxErr(), fluxerr) 

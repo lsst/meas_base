@@ -212,7 +212,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         fluxCountKey = schema.find("test.fluxCount").key
         backKey = schema.find("test.back").key
         backCountKey = schema.find("test.backCount").key
-        truthFluxkey = srccat.getSchema().find("truth.flux").key
+        truthFluxkey = srccat.getSchema().find("truth_flux").key
    
         # Test all the records to be sure that the measurement mechanism works for total flux
         # And that the area surrounding the footprint has the expected replacement pixels

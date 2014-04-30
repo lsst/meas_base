@@ -65,13 +65,15 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
         wcs = exposure.getWcs()
+        truthCentroidKey = lsst.afw.table.Point2DKey(srccat.schema.find("truth_x").key,
+                                                     srccat.schema.find("truth_y").key)
         for i in range(len(measCat)):
             record = measCat[i]
             srcRec = srccat[i]
-            trueCentroid = srcRec.get("truth.centroid")
+            trueCentroid = srcRec.get(truthCentroidKey)
             skyPos = wcs.pixelToSky(trueCentroid)
             # check to see if the skycoord is withing .5 arcseconds of the true centroid
-            if srcRec.get("truth.isstar"):
+            if srcRec.get("truth_isStar"):
                 self.assertLess(skyPos.angularSeparation(record.getCoord()).asArcseconds(), 1)
     
 
