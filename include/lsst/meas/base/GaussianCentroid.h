@@ -48,13 +48,6 @@ namespace lsst { namespace meas { namespace base {
 
 /**
  *  @brief A C++ control class to handle GaussianCentroidAlgorithm's configuration
- *
- *  In C++, we define Control objects to handle configuration information.  Using the LSST_CONTROL_FIELD
- *  macro and lsst.pex.config.wrap.makeConfigClass, we can turn these into more full-featured Config classes
- *  in Python.  While the user will usually interact with the Config class, the plugin wrapper system will
- *  turn Config instances into Control instances when passing them to C++.
- *
- *  This should logically be an inner class, but Swig doesn't know how to parse those.
  */
 class GaussianCentroidControl {
 public:
@@ -70,28 +63,17 @@ public:
 
 /**
  *  @brief An object that transfers values from FluxComponent to afw::table::BaseRecord
- *
- *  This should be included in one of @ref measBaseResultMapperTemplates to correspond with using
- *  FluxComponent in the same position in one of @ref measBaseResultTemplates, and will otherwise
- *  not be used directly by users.
  */
 
-
 /**
- *  @brief A overly simplistic Centroid Algorithm
- *
+ *  * @brief A class that knows how to calculate centroids as a simple unweighted first moment
+ *   * of the 3x3 region around a pixel
  */
 class GaussianCentroidAlgorithm {
 public:
 
     /**
      *  @brief Flag bits to be used with the 'flags' data member of the Result object.
-     *
-     *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
-     *
-     *  Note that we've included a final N_FLAGS value that isn't a valid flag; this is a common C++
-     *  idiom for automatically counting the number of enum values, and it's required for Algorithms
-     *  as the N_FLAGS value is used by the Result and ResultMapper objects.
      */
     enum FlagBits {
         NO_PEAK,
@@ -101,13 +83,6 @@ public:
     /**
      *  @brief Return an array of (name, doc) tuples that describes the flags and sets the names used
      *         in catalog schemas.
-     *
-     *  Each element of the returned array should correspond to one of the FlagBits enum values, but the
-     *  names should follow conventions; FlagBits should be ALL_CAPS_WITH_UNDERSCORES, while FlagDef names
-     *  should be camelCaseStartingWithLowercase.  @sa FlagsComponentMapper.
-     *
-     *  The implementation of getFlagDefinitions() should generally go in the header file so it is easy
-     *  to keep in sync with the FlagBits enum.
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
         static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
@@ -145,10 +120,6 @@ public:
 
     /**
      *  @brief Create an object that transfers Result values to a record associated with the given schema
-     *
-     *  This is called by the Plugin wrapper system to create a ResultMapper.  It's responsible for calling
-     *  the ResultMapper constructor, forwarding the schema and prefix arguments and providing the correct
-     *  values for the uncertainty arguments.
      */
     static ResultMapper makeResultMapper(
         afw::table::Schema & schema,
@@ -158,12 +129,6 @@ public:
 
     /**
      *  @brief Measure the flux of a source using the GaussianCentroid algorithm.
-     *
-     *  This is the overload of apply() that does all the work, and it's designed to be as easy to use
-     *  as possible outside the Plugin framework (since the Plugin framework calls the other one).  The
-     *  arguments are all the things we need, and nothing more: we don't even pass a Footprint, since
-     *  we wouldn't actually use it, and if we didn't need to get a Psf from the Exposure, we'd use
-     *  MaskedImage instead.
      */
     template <typename T>
     static Result apply(

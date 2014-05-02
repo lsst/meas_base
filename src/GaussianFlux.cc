@@ -119,6 +119,7 @@ GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(
     result.flux =  oldresult.first;
     result.fluxSigma = oldresult.second;
 
+/*  Remove the psf scaling for first port -- pgee
     if (!exposure.hasPsf()) {
         throw LSST_EXCEPT(
             MeasurementError,
@@ -126,10 +127,9 @@ GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(
             NO_PSF
         );
     }
-/*  Remove the psf scaling for first port -- pgee
     double psfFactor = algorithms::getPsfFactor(*exposure.getPsf(), center, ctrl.shiftmax,
                                     ctrl.maxIter, ctrl.tol1, ctrl.tol2);
-    result.flux = psfFactor;
+    result.fluxCorrectionKeys.psfFactor =  psfFactor;
 */
     //  End of meas_algorithms code
     return result;

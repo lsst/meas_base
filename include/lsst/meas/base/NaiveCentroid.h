@@ -45,16 +45,8 @@
 #include "lsst/meas/base/ResultMappers.h"
 
 namespace lsst { namespace meas { namespace base {
-
 /**
  *  @brief A C++ control class to handle NaiveCentroidAlgorithm's configuration
- *
- *  In C++, we define Control objects to handle configuration information.  Using the LSST_CONTROL_FIELD
- *  macro and lsst.pex.config.wrap.makeConfigClass, we can turn these into more full-featured Config classes
- *  in Python.  While the user will usually interact with the Config class, the plugin wrapper system will
- *  turn Config instances into Control instances when passing them to C++.
- *
- *  This should logically be an inner class, but Swig doesn't know how to parse those.
  */
 class NaiveCentroidControl {
 public:
@@ -76,11 +68,12 @@ public:
  *  not be used directly by users.
  */
 
-
 /**
- *  @brief A overly simplistic Centroid Algorithm
+ *  * @brief A class that knows how to calculate centroids as a simple unweighted first moment
+ *   * of the 3x3 region around a pixel
  *
  */
+
 class NaiveCentroidAlgorithm {
 public:
 

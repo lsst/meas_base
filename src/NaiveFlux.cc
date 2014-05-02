@@ -49,14 +49,6 @@ NaiveFluxAlgorithm::Result NaiveFluxAlgorithm::apply(
     afw::geom::Point2D const & center,
     Control const & ctrl
 ) {
-    PTR(afw::detection::Psf const) psf = exposure.getPsf();
-    if (!psf) {
-        throw LSST_EXCEPT(
-            MeasurementError,
-            getFlagDefinitions()[NO_PSF].doc,
-            NO_PSF
-        );
-    }
     Result result;
     typename afw::image::Exposure<T>::MaskedImageT const& mimage = exposure.getMaskedImage();
 
