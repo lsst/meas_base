@@ -27,8 +27,7 @@
 /**
  *  @file lsst/meas/base/NaiveCentroid.h
  *
- *  This file is one of two (the other is SdssShape.h) intended to serve as an tutorial example on
- *  how to implement new Algorithms.  NaiveCentroidAlgorithm is a particularly simple algorithm, while
+ *  NaiveCentroidAlgorithm is a particularly simple algorithm, while
  *  SdssShapeAlgorithm is more complex.
  *
  *  See @ref measBaseImplementingNew for a general overview of the steps required.
@@ -62,16 +61,11 @@ public:
 
 /**
  *  @brief An object that transfers values from FluxComponent to afw::table::BaseRecord
- *
- *  This should be included in one of @ref measBaseResultMapperTemplates to correspond with using
- *  FluxComponent in the same position in one of @ref measBaseResultTemplates, and will otherwise
- *  not be used directly by users.
  */
 
 /**
  *  * @brief A class that knows how to calculate centroids as a simple unweighted first moment
  *   * of the 3x3 region around a pixel
- *
  */
 
 class NaiveCentroidAlgorithm {
@@ -95,13 +89,6 @@ public:
     /**
      *  @brief Return an array of (name, doc) tuples that describes the flags and sets the names used
      *         in catalog schemas.
-     *
-     *  Each element of the returned array should correspond to one of the FlagBits enum values, but the
-     *  names should follow conventions; FlagBits should be ALL_CAPS_WITH_UNDERSCORES, while FlagDef names
-     *  should be camelCaseStartingWithLowercase.  @sa FlagsComponentMapper.
-     *
-     *  The implementation of getFlagDefinitions() should generally go in the header file so it is easy
-     *  to keep in sync with the FlagBits enum.
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
         static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
@@ -116,9 +103,7 @@ public:
     typedef NaiveCentroidControl Control;
 
     /**
-     *  This is the type returned by apply().  Because NaiveCentroidAlgorithm measure multiple fluxes,
-     *  we need to store the number of fluxes as the first item, and this will allow us to iterate
-     *  the remaining values
+     *  This is the type returned by apply().  Only a Centroid Component is required
      */
     typedef Result1<
         NaiveCentroidAlgorithm,
@@ -140,10 +125,6 @@ public:
 
     /**
      *  @brief Create an object that transfers Result values to a record associated with the given schema
-     *
-     *  This is called by the Plugin wrapper system to create a ResultMapper.  It's responsible for calling
-     *  the ResultMapper constructor, forwarding the schema and prefix arguments and providing the correct
-     *  values for the uncertainty arguments.
      */
     static ResultMapper makeResultMapper(
         afw::table::Schema & schema,
@@ -153,12 +134,6 @@ public:
 
     /**
      *  @brief Measure the flux of a source using the NaiveCentroid algorithm.
-     *
-     *  This is the overload of apply() that does all the work, and it's designed to be as easy to use
-     *  as possible outside the Plugin framework (since the Plugin framework calls the other one).  The
-     *  arguments are all the things we need, and nothing more: we don't even pass a Footprint, since
-     *  we wouldn't actually use it, and if we didn't need to get a Psf from the Exposure, we'd use
-     *  MaskedImage instead.
      */
     template <typename T>
     static Result apply(

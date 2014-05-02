@@ -103,8 +103,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             record = measCat[i]
             x = record.get("base_GaussianCentroid_x")
             y = record.get("base_GaussianCentroid_y")
-            print x,y
             self.assertFalse(record.get("base_GaussianCentroid_flag"))
+            self.assertFalse(record.get("base_GaussianCentroid_flag_noPeak"))
             centroid = record.getCentroid() 
             self.assertClose(x, centroid.getX(), atol=None, rtol=.01)
             self.assertClose(y, centroid.getY(), atol=None, rtol=.01)

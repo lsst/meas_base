@@ -76,6 +76,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             # if a star, see if the flux measured is decent
             if srcRec.get("truth_isStar"):
                 self.assertClose(truthFlux, flux, atol=None, rtol=.1)
+            # test the slots
             self.assertEqual(record.getModelFlux(), flux) 
             self.assertEqual(record.getModelFluxErr(), fluxerr) 
 

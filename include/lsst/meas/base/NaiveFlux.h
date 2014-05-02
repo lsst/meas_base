@@ -92,7 +92,6 @@ public:
     /**
      *  Result is the type returned by apply().  Because NaiveFluxAlgorithm only measures a flux and its
      *  uncertainty, we can use the single predefined component, FluxComponent, without any modification.
-     *  Result1 is a template for algorithms with one result component, in addition to flags.
      */
     typedef Result1<NaiveFluxAlgorithm,FluxComponent> Result;
 
@@ -123,12 +122,6 @@ public:
 
     /**
      *  @brief Measure the flux of a source using the NaiveFlux algorithm.
-     *
-     *  This is the overload of apply() that does all the work, and it's designed to be as easy to use
-     *  as possible outside the Plugin framework (since the Plugin framework calls the other one).  The
-     *  arguments are all the things we need, and nothing more: we don't even pass a Footprint, since
-     *  we wouldn't actually use it, and if we didn't need to get a Psf from the Exposure, we'd use
-     *  MaskedImage instead.
      */
     template <typename T>
     static Result apply(
