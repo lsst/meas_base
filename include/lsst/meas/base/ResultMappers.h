@@ -242,6 +242,23 @@ private:
  *  @{
  */
 
+template <typename Algorithm>
+struct ResultMapper0 : public FlagsComponentMapper<Algorithm> {
+
+    template <typename A1>
+    ResultMapper0(
+        afw::table::Schema & schema,
+        std::string const & prefix,
+        A1 a1
+    ) : FlagsComponentMapper<Algorithm>(schema, prefix)
+    {}
+
+    void apply(afw::table::BaseRecord & record, typename Algorithm::Result const & result) {
+        FlagsComponentMapper<Algorithm>::apply(record, result);
+    }
+
+};
+
 template <typename Algorithm, typename T1>
 struct ResultMapper1 : public T1, public FlagsComponentMapper<Algorithm> {
 
