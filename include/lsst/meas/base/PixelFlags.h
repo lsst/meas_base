@@ -100,13 +100,13 @@ public:
     /**
      *  Result is the type returned by apply().
      */
-    typedef Result1<PixelFlagsAlgorithm,FluxComponent> Result;
+    typedef Result0<PixelFlagsAlgorithm> Result;
 
     /**
      *  The ResultMapper typedef here must exactly corresponds to the the Result typedef defined above:
      *  There is a ComponentMapper corresponding to each Component.
      */
-    typedef ResultMapper1<PixelFlagsAlgorithm,FluxComponentMapper> ResultMapper;
+    typedef ResultMapper0<PixelFlagsAlgorithm> ResultMapper;
 
     /**
      *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the

@@ -87,6 +87,17 @@ T.Vector = T ## Vector
 %instantiateInput(FootprintCentroidInput)
 %instantiateInput(FootprintCentroidShapeInput)
 
+%define %instantiateResult0(NAMESPACE, ALGORITHM)
+%template(ALGORITHM##FlagsComponent) lsst::meas::base::FlagsComponent<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##FlagsComponentMapper) lsst::meas::base::FlagsComponentMapper<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##Result0) lsst::meas::base::Result0<
+    NAMESPACE::ALGORITHM
+    >;
+%template(ALGORITHM##ResultMapper0) lsst::meas::base::ResultMapper0<
+    NAMESPACE::ALGORITHM
+    >;
+%enddef
+
 %define %instantiateResult1(NAMESPACE, ALGORITHM, T1)
 %template(ALGORITHM##FlagsComponent) lsst::meas::base::FlagsComponent<NAMESPACE::ALGORITHM>;
 %template(ALGORITHM##FlagsComponentMapper) lsst::meas::base::FlagsComponentMapper<NAMESPACE::ALGORITHM>;
@@ -162,6 +173,12 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %}
 %enddef
 
+%define %wrapMeasurementAlgorithm0(NAMESPACE, ALGORITHM, CONTROL, INPUT)
+%instantiateResult0(NAMESPACE, ALGORITHM)
+%wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT,
+                            ALGORITHM##Result0, ALGORITHM##ResultMapper0)
+%enddef
+
 %define %wrapMeasurementAlgorithm1(NAMESPACE, ALGORITHM, CONTROL, INPUT, T1)
 %instantiateResult1(NAMESPACE, ALGORITHM, T1)
 %wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT,
@@ -230,7 +247,7 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %include "lsst/meas/base/PixelFlags.h"
 %template(apply) lsst::meas::base::PixelFlagsAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::PixelFlagsAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, PixelFlagsAlgorithm, PixelFlagsControl, FootprintCentroidInput, FluxComponent)
+%wrapMeasurementAlgorithm0(lsst::meas::base, PixelFlagsAlgorithm, PixelFlagsControl, FootprintCentroidInput)
 %include "lsst/meas/base/PixelFlags.h"
 
 %include "lsst/meas/base/Classification.h"

@@ -271,6 +271,9 @@ struct ShapeComponent {
  *  @endinternal
  * @{
  */
+template <typename Algorithm>
+struct Result0 : public FlagsComponent<Algorithm> {};
+
 template <typename Algorithm, typename T1>
 struct Result1 : public T1, public FlagsComponent<Algorithm> {};
 
