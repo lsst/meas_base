@@ -53,7 +53,7 @@ public:
 
 
 /**
- *  @brief A measurement algorithm that estimates flux 
+ *  @brief A measurement algorithm that gets flag bits from the exposure and sets them in a single flag field
  */
 class PixelFlagsAlgorithm {
 public:
@@ -82,13 +82,13 @@ public:
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
         static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
                 {"edge", "Could not use full PSF model image in fit because of proximity to exposure border"},
-                {"interpolated", ""},
-                {"interpolatedCenter", ""},
-                {"saturated", ""},
-                {"saturatedCenter", ""},
-                {"cr", ""},
-                {"crCenter", ""},
-                {"bad", ""}
+                {"interpolated", "Interpolated pixel in the source footprint"},
+                {"interpolatedCenter", "Interpolated pixel in the source center"},
+                {"saturated", "Saturated pixel in the source footprint"},
+                {"saturatedCenter", "Saturated pixel in the source center"},
+                {"cr", "Cosmic ray in the source footprint"},
+                {"crCenter", "Cosmic ray in the source center"},
+                {"bad", "Bad pixel in the source footprint"}
 
             }};
         return flagDefs;
@@ -98,8 +98,7 @@ public:
     typedef PixelFlagsControl Control;
 
     /**
-     *  Result is the type returned by apply().  Because PixelFlagsAlgorithm only measures a flux and its
-     *  uncertainty, we can use the single predefined component, FluxComponent, without any modification.
+     *  Result is the type returned by apply().
      */
     typedef Result1<PixelFlagsAlgorithm,FluxComponent> Result;
 
@@ -111,7 +110,7 @@ public:
 
     /**
      *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  PixelFlagsAlgorithm only needs a centroid, so we use FootprintCentroidInput.
+     *  Exposure being measured.  PixelFlagsAlgorithm only needs a centroid and footprint
      */
     typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
 
@@ -125,7 +124,7 @@ public:
     );
 
     /**
-     *  @brief Measure the flux of a source using the PixelFlags algorithm.
+     *  @brief Summarize the masked image flags of the source footprint
      */
     template <typename T>
     static Result apply(

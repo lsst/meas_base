@@ -51,7 +51,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         flags = MeasurementDataFlags()
 
         #  Basic test of Classification algorithm, no C++ slots
-        sfm_config.plugins = ["base_SdssCentroid", "base_PsfFlux", "base_SincFlux"]
+        sfm_config.plugins = ["base_SdssCentroid", "base_PsfFlux", "base_SincFlux", "base_Classification"]
         sfm_config.slots.centroid = "base_SdssCentroid"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = "base_PsfFlux"
@@ -68,11 +68,14 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             record = measCat[i]
             srcRec = srccat[i]
             # check all the flags
-            self.assertFalse(record.get("base_SincFlux_flag"))
+            self.assertFalse(record.get("base_Classification_flag"))
             # check the slots
-            centroid = record.getCentroid() 
             # if a star, see if the flux measured is decent
-            print centroid
+            probability = record.get("base_Classification_probability")
+            print probability, srcRec.get("truth_isStar")
+            if srcRec.get("truth_isStar"):
+                pass   # can't test this until we have a model flux
+                #self.assertClose(truthFlux, flux, atol=None, rtol=.1)
 
 def suite():
     """Returns a suite containing all the test cases in this module."""

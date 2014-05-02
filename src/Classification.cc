@@ -29,11 +29,6 @@
 #include "lsst/meas/base/Classification.h"
 
 
-// Doxygen gets confused and generates warnings when trying to map the definitions here to their
-// declarations, but we want to put the source code itself in the HTML docs, so we just tell it
-// not to look for any documentation comments here.
-/// @cond SOURCE_FILE
-
 namespace lsst { namespace meas { namespace base {
 
 
@@ -53,13 +48,9 @@ ClassificationExtrasMapper::ClassificationExtrasMapper(
     )
 {};
 
-// This has to be calculated during apply, because it is the only time we have the source record
 void ClassificationExtrasMapper::apply(afw::table::BaseRecord & record, ClassificationExtras const & result) const
 {
-    double probability =  0.0;
-// _fluxRatio*record.getModelFlux() + _modelErrFactor*record.getModelFluxErr())
-//        < (record.getPsfFlux() + _psfErrFactor*record.getPsfFluxErr()) ? 0.0 : 1.0;
-    record.set(_probability, probability);
+    record.set(_probability, result.probability);
 };
 
 ClassificationAlgorithm::ResultMapper ClassificationAlgorithm::makeResultMapper(
@@ -81,6 +72,7 @@ ClassificationAlgorithm::Result ClassificationAlgorithm::apply(
     typedef typename MaskedImageT::Image ImageT;
     Result result;
 
+    // set the probability by comparing the corrected model flux to the corrected psf flux
     result.probability = (ctrl.fluxRatio*modelFlux + ctrl.modelErrFactor*modelFluxErr)
         < (psfFlux + ctrl.psfErrFactor*psfFluxErr) ? 0.0 : 1.0;
 
@@ -133,5 +125,4 @@ INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
 
-/// @endcond
 
