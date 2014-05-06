@@ -45,8 +45,6 @@ namespace meas {
 namespace base {
 namespace algorithms {
     
-//namespace {
-
 /************************************************************************************************************/
 
 float const AMPAST4 = 1.33;           // amplitude of `4th order' corr compared to theory
@@ -123,7 +121,6 @@ float astrom_errors(float skyVar,       // variance of pixels at the sky level
 /*
  * Estimate the position of an object, assuming we know that it's approximately the size of the PSF 
  */
-//namespace {
 
 #if 1
 template<typename ImageXy_locatorT, typename VarImageXy_locatorT>
