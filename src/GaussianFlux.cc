@@ -28,12 +28,7 @@
 #include "lsst/afw/detection/FootprintArray.cc"
 #include "lsst/meas/base/GaussianFlux.h"
 #include "lsst/meas/base/algorithms/GaussianFluxTemplates.h"
-#include "algorithms/all.h"
-
-// Doxygen gets confused and generates warnings when trying to map the definitions here to their
-// declarations, but we want to put the source code itself in the HTML docs, so we just tell it
-// not to look for any documentation comments here.
-/// @cond SOURCE_FILE
+#include "lsst/meas/base/algorithms/all.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -162,4 +157,3 @@ INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
 
-/// @endcond

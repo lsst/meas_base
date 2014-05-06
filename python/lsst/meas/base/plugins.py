@@ -44,7 +44,6 @@ WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm)
 WrappedSingleFramePlugin.generate(SincFluxAlgorithm)
 WrappedSingleFramePlugin.generate(PixelFlagsAlgorithm)
 WrappedSingleFramePlugin.generate(ClassificationAlgorithm)
-WrappedSingleFramePlugin.generate(GaussianFluxAlgorithm)
 WrappedSingleFramePlugin.generate(NaiveFluxAlgorithm)
 WrappedSingleFramePlugin.generate(GaussianCentroidAlgorithm)
 WrappedSingleFramePlugin.generate(NaiveCentroidAlgorithm)
@@ -115,6 +114,46 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
 
 SingleFramePlugin.registry.register("skycoord", SingleFrameSkyCoordPlugin)
 
+class SingleFrameClassificationConfig(SingleFramePluginConfig):
+
+    fluxRatio = lsst.pex.config.Field(dtype=double, default=.925, optional=True,
+                                  doc="critical ratio of model to psf flux")
+    modelErrFactor = lsst.pex.config.Field(dtype=double, default=0.0, optional=True,
+                                  doc="correction factor for modelFlux error")
+    psfErrFactor = lsst.pex.config.Field(dtype=double, default=0.0, optional=True,
+                                  doc="correction factor for psfFlux error")
+    def setDefaults(self):
+        SingleFramePluginConfig.setDefaults(self)
+        self.executionOrder = 5.0
+
+class SingleFrameClassificationPlugin(SingleFramePlugin):
+    """
+    This is an easy-to-implement centroid algorithm, based on the peak pixel of the source
+    footprint.  It is not the best centroid estimatation, but it is always available.
+    """
+    ConfigClass = SingleFrameClassificationConfig
+
+    def __init__(self, config, name, schema, flags, others, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
+        self.keyProbability = schema.addField(name + "_probability", type="D", doc="Classification", units="none")
+
+    def measure(self, measRecord, exposure):
+        modelFlux = measRecord.getModelFlux()
+        modelFluxErr = measRecord.getModelFluxErr()
+        psfFlux = measRecord.getPsfFlux()
+        psfFluxErr = measRecord.getPsfFluxErr()
+        flux1 = self.config.fluxRatio*modelFlux + self.config.modelErrFactor*modelFluxErr
+        flux2 = psfFlux + self.config.psfErrFactor*psfFluxErr
+        if flux1 < flux2: measRecord.set(0.0)
+        else: measREcord.set(1.0);
+
+    def fail(self, measRecord, error=None):
+        pass
+
+# Plugin class must be registered to the singleton Registry class of the same type in order to
+# be available for use with the corresponding measurement Task.
+
+SingleFramePlugin.registry.register("classification", SingleFrameClassificationPlugin)
 
 # --- Forced Plugins ---
 

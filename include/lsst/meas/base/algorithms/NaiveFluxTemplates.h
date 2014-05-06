@@ -53,7 +53,6 @@ namespace afwGeom = lsst::afw::geom;
 namespace lsst {
 namespace meas { namespace base {
 namespace algorithms {
-namespace {
 template <typename MaskedImageT>
 class FootprintFlux : public afwDetection::FootprintFunctor<MaskedImageT> {
 public:
@@ -159,5 +158,5 @@ struct getSum2 {
     double sum2;                        // \sum_i(x_i^2)
 };
 
-}}}}};  // end of lsst::meas::base::algorithms
+}}}};  // end of lsst::meas::base::algorithms
 #endif

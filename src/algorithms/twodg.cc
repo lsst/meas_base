@@ -24,7 +24,7 @@
 #include "Eigen/Core"
 #include "Eigen/LU"
 
-#include "all.h"
+#include "lsst/meas/base/algorithms/all.h"
 
 #define USE_WEIGHT 0                    // zweight is only set, not used.  It isn't even set if this is false
 struct Raster {

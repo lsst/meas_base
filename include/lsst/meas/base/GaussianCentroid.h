@@ -26,12 +26,6 @@
 
 /**
  *  @file lsst/meas/base/GaussianCentroid.h
- *
- *  This file is one of two (the other is SdssShape.h) intended to serve as an tutorial example on
- *  how to implement new Algorithms.  GaussianCentroidAlgorithm is a particularly simple algorithm, while
- *  SdssShapeAlgorithm is more complex.
- *
- *  See @ref measBaseImplementingNew for a general overview of the steps required.
  */
 
 #include <stdio.h>
@@ -60,10 +54,6 @@ public:
      */
     GaussianCentroidControl() : background(0.0) {}
 };
-
-/**
- *  @brief An object that transfers values from FluxComponent to afw::table::BaseRecord
- */
 
 /**
  *  * @brief A class that knows how to calculate centroids as a simple unweighted first moment
@@ -96,9 +86,7 @@ public:
     typedef GaussianCentroidControl Control;
 
     /**
-     *  This is the type returned by apply().  Because GaussianCentroidAlgorithm measure multiple fluxes,
-     *  we need to store the number of fluxes as the first item, and this will allow us to iterate
-     *  the remaining values
+     *  This is the type returned by apply().
      */
     typedef Result1<
         GaussianCentroidAlgorithm,
@@ -139,12 +127,6 @@ public:
 
     /**
      *  @brief Apply the GaussianCentroid to a single source using the Plugin API.
-     *
-     *  This is the version that will be called by both the SFM framework and the forced measurement
-     *  framework, in single-object mode.  It will delegate to the other overload of apply().  Note that
-     *  we can use the same implementation for both single-frame and forced measurement, because we require
-     *  exactly the same inputs in both cases.  This is true for the vast majority of algorithms, but not
-     *  all (extended source photometry is the notable exception).
      */
     template <typename T>
     static Result apply(

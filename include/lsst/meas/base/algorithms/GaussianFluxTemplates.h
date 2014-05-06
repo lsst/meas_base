@@ -100,4 +100,4 @@ double getPsfFactor(afwDet::Psf const & psf, afw::geom::Point2D const & center, 
     return result.first;
 }
 
-}}}} // xyzzy
+}}}} // end lsst::meas::base::algorithms namespace

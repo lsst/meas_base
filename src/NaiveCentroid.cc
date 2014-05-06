@@ -21,16 +21,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 #include "ndarray/eigen.h"
-#include <iostream>
-#include <cmath>
-#include <numeric>
 #include "lsst/meas/base/NaiveCentroid.h"
 
-
-// Doxygen gets confused and generates warnings when trying to map the definitions here to their
-// declarations, but we want to put the source code itself in the HTML docs, so we just tell it
-// not to look for any documentation comments here.
-/// @cond SOURCE_FILE
 
 namespace lsst { namespace meas { namespace base {
 
@@ -134,5 +126,4 @@ INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
 
-/// @endcond
 
