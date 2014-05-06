@@ -250,8 +250,3 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %wrapMeasurementAlgorithm0(lsst::meas::base, PixelFlagsAlgorithm, PixelFlagsControl, FootprintCentroidInput)
 %include "lsst/meas/base/PixelFlags.h"
 
-%include "lsst/meas/base/Classification.h"
-%template(apply) lsst::meas::base::ClassificationAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::ClassificationAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, ClassificationAlgorithm, ClassificationControl, ClassificationInput, ClassificationExtras)
-%include "lsst/meas/base/Classification.h"

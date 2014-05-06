@@ -26,6 +26,7 @@
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/detection/FootprintFunctor.h"
 #include "lsst/afw/geom/ellipses/Ellipse.h"
+#include "lsst/meas/base/algorithms/PixelFlagsTemplates.h"
 #include "lsst/meas/base/PixelFlags.h"
 
 namespace lsst { namespace meas { namespace base {

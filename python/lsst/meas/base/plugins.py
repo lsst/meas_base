@@ -43,9 +43,9 @@ WrappedSingleFramePlugin.generate(SdssShapeAlgorithm)
 WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm)
 WrappedSingleFramePlugin.generate(SincFluxAlgorithm)
 WrappedSingleFramePlugin.generate(PixelFlagsAlgorithm)
-WrappedSingleFramePlugin.generate(ClassificationAlgorithm)
 WrappedSingleFramePlugin.generate(NaiveFluxAlgorithm)
 WrappedSingleFramePlugin.generate(GaussianCentroidAlgorithm)
+WrappedSingleFramePlugin.generate(GaussianFluxAlgorithm)
 WrappedSingleFramePlugin.generate(NaiveCentroidAlgorithm)
 WrappedForcedPlugin.generate(PsfFluxAlgorithm)
 
@@ -116,11 +116,11 @@ SingleFramePlugin.registry.register("skycoord", SingleFrameSkyCoordPlugin)
 
 class SingleFrameClassificationConfig(SingleFramePluginConfig):
 
-    fluxRatio = lsst.pex.config.Field(dtype=double, default=.925, optional=True,
+    fluxRatio = lsst.pex.config.Field(dtype=float, default=.925, optional=True,
                                   doc="critical ratio of model to psf flux")
-    modelErrFactor = lsst.pex.config.Field(dtype=double, default=0.0, optional=True,
+    modelErrFactor = lsst.pex.config.Field(dtype=float, default=0.0, optional=True,
                                   doc="correction factor for modelFlux error")
-    psfErrFactor = lsst.pex.config.Field(dtype=double, default=0.0, optional=True,
+    psfErrFactor = lsst.pex.config.Field(dtype=float, default=0.0, optional=True,
                                   doc="correction factor for psfFlux error")
     def setDefaults(self):
         SingleFramePluginConfig.setDefaults(self)
@@ -144,8 +144,8 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
         psfFluxErr = measRecord.getPsfFluxErr()
         flux1 = self.config.fluxRatio*modelFlux + self.config.modelErrFactor*modelFluxErr
         flux2 = psfFlux + self.config.psfErrFactor*psfFluxErr
-        if flux1 < flux2: measRecord.set(0.0)
-        else: measREcord.set(1.0);
+        if flux1 < flux2: measRecord.set(self.keyProbability, 0.0)
+        else: measRecord.set(self.keyProbability, 1.0);
 
     def fail(self, measRecord, error=None):
         pass
