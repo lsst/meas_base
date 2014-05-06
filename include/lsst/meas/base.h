@@ -32,5 +32,6 @@
 #include "lsst/meas/base/SincFlux.h"
 #include "lsst/meas/base/SdssCentroid.h"
 #include "lsst/meas/base/SdssShape.h"
+#include "lsst/meas/base/PixelFlags.h"
 
 #endif // !LSST_MEAS_base_h_INCLUDED
