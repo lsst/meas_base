@@ -216,6 +216,7 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
                  ],
         doc="Plugins to be run and their configuration"
         )
+    algorithms = property(lambda self: self.plugins, doc="backwards-compatibility alias for plugins")
     references = ConfigurableField(
         target=CoaddSrcReferencesTask,
         doc="Retrieve reference source catalog"
