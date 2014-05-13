@@ -69,6 +69,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         measCat.getTable().setVersion(1)
         measCat.extend(srccat, mapper=mapper)
         # now run the SFM task with the test plugin
+        exposure.setPsf(None)
         task.run(measCat, exposure)
         for i in range(len(measCat)):
             record = measCat[i]

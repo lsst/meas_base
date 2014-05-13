@@ -132,6 +132,7 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
     def fail(self, measRecord, error=None):
         # The ResultMapper will set detailed flag bits describing the error if error is not None,
         # and set a general failure bit otherwise.
+        print "failure in WrappedSingleFramePlugin, record id = ", measRecord.getId();
         self.resultMapper.fail(measRecord, error)
 
     @classmethod

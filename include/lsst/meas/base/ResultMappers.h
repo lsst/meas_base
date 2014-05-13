@@ -107,6 +107,7 @@ void FlagsComponentMapper<Algorithm>::fail(
         assert(error->getFlagBit() < Algorithm::N_FLAGS);
         record.set(_flags[error->getFlagBit() + 1], true);
     }
+    std::cout << "Setting the general flag, record id = " << record.getId() << std::endl;
     record.set(_flags[0], true);
 }
 
