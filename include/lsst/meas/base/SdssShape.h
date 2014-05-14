@@ -48,7 +48,7 @@ namespace lsst { namespace meas { namespace base {
  */
 class SdssShapeControl {
 public:
-
+    LSST_CONTROL_FIELD(executionOrder, float, "Order of execution");
     LSST_CONTROL_FIELD(background, double, "Additional value to add to background");
     LSST_CONTROL_FIELD(maxIter, int, "Maximum number of iterations");
     LSST_CONTROL_FIELD(maxShift, double, "Maximum centroid shift");
@@ -56,7 +56,7 @@ public:
     LSST_CONTROL_FIELD(tol2, float, "Convergence tolerance for FWHM");
 
     /// @copydoc PsfFluxControl::PsfFluxControl
-    SdssShapeControl() : background(0.0), maxIter(100), maxShift(), tol1(1E-5), tol2(1E-4) {}
+    SdssShapeControl() : executionOrder(4.0), background(0.0), maxIter(100), maxShift(), tol1(1E-5), tol2(1E-4) {}
 
 };
 
