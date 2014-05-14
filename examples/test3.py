@@ -34,8 +34,8 @@ import numpy
 numpy.random.seed(1234)
 
 
-DATA_FILE = os.path.join(os.environ["work"], "mmout12/src/v100-fi/R22/S11.fits")
-DATA_FILE0 = os.path.join(os.environ["work"], "mmout11/src/v100-fi/R22/S11.fits")
+DATA_FILE = "mmout12/src/v100-fi/R22/S11.fits"
+DATA_FILE0 ="mmout11/src/v100-fi/R22/S11.fits"
 
 if __name__ == "__main__":
 #  Read a catalog for the old (meas_algorithm) and new (meas_base) algorithms

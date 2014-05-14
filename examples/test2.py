@@ -34,8 +34,8 @@ import numpy
 numpy.random.seed(1234)
 
 
-DATA_FILE = os.path.join(os.environ["work"], "mmout12/src/v100-fi/R22/S11.fits")
-DATA_FILE0 = os.path.join(os.environ["work"], "mmout11/src/v100-fi/R22/S11.fits")
+DATA_FILE = "mmout12/src/v100-fi/R22/S11.fits"
+DATA_FILE0 = "mmout11/src/v100-fi/R22/S11.fits"
 
 def compareArrays(array1, array2, relDiff):
     if not array1.shape[0] == array2.shape[0] or not array1.shape[1] == array2.shape[1]:
