@@ -196,13 +196,6 @@ SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
     result.xxSigma = shapeImpl.getIxxErr();
     result.yySigma = shapeImpl.getIyyErr();
     result.xySigma = shapeImpl.getIxyErr();
-    if (anyFlags) {
-        std::cout << "Throwing on anyflag on point " << center << "\n";
-//        throw LSST_EXCEPT(
-//            pex::exceptions::LogicErrorException,
-//            "Shape measurement error"
-//        );
-    }
     return result;
 }
 
