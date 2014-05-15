@@ -23,6 +23,7 @@
 
 import math
 import os
+import sys 
 from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
 from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
 from lsst.meas.base.base import *
@@ -34,10 +35,15 @@ import numpy
 numpy.random.seed(1234)
 
 
-DATA_FILE = "mmout12/src/v100-fi/R22/S11.fits"
-DATA_FILE0 ="mmout11/src/v100-fi/R22/S11.fits"
-
 if __name__ == "__main__":
+
+    if not len(sys.argv) == 2:
+        print "Usage: %s visit"%(sys.argv[0],)
+        sys.exit(1)
+    visit = sys.argv[1] 
+    DATA_FILE = "mmout1/src/v%s-fi/R22/S11.fits"%(visit,)
+    DATA_FILE0 = "mmout0/src/v%s-fi/R22/S11.fits"%(visit,)
+
 #  Read a catalog for the old (meas_algorithm) and new (meas_base) algorithms
 #  These are the result of a complete run of processCcd with default configurations of measurement.py
 #  and sfm.py.  "0" means the old meas_algorithm algorithms.  Only the measurement task is different.

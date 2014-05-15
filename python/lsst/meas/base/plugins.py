@@ -153,7 +153,7 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
 # Plugin class must be registered to the singleton Registry class of the same type in order to
 # be available for use with the corresponding measurement Task.
 
-SingleFramePlugin.registry.register("classification", SingleFrameClassificationPlugin)
+SingleFramePlugin.registry.register("classification.extendedness", SingleFrameClassificationPlugin)
 
 # --- Forced Plugins ---
 

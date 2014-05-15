@@ -23,6 +23,7 @@
 
 import math
 import os
+import sys
 from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
 from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
 from lsst.meas.base.base import *
@@ -33,9 +34,6 @@ import numpy
 
 numpy.random.seed(1234)
 
-
-DATA_FILE = "mmout12/src/v100-fi/R22/S11.fits"
-DATA_FILE0 = "mmout11/src/v100-fi/R22/S11.fits"
 
 def compareArrays(array1, array2, relDiff):
     if not array1.shape[0] == array2.shape[0] or not array1.shape[1] == array2.shape[1]:
@@ -55,6 +53,13 @@ def compareArrays(array1, array2, relDiff):
 
 if __name__ == "__main__":
    
+    if not len(sys.argv) == 2:
+        print "Usage: %s visit"%(sys.argv[0],)
+        sys.exit(1)
+    visit = sys.argv[1] 
+    DATA_FILE = "mmout1/src/v%s-fi/R22/S11.fits"%(visit,)
+    DATA_FILE0 = "mmout0/src/v%s-fi/R22/S11.fits"%(visit,)
+
     measCat0 = SourceCatalog.readFits(DATA_FILE0)
     measCat = SourceCatalog.readFits(DATA_FILE)
     print measCat.getCentroidDefinition()
