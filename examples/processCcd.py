@@ -1,6 +1,6 @@
 from lsst.meas.base.sfm import SingleFrameMeasurementTask
 root.measurement.retarget(SingleFrameMeasurementTask)
-root.measurement.plugins = ["centroid.peak", "base_SdssCentroid", "base_SdssShape", "base_GaussianFlux", "base_PsfFlux", "base_SincFlux", "base_NaiveFlux", "skycoord"]
+root.measurement.plugins = ["centroid.peak", "base_SdssCentroid", "base_SdssShape", "base_GaussianFlux", "base_PsfFlux", "base_SincFlux", "base_NaiveFlux", "skycoord", "classification", "base_PixelFlags"]
 root.tableVersion=1
 root.measurement.slots.centroid = "base_SdssCentroid"
 root.measurement.slots.shape = "base_SdssShape"

@@ -8,13 +8,12 @@ endif
 setenv visit $1
 cat processCcd0.py > temp.py
 if ($2 != "") then
-    setenv config $2
+    setenv config $2.py
     if (! -e $config) then
         echo "The config file '$config' does not exist"
         echo $usage
         exit 1
     endif
-    cat $config|sed -e 's/base_PsfFlux/flux.psf/'|sed -e 's/base_GaussianFlux/flux.gaussian/'|sed -e 's/base_NaiveFlux/flux.naive/'|sed -e 's/base_SincFlux/flux.sinc/'|sed -e 's/base_SdssShape/shape.sdss/'|sed -e 's/base_SdssCentroid/centroid.sdss/' >> temp.py
+    cat $config|sed -e 's/base_PsfFlux/flux.psf/'|sed -e 's/base_GaussianFlux/flux.gaussian/'|sed -e 's/base_NaiveFlux/flux.naive/'|sed -e 's/base_SincFlux/flux.sinc/'|sed -e 's/base_SdssShape/shape.sdss/'|sed -e 's/base_SdssCentroid/centroid.sdss/' | sed -e 's/classification/classification.extendedness/' >> temp.py
 endif
-
 python $PIPE_TASKS_DIR/bin/processCcd.py /raid/pgee/mylsst7/measMosaicData/input_renamed --clobber-config --configfile=temp.py --id visit=$visit raft=2,2 sensor=1,1 filter=i  --output mmout0

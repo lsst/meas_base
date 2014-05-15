@@ -51,7 +51,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         flags = MeasurementDataFlags()
 
         #  Basic test of Classification algorithm, no C++ slots
-        sfm_config.plugins = ["base_SdssCentroid", "base_PsfFlux", "base_SincFlux", "classification.extendedness"]
+        sfm_config.plugins = ["base_SdssCentroid", "base_PsfFlux", "base_SincFlux", "classification"]
         sfm_config.slots.centroid = "base_SdssCentroid"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = "base_PsfFlux"
@@ -70,7 +70,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             # check all the flags
             # check the slots
             # if a star, see if the flux measured is decent
-            probability = record.get("classification.extendedness_probability")
+            probability = record.get("classification_extendedness")
             if srcRec.get("truth_isStar"):
                 self.assertEqual(probability, 0.0)
             else:

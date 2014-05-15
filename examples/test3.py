@@ -49,7 +49,7 @@ if __name__ == "__main__":
 #  and sfm.py.  "0" means the old meas_algorithm algorithms.  Only the measurement task is different.
 #  The pipeline preparatory to measurement should be all the same for both catalogs.   
 
-    errorLimit = .01
+    errorLimit = 1
     valueLimit = .001
     measCat0 = SourceCatalog.readFits(DATA_FILE0)
     measCat = SourceCatalog.readFits(DATA_FILE)
@@ -88,4 +88,50 @@ if __name__ == "__main__":
             print label, "Flags differ: ", record.getCentroid(), record.getId(), record.getPsfFlux(), record0.getPsfFlux(), record.getPsfFluxFlag(), record0.getPsfFluxFlag()
         if not (abs((error-error0)/error0)<errorLimit) and not(numpy.isnan(error)) and not record.get("base_PsfFlux_flag_edge"):
             print label, "Errors differ: ", record.getCentroid(), record.getId(), record.getPsfFluxErr(), record0.getPsfFluxErr(), record.getPsfFluxFlag(), record0.getPsfFluxFlag()
+        value = record.get("classification_extendedness")
+        value0= record0.get("classification.extendedness")
+        label = "Classification: "
+        if not (value == value0) and  not(numpy.isnan(value)):
+            print label, "Values differ: ", record.getCentroid(), record.getId(), value, value0
+        label = "PixelFlags: "
+        value = record.get("base_PixelFlags_flag_edge")
+        value0 = record0.get("flags.pixel.edge")
+        if not (value == value0) and  not(numpy.isnan(value)):
+            print label, "Values differ: ", record.getCentroid(), record.getId(), value, value0
+        label = "PixelFlagsEdge: "
+        value = record.get("base_PixelFlags_flag_interpolated")
+        value0 = record0.get("flags.pixel.interpolated.any")
+        if not (value == value0) and  not(numpy.isnan(value)):
+            print label, "Values differ: ", record.getCentroid(), record.getId(), value, value0
+        label = "PixelFlagPixelInterpolated: "
+        value = record.get("base_PixelFlags_flag_interpolatedCenter")
+        value0 = record0.get("flags.pixel.interpolated.center")
+        if not (value == value0) and  not(numpy.isnan(value)):
+            print label, "Values differ: ", record.getCentroid(), record.getId(), value, value0
+        label = "PixelFlagInterpolatedCenter: "
+        value = record.get("base_PixelFlags_flag_saturated")
+        value0 = record0.get("flags.pixel.saturated.any")
+        if not (value == value0) and  not(numpy.isnan(value)):
+            print label, "Values differ: ", record.getCentroid(), record.getId(), value, value0
+        label = "PixelFlagSaturated: "
+        value = record.get("base_PixelFlags_flag_saturatedCenter")
+        value0 = record0.get("flags.pixel.saturated.center")
+        if not (value == value0) and  not(numpy.isnan(value)):
+            print label, "Values differ: ", record.getCentroid(), record.getId(), value, value0
+        label = "PixelFlagsCr: "
+        value = record.get("base_PixelFlags_flag_cr")
+        value0 = record0.get("flags.pixel.cr.any")
+        if not (value == value0) and  not(numpy.isnan(value)):
+            print label, "Values differ: ", record.getCentroid(), record.getId(), value, value0
+        label = "PixelFlagsCrCenter: "
+        value = record.get("base_PixelFlags_flag_crCenter")
+        value0 = record0.get("flags.pixel.cr.center")
+        label = "PixelFlagBad: "
+        if not (value == value0) and  not(numpy.isnan(value)):
+            print label, "Values differ: ", record.getCentroid(), record.getId(), value, value0
+        value = record.get("base_PixelFlags_flag_bad")
+        value0 = record0.get("flags.pixel.bad")
+        label = "PixelFlags: "
+        if not (value == value0) and  not(numpy.isnan(value)):
+            print label, "Values differ: ", record.getCentroid(), record.getId(), value, value0
 

@@ -1,6 +1,6 @@
-root.measurement.algorithms['classification.extendedness'].psfErrFactor=0.0
-root.measurement.algorithms['classification.extendedness'].modelErrFactor=0.0
-root.measurement.algorithms['classification.extendedness'].fluxRatio=0.925
+root.measurement.algorithms['classification'].psfErrFactor=0.0
+root.measurement.algorithms['classification'].modelErrFactor=0.0
+root.measurement.algorithms['classification'].fluxRatio=0.925
 root.measurement.algorithms['base_NaiveFlux'].radius=9.0
 root.measurement.algorithms['base_SincFlux'].radius1=1.0
 root.measurement.algorithms['base_SincFlux'].radius2=5.0
