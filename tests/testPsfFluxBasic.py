@@ -63,7 +63,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         sfm_config.slots.modelFlux = None
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
-        sfm_config.plugins["base_PsfFlux"].usePixelWeights = True
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
         measCat = SourceCatalog(outschema)
         measCat.getTable().setVersion(1)
