@@ -45,7 +45,6 @@ namespace lsst { namespace meas { namespace base {
 class SdssCentroidControl {
 public:
 
-    LSST_CONTROL_FIELD(executionOrder, float, "Order of execution");
     LSST_CONTROL_FIELD(binmax, int, "maximum allowed binning");
     LSST_CONTROL_FIELD(peakMin, double, "if the peak's less thatn this insist on binning at least once");
     LSST_CONTROL_FIELD(wfac, double, "fiddle factor for adjusting the binning");
@@ -56,7 +55,7 @@ public:
      *  All control classes should define a default constructor that sets all fields to their default values.
      */
 
-    SdssCentroidControl() : executionOrder(0.0), binmax(16), peakMin(-1.0), wfac(1.5) {}
+    SdssCentroidControl() : binmax(16), peakMin(-1.0), wfac(1.5) {}
 };
 
 /**
