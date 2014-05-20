@@ -184,7 +184,7 @@ SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
             lastFlag = n;
         }
     }
-    if (lastFlag > 0) {
+    if (lastFlag >= 0) {
         throw LSST_EXCEPT(
             pex::exceptions::LogicErrorException,
             "SdssShape unable to set record values and set the general failure flag"
