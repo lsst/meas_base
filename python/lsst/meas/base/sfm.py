@@ -186,6 +186,7 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
 
     ConfigClass = SingleFrameMeasurementConfig
     _DefaultName = "measurement"
+    TableVersion = 1
 
     #   The algMetadata parameter is currently required by the pipe_tasks running mechanism
     #   This is a temporary state until pipe_tasks is converted to the new plugin framework.

@@ -253,7 +253,7 @@ class ForcedMeasurementTask(CmdLineTask):
     RunnerClass = ButlerInitializedTaskRunner
     # this must be defined by the a child class: dataPrefix =
     _DefaultName = "forcedMeasurementTask"
-
+    TableVersion = 1
     #  The primary input to this init is the butler, which is a keyword argument,
     #
     def __init__(self, butler=None, refSchema=None, **kwds):
