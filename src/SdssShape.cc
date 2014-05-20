@@ -21,7 +21,9 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+#include "lsst/utils/ieee.h"
 #include "lsst/utils/PowFast.h"
+#include "lsst/meas/base/exceptions.h"
 #include "lsst/meas/base/SdssShape.h"
 #include "lsst/meas/base/algorithms/SdssShapeImpl.h"
 
@@ -162,35 +164,37 @@ SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
     }
 
     algorithms::SdssShapeImpl shapeImpl;
-
     try {
         algorithms::getAdaptiveMoments(mimage, control.background, xcen, ycen, shiftmax, &shapeImpl,
                                          control.maxIter, control.tol1, control.tol2);
     } catch (pex::exceptions::Exception & err) {
-            
-        for (int n = 0; n < algorithms::SdssShapeImpl::N_FLAGS; ++n) {
-            if (shapeImpl.getFlag(algorithms::SdssShapeImpl::Flag(n))) {
-                result.setFlag(FlagBits(n));
-            }
-        }
+    // There used to be code here to set the flags, but the Result object
+    // gets lost when the throw happens.
         throw;
     }
 /*
  * We need to measure the PSF's moments even if we failed on the object
  * N.b. This isn't yet implemented (but the code's available from SDSS)
  */
+    //calculate the biggest numerical flag set
+    int lastFlag = -1;
     for (int n = 0; n < algorithms::SdssShapeImpl::N_FLAGS; ++n) {
         if (shapeImpl.getFlag(algorithms::SdssShapeImpl::Flag(n))) {
             result.setFlag(FlagBits(n));
+            lastFlag = n;
         }
     }
-    
+    if (lastFlag > 0) {
+        throw LSST_EXCEPT(
+            pex::exceptions::LogicErrorException,
+            "SdssShape unable to set record values and set the general failure flag"
+        );
+    }
     result.x = shapeImpl.getX();
     result.y = shapeImpl.getY();
     // FIXME: should do off-diagonal covariance elements too
     result.xSigma = shapeImpl.getXErr();
     result.ySigma = shapeImpl.getYErr();
-    
     result.xx = shapeImpl.getIxx();
     result.yy = shapeImpl.getIyy();
     result.xy = shapeImpl.getIxy();

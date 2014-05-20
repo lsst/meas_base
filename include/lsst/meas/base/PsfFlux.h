@@ -53,7 +53,6 @@ namespace lsst { namespace meas { namespace base {
  */
 class PsfFluxControl {
 public:
-    LSST_CONTROL_FIELD(usePixelWeights, bool, "Whether to use per-pixel inverse variance as weights");
     LSST_CONTROL_FIELD(badMaskPlanes, std::vector<std::string>,
                        "Mask planes that indicate pixels that should be excluded from the fit");
 
@@ -62,7 +61,7 @@ public:
      *
      *  All control classes should define a default constructor that sets all fields to their default values.
      */
-    PsfFluxControl() : usePixelWeights(false) {}
+    PsfFluxControl() {}
 };
 
 

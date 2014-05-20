@@ -39,14 +39,14 @@ from .forcedImage import *
 # --- Wrapped C++ Plugins ---
 
 WrappedSingleFramePlugin.generate(PsfFluxAlgorithm)
-WrappedSingleFramePlugin.generate(SdssShapeAlgorithm)
-WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm)
+WrappedSingleFramePlugin.generate(SdssShapeAlgorithm, executionOrder=1.0)
+WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(SincFluxAlgorithm)
-WrappedSingleFramePlugin.generate(PixelFlagsAlgorithm)
+WrappedSingleFramePlugin.generate(PixelFlagsAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(NaiveFluxAlgorithm)
-WrappedSingleFramePlugin.generate(GaussianCentroidAlgorithm)
+WrappedSingleFramePlugin.generate(GaussianCentroidAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(GaussianFluxAlgorithm)
-WrappedSingleFramePlugin.generate(NaiveCentroidAlgorithm)
+WrappedSingleFramePlugin.generate(NaiveCentroidAlgorithm, executionOrder=0.0)
 WrappedForcedPlugin.generate(PsfFluxAlgorithm)
 
 # --- Single-Frame Measurement Plugins ---
@@ -135,7 +135,7 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
 
     def __init__(self, config, name, schema, flags, others, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
-        self.keyProbability = schema.addField(name + "_probability", type="D", doc="Classification", units="none")
+        self.keyProbability = schema.addField(name + "_extendedness", type="D", doc="Classification", units="none")
 
     def measure(self, measRecord, exposure):
         modelFlux = measRecord.getModelFlux()

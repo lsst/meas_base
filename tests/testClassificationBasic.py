@@ -70,7 +70,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             # check all the flags
             # check the slots
             # if a star, see if the flux measured is decent
-            probability = record.get("classification_probability")
+            probability = record.get("classification_extendedness")
             if srcRec.get("truth_isStar"):
                 self.assertEqual(probability, 0.0)
             else:

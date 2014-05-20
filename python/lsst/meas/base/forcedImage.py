@@ -176,7 +176,7 @@ class WrappedForcedPlugin(ForcedPlugin):
         self.resultMapper.fail(measRecord, error)
 
     @classmethod
-    def generate(Base, AlgClass, name=None, doRegister=True, ConfigClass=None):
+    def generate(Base, AlgClass, name=None, doRegister=True, ConfigClass=None, executionOrder=None):
         """Create a new derived class of WrappedForcedPlugin from a C++ Algorithm class.
 
         @param[in]   AlgClass   The name of the (Swigged) C++ Algorithm class this Plugin will delegate to.
@@ -187,6 +187,8 @@ class WrappedForcedPlugin(ForcedPlugin):
         @param[in]   ConfigClass  The ConfigClass associated with the new Plugin.  This should have a
                                   makeControl() method that returns the Control object used by the C++
                                   Algorithm class.
+        @param[in]   executionOrder   If not None, a float that overrides the default executionOrder
+                                      for this algorithm (see BasePluginConfig.executionOrder).
 
         For more information, please see the "Adding New Algorithms" section of the main meas_base
         documentation.
@@ -199,6 +201,8 @@ class WrappedForcedPlugin(ForcedPlugin):
                     dtype=bool, default=True,
                     doc="whether to run this plugin multi-object mode"
                     )
+        if executionOrder is not None:
+            ConfigClass.executionOrder.default = float(executionOrder)
         PluginClass = type(AlgClass.__name__ + "ForcedPlugin", (Base,),
                            dict(AlgClass=AlgClass, ConfigClass=ConfigClass))
         if doRegister:
@@ -249,7 +253,7 @@ class ForcedMeasurementTask(CmdLineTask):
     RunnerClass = ButlerInitializedTaskRunner
     # this must be defined by the a child class: dataPrefix =
     _DefaultName = "forcedMeasurementTask"
-
+    TableVersion = 1
     #  The primary input to this init is the butler, which is a keyword argument,
     #
     def __init__(self, butler=None, refSchema=None, **kwds):

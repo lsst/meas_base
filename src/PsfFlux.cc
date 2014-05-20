@@ -99,26 +99,12 @@ PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
             exposure.getXY0()
         )
     );
-    if (ctrl.usePixelWeights) {
-        // If we want to use per-pixel variances as weights (not generally recommended, as it can bias
-        // the fluxes by giving bright things a different profile than faint things), we'll apply the
-        // weights to the model and data before compute the flux.
-        ndarray::EigenView<VarPixel,1,1,Eigen::ArrayXpr> weights(variance.shallow());
-        weights = variance.sqrt().inverse();
-        model *= weights.template cast<PsfPixel>();
-        data *= weights.template cast<T>();
-    }
     PsfPixel alpha = model.matrix().squaredNorm();
     result.flux = model.matrix().dot(data.matrix().template cast<PsfPixel>()) / alpha;
-    if (!ctrl.usePixelWeights) {
-        // If we're not using per-pixel weights to compute the flux, we'll still want to compute the
-        // variance as if we had, so we'll apply the weights to the model vector now, and update alpha.
-        ndarray::EigenView<VarPixel,1,1,Eigen::ArrayXpr> weights(variance.shallow());
-        weights = variance.sqrt().inverse();
-        model *= weights.template cast<PsfPixel>();
-        alpha = model.matrix().squaredNorm();
-    }
-    result.fluxSigma = std::sqrt(1.0 / alpha);
+    // If we're not using per-pixel weights to compute the flux, we'll still want to compute the
+    // variance as if we had, so we'll apply the weights to the model vector now, and update alpha.
+    result.fluxSigma = std::sqrt(model.square().matrix().dot(variance.matrix().template cast<PsfPixel>()))
+        / alpha;
     if (!utils::isfinite(result.flux) || !utils::isfinite(result.fluxSigma)) {
         throw LSST_EXCEPT(PixelValueError, "Invalid pixel value detected in image.");
     }

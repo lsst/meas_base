@@ -48,7 +48,6 @@ namespace lsst { namespace meas { namespace base {
  */
 class SdssShapeControl {
 public:
-
     LSST_CONTROL_FIELD(background, double, "Additional value to add to background");
     LSST_CONTROL_FIELD(maxIter, int, "Maximum number of iterations");
     LSST_CONTROL_FIELD(maxShift, double, "Maximum centroid shift");
