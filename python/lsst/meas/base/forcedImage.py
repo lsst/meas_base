@@ -55,6 +55,7 @@ from .base import *
 from .references import CoaddSrcReferencesTask, BaseReferencesTask
 
 __all__ = ("ForcedPluginConfig", "ForcedPlugin", "WrappedForcedPlugin",
+           "ForcedMeasurementCmdConfig", "ForcedMeasurementCmdTask",
            "ForcedMeasurementConfig", "ForcedMeasurementTask")
 
 class ForcedPluginConfig(BasePluginConfig):
@@ -183,7 +184,7 @@ class WrappedForcedPlugin(ForcedPlugin):
         @param[in]   name       The name to use when registering the Plugin (ignored if doRegister=False).
                                 Defaults to the result of generateAlgorithmName(AlgClass).
         @param[in]   doRegister   If True (default), register the new Plugin so it can be configured to be
-                                  run by ForcedMeasurementTask.
+                                  run by ForcedMeasurementCmdTask.
         @param[in]   ConfigClass  The ConfigClass associated with the new Plugin.  This should have a
                                   makeControl() method that returns the Control object used by the C++
                                   Algorithm class.
@@ -221,28 +222,21 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         doc="Plugins to be run and their configuration"
         )
     algorithms = property(lambda self: self.plugins, doc="backwards-compatibility alias for plugins")
-    references = ConfigurableField(
-        target=CoaddSrcReferencesTask,
-        doc="Retrieve reference source catalog"
-        )
+
     copyColumns = DictField(
         keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
         default={"id": "objectId", "parent":"parentObjectId"}
         )
-    coaddName = lsst.pex.config.Field(
-        doc = "coadd name: typically one of deep or goodSeeing",
-        dtype = str,
-        default = "deep",
-    )
 
     def setDefaults(self):
+        self.slots.centroid = "centroid.peak"
         self.slots.shape = None
         self.slots.apFlux = None
         self.slots.modelFlux = None
         self.slots.psfFlux = None
         self.slots.instFlux = None
 
-class ForcedMeasurementTask(CmdLineTask):
+class ForcedMeasurementTask(lsst.pipe.base.Task):
     """Forced measurement driver task
 
     This task is intended as a command-line script base class, in the model of ProcessImageTask
@@ -250,41 +244,30 @@ class ForcedMeasurementTask(CmdLineTask):
     """
 
     ConfigClass = ForcedMeasurementConfig
-    RunnerClass = ButlerInitializedTaskRunner
-    # this must be defined by the a child class: dataPrefix =
-    _DefaultName = "forcedMeasurementTask"
+    _DefaultName = "forcedMeasurement"
     TableVersion = 1
-    #  The primary input to this init is the butler, which is a keyword argument,
-    #
-    def __init__(self, butler=None, refSchema=None, **kwds):
-        CmdLineTask.__init__(self, **kwds)
-        self.makeSubtask("references")
-        self.algMetadata = lsst.daf.base.PropertyList()
-        self.plugins = PluginMap()
-        if not refSchema:
-            refSchema = self.references.getSchema(butler)
+
+    def __init__(self, refSchema, config=None, parentTask=None, name=None):
+        lsst.pipe.base.Task.__init__(self)
+
         self.mapper = lsst.afw.table.SchemaMapper(refSchema)
         minimalSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
         self.mapper.addMinimalSchema(minimalSchema)
+
         for refName, targetName in self.config.copyColumns.items():
             refItem = refSchema.find(refName)
             self.mapper.addMapping(refItem.key, targetName)
 
+        self.plugins = PluginMap()
+        for refName, targetName in self.config.copyColumns.items():
+            refItem = self.mapper.getInputSchema().find(refName)
+            self.mapper.addMapping(refItem.key, targetName)
         flags = MeasurementDataFlags()
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
             self.plugins[name] = PluginClass(config, name, self.mapper, flags=flags,
-                                                   others=self.plugins, metadata=self.algMetadata)
+                                                   others=self.plugins, metadata=self.metadata)
 
-    def run(self, dataRef):
-        """Main driver method called once for each measurement image by the command-line interface.
-        """
-        refWcs = self.references.getWcs(dataRef)
-        exposure = self.getExposure(dataRef)
-        refCat = list(self.fetchReferences(dataRef, exposure))
-        retStruct = self.forcedMeasure(exposure, refCat, refWcs, dataRef=dataRef)
-        self.writeOutput(dataRef, retStruct.sources)
-
-    def forcedMeasure(self, exposure, refCat, refWcs, dataRef=None):
+    def run(self, exposure, refCat, refWcs, idFactory=lsst.afw.table.IdFactory.makeSimple()):
         """This is a service routine which allows a forced measurement to be made without
         constructing the reference list.  The reference list and refWcs can then be passed in.
         """
@@ -308,9 +291,8 @@ class ForcedMeasurementTask(CmdLineTask):
                 topId = footprints[topId]
             if topId == 0:
                 refList.append(ref)
-
         # now generate transformed source corresponding to the cleanup up refLst
-        sources = self.generateSources(dataRef, exposure, refList, refWcs)
+        sources = self.generateSources(idFactory, exposure, refList, refWcs)
 
         # Steal the transformed source footprint and use it to complete the footprints dict,
         # which then looks like {ref.getId(): (ref.getParent(), source.getFootprint())}
@@ -322,7 +304,6 @@ class ForcedMeasurementTask(CmdLineTask):
         # Build a catalog of just the references we intend to measure
         referenceCat = lsst.afw.table.SourceCatalog(self.mapper.getInputSchema())
         referenceCat.extend(refList)
-
         self.config.slots.setupTable(sources.table)
 
         # convert the footprints to the coordinate system of the exposure
@@ -351,6 +332,77 @@ class ForcedMeasurementTask(CmdLineTask):
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()
         return Struct(sources=sources)
+
+    def generateSources(self, idFactory, exposure, refCat, refWcs):
+        """Generate sources to be measured, copying any fields in self.config.copyColumns
+        Also, transform footprints to the measurement coordinate system, noting that
+        we do not currently have the ability to transform heavy footprints because they
+        need deblender information that we don't have.  So when the reference and measure
+        WCS are different, we won't be able to use the heavyFootprint child info at all.
+
+        @param idFactory   factory for making new ids
+        @param exposure    Exposure to be measured
+        @param refCat      Sequence (not necessarily a SourceCatalog) of reference sources
+        @param idFactory   Factory to generate unique ids for forced sources
+        @return Source catalog ready for measurement
+        """
+        table = lsst.afw.table.SourceTable.make(self.mapper.getOutputSchema(), idFactory)
+        table.setVersion(self.TableVersion)
+        sources = lsst.afw.table.SourceCatalog(table)
+        table = sources.table
+        table.setMetadata(self.metadata)
+        table.preallocate(len(refCat))
+        expregion = exposure.getBBox(lsst.afw.image.PARENT)
+        targetWcs = exposure.getWcs()
+        for ref in refCat:
+            newsource = sources.addNew()
+            newsource.assign(ref, self.mapper)
+            footprint = newsource.getFootprint()
+            # if heavy, just transform the "light footprint" and leave the rest behind
+            if footprint.isHeavy():
+                footprint = lsst.afw.detection.Footprint(footprint)
+            if not refWcs == targetWcs:
+                footprint = footprint.transform(refWcs, targetWcs, expregion, True)
+            newsource.setFootprint(footprint)
+        return sources
+
+
+class ForcedMeasurementCmdConfig(BaseMeasurementConfig):
+    """Config class for forced measurement driver task."""
+
+    references = ConfigurableField(
+        target=CoaddSrcReferencesTask,
+        doc="Retrieve reference source catalog"
+        )
+    forcedMeasurement = ConfigurableField(
+        target=ForcedMeasurementTask,
+        doc="subtask to do forced measurement"
+        )
+    coaddName = lsst.pex.config.Field(
+        doc = "coadd name: typically one of deep or goodSeeing",
+        dtype = str,
+        default = "deep",
+    )
+
+class ForcedMeasurementCmdTask(CmdLineTask):
+    ConfigClass = ForcedMeasurementCmdConfig
+    _DefaultName = "forcedMeasurementCmdTask"
+
+    def __init__(self, butler=None, refSchema=None, **kwds):
+        CmdLineTask.__init__(self, **kwds)
+        if not refSchema:
+            refSchema = self.references.getSchema(butler)
+        self.makeSubtask("references")
+        self.algMetadata = lsst.daf.base.PropertyList()
+        self.makeSubtask("forcedMeasurement", refSchema=refSchema)
+
+
+    def run(self, dataRef):
+        refWcs = self.references.getWcs(dataRef)
+        exposure = self.getExposure(dataRef)
+        refCat = list(self.fetchReferences(dataRef, exposure))
+        retStruct = self.measurement.run(exposure, refCat, refWcs, self.makeIdFactory(dataRef))
+        self.writeOutput(dataRef, retStruct.sources)
 
     def makeIdFactory(self, dataRef):
         """Hook for derived classes to define how to make an IdFactory for forced sources.
@@ -394,39 +446,6 @@ class ForcedMeasurementTask(CmdLineTask):
         catalog = lsst.afw.table.SourceCatalog(self.mapper.getOutputSchema())
         datasetType = self.dataPrefix + "forced"
         return {datasetType:catalog}
-
-    def generateSources(self, dataRef, exposure, refCat, refWcs):
-        """Generate sources to be measured, copying any fields in self.config.copyColumns
-        Also, transform footprints to the measurement coordinate system, noting that
-        we do not currently have the ability to transform heavy footprints because they
-        need deblender information that we don't have.  So when the reference and measure
-        WCS are different, we won't be able to use the heavyFootprint child info at all.
-
-        @param dataRef     Data reference from butler
-        @param exposure    Exposure to be measured
-        @param refCat      Sequence (not necessarily a SourceCatalog) of reference sources
-        @param idFactory   Factory to generate unique ids for forced sources
-        @return Source catalog ready for measurement
-        """
-        idFactory = self.makeIdFactory(dataRef)
-        table = lsst.afw.table.SourceTable.make(self.mapper.getOutputSchema(), idFactory)
-        sources = lsst.afw.table.SourceCatalog(table)
-        table = sources.table
-        table.setMetadata(self.algMetadata)
-        table.preallocate(len(refCat))
-        expregion = exposure.getBBox(lsst.afw.image.PARENT)
-        targetWcs = exposure.getWcs()
-        for ref in refCat:
-            newsource = sources.addNew()
-            newsource.assign(ref, self.mapper)
-            footprint = newsource.getFootprint()
-            # if heavy, just transform the "light footprint" and leave the rest behind
-            if footprint.isHeavy():
-                footprint = lsst.afw.detection.Footprint(footprint)
-            if not refWcs == targetWcs:
-                footprint = footprint.transform(refWcs, targetWcs, expregion, True)
-            newsource.setFootprint(footprint)
-        return sources
 
     def _getConfigName(self):
         """Return the name of the config dataset.  Forces config comparison from run-to-run

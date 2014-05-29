@@ -42,7 +42,7 @@ class ForcedCoaddMeasurementConfig(ForcedMeasurementConfig):
     pass
 
 
-class ForcedCoaddMeasurementTask(ForcedMeasurementTask):
+class ForcedCoaddMeasurementTask(ForcedMeasurementCmdTask):
     """Forced measurement driver task
 
     This task is intended as a command-line script base class, in the model of ProcessImageTask

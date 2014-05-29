@@ -39,10 +39,10 @@ from lsst.meas.base.tests import *
 
 numpy.random.seed(123)
 
-class TestForcedCcdMeasurementConfig(ForcedCcdMeasurementConfig):
+class TestForcedMeasurementConfig(ForcedMeasurementConfig):
 
     def setDefaults(self):
-        ForcedCcdMeasurementConfig.setDefaults(self)
+        ForcedMeasurementConfig.setDefaults(self)
         self.plugins = ["centroid.peak", "test.flux"]
         self.slots.centroid = None #"centroid.peak"
         self.slots.shape = None
@@ -51,13 +51,14 @@ class TestForcedCcdMeasurementConfig(ForcedCcdMeasurementConfig):
         self.slots.apFlux = None
         self.slots.instFlux = None
 
-class TestForcedCcdMeasurementTask(ForcedCcdMeasurementTask):
+class TestForcedMeasurementTask(ForcedMeasurementTask):
 
-    ConfigClass = TestForcedCcdMeasurementConfig
+    ConfigClass = TestForcedMeasurementConfig
     # Since this is a test and we are not building a real output catalog
     # we can use create Ids without using camera dependent code.
-    def makeIdFactory(self, butler):
-        return IdFactory.makeSimple()
+
+    def __init__(self, mapper):
+        ForcedMeasurementTask.__init__(self, mapper)
 
 class TestFluxConfig(ForcedPluginConfig):
     pass
@@ -195,18 +196,8 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         mapper.addMinimalSchema(minimalSchema)
         newRefCat = lsst.afw.table.SourceCatalog(mapper.getOutputSchema()) 
         newRefCat.extend(refCat, mapper=mapper)
-        # Read a catalog which should be the same as the catalog of processCcd
-        # prior to measurement.  Create an empty catalog with the same schema
-        # plus the schema items for the SFM task, then transfer the existing data
-        # to the new catalog
-        srccat = SourceCatalog.readFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
-        schema = srccat.getSchema()
-        flags = MeasurementDataFlags()
-        
-        task = TestForcedCcdMeasurementTask(refSchema=newRefCat.getSchema())
-
-        # Then run the default SFM task.  Results not checked
-        result = task.forcedMeasure(exposure, list(newRefCat), refWcs)
+        task = TestForcedMeasurementTask(newRefCat.getSchema())
+        result = task.run(exposure, list(newRefCat), refWcs)
         sources = result.sources
         mismatches = 0
 	testidkey = sources.getSchema().find("objectId").key
@@ -232,9 +223,8 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         path = os.path.join(DATA_DIR, 'calexp-0A.fits')
         exposure = lsst.afw.image.ExposureF(path)
         refWcs = exposure.getWcs()
-
-        task = TestForcedCcdMeasurementTask(butler=None, refSchema=refCat.getSchema())
-        result = task.forcedMeasure(exposure, refCat, refWcs) #butler
+        task = TestForcedMeasurementTask(refCat.getSchema())
+        result = task.run(exposure, refCat, refWcs)
         sources = result.sources
         mismatches = 0
         keyX = sources.getSchema().find("centroid.peak_x").key

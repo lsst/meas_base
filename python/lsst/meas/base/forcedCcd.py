@@ -66,7 +66,7 @@ class ForcedCcdDataIdContainer(DataIdContainer):
                     )
                 self.refList.append(dataRef)
 
-class ForcedCcdMeasurementConfig(ForcedMeasurementConfig):
+class ForcedCcdMeasurementConfig(ForcedMeasurementCmdConfig):
     doApplyUberCal = Field(
         dtype = bool,
         doc = "Apply meas_mosaic ubercal results to input calexps?",
@@ -74,7 +74,7 @@ class ForcedCcdMeasurementConfig(ForcedMeasurementConfig):
     )
 
 
-class ForcedCcdMeasurementTask(ForcedMeasurementTask):
+class ForcedCcdMeasurementTask(ForcedMeasurementCmdTask):
     """Forced measurement driver task
 
     This task is intended as a command-line script base class, in the model of ProcessImageTask
@@ -109,7 +109,7 @@ class ForcedCcdMeasurementTask(ForcedMeasurementTask):
 
         @param dataRef       Data reference from butler
         """
-        exposure = ForcedMeasurementTask.getExposure(self, dataRef)
+        exposure = ForcedMeasurementCmdTask.getExposure(self, dataRef)
         if not self.config.doApplyUberCal:
             return exposure
         if applyMosaicResults is None:
