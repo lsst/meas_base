@@ -249,7 +249,6 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
 
     def __init__(self, refSchema, config=None, parentTask=None, name=None):
         lsst.pipe.base.Task.__init__(self)
-
         self.mapper = lsst.afw.table.SchemaMapper(refSchema)
         minimalSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
         self.mapper.addMinimalSchema(minimalSchema)
@@ -367,7 +366,7 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
         return sources
 
 
-class ForcedMeasurementCmdConfig(BaseMeasurementConfig):
+class ForcedMeasurementCmdConfig(lsst.pex.config.Config):
     """Config class for forced measurement driver task."""
 
     references = ConfigurableField(
@@ -390,9 +389,10 @@ class ForcedMeasurementCmdTask(CmdLineTask):
 
     def __init__(self, butler=None, refSchema=None, **kwds):
         CmdLineTask.__init__(self, **kwds)
+        self.makeSubtask("references")
         if not refSchema:
             refSchema = self.references.getSchema(butler)
-        self.makeSubtask("references")
+             
         self.algMetadata = lsst.daf.base.PropertyList()
         self.makeSubtask("forcedMeasurement", refSchema=refSchema)
 
@@ -401,7 +401,7 @@ class ForcedMeasurementCmdTask(CmdLineTask):
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
         refCat = list(self.fetchReferences(dataRef, exposure))
-        retStruct = self.measurement.run(exposure, refCat, refWcs, self.makeIdFactory(dataRef))
+        retStruct = self.forcedMeasurement.run(exposure, refCat, refWcs, self.makeIdFactory(dataRef))
         self.writeOutput(dataRef, retStruct.sources)
 
     def makeIdFactory(self, dataRef):
@@ -421,7 +421,6 @@ class ForcedMeasurementCmdTask(CmdLineTask):
         coadd), or is just an arbitrary box (as it would be for CCD forced measurements).
         """
         raise NotImplementedError()
-
 
     def getExposure(self, dataRef):
         """Read input exposure on which to perform the measurements
@@ -443,7 +442,7 @@ class ForcedMeasurementCmdTask(CmdLineTask):
         In the case of forced taks, there is only one schema for each type of forced measurement.
         The dataset type for this measurement is defined in the mapper.
         """
-        catalog = lsst.afw.table.SourceCatalog(self.mapper.getOutputSchema())
+        catalog = lsst.afw.table.SourceCatalog(self.forcedMeasurement.mapper.getOutputSchema())
         datasetType = self.dataPrefix + "forced"
         return {datasetType:catalog}
 

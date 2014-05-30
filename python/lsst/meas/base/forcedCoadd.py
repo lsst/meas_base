@@ -38,7 +38,7 @@ from .references import CoaddSrcReferencesTask
 
 __all__ = ("ForcedCoaddMeasurementConfig", "ForcedCoaddMeasurementTask")
 
-class ForcedCoaddMeasurementConfig(ForcedMeasurementConfig):
+class ForcedCoaddMeasurementConfig(ForcedMeasurementCmdConfig):
     pass
 
 
