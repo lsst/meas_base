@@ -55,7 +55,7 @@ from .base import *
 from .references import CoaddSrcReferencesTask, BaseReferencesTask
 
 __all__ = ("ForcedPluginConfig", "ForcedPlugin", "WrappedForcedPlugin",
-           "ForcedMeasurementCmdConfig", "ForcedMeasurementCmdTask",
+           "ProcessImageForcedConfig", "ProcessImageForcedTask",
            "ForcedMeasurementConfig", "ForcedMeasurementTask")
 
 class ForcedPluginConfig(BasePluginConfig):
@@ -184,7 +184,7 @@ class WrappedForcedPlugin(ForcedPlugin):
         @param[in]   name       The name to use when registering the Plugin (ignored if doRegister=False).
                                 Defaults to the result of generateAlgorithmName(AlgClass).
         @param[in]   doRegister   If True (default), register the new Plugin so it can be configured to be
-                                  run by ForcedMeasurementCmdTask.
+                                  run by ProcessImageForcedTask.
         @param[in]   ConfigClass  The ConfigClass associated with the new Plugin.  This should have a
                                   makeControl() method that returns the Control object used by the C++
                                   Algorithm class.
@@ -239,8 +239,11 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
 class ForcedMeasurementTask(lsst.pipe.base.Task):
     """Forced measurement driver task
 
-    This task is intended as a command-line script base class, in the model of ProcessImageTask
-    (i.e. it should be subclassed for running on CCDs and Coadds).
+    This task is intended to be a subtask of another command line task, such as ProcessImageForcedTask
+    It should be subclassed for running on CCDs and Coadds.  See ProcessCcd(Coadd)ForcedTask.
+
+    Note that the __init__ method takes the refSchema, while the run method takes the refCat.
+    The two schemas must match.
     """
 
     ConfigClass = ForcedMeasurementConfig
@@ -267,8 +270,10 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
                                                    others=self.plugins, metadata=self.metadata)
 
     def run(self, exposure, refCat, refWcs, idFactory=lsst.afw.table.IdFactory.makeSimple()):
-        """This is a service routine which allows a forced measurement to be made without
-        constructing the reference list.  The reference list and refWcs can then be passed in.
+        """The reference list and refWcs are passed in to the run method, along with the exposure.
+        It creates its own source catalog, which is returned in the result structure.
+        The IdFactory is assumed to be known by the parentTask (see ProcessImageForcedTask.run)
+        and will default to IdFactory.makeSimple() if not specified.
         """
         # First create a refList from the original which excludes children when a member
         # of the parent chain is not within the list.  This can occur at boundaries when
@@ -366,7 +371,7 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
         return sources
 
 
-class ForcedMeasurementCmdConfig(lsst.pex.config.Config):
+class ProcessImageForcedConfig(lsst.pex.config.Config):
     """Config class for forced measurement driver task."""
 
     references = ConfigurableField(
@@ -383,9 +388,9 @@ class ForcedMeasurementCmdConfig(lsst.pex.config.Config):
         default = "deep",
     )
 
-class ForcedMeasurementCmdTask(CmdLineTask):
-    ConfigClass = ForcedMeasurementCmdConfig
-    _DefaultName = "forcedMeasurementCmdTask"
+class ProcessImageForcedTask(CmdLineTask):
+    ConfigClass = ProcessImageForcedConfig
+    _DefaultName = "processImageForcedTask"
 
     def __init__(self, butler=None, refSchema=None, **kwds):
         CmdLineTask.__init__(self, **kwds)

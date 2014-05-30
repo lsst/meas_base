@@ -20,5 +20,5 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from lsst.meas.base.forcedCcd import ForcedCcdMeasurementTask
-ForcedCcdMeasurementTask.parseAndRun()
+from lsst.meas.base.forcedCcd import ProcessForcedCcdTask
+ProcessForcedCcdTask.parseAndRun()

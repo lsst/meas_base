@@ -20,5 +20,5 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from lsst.meas.base.forcedCoadd import ForcedCoaddMeasurementTask
-ForcedCoaddMeasurementTask.parseAndRun()
+from lsst.meas.base.forcedCoadd import ProcessForcedCoaddTask
+ProcessForcedCoaddTask.parseAndRun()

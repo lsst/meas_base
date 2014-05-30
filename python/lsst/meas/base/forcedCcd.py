@@ -37,9 +37,9 @@ try:
 except ImportError:
     applyMosaicResults = None
 
-__all__ = ("ForcedCcdMeasurementConfig", "ForcedCcdMeasurementTask")
+__all__ = ("ProcessForcedCcdConfig", "ProcessForcedCcdTask")
 
-class ForcedCcdDataIdContainer(DataIdContainer):
+class ProcessForcedCcdDataIdContainer(DataIdContainer):
     """A version of DataIdContainer specialized for forced photometry on CCDs.
 
     Required because we need to add "tract" to the raw data ID keys, and that's tricky.
@@ -66,7 +66,7 @@ class ForcedCcdDataIdContainer(DataIdContainer):
                     )
                 self.refList.append(dataRef)
 
-class ForcedCcdMeasurementConfig(ForcedMeasurementCmdConfig):
+class ProcessForcedCcdConfig(ProcessImageForcedConfig):
     doApplyUberCal = Field(
         dtype = bool,
         doc = "Apply meas_mosaic ubercal results to input calexps?",
@@ -74,16 +74,16 @@ class ForcedCcdMeasurementConfig(ForcedMeasurementCmdConfig):
     )
 
 
-class ForcedCcdMeasurementTask(ForcedMeasurementCmdTask):
+class ProcessForcedCcdTask(ProcessImageForcedTask):
     """Forced measurement driver task
 
     This task is intended as a command-line script base class, in the model of ProcessImageTask
-    (i.e. it should be subclasses for running on Coadds and Ccds).
+    (i.e. it should be subclasses for running on Ccds).
     """
 
-    ConfigClass = ForcedCcdMeasurementConfig
+    ConfigClass = ProcessForcedCcdConfig
     RunnerClass = ButlerInitializedTaskRunner
-    _DefaultName = "forcedCcdMeasurementTask"
+    _DefaultName = "forcedCcdTask"
     dataPrefix = ""
 
     def makeIdFactory(self, dataRef):
@@ -109,7 +109,7 @@ class ForcedCcdMeasurementTask(ForcedMeasurementCmdTask):
 
         @param dataRef       Data reference from butler
         """
-        exposure = ForcedMeasurementCmdTask.getExposure(self, dataRef)
+        exposure = ProcessImageForcedTask.getExposure(self, dataRef)
         if not self.config.doApplyUberCal:
             return exposure
         if applyMosaicResults is None:
@@ -125,7 +125,7 @@ class ForcedCcdMeasurementTask(ForcedMeasurementCmdTask):
     def _makeArgumentParser(cls):
         parser = ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "forced_src", help="data ID, with raw CCD keys + tract",
-                               ContainerClass=ForcedCcdDataIdContainer)
+                               ContainerClass=ProcessForcedCcdDataIdContainer)
         return parser
 
 

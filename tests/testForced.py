@@ -26,7 +26,7 @@ import math
 from lsst.afw.table import IdFactory,Schema,SchemaMapper,SourceCatalog,SourceTable
 from lsst.meas.base.base import *
 from lsst.meas.base.forcedImage import *
-from lsst.meas.base.forcedCcd import ForcedCcdMeasurementTask, ForcedCcdMeasurementConfig
+from lsst.meas.base.forcedCcd import ProcessForcedCcdMeasurementTask, ProcessForcedCcdMeasurementConfig
 from lsst.daf.persistence.butler import *
 import unittest
 import lsst.utils.tests
