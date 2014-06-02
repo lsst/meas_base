@@ -250,7 +250,7 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
     _DefaultName = "forcedMeasurement"
     TableVersion = 1
 
-    def __init__(self, refSchema, config=None, parentTask=None, name=None):
+    def __init__(self, refSchema, **kwds):
         lsst.pipe.base.Task.__init__(self)
         self.mapper = lsst.afw.table.SchemaMapper(refSchema)
         minimalSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
@@ -269,7 +269,7 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
             self.plugins[name] = PluginClass(config, name, self.mapper, flags=flags,
                                                    others=self.plugins, metadata=self.metadata)
 
-    def run(self, exposure, refCat, refWcs, idFactory=lsst.afw.table.IdFactory.makeSimple()):
+    def run(self, exposure, refCat, refWcs, idFactory=None):
         """The reference list and refWcs are passed in to the run method, along with the exposure.
         It creates its own source catalog, which is returned in the result structure.
         The IdFactory is assumed to be known by the parentTask (see ProcessImageForcedTask.run)
@@ -296,7 +296,7 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
             if topId == 0:
                 refList.append(ref)
         # now generate transformed source corresponding to the cleanup up refLst
-        sources = self.generateSources(idFactory, exposure, refList, refWcs)
+        sources = self.generateSources(exposure, refList, refWcs, idFactory)
 
         # Steal the transformed source footprint and use it to complete the footprints dict,
         # which then looks like {ref.getId(): (ref.getParent(), source.getFootprint())}
@@ -337,37 +337,39 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
         noiseReplacer.end()
         return Struct(sources=sources)
 
-    def generateSources(self, idFactory, exposure, refCat, refWcs):
+    def generateSources(self, exposure, refCat, refWcs, idFactory=None):
         """Generate sources to be measured, copying any fields in self.config.copyColumns
         Also, transform footprints to the measurement coordinate system, noting that
         we do not currently have the ability to transform heavy footprints because they
         need deblender information that we don't have.  So when the reference and measure
         WCS are different, we won't be able to use the heavyFootprint child info at all.
 
-        @param idFactory   factory for making new ids
         @param exposure    Exposure to be measured
         @param refCat      Sequence (not necessarily a SourceCatalog) of reference sources
-        @param idFactory   Factory to generate unique ids for forced sources
+        @param refWcs      Wcs that goes with the X,Y cooridinates of the refCat
+        @param idFactory   factory for making new ids from reference catalog ids
         @return Source catalog ready for measurement
         """
+        if idFactory == None:
+            idFactory = lsst.afw.table.IdFactory.makeSimple()
         table = lsst.afw.table.SourceTable.make(self.mapper.getOutputSchema(), idFactory)
         table.setVersion(self.TableVersion)
         sources = lsst.afw.table.SourceCatalog(table)
         table = sources.table
         table.setMetadata(self.metadata)
         table.preallocate(len(refCat))
-        expregion = exposure.getBBox(lsst.afw.image.PARENT)
+        expRegion = exposure.getBBox(lsst.afw.image.PARENT)
         targetWcs = exposure.getWcs()
         for ref in refCat:
-            newsource = sources.addNew()
-            newsource.assign(ref, self.mapper)
-            footprint = newsource.getFootprint()
+            newSource = sources.addNew()
+            newSource.assign(ref, self.mapper)
+            footprint = newSource.getFootprint()
             # if heavy, just transform the "light footprint" and leave the rest behind
             if footprint.isHeavy():
                 footprint = lsst.afw.detection.Footprint(footprint)
             if not refWcs == targetWcs:
-                footprint = footprint.transform(refWcs, targetWcs, expregion, True)
-            newsource.setFootprint(footprint)
+                footprint = footprint.transform(refWcs, targetWcs, expRegion, True)
+            newSource.setFootprint(footprint)
         return sources
 
 

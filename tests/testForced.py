@@ -39,6 +39,7 @@ from lsst.meas.base.tests import *
 
 numpy.random.seed(123)
 
+# This task if just to define a ForcedMeasurementTask with no required plugins
 class TestForcedMeasurementConfig(ForcedMeasurementConfig):
 
     def setDefaults(self):
@@ -54,14 +55,7 @@ class TestForcedMeasurementConfig(ForcedMeasurementConfig):
 class TestForcedMeasurementTask(ForcedMeasurementTask):
 
     ConfigClass = TestForcedMeasurementConfig
-    # Since this is a test and we are not building a real output catalog
-    # we can use create Ids without using camera dependent code.
 
-    def __init__(self, mapper):
-        ForcedMeasurementTask.__init__(self, mapper)
-
-class TestFluxConfig(ForcedPluginConfig):
-    pass
 
 #  Test SFM plugin, which is used to test that the plugin mechanism works correctly,
 #  and that the noise replacement mechanism is working.  This plugin measures the total
@@ -69,7 +63,6 @@ class TestFluxConfig(ForcedPluginConfig):
 #  completely surrounds the object (providing an indication of any bad replacement nearby
 
 class TestFlux(ForcedPlugin):
-    ConfigClass = TestFluxConfig
 
     def __init__(self, config, name, schemaMapper, flags=None, others=None, metadata=None):
         ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
@@ -136,32 +129,32 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         exposure.getWcs().shiftReferencePixel(lsst.afw.geom.Extent2D(1000,1000))
         refwcs = exposure.getWcs()
         exposure.writeFits(os.path.join(DATA_DIR, "ref-0A.fits"))
-        centkey = lsst.afw.table.Point2DKey(catalog.getSchema().find("truth_x").key,
+        centKey = lsst.afw.table.Point2DKey(catalog.getSchema().find("truth_x").key,
                                             catalog.getSchema().find("truth_y").key)
-        coordkey = catalog.getSchema().find("coord").key
+        coordKey = catalog.getSchema().find("coord").key
         for rec in catalog:
-            expregion = exposure.getBBox(lsst.afw.image.PARENT)
-            expregion.shift(lsst.afw.geom.Extent2I(1000,1000))
-            ref_footprint = rec.getFootprint().transform(wcs, refwcs, expregion, True)
+            expRegion = exposure.getBBox(lsst.afw.image.PARENT)
+            expRegion.shift(lsst.afw.geom.Extent2I(1000,1000))
+            ref_footprint = rec.getFootprint().transform(wcs, refwcs, expRegion, True)
             peaks = rec.getFootprint().getPeaks()
             for i, peak in enumerate(peaks):
-                newpeak = refwcs.skyToPixel(wcs.pixelToSky(lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())))
-                ref_footprint.getPeaks().push_back(lsst.afw.detection.Peak(newpeak.getX(), newpeak.getY()))
+                newPeak = refwcs.skyToPixel(wcs.pixelToSky(lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())))
+                ref_footprint.getPeaks().push_back(lsst.afw.detection.Peak(newPeak.getX(), newPeak.getY()))
             rec.setFootprint(ref_footprint)
             rfoot = rec.getFootprint()
-            centroid = rec.get(centkey)
+            centroid = rec.get(centKey)
             sky = wcs.pixelToSky(centroid)
-            rec.set(centkey, refwcs.skyToPixel(sky)) 
-            rec.set(coordkey, sky) 
+            rec.set(centKey, refwcs.skyToPixel(sky)) 
+            rec.set(coordKey, sky) 
         catalog.writeFits(os.path.join(DATA_DIR, "refcat-0A.fits"))
         refCat = lsst.afw.table.SourceCatalog.readFits(os.path.join(DATA_DIR, 'refcat-0A.fits'))
-        centkey = lsst.afw.table.Point2DKey(catalog.getSchema().find("truth_x").key,
+        centKey = lsst.afw.table.Point2DKey(catalog.getSchema().find("truth_x").key,
                                             catalog.getSchema().find("truth_y").key)
-        coordkey = catalog.getSchema().find("coord").key 
+        coordKey = catalog.getSchema().find("coord").key 
         for rec in refCat:
             foot = rec.getFootprint()
-            coord = rec.get(coordkey)
-            cent = rec.get(centkey)
+            coord = rec.get(coordKey)
+            cent = rec.get(centKey)
         crval = lsst.afw.coord.IcrsCoord(45.0*lsst.afw.geom.degrees, 44.995*lsst.afw.geom.degrees)
         catalog, bbox = MakeTestData.makeCatalog()
         exposure = MakeTestData.makeEmptyExposure(bbox, crval)
@@ -223,7 +216,7 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         path = os.path.join(DATA_DIR, 'calexp-0A.fits')
         exposure = lsst.afw.image.ExposureF(path)
         refWcs = exposure.getWcs()
-        task = TestForcedMeasurementTask(refCat.getSchema())
+        task = ForcedMeasurementTask(refCat.getSchema())
         result = task.run(exposure, refCat, refWcs)
         sources = result.sources
         mismatches = 0
