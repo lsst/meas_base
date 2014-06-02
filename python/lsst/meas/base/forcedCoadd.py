@@ -36,22 +36,22 @@ from .forcedImage import *
 from .base import *
 from .references import CoaddSrcReferencesTask
 
-__all__ = ("ForcedCoaddMeasurementConfig", "ForcedCoaddMeasurementTask")
+__all__ = ("ProcessForcedCoaddConfig", "ProcessForcedCoaddTask")
 
-class ForcedCoaddMeasurementConfig(ForcedMeasurementConfig):
+class ProcessForcedCoaddConfig(ProcessImageForcedConfig):
     pass
 
 
-class ForcedCoaddMeasurementTask(ForcedMeasurementTask):
+class ProcessForcedCoaddTask(ProcessImageForcedTask):
     """Forced measurement driver task
 
     This task is intended as a command-line script base class, in the model of ProcessImageTask
-    (i.e. it should be subclasses for running on CCDs and Coadds).
+    (i.e. it should be subclasses for running on Coadds).
     """
 
-    ConfigClass = ForcedCoaddMeasurementConfig
+    ConfigClass = ProcessForcedCoaddConfig
     RunnerClass = ButlerInitializedTaskRunner
-    _DefaultName = "forcedCoaddMeasurementTask"
+    _DefaultName = "forcedCoaddTask"
     dataPrefix = "deepCoadd_"
 
     def fetchReferences(self, dataRef, exposure):
