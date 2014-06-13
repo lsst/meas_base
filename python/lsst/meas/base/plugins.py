@@ -39,6 +39,7 @@ from .forcedImage import *
 # --- Wrapped C++ Plugins ---
 
 WrappedSingleFramePlugin.generate(PsfFluxAlgorithm)
+WrappedSingleFramePlugin2.generate(TestFluxAlgorithm)
 WrappedSingleFramePlugin.generate(SdssShapeAlgorithm, executionOrder=1.0)
 WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(SincFluxAlgorithm)

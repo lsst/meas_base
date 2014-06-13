@@ -65,6 +65,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         #measCat.getTable().defineModelFlux("base_GaussianFlux")
         measCat.extend(srccat, mapper=mapper)
         # now run the SFM task with the test plugin
+        schema = measCat.getSchema()
         task.run(measCat, exposure)
         for i in range(len(measCat)):
             record = measCat[i]

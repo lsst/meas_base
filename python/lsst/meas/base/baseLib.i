@@ -162,6 +162,16 @@ T.Vector = T ## Vector
     >;
 %enddef
 
+%define %wrapPartialEx(NAMESPACE, ALGORITHM, CONTROL, INPUT, RESULT)
+// Turn C++ typedefs into equivalent Python attributes - it's a shame Swig doesn't do this for us,
+// or even give us a way to look up the Python class name for a C++ class we've already wrapped.
+%pythoncode %{
+ALGORITHM.Control = CONTROL
+ALGORITHM.Input = INPUT
+ALGORITHM.Result = RESULT
+%}
+%enddef
+
 %define %wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT, RESULT, RESULT_MAPPER)
 // Turn C++ typedefs into equivalent Python attributes - it's a shame Swig doesn't do this for us,
 // or even give us a way to look up the Python class name for a C++ class we've already wrapped.
@@ -177,6 +187,12 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %instantiateResult0(NAMESPACE, ALGORITHM)
 %wrapMeasurementAlgorithmEx(NAMESPACE, ALGORITHM, CONTROL, INPUT,
                             ALGORITHM##Result0, ALGORITHM##ResultMapper0)
+%enddef
+
+%define %wrapPartial1(NAMESPACE, ALGORITHM, CONTROL, INPUT)
+%template(ALGORITHM##FlagsComponent) lsst::meas::base::FlagsComponent<NAMESPACE::ALGORITHM>;
+%template(ALGORITHM##Result) lsst::meas::base::ALGORITHM::Result;
+%wrapPartialEx(NAMESPACE, ALGORITHM, CONTROL, INPUT, ALGORITHM##Result)
 %enddef
 
 %define %wrapMeasurementAlgorithm1(NAMESPACE, ALGORITHM, CONTROL, INPUT, T1)
@@ -223,6 +239,16 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %template(apply) lsst::meas::base::GaussianFluxAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::GaussianFluxAlgorithm::apply<double>;
 %wrapMeasurementAlgorithm1(lsst::meas::base, GaussianFluxAlgorithm, GaussianFluxControl, FootprintCentroidInput, FluxComponent)
+
+%include "lsst/meas/base/TestFlux.h"
+%template(apply) lsst::meas::base::TestFluxAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::TestFluxAlgorithm::apply<double>;
+%template(TestFluxAlgorithmFlagsComponent) lsst::meas::base::FlagsComponent<lsst::meas::base::TestFluxAlgorithm>;
+# %template(TestFluxAlgorithmResult) lsst::meas::base::TestFluxAlgorithm::Result;
+%pythoncode %{
+TestFluxAlgorithm.Control = TestFluxControl
+TestFluxAlgorithm.Input = FootprintCentroidInput
+%}
 
 %include "lsst/meas/base/GaussianCentroid.h"
 %template(apply) lsst::meas::base::GaussianCentroidAlgorithm::apply<float>;

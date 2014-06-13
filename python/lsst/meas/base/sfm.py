@@ -34,7 +34,7 @@ import lsst.daf.base
 import lsst.meas.algorithms
 from .base import *
 
-__all__ = ("SingleFramePluginConfig", "SingleFramePlugin", "WrappedSingleFramePlugin",
+__all__ = ("SingleFramePluginConfig", "SingleFramePlugin", "WrappedSingleFramePlugin", "WrappedSingleFramePlugin2",
            "SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
 
 class SingleFramePluginConfig(BasePluginConfig):
@@ -137,6 +137,90 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
     @classmethod
     def generate(Base, AlgClass, name=None, doRegister=True, ConfigClass=None, executionOrder=None):
         """Create a new derived class of WrappedSingleFramePlugin from a C++ Algorithm class.
+
+        @param[in]   AlgClass   The name of the (Swigged) C++ Algorithm class this Plugin will delegate to.
+        @param[in]   name       The name to use when registering the Plugin (ignored if doRegister=False).
+                                Defaults to the result of generateAlgorithmName(AlgClass).
+        @param[in]   doRegister   If True (default), register the new Plugin so it can be configured to be
+                                  run by SingleFrameMeasurementTask.
+        @param[in]   ConfigClass  The ConfigClass associated with the new Plugin.  This should have a
+                                  makeControl() method that returns the Control object used by the C++
+                                  Algorithm class.
+        @param[in]   executionOrder   If not None, a float that overrides the default executionOrder
+                                      for this algorithm (see BasePluginConfig.executionOrder).
+
+        For more information, please see the "Adding New Algorithms" section of the main meas_base
+        documentation.
+        """
+        if ConfigClass is None:
+            ConfigClass = lsst.pex.config.makeConfigClass(AlgClass.Control, base=Base.ConfigClass,
+                                                          module=AlgClass.__module__)
+            if hasattr(AlgClass, "applyN"):
+                ConfigClass.doMeasureN = lsst.pex.config.Field(
+                    dtype=bool, default=True,
+                    doc="whether to run this plugin multi-object mode"
+                    )
+        if executionOrder is not None:
+            ConfigClass.executionOrder.default = float(executionOrder)
+        PluginClass = type(AlgClass.__name__ + "SingleFramePlugin", (Base,),
+                           dict(AlgClass=AlgClass, ConfigClass=ConfigClass))
+        if doRegister:
+            if name is None:
+                name = generateAlgorithmName(AlgClass)
+            Base.registry.register(name, PluginClass)
+        return PluginClass
+
+class WrappedSingleFramePlugin2(SingleFramePlugin):
+    """A base class for SingleFramePlugins that delegates the algorithmic work to a C++
+    Algorithm class.
+
+    Derived classes of WrappedSingleFramePlugin2 must set the AlgClass class attribute
+    to the C++ class being wrapped, which must meet the requirements defined in the
+    "Implementing New Plugins and Algorithms" section of the meas_base documentation.  This is usually done
+    by calling the generate() class method.
+    """
+
+    AlgClass = None
+
+    def __init__(self, config, name, schema, flags, others, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
+        #  use the AlgClass fieldNames attribute to figure out the map
+        fieldCount = self.AlgClass.getFieldCount()
+        self.keys = {}
+        for field in range(fieldCount):
+            fieldName = self.AlgClass.getFieldName(field)
+            fieldType = self.AlgClass.getFieldType(field)
+            key = schema.addField(name + "_" + fieldName, fieldType)
+            self.keys[fieldName] = key
+        # TODO: check flags
+
+    def measure(self, measRecord, exposure):
+        inputs = self.AlgClass.Input(measRecord)
+        result = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
+        if result.flux > 0:
+            fieldCount = self.AlgClass.getFieldCount()
+            for field in range(fieldCount):
+                fieldName = self.AlgClass.getFieldName(field)
+                fieldType = self.AlgClass.getFieldType(field)
+                value = getattr(result, fieldName)
+                measRecord.set(self.keys[fieldName], value)
+
+    def measureN(self, measCat, exposure):
+        assert hasattr(AlgClass, "applyN")  # would be better if we could delete this method somehow
+        inputs = self.AlgClass.Input.Vector(measCat)
+        results = self.AlgClass.applyN(exposure, inputs, self.config.makeControl())
+        for result, measRecord in zip(results, measCat):
+            self.resultMapper.apply(measRecord, result)
+
+    def fail(self, measRecord, error=None):
+        # The ResultMapper will set detailed flag bits describing the error if error is not None,
+        # and set a general failure bit otherwise.
+        import pdb
+        pdb.set_trace() #self.resultMapper.fail(measRecord, error)
+
+    @classmethod
+    def generate(Base, AlgClass, name=None, doRegister=True, ConfigClass=None, executionOrder=None):
+        """Create a new derived class of WrappedSingleFramePlugin2 from a C++ Algorithm class.
 
         @param[in]   AlgClass   The name of the (Swigged) C++ Algorithm class this Plugin will delegate to.
         @param[in]   name       The name to use when registering the Plugin (ignored if doRegister=False).
