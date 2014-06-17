@@ -45,12 +45,12 @@ namespace lsst { namespace meas { namespace base {
  *       }
  *  @endcode
  */
-class MeasurementError : public pex::exceptions::RuntimeErrorException {
+class MeasurementError : public pex::exceptions::RuntimeError {
 public:
 
     /// Constructor; should only be invoked by the LSST_EXCEPT macro (see class docs)
     MeasurementError(LSST_EARGS_TYPED, std::size_t flagBit) :
-        pex::exceptions::RuntimeErrorException(LSST_EARGS_UNTYPED),
+        pex::exceptions::RuntimeError(LSST_EARGS_UNTYPED),
         _flagBit(flagBit)
     {}
 
@@ -72,7 +72,7 @@ private:
  *
  *  When caught by the plugin framework, this exception will generate a log message.
  */
-LSST_EXCEPTION_TYPE(PixelValueError, lsst::pex::exceptions::DomainErrorException,
+LSST_EXCEPTION_TYPE(PixelValueError, lsst::pex::exceptions::DomainError,
                     lsst::meas::base::PixelValueError);
 
 }}} // lsst::meas::base

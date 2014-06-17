@@ -143,10 +143,10 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     double const sy =  0.5*(im(0, 1) - im( 0, -1));
 
     if (d2x == 0.0 || d2y == 0.0) {
-        throw LSST_EXCEPT(pexExceptions::RuntimeErrorException, "Object has a vanishing 2nd derivative");
+        throw LSST_EXCEPT(pexExceptions::RuntimeError, "Object has a vanishing 2nd derivative");
     }
     if (d2x < 0.0 || d2y < 0.0) {
-        throw LSST_EXCEPT(pexExceptions::RuntimeErrorException,
+        throw LSST_EXCEPT(pexExceptions::RuntimeError,
                           (boost::format("Object is not at a maximum: d2I/dx2, d2I/dy2 = %g %g")
                            % d2x % d2y).str());
     }
@@ -155,7 +155,7 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     double const dy0 = sy/d2y;          // first guess
 
     if (fabs(dx0) > 10.0 || fabs(dy0) > 10.0) {
-        throw LSST_EXCEPT(pexExceptions::RuntimeErrorException,
+        throw LSST_EXCEPT(pexExceptions::RuntimeError,
                           (boost::format("Object has an almost vanishing 2nd derivative:"
                                          " sx, d2x, sy, d2y = %f %f %f %f")
                            % sx % d2x % sy % d2y).str());
@@ -255,10 +255,10 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     double const sy =  0.5*(mim.image(0, 1) - mim.image( 0, -1));
 
     if (d2x == 0.0 || d2y == 0.0) {
-        throw LSST_EXCEPT(pexExceptions::RuntimeErrorException, "Object has a vanishing 2nd derivative");
+        throw LSST_EXCEPT(pexExceptions::RuntimeError, "Object has a vanishing 2nd derivative");
     }
     if (d2x < 0.0 || d2y < 0.0) {
-        throw LSST_EXCEPT(pexExceptions::RuntimeErrorException,
+        throw LSST_EXCEPT(pexExceptions::RuntimeError,
                           (boost::format("Object is not at a maximum: d2I/dx2, d2I/dy2 = %g %g")
                            % d2x % d2y).str());
     }
@@ -267,7 +267,7 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     double const dy0 = sy/d2y;          // first guess
 
     if (fabs(dx0) > 10.0 || fabs(dy0) > 10.0) {
-        throw LSST_EXCEPT(pexExceptions::RuntimeErrorException,
+        throw LSST_EXCEPT(pexExceptions::RuntimeError,
                           (boost::format("Object has an almost vanishing 2nd derivative:"
                                          " sx, d2x, sy, d2y = %f %f %f %f")
                            % sx % d2x % sy % d2y).str());

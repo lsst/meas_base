@@ -96,7 +96,7 @@ GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(
     /*
         // Fixed aperture, defined by SDSS shape measurement made elsewhere
         if (source.get(_shapeFlagKey)) {
-            throw LSST_EXCEPT(pexExceptions::RuntimeErrorException, "Shape measurement failed");
+            throw LSST_EXCEPT(pexExceptions::RuntimeError, "Shape measurement failed");
         }
         SdssShapeImpl sdss(source.get(_centroidKey), source.get(_shapeKey));
         oldresult = detail::getFixedMomentsFlux(mimage, ctrl.background, xcen, ycen, sdss);
