@@ -300,11 +300,17 @@ class SourceSlotConfig(lsst.pex.config.Config):
 class BaseMeasurementConfig(lsst.pex.config.Config):
     """Baseconfig class for all measurement driver tasks."""
 
-    prefix = None
+    #prefix = None
 
     slots = lsst.pex.config.ConfigField(
         dtype = SourceSlotConfig,
         doc="Mapping from algorithms to special aliases in Source."
+        )
+
+    prefix = lsst.pex.config.Field(
+        dtype = str,
+        doc="Prefix to field name - DELETE THIS.",
+        default = ""
         )
 
     doReplaceWithNoise = lsst.pex.config.Field(dtype=bool, default=True, optional=False,
