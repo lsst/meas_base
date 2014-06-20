@@ -203,7 +203,9 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
         self.plugins = PluginMap()
         # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
-            self.plugins[name] = PluginClass(config, name, schema=schema, flags=flags,
+            if not self.config.prefix == None:
+                schemaName = self.config.prefix + name
+            self.plugins[name] = PluginClass(config, schemaName, schema=schema, flags=flags,
                 others=self.plugins, metadata=self.algMetadata)
 
     def run(self, measCat, exposure):
@@ -255,4 +257,7 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
             noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
         noiseReplacer.end()
+
+    def measure(self, measCat, exposure):
+        self.run(measCat, exposure)
 
