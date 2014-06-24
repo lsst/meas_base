@@ -203,9 +203,7 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
         self.plugins = PluginMap()
         # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
-            if not self.config.prefix == None:
-                schemaName = self.config.prefix + name
-            self.plugins[name] = PluginClass(config, schemaName, schema=schema, flags=flags,
+            self.plugins[name] = PluginClass(config, name, schema=schema, flags=flags,
                 others=self.plugins, metadata=self.algMetadata)
 
     def run(self, measCat, exposure):
@@ -223,7 +221,7 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
             exposure = measCat
             measCat = temp
         assert measCat.getSchema().contains(self.schema)
-        self.config.slots.setupTable(measCat.table, prefix=self.config.prefix)
+        self.config.slots.setupTable(measCat.table)
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
             for measRecord in measCat}
 
