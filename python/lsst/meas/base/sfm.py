@@ -31,7 +31,6 @@ to avoid information loss (this should, of course, be indicated in the field doc
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.daf.base
-import lsst.meas.algorithms
 from .base import *
 
 __all__ = ("SingleFramePluginConfig", "SingleFramePlugin", "WrappedSingleFramePlugin",
@@ -175,7 +174,18 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
 
     plugins = SingleFramePlugin.registry.makeField(
         multi=True,
-        default=["centroid.peak",
+        default=["base_PixelFlags",
+                 "base_SdssCentroid",
+                 "base_GaussianCentroid",
+                 "base_NaiveCentroid",
+                 "base_SdssShape",
+                 "base_GaussianFlux",
+                 "base_NaiveFlux",
+                 "base_PsfFlux",
+                 "base_SincFlux",
+                 #"correctfluxes",
+                 "classification.extendedness",
+                 "skycoord",
                  ],
         doc="Plugin plugins to be run and their configuration"
         )

@@ -33,7 +33,6 @@ import lsst.afw.image as afwImage
 import lsst.pipe.base
 import lsst.pex.config
 import lsst.pex.exceptions
-import lsst.meas.algorithms
 import lsst.afw.table
 
 from .baseLib import *
@@ -269,17 +268,17 @@ class SourceSlotConfig(lsst.pex.config.Config):
     NOTE: default for each slot must be registered, even if the default is not used.
     """
 
-    centroid = lsst.pex.config.Field(dtype=str, default="centroid.sdss", optional=True,
+    centroid = lsst.pex.config.Field(dtype=str, default="base_SdssCentroid", optional=True,
                                      doc="the name of the centroiding algorithm used to set source x,y")
-    shape = lsst.pex.config.Field(dtype=str, default="shape.sdss", optional=True,
+    shape = lsst.pex.config.Field(dtype=str, default="base_SdssShape", optional=True,
                                   doc="the name of the algorithm used to set source moments parameters")
-    apFlux = lsst.pex.config.Field(dtype=str, default="flux.sinc", optional=True,
+    apFlux = lsst.pex.config.Field(dtype=str, default="base_SincFlux", optional=True,
                                    doc="the name of the algorithm used to set the source aperture flux slot")
-    modelFlux = lsst.pex.config.Field(dtype=str, default="flux.gaussian", optional=True,
+    modelFlux = lsst.pex.config.Field(dtype=str, default="base_GaussianFlux", optional=True,
                                       doc="the name of the algorithm used to set the source model flux slot")
-    psfFlux = lsst.pex.config.Field(dtype=str, default="flux.naive", optional=True,
+    psfFlux = lsst.pex.config.Field(dtype=str, default="base_PsfFlux", optional=True,
                                     doc="the name of the algorithm used to set the source psf flux slot")
-    instFlux = lsst.pex.config.Field(dtype=str, default="flux.gaussian", optional=True,
+    instFlux = lsst.pex.config.Field(dtype=str, default="base_GaussianFlux", optional=True,
                                      doc="the name of the algorithm used to set the source inst flux slot")
 
     def setupTable(self, table, prefix=None):
