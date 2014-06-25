@@ -29,6 +29,7 @@ import lsst.afw.image
 import lsst.afw.table
 
 from .forcedPhotImage import ProcessImageForcedTask, ProcessImageForcedConfig
+from .dataIds import PerTractCcdDataIdContainer
 
 try:
     from lsst.meas.mosaic import applyMosaicResults
@@ -36,33 +37,6 @@ except ImportError:
     applyMosaicResults = None
 
 __all__ = ("ForcedPhotCcdConfig", "ForcedPhotCcdTask")
-
-class ForcedPhotCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
-    """A version of DataIdContainer specialized for forced photometry on CCDs.
-
-    Required because we need to add "tract" to the raw data ID keys, and that's tricky.
-    This IdContainer assumes that a calexp is being measured using the detection information
-    from the set of coadds which intersect with the calexp.  a set of reference catalog
-    from a coadd which overlaps it.  It needs the calexp id (e.g. visit, raft, sensor), but it
-    also uses the tract to decide what set of coadds to use.  The references from the tract
-    whose patches intersect with the calexp are used.
-    """
-    def makeDataRefList(self, namespace):
-        """Make self.refList from self.idList
-        """
-        for dataId in self.idList:
-            if "tract" not in dataId:
-                raise argparse.ArgumentError(None, "--id must include tract")
-            tract = dataId.pop("tract")
-            # making a DataRef for src fills out any missing keys and allows us to iterate
-            for srcDataRef in namespace.butler.subset("src", dataId=dataId):
-                forcedDataId = srcDataRef.dataId.copy()
-                forcedDataId['tract'] = tract
-                dataRef = namespace.butler.dataRef(
-                    datasetType = "forced_src",
-                    dataId = forcedDataId,
-                    )
-                self.refList.append(dataRef)
 
 class ForcedPhotCcdConfig(ProcessImageForcedConfig):
     doApplyUberCal = lsst.pex.config.Field(
@@ -183,7 +157,7 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "forced_src", help="data ID, with raw CCD keys + tract",
-                               ContainerClass=ForcedPhotCcdDataIdContainer)
+                               ContainerClass=PerTractCcdDataIdContainer)
         return parser
 
 

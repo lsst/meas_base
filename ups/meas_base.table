@@ -3,6 +3,7 @@ setupRequired(pipe_base)
 setupRequired(daf_base)
 setupRequired(pex_config)
 setupRequired(coadd_utils)
+setupRequired(geom)
 
 envPrepend(LD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
 envPrepend(DYLD_LIBRARY_PATH, ${PRODUCT_DIR}/lib)
