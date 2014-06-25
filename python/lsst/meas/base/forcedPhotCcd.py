@@ -21,8 +21,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import argparse
-
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.afw.image
