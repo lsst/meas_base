@@ -104,7 +104,6 @@ NaiveCentroidAlgorithm::Result NaiveCentroidAlgorithm::apply(
     Input const & inputs,
     Control const & ctrl
 ) {
-    std::cout << "Naive Centroid Input: " << inputs.position << std::endl;
     return apply(exposure, inputs.position, ctrl);
 }
 
