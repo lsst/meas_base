@@ -136,7 +136,7 @@ SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
     Control const & control
 ) {
     throw LSST_EXCEPT(
-        pex::exceptions::LogicErrorException,
+        pex::exceptions::LogicError,
         "Not implemented"
     );
 }
@@ -186,7 +186,7 @@ SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
     }
     if (lastFlag >= 0) {
         throw LSST_EXCEPT(
-            pex::exceptions::LogicErrorException,
+            pex::exceptions::LogicError,
             "SdssShape unable to set record values and set the general failure flag"
         );
     }
