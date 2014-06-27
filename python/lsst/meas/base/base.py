@@ -114,7 +114,26 @@ def callMeasureN(task, measCat, *args, **kwds):
                 plugin.fail(measRecord)
             task.log.warn("Error in %s.measureN on records %s-%s: %s"
                           % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
+_flagMap = {
+    "base_PixelFlags_flag_bad":"flags.pixel.bad",
+    "base_PixelFlags_flag_edge":"flags.pixel.edge",
+    "base_PixelFlags_flag_interpolated":"flags.pixel.interpolated.any",
+    "base_PixelFlags_flag_saturated":"flags.pixel.saturated.any",
+    "base_PixelFlags_flag_cr":"flags.pixel.cr.any",
+    "base_PixelFlags_flag_interpolatedCenter":"flags.pixel.interpolated.center",
+    "base_PixelFlags_flag_saturatedCenter":"flags.pixel.saturated.center",
+    "base_PixelFlags_flag_crCenter":"flags.pixel.cr.center",
+    }
 
+def Version0FlagMapper(flags):
+    _flags = []
+    for name in flags:
+        if name in _flagMap.keys():
+            _flags.append(_flagMap[name])
+        else:
+            _flags.append(name)
+    return _flags
+ 
 class PluginRegistry(lsst.pex.config.Registry):
     """ Base class for plugin registries
 

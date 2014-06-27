@@ -135,7 +135,7 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
 
     def __init__(self, config, name, schema, flags, others, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
-        self.keyProbability = schema.addField(name + "_extendedness", type="D", doc="Classification", units="none")
+        self.keyProbability = schema.addField("classification_extendedness", type="D", doc="Classification", units="none")
 
     def measure(self, measRecord, exposure):
         modelFlux = measRecord.getModelFlux()
