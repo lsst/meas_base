@@ -114,6 +114,9 @@ def callMeasureN(task, measCat, *args, **kwds):
                 plugin.fail(measRecord)
             task.log.warn("Error in %s.measureN on records %s-%s: %s"
                           % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
+
+# Translation map from new PixelFlags to old ones defined in meas_algorithms
+
 _flagMap = {
     "base_PixelFlags_flag_bad":"flags.pixel.bad",
     "base_PixelFlags_flag_edge":"flags.pixel.edge",
