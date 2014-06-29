@@ -131,6 +131,13 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
     def fail(self, measRecord, error=None):
         # The ResultMapper will set detailed flag bits describing the error if error is not None,
         # and set a general failure bit otherwise.
+        if self.name == measRecord.getTable().getCentroidDefinition():
+            if len(measRecord.getFootprint().getPeaks()) > 0:
+                measRecord[self.name+"_x"] = measRecord.getFootprint().getPeaks()[0].getCentroid().getX()
+                measRecord[self.name+"_y"] = measRecord.getFootprint().getPeaks()[0].getCentroid().getY()
+                measRecord[self.name+"_xSigma"] = 0
+                measRecord[self.name+"_ySigma"] = 0
+            
         self.resultMapper.fail(measRecord, error)
 
     @classmethod
