@@ -190,8 +190,8 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
                  "base_PsfFlux",
                  "base_SincFlux",
                  #"correctfluxes",
-                 "classification.extendedness",
-                 "skycoord",
+                 "base_ClassificationExtendedness",
+                 "base_SkyCoord",
                  ],
         doc="Plugin plugins to be run and their configuration"
         )
@@ -202,7 +202,7 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
 
     ConfigClass = SingleFrameMeasurementConfig
     _DefaultName = "measurement"
-    TableVersion = 1
+    tableVersion = 1
 
     #   The algMetadata parameter is currently required by the pipe_tasks running mechanism
     #   This is a temporary state until pipe_tasks is converted to the new plugin framework.
