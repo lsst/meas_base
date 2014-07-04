@@ -112,7 +112,7 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
 # Plugin class must be registered to the singleton Registry class of the same type in order to
 # be available for use with the corresponding measurement Task.
 
-SingleFramePlugin.registry.register("skycoord", SingleFrameSkyCoordPlugin)
+SingleFramePlugin.registry.register("base_SkyCoord", SingleFrameSkyCoordPlugin)
 
 class SingleFrameClassificationConfig(SingleFramePluginConfig):
 
@@ -135,7 +135,7 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
 
     def __init__(self, config, name, schema, flags, others, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
-        self.keyProbability = schema.addField(name + "_extendedness", type="D", doc="Classification", units="none")
+        self.keyProbability = schema.addField("base_classificationExtendedness", type="D", doc="Classification", units="none")
 
     def measure(self, measRecord, exposure):
         modelFlux = measRecord.getModelFlux()
@@ -153,7 +153,7 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
 # Plugin class must be registered to the singleton Registry class of the same type in order to
 # be available for use with the corresponding measurement Task.
 
-SingleFramePlugin.registry.register("classification", SingleFrameClassificationPlugin)
+SingleFramePlugin.registry.register("base_ClassificationExtendedness", SingleFrameClassificationPlugin)
 
 # --- Forced Plugins ---
 

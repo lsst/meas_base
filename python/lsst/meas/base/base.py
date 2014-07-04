@@ -33,7 +33,6 @@ import lsst.afw.image as afwImage
 import lsst.pipe.base
 import lsst.pex.config
 import lsst.pex.exceptions
-import lsst.meas.algorithms
 import lsst.afw.table
 
 from .baseLib import *
@@ -116,6 +115,28 @@ def callMeasureN(task, measCat, *args, **kwds):
             task.log.warn("Error in %s.measureN on records %s-%s: %s"
                           % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
 
+# Translation map from new PixelFlags to old ones defined in meas_algorithms
+
+_flagMap = {
+    "base_PixelFlags_flag_bad":"flags.pixel.bad",
+    "base_PixelFlags_flag_edge":"flags.pixel.edge",
+    "base_PixelFlags_flag_interpolated":"flags.pixel.interpolated.any",
+    "base_PixelFlags_flag_saturated":"flags.pixel.saturated.any",
+    "base_PixelFlags_flag_cr":"flags.pixel.cr.any",
+    "base_PixelFlags_flag_interpolatedCenter":"flags.pixel.interpolated.center",
+    "base_PixelFlags_flag_saturatedCenter":"flags.pixel.saturated.center",
+    "base_PixelFlags_flag_crCenter":"flags.pixel.cr.center",
+    }
+
+def Version0FlagMapper(flags):
+    _flags = []
+    for name in flags:
+        if name in _flagMap.keys():
+            _flags.append(_flagMap[name])
+        else:
+            _flags.append(name)
+    return _flags
+ 
 class PluginRegistry(lsst.pex.config.Registry):
     """ Base class for plugin registries
 
@@ -269,17 +290,17 @@ class SourceSlotConfig(lsst.pex.config.Config):
     NOTE: default for each slot must be registered, even if the default is not used.
     """
 
-    centroid = lsst.pex.config.Field(dtype=str, default="centroid.sdss", optional=True,
+    centroid = lsst.pex.config.Field(dtype=str, default="base_SdssCentroid", optional=True,
                                      doc="the name of the centroiding algorithm used to set source x,y")
-    shape = lsst.pex.config.Field(dtype=str, default="shape.sdss", optional=True,
+    shape = lsst.pex.config.Field(dtype=str, default="base_SdssShape", optional=True,
                                   doc="the name of the algorithm used to set source moments parameters")
-    apFlux = lsst.pex.config.Field(dtype=str, default="flux.sinc", optional=True,
+    apFlux = lsst.pex.config.Field(dtype=str, default="base_SincFlux", optional=True,
                                    doc="the name of the algorithm used to set the source aperture flux slot")
-    modelFlux = lsst.pex.config.Field(dtype=str, default="flux.gaussian", optional=True,
+    modelFlux = lsst.pex.config.Field(dtype=str, default="base_GaussianFlux", optional=True,
                                       doc="the name of the algorithm used to set the source model flux slot")
-    psfFlux = lsst.pex.config.Field(dtype=str, default="flux.naive", optional=True,
+    psfFlux = lsst.pex.config.Field(dtype=str, default="base_PsfFlux", optional=True,
                                     doc="the name of the algorithm used to set the source psf flux slot")
-    instFlux = lsst.pex.config.Field(dtype=str, default="flux.gaussian", optional=True,
+    instFlux = lsst.pex.config.Field(dtype=str, default="base_GaussianFlux", optional=True,
                                      doc="the name of the algorithm used to set the source inst flux slot")
 
     def setupTable(self, table, prefix=None):
@@ -299,8 +320,6 @@ class SourceSlotConfig(lsst.pex.config.Config):
 
 class BaseMeasurementConfig(lsst.pex.config.Config):
     """Baseconfig class for all measurement driver tasks."""
-
-    prefix = None
 
     slots = lsst.pex.config.ConfigField(
         dtype = SourceSlotConfig,

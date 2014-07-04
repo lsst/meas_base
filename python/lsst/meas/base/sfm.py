@@ -31,7 +31,6 @@ to avoid information loss (this should, of course, be indicated in the field doc
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.daf.base
-import lsst.meas.algorithms
 from .base import *
 
 __all__ = ("SingleFramePluginConfig", "SingleFramePlugin", "WrappedSingleFramePlugin",
@@ -132,6 +131,13 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
     def fail(self, measRecord, error=None):
         # The ResultMapper will set detailed flag bits describing the error if error is not None,
         # and set a general failure bit otherwise.
+        if self.name == measRecord.getTable().getCentroidDefinition():
+            if len(measRecord.getFootprint().getPeaks()) > 0:
+                measRecord[self.name+"_x"] = measRecord.getFootprint().getPeaks()[0].getCentroid().getX()
+                measRecord[self.name+"_y"] = measRecord.getFootprint().getPeaks()[0].getCentroid().getY()
+                measRecord[self.name+"_xSigma"] = 0
+                measRecord[self.name+"_ySigma"] = 0
+            
         self.resultMapper.fail(measRecord, error)
 
     @classmethod
@@ -175,7 +181,17 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
 
     plugins = SingleFramePlugin.registry.makeField(
         multi=True,
-        default=["centroid.peak",
+        default=["base_PixelFlags",
+                 "base_SdssCentroid",
+                 "base_GaussianCentroid",
+                 "base_SdssShape",
+                 "base_GaussianFlux",
+                 "base_NaiveFlux",
+                 "base_PsfFlux",
+                 "base_SincFlux",
+                 #"correctfluxes",
+                 "base_ClassificationExtendedness",
+                 "base_SkyCoord",
                  ],
         doc="Plugin plugins to be run and their configuration"
         )
@@ -186,7 +202,7 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
 
     ConfigClass = SingleFrameMeasurementConfig
     _DefaultName = "measurement"
-    TableVersion = 1
+    tableVersion = 1
 
     #   The algMetadata parameter is currently required by the pipe_tasks running mechanism
     #   This is a temporary state until pipe_tasks is converted to the new plugin framework.
@@ -221,7 +237,7 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
             exposure = measCat
             measCat = temp
         assert measCat.getSchema().contains(self.schema)
-        self.config.slots.setupTable(measCat.table, prefix=self.config.prefix)
+        self.config.slots.setupTable(measCat.table)
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
             for measRecord in measCat}
 
@@ -255,4 +271,7 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
             noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
         noiseReplacer.end()
+
+    def measure(self, measCat, exposure):
+        self.run(measCat, exposure)
 
