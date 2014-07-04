@@ -50,8 +50,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         outschema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
         #  Basic test of SkyCoord algorithm, no C++ slots
-        sfm_config.plugins = ["centroid.peak", "skycoord"]
-        sfm_config.plugins["skycoord"].usePeak = False
+        sfm_config.plugins = ["centroid.peak", "base_SkyCoord"]
+        sfm_config.plugins["base_SkyCoord"].usePeak = False
         sfm_config.slots.centroid = "centroid.peak"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None
