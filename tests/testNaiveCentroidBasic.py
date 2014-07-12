@@ -42,35 +42,16 @@ DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
 
 class SFMTestCase(lsst.utils.tests.TestCase):
 
-    def setUp(self):
-        catalog, bbox = MakeTestData.makeCatalog()
-        exposure = MakeTestData.makeEmptyExposure(bbox)
-        MakeTestData.fillImages(catalog, exposure)
-        catalog.writeFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
-        exposure.writeFits(os.path.join(DATA_DIR, "calexp-0A.fits"))
-        exposure.writeFits(os.path.join(DATA_DIR, "ref-0A.fits"))
-    
-
-    def tearDown(self):
-        os.unlink(os.path.join(DATA_DIR, "truthcat-0A.fits"))
-        os.unlink(os.path.join(DATA_DIR, "calexp-0A.fits"))
-        os.unlink(os.path.join(DATA_DIR, "ref-0A.fits"))
-
     def testAlgorithm(self):
 
-        path = os.path.join(DATA_DIR, 'calexp-0A.fits')
-        exposure = lsst.afw.image.ExposureF(path)
-        #  catalog with footprints, but not measurement fields added
-        path = os.path.join(DATA_DIR, 'truthcat-0A.fits')
-        srccat = SourceCatalog.readFits(path)
+        srccat, bbox = MakeTestData.makeCatalog()
+        exposure = MakeTestData.makeEmptyExposure(bbox)
+        MakeTestData.fillImages(srccat, exposure)
+       
         #  catalog with footprints, but no measurement fields added
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
                       for measRecord in srccat}
         sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        path = os.path.join(DATA_DIR, 'calexp-0A.fits')
-        replaced = lsst.afw.image.ExposureF(path)
-        noiseReplacer = NoiseReplacer(replaced, footprints, sfm_config.noiseSource,
-                          sfm_config.noiseOffset, sfm_config.noiseSeed)
         
         # add the measurement fields to the outputSchema and make a catalog with it
         # then extend with the mapper to copy the extant data
