@@ -29,7 +29,6 @@ import numpy
 from lsst.pex.exceptions import LsstCppException, LengthError
 from lsst.afw.table import tableLib
 import lsst.afw.detection
-import lsst.meas.algorithms
 
 from .base import *
 from .baseLib import *
