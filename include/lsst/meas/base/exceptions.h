@@ -48,6 +48,12 @@ namespace lsst { namespace meas { namespace base {
 class MeasurementError : public pex::exceptions::RuntimeError {
 public:
 
+    /// Constructor; should only be invoked from Python macro
+    MeasurementError(std::string const & message, std::size_t flagBit) :
+        pex::exceptions::RuntimeError(message),
+        _flagBit(flagBit)
+    {}
+
     /// Constructor; should only be invoked by the LSST_EXCEPT macro (see class docs)
     MeasurementError(LSST_EARGS_TYPED, std::size_t flagBit) :
         pex::exceptions::RuntimeError(LSST_EARGS_UNTYPED),

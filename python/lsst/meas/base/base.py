@@ -72,13 +72,7 @@ def callMeasure(task, measRecord, *args, **kwds):
             plugin.measure(measRecord, *args, **kwds)
         except FATAL_EXCEPTIONS:
             raise
-        except lsst.pex.exceptions.LsstCppException as cppError:
-            if isinstance(cppError.args[0], MeasurementError):
-                error = cppError.args[0]
-            else:
-                task.log.warn("Error in %s.measure on record %s: %s"
-                              % (plugin.name, measRecord.getId(), cppError))
-                error = None
+        except MeasurementError as error:
             plugin.fail(measRecord, error)
         except Exception as error:
             task.log.warn("Error in %s.measure on record %s: %s"
@@ -100,13 +94,7 @@ def callMeasureN(task, measCat, *args, **kwds):
             plugin.measureN(measCat, *args, **kwds)
         except FATAL_EXCEPTIONS:
             raise
-        except lsst.pex.exceptions.LsstCppException as cppError:
-            if isinstance(cppError.args[0], MeasurementError):
-                error = cppError.args[0]
-            else:
-                task.log.warn("Error in %s.measureN on records %s-%s: %s"
-                              % (plugin.name, measCat[0].getId(), measCat[-1].getId(), cppError))
-                error = None
+        except MeasurementError as error:
             for measRecord in measCat:
                 plugin.fail(measRecord, error)
         except Exception as error:

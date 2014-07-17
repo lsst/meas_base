@@ -26,7 +26,7 @@ and automatic plugin-from-algorithm calls for those implemented in C++.
 """
 import numpy
 
-from lsst.pex.exceptions import LsstCppException, LengthError
+import lsst.pex.exceptions
 from lsst.afw.table import tableLib
 import lsst.afw.detection
 import lsst.meas.algorithms

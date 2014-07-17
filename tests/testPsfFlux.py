@@ -81,8 +81,8 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         imageArray[badPoint.getY() - self.calexp.getY0(), badPoint.getX() - self.calexp.getX0()] = numpy.inf
         maskArray[badPoint.getY() - self.calexp.getY0(), badPoint.getX() - self.calexp.getX0()] |= badMask
         # Should get an infinite value exception, because we didn't mask that one pixel
-        lsst.utils.tests.assertRaisesLsstCpp(
-            self, lsst.meas.base.PixelValueError,
+        self.assertRaises(
+            lsst.meas.base.PixelValueError,
             lsst.meas.base.PsfFluxAlgorithm.apply,
             self.calexp,
             self.record.get(self.centroidKey)
@@ -99,8 +99,8 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         self.assertClose(result.flux, self.record.get(self.fluxKey), atol=2*result.fluxSigma)
         # If we mask the whole image, we should get a MeasurementError
         maskArray[:,:] |= badMask
-        lsst.utils.tests.assertRaisesLsstCpp(
-            self, lsst.meas.base.MeasurementError,
+        self.assertRaises(
+            lsst.meas.base.MeasurementError,
             lsst.meas.base.PsfFluxAlgorithm.apply,
             self.calexp,
             self.record.get(self.centroidKey),
@@ -126,8 +126,8 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         """Test that we raise MeasurementError when there's no PSF.
         """
         self.calexp.setPsf(None)
-        lsst.utils.tests.assertRaisesLsstCpp(
-            self, lsst.meas.base.MeasurementError,
+        self.assertRaises(
+            lsst.meas.base.MeasurementError,
             lsst.meas.base.PsfFluxAlgorithm.apply,
             self.calexp,
             self.record.get(self.centroidKey),
