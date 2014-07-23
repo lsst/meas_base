@@ -155,12 +155,14 @@ public:
      *                       need not be a small postage stamp (the pixel region actually used in the
      *                       fit will be a subset of this image determined automatically).
      *  @param[in] position  Center position of the object to be measured, in the image's PARENT coordinates.
+     *  @param[in] negative  Boolean, specify if the source is in negative flux space
      *  @param[in] ctrl      Control object specifying the details of how the object is to be measured.
      */
     template <typename ImageT>
     static Result computeAdaptiveMoments(
         ImageT const & image,
         afw::geom::Point2D const & position,
+        bool negative=false,
         Control const & ctrl=Control()
     );
 

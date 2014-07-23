@@ -220,7 +220,8 @@ calcmom(ImageT const& image,            // the image data
         double *psum,                       // sum w*I (if !NULL)
         double *psumx, double *psumy,       // sum [xy]*w*I (if !fluxOnly)
         double *psumxx, double *psumxy, double *psumyy, // sum [xy]^2*w*I (if !fluxOnly)
-        double *psums4                                  // sum w*I*weight^2 (if !fluxOnly && !NULL)
+        double *psums4,                                 // sum w*I*weight^2 (if !fluxOnly && !NULL)
+        bool negative = false
        )
 {
     
@@ -378,7 +379,11 @@ calcmom(ImageT const& image,            // the image data
     }
 #endif
 
-    return (fluxOnly || (sum > 0 && sumxx > 0 && sumyy > 0)) ? 0 : -1;
+    if (negative) {
+        return (fluxOnly || (sum < 0 && sumxx < 0 && sumyy < 0)) ? 0 : -1;
+    } else {
+        return (fluxOnly || (sum > 0 && sumxx > 0 && sumyy > 0)) ? 0 : -1;
+    }
 }
 
 /*
@@ -388,7 +393,7 @@ calcmom(ImageT const& image,            // the image data
  */
 template<typename ImageT>
 bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double ycen, double shiftmax,
-                        SdssShapeResult *shape, int maxIter, float tol1, float tol2)
+                        SdssShapeResult *shape, int maxIter, float tol1, float tol2, bool negative)
 {
     double I0 = 0;                      // amplitude of best-fit Gaussian
     double sum;                         // sum of intensity*weight
@@ -459,10 +464,11 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
         }
 
         if (calcmom<false>(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22,
-                           &I0, &sum, &sumx, &sumy, &sumxx, &sumxy, &sumyy, &sums4) < 0) {
+                           &I0, &sum, &sumx, &sumy, &sumxx, &sumxy, &sumyy, &sums4, negative) < 0) {
             shape->flags[SdssShapeAlgorithm::UNWEIGHTED] = true;
             break;
         }
+
 #if 0
 /*
  * Find new centre
@@ -578,7 +584,8 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
     if (shape->flags[SdssShapeAlgorithm::UNWEIGHTED]) {
         w11 = w22 = w12 = 0;
         if (calcmom<false>(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22,
-                           &I0, &sum, &sumx, &sumy, &sumxx, &sumxy, &sumyy, NULL) < 0 || sum <= 0) {
+                           &I0, &sum, &sumx, &sumy, &sumxx, &sumxy, &sumyy, NULL, negative) < 0 ||
+	    (!negative && sum <= 0) || (negative && sum >= 0)) {
             shape->flags[SdssShapeAlgorithm::UNWEIGHTED] = false;
             shape->flags[SdssShapeAlgorithm::UNWEIGHTED_BAD] = true;
 
@@ -753,6 +760,7 @@ template <typename ImageT>
 SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(
     ImageT const & image,
     afw::geom::Point2D const & center,
+    bool negative,
     Control const & control
 ) {
     double xcen = center.getX();         // object's column position
@@ -772,7 +780,7 @@ SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(
     try {
         result.flags[FAILURE] = !getAdaptiveMoments(
             image, control.background, xcen, ycen, shiftmax, &result,
-            control.maxIter, control.tol1, control.tol2
+            control.maxIter, control.tol1, control.tol2, negative
         );
     } catch (pex::exceptions::Exception & err) {
         result.flags[FAILURE] = true;
@@ -866,9 +874,16 @@ void SdssShapeAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
 ) const {
+    bool negative = false;
+    try {
+        negative = measRecord.get(measRecord.getSchema().find<afw::table::Flag>("flags_negative").key);
+    } catch(pexExcept::Exception &e) {
+    }
+
     SdssShapeResult result = computeAdaptiveMoments(
         exposure.getMaskedImage(),
         _centroidExtractor(measRecord, _resultKey.getFlagHandler()),
+        negative,
         _ctrl
     );
     measRecord.set(_resultKey, result);
@@ -885,6 +900,7 @@ void SdssShapeAlgorithm::fail(
     template SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments( \
         IMAGE const &,                                                  \
         afw::geom::Point2D const &,                                     \
+        bool ,                                                          \
         Control const &                                                 \
     );                                                                  \
     template FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux( \
