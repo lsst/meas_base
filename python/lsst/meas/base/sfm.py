@@ -204,8 +204,6 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
     _DefaultName = "measurement"
     tableVersion = 1
 
-    #   The algMetadata parameter is currently required by the pipe_tasks running mechanism
-    #   This is a temporary state until pipe_tasks is converted to the new plugin framework.
     def __init__(self, schema, algMetadata=None, flags=None, **kwds):
         """Initialize the task, including setting up the execution order of the plugins
         and providing the task with the metadata and schema objects
@@ -215,7 +213,9 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
         """
         lsst.pipe.base.Task.__init__(self, **kwds)
         self.schema = schema
-        self.algMetadata = lsst.daf.base.PropertyList()
+        if algMetadata is None:
+            algMetadata = lsst.daf.base.PropertyList()
+        self.algMetadata = algMetadata
         self.plugins = PluginMap()
         # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
