@@ -307,8 +307,7 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
         self.config.slots.setupTable(sources.table)
 
         # convert the footprints to the coordinate system of the exposure
-        noiseReplacer = NoiseReplacer(exposure, footprints, self.config.noiseSource,
-           self.config.noiseOffset, self.config.noiseSeed, log=self.log)
+        noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
 
         # Create parent cat which slices both the referenceCat and measCat (sources)
         # first, get the reference and source records which have no parent
