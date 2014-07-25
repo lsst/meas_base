@@ -61,14 +61,17 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         if not refSchema:
             refSchema = self.references.getSchema(butler)
         self.algMetadata = lsst.daf.base.PropertyList()
-        self.makeSubtask("forcedMeasurement", refSchema=refSchema)
+        flags = MeasurementDataFlags()  # just a placeholder for now
+        self.makeSubtask("forcedMeasurement", refSchema=refSchema, flags=flags, algMetadata=self.algMetadata)
 
 
     def run(self, dataRef):
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
         refCat = list(self.fetchReferences(dataRef, exposure))
-        retStruct = self.forcedMeasurement.run(exposure, refCat, refWcs, self.makeIdFactory(dataRef))
+        retStruct = self.forcedMeasurement.run(exposure, refCat, refWcs,
+                                               idFactory=self.makeIdFactory(dataRef),
+                                               algMetadata=self.algMetadata)
         self.writeOutput(dataRef, retStruct.sources)
 
     def makeIdFactory(self, dataRef):
@@ -110,6 +113,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         The dataset type for this measurement is defined in the mapper.
         """
         catalog = lsst.afw.table.SourceCatalog(self.forcedMeasurement.mapper.getOutputSchema())
+        catalog.getTable().setMetadata(self.algMetadata)
         datasetType = self.dataPrefix + "forced"
         return {datasetType:catalog}
 
