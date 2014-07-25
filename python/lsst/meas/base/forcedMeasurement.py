@@ -247,12 +247,14 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
     _DefaultName = "forcedMeasurement"
     TableVersion = 1
 
-    def __init__(self, refSchema, **kwds):
+    def __init__(self, refSchema, algMetadata=None, flags=None, **kwds):
         lsst.pipe.base.Task.__init__(self)
+        if algMetadata is None:
+            algMetadata = lsst.daf.base.PropertyList()
+        self.algMetadata = algMetadata
         self.mapper = lsst.afw.table.SchemaMapper(refSchema)
         minimalSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
         self.mapper.addMinimalSchema(minimalSchema)
-
         for refName, targetName in self.config.copyColumns.items():
             refItem = refSchema.find(refName)
             self.mapper.addMapping(refItem.key, targetName)
@@ -261,10 +263,9 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
         for refName, targetName in self.config.copyColumns.items():
             refItem = self.mapper.getInputSchema().find(refName)
             self.mapper.addMapping(refItem.key, targetName)
-        flags = MeasurementDataFlags()
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
             self.plugins[name] = PluginClass(config, name, self.mapper, flags=flags,
-                                                   others=self.plugins, metadata=self.metadata)
+                                                   others=self.plugins, metadata=self.algMetadata)
 
     def run(self, exposure, refCat, refWcs, idFactory=None):
         """The reference list and refWcs are passed in to the run method, along with the exposure.
@@ -345,6 +346,7 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
         @param refCat      Sequence (not necessarily a SourceCatalog) of reference sources
         @param refWcs      Wcs that goes with the X,Y cooridinates of the refCat
         @param idFactory   factory for making new ids from reference catalog ids
+        @param algMetadata algorithm metadata to be attached to the catalog (PropertySet)
         @return Source catalog ready for measurement
         """
         if idFactory == None:
@@ -353,7 +355,7 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
         table.setVersion(self.TableVersion)
         sources = lsst.afw.table.SourceCatalog(table)
         table = sources.table
-        table.setMetadata(self.metadata)
+        table.setMetadata(self.algMetadata)
         table.preallocate(len(refCat))
         expRegion = exposure.getBBox(lsst.afw.image.PARENT)
         targetWcs = exposure.getWcs()
