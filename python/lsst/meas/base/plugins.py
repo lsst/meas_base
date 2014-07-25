@@ -33,7 +33,7 @@ import lsst.afw.detection
 from .base import *
 from .baseLib import *
 from .sfm import *
-from .forcedImage import *
+from .forcedMeasurement import *
 
 # --- Wrapped C++ Plugins ---
 
