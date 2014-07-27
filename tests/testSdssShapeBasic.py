@@ -31,6 +31,8 @@ import unittest
 import lsst.utils.tests
 import numpy
 
+numpy.random.seed(1234)
+
 DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
 
 class SFMTestCase(lsst.utils.tests.TestCase):
