@@ -177,7 +177,7 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
         return PluginClass
 
 class SingleFrameMeasurementConfig(BaseMeasurementConfig):
-    """Config class for single-frame measurement driver task."""
+    """Config class for single frame measurement driver task."""
 
     plugins = SingleFramePlugin.registry.makeField(
         multi=True,
@@ -197,17 +197,124 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
         )
     algorithms = property(lambda self: self.plugins, doc="backwards-compatibility alias for plugins")
 
-class SingleFrameMeasurementTask(BaseMeasurementTask):
-    """Single-frame measurement driver task"""
+## \addtogroup LSST_task_documentation
+## \{
+## \page singleFrameMeasurementTask
+## \ref SingleFrameMeasurementTask_ "SingleFrameMeasurementTask"
+## \copybrief SingleFrameMeasurementTask
+## \}
 
-    ConfigClass = SingleFrameMeasurementConfig
+class SingleFrameMeasurementTask(BaseMeasurementTask):
+    """!
+\anchor SingleFrameMeasurementTask_
+\brief The SingleFrameMeasurementTask is used to measure the properties of sources on a single exposure.
+
+
+\section meas_base_sfm_Contents Contents
+
+ - \ref meas_base_sfm_Purpose
+ - \ref meas_base_sfm_Initialize
+ - \ref meas_base_sfm_IO
+ - \ref meas_base_sfm_Config
+ - \ref meas_base_sfm_Example
+
+\section meas_base_sfm_Purpose	Description
+
+\copybrief SingleFrameMeasurementTask
+
+The task is configured with a list of "plugins": each plugin defines the values it
+is measuring and conducts that measurement on each detected source. The job of the
+measurement task is to call each plugin at the appropriate time for initialization
+and measurement of each detected source, and to save the results of the
+measurement to a Source Record.
+
+\section meas_base_sfm_Initialize	Task initialisation
+
+\copydoc __init__
+
+\section meas_base_sfm_IO		Inputs/Outputs to the run method
+
+\copydoc run
+
+\section meas_base_sfm_Config       Configuration parameters
+
+See \ref SingleFrameMeasurementConfig
+
+\section meas_base_sfm_Example	A complete example of using SingleFrameMeasurementTask
+
+This code is in \link runSFMTask.py\endlink in the examples directory, and can be run as \em e.g.
+\code
+examples/runSFMTask.py --ds9
+\endcode
+\dontinclude runSFMTask.py
+
+See \ref meas_algorithms_detection_Example for a few more details on the DetectionTask.
+
+Importx the tasks (there are some other standard imports; read the file if you're confused)
+\skip SourceDetectionTask
+\until SingleFrameMeasurementTask
+
+We need to create our tasks before processing any data as the task constructors
+can add extra columns to the schema.  First the detection task
+\skipline makeMinimalSchema
+\skip SourceDetectionTask.ConfigClass
+\until detectionTask
+and then the measurement task using the default plugins (as set by SingleFrameMeasurementConfig.plugins):
+\skipline SingleFrameMeasurementTask.ConfigClass
+\until measureTask
+
+We're now ready to process the data (we could loop over multiple exposures/catalogues using the same
+task objects).  First create the output table and process the image to find sources:
+\skipline afwTable
+\skip result
+\until sources
+
+Then measure them:
+\skipline measure
+
+We then might plot the results (\em e.g. if you set \c --ds9 on the command line)
+\skip display
+\until RED
+
+\dontinclude runSFMTask.py
+Rather than accept a default set you can select which plugins should be run.
+First create the Config object:
+\skipline SingleFrameMeasurementTask.ConfigClass
+Then specify which plugins we're interested in and set any needed parameters:
+\until add(plugin)
+
+Unfortunately that won't quite work as there are still "slots" (mappings between measurements like PSF fluxes
+and the plugins that calculate them) pointing to some of the discarded plugins (see SourceSlotConfig):
+
+\skip instFlux
+\until psfFlux
+and create the task as before:
+\skipline measureTask
+We're now ready to process the data (we could loop over multiple exposures/catalogues using the same
+task objects).  First create the output table and process the image to find sources:
+\skipline afwTable
+\skip result
+\until sources
+
+Then measure them:
+\skipline run
+
+We then might plot the results (\em e.g. if you set \c --ds9 on the command line)
+\skip display
+\until RED
+    """
 
     def __init__(self, schema, algMetadata=None, flags=None, **kwds):
         """Initialize the task, including setting up the execution order of the plugins
-        and providing the task with the metadata and schema objects
+        and allowing each plugin to add fields to the Schema object and entries to the
+        task metadata
 
-        @param[in] schema      lsst.afw.table.Schema, which should have been initialized
-                               to include the measurement fields from the plugins already
+        @param[in]     schema       lsst.afw.table.Schema, which should have been initialized
+                                    to include the measurement fields from the plugins already
+        \param[in,out] algMetadata  lsst.daf.base.PropertyList used to record information about
+                                    each algorithm.  An empty PropertyList is created if None.
+        \param[in]     flags        lsst.meas.base.MeasurementDataFlags
+        \param[in]     **kwds       Keyword arguments forwarded to lsst.pipe.base.task.Task
         """
         BaseMeasurementTask.__init__(self, algMetadata=algMetadata, **kwds)
         self.schema = schema
@@ -217,13 +324,13 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
                 others=self.plugins, metadata=self.algMetadata)
 
     def run(self, measCat, exposure):
-        """ Run single frame measurement over an exposure and source catalog
+        """!Run single frame measurement over an exposure and source catalog
 
-        @param[in, out] measCat  lsst.afw.table.SourceCatalog to be filled with outputs.  Must
+        \param[in,out]  measCat  lsst.afw.table.SourceCatalog to be filled with outputs.  Must
                                  contain all the SourceRecords to be measured (with Footprints
                                  attached), and have a schema that is a superset of self.schema.
 
-        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
+        \param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
                                  be measured and the associated Psf, Wcs, etc.
         """
         if exposure.__class__.__name__ == "SourceCatalog":
