@@ -152,7 +152,7 @@ the config mechanism.
 When a Plugin (or the Algorithm it delegates to) raises any exception, the Task calling it will catch the
 exception, and call the fail() method of the Plugin, which should cause the plugin to set one or more
 flags in the output record.  If the exception is MeasurementError (note that in Python, this
-will be raised as lsst.pex.exceptions.LsstCppException; see @ref secExcPython), the Task will pass this
+will be raised as lsst.pex.exceptions.LsstCppException; see secExcPython), the Task will pass this
 exception back to the fail() method, as MeasurementError contains additional Plugin-specific information
 indicating the kind of failure.  For most other exceptions, the Task will log the exception message
 as a warning, and pass None as the exception to fail().  In this case, the Plugin should just set the
