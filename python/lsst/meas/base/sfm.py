@@ -250,7 +250,7 @@ examples/runSFMTask.py --ds9
 
 See \ref meas_algorithms_detection_Example for a few more details on the DetectionTask.
 
-Importx the tasks (there are some other standard imports; read the file if you're confused)
+Import the tasks (there are some other standard imports; read the file if you're confused)
 \skip SourceDetectionTask
 \until SingleFrameMeasurementTask
 
@@ -281,7 +281,7 @@ Rather than accept a default set you can select which plugins should be run.
 First create the Config object:
 \skipline SingleFrameMeasurementTask.ConfigClass
 Then specify which plugins we're interested in and set any needed parameters:
-\until add(plugin)
+\until radii = radii
 
 Unfortunately that won't quite work as there are still "slots" (mappings between measurements like PSF fluxes
 and the plugins that calculate them) pointing to some of the discarded plugins (see SourceSlotConfig):
@@ -290,18 +290,17 @@ and the plugins that calculate them) pointing to some of the discarded plugins (
 \until psfFlux
 and create the task as before:
 \skipline measureTask
-We're now ready to process the data (we could loop over multiple exposures/catalogues using the same
-task objects).  First create the output table and process the image to find sources:
-\skipline afwTable
-\skip result
-\until sources
+and create the task as before:
+\skipline measureTask
+We can find out what aperture radii were chosen with
+\skipline radii
+and add them to the display code:
+\skip s in sources
+\until YELLOW
 
-Then measure them:
-\skipline run
+and end up with something like
+\image html measAlgTasks-ds9.png
 
-We then might plot the results (\em e.g. if you set \c --ds9 on the command line)
-\skip display
-\until RED
     """
 class SingleFrameMeasurementTask(lsst.pipe.base.Task):
     """Single-frame measurement driver task"""
@@ -317,8 +316,8 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
         the plugins, giving each plugin an opportunity to add its measurement fields to
         the output schema and to record information in the task metadata.
 
-        \param[in,out] schema      lsst.afw.table.Schema, which should have been initialized
-                                   to include the measurement fields from the plugins already
+        \param[in,out] schema      lsst.afw.table.Schema, to be initialized to include the
+                                   measurement fields from the plugins already
         \param[in,out] algMetaData lsst.daf.base.PropertyList used to record information about
                                    each algorithm.
         \param[in]     flags       lsst.meas.base.MeasurementDataFlags
@@ -329,12 +328,7 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
     #   The algMetadata parameter is currently required by the pipe_tasks running mechanism
     #   This is a temporary state until pipe_tasks is converted to the new plugin framework.
     def __init__(self, schema, algMetadata=None, flags=None, **kwds):
-        """Initialize the task, including setting up the execution order of the plugins
-        and allowing each plugin to add fields to the Schema object and entries to the
-        task metadata
-
-        @param[in] schema      lsst.afw.table.Schema, which should have been initialized
-                               to include the measurement fields from the plugins already
+        """!\copydoc init
         """
         lsst.pipe.base.Task.__init__(self, **kwds)
         self.schema = schema

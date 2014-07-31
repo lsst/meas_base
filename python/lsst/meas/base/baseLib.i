@@ -234,6 +234,11 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %template(apply) lsst::meas::base::NaiveFluxAlgorithm::apply<double>;
 %wrapMeasurementAlgorithm1(lsst::meas::base, NaiveFluxAlgorithm, NaiveFluxControl, FootprintCentroidInput, FluxComponent)
 
+%include "lsst/meas/base/PeakLikelihoodFlux.h"
+%template(apply) lsst::meas::base::PeakLikelihoodFluxAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::PeakLikelihoodFluxAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, PeakLikelihoodFluxAlgorithm, PeakLikelihoodFluxControl, FootprintCentroidInput, FluxComponent)
+
 %include "lsst/meas/base/NaiveCentroid.h"
 %template(apply) lsst::meas::base::NaiveCentroidAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::NaiveCentroidAlgorithm::apply<double>;
@@ -249,4 +254,9 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %template(apply) lsst::meas::base::PixelFlagsAlgorithm::apply<double>;
 %wrapMeasurementAlgorithm0(lsst::meas::base, PixelFlagsAlgorithm, PixelFlagsControl, FootprintCentroidInput)
 %include "lsst/meas/base/PixelFlags.h"
+
+%include "lsst/meas/base/ApertureFlux.h"
+%template(apply) lsst::meas::base::ApertureFluxAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::ApertureFluxAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, ApertureFluxAlgorithm, ApertureFluxControl, FootprintCentroidInput, ApertureFluxExtras)
 
