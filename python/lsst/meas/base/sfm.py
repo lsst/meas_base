@@ -299,7 +299,7 @@ and add them to the display code:
 \until YELLOW
 
 and end up with something like
-\image html measAlgTasks-ds9.png
+\image html runSFMTask-ds9.png
 
     """
 class SingleFrameMeasurementTask(lsst.pipe.base.Task):

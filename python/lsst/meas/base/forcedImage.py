@@ -294,6 +294,10 @@ Now define a ForcedMeasurementConfig object which will be used to do the measure
 the ForcedMeasurementPlugins which will be used, and which slots will be available:
 \skipline config =
 \until slots.shape
+We will also ask the task to copy a field from the reference catalog, which contains, in this contrived
+example, a known flux.  Not the two fields, the source id and the parent field, are in config.copyColumns
+by default, so with the addition of this field, 3 columns will be copied:
+\skipline refFlux
 Create the task, passing in the reference schema (used to map information from the input catalog
 to the output catalog), and the reference Wcs object (used for coordinate transformation).
 \skipline task =
@@ -303,6 +307,14 @@ We can get the flux of the measured sources and compare against the values from 
 catalog:
 \skipline sources =
 \until print source.getId()
+The output looks like this, noting that we do not try to make the comparison for this simple test
+algorithm when the object is a deblended child.
+\code
+id refFlux   testFlux
+1 100000.0 100655.183904
+2 75000.0 76332.1643591
+3 200000.0 203754.360852
+\endcode
 """
 
     ConfigClass = ForcedMeasurementConfig
