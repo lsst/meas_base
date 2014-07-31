@@ -53,10 +53,10 @@ class TestFlux(ForcedPlugin):
         schema = schemaMapper.editOutputSchema()
         self.fluxKey = schema.addField("testFlux_flux", type=float, doc="sum of flux in object footprint",
                                        units="dn")
-        self.fluxCountKey = schema.addField("test.fluxcount", type=int,
+        self.fluxCountKey = schema.addField("testFlux_fluxcount", type=int,
                                             doc="number of pixels in object footprint", units="pixels^2")
-        self.backKey = schema.addField("test.back", type=float, doc="avg of flux in background", units="dn")
-        self.backCountKey = schema.addField("test.backcount", type=int,
+        self.backKey = schema.addField("testFlux_back", type=float, doc="avg of flux in background", units="dn")
+        self.backCountKey = schema.addField("testFlux_backcount", type=int,
                                             doc="number of pixels in surrounding background",
                                             units="pixels^2")
 
@@ -178,7 +178,8 @@ def testOnCcd():
     config.slots.modelFlux = None
     config.slots.apFlux = None
     config.slots.shape = None
-
+    config.copyColumns["truth_flux"] = "refFlux"
+    # copy members of the original ref catalog to the output catalog
     # create and run the task
     task = ForcedMeasurementTask(refCat.getSchema(), config=config)
     result = task.run(exposure, refCat, refWcs)
@@ -188,11 +189,11 @@ def testOnCcd():
     mismatches = 0
     testidkey = sources.getSchema().find("objectId").key
     truthFluxKey = refCat.getSchema().find("truth_flux").key
+    print "id refFlux   testFlux"
     for i, source in enumerate(sources):
-        testFlux = sources[i].getInstFlux()
-        truthFlux = refCat[i].get(truthFluxKey)
-        parent = refCat[i].getParent()
-        if parent==0:
+        testFlux = source.getInstFlux()
+        truthFlux = source.get("refFlux")
+        if source.getParent() == 0: 
             print source.getId(), truthFlux, testFlux
     tearDown()
 
