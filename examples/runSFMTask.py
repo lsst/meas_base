@@ -33,7 +33,7 @@ import lsst.afw.image              as afwImage
 import lsst.afw.display.ds9        as ds9
 import lsst.meas.algorithms        as measAlg
 from lsst.meas.algorithms.detection import SourceDetectionTask
-from lsst.meas.base import SingleFrameMeasurementTask
+from lsst.meas.base import SingleFrameMeasurementTask, MeasurementDataFlags
 
 def loadData():
     """Prepare the data we need to run the example"""
@@ -65,14 +65,16 @@ def run(display=False):
     config.thresholdPolarity = "both"
     config.background.isNanSafe = True
     config.thresholdValue = 3
-    detectionTask = SourceDetectionTask(config=config, schema=schema)
+    detectionTask = SourceDetectionTask(config=config, schema=schema, tableVersion=1)
     #
     # And the measurement Task
     #
     config = SingleFrameMeasurementTask.ConfigClass()
     config.plugins.names.clear()
-    for plugin in ["base_SdssCentroid", "base_SincFlux", "base_PsfFlux"]:
+    for plugin in ["base_SdssCentroid", "base_SdssShape", "base_SincFlux", "base_ApertureFlux"]:
         config.plugins.names.add(plugin)
+    radii = [1, 2, 4, 8, 16] # pixels
+    config.plugins["base_ApertureFlux"].radii = radii
     config.slots.instFlux = None
     config.slots.modelFlux = None
     config.slots.psfFlux = None
@@ -95,7 +97,6 @@ def run(display=False):
     print "Found %d sources (%d +ve, %d -ve)" % (len(sources), result.fpSets.numPos, result.fpSets.numNeg)
 
     measureTask.run(sources, exposure)
-
     if display:                         # display on ds9 (see also --debug argparse option)
         frame = 1
         ds9.mtv(exposure, frame=frame)
@@ -103,10 +104,10 @@ def run(display=False):
         with ds9.Buffering():
             for s in sources:
                 xy = s.getCentroid()
-                ds9.dot('+', *xy, ctype=ds9.CYAN if s.get("flags.negative") else ds9.GREEN, frame=frame)
+                ds9.dot('+', *xy, ctype=ds9.CYAN if s.get("flags_negative") else ds9.GREEN, frame=frame)
                 ds9.dot(s.getShape(), *xy, ctype=ds9.RED, frame=frame)
 
-                for i in range(s.get("flux.aperture.nProfile")):
+                for i in range(s.get("base_ApertureFlux_nApertures")):
                     ds9.dot('o', *xy, size=radii[i], ctype=ds9.YELLOW, frame=frame)
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
