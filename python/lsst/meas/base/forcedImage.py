@@ -237,21 +237,92 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         self.slots.instFlux = None
 
 class ForcedMeasurementTask(lsst.pipe.base.Task):
-    """Forced measurement driver task
+    """!
+\anchor ForcedMeasurementTask_
+\brief The ForcedMeasurementTask is used to measure properties of sources on an exposure
+using the detection information from a reference catalog
 
-    This task is intended to be a subtask of another command line task, such as ProcessImageForcedTask
-    It should be subclassed for running on CCDs and Coadds.  See ProcessCcd(Coadd)ForcedTask.
 
-    Note that the __init__ method takes the refSchema, while the run method takes the refCat.
-    The two schemas must match.
-    """
+\section meas_base_forced_Contents Contents
+
+ - \ref meas_base_forced_Purpose
+ - \ref meas_base_forced_Initialize
+ - \ref meas_base_forced_IO
+ - \ref meas_base_forced_Config
+ - \ref meas_base_forced_Example
+
+\section meas_base_forced_Purpose	Description
+
+\copybrief ForcedMeasurementTask
+
+The task is configured with a list of "plugins": each plugin defines the values it
+is measuring and conducts that measurement on each detected source. The job of the
+measurement task is to call each plugin at the appropriate time for initialization
+and measurement of each detected source, and to save the results of the
+measurement to a Source Record.
+
+\section meas_base_forced_Initialize	Task initialisation
+
+\copydoc init
+
+\section meas_base_forced_IO		Inputs/Outputs to the run method
+
+\copydoc run 
+
+\section meas_base_forced_Config       Configuration parameters
+
+See \ref ForcedMeasurementConfig
+
+\section meas_base_forced_Example	A complete example of using ForcedMeasurementTask
+
+This code is in \link runForcedTask.py\endlink in the examples directory, and can be run as \em e.g.
+\code
+examples/runForcedTask.py
+\endcode
+\dontinclude runForcedTask.py
+
+The ForcedMeasurementTask assumes that a detection catalog was previously created from the same area of sky
+and that you are able to create a SourceCatalog (complete with footprints) which can be used by the task.
+The task also assumes that you have an lsst.afw.detection.Wcs which can be used to map the pixel coordinates
+of the reference catalog to positions on the sky. In our example, we fetch this information like this:
+\skipline get the reference catalog
+\until refWcs =
+We also need the exposure which we will be measuring:
+\skipline path =
+\until exposure =
+Now define a ForcedMeasurementConfig object which will be used to do the measurement. We will also specify
+the ForcedMeasurementPlugins which will be used, and which slots will be available:
+\skipline config =
+\until slots.shape
+Create the task, passing in the reference schema (used to map information from the input catalog
+to the output catalog), and the reference Wcs object (used for coordinate transformation).
+\skipline task =
+\until result =
+The output source catalog is a member of the container object returned by the task run method.
+We can get the flux of the measured sources and compare against the values from the reference
+catalog:
+\skipline sources =
+\until print source.getId()
+"""
 
     ConfigClass = ForcedMeasurementConfig
     _DefaultName = "forcedMeasurement"
     TableVersion = 1
 
+    def init(self, refSchema, **kwds):
+        """!Create the task, using the reference catalog schema to initialize the output catalog.
+        The reference catalog contains information out the positions and footprints of sources
+        that are to be measured during run(). The refSchema itself is not altered. 
+        \param[in]     refSchema   lsst.afw.table.Schema, is used to create a SchemaMapper
+                                   for transferring information from the reference catalog.
+        \param[in]     **kwds      Keyword arguments passed from lsst.pipe.base.task.Task
+        """
+        __init__(self,refSchema, **kwds)
+ 
     def __init__(self, refSchema, **kwds):
-        lsst.pipe.base.Task.__init__(self)
+        """!\copydoc init
+        """
+        lsst.pipe.base.Task.__init__(self, **kwds)
         self.mapper = lsst.afw.table.SchemaMapper(refSchema)
         minimalSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
         self.mapper.addMinimalSchema(minimalSchema)
@@ -270,10 +341,17 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
                                                    others=self.plugins, metadata=self.metadata)
 
     def run(self, exposure, refCat, refWcs, idFactory=None):
-        """The reference list and refWcs are passed in to the run method, along with the exposure.
+        """!The reference list and refWcs are passed in to the run method, along with the exposure.
         It creates its own source catalog, which is returned in the result structure.
         The IdFactory is assumed to be known by the parentTask (see ProcessImageForcedTask.run)
         and will default to IdFactory.makeSimple() if not specified.
+        \param[in]     refCat      lsst.afw.table.SourceCatalog.  This catalog must contain
+                                   footprint information for the sources to be measured, as well
+                                   as any fields listed in config.copyColumns, which are to be
+                                   transferred from the reference catalog to the output catalog
+        \param[in]     refWcs      lsst.afw.image.Wcs for the reference catalog.
+                                   Used to map detected footprints to the exposure being measured. 
+        \param[in]     idFactory   Optional lsst.afw.table.IdFactory used to create unique ids
         """
         # First create a refList from the original which excludes children when a member
         # of the parent chain is not within the list.  This can occur at boundaries when

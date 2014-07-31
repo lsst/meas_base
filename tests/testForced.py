@@ -44,7 +44,7 @@ class TestForcedMeasurementConfig(ForcedMeasurementConfig):
 
     def setDefaults(self):
         ForcedMeasurementConfig.setDefaults(self)
-        self.plugins = ["centroid.peak", "test.flux"]
+        self.plugins = ["centroid.peak", "test.flux", "base_PsfFlux"]
         self.slots.centroid = None #"centroid.peak"
         self.slots.shape = None
         self.slots.psfFlux = None 
@@ -111,7 +111,6 @@ class TestFlux(ForcedPlugin):
 
 
 ForcedPlugin.registry.register("test.flux", TestFlux)
-
 DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
 
 
@@ -192,6 +191,8 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         task = TestForcedMeasurementTask(newRefCat.getSchema())
         result = task.run(exposure, list(newRefCat), refWcs)
         sources = result.sources
+        import pdb
+        pdb.set_trace()
         mismatches = 0
 	testidkey = sources.getSchema().find("objectId").key
 	testFluxKey = sources.getSchema().find("test.flux").key
