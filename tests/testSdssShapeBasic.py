@@ -31,7 +31,7 @@ import unittest
 import lsst.utils.tests
 import numpy
 
-numpy.random.seed(1234)
+numpy.random.seed(500)
 
 DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
 
