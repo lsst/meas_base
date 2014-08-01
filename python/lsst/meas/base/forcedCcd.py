@@ -83,7 +83,6 @@ class ProcessForcedCcdTask(ProcessImageForcedTask):
     \section meas_base_processForcedCcdTask_Contents Contents
     
      - \ref meas_base_processForcedCcdTask_Purpose
-     - \ref meas_base_processForcedCcdTask_Initialize
      - \ref meas_base_processForcedCcdTask_IO
      - \ref meas_base_processForcedCcdTask_Config
     
@@ -94,13 +93,9 @@ class ProcessForcedCcdTask(ProcessImageForcedTask):
     measurement on a single exposure, using the as a reference catalog the detections which
     were made on overlapping coadds.
     
-    \section meas_base_processForcedCcdTask_Initialize	Task initialisation
-   
-    See the init method of ProcessForcedImageTask for a decription of the init method 
-    
     \section meas_base_processForcedCcdTask_IO		Inputs/Outputs to the run method
     
-    See the run method of ProcessForcedImageTask for a decription of the run method.
+    See the \link lsst.meas.base.forcedImage.ProcessImageForcedTask#run ProcessImageForcedTask.run method\endlink for more information.
 
     The run method includes a dataRef, which must specify both the dataset to be used to
     locate the exposure (or exposures) which you want to measure, and the set of reference

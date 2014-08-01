@@ -483,7 +483,7 @@ class ProcessImageForcedConfig(lsst.pex.config.Config):
 
 class ProcessImageForcedTask(CmdLineTask):
     """!
-    \anchor ProcessForcedImageTask_
+    \anchor ProcessImageForcedTask_
 
     \brief The ProcessForcedImageTask is used to measure the properties of sources on a single exposure.
 
@@ -496,9 +496,7 @@ class ProcessImageForcedTask(CmdLineTask):
     
     \section meas_base_processImageForcedTask_Purpose	Description
     
-    \copybrief ProcessForcedImageTask
-    The ProcessForcedImageTask is used to measure the properties of sources on a single exposure.
-
+    \copybrief ProcessImageForcedTask
     This is a an abstract class, which is the common ancestor for ProcessForcedCcdTask
     and ProcessForcedCoaddTask. 
     \section meas_base_processImageForcedTask_Initialize	Task initialisation
