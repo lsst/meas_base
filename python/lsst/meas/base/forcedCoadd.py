@@ -43,12 +43,46 @@ class ProcessForcedCoaddConfig(ProcessImageForcedConfig):
 
 
 class ProcessForcedCoaddTask(ProcessImageForcedTask):
-    """Forced measurement driver task
+    """!
+    \anchor ProcessForcedCoaddTask_
+    \brief The ProcessForcedCoaddTask is used to measure the properties of sources on a Coadd.
+    
+    
+    \section meas_base_processForcedCoaddTask_Contents Contents
+    
+     - \ref meas_base_processForcedCoaddTask_Purpose
+     - \ref meas_base_processForcedCoaddTask_Initialize
+     - \ref meas_base_processForcedCoaddTask_IO
+     - \ref meas_base_processForcedCoaddTask_Config
+    
+    \section meas_base_processForcedCoaddTask_Purpose	Description
+    
+    \copybrief ProcessForcedCoaddTask
+    This task is a subclass of ProcessForcedImageTask which is specifically for doing forced
+    measurement on a Coadd, using the as a reference catalog the detections which
+    were made on overlapping Coadds.
+    
+    \section meas_base_processForcedCoaddTask_Initialize	Task initialisation
+   
+    See the init method of ProcessForcedImageTask for a decription of the init method 
+    
+    \section meas_base_processForcedCoaddTask_IO		Inputs/Outputs to the run method
+    
+    See the run method of ProcessForcedImageTask for a decription of the run method.
 
-    This task is intended as a command-line script base class, in the model of ProcessImageTask
-    (i.e. it should be subclasses for running on Coadds).
+    The run method includes a dataRef, which must specify both the dataset to be used to
+    locate the exposure (or exposures) which you want to measure, and the set of reference
+    datasets which are to be used as the reference catalog.
+
+    For example, the coadd to be measured may be specified by a tract, patch and filter,
+    which means that --id tract=xxx patch=yyy filter=i must be provide on the command line.
+
+    The tract is also used identify the Coadd detections which may be used for references. 
+    
+    \section meas_base_processForcedCoaddTask_Config       Configuration parameters
+    
+    See \ref ProcessForcedCoaddConfig
     """
-
     ConfigClass = ProcessForcedCoaddConfig
     RunnerClass = ButlerInitializedTaskRunner
     _DefaultName = "forcedCoaddTask"

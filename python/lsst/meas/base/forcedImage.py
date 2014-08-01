@@ -329,7 +329,7 @@ id refFlux   testFlux
                                    for transferring information from the reference catalog.
         \param[in]     **kwds      Keyword arguments passed from lsst.pipe.base.task.Task
         """
-        __init__(self,refSchema, **kwds)
+        self.__init__(refSchema, **kwds)
  
     def __init__(self, refSchema, **kwds):
         """!\copydoc init
@@ -357,6 +357,7 @@ id refFlux   testFlux
         It creates its own source catalog, which is returned in the result structure.
         The IdFactory is assumed to be known by the parentTask (see ProcessImageForcedTask.run)
         and will default to IdFactory.makeSimple() if not specified.
+        \param[in]     exposure    lsst.afw.image.Exposure to be measured
         \param[in]     refCat      lsst.afw.table.SourceCatalog.  This catalog must contain
                                    footprint information for the sources to be measured, as well
                                    as any fields listed in config.copyColumns, which are to be
@@ -481,10 +482,48 @@ class ProcessImageForcedConfig(lsst.pex.config.Config):
     )
 
 class ProcessImageForcedTask(CmdLineTask):
+    """!
+    \anchor ProcessForcedImageTask_
+
+    \brief The ProcessForcedImageTask is used to measure the properties of sources on a single exposure.
+
+    \section meas_base_processImageForcedTask_Contents Contents
+    
+     - \ref meas_base_processImageForcedTask_Purpose
+     - \ref meas_base_processImageForcedTask_Initialize
+     - \ref meas_base_processImageForcedTask_IO
+     - \ref meas_base_processImageForcedTask_Config
+    
+    \section meas_base_processImageForcedTask_Purpose	Description
+    
+    \copybrief ProcessForcedImageTask
+    The ProcessForcedImageTask is used to measure the properties of sources on a single exposure.
+
+    This is a an abstract class, which is the common ancestor for ProcessForcedCcdTask
+    and ProcessForcedCoaddTask. 
+    \section meas_base_processImageForcedTask_Initialize	Task initialisation
+    
+    \copydoc init
+    
+    \section meas_base_processImageForcedTask_IO		Inputs/Outputs to the run method
+    
+    \copydoc run 
+    
+    \section meas_base_processImageForcedTask_Config       Configuration parameters
+    
+    See \ref ProcessImageForcedConfig
+    """
     ConfigClass = ProcessImageForcedConfig
     _DefaultName = "processImageForcedTask"
 
+    def init(self, butler=None, refSchema=None, **kwds):
+        """!Initialization for command line task
+        """
+        self.__init__(butler, refSchema, **kwds)
+
     def __init__(self, butler=None, refSchema=None, **kwds):
+        """!\copydoc init
+        """
         CmdLineTask.__init__(self, **kwds)
         self.makeSubtask("references")
         if not refSchema:
@@ -493,8 +532,15 @@ class ProcessImageForcedTask(CmdLineTask):
         self.algMetadata = lsst.daf.base.PropertyList()
         self.makeSubtask("forcedMeasurement", refSchema=refSchema)
 
-
     def run(self, dataRef):
+        """!Measure a single exposure using forced detection for a reference catalog.
+
+        \param[in]  dataRef      An lsst.daf.persistence.ButlerDataRef. It is used to specify
+                                 the dataset which is used to create the reference catalog.
+                                 It also specifies the exposure to be measured.
+        \param[out] refStruct    Structure containing the source catalog resulting from the
+                                 forced measurement on the exposure.
+        """
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
         refCat = list(self.fetchReferences(dataRef, exposure))

@@ -48,16 +48,52 @@ class BaseReferencesConfig(Config):
     )
 
 class BaseReferencesTask(Task):
-    """Base class for forced photometry subtask that retrieves reference sources.
-
+    """!
+    \anchor BaseReferencesTask_
+    \brief Base class for forced photometry subtask that retrieves reference sources.
+    
+    \section meas_base_base_references_Contents Contents
+    
+     - \ref meas_base_base_references_Purpose
+     - \ref meas_base_base_references_Initialize
+     - \ref meas_base_base_references_Config
+     - \ref meas_base_base_references_Examples
+    
+    \section meas_base_base_references_Purpose	Description
+    
+    \copybrief BaseReferencesTask
+    BaseReferencesTask implements service methods which allow forced measurement tasks
+    to retrieve lists of reference objects which can be used to perform the forced measurement.
+    
     BaseReferencesTask defines the required API for the references task, which includes:
       - getSchema(butler)
-      - fetchInPatches(butler, tract, filter, patchList)
-      - fetchInBox(self, butler, tract, filter, bbox, wcs)
+      - fetchInPatches(dataRef, patchList)
+      - fetchInBox(dataRef, bbox, wcs)
       - the removePatchOverlaps config option
 
     It also provides the subset() method, which may be of use to derived classes when
     reimplementing fetchInBox.
+
+    The dataRef provided to the fetch methods much contain a "tract" entry to identify
+    the tract for the coadds.
+    \section meas_base_base_references_Initialize	Task initialisation
+    The fetch methods for references tasks receive a dataRef and other required
+    information at the time they are called.
+    
+    \section meas_base_base_references_Config       Configuration parameters
+    
+    See \ref BaseReferencesConfig
+    
+    \section meas_base_base_references_Examples	Examples of uses of BaseReferencesTask
+    A References task is used by ProcessForcedImageTasks to create a list of detections
+    from previous coadd which overlap the exposure being measured.
+
+    See the fetchReferences method in ProcessForcedCcdTask for an example of how
+    the fetchInBox method is used to find detections which are contained in the
+    bounding box for a single exposure.
+
+    See the fetchReferences method in ProcessForcedCoaddTask for an example of how
+    fetchInPatches in used to find the detections which are contained in a coadd.
     """
 
     ConfigClass = BaseReferencesConfig
