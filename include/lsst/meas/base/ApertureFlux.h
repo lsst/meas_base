@@ -27,11 +27,6 @@
 /**
  *  @file lsst/meas/base/ApertureFlux.h
  *
- *  This file is one of two (the other is SdssShape.h) intended to serve as an tutorial example on
- *  how to implement new Algorithms.  ApertureFluxAlgorithm is a particularly simple algorithm, while
- *  SdssShapeAlgorithm is more complex.
- *
- *  See @ref measBaseImplementingNew for a general overview of the steps required.
  */
  
 #include <stdio.h>
@@ -49,13 +44,6 @@ namespace lsst { namespace meas { namespace base {
 
 /**
  *  @brief A C++ control class to handle ApertureFluxAlgorithm's configuration
- *
- *  In C++, we define Control objects to handle configuration information.  Using the LSST_CONTROL_FIELD
- *  macro and lsst.pex.config.wrap.makeConfigClass, we can turn these into more full-featured Config classes
- *  in Python.  While the user will usually interact with the Config class, the plugin wrapper system will
- *  turn Config instances into Control instances when passing them to C++.
- *
- *  This should logically be an inner class, but Swig doesn't know how to parse those.
  */
 class ApertureFluxControl {
 public:
@@ -83,8 +71,6 @@ public:
  
     /**
      *  @brief Construct the mapper, adding fields to the given schema and saving their keys
-     *
-     *  The given prefix will form the first part of all fields, and the uncertainty argument
      *  sets which uncertainty fields will be added to the schema and transferred during apply().
      */
     ApFluxComponentMapper(
@@ -94,7 +80,7 @@ public:
     );
 
     /// Transfer values from the result struct to the record
-    void apply(afw::table::BaseRecord & record, FluxComponent const & result) const; //changed pgee
+    void apply(afw::table::BaseRecord & record, FluxComponent const & result) const;
 
 private:
     afw::table::Key<Flux> _flux;
@@ -104,16 +90,8 @@ private:
  /**
   *  @brief Additional results for ApertureFluxAlgorithm
   *
-  *  Unlike PsfFlux, some of ApertureFlux's outputs aren't handled by the standard FluxComponent,
-  *  CentroidComponent, and ShapeComponent classes, so we have to define a Component class here
-  *  to handle just those output which require special handling.
-  *
-  *  A corresponding ComponentMapper class is also required (see below).
-  *
-  *  Note: for what I guess are historical reasons, ApertureFlux computes covariance terms between the flux
-  *  and the shape, but not between the flux and centroid or centroid and shape.
-  *
-  *  This should logically be an inner class, but Swig doesn't know how to parse those.
+  *  ApertureFlux keeps an a vector of FluxComponents of the same length as the config.radii
+  *  parameter.  So it can use the standard FluxComponent, but not the standard mapper.
   */
  
 class ApertureFluxExtras {
@@ -124,26 +102,16 @@ public:
 
 
 /**
- *  @brief Object that transfers additional SdssShapeAlgorithm results to afw::table records
- *
- *  Because we have custom outputs, we also have to define how to transfer those outputs to
- *  records.  We just follow the pattern established by the other ComponentMapper classes.
- *
- *  This should logically be an inner class, but Swig doesn't know how to parse those.
+ *  @brief Object that transfers additional ApertureFlux flux component vector to an output
+ *  source catalog. 
  */
 class ApertureFluxExtrasMapper {
 public:
 
     /**
      *  @brief Allocate fields in the schema and save keys for future use.
-     *
-     *  Unlike the standard ComponentMappers, ApertureFluxExtrasMappers takes a Control instance
-     *  as its third argument.  It doesn't actually need it, but this is a good pattern to
-     *  establish as some algorithms' outputs *will* depend on the Control object's values, and
-     *  the mapper needs to have some kind of third argument in order to work with
-     *  @ref measBaseResultMapperTemplates.
-     *
-     *  All fields should start with the given prefix and an underscore.
+     *  The output fluxes are named with a number postpended to the field name, equal to
+     *  the index of the radius in config.radii and to the component in fluxComponentVector.
      */
     ApertureFluxExtrasMapper(
         afw::table::Schema & schema,
@@ -160,37 +128,8 @@ private:
 };
 
 /**
- *  @brief A measurement algorithm that estimates flux using a linear least-squares fit with the Psf model
- *
- *  The ApertureFlux algorithm is extremely simple: we do a least-squares fit of the Psf model (evaluated
- *  at a given position) to the data.  For point sources, this provides the optimal flux measurement
- *  in the limit where the Psf model is correct.  We do not use per-pixel weights in the fit by default
- *  (see ApertureFluxControl::usePixelWeights), as this results in bright stars being fit with a different
- *  effective profile than faint stairs.
- *
- *  As one of the simplest Algorithms, ApertureFlux is documented to serve as an example in implementing new
- *  algorithms.  For an overview of the interface Algorithms should adhere to, see
- *  @ref measBaseAlgorithmConcept.
- *
- *  As an Algorithm class, all of ApertureFluxAlgorithm's core functionality is available via static methods
- *  (in fact, there should be no reason to ever construct an instance).
- *
- *  Almost all of the implementation of ApertureFluxAlgorithm is here and in ApertureFluxAlgorithm.cc, but there
- *  are also a few key lines in the Swig .i file:
- *  @code
- *  %include "lsst/meas/base/ApertureFlux.h"
- *  %template(apply) lsst::meas::base::ApertureFluxAlgorithm::apply<float>;
- *  %template(apply) lsst::meas::base::ApertureFluxAlgorithm::apply<double>;
- *  %wrapMeasurementAlgorithm1(lsst::meas::base, ApertureFluxAlgorithm, ApertureFluxControl, FootprintCentroidInput,
- *                             FluxComponent)
- *  @endcode
- *  and in the pure Python layer:
- *  @code
- *  WrappedSingleFramePlugin.generate(ApertureFluxAlgorithm)
- *  @endcode
- *  The former ensure the Algorithm class is fully wrapped via Swig (including @c %%template instantiations
- *  of its @c Result and @c ResultMapper classes), and the latter actually generates the Config class and
- *  the Plugin classes and registers them.
+ *  @brief A measurement algorithm that measures the flux within each aperture radius
+ *  in the config.radii list, and outputs that number of FluxComponent results to the catalog.
  */
 class ApertureFluxAlgorithm {
 public:
@@ -199,10 +138,6 @@ public:
      *  @brief Flag bits to be used with the 'flags' data member of the Result object.
      *
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
-     *
-     *  Note that we've included a final N_FLAGS value that isn't a valid flag; this is a common C++
-     *  idiom for automatically counting the number of enum values, and it's required for Algorithms
-     *  as the N_FLAGS value is used by the Result and ResultMapper objects.
      */
     enum FlagBits {
         NO_PSF=0,
@@ -214,13 +149,6 @@ public:
     /**
      *  @brief Return an array of (name, doc) tuples that describes the flags and sets the names used
      *         in catalog schemas.
-     *
-     *  Each element of the returned array should correspond to one of the FlagBits enum values, but the
-     *  names should follow conventions; FlagBits should be ALL_CAPS_WITH_UNDERSCORES, while FlagDef names
-     *  should be camelCaseStartingWithLowercase.  @sa FlagsComponentMapper.
-     *
-     *  The implementation of getFlagDefinitions() should generally go in the header file so it is easy
-     *  to keep in sync with the FlagBits enum.
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
         static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
@@ -237,8 +165,7 @@ public:
 
     /**
      *  This is the type returned by apply().  Because ApertureFluxAlgorithm measure multiple fluxes,
-     *  we need to store the number of fluxes as the first item, and this will allow us to iterate
-     *  the remaining values
+     *  the Result object must be a custom vector of FluxComponents
      */
     typedef Result1<
         ApertureFluxAlgorithm,
@@ -260,10 +187,6 @@ public:
 
     /**
      *  @brief Create an object that transfers Result values to a record associated with the given schema
-     *
-     *  This is called by the Plugin wrapper system to create a ResultMapper.  It's responsible for calling
-     *  the ResultMapper constructor, forwarding the schema and prefix arguments and providing the correct
-     *  values for the uncertainty arguments.
      */
     static ResultMapper makeResultMapper(
         afw::table::Schema & schema,
@@ -272,13 +195,7 @@ public:
     );
 
     /**
-     *  @brief Measure the flux of a source using the ApertureFlux algorithm.
-     *
-     *  This is the overload of apply() that does all the work, and it's designed to be as easy to use
-     *  as possible outside the Plugin framework (since the Plugin framework calls the other one).  The
-     *  arguments are all the things we need, and nothing more: we don't even pass a Footprint, since
-     *  we wouldn't actually use it, and if we didn't need to get a Psf from the Exposure, we'd use
-     *  MaskedImage instead.
+     *  @brief Measure multiple fluxes of a source using the ApertureFlux algorithm.
      */
     template <typename T>
     static Result apply(
@@ -289,12 +206,6 @@ public:
 
     /**
      *  @brief Apply the ApertureFlux to a single source using the Plugin API.
-     *
-     *  This is the version that will be called by both the SFM framework and the forced measurement
-     *  framework, in single-object mode.  It will delegate to the other overload of apply().  Note that
-     *  we can use the same implementation for both single-frame and forced measurement, because we require
-     *  exactly the same inputs in both cases.  This is true for the vast majority of algorithms, but not
-     *  all (extended source photometry is the notable exception).
      */
     template <typename T>
     static Result apply(

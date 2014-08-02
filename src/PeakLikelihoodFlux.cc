@@ -43,7 +43,6 @@ PeakLikelihoodFluxAlgorithm::ResultMapper PeakLikelihoodFluxAlgorithm::makeResul
 
 /**
 Compute the value of one pixel of an image after a fractional pixel shift
-
 Since we only want the value at one pixel, there is no need to shift the entire image;
 instead we simply convolve at one point.
 
