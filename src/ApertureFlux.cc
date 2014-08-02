@@ -59,17 +59,13 @@ ApFluxComponentMapper::ApFluxComponentMapper(
     }
 }
 
-void ApFluxComponentMapper::apply(afw::table::BaseRecord & record, FluxComponent const & result) const { //changed pgee
+void ApFluxComponentMapper::apply(afw::table::BaseRecord & record, FluxComponent const & result) const {
     record.set(_flux, result.flux);
     if (_fluxSigma.isValid()) {
         record.set(_fluxSigma, result.fluxSigma);
     }
 }
 
-// pgee changed ApFluxComponent::ApFluxComponent() :
-//    flux(std::numeric_limits<float>::quiet_NaN()),
-//    fluxSigma(std::numeric_limits<float>::quiet_NaN())
-//{}
 ApertureFluxExtras::ApertureFluxExtras(){}; ///< Constructor; initializes everything to NaN
 
 ApertureFluxExtrasMapper::ApertureFluxExtrasMapper(
@@ -91,7 +87,7 @@ ApertureFluxExtrasMapper::ApertureFluxExtrasMapper(
     {
         std::stringstream sstm;
         sstm << prefix << '.' << i;
-        FluxComponentMapper fluxComponentMapper(schema, sstm.str(), SIGMA_ONLY);  // changed pgee
+        FluxComponentMapper fluxComponentMapper(schema, sstm.str(), SIGMA_ONLY);
         _fluxComponentMapperVector.push_back(fluxComponentMapper);
     }
 };
@@ -197,7 +193,7 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::apply(
     for (unsigned int i = 0; i <  ctrl.radii.size(); ++i) {
         algorithms::FootprintFlux<MaskedImageT> fluxFunctor(mimage);
         afw::detection::Footprint const foot(afw::geom::PointI(ixcen, iycen), ctrl.radii[i], imageBBox);
-        boost::shared_ptr<lsst::meas::base::FluxComponent> ptr = boost::shared_ptr<lsst::meas::base::FluxComponent>(new FluxComponent()); // changed pgee
+        boost::shared_ptr<lsst::meas::base::FluxComponent> ptr = boost::shared_ptr<lsst::meas::base::FluxComponent>(new FluxComponent());
         result.fluxComponentVector.push_back(ptr);
         try {
             fluxFunctor.apply(foot);
