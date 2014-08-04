@@ -80,10 +80,6 @@ public:
      *  @brief Flag bits to be used with the 'flags' data member of the Result object.
      *
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
-     *
-     *  Note that we've included a final N_FLAGS value that isn't a valid flag; this is a common C++
-     *  idiom for automatically counting the number of enum values, and it's required for Algorithms
-     *  as the N_FLAGS value is used by the Result and ResultMapper objects.
      */
     enum FlagBits {
         NO_PSF=0,
@@ -113,20 +109,17 @@ public:
 
     /**
      *  Result is the type returned by apply().  Because GaussianFluxAlgorithm only measures a flux and its
-     *  uncertainty, we can use the single predefined component, FluxComponent, without any modification.
+     *  uncertainty, we can use the single predefined component, FluxComponent, without modification.
      */
     typedef Result1<GaussianFluxAlgorithm,FluxComponent> Result;
 
     /**
-     *  The ResultMapper typedef here must exactly corresponds to the the Result typedef defined above:
-     *  There is a ComponentMapper corresponding to each Component.
+     *  Use the FluxComponentMapper to map algorithm Result to output catalog
      */
     typedef ResultMapper1<GaussianFluxAlgorithm,FluxComponentMapper> ResultMapper;
 
     /**
-     *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  GaussianFluxAlgorithm only needs a centroid and footprint
-     *  so we use FootprintCentroidInput.
+     *  GaussianFluxAlgorithm only needs a centroid and footprint as input.
      */
     typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
 
@@ -151,12 +144,6 @@ public:
 
     /**
      *  @brief Apply the GaussianFlux to a single source using the Plugin API.
-     *
-     *  This is the version that will be called by both the SFM framework and the forced measurement
-     *  framework, in single-object mode.  It will delegate to the other overload of apply().  Note that
-     *  we can use the same implementation for both single-frame and forced measurement, because we require
-     *  exactly the same inputs in both cases.  This is true for the vast majority of algorithms, but not
-     *  all (extended source photometry is the notable exception).
      */
     template <typename T>
     static Result apply(

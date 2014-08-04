@@ -53,7 +53,7 @@ public:
 
 
 /**
- *  @brief A measurement algorithm that gets flag bits from the exposure and sets them in a single flag field
+ *  @brief A measurement algorithm that gets mask bits from the exposure and sets flag bits to summarize.
  */
 class PixelFlagsAlgorithm {
 public:
@@ -103,14 +103,12 @@ public:
     typedef Result0<PixelFlagsAlgorithm> Result;
 
     /**
-     *  The ResultMapper typedef here must exactly corresponds to the the Result typedef defined above:
-     *  There is a ComponentMapper corresponding to each Component.
+     *  ResultMapper for PixelFlagsAlgorithm, which only defines a flag set out its output.
      */
     typedef ResultMapper0<PixelFlagsAlgorithm> ResultMapper;
 
     /**
-     *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  PixelFlagsAlgorithm only needs a centroid and footprint
+     *  PixelFlagsAlgorithm only needs a footprint
      */
     typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
 
@@ -124,7 +122,7 @@ public:
     );
 
     /**
-     *  @brief Summarize the masked image flags of the source footprint
+     *  @brief Collect and summarize the masked image flags of the source footprint
      */
     template <typename T>
     static Result apply(

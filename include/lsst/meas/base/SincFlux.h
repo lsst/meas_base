@@ -59,7 +59,7 @@ public:
 
 
 /**
- *  @brief A measurement algorithm that estimates flux 
+ *  @brief A measurement algorithm that estimates flux using a sinc algorithm
  */
 class SincFluxAlgorithm {
 public:

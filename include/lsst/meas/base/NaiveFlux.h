@@ -27,7 +27,8 @@
 /**
  *  @file lsst/meas/base/NaiveFlux.h
  *
- *  This algorithm is a flux measurement which simply sums the counts over the footprint
+ *  This algorithm estimates flux by summing the pixel values at the given center
+ *  over a circular aperture.  The pixel radius is provided by the configuration.
  */
 
 #include "lsst/pex/config.h"
@@ -42,7 +43,7 @@ namespace lsst { namespace meas { namespace base {
  */
 class NaiveFluxControl {
 public:
-    LSST_CONTROL_FIELD(radius, double, "FIXME! NEVER DOCUMENTED!");
+    LSST_CONTROL_FIELD(radius, double, "Size of the circular aperture, in pixels");
 
 
     /**
@@ -55,7 +56,7 @@ public:
 
 
 /**
- *  @brief A measurement algorithm that estimates flux using a linear least-squares fit with the Psf model
+ *  @brief A measurement algorithm that sums pixel values over a circular aperture.
  *
  *  The NaiveFlux algorithm is extremely simple. It sums the pixels over the source footprint,
  *  within the radius specified in the config
@@ -67,10 +68,6 @@ public:
      *  @brief Flag bits to be used with the 'flags' data member of the Result object.
      *
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
-     *
-     *  Note that we've included a final N_FLAGS value that isn't a valid flag; this is a common C++
-     *  idiom for automatically counting the number of enum values, and it's required for Algorithms
-     *  as the N_FLAGS value is used by the Result and ResultMapper objects.
      */
     enum FlagBits {
         N_FLAGS
@@ -132,12 +129,6 @@ public:
 
     /**
      *  @brief Apply the NaiveFlux to a single source using the Plugin API.
-     *
-     *  This is the version that will be called by both the SFM framework and the forced measurement
-     *  framework, in single-object mode.  It will delegate to the other overload of apply().  Note that
-     *  we can use the same implementation for both single-frame and forced measurement, because we require
-     *  exactly the same inputs in both cases.  This is true for the vast majority of algorithms, but not
-     *  all (extended source photometry is the notable exception).
      */
     template <typename T>
     static Result apply(

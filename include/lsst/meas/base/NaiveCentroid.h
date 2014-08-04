@@ -24,15 +24,6 @@
 #ifndef LSST_MEAS_BASE_NaiveCentroid_h_INCLUDED
 #define LSST_MEAS_BASE_NaiveCentroid_h_INCLUDED
 
-/**
- *  @file lsst/meas/base/NaiveCentroid.h
- *
- *  NaiveCentroidAlgorithm is a particularly simple algorithm, while
- *  SdssShapeAlgorithm is more complex.
- *
- *  See @ref measBaseImplementingNew for a general overview of the steps required.
- */
-
 #include <stdio.h>
 #include <execinfo.h>
 #include <signal.h>
@@ -49,7 +40,7 @@ namespace lsst { namespace meas { namespace base {
  */
 class NaiveCentroidControl {
 public:
-    LSST_CONTROL_FIELD(background, double, "FIXME! NEVER DOCUMENTED!");
+    LSST_CONTROL_FIELD(background, double, "Value to subtract from the image pixel values");
 
     /**
      *  @brief Default constructor
@@ -60,12 +51,8 @@ public:
 };
 
 /**
- *  @brief An object that transfers values from FluxComponent to afw::table::BaseRecord
- */
-
-/**
- *  * @brief A class that knows how to calculate centroids as a simple unweighted first moment
- *   * of the 3x3 region around a pixel
+ *  * @brief A class that calculates a centroid as a simple unweighted first moment
+ *   * of the 3x3 region around a pixel.  "background" may optionally be subtracted.
  */
 
 class NaiveCentroidAlgorithm {
@@ -99,14 +86,14 @@ public:
     typedef NaiveCentroidControl Control;
 
     /**
-     *  This is the type returned by apply().  Only a Centroid Component is required
+     *  The apply() method return type - a CentroidComponent.
      */
     typedef Result1<
         NaiveCentroidAlgorithm,
         CentroidComponent 
     > Result;
 
-    /// @copydoc PsfFluxAlgorithm::ResultMapper
+    /// The result mapper for this algorithm is a simple CentroidComponentMapper
     typedef ResultMapper1<
         NaiveCentroidAlgorithm,
         CentroidComponentMapper
@@ -129,7 +116,7 @@ public:
     );
 
     /**
-     *  @brief Measure the flux of a source using the NaiveCentroid algorithm.
+     *  @brief Measure the centroid of a source using the NaiveCentroid algorithm.
      */
     template <typename T>
     static Result apply(

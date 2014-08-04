@@ -56,14 +56,15 @@ public:
 };
 
 /**
- *  * @brief A class that knows how to calculate centroids as a simple unweighted first moment
- *   * of the 3x3 region around a pixel
+ *  * @brief A class that calculates a centroid by fitting the image to a 2 dimensional Gaussian.
  */
 class GaussianCentroidAlgorithm {
 public:
 
     /**
      *  @brief Flag bits to be used with the 'flags' data member of the Result object.
+     *
+     *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
     enum FlagBits {
         NO_PEAK,
@@ -116,7 +117,7 @@ public:
     );
 
     /**
-     *  @brief Measure the flux of a source using the GaussianCentroid algorithm.
+     *  @brief Measure the centroid of a source using the GaussianCentroid algorithm.
      */
     template <typename T>
     static Result apply(

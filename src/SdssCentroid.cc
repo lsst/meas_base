@@ -43,9 +43,6 @@ SdssCentroidAlgorithm::ResultMapper SdssCentroidAlgorithm::makeResultMapper(
     return ResultMapper(schema, name, FULL_COVARIANCE);
 }
 
-/**
- * @brief Given an image and a pixel position, return a Centroid using a naive 3x3 weighted moment
- */
 template <typename T>
 SdssCentroidAlgorithm::Result SdssCentroidAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
