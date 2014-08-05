@@ -22,6 +22,7 @@
  */
 #include "lsst/meas/base/Inputs.h"
 #include "lsst/utils/ieee.h"
+#include "lsst/pex/exceptions.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -34,10 +35,22 @@ FootprintInput::Vector FootprintInput::makeVector(afw::table::SourceCatalog cons
     return r;
 }
 
-FootprintCentroidInput::FootprintCentroidInput(afw::table::SourceRecord const & record) : FootprintInput(record) 
+FootprintCentroidInput::FootprintCentroidInput(afw::table::SourceRecord const & record) :
+    FootprintInput(record)
 {
-        
     if (!record.getTable()->hasCentroidSlot() || lsst::utils::isnan(record.getCentroid().getX())) {
+        if (!record.getFootprint()) {
+            throw LSST_EXCEPT(
+                pex::exceptions::LogicError,
+                "Source has no valid Centroid slot and no Footprint"
+            );
+        }
+        if (record.getFootprint()->getPeaks().empty()) {
+            throw LSST_EXCEPT(
+                pex::exceptions::LogicError,
+                "Source has no valid Centroid slot and no Peaks in its Footprint"
+            );
+        }
         position.setX(record.getFootprint()->getPeaks()[0]->getFx());
         position.setY(record.getFootprint()->getPeaks()[0]->getFy());
     } else {
