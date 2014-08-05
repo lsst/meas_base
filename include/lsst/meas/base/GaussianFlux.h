@@ -24,11 +24,6 @@
 #ifndef LSST_MEAS_BASE_GaussianFlux_h_INCLUDED
 #define LSST_MEAS_BASE_GaussianFlux_h_INCLUDED
 
-/**
- *  @file lsst/meas/base/GaussianFlux.h
- *  This is a class which knows how to calculate fluxes using the GAUSSIAN photometry algorithm
- */
-
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Inputs.h"
@@ -71,7 +66,11 @@ public:
 
 
 /**
- *  @brief A measurement algorithm that estimates flux using the GaussianFlux algorithm
+ *  @brief A measurement algorithm that estimates flux using an elliptical Gaussian weight.
+ *
+ *  This algorithm computes flux as the dot product of an elliptical Gaussian weight function
+ *  with the image.  The size and ellipticity of the weight function is determined using the
+ *  SdssShape algorithm, or retreived from a named field.
  */
 class GaussianFluxAlgorithm {
 public:
