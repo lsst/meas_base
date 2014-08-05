@@ -43,7 +43,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         srccat, bbox = MakeTestData.makeCatalog()
         exposure = MakeTestData.makeEmptyExposure(bbox)
         MakeTestData.fillImages(srccat, exposure)
-       
+
         sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
         mapper = SchemaMapper(srccat.getSchema())
         mapper.addMinimalSchema(srccat.getSchema())
@@ -51,7 +51,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         flags = MeasurementDataFlags()
 
         #  Basic test of Classification algorithm, no C++ slots
-        sfm_config.plugins = ["base_SdssCentroid", "base_PsfFlux", "base_SincFlux", "base_ClassificationExtendedness"]
+        sfm_config.plugins = ["base_SdssCentroid", "base_PsfFlux", "base_SincFlux",
+                              "base_ClassificationExtendedness"]
         sfm_config.slots.centroid = "base_SdssCentroid"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = "base_PsfFlux"
@@ -70,12 +71,12 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             # check all the flags
             # check the slots
             # if a star, see if the flux measured is decent
-            probability = record.get("base_classificationExtendedness")
+            probability = record.get("base_ClassificationExtendedness_value")
             if srcRec.get("truth_isStar"):
                 self.assertEqual(probability, 0.0)
             else:
                 self.assertEqual(probability, 1.0)
-                
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
