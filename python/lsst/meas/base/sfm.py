@@ -242,11 +242,11 @@ See \ref SingleFrameMeasurementConfig
 
 \section meas_base_sfm_Example	A complete example of using SingleFrameMeasurementTask
 
-This code is in \link runSFMTask.py\endlink in the examples directory, and can be run as \em e.g.
+This code is in \link runSingleFrameTask.py\endlink in the examples directory, and can be run as \em e.g.
 \code
-examples/runSFMTask.py --ds9
+examples/runSingleFrameTask.py --ds9
 \endcode
-\dontinclude runSFMTask.py
+\dontinclude runSingleFrameTask.py
 
 See \ref meas_algorithms_detection_Example for a few more details on the DetectionTask.
 
@@ -276,7 +276,7 @@ We then might plot the results (\em e.g. if you set \c --ds9 on the command line
 \skip display
 \until RED
 
-\dontinclude runSFMTask.py
+\dontinclude runSingleFrameTask.py
 Rather than accept a default set you can select which plugins should be run.
 First create the Config object:
 \skipline SingleFrameMeasurementTask.ConfigClass
@@ -299,7 +299,7 @@ and add them to the display code:
 \until YELLOW
 
 and end up with something like
-\image html runSFMTask-ds9.png
+\image html runSingleFrameTask-ds9.png
 
     """
 class SingleFrameMeasurementTask(lsst.pipe.base.Task):
