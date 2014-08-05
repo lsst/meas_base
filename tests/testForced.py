@@ -191,8 +191,6 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         task = TestForcedMeasurementTask(newRefCat.getSchema())
         result = task.run(exposure, list(newRefCat), refWcs)
         sources = result.sources
-        import pdb
-        pdb.set_trace()
         mismatches = 0
 	testidkey = sources.getSchema().find("objectId").key
 	testFluxKey = sources.getSchema().find("test.flux").key
