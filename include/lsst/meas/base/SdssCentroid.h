@@ -27,7 +27,7 @@
 /**
  *  @file lsst/meas/base/SdssCentroid.h
  *
- *  This is implementation of SdssCentroid using the meas_base measurement framework
+ *  This implements the SdssCentroid algorithm within the meas_base measurement framework
  *
  */
 
@@ -110,7 +110,7 @@ public:
 
     /**
      *  Input from the measurement framework to the algorithm.
-     *  SdssCentroidAlgorithm needs only a beginning centroid and footprint,
+     *  SdssCentroidAlgorithm needs only a beginning centroid and footprint.
      */
     typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
 

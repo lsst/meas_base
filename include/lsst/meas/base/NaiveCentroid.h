@@ -51,8 +51,10 @@ public:
 };
 
 /**
- *  * @brief A class that calculates a centroid as a simple unweighted first moment
- *   * of the 3x3 region around a pixel.  "background" may optionally be subtracted.
+ *  @brief A class that calculates a centroid as a simple unweighted first moment
+ *         of the 3x3 region around a pixel.
+ *
+ *   A fixed background (set via config) may optionally be subtracted.
  */
 
 class NaiveCentroidAlgorithm {

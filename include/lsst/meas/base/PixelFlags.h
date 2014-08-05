@@ -53,7 +53,8 @@ public:
 
 
 /**
- *  @brief A measurement algorithm that gets mask bits from the exposure and sets flag bits to summarize.
+ *  @brief A measurement algorithm that gets mask bits from the exposure and sets flag bits to summarize which
+ *         bits are set within a source's footprint.
  */
 class PixelFlagsAlgorithm {
 public:

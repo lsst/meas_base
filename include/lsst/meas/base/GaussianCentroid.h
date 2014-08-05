@@ -56,7 +56,7 @@ public:
 };
 
 /**
- *  * @brief A class that calculates a centroid by fitting the image to a 2 dimensional Gaussian.
+ *  @brief A class that calculates a centroid by fitting a circular Gaussian to the image.
  */
 class GaussianCentroidAlgorithm {
 public:
