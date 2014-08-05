@@ -23,7 +23,6 @@
 
 #include "ndarray/eigen.h"
 
-#include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/detection/FootprintFunctor.h"
 #include "lsst/afw/geom/ellipses/Ellipse.h"
 #include "lsst/meas/base/algorithms/SincFluxTemplates.h"
@@ -48,14 +47,6 @@ SincFluxAlgorithm::Result SincFluxAlgorithm::apply(
     afw::geom::Point2D const & center,
     Control const & ctrl
 ) {
-    PTR(afw::detection::Psf const) psf = exposure.getPsf();
-    if (!psf) {
-        throw LSST_EXCEPT(
-            MeasurementError,
-            getFlagDefinitions()[NO_PSF].doc,
-            NO_PSF
-        );
-    }
     Result result;
     afw::geom::ellipses::Axes const axes(ctrl.radius2, ctrl.radius2*(1.0 - ctrl.ellipticity), ctrl.angle);
     std::pair<double, double> fluxes =

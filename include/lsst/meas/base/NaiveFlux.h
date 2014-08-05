@@ -59,7 +59,14 @@ public:
  *  @brief A measurement algorithm that sums pixel values over a circular aperture.
  *
  *  The NaiveFlux algorithm is extremely simple. It sums the pixels over the source footprint,
- *  within the radius specified in the config
+ *  within the radius specified in the config.  This does not account for the fact that the
+ *  aperture boundary involves fractional pixels, as SincFluxAlgorithm, but it is much faster
+ *  and hence should be used for large apertures where the fractional boundary pixels are
+ *  less important.
+ *
+ *  In the future, SincFluxAlgorithm and NaiveFluxAlgorithm will be merged into a single
+ *  algorithm capable of computing multiple apertures (see DM-837) and handling elliptical
+ *  apertures.
  */
 class NaiveFluxAlgorithm {
 public:
