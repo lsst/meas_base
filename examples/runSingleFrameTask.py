@@ -24,9 +24,10 @@
 
 import os
 import sys
-import numpy as np
+import numpy
 
 import eups
+
 import lsst.daf.base               as dafBase
 import lsst.afw.table              as afwTable
 import lsst.afw.image              as afwImage
@@ -51,7 +52,7 @@ def loadData():
     exposure.setPsf(psf)
 
     im = exposure.getMaskedImage().getImage()
-    im -= np.median(im.getArray())
+    im -= numpy.median(im.getArray())
 
     return exposure
 
@@ -71,12 +72,9 @@ def run(display=False):
     #
     config = SingleFrameMeasurementTask.ConfigClass()
     config.plugins.names.clear()
-    for plugin in ["base_SdssCentroid", "base_SdssShape", "base_SincFlux", "base_ApertureFlux"]:
+    for plugin in ["base_SdssCentroid", "base_SdssShape", "base_SincFlux", "base_GaussianFlux"]:
         config.plugins.names.add(plugin)
-    radii = [1, 2, 4, 8, 16] # pixels
-    config.plugins["base_ApertureFlux"].radii = radii
     config.slots.instFlux = None
-    config.slots.modelFlux = None
     config.slots.psfFlux = None
     flags = MeasurementDataFlags()
 
@@ -106,9 +104,7 @@ def run(display=False):
                 xy = s.getCentroid()
                 ds9.dot('+', *xy, ctype=ds9.CYAN if s.get("flags_negative") else ds9.GREEN, frame=frame)
                 ds9.dot(s.getShape(), *xy, ctype=ds9.RED, frame=frame)
-
-                for i in range(s.get("base_ApertureFlux_nApertures")):
-                    ds9.dot('o', *xy, size=radii[i], ctype=ds9.YELLOW, frame=frame)
+                ds9.dot('o', *xy, size=config.plugins["base_SincFlux"].radius2, ctype=ds9.YELLOW, frame=frame)
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
