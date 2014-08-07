@@ -21,18 +21,17 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import math
 import os
+import unittest
+import numpy
+
 from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
 from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
 from lsst.meas.base.base import *
 from lsst.meas.base.tests import *
-import unittest
 import lsst.utils.tests
-import numpy
 
 numpy.random.seed(1234)
-
 
 DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
 
@@ -45,7 +44,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         catalog.writeFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
         exposure.writeFits(os.path.join(DATA_DIR, "calexp-0A.fits"))
         exposure.writeFits(os.path.join(DATA_DIR, "ref-0A.fits"))
-    
 
     def tearDown(self):
         os.unlink(os.path.join(DATA_DIR, "truthcat-0A.fits"))
@@ -73,7 +71,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         replaced = lsst.afw.image.ExposureF(path)
         noiseReplacer = NoiseReplacer(replaced, footprints, sfm_config.noiseSource,
                           sfm_config.noiseOffset, sfm_config.noiseSeed)
-        
+
         # add the measurement fields to the outputSchema and make a catalog with it
         # then extend with the mapper to copy the extant data
         mapper = SchemaMapper(srccat.getSchema())
@@ -107,21 +105,19 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             nApertures = record.get(record.getSchema().find("base_ApertureFlux_nApertures").key)
             print "Displaying " + str(nApertures) + " apertures for object"
             print record.get("base_ApertureFlux_flag")
-            print record.get("base_ApertureFlux_flag_noPsf")
-            print record.get("base_ApertureFlux_flag_noGoodPixels")
             print record.get("base_ApertureFlux_flag_edge")
-            for ap in range(nApertures): 
+            for ap in range(nApertures):
                 fluxKey = schema.find("base_ApertureFlux." + str(ap) + "_flux").key
                 fluxErrKey = schema.find("base_ApertureFlux." + str(ap) + "_fluxSigma").key
-            # Test all the records to be sure that the measurement mechanism works for total flux
-            # And that the area surrounding the footprint has the expected replacement pixels
+                # Test all the records to be sure that the measurement mechanism works for total flux
+                # And that the area surrounding the footprint has the expected replacement pixels
                 # First check to be sure that the flux measured by the plug-in is correct
                 # get the values produced by the plugin
                 flux = record.get(fluxKey)
                 fluxErr = record.get(fluxErrKey)
                 truthFlux = srccat[i].get(truthFluxkey)
                 #  The flux reported by the test.flux plugin should be close to the truthFlux, but could
-                #      differ due to finite aperature effects. 
+                #      differ due to finite aperature effects.
                 print truthFlux, flux
                 if radii[ap] < 5:
                     self.assertClose(truthFlux, flux, atol=None, rtol=.8)
@@ -131,7 +127,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
                     self.assertClose(truthFlux, flux, atol=None, rtol=.3)
                 elif radii[ap] < 100:
                     self.assertClose(truthFlux, flux, atol=None, rtol=.22)
-    
+
 
 
 def suite():

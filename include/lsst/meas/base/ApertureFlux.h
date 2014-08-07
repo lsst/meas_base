@@ -24,33 +24,24 @@
 #ifndef LSST_MEAS_BASE_ApertureFlux_h_INCLUDED
 #define LSST_MEAS_BASE_ApertureFlux_h_INCLUDED
 
-/**
- *  @file lsst/meas/base/ApertureFlux.h
- *
- */
- 
-#include <stdio.h>
-#include <execinfo.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Inputs.h"
 #include "lsst/meas/base/ResultMappers.h"
-// #include "lsst/meas/base/ApFluxComponent.h"
 
 namespace lsst { namespace meas { namespace base {
 
 /**
  *  @brief A C++ control class to handle ApertureFluxAlgorithm's configuration
+ *
+ *  @note ApertureFluxAlgorithm is slated for a major rewrite soon (DM-837).  Its current interface
+ *        and features should be considered to be nothing more than a placeholder.
  */
 class ApertureFluxControl {
 public:
+
     LSST_CONTROL_FIELD(radii, std::vector<double>, "vector of radii for apertures (in pixels)");
 
-    LSST_CONTROL_FIELD(badMaskPlanes, std::vector<std::string>,
-                       "Mask planes that indicate pixels that should be excluded from the fit");
     /**
     *  @brief Default constructor
     *
@@ -58,17 +49,21 @@ public:
     */
     ApertureFluxControl();
 };
- 
+
+
 /**
  *  @brief An object that transfers values from FluxComponent to afw::table::BaseRecord
  *
  *  This should be included in one of @ref measBaseResultMapperTemplates to correspond with using
  *  FluxComponent in the same position in one of @ref measBaseResultTemplates, and will otherwise
  *  not be used directly by users.
+ *
+ *  @note ApertureFluxAlgorithm is slated for a major rewrite soon (DM-837).  Its current interface
+ *        and features should be considered to be nothing more than a placeholder.
  */
 class ApFluxComponentMapper {
 public:
- 
+
     /**
      *  @brief Construct the mapper, adding fields to the given schema and saving their keys
      *  sets which uncertainty fields will be added to the schema and transferred during apply().
@@ -86,24 +81,30 @@ private:
     afw::table::Key<Flux> _flux;
     afw::table::Key<ErrElement> _fluxSigma;
 };
- 
- /**
-  *  @brief Additional results for ApertureFluxAlgorithm
-  *
-  *  ApertureFlux keeps an a vector of FluxComponents of the same length as the config.radii
-  *  parameter.  So it can use the standard FluxComponent, but not the standard mapper.
-  */
- 
+
+
+/**
+ *  @brief Additional results for ApertureFluxAlgorithm
+ *
+ *  ApertureFlux keeps an a vector of FluxComponents of the same length as the config.radii
+ *  parameter.  So it can use the standard FluxComponent, but not the standard mapper.
+ *
+ *  @note ApertureFluxAlgorithm is slated for a major rewrite soon (DM-837).  Its current interface
+ *        and features should be considered to be nothing more than a placeholder.
+ */
 class ApertureFluxExtras {
 public:
-    std::vector< boost::shared_ptr<lsst::meas::base::FluxComponent> > fluxComponentVector; //changed pgee
-    ApertureFluxExtras(); ///< Constructor; initializes everything to NaN
+    std::vector< boost::shared_ptr<lsst::meas::base::FluxComponent> > fluxComponentVector;
+    ApertureFluxExtras();
 };
 
 
 /**
  *  @brief Object that transfers additional ApertureFlux flux component vector to an output
- *  source catalog. 
+ *  source catalog.
+ *
+ *  @note ApertureFluxAlgorithm is slated for a major rewrite soon (DM-837).  Its current interface
+ *        and features should be considered to be nothing more than a placeholder.
  */
 class ApertureFluxExtrasMapper {
 public:
@@ -130,6 +131,9 @@ private:
 /**
  *  @brief A measurement algorithm that measures the flux within each aperture radius
  *  in the config.radii list, and outputs that number of FluxComponent results to the catalog.
+ *
+ *  @note ApertureFluxAlgorithm is slated for a major rewrite soon (DM-837).  Its current interface
+ *        and features should be considered to be nothing more than a placeholder.
  */
 class ApertureFluxAlgorithm {
 public:
@@ -140,9 +144,7 @@ public:
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
     enum FlagBits {
-        NO_PSF=0,
-        NO_GOOD_PIXELS,
-        EDGE,
+        EDGE=0,
         N_FLAGS
     };
 
@@ -152,9 +154,7 @@ public:
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
         static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
-                {"noPsf", "No Psf object attached to the Exposure object being measured"},
-                {"noGoodPixels", "No usable pixels in fit region"},
-                {"edge", "At least one of the aperture extends to or past the edge"}
+                {"edge", "At least one of the apertures extends to or past the edge"}
             }};
         return flagDefs;
     }
@@ -181,7 +181,8 @@ public:
 
     /**
      *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  ApertureFluxAlgorithm only needs a centroid, so we use FootprintCentroidInput.
+     *  Exposure being measured.  ApertureFluxAlgorithm only needs a centroid, so we use
+     *  FootprintCentroidInput.
      */
     typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
 
@@ -205,7 +206,7 @@ public:
     );
 
     /**
-     *  @brief Apply the ApertureFlux to a single source using the Plugin API.
+     *  @brief Apply the ApertureFlux algorithm to a single source using the Plugin API.
      */
     template <typename T>
     static Result apply(
