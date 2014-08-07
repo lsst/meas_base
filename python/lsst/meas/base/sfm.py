@@ -28,6 +28,7 @@ Measurements are generally recorded in the coordinate system of the image being 
 slot-eligible fields must be), but non-slot fields may be recorded in other coordinate systems if necessary
 to avoid information loss (this should, of course, be indicated in the field documentation).
 """
+
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.daf.base
@@ -41,7 +42,13 @@ class SingleFramePluginConfig(BasePluginConfig):
     pass
 
 class SingleFramePlugin(BasePlugin):
-    """Base class for single-frame plugin algorithms."""
+    """Base class for single-frame plugin algorithms.
+
+    New Plugins can be created in Python by inheriting directly from this class
+    and implementing measure(), fail() (from BasePlugin), and optionally __init__
+    and measureN().  Plugins can also be defined in C++ via the WrappedSingleFramePlugin
+    class.
+    """
 
     # All subclasses of SingleFramePlugin should be registered here
     registry = PluginRegistry(SingleFramePluginConfig)
@@ -137,7 +144,6 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
                 measRecord[self.name+"_y"] = measRecord.getFootprint().getPeaks()[0].getCentroid().getY()
                 measRecord[self.name+"_xSigma"] = 0
                 measRecord[self.name+"_ySigma"] = 0
-            
         self.resultMapper.fail(measRecord, error)
 
     @classmethod
@@ -189,11 +195,10 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
                  "base_NaiveFlux",
                  "base_PsfFlux",
                  "base_SincFlux",
-                 #"correctfluxes",
                  "base_ClassificationExtendedness",
                  "base_SkyCoord",
                  ],
-        doc="Plugin plugins to be run and their configuration"
+        doc="Plugins to be run and their configuration"
         )
     algorithms = property(lambda self: self.plugins, doc="backwards-compatibility alias for plugins")
 
@@ -209,36 +214,19 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
 \anchor SingleFrameMeasurementTask_
 \brief The SingleFrameMeasurementTask is used to measure the properties of sources on a single exposure.
 
-
-\section meas_base_sfm_Contents Contents
-
- - \ref meas_base_sfm_Purpose
- - \ref meas_base_sfm_Initialize
- - \ref meas_base_sfm_IO
- - \ref meas_base_sfm_Config
- - \ref meas_base_sfm_Example
-
-\section meas_base_sfm_Purpose	Description
-
-\copybrief SingleFrameMeasurementTask
-
 The task is configured with a list of "plugins": each plugin defines the values it
-is measuring and conducts that measurement on each detected source. The job of the
-measurement task is to call each plugin at the appropriate time for initialization
-and measurement of each detected source, and to save the results of the
-measurement to a Source Record.
+measures (i.e. the columns in a table it will fill) and conducts that measurement
+on each detected source (see SingleFramePlugin).  The job of the
+measurement task is to initialize the set of plugins (which includes setting up the
+catalog schema) from their configuration, and then invoke each plugin on each
+source.
 
-\section meas_base_sfm_Initialize	Task initialisation
+When run after the deblender (see lsst.meas.deblender.SourceDeblendTask),
+SingleFrameMeasurementTask also replaces each source's neighbors with noise before
+measuring each source, utilizing the HeavyFootprints created by the deblender.
 
-\copydoc __init__
-
-\section meas_base_sfm_IO		Inputs/Outputs to the run method
-
-\copydoc run
-
-\section meas_base_sfm_Config       Configuration parameters
-
-See \ref SingleFrameMeasurementConfig
+SingleFrameMeasurementTask has only two methods: __init__() and run().  For configuration
+options, see SingleFrameMeasurementConfig.
 
 \section meas_base_sfm_Example	A complete example of using SingleFrameMeasurementTask
 
@@ -248,22 +236,48 @@ examples/runSingleFrameTask.py --ds9
 \endcode
 \dontinclude runSingleFrameTask.py
 
-See \ref meas_algorithms_detection_Example for a few more details on the DetectionTask.
+See \ref meas_algorithms_detection_Example for a few more details on SourceDetectionTask.
 
 Import the tasks (there are some other standard imports; read the file if you're confused)
 \skip SourceDetectionTask
 \until SingleFrameMeasurementTask
 
 We need to create our tasks before processing any data as the task constructors
-can add extra columns to the schema.  First the detection task
-\skipline makeMinimalSchema
-\skip SourceDetectionTask.ConfigClass
+can add extra columns to the schema.  The most important argument we pass these to these
+is a lsst.afw.table.Schema object, which contains information about the fields (i.e. columns) of the
+measurement catalog we'll create, including names, types, and additional documentation.
+Tasks that operate on a catalog are typically passed a Schema upon construction, to which
+they'll add the fields they'll fill later when run.  We construct a mostly empty Schema that
+contains just the fields required for a SourceCatalog like this:
+\skipline schema
+Now we can configure and create the SourceDetectionTask:
 \until detectionTask
-and then the measurement task using the default plugins (as set by SingleFrameMeasurementConfig.plugins):
-\skipline SingleFrameMeasurementTask.ConfigClass
+(tableVersion is a temporary parameter that will be removed after the transition from the meas_algorithms
+Tasks to the meas_base Tasks is complete; for now, setting tableVersion=1 is necessary when using meas_base
+Tasks).
+
+We then move on to configuring the measurement task:
+\until config
+While a reasonable set of plugins is configured by default, we'll customize the list.
+We also need to unset one of the slots at the same time, because we're
+not running the algorithm that it' set to by default, and that would cause problems later:
+\until config.slot
+MeasurementDataFlags are just a placeholder for now; eventually they'll be used to tell plugins about
+certain features of the data, such as whether the data being processed is a difference image, a regular
+image, or a coadd, or whether it has been "preconvolved" by the PSF.
+\until flags
+
+Now, finally, we can construct the measurement task:
 \until measureTask
 
-We're now ready to process the data (we could loop over multiple exposures/catalogues using the same
+After constructing all the tasks, we can inspect the Schema we've created:
+\skipline print schema
+All of the fields in the
+schema can be accessed via the get() method on a record object.  See afwTable for more
+information.
+
+
+We're now ready to process the data (we could loop over multiple exposures/catalogs using the same
 task objects).  First create the output table and process the image to find sources:
 \skipline afwTable
 \skip result
@@ -275,47 +289,23 @@ Then measure them:
 We then might plot the results (\em e.g. if you set \c --ds9 on the command line)
 \skip display
 \until RED
-
-\dontinclude runSingleFrameTask.py
-Rather than accept a default set you can select which plugins should be run.
-First create the Config object:
-\skipline SingleFrameMeasurementTask.ConfigClass
-Then specify which plugins we're interested in and set any needed parameters:
-\until radii = radii
-
-Unfortunately that won't quite work as there are still "slots" (mappings between measurements like PSF fluxes
-and the plugins that calculate them) pointing to some of the discarded plugins (see SourceSlotConfig):
-
-\skip instFlux
-\until psfFlux
-and create the task as before:
-\skipline measureTask
-and create the task as before:
-\skipline measureTask
-We can find out what aperture radii were chosen with
-\skipline radii
-and add them to the display code:
-\skip s in sources
-\until YELLOW
-
 and end up with something like
 \image html runSingleFrameTask-ds9.png
-
-    """
+"""
 
     ConfigClass = SingleFrameMeasurementConfig
 
     def __init__(self, schema, algMetadata=None, flags=None, **kwds):
-        """Initialize the task, including setting up the execution order of the plugins
-        and allowing each plugin to add fields to the Schema object and entries to the
-        task metadata
+        """!Initialize the task. Set up the execution order of the plugins and initialize
+        the plugins, giving each plugin an opportunity to add its measurement fields to
+        the output schema and to record information in the task metadata.
 
-        @param[in]     schema       lsst.afw.table.Schema, which should have been initialized
-                                    to include the measurement fields from the plugins already
-        \param[in,out] algMetadata  lsst.daf.base.PropertyList used to record information about
-                                    each algorithm.  An empty PropertyList is created if None.
-        \param[in]     flags        lsst.meas.base.MeasurementDataFlags
-        \param[in]     **kwds       Keyword arguments forwarded to lsst.pipe.base.task.Task
+        @param[in,out] schema      lsst.afw.table.Schema, to be initialized to include the
+                                   measurement fields from the plugins already
+        @param[in,out] algMetadata lsst.daf.base.PropertyList used to record information about
+                                   each algorithm.
+        @param[in]     flags       lsst.meas.base.MeasurementDataFlags
+        @param[in]     **kwds      Keyword arguments passed from lsst.pipe.base.task.Task
         """
         BaseMeasurementTask.__init__(self, algMetadata=algMetadata, **kwds)
         self.schema = schema
@@ -334,6 +324,8 @@ and end up with something like
         \param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
                                  be measured and the associated Psf, Wcs, etc.
         """
+        # Temporary workaround for change in order of arguments; will be removed when transition
+        # from meas_algorithms to meas_base is complete.
         if exposure.__class__.__name__ == "SourceCatalog":
             temp = exposure
             exposure = measCat
@@ -343,8 +335,8 @@ and end up with something like
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
             for measRecord in measCat}
 
-        # noiseReplacer is used to fill the footprints with noise and save off heavy footprints
-        # of the source pixels so that they can re restored one at a time for measurement.
+        # noiseReplacer is used to fill the footprints with noise and save heavy footprints
+        # of the source pixels so that they can be restored one at a time for measurement.
         # After the NoiseReplacer is constructed, all pixels in the exposure.getMaskedImage()
         # which belong to objects in measCat will be replaced with noise
         noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
@@ -375,5 +367,7 @@ and end up with something like
         noiseReplacer.end()
 
     def measure(self, measCat, exposure):
+        """Backwards-compatibility alias for run()
+        """
         self.run(measCat, exposure)
 
