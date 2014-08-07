@@ -22,64 +22,75 @@
 #
 
 """Class for force measuring a Coadd exposure using a reference catalog made from measuring Coadds.
-   See comments in the parent class in forcedImage.py for more information.
 """
 
 import lsst.pex.config
-
-from lsst.pipe.base import Task, CmdLineTask, Struct, timeMethod, ArgumentParser, ButlerInitializedTaskRunner
-from lsst.coadd.utils import CoaddDataIdContainer
-import lsst.daf.base
-from lsst.pex.config import DictField,ConfigurableField
+import lsst.pipe.base
+import lsst.coadd.utils
+import lsst.afw.table
 
 from .forcedImage import *
 from .base import *
-from .references import CoaddSrcReferencesTask
 
 __all__ = ("ProcessForcedCoaddConfig", "ProcessForcedCoaddTask")
 
 class ProcessForcedCoaddConfig(ProcessImageForcedConfig):
     pass
 
+## \addtogroup LSST_task_documentation
+## \{
+## \page processForcedCoaddTask
+## \ref ProcessForcedCoaddTask_ "ProcessForcedCoaddTask"
+## \copybrief ProcessForcedCoaddTask
+## \}
 
 class ProcessForcedCoaddTask(ProcessImageForcedTask):
     """!
     \anchor ProcessForcedCoaddTask_
-    \brief The ProcessForcedCoaddTask is used to measure the properties of sources on a Coadd.
-    
-    
+
+    \brief The ProcessForcedCoaddTask is used to measure the properties of sources on a Coadd, using
+           sources from a run on another coadd (usually a different band) as references.
+
     \section meas_base_processForcedCoaddTask_Contents Contents
-    
+
      - \ref meas_base_processForcedCoaddTask_Purpose
      - \ref meas_base_processForcedCoaddTask_IO
      - \ref meas_base_processForcedCoaddTask_Config
 
     \section meas_base_processForcedCoaddTask_Purpose	Description
-    
+
     This task is a subclass of ProcessForcedImageTask which is specifically for doing forced
-    measurement on a Coadd, using the as a reference catalog the detections which
-    were made on overlapping Coadds.
-    
- 
+    measurement on a coadd, using the as a reference catalog the detections which
+    were made on overlapping coadds.
+
     \section meas_base_processForcedCoaddTask_IO		Inputs/Outputs to the run method
 
-    See the \link lsst.meas.base.forcedImage.ProcessImageForcedTask#run ProcessImageForcedTask.run method\endlink for more information.
+    See \link lsst.meas.base.forcedImage.ProcessImageForcedTask#run ProcessImageForcedTask.run\endlink
+    for more information.
 
-    The run method includes a dataRef, which must specify both the dataset to be used to
-    locate the exposure (or exposures) which you want to measure, and the set of reference
-    datasets which are to be used as the reference catalog.
+    The run method (inherited from ProcessForcedImageTask) takes a lsst.daf.persistence.ButlerDataRef
+    argument that corresponds to a coadd image.  This is used to provide all the inputs and outputs
+    for the task:
+     - A "*Coadd_src" (e.g. "deepCoadd_src") dataset is used as the reference catalog.  This not loaded
+       directly from the passed dataRef, however; only the patch and tract are used, while the filter
+       is set by the configuration for the references subtask (see CoaddSrcReferencesTask).
+     - A "*Coadd_calexp" (e.g. "deepCoadd_calexp") dataset is used as the measurement image.  Note that
+       this means that ProcessCoaddTask must be run on an image before ProcessForcedCoaddTask, in order
+       to generate the "*Coadd_calexp" dataset.
+     - A "*Coadd_forced_src" (e.g. "deepCoadd_forced_src") dataset will be written with the output
+       measurement catalog.
 
-    For example, the coadd to be measured may be specified by a tract, patch and filter,
-    which means that --id tract=xxx patch=yyy filter=i must be provide on the command line.
+    In addition to the run method, ProcessForcedCcdTask overrides several methods of ProcessForcedImageTask
+    to specialize it for coadd processing, including makeIdFactory() and fetchReferences().  None of these
+    should be called directly by the user, though it may be useful to override them further in subclasses.
 
-    The tract is also used identify the Coadd detections which may be used for references. 
-    
     \section meas_base_processForcedCoaddTask_Config       Configuration parameters
-    
+
     See \ref ProcessForcedCoaddConfig
     """
+
     ConfigClass = ProcessForcedCoaddConfig
-    RunnerClass = ButlerInitializedTaskRunner
+    RunnerClass = lsst.pipe.base.ButlerInitializedTaskRunner
     _DefaultName = "forcedCoaddTask"
     dataPrefix = "deepCoadd_"
 
@@ -94,19 +105,16 @@ class ProcessForcedCoaddTask(ProcessImageForcedTask):
         return self.references.fetchInPatches(dataRef, patchList=[patchInfo])
 
     def makeIdFactory(self, dataRef):
-        """An Id Factory is used to convert ids from the previous pipelines into an id,
+        """An IdFactory is used to convert ids from the previous pipelines into an id,
         using specific bit field which the dataRef butler knows about (camera specific)
         """
         expBits = dataRef.get(self.config.coaddName + "CoaddId_bits")
         expId = long(dataRef.get(self.config.coaddName + "CoaddId"))
         return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
 
-
     @classmethod
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "deepCoadd_forced_src", help="data ID, with raw CCD keys + tract",
-                               ContainerClass=CoaddDataIdContainer)
+                               ContainerClass=lsst.coadd.utils.CoaddDataIdContainer)
         return parser
-
-

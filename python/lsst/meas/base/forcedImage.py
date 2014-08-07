@@ -20,6 +20,7 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+
 """Base classes for forced measurement plugins and the driver task for these.
 
 In forced measurement, a reference catalog is used to define restricted measurements (usually just fluxes)
@@ -44,23 +45,22 @@ which will generally be set to the transformed position of the reference object 
 run, and hence avoid using the reference catalog at all.
 """
 
-import math
-
 import lsst.pex.config
 import lsst.daf.base
-from lsst.pipe.base import Task, CmdLineTask, Struct, timeMethod, ArgumentParser, ButlerInitializedTaskRunner
-from lsst.pex.config import DictField, ConfigurableField
+import lsst.pipe.base
 
 from .base import *
-from .references import CoaddSrcReferencesTask, BaseReferencesTask
+from .references import CoaddSrcReferencesTask
 
 __all__ = ("ForcedPluginConfig", "ForcedPlugin", "WrappedForcedPlugin",
            "ProcessImageForcedConfig", "ProcessImageForcedTask",
            "ForcedMeasurementConfig", "ForcedMeasurementTask")
 
+
 class ForcedPluginConfig(BasePluginConfig):
     """Base class for configs of forced measurement plugins."""
     pass
+
 
 class ForcedPlugin(BasePlugin):
 
@@ -141,6 +141,7 @@ class ForcedPlugin(BasePlugin):
         """
         raise NotImplementedError()
 
+
 class WrappedForcedPlugin(ForcedPlugin):
     """A base class for ForcedPlugins that delegates the algorithmic work to a C++
     Algorithm class.
@@ -212,6 +213,7 @@ class WrappedForcedPlugin(ForcedPlugin):
             Base.registry.register(name, PluginClass)
         return PluginClass
 
+
 class ForcedMeasurementConfig(BaseMeasurementConfig):
     """Config class for forced measurement driver task."""
 
@@ -223,7 +225,7 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         )
     algorithms = property(lambda self: self.plugins, doc="backwards-compatibility alias for plugins")
 
-    copyColumns = DictField(
+    copyColumns = lsst.pex.config.DictField(
         keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
         default={"id": "objectId", "parent":"parentObjectId"}
         )
@@ -236,12 +238,19 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         self.slots.psfFlux = None
         self.slots.instFlux = None
 
+
+## \addtogroup LSST_task_documentation
+## \{
+## \page ForcedMeasurementTask
+## \ref ForcedMeasurementTask_ "ForcedMeasurementTask"
+## \copybrief ForcedMeasurementTask
+## \}
+
 class ForcedMeasurementTask(lsst.pipe.base.Task):
     """!
 \anchor ForcedMeasurementTask_
 \brief The ForcedMeasurementTask is used to measure properties of sources on an exposure
 using the detection information from a reference catalog
-
 
 \section meas_base_forced_Contents Contents
 
@@ -267,7 +276,7 @@ measurement to a Source Record.
 
 \section meas_base_forced_IO		Inputs/Outputs to the run method
 
-\copydoc run 
+\copydoc run
 
 \section meas_base_forced_Config       Configuration parameters
 
@@ -324,13 +333,13 @@ id refFlux   testFlux
     def init(self, refSchema, **kwds):
         """!Create the task, using the reference catalog schema to initialize the output catalog.
         The reference catalog contains information out the positions and footprints of sources
-        that are to be measured during run(). The refSchema itself is not altered. 
+        that are to be measured during run(). The refSchema itself is not altered.
         \param[in]     refSchema   lsst.afw.table.Schema, is used to create a SchemaMapper
                                    for transferring information from the reference catalog.
         \param[in]     **kwds      Keyword arguments passed from lsst.pipe.base.task.Task
         """
         self.__init__(refSchema, **kwds)
- 
+
     def __init__(self, refSchema, **kwds):
         """!\copydoc init
         """
@@ -363,7 +372,7 @@ id refFlux   testFlux
                                    as any fields listed in config.copyColumns, which are to be
                                    transferred from the reference catalog to the output catalog
         \param[in]     refWcs      lsst.afw.image.Wcs for the reference catalog.
-                                   Used to map detected footprints to the exposure being measured. 
+                                   Used to map detected footprints to the exposure being measured.
         \param[in]     idFactory   Optional lsst.afw.table.IdFactory used to create unique ids
         """
         # First create a refList from the original which excludes children when a member
@@ -426,7 +435,7 @@ id refFlux   testFlux
                          refParentCat[parentIdx:parentIdx+1])
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()
-        return Struct(sources=sources)
+        return lsst.pipe.base.Struct(sources=sources)
 
     def generateSources(self, exposure, refCat, refWcs, idFactory=None):
         """Generate sources to be measured, copying any fields in self.config.copyColumns
@@ -464,14 +473,21 @@ id refFlux   testFlux
         return sources
 
 
+## \addtogroup LSST_task_documentation
+## \{
+## \page ProcessImageForcedTask
+## \ref ProcessImageForcedTask_ "ProcessImageForcedTask"
+## \copybrief ProcessImageForcedTask
+## \}
+
 class ProcessImageForcedConfig(lsst.pex.config.Config):
     """Config class for forced measurement driver task."""
 
-    references = ConfigurableField(
+    references = lsst.pex.config.ConfigurableField(
         target=CoaddSrcReferencesTask,
-        doc="Retrieve reference source catalog"
+        doc="subtask to retrieve reference source catalog"
         )
-    forcedMeasurement = ConfigurableField(
+    forcedMeasurement = lsst.pex.config.ConfigurableField(
         target=ForcedMeasurementTask,
         doc="subtask to do forced measurement"
         )
@@ -481,34 +497,34 @@ class ProcessImageForcedConfig(lsst.pex.config.Config):
         default = "deep",
     )
 
-class ProcessImageForcedTask(CmdLineTask):
+class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
     """!
     \anchor ProcessImageForcedTask_
 
     \brief The ProcessForcedImageTask is used to measure the properties of sources on a single exposure.
 
     \section meas_base_processImageForcedTask_Contents Contents
-    
+
      - \ref meas_base_processImageForcedTask_Purpose
      - \ref meas_base_processImageForcedTask_Initialize
      - \ref meas_base_processImageForcedTask_IO
      - \ref meas_base_processImageForcedTask_Config
-    
+
     \section meas_base_processImageForcedTask_Purpose	Description
-    
+
     \copybrief ProcessImageForcedTask
     This is a an abstract class, which is the common ancestor for ProcessForcedCcdTask
-    and ProcessForcedCoaddTask. 
+    and ProcessForcedCoaddTask.
     \section meas_base_processImageForcedTask_Initialize	Task initialisation
-    
+
     \copydoc init
-    
+
     \section meas_base_processImageForcedTask_IO		Inputs/Outputs to the run method
-    
-    \copydoc run 
-    
+
+    \copydoc run
+
     \section meas_base_processImageForcedTask_Config       Configuration parameters
-    
+
     See \ref ProcessImageForcedConfig
     """
     ConfigClass = ProcessImageForcedConfig
@@ -526,7 +542,7 @@ class ProcessImageForcedTask(CmdLineTask):
         self.makeSubtask("references")
         if not refSchema:
             refSchema = self.references.getSchema(butler)
-             
+
         self.algMetadata = lsst.daf.base.PropertyList()
         self.makeSubtask("forcedMeasurement", refSchema=refSchema)
 
