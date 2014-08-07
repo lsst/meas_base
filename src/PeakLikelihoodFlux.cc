@@ -46,7 +46,7 @@ Compute the value of one pixel of an image after a fractional pixel shift
 Since we only want the value at one pixel, there is no need to shift the entire image;
 instead we simply convolve at one point.
 
-@raise pex::exceptions::RangeError if abs(fracShift) > 1 in either dimension
+@throw pex::exceptions::RangeError if abs(fracShift) > 1 in either dimension
 */
 template<typename T>
 typename afw::image::MaskedImage<T>::SinglePixel computeShiftedValue(
@@ -111,10 +111,10 @@ PeakLikelihoodFluxAlgorithm::Result PeakLikelihoodFluxAlgorithm::apply(
 /**
  * Given an image and a pixel position, return a Flux
  *
- * @raise lsst::pex::exceptions::InvalidParameterError if the exposure has no PSF.
- * @raise lsst::pex::exceptions::RangeError if the warping (centering) kernel
+ * @throw lsst::pex::exceptions::InvalidParameterError if the exposure has no PSF.
+ * @throw lsst::pex::exceptions::RangeError if the warping (centering) kernel
  *      is not fully contained within the exposure.
- * @raise lsst::pex::exceptions::RangeError if the center not within exposure.
+ * @throw lsst::pex::exceptions::RangeError if the center not within exposure.
  *      (This avoids insane center values from confusing the test for warping kernel within exposure).
  */
 

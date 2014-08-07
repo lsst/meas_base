@@ -24,12 +24,6 @@
 #ifndef LSST_MEAS_BASE_PeakLikelihoodFlux_h_INCLUDED
 #define LSST_MEAS_BASE_PeakLikelihoodFlux_h_INCLUDED
 
-/**
- *  @file lsst/meas/base/PeakLikelihoodFlux.h
- *
- *  This algorithm is a flux measurement which simply sums the counts over the footprint
- */
-
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Inputs.h"
@@ -41,9 +35,11 @@ namespace lsst { namespace meas { namespace base {
  *  @brief C++ control object for peak likelihood flux.
  *
  * Peak likelihood flux requires an image that has been filtered by convolving with its own PSF
- * (or an approximate model). The PSF must be provided in the exposure, as it is used to compute
- * a weighting factor.
- * 
+ * (or an approximate model). It is equivalent to a PSF flux (e.g. PsfFluxAlgorithm) computed on
+ * a non-preconvolved image.
+ *
+ * The PSF must be provided in the exposure, as it is used to compute a weighting factor.
+ *
  * Flux and error are computed as follows:
  * * flux = sum(unfiltered image * PSF) / sum(PSF^2)
  *        = value of peak of filtered source / sum(PSF^2)
@@ -62,6 +58,8 @@ public:
 
     PeakLikelihoodFluxControl() : warpingKernelName("lanczos4") {}
 };
+
+
 /**
  *  @brief A measurement algorithm that estimates the peak flux, using a filtered image
     which has been convolved with its own PSF.
@@ -92,8 +90,9 @@ public:
     typedef PeakLikelihoodFluxControl Control;
 
     /**
-     *  Result is the type returned by apply().  Because PeakLikelihoodFluxAlgorithm only measures a flux and its
-     *  uncertainty, we can use the single predefined component, FluxComponent, without any modification.
+     *  Result is the type returned by apply().  Because PeakLikelihoodFluxAlgorithm only measures a flux
+     *  and its uncertainty, we can use the single predefined component, FluxComponent, without any
+     *  modification.
      */
     typedef Result1<PeakLikelihoodFluxAlgorithm,FluxComponent> Result;
 
@@ -105,7 +104,8 @@ public:
 
     /**
      *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  PeakLikelihoodFluxAlgorithm only needs a centroid, so we use FootprintCentroidInput.
+     *  Exposure being measured.  PeakLikelihoodFluxAlgorithm only needs a centroid, so we use
+     *  FootprintCentroidInput.
      */
     typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
 
@@ -129,7 +129,7 @@ public:
     );
 
     /**
-     *  @brief Apply the PeakLikelihoodFlux to a single source using the Plugin API.
+     *  @brief Apply the PeakLikelihoodFlux algorithm to a single source using the Plugin API.
      */
     template <typename T>
     static Result apply(
