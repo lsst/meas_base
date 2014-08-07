@@ -230,13 +230,11 @@ options, see SingleFrameMeasurementConfig.
 
 \section meas_base_sfm_Example	A complete example of using SingleFrameMeasurementTask
 
-This code is in \link runSingleFrameTask.py\endlink in the examples directory, and can be run as \em e.g.
-\code
-examples/runSingleFrameTask.py --ds9
-\endcode
+The code below is in examples/runSingleFrameTask.py
+
 \dontinclude runSingleFrameTask.py
 
-See \ref meas_algorithms_detection_Example for a few more details on SourceDetectionTask.
+See meas_algorithms_detection_Example for more information on SourceDetectionTask.
 
 Import the tasks (there are some other standard imports; read the file if you're confused)
 \skip SourceDetectionTask

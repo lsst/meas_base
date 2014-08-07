@@ -284,10 +284,8 @@ See \ref ForcedMeasurementConfig
 
 \section meas_base_forced_Example	A complete example of using ForcedMeasurementTask
 
-This code is in \link runForcedTask.py\endlink in the examples directory, and can be run as \em e.g.
-\code
-examples/runForcedTask.py
-\endcode
+The code below is in examples/runForcedTask.py.
+
 \dontinclude runForcedTask.py
 
 The ForcedMeasurementTask assumes that a detection catalog was previously created from the same area of sky
@@ -473,13 +471,6 @@ id refFlux   testFlux
         return sources
 
 
-## \addtogroup LSST_task_documentation
-## \{
-## \page ProcessImageForcedTask
-## \ref ProcessImageForcedTask_ "ProcessImageForcedTask"
-## \copybrief ProcessImageForcedTask
-## \}
-
 class ProcessImageForcedConfig(lsst.pex.config.Config):
     """Config class for forced measurement driver task."""
 
@@ -497,11 +488,18 @@ class ProcessImageForcedConfig(lsst.pex.config.Config):
         default = "deep",
     )
 
+## \addtogroup LSST_task_documentation
+## \{
+## \page ProcessImageForcedTask
+## \ref ProcessImageForcedTask_ "ProcessImageForcedTask"
+## \copybrief ProcessImageForcedTask
+## \}
+
 class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
     """!
     \anchor ProcessImageForcedTask_
 
-    \brief The ProcessForcedImageTask is used to measure the properties of sources on a single exposure.
+    \brief A base class for command-line forced measurement drivers.
 
     \section meas_base_processImageForcedTask_Contents Contents
 
@@ -514,7 +512,10 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
 
     \copybrief ProcessImageForcedTask
     This is a an abstract class, which is the common ancestor for ProcessForcedCcdTask
-    and ProcessForcedCoaddTask.
+    and ProcessForcedCoaddTask.  It provides the run() method that does most of the
+    work, while delegating a few customization tasks to other methods that are
+    overridden by subclasses.
+
     \section meas_base_processImageForcedTask_Initialize	Task initialisation
 
     \copydoc init
@@ -552,7 +553,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         \param[in]  dataRef      An lsst.daf.persistence.ButlerDataRef. It is used to specify
                                  the dataset which is used to create the reference catalog.
                                  It also specifies the exposure to be measured.
-        \param[out] refStruct    Structure containing the source catalog resulting from the
+        \return refStruct        lsst.pipe.base.Struct containing the source catalog resulting from the
                                  forced measurement on the exposure.
         """
         refWcs = self.references.getWcs(dataRef)
