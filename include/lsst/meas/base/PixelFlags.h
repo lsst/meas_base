@@ -104,7 +104,7 @@ public:
     typedef Result0<PixelFlagsAlgorithm> Result;
 
     /**
-     *  ResultMapper for PixelFlagsAlgorithm, which only defines a flag set out its output.
+     *  ResultMapper for PixelFlagsAlgorithm, which includes only flag fields.
      */
     typedef ResultMapper0<PixelFlagsAlgorithm> ResultMapper;
 
