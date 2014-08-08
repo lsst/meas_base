@@ -88,7 +88,7 @@ public:
      *         in catalog schemas.
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
-        static boost::array<FlagDef,N_FLAGS> const flagDefs;
+        static boost::array<FlagDef,N_FLAGS> const flagDefs = {};
         return flagDefs;
     }
 
