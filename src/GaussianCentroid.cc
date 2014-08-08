@@ -34,9 +34,6 @@ GaussianCentroidAlgorithm::ResultMapper GaussianCentroidAlgorithm::makeResultMap
     return ResultMapper(schema, name, NO_UNCERTAINTY);
 }
 
-/**
- * @brief Given an image and a pixel position, return a Centroid using a naive 3x3 weighted moment
- */
 template <typename T>
 GaussianCentroidAlgorithm::Result GaussianCentroidAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
@@ -61,7 +58,6 @@ GaussianCentroidAlgorithm::Result GaussianCentroidAlgorithm::apply(
     y -= image.getY0();
 
     FittedModel fit = twodg(image, x, y); // here's the fitter
-
     if (fit.params[FittedModel::PEAK] <= 0) {
         throw LSST_EXCEPT(
             MeasurementError,

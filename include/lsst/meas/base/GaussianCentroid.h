@@ -24,15 +24,6 @@
 #ifndef LSST_MEAS_BASE_GaussianCentroid_h_INCLUDED
 #define LSST_MEAS_BASE_GaussianCentroid_h_INCLUDED
 
-/**
- *  @file lsst/meas/base/GaussianCentroid.h
- */
-
-#include <stdio.h>
-#include <execinfo.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Inputs.h"
@@ -42,28 +33,29 @@ namespace lsst { namespace meas { namespace base {
 
 /**
  *  @brief A C++ control class to handle GaussianCentroidAlgorithm's configuration
+ *
+ *  At present, GaussianCentroidAlgorithm has no configuration options.
  */
 class GaussianCentroidControl {
 public:
-    LSST_CONTROL_FIELD(background, double, "FIXME! NEVER DOCUMENTED!");
-
     /**
      *  @brief Default constructor
      *
      *  All control classes should define a default constructor that sets all fields to their default values.
      */
-    GaussianCentroidControl() : background(0.0) {}
+    GaussianCentroidControl() {}
 };
 
 /**
- *  * @brief A class that knows how to calculate centroids as a simple unweighted first moment
- *   * of the 3x3 region around a pixel
+ *  @brief A class that calculates a centroid by fitting a circular Gaussian to the image.
  */
 class GaussianCentroidAlgorithm {
 public:
 
     /**
      *  @brief Flag bits to be used with the 'flags' data member of the Result object.
+     *
+     *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
     enum FlagBits {
         NO_PEAK,
@@ -90,7 +82,7 @@ public:
      */
     typedef Result1<
         GaussianCentroidAlgorithm,
-        CentroidComponent 
+        CentroidComponent
     > Result;
 
     /// @copydoc PsfFluxAlgorithm::ResultMapper
@@ -102,7 +94,8 @@ public:
 
     /**
      *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  GaussianCentroidAlgorithm only needs a centroid, so we use FootprintCentroidInput.
+     *  Exposure being measured.  GaussianCentroidAlgorithm only needs a centroid, so we use
+     *  FootprintCentroidInput.
      */
     typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
 
@@ -116,7 +109,7 @@ public:
     );
 
     /**
-     *  @brief Measure the flux of a source using the GaussianCentroid algorithm.
+     *  @brief Measure the centroid of a source using the GaussianCentroid algorithm.
      */
     template <typename T>
     static Result apply(

@@ -71,9 +71,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             srcRec = srccat[i]
             # check all the flags
             self.assertFalse(record.get("base_SincFlux_flag"))
-            self.assertFalse(record.get("base_SincFlux_flag_noPsf"))
-            self.assertFalse(record.get("base_SincFlux_flag_noGoodPixels"))
-            self.assertFalse(record.get("base_SincFlux_flag_edge"))
             # check the slots
             centroid = record.getCentroid() 
             flux = record.get("base_SincFlux_flux")

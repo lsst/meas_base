@@ -27,7 +27,7 @@
 /**
  *  @file lsst/meas/base/SdssCentroid.h
  *
- *  This is implementation of SdssCentroid using the new measurement framework
+ *  This implements the SdssCentroid algorithm within the meas_base measurement framework
  *
  */
 
@@ -46,7 +46,7 @@ class SdssCentroidControl {
 public:
 
     LSST_CONTROL_FIELD(binmax, int, "maximum allowed binning");
-    LSST_CONTROL_FIELD(peakMin, double, "if the peak's less thatn this insist on binning at least once");
+    LSST_CONTROL_FIELD(peakMin, double, "if the peak's less than this insist on binning at least once");
     LSST_CONTROL_FIELD(wfac, double, "fiddle factor for adjusting the binning");
 
     /**
@@ -68,10 +68,6 @@ public:
      *  @brief Flag bits to be used with the 'flags' data member of the Result object.
      *
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
-     *
-     *  Note that we've included a final N_FLAGS value that isn't a valid flag; this is a common C++
-     *  idiom for automatically counting the number of enum values, and it's required for Algorithms
-     *  as the N_FLAGS value is used by the Result and ResultMapper objects.
      */
     enum FlagBits {
         NO_PSF,
@@ -98,7 +94,7 @@ public:
     typedef SdssCentroidControl Control;
 
     /**
-     *  This is the type returned by apply().  SdssCentroidAlgorithm resturns only a Point and errors
+     *  This is the type returned by apply().  SdssCentroidAlgorithm returns only a Point and Errors
      */
     typedef Result1<
         SdssCentroidAlgorithm,
@@ -113,8 +109,8 @@ public:
 
 
     /**
-     *  Input for measurement framework. SdssCentroidAlgorithm needs a beginning centroid and footprint,
-     *  so we use FootprintCentroidInput. The input centroid may be an approximation
+     *  Input from the measurement framework to the algorithm.
+     *  SdssCentroidAlgorithm needs only a beginning centroid and footprint.
      */
     typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
 

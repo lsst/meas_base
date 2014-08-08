@@ -24,11 +24,6 @@
 #ifndef LSST_MEAS_BASE_GaussianFlux_h_INCLUDED
 #define LSST_MEAS_BASE_GaussianFlux_h_INCLUDED
 
-/**
- *  @file lsst/meas/base/GaussianFlux.h
- *  This is a class which knows how to calculate fluxes using the GAUSSIAN photometry algorithm
- */
-
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Inputs.h"
@@ -71,7 +66,11 @@ public:
 
 
 /**
- *  @brief A measurement algorithm that estimates flux using the GaussianFlux algorithm
+ *  @brief A measurement algorithm that estimates flux using an elliptical Gaussian weight.
+ *
+ *  This algorithm computes flux as the dot product of an elliptical Gaussian weight function
+ *  with the image.  The size and ellipticity of the weight function is determined using the
+ *  SdssShape algorithm, or retreived from a named field.
  */
 class GaussianFluxAlgorithm {
 public:
@@ -80,10 +79,6 @@ public:
      *  @brief Flag bits to be used with the 'flags' data member of the Result object.
      *
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
-     *
-     *  Note that we've included a final N_FLAGS value that isn't a valid flag; this is a common C++
-     *  idiom for automatically counting the number of enum values, and it's required for Algorithms
-     *  as the N_FLAGS value is used by the Result and ResultMapper objects.
      */
     enum FlagBits {
         NO_PSF=0,
@@ -113,20 +108,17 @@ public:
 
     /**
      *  Result is the type returned by apply().  Because GaussianFluxAlgorithm only measures a flux and its
-     *  uncertainty, we can use the single predefined component, FluxComponent, without any modification.
+     *  uncertainty, we can use the single predefined component, FluxComponent, without modification.
      */
     typedef Result1<GaussianFluxAlgorithm,FluxComponent> Result;
 
     /**
-     *  The ResultMapper typedef here must exactly corresponds to the the Result typedef defined above:
-     *  There is a ComponentMapper corresponding to each Component.
+     *  Use the FluxComponentMapper to map algorithm Result to output catalog
      */
     typedef ResultMapper1<GaussianFluxAlgorithm,FluxComponentMapper> ResultMapper;
 
     /**
-     *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  GaussianFluxAlgorithm only needs a centroid and footprint
-     *  so we use FootprintCentroidInput.
+     *  GaussianFluxAlgorithm only needs a centroid and footprint as input.
      */
     typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
 
@@ -151,12 +143,6 @@ public:
 
     /**
      *  @brief Apply the GaussianFlux to a single source using the Plugin API.
-     *
-     *  This is the version that will be called by both the SFM framework and the forced measurement
-     *  framework, in single-object mode.  It will delegate to the other overload of apply().  Note that
-     *  we can use the same implementation for both single-frame and forced measurement, because we require
-     *  exactly the same inputs in both cases.  This is true for the vast majority of algorithms, but not
-     *  all (extended source photometry is the notable exception).
      */
     template <typename T>
     static Result apply(

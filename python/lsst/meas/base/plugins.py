@@ -57,11 +57,12 @@ class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
         self.executionOrder = 0.0
 
 class SingleFramePeakCentroidPlugin(SingleFramePlugin):
+    """
+    A centroid algorithm that simply uses the first (i.e. highest) Peak in the Source's
+    Footprint as the centroid.  This is of course a relatively poor measure of the true
+    centroid of the object; this algorithm is provided mostly for testing and debugging.
+    """
 
-    """
-    This is an easy-to-implement centroid algorithm, based on the peak pixel of the source
-    footprint.  It is not the best centroid estimatation, but it is always available.
-    """
     ConfigClass = SingleFramePeakCentroidConfig
 
     def __init__(self, config, name, schema, flags, others, metadata):
@@ -87,13 +88,13 @@ class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
 
 class SingleFrameSkyCoordPlugin(SingleFramePlugin):
     """
-    This is an easy-to-implement centroid algorithm, based on the peak pixel of the source
-    footprint.  It is not the best centroid estimatation, but it is always available.
+    A measurement plugin that sets the "coord" field (part of the Source minimal schema)
+    using the slot centroid and the Wcs attached to the Exposure.
     """
     ConfigClass = SingleFrameSkyCoordConfig
 
     def measure(self, measRecord, exposure):
-        # there should be a base class method for handling this exception. Put this on a later ticket 
+        # there should be a base class method for handling this exception. Put this on a later ticket
         # Also, there should be a python Exception of the appropriate type for this error
         if not exposure.hasWcs():
             raise Exception("Wcs not attached to exposure.  Required for " + self.name + " algorithm")
@@ -106,10 +107,10 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
             measRecord.updateCoord(exposure.getWcs())
 
     def fail(self, measRecord, error=None):
+        # Override fail() to do nothing in the case of an exception: this is not ideal,
+        # but we don't have a place to put failures because we don't allocate any fields.
+        # Should consider fixing as part of DM-1011
         pass
-
-# Plugin class must be registered to the singleton Registry class of the same type in order to
-# be available for use with the corresponding measurement Task.
 
 SingleFramePlugin.registry.register("base_SkyCoord", SingleFrameSkyCoordPlugin)
 
@@ -127,14 +128,21 @@ class SingleFrameClassificationConfig(SingleFramePluginConfig):
 
 class SingleFrameClassificationPlugin(SingleFramePlugin):
     """
-    This is an easy-to-implement centroid algorithm, based on the peak pixel of the source
-    footprint.  It is not the best centroid estimatation, but it is always available.
+    A binary measure of the extendedness of a source, based a simple cut on the ratio of the
+    PSF flux to the model flux.
+
+    Because the fluxes on which this algorithm is based are slot measurements, they can be provided
+    by different algorithms, and the "fluxRatio" threshold used by this algorithm should generally
+    be set differently for different algorithms.  To do this, plot the difference between the PSF
+    magnitude and the model magnitude vs. the PSF magnitude, and look for where the cloud of galaxies
+    begins.
     """
     ConfigClass = SingleFrameClassificationConfig
 
     def __init__(self, config, name, schema, flags, others, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
-        self.keyProbability = schema.addField("base_classificationExtendedness", type="D", doc="Classification", units="none")
+        self.keyProbability = schema.addField(name + "_value", type="D",
+                                              doc="Set to 1 for extended sources, 0 for point sources.")
 
     def measure(self, measRecord, exposure):
         modelFlux = measRecord.getModelFlux()
@@ -143,14 +151,15 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
         psfFluxErr = measRecord.getPsfFluxErr()
         flux1 = self.config.fluxRatio*modelFlux + self.config.modelErrFactor*modelFluxErr
         flux2 = psfFlux + self.config.psfErrFactor*psfFluxErr
-        if flux1 < flux2: measRecord.set(self.keyProbability, 0.0)
-        else: measRecord.set(self.keyProbability, 1.0);
+        if flux1 < flux2:
+            measRecord.set(self.keyProbability, 0.0)
+        else:
+            measRecord.set(self.keyProbability, 1.0);
 
     def fail(self, measRecord, error=None):
+        # Override fail() to do nothing in the case of an exception.  We should be setting a flag
+        # instead.
         pass
-
-# Plugin class must be registered to the singleton Registry class of the same type in order to
-# be available for use with the corresponding measurement Task.
 
 SingleFramePlugin.registry.register("base_ClassificationExtendedness", SingleFrameClassificationPlugin)
 

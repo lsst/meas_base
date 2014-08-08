@@ -33,9 +33,6 @@ NaiveCentroidAlgorithm::ResultMapper NaiveCentroidAlgorithm::makeResultMapper(
     return ResultMapper(schema, name, NO_UNCERTAINTY);
 }
 
-/**
- * @brief Given an image and a pixel position, return a Centroid using a naive 3x3 weighted moment
- */
 template <typename T>
 NaiveCentroidAlgorithm::Result NaiveCentroidAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,

@@ -59,7 +59,17 @@ public:
 
 
 /**
- *  @brief A measurement algorithm that estimates flux 
+ *  @brief An aperture photometry algorithm that uses sinc interpolation to handle fractional pixels.
+ *
+ *  While SincFluxAlgorithm supports elliptical apertures, the ellipticity and size of these apertures
+ *  is fixed by config, so in practice this feature is not useful.
+ *
+ *  For larger apertures where the fractional nature of the aperture boundary is unimportant,
+ *  NaiveFluxAlgorithm may be a better choice for performance reasons.
+ *
+ *  In the future, SincFluxAlgorithm and NaiveFluxAlgorithm will be merged into a single
+ *  algorithm capable of computing multiple apertures (see DM-837) and handling elliptical
+ *  apertures.
  */
 class SincFluxAlgorithm {
 public:
@@ -70,9 +80,6 @@ public:
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
     enum FlagBits {
-        NO_PSF=0,
-        NO_GOOD_PIXELS,
-        EDGE,
         N_FLAGS
     };
 
@@ -81,11 +88,7 @@ public:
      *         in catalog schemas.
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
-        static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
-                {"noPsf", "No Psf object attached to the Exposure object being measured"},
-                {"noGoodPixels", "No usable pixels in fit region"},
-                {"edge", "Could not use full PSF model image in fit because of proximity to exposure border"}
-            }};
+        static boost::array<FlagDef,N_FLAGS> const flagDefs;
         return flagDefs;
     }
 
