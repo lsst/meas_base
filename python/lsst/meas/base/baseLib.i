@@ -250,6 +250,11 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %wrapMeasurementAlgorithm0(lsst::meas::base, PixelFlagsAlgorithm, PixelFlagsControl, FootprintCentroidInput)
 %include "lsst/meas/base/PixelFlags.h"
 
+%include "lsst/meas/base/ApertureFlux.h"
+%template(apply) lsst::meas::base::ApertureFluxAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::ApertureFluxAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, ApertureFluxAlgorithm, ApertureFluxControl, FootprintCentroidInput, ApertureFluxExtras)
+
 %import "lsst/pex/exceptions/exceptionsLib.i"
 %declareException(MeasurementError, lsst.pex.exceptions.RuntimeError, lsst::meas::base::MeasurementError)
 %declareException(PixelValueError, lsst.pex.exceptions.DomainError, lsst::meas::base::PixelValueError)

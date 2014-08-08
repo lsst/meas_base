@@ -46,6 +46,7 @@ WrappedSingleFramePlugin.generate(NaiveFluxAlgorithm)
 WrappedSingleFramePlugin.generate(GaussianCentroidAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(GaussianFluxAlgorithm)
 WrappedSingleFramePlugin.generate(NaiveCentroidAlgorithm, executionOrder=0.0)
+WrappedSingleFramePlugin.generate(ApertureFluxAlgorithm)
 WrappedForcedPlugin.generate(PsfFluxAlgorithm)
 
 # --- Single-Frame Measurement Plugins ---
