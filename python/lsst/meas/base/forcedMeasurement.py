@@ -310,15 +310,16 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             # TODO: skip this loop if there are no plugins configured for single-object mode
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
                 noiseReplacer.insertSource(refChildRecord.getId())
-                callMeasure(self, measChildRecord, exposure, refChildRecord, refWcs)
+                self.callMeasure(measChildRecord, exposure, refChildRecord, refWcs)
                 noiseReplacer.removeSource(refChildRecord.getId())
 
             # then process the parent record
             noiseReplacer.insertSource(refParentRecord.getId())
-            callMeasure(self, measParentRecord, exposure, refParentRecord, refWcs)
-            callMeasureN(self, measChildCat, exposure, refChildCat)
-            callMeasureN(self, measParentCat[parentIdx:parentIdx+1], exposure,
-                         refParentCat[parentIdx:parentIdx+1])
+            self.callMeasure(measParentRecord, exposure, refParentRecord, refWcs)
+            self.callMeasureN(measParentCat[parentIdx:parentIdx+1], exposure,
+                              refParentCat[parentIdx:parentIdx+1])
+            # measure all the children simultaneously
+            self.callMeasureN(measChildCat, exposure, refChildCat)
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()
         return lsst.pipe.base.Struct(sources=sources)
@@ -339,7 +340,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         if idFactory == None:
             idFactory = lsst.afw.table.IdFactory.makeSimple()
         table = lsst.afw.table.SourceTable.make(self.mapper.getOutputSchema(), idFactory)
-        table.setVersion(self.TableVersion)
+        table.setVersion(self.tableVersion)
         sources = lsst.afw.table.SourceCatalog(table)
         table = sources.table
         table.setMetadata(self.algMetadata)
