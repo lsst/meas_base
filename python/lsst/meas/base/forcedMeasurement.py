@@ -233,7 +233,7 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         self.slots.psfFlux = None
         self.slots.instFlux = None
 
-class ForcedMeasurementTask(lsst.pipe.base.Task):
+class ForcedMeasurementTask(BaseMeasurementTask):
     """Forced measurement driver task
 
     This task is intended to be a subtask of another command line task, such as ProcessImageForcedTask
@@ -244,24 +244,13 @@ class ForcedMeasurementTask(lsst.pipe.base.Task):
     """
 
     ConfigClass = ForcedMeasurementConfig
-    _DefaultName = "forcedMeasurement"
-    TableVersion = 1
 
     def __init__(self, refSchema, algMetadata=None, flags=None, **kwds):
-        lsst.pipe.base.Task.__init__(self)
-        if algMetadata is None:
-            algMetadata = lsst.daf.base.PropertyList()
-        self.algMetadata = algMetadata
+        BaseMeasurementTask.__init__(self, algMetadata=algMetadata, **kwds)
         self.mapper = lsst.afw.table.SchemaMapper(refSchema)
-        minimalSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        self.mapper.addMinimalSchema(minimalSchema)
+        self.mapper.addMinimalSchema(lsst.afw.table.SourceTable.makeMinimalSchema())
         for refName, targetName in self.config.copyColumns.items():
             refItem = refSchema.find(refName)
-            self.mapper.addMapping(refItem.key, targetName)
-
-        self.plugins = PluginMap()
-        for refName, targetName in self.config.copyColumns.items():
-            refItem = self.mapper.getInputSchema().find(refName)
             self.mapper.addMapping(refItem.key, targetName)
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
             self.plugins[name] = PluginClass(config, name, self.mapper, flags=flags,

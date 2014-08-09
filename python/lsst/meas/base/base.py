@@ -25,15 +25,11 @@
     The intention is that single frame and multi frame algorithms will have different
     registries.
 """
+
 import collections
-import math
-import lsst.afw.detection as afwDet
-import lsst.afw.math as afwMath
-import lsst.afw.image as afwImage
+
 import lsst.pipe.base
 import lsst.pex.config
-import lsst.pex.exceptions
-import lsst.afw.table
 
 from .baseLib import *
 from .noiseReplacer import *
@@ -273,7 +269,7 @@ class SourceSlotConfig(lsst.pex.config.Config):
     """Slot configuration which assigns a particular named plugin to each of a set of
     slots.  Each slot allows a type of measurement to be fetched from the SourceTable
     without knowing which algorithm was used to produced the data.  For example, getCentroid()
-    and setCentroid() can be used if the centroid slot is setup, without know that the correct
+    and setCentroid() can be used if the centroid slot is setup, without knowing that the correct
     key is schema.find("centroid.sdss").key
 
     NOTE: default for each slot must be registered, even if the default is not used.
@@ -336,3 +332,29 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
                         break
                 else:
                     raise ValueError("source flux slot algorithm '%s' is not being run." % slot)
+
+
+class BaseMeasurementTask(lsst.pipe.base.Task):
+
+    _DefaultName = "measurement"
+    TableVersion = 1
+
+    def __init__(self, algMetadata=None, **kwds):
+        """Constructor; only called by derived classes.
+
+        @param[in]  algMetadata     An lsst.daf.base.PropertyList that will be filled with metadata
+                                    about the plugins being run.  If None, an empty PropertyList will
+                                    be created.
+        @param[in]  **kwds          Additional arguments passed to lsst.pipe.base.Task.__init__.
+
+        This attaches two public attributes to the class for use by derived classes and parent tasks:
+         - plugins: an empty PluginMap, which will eventually contain all active plugins that will by
+           invoked by the run() method (to be filled by subclasses).  This should be considered read-only.
+         - algMetadata: a lsst.daf.base.PropertyList that will contain additional information about the
+           active plugins to be saved with the output catalog (to be filled by subclasses).
+        """
+        lsst.pipe.base.Task.__init__(self, **kwds)
+        self.plugins = PluginMap()
+        if algMetadata is None:
+            algMetadata = lsst.daf.base.PropertyList()
+        self.algMetadata = algMetadata
