@@ -251,16 +251,17 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         for parentIdx, measParentRecord in enumerate(measParentCat):
             # first get all the children of this parent, insert footprint in turn, and measure
             measChildCat = measCat.getChildren(measParentRecord.getId())
+            # TODO: skip this loop if there are no plugins configured for single-object mode
             for measChildRecord in measChildCat:
                 noiseReplacer.insertSource(measChildRecord.getId())
-                callMeasure(self, measChildRecord, exposure)
+                self.callMeasure(measChildRecord, exposure)
                 noiseReplacer.removeSource(measChildRecord.getId())
             # Then insert the parent footprint, and measure that
             noiseReplacer.insertSource(measParentRecord.getId())
-            callMeasure(self, measParentRecord, exposure)
+            self.callMeasure(measParentRecord, exposure)
             # Finally, process both the parent and the child set through measureN
-            callMeasureN(self, measParentCat[parentIdx:parentIdx+1], exposure)
-            callMeasureN(self, measChildCat, exposure)
+            self.callMeasureN(measParentCat[parentIdx:parentIdx+1], exposure)
+            self.callMeasureN(measChildCat, exposure)
             noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
         noiseReplacer.end()

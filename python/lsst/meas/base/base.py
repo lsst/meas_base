@@ -54,52 +54,6 @@ def generateAlgorithmName(AlgClass):
         terms = terms[:-1]
     return "%s_%s" % ("_".join(terms), name)
 
-def callMeasure(task, measRecord, *args, **kwds):
-    """Call the measure() method on all plugins in the given task, handling exceptions in a consistent way.
-
-    This function can be used with plugins that have different signatures; the only requirement is that
-    'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are forwarded
-    directly to the plugin.  This allows callMeasure() to be used by both SingleFrameMeasurementTask and
-    ForcedMeasurementTask.
-
-    If all measurement tasks had a common base class, this would probably go there.
-    """
-    for plugin in task.plugins.iter():
-        try:
-            plugin.measure(measRecord, *args, **kwds)
-        except FATAL_EXCEPTIONS:
-            raise
-        except MeasurementError as error:
-            plugin.fail(measRecord, error)
-        except Exception as error:
-            task.log.warn("Error in %s.measure on record %s: %s"
-                          % (plugin.name, measRecord.getId(), error))
-            plugin.fail(measRecord)
-
-def callMeasureN(task, measCat, *args, **kwds):
-    """Call the measureN() method on all plugins in the given task, handling exceptions in a consistent way.
-
-    This function can be used with plugins that have different signatures; the only requirement is that
-    'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are forwarded
-    directly to the plugin.  This allows callMeasureN() to be used by both SingleFrameMeasurementTask and
-    ForcedMeasurementTask.
-
-    If all measurement tasks had a common base class, this would probably go there.
-    """
-    for plugin in task.plugins.iterN():
-        try:
-            plugin.measureN(measCat, *args, **kwds)
-        except FATAL_EXCEPTIONS:
-            raise
-        except MeasurementError as error:
-            for measRecord in measCat:
-                plugin.fail(measRecord, error)
-        except Exception as error:
-            for measRecord in measCat:
-                plugin.fail(measRecord)
-            task.log.warn("Error in %s.measureN on records %s-%s: %s"
-                          % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
-
 # Translation map from new PixelFlags to old ones defined in meas_algorithms
 
 _flagMap = {
@@ -336,6 +290,7 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
 
 class BaseMeasurementTask(lsst.pipe.base.Task):
 
+    ConfigClass = BaseMeasurementConfig
     _DefaultName = "measurement"
     TableVersion = 1
 
@@ -358,3 +313,43 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         if algMetadata is None:
             algMetadata = lsst.daf.base.PropertyList()
         self.algMetadata = algMetadata
+
+    def callMeasure(self, measRecord, *args, **kwds):
+        """Call the measure() method on all plugins, handling exceptions in a consistent way.
+
+        This method can be used with plugins that have different signatures; the only requirement is that
+        'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are
+        forwarded directly to the plugin.
+        """
+        for plugin in self.plugins.iter():
+            try:
+                plugin.measure(measRecord, *args, **kwds)
+            except FATAL_EXCEPTIONS:
+                raise
+            except MeasurementError as error:
+                plugin.fail(measRecord, error)
+            except Exception as error:
+                self.log.warn("Error in %s.measure on record %s: %s"
+                              % (plugin.name, measRecord.getId(), error))
+                plugin.fail(measRecord)
+
+    def callMeasureN(self, measCat, *args, **kwds):
+        """Call the measureN() method on all plugins, handling exceptions in a consistent way.
+
+        This method can be used with plugins that have different signatures; the only requirement is that
+        'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are
+        forwarded directly to the plugin.
+        """
+        for plugin in self.plugins.iterN():
+            try:
+                plugin.measureN(measCat, *args, **kwds)
+            except FATAL_EXCEPTIONS:
+                raise
+            except MeasurementError as error:
+                for measRecord in measCat:
+                    plugin.fail(measRecord, error)
+            except Exception as error:
+                for measRecord in measCat:
+                    plugin.fail(measRecord)
+                self.log.warn("Error in %s.measureN on records %s-%s: %s"
+                              % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
