@@ -197,12 +197,10 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
         )
     algorithms = property(lambda self: self.plugins, doc="backwards-compatibility alias for plugins")
 
-class SingleFrameMeasurementTask(lsst.pipe.base.Task):
+class SingleFrameMeasurementTask(BaseMeasurementTask):
     """Single-frame measurement driver task"""
 
     ConfigClass = SingleFrameMeasurementConfig
-    _DefaultName = "measurement"
-    tableVersion = 1
 
     def __init__(self, schema, algMetadata=None, flags=None, **kwds):
         """Initialize the task, including setting up the execution order of the plugins
@@ -211,12 +209,8 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
         @param[in] schema      lsst.afw.table.Schema, which should have been initialized
                                to include the measurement fields from the plugins already
         """
-        lsst.pipe.base.Task.__init__(self, **kwds)
+        BaseMeasurementTask.__init__(self, algMetadata=algMetadata, **kwds)
         self.schema = schema
-        if algMetadata is None:
-            algMetadata = lsst.daf.base.PropertyList()
-        self.algMetadata = algMetadata
-        self.plugins = PluginMap()
         # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
             self.plugins[name] = PluginClass(config, name, schema=schema, flags=flags,
