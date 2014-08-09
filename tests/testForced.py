@@ -22,18 +22,17 @@
 #
 
 import os
-import math
-from lsst.afw.table import IdFactory,Schema,SchemaMapper,SourceCatalog,SourceTable
-from lsst.meas.base.base import *
-from lsst.meas.base.forcedImage import *
-from lsst.meas.base.forcedCcd import ProcessForcedCcdTask, ProcessForcedCcdConfig
-from lsst.daf.persistence.butler import *
 import unittest
-import lsst.utils.tests
+import math
 import numpy
 
+import lsst.utils.tests
 import lsst.afw.detection
-import numpy
+from lsst.afw.table import IdFactory,Schema,SchemaMapper,SourceCatalog,SourceTable
+from lsst.meas.base.base import *
+from lsst.meas.base.forcedMeasurement import *
+from lsst.meas.base.forcedCcd import ProcessForcedCcdTask, ProcessForcedCcdConfig
+from lsst.daf.persistence.butler import *
 
 from lsst.meas.base.tests import *
 
