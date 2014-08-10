@@ -29,44 +29,65 @@ import lsst.pex.config
 class NoiseReplacerConfig(lsst.pex.config.Config):
     noiseSource = lsst.pex.config.ChoiceField(
         doc='How to choose mean and variance of the Gaussian noise we generate?',
-        dtype=str, allowed={'measure': 'Measure clipped mean and variance from the whole image',
-        'meta': 'Mean = 0, variance = the "BGMEAN" metadata entry',
-        'variance': "Mean = 0, variance = the image's variance",},
-        default='measure', optional=False)
-    noiseOffset = lsst.pex.config.Field(dtype=float, optional=False, default=0.,
-                                  doc='Add ann offset to the generated noise.')
-    noiseSeed = lsst.pex.config.Field(dtype=int, default=0,
-        doc='The seed value to use for random number generation.')
+        dtype=str,
+        allowed={
+            'measure': 'Measure clipped mean and variance from the whole image',
+            'meta': 'Mean = 0, variance = the "BGMEAN" metadata entry',
+            'variance': "Mean = 0, variance = the image's variance",
+            },
+        default='measure', optional=False
+        )
+    noiseOffset = lsst.pex.config.Field(
+        dtype=float, optional=False, default=0.,
+        doc='Add ann offset to the generated noise.'
+        )
+    noiseSeed = lsst.pex.config.Field(
+        dtype=int, default=0,
+        doc='The seed value to use for random number generation.'
+        )
 
 class NoiseReplacer(object):
-    """ Class that handles replacing sources with noise during measurement.
+    """!
+    Class that handles replacing sources with noise during measurement.
 
-    This is a functional copy of the code in  ReplaceWithNoiseTask, but with a slightly different API
-    needed for the new measurement framework; note that it is not a Task, as the lifetime of a
+    When measuring a source (or the children associated with a parent source), this class is used
+    to replace its neighbors with noise, using the deblender's definition of the sources as stored
+    in HeavyFootprints attached to the SourceRecords.  The algorithm works as follows:
+     - We start by replacing all pixels that are in source Footprints with artificially
+       generated noise (__init__).
+     - When we are about to measure a particular source, we add it back in, by inserting that source's
+       HeavyFootprint (from the deblender) into the image.
+     - When we are done measuring that source, we again replace the HeavyFootprint with (the same)
+       artificial noise.
+     - After measuring all sources, we return the image to its original state.
+
+    This is a functional copy of the code in the older ReplaceWithNoiseTask, but with a slightly different
+    API needed for the new measurement framework; note that it is not a Task, as the lifetime of a
     NoiseReplacer now corresponds to a single exposure, not an entire processing run.
     """
 
     ConfigClass = NoiseReplacerConfig
 
     def __init__(self, config, exposure, footprints, log=None):
-        """ Initialize the NoiseReplacer.
+        """!
+        Initialize the NoiseReplacer.
 
-            @param[in]      config       instance of NoiseReplacerConfig
-            @param[in,out]  exposure     Exposure to be noise replaced. (All sources replaced on return)
-            @param[in]      footprints   dict of {id: (parent, footprint)};
+        @param[in]      config       instance of NoiseReplacerConfig
+        @param[in,out]  exposure     Exposure to be noise replaced. (All sources replaced on return)
+        @param[in]      footprints   dict of {id: (parent, footprint)};
 
-            'footprints' is a dict of {id: (parent, footprint)}; when used in SFM, the ID will be the
-            source ID, but in forced photometry, this will be the reference ID, as that's what we used to
-            determine the deblend families.  This routine should create HeavyFootprints for any non-Heavy
-            Footprints, and replace them in the dict.  It should then create a dict of HeavyFootprints
-            containing noise, but only for parent objects, then replace all sources with noise.
-            This should ignore any footprints that lay outside the bounding box of the exposure,
-            and clip those that lie on the border.
+        'footprints' is a dict of {id: (parent, footprint)}; when used in SFM, the ID will be the
+        source ID, but in forced photometry, this will be the reference ID, as that's what we used to
+        determine the deblend families.  This routine should create HeavyFootprints for any non-Heavy
+        Footprints, and replace them in the dict.  It should then create a dict of HeavyFootprints
+        containing noise, but only for parent objects, then replace all sources with noise.
+        This should ignore any footprints that lay outside the bounding box of the exposure,
+        and clip those that lie on the border.
 
-            NOTE: as the code currently stands, the heavy footprint for a deblended object must be available
-            from the input catalog.  If it is not, it cannot be reproduced here.  In that case, the
-            topmost parent in the objects parent chain must be used.  The heavy footprint for that source
-            is created in this class from the masked image.
+        NOTE: as the code currently stands, the heavy footprint for a deblended object must be available
+        from the input catalog.  If it is not, it cannot be reproduced here.  In that case, the
+        topmost parent in the objects parent chain must be used.  The heavy footprint for that source
+        is created in this class from the masked image.
         """
         noiseImage=None
         noiseMeanVar=None
@@ -146,10 +167,12 @@ class NoiseReplacer(object):
             afwDet.setMaskFromFootprint(mask, fp, self.otherbitmask)
 
     def insertSource(self, id):
-        """ Insert the heavy footprint of a given source into the exposure
-            @param[in]  id   id for current source to insert
-                             from original footprint dict
-            Fix up the mask plane to show the source of this footprint
+        """!
+        Insert the heavy footprint of a given source into the exposure
+
+        @param[in]  id   id for current source to insert from original footprint dict
+
+        Also adjusts the mask plane to show the source of this footprint.
         """
         # Copy this source's pixels into the image
         mi = self.exposure.getMaskedImage()
@@ -167,10 +190,12 @@ class NoiseReplacer(object):
         afwDet.clearMaskFromFootprint(mask, fp, self.otherbitmask)
 
     def removeSource(self, id):
-        """ Remove the heavy footprint of a given source and replace with previous noise
-            @param[in]  id   id for current source to insert
-                             from original footprint dict
-            Fix up the mask plane to show the source of this footprint
+        """!
+        Remove the heavy footprint of a given source and replace with previous noise
+
+        @param[in]  id   id for current source to insert from original footprint dict
+
+        Also restore the mask plane.
         """
         # remove a single source
         # (Replace this source's pixels by noise again.)
@@ -192,9 +217,11 @@ class NoiseReplacer(object):
         afwDet.setMaskFromFootprint(mask, fp, self.otherbitmask)
 
     def end(self):
-        """" End the NoiseReplacer.
-             Restore original data to the exposure from the heavies dictionary
-             Restore the mask planes to their original state
+        """!
+        End the NoiseReplacer.
+
+        Restore original data to the exposure from the heavies dictionary
+        Restore the mask planes to their original state
         """
         # restores original image, cleans up temporaries
         # (ie, replace all the top-level pixels)
@@ -216,7 +243,8 @@ class NoiseReplacer(object):
         del self.heavyNoise
 
     def getNoiseGenerator(self, exposure, noiseImage, noiseMeanVar):
-        """" Generate noise image using parameters given
+        """!
+        Generate noise image using parameters given
         """
         if noiseImage is not None:
             return ImageNoiseGenerator(noiseImage)
@@ -299,16 +327,18 @@ class NoiseReplacerList(list):
         for item in self: self.end()
 
 class NoiseGenerator(object):
-    """
+    """!
     Base class for noise generators used by the "doReplaceWithNoise" routine:
     these produce HeavyFootprints filled with noise generated in various ways.
 
     This is an abstract base class.
     """
+
     def getHeavyFootprint(self, fp):
         bb = fp.getBBox()
         mim = self.getMaskedImage(bb)
         return afwDet.makeHeavyFootprint(fp, mim)
+
     def getMaskedImage(self, bb):
         im = self.getImage(bb)
         return afwImage.MaskedImageF(im)
@@ -317,26 +347,30 @@ class NoiseGenerator(object):
 
 class ImageNoiseGenerator(NoiseGenerator):
     """
-        "Generates" noise by cutting out a subimage from a user-supplied noise Image.
+    Generates noise by cutting out a subimage from a user-supplied noise Image.
     """
+
     def __init__(self, img):
         """
         img: an afwImage.ImageF
         """
         self.mim = afwImage.MaskedImageF(img)
+
     def getMaskedImage(self, bb):
         return self.mim
 
 class GaussianNoiseGenerator(NoiseGenerator):
-    """
-        Generates noise using the afwMath.Random() and afwMath.randomGaussianImage() routines.
+    """!
+    Generates noise using the afwMath.Random() and afwMath.randomGaussianImage() routines.
 
-        This is an abstract base class.
+    This is an abstract base class.
     """
+
     def __init__(self, rand=None):
         if rand is None:
             rand = afwMath.Random()
         self.rand = rand
+
     def getRandomImage(self, bb):
         # Create an Image and fill it with Gaussian noise.
         rim = afwImage.ImageF(bb.getWidth(), bb.getHeight())
@@ -345,15 +379,18 @@ class GaussianNoiseGenerator(NoiseGenerator):
         return rim
 
 class FixedGaussianNoiseGenerator(GaussianNoiseGenerator):
+    """!
+    Generates Gaussian noise with a fixed mean and standard deviation.
     """
-        Generates Gaussian noise with a fixed mean and standard deviation.
-    """
+
     def __init__(self, mean, std, rand=None):
         super(FixedGaussianNoiseGenerator, self).__init__(rand=rand)
         self.mean = mean
         self.std = std
+
     def __str__(self):
         return 'FixedGaussianNoiseGenerator: mean=%g, std=%g' % (self.mean, self.std)
+
     def getImage(self, bb):
         rim = self.getRandomImage(bb)
         rim *= self.std
@@ -361,9 +398,10 @@ class FixedGaussianNoiseGenerator(GaussianNoiseGenerator):
         return rim
 
 class VariancePlaneNoiseGenerator(GaussianNoiseGenerator):
+    """!
+    Generates Gaussian noise whose variance matches that of the variance plane of the image.
     """
-        Generates Gaussian noise whose variance matches that of the variance plane of the image.
-    """
+
     def __init__(self, var, mean=None, rand=None):
         """
         var: an afwImage.ImageF; the variance plane.
@@ -374,8 +412,10 @@ class VariancePlaneNoiseGenerator(GaussianNoiseGenerator):
         if mean is not None and mean == 0.:
             mean = None
         self.mean = mean
+
     def __str__(self):
         return 'VariancePlaneNoiseGenerator: mean=' + str(self.mean)
+
     def getImage(self, bb):
         rim = self.getRandomImage(bb)
         # Use the image's variance plane to scale the noise.
