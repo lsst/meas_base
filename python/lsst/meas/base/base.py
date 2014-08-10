@@ -20,10 +20,11 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-""" Base class for plugin registries.
-    The Plugin class allowed in the registry is defined on the ctor of the registry
-    The intention is that single frame and multi frame algorithms will have different
-    registries.
+"""Base and utility classes for measurement frameworks
+
+This includes base classes for plugins and tasks and utility classes such as PluginMap and
+MeasurementDataFlags that are shared by the single-frame measurement framework and the forced
+measurement framework.
 """
 
 import collections
@@ -39,6 +40,10 @@ FATAL_EXCEPTIONS = (MemoryError,)  # Exceptions that the framework should always
 def generateAlgorithmName(AlgClass):
     """Generate a string name for an algorithm class that strips away terms that are generally redundant
     while (hopefully) remaining easy to trace to the code.
+
+    The returned name will cobmine the package name, with any "lsst" and/or "meas" prefix removed,
+    with the class name, with any "Algorithm" suffix removed.  For instance,
+    lsst.meas.base.SdssShapeAlgorithm becomes "base_SdssShape".
     """
     name = AlgClass.__name__
     pkg = AlgClass.__module__
@@ -75,17 +80,18 @@ def Version0FlagMapper(flags):
         else:
             _flags.append(name)
     return _flags
- 
+
 class PluginRegistry(lsst.pex.config.Registry):
-    """ Base class for plugin registries
+    """!
+    Base class for plugin registries
 
     The Plugin class allowed in the registry is defined on the ctor of the registry
-    The intention is that single-frame and multi-frame plugins will have different
-    registries.
+    Single-frame and forced plugins have different registries.
     """
 
     class Configurable(object):
-        """Class used as the actual element in the registry
+        """!
+        Class used as the actual element in the registry
 
         Rather than constructing a Plugin instance, it returns a tuple
         of (runlevel, name, config, PluginClass), which can then
@@ -95,7 +101,8 @@ class PluginRegistry(lsst.pex.config.Registry):
         __slots__ = "PluginClass", "name"
 
         def __init__(self, name, PluginClass):
-            """ Initialize registry with Plugin Class
+            """!
+            Initialize registry with Plugin Class
             """
             self.name = name
             self.PluginClass = PluginClass
@@ -107,7 +114,8 @@ class PluginRegistry(lsst.pex.config.Registry):
             return (config.executionOrder, self.name, config, self.PluginClass)
 
     def register(self, name, PluginClass):
-        """Register a Plugin class with the given name.
+        """!
+        Register a Plugin class with the given name.
 
         The same Plugin may be registered multiple times with different names; this can
         be useful if we often want to run it multiple times with different configuration.
@@ -122,13 +130,11 @@ class PluginRegistry(lsst.pex.config.Registry):
         return lsst.pex.config.RegistryField(doc, self, default, optional, multi)
 
 class PluginMap(collections.OrderedDict):
-    """ Map of plugins to be run for a task
+    """!
+    Map of plugins to be run for a task
 
     We assume Plugins are added to the PluginMap according to their executionOrder, so this
     class doesn't actually do any of the sorting (though it does have to maintain that order).
-
-    Should later be implemented as Swigged C++ class so we can pass it to C++-implemented Plugins
-    in the future.
     """
 
     def iter(self):
@@ -146,7 +152,8 @@ class PluginMap(collections.OrderedDict):
                 yield plugin
 
 class BasePluginConfig(lsst.pex.config.Config):
-    """Base class for config which should be defined for each measurement plugin.
+    """!
+    Base class measurement Plugin config classes.
 
     Most derived classes will want to override setDefaults() in order to customize
     the default exceutionOrder.
@@ -183,10 +190,16 @@ are also allowed, but should be avoided unless they are needed):
     doMeasureN = False  # replace this class attribute with a Field if measureN-capable
 
 class BasePlugin(object):
-    """Base class for measurement plugins."""
+    """!
+    Base class for measurement plugins.
+
+    This is the base class for SingleFramePlugin and ForcedPlugin; derived classes should inherit
+    from one of those.
+    """
 
     def fail(self, measRecord, error=None):
-        """Record a failure of the measure or measureN() method.
+        """!
+        Record a failure of the measure or measureN() method.
 
         When measure() raises an exception, the measurement framework
         will call fail() to allow the plugin to set its failure flag
@@ -202,10 +215,11 @@ class BasePlugin(object):
         raise NotImplementedError("This algorithm thinks it cannot fail; please report this as a bug.")
 
 class MeasurementDataFlags(object):
-    """Flags that describe data to be measured, allowing plugins with the same signature but
+    """!
+    Flags that describe data to be measured, allowing plugins with the same signature but
     different requirements to assert their appropriateness for the data they will be run on.
 
-    This should later be implemented as a Swigged C++ enum
+    This is just a placeholder for now; see DM-1026.
     """
 
     PRECONVOLVED = 0x01  # the image has already been convolved with its PSF;
@@ -220,13 +234,12 @@ class MeasurementDataFlags(object):
     NO_WCS = 0x10 # the image has no Wcs object attached
 
 class SourceSlotConfig(lsst.pex.config.Config):
-    """Slot configuration which assigns a particular named plugin to each of a set of
+    """!
+    Slot configuration which assigns a particular named plugin to each of a set of
     slots.  Each slot allows a type of measurement to be fetched from the SourceTable
-    without knowing which algorithm was used to produced the data.  For example, getCentroid()
-    and setCentroid() can be used if the centroid slot is setup, without knowing that the correct
-    key is schema.find("centroid.sdss").key
+    without knowing which algorithm was used to produced the data.
 
-    NOTE: default for each slot must be registered, even if the default is not used.
+    NOTE: the default algorithm for each slot must be registered, even if the default is not used.
     """
 
     centroid = lsst.pex.config.Field(dtype=str, default="base_SdssCentroid", optional=True,
@@ -258,7 +271,9 @@ class SourceSlotConfig(lsst.pex.config.Config):
 
 
 class BaseMeasurementConfig(lsst.pex.config.Config):
-    """Base config class for all measurement driver tasks."""
+    """!
+    Base config class for all measurement driver tasks.
+    """
 
     slots = lsst.pex.config.ConfigField(
         dtype = SourceSlotConfig,
@@ -288,14 +303,27 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
                     raise ValueError("source flux slot algorithm '%s' is not being run." % slot)
 
 
+## @addtogroup LSST_task_documentation
+## @{
+## @page baseMeasurementTask
+## BaseMeasurementTask @copybrief BaseMeasurementTask
+## @}
+
 class BaseMeasurementTask(lsst.pipe.base.Task):
+    """!
+    Ultimate base class for all measurement tasks.
+
+    This base class for SingleFrameMeasurementTask and ForcedMeasurementTask mostly exists to share
+    code between the two, and generally should not be used directly.
+    """
 
     ConfigClass = BaseMeasurementConfig
     _DefaultName = "measurement"
     tableVersion = 1
 
     def __init__(self, algMetadata=None, **kwds):
-        """Constructor; only called by derived classes.
+        """!
+        Constructor; only called by derived classes.
 
         @param[in]  algMetadata     An lsst.daf.base.PropertyList that will be filled with metadata
                                     about the plugins being run.  If None, an empty PropertyList will
@@ -315,11 +343,19 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         self.algMetadata = algMetadata
 
     def callMeasure(self, measRecord, *args, **kwds):
-        """Call the measure() method on all plugins, handling exceptions in a consistent way.
+        """!
+        Call the measure() method on all plugins, handling exceptions in a consistent way.
+
+        @param[in,out]  measRecord     lsst.afw.table.SourceRecord that corresponds to the object being
+                                       measured, and where outputs should be written.
+        @param[in]      *args          Positional arguments forwarded to Plugin.measure()
+        @param[in]      **kwds         Keyword arguments forwarded to Plugin.measure()
 
         This method can be used with plugins that have different signatures; the only requirement is that
         'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are
         forwarded directly to the plugin.
+
+        This method should be considered "protected"; it is intended for use by derived classes, not users.
         """
         for plugin in self.plugins.iter():
             try:
@@ -334,11 +370,20 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
                 plugin.fail(measRecord)
 
     def callMeasureN(self, measCat, *args, **kwds):
-        """Call the measureN() method on all plugins, handling exceptions in a consistent way.
+        """!
+        Call the measureN() method on all plugins, handling exceptions in a consistent way.
+
+        @param[in,out]  measCat        lsst.afw.table.SourceCatalog containing records for just
+                                       the source family to be measured, and where outputs should
+                                       be written.
+        @param[in]      *args          Positional arguments forwarded to Plugin.measure()
+        @param[in]      **kwds         Keyword arguments forwarded to Plugin.measure()
 
         This method can be used with plugins that have different signatures; the only requirement is that
         'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are
         forwarded directly to the plugin.
+
+        This method should be considered "protected"; it is intended for use by derived classes, not users.
         """
         for plugin in self.plugins.iterN():
             try:
