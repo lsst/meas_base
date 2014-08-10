@@ -37,5 +37,6 @@
 #include "lsst/meas/base/GaussianCentroid.h"
 #include "lsst/meas/base/NaiveFlux.h"
 #include "lsst/meas/base/NaiveCentroid.h"
+#include "lsst/meas/base/PeakLikelihoodFlux.h"
 
 #endif // !LSST_MEAS_base_h_INCLUDED
