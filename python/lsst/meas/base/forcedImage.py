@@ -29,6 +29,7 @@ import lsst.daf.base
 import lsst.pipe.base
 import lsst.pex.config
 
+from .base import *
 from .references import CoaddSrcReferencesTask
 from .forcedMeasurement import *
 
@@ -41,7 +42,7 @@ class ProcessImageForcedConfig(lsst.pex.config.Config):
         target=CoaddSrcReferencesTask,
         doc="Retrieve reference source catalog"
         )
-    forcedMeasurement = lsst.pex.config.ConfigurableField(
+    measurement = lsst.pex.config.ConfigurableField(
         target=ForcedMeasurementTask,
         doc="subtask to do forced measurement"
         )
@@ -56,7 +57,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
     _DefaultName = "processImageForcedTask"
 
     def __init__(self, butler=None, refSchema=None, **kwds):
-        lsst.pipe.base.CmdLineTask.__init__(self, **kwds)
+        super(lsst.pipe.base.CmdLineTask, self).__init__(**kwds)
         self.makeSubtask("references")
         if not refSchema:
             refSchema = self.references.getSchema(butler)

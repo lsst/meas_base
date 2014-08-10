@@ -308,7 +308,7 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
          - algMetadata: a lsst.daf.base.PropertyList that will contain additional information about the
            active plugins to be saved with the output catalog (to be filled by subclasses).
         """
-        lsst.pipe.base.Task.__init__(self, **kwds)
+        super(BaseMeasurementTask, self).__init__(**kwds)
         self.plugins = PluginMap()
         if algMetadata is None:
             algMetadata = lsst.daf.base.PropertyList()
