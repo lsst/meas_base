@@ -70,7 +70,7 @@ class ProcessForcedCcdConfig(ProcessImageForcedConfig):
     doApplyUberCal = Field(
         dtype = bool,
         doc = "Apply meas_mosaic ubercal results to input calexps?",
-        default = True
+        default = False
     )
 
 

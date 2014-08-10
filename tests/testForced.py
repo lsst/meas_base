@@ -22,50 +22,45 @@
 #
 
 import os
-import math
-from lsst.afw.table import IdFactory,Schema,SchemaMapper,SourceCatalog,SourceTable
-from lsst.meas.base.base import *
-from lsst.meas.base.forcedImage import *
-from lsst.meas.base.forcedCcd import ProcessForcedCcdTask, ProcessForcedCcdConfig
-from lsst.daf.persistence.butler import *
 import unittest
+import numpy
+
 import lsst.utils.tests
-import numpy
-
 import lsst.afw.detection
-import numpy
+import lsst.afw.table
 
-from lsst.meas.base.tests import *
+import lsst.meas.base.tests
 
 numpy.random.seed(123)
 
 # This task if just to define a ForcedMeasurementTask with no required plugins
-class TestForcedMeasurementConfig(ForcedMeasurementConfig):
+class TestForcedMeasurementConfig(lsst.meas.base.ForcedMeasurementConfig):
 
     def setDefaults(self):
-        ForcedMeasurementConfig.setDefaults(self)
+        super(lsst.meas.base.ForcedMeasurementConfig, self).setDefaults()
         self.plugins = ["centroid.peak", "test.flux"]
         self.slots.centroid = None #"centroid.peak"
         self.slots.shape = None
-        self.slots.psfFlux = None 
+        self.slots.psfFlux = None
         self.slots.modelFlux = None
         self.slots.apFlux = None
         self.slots.instFlux = None
 
-class TestForcedMeasurementTask(ForcedMeasurementTask):
+class TestForcedMeasurementTask(lsst.meas.base.ForcedMeasurementTask):
 
     ConfigClass = TestForcedMeasurementConfig
 
 
-#  Test SFM plugin, which is used to test that the plugin mechanism works correctly,
+#  Test plugin, which is used to test that the plugin mechanism works correctly,
 #  and that the noise replacement mechanism is working.  This plugin measures the total
 #  flux for each source within its footprint, as well as the total flux in a box which
 #  completely surrounds the object (providing an indication of any bad replacement nearby
 
-class TestFlux(ForcedPlugin):
+class TestFlux(lsst.meas.base.ForcedPlugin):
 
     def __init__(self, config, name, schemaMapper, flags=None, others=None, metadata=None):
-        ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
+        super(TestFlux, self).__init__(config, name, schemaMapper, flags,
+                                       others, metadata)
         schema = schemaMapper.editOutputSchema()
         self.fluxKey = schema.addField("test.flux", type=float, doc="sum of flux in object footprint",
                                        units="dn")
@@ -110,7 +105,7 @@ class TestFlux(ForcedPlugin):
 
 
 
-ForcedPlugin.registry.register("test.flux", TestFlux)
+lsst.meas.base.ForcedPlugin.registry.register("test.flux", TestFlux)
 
 DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
 
@@ -119,9 +114,9 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
 
     def setUp(self):
         crval = lsst.afw.coord.IcrsCoord(45.0*lsst.afw.geom.degrees, 45.005*lsst.afw.geom.degrees)
-        catalog, bbox = MakeTestData.makeCatalog()
-        exposure = MakeTestData.makeEmptyExposure(bbox, crval)
-        MakeTestData.fillImages(catalog, exposure)
+        catalog, bbox = lsst.meas.base.tests.MakeTestData.makeCatalog()
+        exposure = lsst.meas.base.tests.MakeTestData.makeEmptyExposure(bbox, crval)
+        lsst.meas.base.tests.MakeTestData.fillImages(catalog, exposure)
         catalog.writeFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
         exposure.writeFits(os.path.join(DATA_DIR, "calexp-0A.fits"))
         refCatalog = lsst.afw.table.SourceCatalog(catalog.getSchema())
@@ -156,9 +151,9 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
             coord = rec.get(coordKey)
             cent = rec.get(centKey)
         crval = lsst.afw.coord.IcrsCoord(45.0*lsst.afw.geom.degrees, 44.995*lsst.afw.geom.degrees)
-        catalog, bbox = MakeTestData.makeCatalog()
-        exposure = MakeTestData.makeEmptyExposure(bbox, crval)
-        MakeTestData.fillImages(catalog, exposure)
+        catalog, bbox = lsst.meas.base.tests.MakeTestData.makeCatalog()
+        exposure = lsst.meas.base.tests.MakeTestData.makeEmptyExposure(bbox, crval)
+        lsst.meas.base.tests.MakeTestData.fillImages(catalog, exposure)
         catalog.writeFits(os.path.join(DATA_DIR, "truthcat-0B.fits"))
         exposure.writeFits(os.path.join(DATA_DIR, "calexp-0B.fits"))
     
@@ -178,7 +173,7 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
 
         path = os.path.join(DATA_DIR, 'calexp-0A.fits')
         exposure = lsst.afw.image.ExposureF(path)
-        refCat = SourceCatalog.readFits(os.path.join(DATA_DIR, "refcat-0A.fits"))
+        refCat = lsst.afw.table.SourceCatalog.readFits(os.path.join(DATA_DIR, "refcat-0A.fits"))
         path = os.path.join(DATA_DIR, 'ref-0A.fits')
         ref = lsst.afw.image.ExposureF(path)
         refWcs = ref.getWcs()
@@ -211,12 +206,12 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
     #  with the same Wcs as the refCat exposure
     def testOnSameWcs(self):
 
-        refCat = SourceCatalog.readFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
-        
+        refCat = lsst.afw.table.SourceCatalog.readFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
+
         path = os.path.join(DATA_DIR, 'calexp-0A.fits')
         exposure = lsst.afw.image.ExposureF(path)
         refWcs = exposure.getWcs()
-        task = ForcedMeasurementTask(refCat.getSchema())
+        task = lsst.meas.base.ForcedMeasurementTask(refCat.getSchema())
         result = task.run(exposure, refCat, refWcs)
         sources = result.sources
         mismatches = 0
@@ -225,14 +220,14 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         for source in sources:
             centroid = source.getFootprint().getPeaks()[0].getCentroid()
             peakcentroid = lsst.afw.geom.geomLib.Point2D(source.get(keyX), source.get(keyY))
-            distance = math.sqrt(centroid.distanceSquared(peakcentroid))
+            distance = numpy.sqrt(centroid.distanceSquared(peakcentroid))
             if distance > .00001:
                 mismatches = mismatches + 1
                 distX = centroid.getX()-peakcentroid.getX()
                 distY = centroid.getY()-peakcentroid.getY()
                 print "Mismatch: ", source.getId(), distance, distX, distY
 
-        self.assertEqual(mismatches, 0) 
+        self.assertEqual(mismatches, 0)
 
 def suite():
     """Returns a suite containing all the test cases in this module."""

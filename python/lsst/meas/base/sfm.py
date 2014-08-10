@@ -31,7 +31,9 @@ to avoid information loss (this should, of course, be indicated in the field doc
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.daf.base
+
 from .base import *
+from .noiseReplacer import *
 
 __all__ = ("SingleFramePluginConfig", "SingleFramePlugin", "WrappedSingleFramePlugin",
            "SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
@@ -59,6 +61,7 @@ class SingleFramePlugin(BasePlugin):
         @param[in]  others       A PluginMap of previously-initialized plugins
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
+        super(SingleFramePlugin, self).__init__()
         self.config = config
         self.name = name
 
@@ -112,7 +115,7 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
     AlgClass = None
 
     def __init__(self, config, name, schema, flags, others, metadata):
-        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
+        super(WrappedSingleFramePlugin, self).__init__(config, name, schema, flags, others, metadata)
         self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
         # TODO: check flags
 
@@ -137,7 +140,6 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
                 measRecord[self.name+"_y"] = measRecord.getFootprint().getPeaks()[0].getCentroid().getY()
                 measRecord[self.name+"_xSigma"] = 0
                 measRecord[self.name+"_ySigma"] = 0
-            
         self.resultMapper.fail(measRecord, error)
 
     @classmethod
@@ -189,7 +191,6 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
                  "base_NaiveFlux",
                  "base_PsfFlux",
                  "base_SincFlux",
-                 #"correctfluxes",
                  "base_ClassificationExtendedness",
                  "base_SkyCoord",
                  ],
@@ -197,15 +198,11 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
         )
     algorithms = property(lambda self: self.plugins, doc="backwards-compatibility alias for plugins")
 
-class SingleFrameMeasurementTask(lsst.pipe.base.Task):
+class SingleFrameMeasurementTask(BaseMeasurementTask):
     """Single-frame measurement driver task"""
 
     ConfigClass = SingleFrameMeasurementConfig
-    _DefaultName = "measurement"
-    tableVersion = 1
 
-    #   The algMetadata parameter is currently required by the pipe_tasks running mechanism
-    #   This is a temporary state until pipe_tasks is converted to the new plugin framework.
     def __init__(self, schema, algMetadata=None, flags=None, **kwds):
         """Initialize the task, including setting up the execution order of the plugins
         and providing the task with the metadata and schema objects
@@ -213,10 +210,8 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
         @param[in] schema      lsst.afw.table.Schema, which should have been initialized
                                to include the measurement fields from the plugins already
         """
-        lsst.pipe.base.Task.__init__(self, **kwds)
+        super(SingleFrameMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
         self.schema = schema
-        self.algMetadata = lsst.daf.base.PropertyList()
-        self.plugins = PluginMap()
         # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
             self.plugins[name] = PluginClass(config, name, schema=schema, flags=flags,
@@ -245,8 +240,7 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
         # of the source pixels so that they can re restored one at a time for measurement.
         # After the NoiseReplacer is constructed, all pixels in the exposure.getMaskedImage()
         # which belong to objects in measCat will be replaced with noise
-        noiseReplacer = NoiseReplacer(exposure, footprints, self.config.noiseSource,
-           self.config.noiseOffset, self.config.noiseSeed, log=self.log)
+        noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
 
         # First, create a catalog of all parentless sources
         # Loop through all the parent sources, first processing the children, then the parent
@@ -258,20 +252,20 @@ class SingleFrameMeasurementTask(lsst.pipe.base.Task):
         for parentIdx, measParentRecord in enumerate(measParentCat):
             # first get all the children of this parent, insert footprint in turn, and measure
             measChildCat = measCat.getChildren(measParentRecord.getId())
+            # TODO: skip this loop if there are no plugins configured for single-object mode
             for measChildRecord in measChildCat:
                 noiseReplacer.insertSource(measChildRecord.getId())
-                callMeasure(self, measChildRecord, exposure)
+                self.callMeasure(measChildRecord, exposure)
                 noiseReplacer.removeSource(measChildRecord.getId())
             # Then insert the parent footprint, and measure that
             noiseReplacer.insertSource(measParentRecord.getId())
-            callMeasure(self, measParentRecord, exposure)
+            self.callMeasure(measParentRecord, exposure)
             # Finally, process both the parent and the child set through measureN
-            callMeasureN(self, measParentCat[parentIdx:parentIdx+1], exposure)
-            callMeasureN(self, measChildCat, exposure)
+            self.callMeasureN(measParentCat[parentIdx:parentIdx+1], exposure)
+            self.callMeasureN(measChildCat, exposure)
             noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
         noiseReplacer.end()
 
     def measure(self, measCat, exposure):
         self.run(measCat, exposure)
-
