@@ -31,7 +31,9 @@ to avoid information loss (this should, of course, be indicated in the field doc
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.daf.base
+
 from .base import *
+from .noiseReplacer import *
 
 __all__ = ("SingleFramePluginConfig", "SingleFramePlugin", "WrappedSingleFramePlugin",
            "SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
@@ -59,6 +61,7 @@ class SingleFramePlugin(BasePlugin):
         @param[in]  others       A PluginMap of previously-initialized plugins
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
+        super(SingleFramePlugin, self).__init__()
         self.config = config
         self.name = name
 
@@ -112,7 +115,7 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
     AlgClass = None
 
     def __init__(self, config, name, schema, flags, others, metadata):
-        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
+        super(WrappedSingleFramePlugin, self).__init__(config, name, schema, flags, others, metadata)
         self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
         # TODO: check flags
 
@@ -137,7 +140,6 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
                 measRecord[self.name+"_y"] = measRecord.getFootprint().getPeaks()[0].getCentroid().getY()
                 measRecord[self.name+"_xSigma"] = 0
                 measRecord[self.name+"_ySigma"] = 0
-            
         self.resultMapper.fail(measRecord, error)
 
     @classmethod
@@ -189,7 +191,6 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
                  "base_NaiveFlux",
                  "base_PsfFlux",
                  "base_SincFlux",
-                 #"correctfluxes",
                  "base_ClassificationExtendedness",
                  "base_SkyCoord",
                  ],
@@ -209,7 +210,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         @param[in] schema      lsst.afw.table.Schema, which should have been initialized
                                to include the measurement fields from the plugins already
         """
-        BaseMeasurementTask.__init__(self, algMetadata=algMetadata, **kwds)
+        super(SingleFrameMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
         self.schema = schema
         # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
@@ -268,4 +269,3 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
 
     def measure(self, measCat, exposure):
         self.run(measCat, exposure)
-
