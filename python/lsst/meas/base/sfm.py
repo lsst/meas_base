@@ -315,7 +315,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         @param[in,out] algMetadata lsst.daf.base.PropertyList used to record information about
                                    each algorithm.  An empty PropertyList will be created if None.
         @param[in]     flags       lsst.meas.base.MeasurementDataFlags
-        @param[in]     **kwds      Keyword arguments passed from lsst.pipe.base.task.Task
+        @param[in]     **kwds      Keyword arguments forwarded to lsst.pipe.base.Task.__init__
         """
         super(SingleFrameMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
         self.schema = schema
