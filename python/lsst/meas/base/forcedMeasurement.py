@@ -43,8 +43,8 @@ that only require a position or shape, they may simply use output SourceCatalog'
 which will generally be set to the transformed position of the reference object before any other plugins are
 run, and hence avoid using the reference catalog at all.
 
-Command-line driver tasks for forced measurement can be found in forcedImage.py, including ForcedImageTask,
-ForcedCcdTask, and ForcedCoaddTask.
+Command-line driver tasks for forced measurement can be found in forcedImage.py, including
+ProcessForcedImageTask, ProcessForcedCcdTask, and ProcessForcedCoaddTask.
 """
 
 import lsst.pex.config
@@ -234,19 +234,58 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         self.slots.psfFlux = None
         self.slots.instFlux = None
 
+## @addtogroup LSST_task_documentation
+## @{
+## @page ForcedMeasurementTask
+## ForcedMeasurementTask
+## @copybrief ForcedMeasurementTask
+## @}
+
 class ForcedMeasurementTask(BaseMeasurementTask):
-    """Forced measurement driver task
+    """!
+	A subtask for measuring the properties of sources on a single exposure, using an existing
+    "reference" catalog to constrain some aspects of the measurement.
 
-    This task is intended to be a subtask of another command line task, such as ProcessImageForcedTask
-    It should be subclassed for running on CCDs and Coadds.  See ProcessCcd(Coadd)ForcedTask.
+    The task is configured with a list of "plugins": each plugin defines the values it
+    measures (i.e. the columns in a table it will fill) and conducts that measurement
+    on each detected source (see ForcedPlugin).  The job of the
+    measurement task is to initialize the set of plugins (which includes setting up the
+    catalog schema) from their configuration, and then invoke each plugin on each
+    source.
 
-    Note that the __init__ method takes the refSchema, while the run method takes the refCat.
-    The two schemas must match.
+    Most of the time, ForcedMeasurementTask will be used via one of the subclasses of
+    ProcessForcedImageTask, ProcessForcedCcdTask and ProcessForcedCoaddTask.  These combine
+    this measurement subtask with a "references" subtask (see BaseReferencesTask and
+    CoaddSrcReferencesTask) to perform forced measurement using measurements performed on
+    another image as the references.  There is generally little reason to use
+    ForcedMeasurementTask outside of one of these drivers, unless it is necessary to avoid
+    using the Butler for I/O.
+
+    ForcedMeasurementTask has only three methods: __init__(), run(), and generateSources().
+    For configuration options, see SingleFrameMeasurementConfig.
     """
 
     ConfigClass = ForcedMeasurementConfig
 
     def __init__(self, refSchema, algMetadata=None, flags=None, **kwds):
+        """!
+        Initialize the task.  Set up the execution order of the plugins and initialize
+        the plugins, giving each plugin an opportunity to add its measurement fields to
+        the output schema and to record information in the task metadata.
+
+        Note that while SingleFrameMeasurementTask is passed an initial Schema that is
+        appended to in order to create the output Schema, ForcedMeasurementTask is
+        initialized with the Schema of the reference catalog, from which a new Schema
+        for the output catalog is created.  Fields to be copied directly from the
+        reference Schema are added before Plugin fields are added.
+
+        @param[in]  refSchema      Schema of the reference catalog.  Must match the catalog
+                                   later passed to generateSources() and/or run().
+        @param[in,out] algMetadata lsst.daf.base.PropertyList used to record information about
+                                   each algorithm.  An empty PropertyList will be created if None.
+        @param[in]     flags       lsst.meas.base.MeasurementDataFlags
+        @param[in]     **kwds      Keyword arguments passed from lsst.pipe.base.Task.__init__
+        """
         super(ForcedMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
         self.mapper = lsst.afw.table.SchemaMapper(refSchema)
         self.mapper.addMinimalSchema(lsst.afw.table.SourceTable.makeMinimalSchema())
@@ -258,10 +297,19 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                                              others=self.plugins, metadata=self.algMetadata)
 
     def run(self, exposure, refCat, refWcs, idFactory=None):
-        """The reference list and refWcs are passed in to the run method, along with the exposure.
-        It creates its own source catalog, which is returned in the result structure.
-        The IdFactory is assumed to be known by the parentTask (see ProcessImageForcedTask.run)
-        and will default to IdFactory.makeSimple() if not specified.
+        """!
+        Perform forced measurement.
+
+        @param[in]  exposure     lsst.afw.image.ExposureF to be measured; must have at least a Wcs attached.
+        @param[in]  refCat       A sequence of SourceRecord objects that provide reference information
+                                 for the measurement.  These will be passed to each Plugin in addition
+                                 to the output SourceRecord.
+        @param[in]  refWcs       Wcs that defines the X,Y coordinate system of refCat
+        @param[in]  idFactory    factory for creating IDs for sources
+
+        @return SourceCatalog containing measurement results.
+
+        Delegates creating the initial empty SourceCatalog to generateSources(), then fills it.
         """
         # First create a refList from the original which excludes children when a member
         # of the parent chain is not within the list.  This can occur at boundaries when
@@ -326,16 +374,22 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         return lsst.pipe.base.Struct(sources=sources)
 
     def generateSources(self, exposure, refCat, refWcs, idFactory=None):
-        """Generate sources to be measured, copying any fields in self.config.copyColumns
-        Also, transform footprints to the measurement coordinate system, noting that
-        we do not currently have the ability to transform heavy footprints because they
-        need deblender information that we don't have.  So when the reference and measure
-        WCS are different, we won't be able to use the heavyFootprint child info at all.
+        """!
+        Initialize an output SourceCatalog using information from the reference catalog.
 
-        @param exposure    Exposure to be measured
-        @param refCat      Sequence (not necessarily a SourceCatalog) of reference sources
-        @param refWcs      Wcs that goes with the X,Y cooridinates of the refCat
-        @param idFactory   factory for making new ids from reference catalog ids
+        This generate a new blank SourceRecord for each record in refCat, copying any
+        fields in ForcedMeasurementConfig.copyColumns.  This also transforms the Footprints
+        in refCat to the measurement coordinate system if it differs from refWcs, and attaches
+        these to the new SourceRecords.  Note that we do not currently have the ability to
+        transform heavy footprints, so when the reference and measure WCSs are different,
+        HeavyFootprints will be converted to regular Footprints, which makes it impossible
+        to properly measure blended objects.
+
+        @param[in] exposure    Exposure to be measured
+        @param[in] refCat      Sequence (not necessarily a SourceCatalog) of reference SourceRecords.
+        @param[in] refWcs      Wcs that defines the X,Y coordinate system of refCat
+        @param[in] idFactory   factory for creating IDs for sources
+
         @return Source catalog ready for measurement
         """
         if idFactory == None:
