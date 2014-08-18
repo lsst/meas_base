@@ -21,16 +21,10 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-"""Class for force measuring a Coadd exposure using a reference catalog made from measuring Coadds.
-   See comments in the parent class in forcedImage.py for more information.
-"""
-
 import lsst.pex.config
-
-from lsst.pipe.base import Task, CmdLineTask, Struct, timeMethod, ArgumentParser, ButlerInitializedTaskRunner
-from lsst.coadd.utils import CoaddDataIdContainer
-import lsst.daf.base
-from lsst.pex.config import DictField,ConfigurableField
+import lsst.pipe.base
+import lsst.coadd.utils
+import lsst.afw.table
 
 from .forcedImage import *
 from .base import *
@@ -41,22 +35,62 @@ __all__ = ("ProcessForcedCoaddConfig", "ProcessForcedCoaddTask")
 class ProcessForcedCoaddConfig(ProcessImageForcedConfig):
     pass
 
+## @addtogroup LSST_task_documentation
+## @{
+## @page processForcedCoaddTask
+## ProcessForcedCoaddTask
+## @copybrief ProcessForcedCoaddTask
+## @}
 
 class ProcessForcedCoaddTask(ProcessImageForcedTask):
-    """Forced measurement driver task
+    """!
+    A command-line driver for performing forced measurement on coadd images
 
-    This task is intended as a command-line script base class, in the model of ProcessImageTask
-    (i.e. it should be subclasses for running on Coadds).
+    This task is a subclass of ProcessForcedImageTask which is specifically for doing forced
+    measurement on a coadd, using as a reference catalog detections which were made on overlapping
+    coadds (i.e. in other bands).
+
+    The run method (inherited from ProcessForcedImageTask) takes a lsst.daf.persistence.ButlerDataRef
+    argument that corresponds to a coadd image.  This is used to provide all the inputs and outputs
+    for the task:
+     - A "*Coadd_src" (e.g. "deepCoadd_src") dataset is used as the reference catalog.  This not loaded
+       directly from the passed dataRef, however; only the patch and tract are used, while the filter
+       is set by the configuration for the references subtask (see CoaddSrcReferencesTask).
+     - A "*Coadd_calexp" (e.g. "deepCoadd_calexp") dataset is used as the measurement image.  Note that
+       this means that ProcessCoaddTask must be run on an image before ProcessForcedCoaddTask, in order
+       to generate the "*Coadd_calexp" dataset.
+     - A "*Coadd_forced_src" (e.g. "deepCoadd_forced_src") dataset will be written with the output
+       measurement catalog.
+
+    In addition to the run method, ProcessForcedCcdTask overrides several methods of ProcessForcedImageTask
+    to specialize it for coadd processing, including makeIdFactory() and fetchReferences().  None of these
+    should be called directly by the user, though it may be useful to override them further in subclasses.
     """
 
     ConfigClass = ProcessForcedCoaddConfig
-    RunnerClass = ButlerInitializedTaskRunner
+    RunnerClass = lsst.pipe.base.ButlerInitializedTaskRunner
     _DefaultName = "forcedCoaddTask"
     dataPrefix = "deepCoadd_"
 
+    def makeIdFactory(self, dataRef):
+        """Create an object that generates globally unique source IDs from per-CCD IDs and the CCD ID.
+
+        @param dataRef       Data reference from butler.  The "CoaddId_bits" and "CoaddId"
+                             datasets are accessed.  The data ID must have tract and patch keys.
+        """
+        expBits = dataRef.get(self.config.coaddName + "CoaddId_bits")
+        expId = long(dataRef.get(self.config.coaddName + "CoaddId"))
+        return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
+
     def fetchReferences(self, dataRef, exposure):
-        """Find references which overlap a skyMap made up of one or more patches.
-        The references in each patch correspond to measurements from individual coadss.
+        """Return an iterable of reference sources which overlap the exposure
+
+        @param dataRef       Data reference from butler corresponding to the image to be measured;
+                             should have tract, patch, and filter keys.
+        @param exposure      lsst.afw.image.Exposure to be measured (not used by this implementation)
+
+        All work is delegated to the references subtask; see CoaddSrcReferencesTask for information
+        about the default behavior.
         """
         skyMap = dataRef.get(self.dataPrefix + "skyMap", immediate=True)
         tractInfo = skyMap[dataRef.dataId["tract"]]
@@ -64,20 +98,11 @@ class ProcessForcedCoaddTask(ProcessImageForcedTask):
         patchInfo = tractInfo.getPatchInfo(patch)
         return self.references.fetchInPatches(dataRef, patchList=[patchInfo])
 
-    def makeIdFactory(self, dataRef):
-        """An Id Factory is used to convert ids from the previous pipelines into an id,
-        using specific bit field which the dataRef butler knows about (camera specific)
-        """
-        expBits = dataRef.get(self.config.coaddName + "CoaddId_bits")
-        expId = long(dataRef.get(self.config.coaddName + "CoaddId"))
-        return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
-
-
     @classmethod
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "deepCoadd_forced_src", help="data ID, with raw CCD keys + tract",
-                               ContainerClass=CoaddDataIdContainer)
+                               ContainerClass=lsst.coadd.utils.CoaddDataIdContainer)
         return parser
 
 
