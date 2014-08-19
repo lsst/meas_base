@@ -153,7 +153,8 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
                 measRecord[self.name+"_y"] = measRecord.getFootprint().getPeaks()[0].getCentroid().getY()
                 measRecord[self.name+"_xSigma"] = 0
                 measRecord[self.name+"_ySigma"] = 0
-        self.resultMapper.fail(measRecord, error)
+        self.resultMapper.fail(measRecord, None if error is None else error.cpp)
+
 
     @classmethod
     def generate(Base, AlgClass, name=None, doRegister=True, ConfigClass=None, executionOrder=None):
