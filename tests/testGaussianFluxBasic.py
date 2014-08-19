@@ -59,8 +59,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         sfm_config.slots.apFlux = None
         sfm_config.slots.modelFlux = "base_GaussianFlux"
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
+        outschema.setVersion(1)
         measCat = SourceCatalog(outschema)
-        measCat.getTable().setVersion(1)
         #measCat.getTable().defineCentroid("base_SdssCentroid")
         #measCat.getTable().defineModelFlux("base_GaussianFlux")
         measCat.extend(srccat, mapper=mapper)

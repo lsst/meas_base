@@ -340,8 +340,9 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         """
         if idFactory == None:
             idFactory = lsst.afw.table.IdFactory.makeSimple()
-        table = lsst.afw.table.SourceTable.make(self.mapper.getOutputSchema(), idFactory)
-        table.setVersion(self.tableVersion)
+        schema = self.mapper.getOutputSchema()
+        schema.setVersion(1) 
+        table = lsst.afw.table.SourceTable.make(schema, idFactory)
         sources = lsst.afw.table.SourceCatalog(table)
         table = sources.table
         table.setMetadata(self.algMetadata)

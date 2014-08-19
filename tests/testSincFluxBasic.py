@@ -61,8 +61,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         sfm_config.plugins["base_SincFlux"].radius1 = 0.0
         sfm_config.plugins["base_SincFlux"].radius2 = 16.0
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
+        outschema.setVersion(1)
         measCat = SourceCatalog(outschema)
-        measCat.getTable().setVersion(1)
         measCat.extend(srccat, mapper=mapper)
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
