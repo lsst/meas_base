@@ -134,13 +134,20 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
 
     def measure(self, measRecord, exposure):
         inputs = self.AlgClass.Input(measRecord)
-        result = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
+        result = self.AlgClass.Result()
+        self.AlgClass.apply(exposure, inputs, result, self.config.makeControl())
+        if measRecord.getId() == 430536917779 and self.name == 'base_GaussianFlux':
+            import pdb
+            pdb.set_trace()
         self.resultMapper.apply(measRecord, result)
 
     def measureN(self, measCat, exposure):
         assert hasattr(AlgClass, "applyN")  # would be better if we could delete this method somehow
         inputs = self.AlgClass.Input.Vector(measCat)
-        results = self.AlgClass.applyN(exposure, inputs, self.config.makeControl())
+        results = []
+        for i in range(len(measCat)):
+            results.append(self.AlgClass.Result())
+        self.AlgClass.applyN(exposure, inputs, results, self.config.makeControl())
         for result, measRecord in zip(results, measCat):
             self.resultMapper.apply(measRecord, result)
 
@@ -153,7 +160,7 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
                 measRecord[self.name+"_y"] = measRecord.getFootprint().getPeaks()[0].getCentroid().getY()
                 measRecord[self.name+"_xSigma"] = 0
                 measRecord[self.name+"_ySigma"] = 0
-        self.resultMapper.fail(measRecord, error)
+        self.resultMapper.fail(measRecord, None if error is None else error.cpp)
 
     @classmethod
     def generate(Base, AlgClass, name=None, doRegister=True, ConfigClass=None, executionOrder=None):

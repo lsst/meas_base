@@ -34,9 +34,9 @@ FootprintInput::Vector FootprintInput::makeVector(afw::table::SourceCatalog cons
     return r;
 }
 
-FootprintCentroidInput::FootprintCentroidInput(afw::table::SourceRecord const & record) : FootprintInput(record) 
+FootprintCentroidInput::FootprintCentroidInput(afw::table::SourceRecord const & record) : FootprintInput(record)
 {
-        
+
     if (!record.getTable()->hasCentroidSlot() || lsst::utils::isnan(record.getCentroid().getX())) {
         position.setX(record.getFootprint()->getPeaks()[0]->getFx());
         position.setY(record.getFootprint()->getPeaks()[0]->getFy());

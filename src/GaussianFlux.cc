@@ -39,9 +39,10 @@ GaussianFluxAlgorithm::ResultMapper GaussianFluxAlgorithm::makeResultMapper(
 }
 
 template <typename T>
-GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(
+ void GaussianFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     afw::geom::Point2D const & center,
+    Result & result,
     Control const & ctrl
 ) {
     PTR(afw::detection::Psf const) psf = exposure.getPsf();
@@ -52,7 +53,6 @@ GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(
             NO_PSF
         );
     }
-    Result result;
     PTR(afw::detection::Psf::Image) psfImage = psf->computeImage(center);
     afw::geom::Box2I fitBBox = psfImage->getBBox(afw::image::PARENT);
     fitBBox.clip(exposure.getBBox(afw::image::PARENT));
@@ -107,8 +107,16 @@ GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(
          * Find the object's adaptive-moments.  N.b. it would be better to use the SdssShape measurement
          * as this code repeats the work of that measurement
          */
-        oldresult = algorithms::getGaussianFlux<MaskedImageT>(mimage, ctrl.background, xcen, ycen, ctrl.shiftmax, ctrl.maxIter,
-                                 ctrl.tol1, ctrl.tol2);
+        bool debug = (xcen>3826.5 && xcen<3826.6 && ycen>54.1 && ycen<54.2);
+        oldresult = algorithms::getGaussianFlux<MaskedImageT>(mimage, ctrl.background, xcen, ycen, ctrl.shiftmax, ctrl.maxIter, ctrl.tol1, ctrl.tol2, debug);
+
+        if (debug) {
+            std::cout << "HERE WE ARE: " << xcen << " " << ycen << "\n";
+            std::cout << ctrl.background << " " << ctrl.shiftmax << " " << ctrl.maxIter << "\n";
+            std::cout << ctrl.tol1 << " " << ctrl.tol2 << "\n";
+            std::cout << oldresult.first << "\n";
+            mimage.writeFits("xyz.fits");
+        }
     }
 
     result.flux =  oldresult.first;
@@ -127,28 +135,30 @@ GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(
     result.fluxCorrectionKeys.psfFactor =  psfFactor;
 */
     //  End of meas_algorithms code
-    return result;
 }
 
 template <typename T>
-GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(
+ void GaussianFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
+    Result & result,
     Control const & ctrl
 ) {
-    return apply(exposure, inputs.position, ctrl);
+    apply(exposure, inputs.position, result, ctrl);
 }
 
 #define INSTANTIATE(T)                                                  \
-    template GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(          \
+    template  void GaussianFluxAlgorithm::apply(          \
         afw::image::Exposure<T> const & exposure,                       \
         afw::geom::Point2D const & position,                            \
+        Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \
     template                                                            \
-    GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(                   \
+     void GaussianFluxAlgorithm::apply(                   \
         afw::image::Exposure<T> const & exposure,                       \
         Input const & inputs,                                           \
+        Result & result,                                          \
         Control const & ctrl                                            \
     )
 
