@@ -68,7 +68,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         sfm_config.slots.instFlux = None
         sfm_config.plugins["base_NaiveCentroid"].background = 0
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
-        outschema.setVersion(1)
         measCat = SourceCatalog(outschema)
         measCat.extend(srccat, mapper=mapper)
         # now run the SFM task with the test plugin

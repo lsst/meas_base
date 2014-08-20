@@ -59,7 +59,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         sfm_config.slots.apFlux = None
         sfm_config.slots.modelFlux = "base_NaiveFlux"
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
-        outschema.setVersion(1)
         measCat = SourceCatalog(outschema)
         measCat.extend(srccat, mapper=mapper)
         # now run the SFM task with the test plugin
