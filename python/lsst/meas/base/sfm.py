@@ -319,6 +319,8 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         @param[in]     **kwds      Keyword arguments passed from lsst.pipe.base.task.Task
         """
         super(SingleFrameMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
+        if schema.getVersion() == 0:
+            raise lsst.pex.exceptions.LogicError("schema must have version=1")
         self.schema = schema
         # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):

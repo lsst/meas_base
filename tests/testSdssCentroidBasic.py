@@ -59,7 +59,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
         task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
-        outschema.setVersion(1)
         measCat = SourceCatalog(outschema)
         measCat.defineCentroid("base_SdssCentroid")
         measCat.extend(srccat, mapper=mapper)

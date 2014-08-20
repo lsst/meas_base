@@ -243,7 +243,6 @@ class AlgorithmTestCase(lsst.utils.tests.TestCase):
         schemaMapper = lsst.afw.table.SchemaMapper(self.truth.schema)
         schemaMapper.addMinimalSchema(self.truth.schema)
         task = SingleFrameMeasurementTask(schema=schemaMapper.editOutputSchema(), config=config, flags=flags)
-        task.schema.setVersion(1)
         measCat = lsst.afw.table.SourceCatalog(task.schema)
         measCat.extend(self.truth, schemaMapper)
         measCat.getTable().defineModelFlux("truth")

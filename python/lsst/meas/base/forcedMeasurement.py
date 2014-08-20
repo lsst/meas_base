@@ -248,7 +248,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
     def __init__(self, refSchema, algMetadata=None, flags=None, **kwds):
         super(ForcedMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
-        self.mapper = lsst.afw.table.SchemaMapper(refSchema)
+        self.mapper = lsst.afw.table.SchemaMapper(refSchema, lsst.afw.table.Schema(1))
         self.mapper.addMinimalSchema(lsst.afw.table.SourceTable.makeMinimalSchema())
         for refName, targetName in self.config.copyColumns.items():
             refItem = refSchema.find(refName)
@@ -341,7 +341,6 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         if idFactory == None:
             idFactory = lsst.afw.table.IdFactory.makeSimple()
         schema = self.mapper.getOutputSchema()
-        schema.setVersion(1) 
         table = lsst.afw.table.SourceTable.make(schema, idFactory)
         sources = lsst.afw.table.SourceCatalog(table)
         table = sources.table
