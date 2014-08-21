@@ -136,9 +136,6 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
         inputs = self.AlgClass.Input(measRecord)
         result = self.AlgClass.Result()
         self.AlgClass.apply(exposure, inputs, result, self.config.makeControl())
-        if measRecord.getId() == 430536917779 and self.name == 'base_GaussianFlux':
-            import pdb
-            pdb.set_trace()
         self.resultMapper.apply(measRecord, result)
 
     def measureN(self, measCat, exposure):

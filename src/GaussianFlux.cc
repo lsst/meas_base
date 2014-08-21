@@ -107,16 +107,8 @@ template <typename T>
          * Find the object's adaptive-moments.  N.b. it would be better to use the SdssShape measurement
          * as this code repeats the work of that measurement
          */
-        bool debug = (xcen>3826.5 && xcen<3826.6 && ycen>54.1 && ycen<54.2);
-        oldresult = algorithms::getGaussianFlux<MaskedImageT>(mimage, ctrl.background, xcen, ycen, ctrl.shiftmax, ctrl.maxIter, ctrl.tol1, ctrl.tol2, debug);
-
-        if (debug) {
-            std::cout << "HERE WE ARE: " << xcen << " " << ycen << "\n";
-            std::cout << ctrl.background << " " << ctrl.shiftmax << " " << ctrl.maxIter << "\n";
-            std::cout << ctrl.tol1 << " " << ctrl.tol2 << "\n";
-            std::cout << oldresult.first << "\n";
-            mimage.writeFits("xyz.fits");
-        }
+        oldresult = algorithms::getGaussianFlux<MaskedImageT>(mimage, ctrl.background, xcen, ycen, ctrl.shiftmax, ctrl.maxIter,
+                                 ctrl.tol1, ctrl.tol2);
     }
 
     result.flux =  oldresult.first;

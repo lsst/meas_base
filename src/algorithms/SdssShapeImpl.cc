@@ -448,7 +448,7 @@ calcmom(ImageT const& image,            // the image data
  */
 template<typename ImageT>
 bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double ycen, double shiftmax,
-                        SdssShapeImpl *shape, int maxIter, float tol1, float tol2, bool debug)
+                        SdssShapeImpl *shape, int maxIter, float tol1, float tol2)
 {
     double I0 = 0;                      // amplitude of best-fit Gaussian
     double sum;                         // sum of intensity*weight
@@ -479,12 +479,9 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
     int iter = 0;                       // iteration number
     for (; iter < maxIter; iter++) {
         bbox = set_amom_bbox(image.getWidth(), image.getHeight(), xcen, ycen, sigma11W, sigma12W, sigma22W);
-        if (debug) std::cout << "ITER = " << iter << " " << sigma11W << " " << sigma12W << " " << sigma22W << " " << bbox << "\n";
-
         boost::tuple<std::pair<bool, double>, double, double, double> weights = 
             getWeights(sigma11W, sigma12W, sigma22W);
         if (!weights.get<0>().first) {
-            if (debug) std::cout << "exit UNWEIGTED, ITER = " << iter << "\n";
             shape->setFlag(SdssShapeImpl::UNWEIGHTED);
             break;
         }
@@ -787,7 +784,7 @@ lsst::afw::geom::BoxI set_amom_bbox(int width, int height, // size of region
 
 #define INSTANTIATE_IMAGE(IMAGE) \
     template bool getAdaptiveMoments<IMAGE>( \
-        IMAGE const&, double, double, double, double, SdssShapeImpl*, int, float, float, bool); \
+        IMAGE const&, double, double, double, double, SdssShapeImpl*, int, float, float); \
     template std::pair<double, double> getFixedMomentsFlux<IMAGE>( \
         IMAGE const&, double, double, double, SdssShapeImpl const&); \
 

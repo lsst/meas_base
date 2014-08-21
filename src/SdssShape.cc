@@ -190,7 +190,7 @@ template <typename T>
     result.yySigma = shapeImpl.getIyyErr();
     result.xySigma = shapeImpl.getIxyErr();
 
-    //calculate the biggest numerical flag set
+    // Now set the flags from SdssShapeImpl, then throw out if one is set.
     int lastFlag = -1;
     for (int n = 0; n < algorithms::SdssShapeImpl::N_FLAGS; ++n) {
         if (shapeImpl.getFlag(algorithms::SdssShapeImpl::Flag(n))) {
@@ -200,8 +200,9 @@ template <typename T>
     }
     if (lastFlag >= 0) {
         throw LSST_EXCEPT(
-            pex::exceptions::LogicError,
-            "SdssShape unable to set record values and set the general failure flag"
+            MeasurementError,
+            getFlagDefinitions()[lastFlag].doc,
+            FlagBits(lastFlag)
         );
     }
 }

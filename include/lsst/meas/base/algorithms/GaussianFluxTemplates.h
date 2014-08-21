@@ -41,7 +41,6 @@ getGaussianFlux(
     int maxIter=SDSS_SHAPE_MAX_ITER, ///< Maximum number of iterations
     float tol1=SDSS_SHAPE_TOL1, ///< Convergence tolerance for e1,e2
     float tol2=SDSS_SHAPE_TOL2, ///< Convergence tolerance for FWHM
-    bool debug = false,
     PTR(SdssShapeImpl) shape=PTR(SdssShapeImpl)() // SDSS shape measurement
 ) {
     double flux = std::numeric_limits<double>::quiet_NaN();
@@ -52,28 +51,11 @@ getGaussianFlux(
     }
 
     if (!getAdaptiveMoments(mimage, background, xcen, ycen, shiftmax, shape.get(),
-                                    maxIter, tol1, tol2, debug)) {
-        if (debug) {
-            std::cout << "Not getAdaptiveMoments\n";
-            for (int n = 0; n < SdssShapeImpl::N_FLAGS; ++n) {
-                std::cout << shape->getFlag(SdssShapeImpl::Flag(n)) << " ";
-            }
-            std::cout << "\n";
-        }
+                                    maxIter, tol1, tol2)) {
     } else {
-        if (debug) {
-            std::cout << "Not getAdaptiveMoments\n";
-            for (int n = 0; n < SdssShapeImpl::N_FLAGS; ++n) {
-                std::cout << shape->getFlag(SdssShapeImpl::Flag(n)) << " ";
-            }
-            std::cout << "\n";
-        }
         double const scale = shape->getFluxScale();
         flux = scale*shape->getI0();
         fluxErr = scale*shape->getI0Err();
-        if (debug) {
-            std::cout << flux << " from getAdaptiveMoments\n";
-        }
     }
 
     return std::make_pair(flux, fluxErr);

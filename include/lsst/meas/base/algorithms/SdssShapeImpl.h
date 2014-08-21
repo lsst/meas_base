@@ -167,8 +167,7 @@ bool getAdaptiveMoments(
     SdssShapeImpl *shape,       ///< a place to store desired data
     int maxIter=SDSS_SHAPE_MAX_ITER,       ///< Maximum number of iterations
     float tol1=SDSS_SHAPE_TOL1,           ///< Convergence tolerance for e1,e2
-    float tol2=SDSS_SHAPE_TOL2,           ///< Convergence tolerance for FWHM
-    bool debug = false
+    float tol2=SDSS_SHAPE_TOL2            ///< Convergence tolerance for FWHM
     );
 
 template<typename ImageT>

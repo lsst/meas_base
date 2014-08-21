@@ -108,6 +108,8 @@ template <typename T>
     if (!utils::isfinite(result.flux) || !utils::isfinite(result.fluxSigma)) {
         throw LSST_EXCEPT(PixelValueError, "Invalid pixel value detected in image.");
     }
+    // Currently, the only flag which allows the algorithm to continue to the end is EDGE
+    // Now throw out once the result is written to set the error flag
     if (result.getFlag(EDGE)) {
         throw LSST_EXCEPT(
             MeasurementError,

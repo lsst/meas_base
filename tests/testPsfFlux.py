@@ -63,7 +63,7 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             self.calexp,
             lsst.meas.base.PsfFluxAlgorithm.Input(self.record.getFootprint(),
                                                   self.record.get(self.centroidKey)),
-            result2
+                                                  result2
             )
         self.assertEqual(result1.flux, result2.flux)
         self.assertEqual(result1.fluxSigma, result2.fluxSigma)
@@ -125,6 +125,8 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         bbox.grow(-1)
         subExposure = self.calexp.Factory(self.calexp, bbox)
         result = lsst.meas.base.PsfFluxAlgorithm.Result()
+        import pdb
+        pdb.set_trace()
         lsst.meas.base.PsfFluxAlgorithm.apply(
             subExposure,
             self.record.get(self.centroidKey),
