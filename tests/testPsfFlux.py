@@ -125,12 +125,10 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         bbox.grow(-1)
         subExposure = self.calexp.Factory(self.calexp, bbox)
         result = lsst.meas.base.PsfFluxAlgorithm.Result()
-        import pdb
-        pdb.set_trace()
-        lsst.meas.base.PsfFluxAlgorithm.apply(
-            subExposure,
-            self.record.get(self.centroidKey),
-            result,
+        self.assertRaises(
+            lsst.meas.base.MeasurementError,
+            lsst.meas.base.PsfFluxAlgorithm.apply,
+            subExposure, self.record.get(self.centroidKey), result,
             )
         self.assertClose(result.flux, self.record.get(self.fluxKey), atol=result.fluxSigma)
         self.assertTrue(result.getFlag(lsst.meas.base.PsfFluxAlgorithm.EDGE))
