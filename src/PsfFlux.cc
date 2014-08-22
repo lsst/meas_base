@@ -37,9 +37,10 @@ PsfFluxAlgorithm::ResultMapper PsfFluxAlgorithm::makeResultMapper(
 }
 
 template <typename T>
-PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
+void PsfFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     afw::geom::Point2D const & position,
+    Result & result,
     Control const & ctrl
 ) {
     PTR(afw::detection::Psf const) psf = exposure.getPsf();
@@ -50,7 +51,6 @@ PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
             NO_PSF
         );
     }
-    Result result;
     PTR(afw::detection::Psf::Image) psfImage = psf->computeImage(position);
     afw::geom::Box2I fitBBox = psfImage->getBBox(afw::image::PARENT);
     fitBBox.clip(exposure.getBBox(afw::image::PARENT));
@@ -108,28 +108,39 @@ PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
     if (!utils::isfinite(result.flux) || !utils::isfinite(result.fluxSigma)) {
         throw LSST_EXCEPT(PixelValueError, "Invalid pixel value detected in image.");
     }
-    return result;
+    // Currently, the only flag which allows the algorithm to continue to the end is EDGE
+    // Now throw out once the result is written to set the error flag
+    if (result.getFlag(EDGE)) {
+        throw LSST_EXCEPT(
+            MeasurementError,
+            getFlagDefinitions()[EDGE].doc,
+            EDGE
+        );
+    }
 }
 
 template <typename T>
-PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(
+void PsfFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
+    Result & result,
     Control const & ctrl
 ) {
-    return apply(exposure, inputs.position, ctrl);
+    apply(exposure, inputs.position, result, ctrl);
 }
 
 #define INSTANTIATE(T)                                                  \
-    template PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(          \
+    template  void PsfFluxAlgorithm::apply(          \
         afw::image::Exposure<T> const & exposure,                       \
         afw::geom::Point2D const & position,                            \
+        Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \
     template                                                            \
-    PsfFluxAlgorithm::Result PsfFluxAlgorithm::apply(                   \
+     void PsfFluxAlgorithm::apply(                   \
         afw::image::Exposure<T> const & exposure,                       \
         Input const & inputs,                                           \
+        Result & result,                                          \
         Control const & ctrl                                            \
     )
 

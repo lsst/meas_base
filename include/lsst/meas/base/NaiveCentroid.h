@@ -92,7 +92,7 @@ public:
      */
     typedef Result1<
         NaiveCentroidAlgorithm,
-        CentroidComponent 
+        CentroidComponent
     > Result;
 
     /// The result mapper for this algorithm is a simple CentroidComponentMapper
@@ -121,9 +121,10 @@ public:
      *  @brief Measure the centroid of a source using the NaiveCentroid algorithm.
      */
     template <typename T>
-    static Result apply(
+    static void apply(
         afw::image::Exposure<T> const & exposure,
         afw::geom::Point2D const & position,
+        Result & result,
         Control const & ctrl=Control()
     );
 
@@ -131,9 +132,10 @@ public:
      *  @brief Apply the NaiveCentroid to a single source using the Plugin API.
      */
     template <typename T>
-    static Result apply(
+    static void apply(
         afw::image::Exposure<T> const & exposure,
         Input const & inputs,
+        Result & result,
         Control const & ctrl=Control()
     );
 

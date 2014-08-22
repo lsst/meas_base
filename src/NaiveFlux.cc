@@ -39,12 +39,12 @@ NaiveFluxAlgorithm::ResultMapper NaiveFluxAlgorithm::makeResultMapper(
 }
 
 template <typename T>
-NaiveFluxAlgorithm::Result NaiveFluxAlgorithm::apply(
+void NaiveFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     afw::geom::Point2D const & center,
+    Result & result,
     Control const & ctrl
 ) {
-    Result result;
     typename afw::image::Exposure<T>::MaskedImageT const& mimage = exposure.getMaskedImage();
 
     double const xcen = center.getX();   ///< object's column position
@@ -60,36 +60,38 @@ NaiveFluxAlgorithm::Result NaiveFluxAlgorithm::apply(
     // Aperture flux
     algorithms::FootprintFlux<typename afw::image::Exposure<T>::MaskedImageT> fluxFunctor(mimage);
     afw::detection::Footprint const foot(
-        afw::geom::PointI(ixcen, iycen), 
-        ctrl.radius, 
+        afw::geom::PointI(ixcen, iycen),
+        ctrl.radius,
         imageBBox
         );
     fluxFunctor.apply(foot);
 
     result.flux = fluxFunctor.getSum();
     result.fluxSigma = ::sqrt(fluxFunctor.getSumVar());
-    return result;
 }
 
 template <typename T>
-NaiveFluxAlgorithm::Result NaiveFluxAlgorithm::apply(
+void NaiveFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
+    Result & result,
     Control const & ctrl
 ) {
-    return apply(exposure, inputs.position, ctrl);
+    apply(exposure, inputs.position, result, ctrl);
 }
 
 #define INSTANTIATE(T)                                                  \
-    template NaiveFluxAlgorithm::Result NaiveFluxAlgorithm::apply(          \
+    template  void NaiveFluxAlgorithm::apply(          \
         afw::image::Exposure<T> const & exposure,                       \
         afw::geom::Point2D const & position,                            \
+        Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \
     template                                                            \
-    NaiveFluxAlgorithm::Result NaiveFluxAlgorithm::apply(                   \
+     void NaiveFluxAlgorithm::apply(                   \
         afw::image::Exposure<T> const & exposure,                       \
         Input const & inputs,                                           \
+        Result & result,                                          \
         Control const & ctrl                                            \
     )
 

@@ -52,7 +52,6 @@ getGaussianFlux(
 
     if (!getAdaptiveMoments(mimage, background, xcen, ycen, shiftmax, shape.get(),
                                     maxIter, tol1, tol2)) {
-        ;                               // Should set a flag here
     } else {
         double const scale = shape->getFluxScale();
         flux = scale*shape->getI0();

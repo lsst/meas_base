@@ -182,9 +182,10 @@ public:
      *  MaskedImage instead.
      */
     template <typename T>
-    static Result apply(
+    static void apply(
         afw::image::Exposure<T> const & exposure,
         afw::geom::Point2D const & position,
+        Result & result,
         Control const & ctrl=Control()
     );
 
@@ -198,9 +199,10 @@ public:
      *  all (extended source photometry is the notable exception).
      */
     template <typename T>
-    static Result apply(
+    static void apply(
         afw::image::Exposure<T> const & exposure,
         Input const & inputs,
+        Result & result,
         Control const & ctrl=Control()
     );
 

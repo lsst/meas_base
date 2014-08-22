@@ -126,10 +126,11 @@ public:
      *  @brief Collect and summarize the masked image flags of the source footprint
      */
     template <typename T>
-    static Result apply(
+    static void apply(
         afw::image::MaskedImage<T> const & image,
         afw::geom::Point2D const & position,
         afw::detection::Footprint const & footprint,
+        Result & result,
         Control const & ctrl=Control()
     );
 
@@ -137,9 +138,10 @@ public:
      *  @brief Apply the PixelFlags to a single source using the Plugin API.
      */
     template <typename T>
-    static Result apply(
+    static void apply(
         afw::image::Exposure<T> const & exposure,
         Input const & inputs,
+        Result & result,
         Control const & ctrl=Control()
     );
 

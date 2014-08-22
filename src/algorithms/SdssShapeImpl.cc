@@ -479,7 +479,6 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
     int iter = 0;                       // iteration number
     for (; iter < maxIter; iter++) {
         bbox = set_amom_bbox(image.getWidth(), image.getHeight(), xcen, ycen, sigma11W, sigma12W, sigma22W);
-
         boost::tuple<std::pair<bool, double>, double, double, double> weights = 
             getWeights(sigma11W, sigma12W, sigma22W);
         if (!weights.get<0>().first) {

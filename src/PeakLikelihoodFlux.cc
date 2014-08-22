@@ -59,13 +59,13 @@ typename afw::image::MaskedImage<T>::SinglePixel computeShiftedValue(
     typedef typename afw::image::Image<double> KernelImageT;
 
     PTR(afw::math::SeparableKernel) warpingKernelPtr = afw::math::makeWarpingKernel(warpingKernelName);
-    
+
     if ((std::abs(fracShift[0]) >= 1) || (std::abs(fracShift[1]) >= 1)) {
         std::ostringstream os;
         os << "fracShift = " << fracShift << " too large; abs value must be < 1 in both axes";
         throw LSST_EXCEPT(pex::exceptions::RangeError, os.str());
     }
-    
+
     // warping kernels have even dimension and want the peak to the right of center
     if (fracShift[0] < 0) {
         warpingKernelPtr->setCtrX(warpingKernelPtr->getCtrX() + 1);
@@ -97,12 +97,12 @@ typename afw::image::MaskedImage<T>::SinglePixel computeShiftedValue(
 }
 
 template <typename T>
-PeakLikelihoodFluxAlgorithm::Result PeakLikelihoodFluxAlgorithm::apply(
+void PeakLikelihoodFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     afw::geom::Point2D const & center,
+    Result & result,
     Control const & ctrl
 ) {
-    Result result;
     typedef typename afw::image::Exposure<T>::MaskedImageT MaskedImageT;
     MaskedImageT const& mimage = exposure.getMaskedImage();
 
@@ -142,7 +142,7 @@ PeakLikelihoodFluxAlgorithm::Result PeakLikelihoodFluxAlgorithm::apply(
     // compute weight = 1/sum(PSF^2) for PSF at ctrPix, where PSF is normalized to a sum of 1
     algorithms::PsfAttributes psfAttr(psfPtr, ctrPixParentInd);
     double weight = psfAttr.computeEffectiveArea();
-    
+
     /*
      * Compute value of image at center of source, as shifted by a fractional pixel to center the source
      * on ctrPix.
@@ -159,28 +159,30 @@ PeakLikelihoodFluxAlgorithm::Result PeakLikelihoodFluxAlgorithm::apply(
     result.fluxSigma = std::sqrt(var);
 
     /* ******************************************************* */
-    return result;
 }
 
 template <typename T>
-PeakLikelihoodFluxAlgorithm::Result PeakLikelihoodFluxAlgorithm::apply(
+void PeakLikelihoodFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
+    Result & result,
     Control const & ctrl
 ) {
-    return apply(exposure, inputs.position, ctrl);
+    apply(exposure, inputs.position, result, ctrl);
 }
 
 #define INSTANTIATE(T)                                                  \
-    template PeakLikelihoodFluxAlgorithm::Result PeakLikelihoodFluxAlgorithm::apply(          \
+    template  void PeakLikelihoodFluxAlgorithm::apply(          \
         afw::image::Exposure<T> const & exposure,                       \
         afw::geom::Point2D const & position,                            \
+        Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \
     template                                                            \
-    PeakLikelihoodFluxAlgorithm::Result PeakLikelihoodFluxAlgorithm::apply(                   \
+     void PeakLikelihoodFluxAlgorithm::apply(                   \
         afw::image::Exposure<T> const & exposure,                       \
         Input const & inputs,                                           \
+        Result & result,                                          \
         Control const & ctrl                                            \
     )
 

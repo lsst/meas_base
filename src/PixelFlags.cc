@@ -38,13 +38,13 @@ PixelFlagsAlgorithm::ResultMapper PixelFlagsAlgorithm::makeResultMapper(
 }
 
 template <typename T>
-PixelFlagsAlgorithm::Result PixelFlagsAlgorithm::apply(
+void PixelFlagsAlgorithm::apply(
     afw::image::MaskedImage<T> const & mimage,
     afw::geom::Point2D const & center,
     afw::detection::Footprint const & footprint,
+    Result & result,
     Control const & ctrl
 ) {
-    Result result;
     typedef typename afw::image::MaskedImage<T> MaskedImageT;
     algorithms::FootprintBits<MaskedImageT> func(mimage);
 
@@ -52,7 +52,6 @@ PixelFlagsAlgorithm::Result PixelFlagsAlgorithm::apply(
     if (!mimage.getBBox().contains(afw::geom::Point2I(center) -
                                                      afw::geom::Extent2I(mimage.getXY0()))) {
        result.setFlag(EDGE);
-       return result;                         // Can't continue safely
     }
 
     // Check for bits set in the source's Footprint
@@ -87,31 +86,33 @@ PixelFlagsAlgorithm::Result PixelFlagsAlgorithm::apply(
     if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("CR")) {
         result.setFlag(CR_CENTER);
     }
-    return result;
 }
 
 template <typename T>
-PixelFlagsAlgorithm::Result PixelFlagsAlgorithm::apply(
+void PixelFlagsAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
+    Result & result,
     Control const & ctrl
 ) {
-    return apply(exposure.getMaskedImage(), inputs.position, *inputs.footprint, ctrl);
+    apply(exposure.getMaskedImage(), inputs.position, *inputs.footprint, result, ctrl);
 }
 
 #define INSTANTIATE(T)                                                  \
-    template PixelFlagsAlgorithm::Result PixelFlagsAlgorithm::apply(        \
+    template  void PixelFlagsAlgorithm::apply(        \
         afw::image::MaskedImage<T> const & mimage,                       \
         afw::geom::Point2D const & position,                            \
         afw::detection::Footprint const & footprint,                    \
+        Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \
     template                                                            \
-    PixelFlagsAlgorithm::Result PixelFlagsAlgorithm::apply(                 \
+     void PixelFlagsAlgorithm::apply(                 \
         afw::image::Exposure<T> const & exposure,                       \
         Input const & inputs,                                           \
+        Result & result,                                          \
         Control const & ctrl                                            \
-    ); 
+    );
 
 INSTANTIATE(float);
 INSTANTIATE(double);

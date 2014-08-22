@@ -56,11 +56,14 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         """Verify that we get reasonable answers when we call apply() directly on an isolated source,
         and that these results are identical regardless of which overload we use.
         """
-        result1 = lsst.meas.base.PsfFluxAlgorithm.apply(self.calexp, self.record.get(self.centroidKey))
-        result2 = lsst.meas.base.PsfFluxAlgorithm.apply(
+        result1 = lsst.meas.base.PsfFluxAlgorithm.Result()
+        result2 = lsst.meas.base.PsfFluxAlgorithm.Result()
+        lsst.meas.base.PsfFluxAlgorithm.apply(self.calexp, self.record.get(self.centroidKey), result1)
+        lsst.meas.base.PsfFluxAlgorithm.apply(
             self.calexp,
             lsst.meas.base.PsfFluxAlgorithm.Input(self.record.getFootprint(),
-                                                  self.record.get(self.centroidKey))
+                                                  self.record.get(self.centroidKey)),
+                                                  result2
             )
         self.assertEqual(result1.flux, result2.flux)
         self.assertEqual(result1.fluxSigma, result2.fluxSigma)
@@ -81,29 +84,35 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         imageArray[badPoint.getY() - self.calexp.getY0(), badPoint.getX() - self.calexp.getX0()] = numpy.inf
         maskArray[badPoint.getY() - self.calexp.getY0(), badPoint.getX() - self.calexp.getX0()] |= badMask
         # Should get an infinite value exception, because we didn't mask that one pixel
+        result = lsst.meas.base.PsfFluxAlgorithm.Result()
         self.assertRaises(
             lsst.meas.base.PixelValueError,
             lsst.meas.base.PsfFluxAlgorithm.apply,
             self.calexp,
-            self.record.get(self.centroidKey)
+            self.record.get(self.centroidKey),
+            result,
             )
         # If we do mask it, we should get a reasonable result
         ctrl = lsst.meas.base.PsfFluxAlgorithm.Control()
         ctrl.badMaskPlanes = ["BAD"]
-        result = lsst.meas.base.PsfFluxAlgorithm.apply(
+        result = lsst.meas.base.PsfFluxAlgorithm.Result()
+        lsst.meas.base.PsfFluxAlgorithm.apply(
             self.calexp,
             self.record.get(self.centroidKey),
+            result,
             ctrl
             )
         # rng dependent
         self.assertClose(result.flux, self.record.get(self.fluxKey), atol=2*result.fluxSigma)
         # If we mask the whole image, we should get a MeasurementError
         maskArray[:,:] |= badMask
+        result = lsst.meas.base.PsfFluxAlgorithm.Result()
         self.assertRaises(
             lsst.meas.base.MeasurementError,
             lsst.meas.base.PsfFluxAlgorithm.apply,
             self.calexp,
             self.record.get(self.centroidKey),
+            result,
             ctrl
             )
 
@@ -115,9 +124,11 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         bbox = psfImage.getBBox(lsst.afw.image.PARENT)
         bbox.grow(-1)
         subExposure = self.calexp.Factory(self.calexp, bbox)
-        result = lsst.meas.base.PsfFluxAlgorithm.apply(
-            subExposure,
-            self.record.get(self.centroidKey),
+        result = lsst.meas.base.PsfFluxAlgorithm.Result()
+        self.assertRaises(
+            lsst.meas.base.MeasurementError,
+            lsst.meas.base.PsfFluxAlgorithm.apply,
+            subExposure, self.record.get(self.centroidKey), result,
             )
         self.assertClose(result.flux, self.record.get(self.fluxKey), atol=result.fluxSigma)
         self.assertTrue(result.getFlag(lsst.meas.base.PsfFluxAlgorithm.EDGE))
@@ -126,11 +137,13 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         """Test that we raise MeasurementError when there's no PSF.
         """
         self.calexp.setPsf(None)
+        result = lsst.meas.base.PsfFluxAlgorithm.Result()
         self.assertRaises(
             lsst.meas.base.MeasurementError,
             lsst.meas.base.PsfFluxAlgorithm.apply,
             self.calexp,
             self.record.get(self.centroidKey),
+            result,
             )
 
     def testMonteCarlo(self):
@@ -145,7 +158,8 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         exposure1 = lsst.afw.image.ExposureD(lsst.afw.image.MaskedImageD(image))
         exposure1.setPsf(psf)
         footprint = lsst.afw.detection.Footprint(image.getBBox(lsst.afw.image.PARENT))
-        result1 = lsst.meas.base.PsfFluxAlgorithm.apply(exposure1, position)
+        result1 = lsst.meas.base.PsfFluxAlgorithm.Result()
+        lsst.meas.base.PsfFluxAlgorithm.apply(exposure1, position, result1)
         self.assertClose(result1.flux, 1.0)
         self.assertClose(result1.fluxSigma, 0.0)
         width = image.getWidth()
@@ -159,7 +173,8 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
                 exposure2.getMaskedImage().getVariance().set(pixelNoiseSigma**2)
                 noise = numpy.random.randn(height, width)* pixelNoiseSigma
                 exposure2.getMaskedImage().getImage().getArray()[:,:] += noise
-                result2 = lsst.meas.base.PsfFluxAlgorithm.apply(exposure2, position)
+                result2 = lsst.meas.base.PsfFluxAlgorithm.Result()
+                lsst.meas.base.PsfFluxAlgorithm.apply(exposure2, position, result2)
                 fluxes.append(result2.flux)
                 fluxSigmas.append(result2.fluxSigma)
             fluxMean = numpy.mean(fluxes)

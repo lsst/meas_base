@@ -222,10 +222,11 @@ public:
      *  the signature of this one is.
      */
     template <typename T>
-    static Result apply(
+    static void apply(
         afw::image::MaskedImage<T> const & image,
         afw::detection::Footprint const & footprint,
         afw::geom::Point2D const & position,
+        Result & result,
         Control const & ctrl=Control()
     );
 
@@ -234,10 +235,11 @@ public:
      *         hence reports no uncertainties.
      */
     template <typename T>
-    static Result apply(
+    static void apply(
         afw::image::Image<T> const & exposure,
         afw::detection::Footprint const & footprint,
         afw::geom::Point2D const & position,
+        Result & result,
         Control const & ctrl=Control()
     );
 
@@ -248,9 +250,10 @@ public:
      *  overload of apply().
      */
     template <typename T>
-    static Result apply(
+    static void apply(
         afw::image::Exposure<T> const & exposure,
         Input const & inputs,
+        Result & result,
         Control const & ctrl=Control()
     );
 

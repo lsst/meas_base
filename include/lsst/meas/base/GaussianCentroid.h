@@ -112,9 +112,10 @@ public:
      *  @brief Measure the centroid of a source using the GaussianCentroid algorithm.
      */
     template <typename T>
-    static Result apply(
+    static void apply(
         afw::image::Exposure<T> const & exposure,
         afw::geom::Point2D const & position,
+        Result & result,
         Control const & ctrl=Control()
     );
 
@@ -122,9 +123,10 @@ public:
      *  @brief Apply the GaussianCentroid to a single source using the Plugin API.
      */
     template <typename T>
-    static Result apply(
+    static void apply(
         afw::image::Exposure<T> const & exposure,
         Input const & inputs,
+        Result & result,
         Control const & ctrl=Control()
     );
 

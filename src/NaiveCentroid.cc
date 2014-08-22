@@ -34,12 +34,12 @@ NaiveCentroidAlgorithm::ResultMapper NaiveCentroidAlgorithm::makeResultMapper(
 }
 
 template <typename T>
-NaiveCentroidAlgorithm::Result NaiveCentroidAlgorithm::apply(
+void NaiveCentroidAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     afw::geom::Point2D const & center,
+    Result & result,
     Control const & ctrl
 ) {
-    Result result;
 
     // This code has been moved essentially without change from meas_algorithms
     // The only changes were:
@@ -92,28 +92,30 @@ NaiveCentroidAlgorithm::Result NaiveCentroidAlgorithm::apply(
     result.y = lsst::afw::image::indexToPosition(y + image.getY0()) + sum_y / sum;
 
     // FIXME: should report uncertainty
-    return result;
 }
 
 template <typename T>
-NaiveCentroidAlgorithm::Result NaiveCentroidAlgorithm::apply(
+void NaiveCentroidAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
+    Result & result,
     Control const & ctrl
 ) {
-    return apply(exposure, inputs.position, ctrl);
+    apply(exposure, inputs.position, result, ctrl);
 }
 
 #define INSTANTIATE(T)                                                  \
-    template NaiveCentroidAlgorithm::Result NaiveCentroidAlgorithm::apply(          \
+    template  void NaiveCentroidAlgorithm::apply(          \
         afw::image::Exposure<T> const & exposure,                       \
         afw::geom::Point2D const & position,                            \
+        Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \
     template                                                            \
-    NaiveCentroidAlgorithm::Result NaiveCentroidAlgorithm::apply(                   \
+     void NaiveCentroidAlgorithm::apply(                   \
         afw::image::Exposure<T> const & exposure,                       \
         Input const & inputs,                                           \
+        Result & result,                                          \
         Control const & ctrl                                            \
     )
 

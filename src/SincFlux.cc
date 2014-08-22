@@ -34,7 +34,7 @@ namespace lsst { namespace meas { namespace base {
 SincFluxAlgorithm::ResultMapper SincFluxAlgorithm::makeResultMapper(
     afw::table::Schema & schema, std::string const & name, Control const & ctrl
 ) {
-    // calculate the needed coefficients 
+    // calculate the needed coefficients
     if (algorithms::photometry::fuzzyCompare<float>().isEqual(ctrl.ellipticity, 0.0)) {
         algorithms::photometry::SincCoeffs<float>::cache(ctrl.radius1, ctrl.radius2);
     }
@@ -42,12 +42,12 @@ SincFluxAlgorithm::ResultMapper SincFluxAlgorithm::makeResultMapper(
 }
 
 template <typename T>
-SincFluxAlgorithm::Result SincFluxAlgorithm::apply(
+void SincFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     afw::geom::Point2D const & center,
+    Result & result,
     Control const & ctrl
 ) {
-    Result result;
     afw::geom::ellipses::Axes const axes(ctrl.radius2, ctrl.radius2*(1.0 - ctrl.ellipticity), ctrl.angle);
     std::pair<double, double> fluxes =
         algorithms::photometry::calculateSincApertureFlux(exposure.getMaskedImage(),
@@ -59,28 +59,30 @@ SincFluxAlgorithm::Result SincFluxAlgorithm::apply(
     result.fluxSigma = fluxErr;
 
     //  End of meas_algorithms code
-    return result;
 }
 
 template <typename T>
-SincFluxAlgorithm::Result SincFluxAlgorithm::apply(
+void SincFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
+    Result & result,
     Control const & ctrl
 ) {
-    return apply(exposure, inputs.position, ctrl);
+    apply(exposure, inputs.position, result, ctrl);
 }
 
 #define INSTANTIATE(T)                                                  \
-    template SincFluxAlgorithm::Result SincFluxAlgorithm::apply(        \
+    template  void SincFluxAlgorithm::apply(        \
         afw::image::Exposure<T> const & exposure,                       \
         afw::geom::Point2D const & position,                            \
+        Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \
     template                                                            \
-    SincFluxAlgorithm::Result SincFluxAlgorithm::apply(                 \
+     void SincFluxAlgorithm::apply(                 \
         afw::image::Exposure<T> const & exposure,                       \
         Input const & inputs,                                           \
+        Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \
     template lsst::afw::image::Image<T>::Ptr algorithms::detail::calcImageRealSpace<T>(double const, double const,   \

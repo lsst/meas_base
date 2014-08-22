@@ -44,12 +44,12 @@ SdssCentroidAlgorithm::ResultMapper SdssCentroidAlgorithm::makeResultMapper(
 }
 
 template <typename T>
-SdssCentroidAlgorithm::Result SdssCentroidAlgorithm::apply(
+void SdssCentroidAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     afw::geom::Point2D const & center,
+    Result & result,
     Control const & ctrl
 ) {
-    Result result;
 
     // This code has been moved essentially without change from meas_algorithms
     // The only changes were:
@@ -86,7 +86,7 @@ SdssCentroidAlgorithm::Result SdssCentroidAlgorithm::apply(
             NO_PSF
         );
     }
-    
+
     int binX = 1;
     int binY = 1;
     double xc=0., yc=0., dxc=0., dyc=0.;            // estimated centre and error therein
@@ -114,7 +114,7 @@ SdssCentroidAlgorithm::Result SdssCentroidAlgorithm::apply(
                 dyc *= binY;
                 sizeY2 *= binY*binY;
             }
-      
+
             xc += x;                    // xc, yc are measured relative to pixel (x, y)
             yc += y;
 
@@ -151,28 +151,30 @@ SdssCentroidAlgorithm::Result SdssCentroidAlgorithm::apply(
     result.ySigma = sqrt(dyc*dyc);
     // FIXME: should include off-diagonal term in covariance
     result.x_y_Cov = 0.0;
-    return result;
 }
 
 template <typename T>
-SdssCentroidAlgorithm::Result SdssCentroidAlgorithm::apply(
+void SdssCentroidAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
+    Result & result,
     Control const & ctrl
 ) {
-    return apply(exposure, inputs.position, ctrl);
+    apply(exposure, inputs.position, result, ctrl);
 }
 
 #define INSTANTIATE(T)                                                  \
-    template SdssCentroidAlgorithm::Result SdssCentroidAlgorithm::apply(          \
+    template  void SdssCentroidAlgorithm::apply(          \
         afw::image::Exposure<T> const & exposure,                       \
         afw::geom::Point2D const & position,                            \
+        Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \
     template                                                            \
-    SdssCentroidAlgorithm::Result SdssCentroidAlgorithm::apply(                   \
+     void SdssCentroidAlgorithm::apply(                   \
         afw::image::Exposure<T> const & exposure,                       \
         Input const & inputs,                                           \
+        Result & result,                                          \
         Control const & ctrl                                            \
     )
 

@@ -129,10 +129,11 @@ SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(
 }
 
 template <typename T>
-SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
+void SdssShapeAlgorithm::apply(
     afw::image::Image<T> const & exposure,
     afw::detection::Footprint const & footprint,
     afw::geom::Point2D const & center,
+    Result & result,
     Control const & control
 ) {
     throw LSST_EXCEPT(
@@ -142,20 +143,20 @@ SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
 }
 
 template <typename T>
-SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
+void SdssShapeAlgorithm::apply(
     afw::image::MaskedImage<T> const & mimage,
     afw::detection::Footprint const & footprint,
     afw::geom::Point2D const & center,
+    Result & result,
     Control const & control
 ) {
-    Result result;
     typedef typename afw::image::MaskedImage<T> MaskedImageT;
     double xcen = center.getX();         // object's column position
     double ycen = center.getY();         // object's row position
 
     xcen -= mimage.getX0();             // work in image Pixel coordinates
     ycen -= mimage.getY0();
-    
+
     float shiftmax = 1;                 // Max allowed centroid shift \todo XXX set shiftmax from Policy
     if (shiftmax < 2) {
         shiftmax = 2;
@@ -176,20 +177,6 @@ SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
  * We need to measure the PSF's moments even if we failed on the object
  * N.b. This isn't yet implemented (but the code's available from SDSS)
  */
-    //calculate the biggest numerical flag set
-    int lastFlag = -1;
-    for (int n = 0; n < algorithms::SdssShapeImpl::N_FLAGS; ++n) {
-        if (shapeImpl.getFlag(algorithms::SdssShapeImpl::Flag(n))) {
-            result.setFlag(FlagBits(n));
-            lastFlag = n;
-        }
-    }
-    if (lastFlag >= 0) {
-        throw LSST_EXCEPT(
-            pex::exceptions::LogicError,
-            "SdssShape unable to set record values and set the general failure flag"
-        );
-    }
     result.x = shapeImpl.getX();
     result.y = shapeImpl.getY();
     // FIXME: should do off-diagonal covariance elements too
@@ -202,35 +189,54 @@ SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
     result.xxSigma = shapeImpl.getIxxErr();
     result.yySigma = shapeImpl.getIyyErr();
     result.xySigma = shapeImpl.getIxyErr();
-    return result;
+
+    // Now set the flags from SdssShapeImpl, then throw out if one is set.
+    int lastFlag = -1;
+    for (int n = 0; n < algorithms::SdssShapeImpl::N_FLAGS; ++n) {
+        if (shapeImpl.getFlag(algorithms::SdssShapeImpl::Flag(n))) {
+            result.setFlag(FlagBits(n));
+            lastFlag = n;
+        }
+    }
+    if (lastFlag >= 0) {
+        throw LSST_EXCEPT(
+            MeasurementError,
+            getFlagDefinitions()[lastFlag].doc,
+            FlagBits(lastFlag)
+        );
+    }
 }
 
 template <typename T>
-SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(
+void SdssShapeAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
+    Result & result,
     Control const & ctrl
 ) {
-    return apply(exposure.getMaskedImage(), *inputs.footprint, inputs.position, ctrl);
+    apply(exposure.getMaskedImage(), *inputs.footprint, inputs.position, result, ctrl);
 }
 
 #define INSTANTIATE(T)                                                  \
-    template SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(      \
+    template  void SdssShapeAlgorithm::apply(      \
         afw::image::MaskedImage<T> const & exposure,                    \
         afw::detection::Footprint const & footprint,                    \
         afw::geom::Point2D const & position,                            \
+        Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \
-    template SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(      \
+    template  void SdssShapeAlgorithm::apply(      \
         afw::image::Image<T> const & exposure,                          \
         afw::detection::Footprint const & footprint,                    \
         afw::geom::Point2D const & position,                            \
+        Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \
     template                                                            \
-    SdssShapeAlgorithm::Result SdssShapeAlgorithm::apply(               \
+     void SdssShapeAlgorithm::apply(               \
         afw::image::Exposure<T> const & exposure,                       \
         Input const & inputs,                                           \
+        Result & result,                                                \
         Control const & ctrl                                            \
     );
 

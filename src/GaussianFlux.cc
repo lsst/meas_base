@@ -39,9 +39,10 @@ GaussianFluxAlgorithm::ResultMapper GaussianFluxAlgorithm::makeResultMapper(
 }
 
 template <typename T>
-GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(
+void GaussianFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     afw::geom::Point2D const & center,
+    Result & result,
     Control const & ctrl
 ) {
     PTR(afw::detection::Psf const) psf = exposure.getPsf();
@@ -52,7 +53,6 @@ GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(
             NO_PSF
         );
     }
-    Result result;
     PTR(afw::detection::Psf::Image) psfImage = psf->computeImage(center);
     afw::geom::Box2I fitBBox = psfImage->getBBox(afw::image::PARENT);
     fitBBox.clip(exposure.getBBox(afw::image::PARENT));
@@ -127,28 +127,30 @@ GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(
     result.fluxCorrectionKeys.psfFactor =  psfFactor;
 */
     //  End of meas_algorithms code
-    return result;
 }
 
 template <typename T>
-GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(
+void GaussianFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
+    Result & result,
     Control const & ctrl
 ) {
-    return apply(exposure, inputs.position, ctrl);
+    apply(exposure, inputs.position, result, ctrl);
 }
 
 #define INSTANTIATE(T)                                                  \
-    template GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(          \
+    template  void GaussianFluxAlgorithm::apply(          \
         afw::image::Exposure<T> const & exposure,                       \
         afw::geom::Point2D const & position,                            \
+        Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \
     template                                                            \
-    GaussianFluxAlgorithm::Result GaussianFluxAlgorithm::apply(                   \
+     void GaussianFluxAlgorithm::apply(                   \
         afw::image::Exposure<T> const & exposure,                       \
         Input const & inputs,                                           \
+        Result & result,                                          \
         Control const & ctrl                                            \
     )
 
