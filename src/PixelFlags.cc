@@ -38,7 +38,7 @@ PixelFlagsAlgorithm::ResultMapper PixelFlagsAlgorithm::makeResultMapper(
 }
 
 template <typename T>
- void PixelFlagsAlgorithm::apply(
+void PixelFlagsAlgorithm::apply(
     afw::image::MaskedImage<T> const & mimage,
     afw::geom::Point2D const & center,
     afw::detection::Footprint const & footprint,
@@ -89,7 +89,7 @@ template <typename T>
 }
 
 template <typename T>
- void PixelFlagsAlgorithm::apply(
+void PixelFlagsAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
     Result & result,

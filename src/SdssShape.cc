@@ -129,7 +129,7 @@ SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(
 }
 
 template <typename T>
- void SdssShapeAlgorithm::apply(
+void SdssShapeAlgorithm::apply(
     afw::image::Image<T> const & exposure,
     afw::detection::Footprint const & footprint,
     afw::geom::Point2D const & center,
@@ -143,7 +143,7 @@ template <typename T>
 }
 
 template <typename T>
- void SdssShapeAlgorithm::apply(
+void SdssShapeAlgorithm::apply(
     afw::image::MaskedImage<T> const & mimage,
     afw::detection::Footprint const & footprint,
     afw::geom::Point2D const & center,
@@ -208,7 +208,7 @@ template <typename T>
 }
 
 template <typename T>
- void SdssShapeAlgorithm::apply(
+void SdssShapeAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
     Result & result,

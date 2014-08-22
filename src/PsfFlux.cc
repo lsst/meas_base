@@ -37,7 +37,7 @@ PsfFluxAlgorithm::ResultMapper PsfFluxAlgorithm::makeResultMapper(
 }
 
 template <typename T>
- void PsfFluxAlgorithm::apply(
+void PsfFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     afw::geom::Point2D const & position,
     Result & result,
@@ -120,7 +120,7 @@ template <typename T>
 }
 
 template <typename T>
- void PsfFluxAlgorithm::apply(
+void PsfFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
     Result & result,

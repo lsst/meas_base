@@ -35,7 +35,7 @@ GaussianCentroidAlgorithm::ResultMapper GaussianCentroidAlgorithm::makeResultMap
 }
 
 template <typename T>
- void GaussianCentroidAlgorithm::apply(
+void GaussianCentroidAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     afw::geom::Point2D const & center,
     Result & result,
@@ -72,7 +72,7 @@ template <typename T>
 }
 
 template <typename T>
- void GaussianCentroidAlgorithm::apply(
+void GaussianCentroidAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
     Result & result,

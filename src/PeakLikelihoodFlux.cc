@@ -97,7 +97,7 @@ typename afw::image::MaskedImage<T>::SinglePixel computeShiftedValue(
 }
 
 template <typename T>
- void PeakLikelihoodFluxAlgorithm::apply(
+void PeakLikelihoodFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     afw::geom::Point2D const & center,
     Result & result,
@@ -162,7 +162,7 @@ template <typename T>
 }
 
 template <typename T>
- void PeakLikelihoodFluxAlgorithm::apply(
+void PeakLikelihoodFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
     Result & result,

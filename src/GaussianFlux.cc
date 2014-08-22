@@ -39,7 +39,7 @@ GaussianFluxAlgorithm::ResultMapper GaussianFluxAlgorithm::makeResultMapper(
 }
 
 template <typename T>
- void GaussianFluxAlgorithm::apply(
+void GaussianFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     afw::geom::Point2D const & center,
     Result & result,
@@ -130,7 +130,7 @@ template <typename T>
 }
 
 template <typename T>
- void GaussianFluxAlgorithm::apply(
+void GaussianFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     Input const & inputs,
     Result & result,

@@ -92,7 +92,7 @@ public:
      */
     typedef Result1<
         NaiveCentroidAlgorithm,
-        CentroidComponent 
+        CentroidComponent
     > Result;
 
     /// The result mapper for this algorithm is a simple CentroidComponentMapper

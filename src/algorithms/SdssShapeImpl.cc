@@ -624,7 +624,6 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
     }
 
     if (iter == maxIter) {
-        std::cout << "Setting maxiter flag\n";
         shape->setFlag(SdssShapeImpl::UNWEIGHTED);
         shape->setFlag(SdssShapeImpl::MAXITER);
     }
@@ -647,7 +646,6 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
                 shape->setIxy(0.0);
                 shape->setIyy(1/12.0);
             }
-            std::cout << "Returning false with BAD set\n";
             
             return false;
         }
