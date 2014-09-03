@@ -21,22 +21,17 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 """
-references.py provides a task which can find the references in a reference catalog which
-lie within the boundaries of an exposure, either a coadd or a single exposure calexp.
-It is assumed that the reference catalog has come from processing the image in question
-through the measurement task, and that the areas on the sky can be figured out from the
-tract and patch, with a coadd, or from the calexp exposure bounds, in the case of a single
-frame
+Subtasks for creating the reference catalogs used in forced measurement.
 """
-import lsst.afw.geom
 
-from lsst.pex.config import Config, Field, FieldValidationError
-from lsst.pipe.base import Task, TaskError
+import lsst.afw.geom
+import lsst.pex.config
+import lsst.pipe.base
 
 __all__ = ("BaseReferencesTask", "CoaddSrcReferencesTask")
 
-class BaseReferencesConfig(Config):
-    removePatchOverlaps = Field(
+class BaseReferencesConfig(lsst.pex.config.Config):
+    removePatchOverlaps = lsst.pex.config.Field(
         doc = "Only include reference sources for each patch that lie within the patch's inner bbox",
         dtype = bool,
         default = True
@@ -47,8 +42,9 @@ class BaseReferencesConfig(Config):
         optional = True
     )
 
-class BaseReferencesTask(Task):
-    """Base class for forced photometry subtask that retrieves reference sources.
+class BaseReferencesTask(lsst.pipe.base.Task):
+    """!
+    Base class for forced photometry subtask that retrieves reference sources.
 
     BaseReferencesTask defines the required API for the references task, which includes:
       - getSchema(butler)
@@ -63,19 +59,22 @@ class BaseReferencesTask(Task):
     ConfigClass = BaseReferencesConfig
 
     def getSchema(self, butler):
-        """Return the schema for the reference sources.
+        """!
+        Return the schema for the reference sources.
 
         Must be available even before any data has been processed.
         """
         raise NotImplementedError("BaseReferencesTask is pure abstract, and cannot be used directly.")
 
     def getWcs(self, dataRef):
-        """Return the WCS for reference sources.  The given dataRef must include the tract in its dataId.
+        """!
+        Return the WCS for reference sources.  The given dataRef must include the tract in its dataId.
         """
         raise NotImplementedError("BaseReferencesTask is pure abstract, and cannot be used directly.")
 
     def fetchInBox(self, dataRef, bbox, wcs):
-        """Return reference sources that overlap a region defined by a pixel-coordinate bounding box
+        """!
+        Return reference sources that overlap a region defined by a pixel-coordinate bounding box
         and corresponding Wcs.
 
         @param[in] dataRef    ButlerDataRef; the implied data ID must contain the 'tract' key.
@@ -92,7 +91,8 @@ class BaseReferencesTask(Task):
         raise NotImplementedError("BaseReferencesTask is pure abstract, and cannot be used directly.")
 
     def fetchInPatches(self, dataRef, patchList):
-        """Return reference sources that overlap a region defined by one or more SkyMap patches.
+        """!
+        Return reference sources that overlap a region defined by one or more SkyMap patches.
 
         @param[in] dataRef    ButlerDataRef; the implied data ID must contain the 'tract' key.
         @param[in] patchList  list of skymap.PatchInfo instances for which to fetch reference sources
@@ -109,7 +109,8 @@ class BaseReferencesTask(Task):
         raise NotImplementedError("BaseReferencesTask is pure abstract, and cannot be used directly.")
 
     def subset(self, sources, bbox, wcs):
-        """Filter sources to contain only those within the given box, defined in the coordinate system
+        """!
+        Filter sources to contain only those within the given box, defined in the coordinate system
         defined by the given Wcs.
 
         @param[in] sources     input iterable of SourceRecords
@@ -136,14 +137,15 @@ class CoaddSrcReferencesConfig(BaseReferencesTask.ConfigClass):
 
     def validate(self):
         if (self.coaddName == "chiSquared") != (self.filter is None):
-            raise FieldValidationError(
+            raise lsst.pex.config.FieldValidationError(
                 field=CoaddSrcReferencesConfig.coaddName,
                 config=self,
                 msg="filter may be None if and only if coaddName is chiSquared"
                 )
 
 class CoaddSrcReferencesTask(BaseReferencesTask):
-    """A references task implementation that loads the coadd_src dataset directly from disk using
+    """!
+    A references task implementation that loads the coadd_src dataset directly from disk using
     the butler.
     """
 
@@ -160,7 +162,8 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
         return skyMap[dataRef.dataId["tract"]].getWcs()
 
     def fetchInPatches(self, dataRef, patchList):
-        """An implementation of BaseReferencesTask.fetchInPatches that loads 'coadd_src' catalogs
+        """!
+        An implementation of BaseReferencesTask.fetchInPatches that loads 'coadd_src' catalogs
         using the butler.
 
         The given dataRef must include the tract in its dataId.
@@ -174,7 +177,7 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
                 dataId['filter'] = self.config.filter
 
             if not butler.datasetExists(dataset, dataId):
-                raise TaskError("Reference %s doesn't exist" % (dataId,))
+                raise lsst.pipe.base.TaskError("Reference %s doesn't exist" % (dataId,))
             self.log.info("Getting references in %s" % (dataId,))
             catalog = butler.get(dataset, dataId, immediate=True)
             if self.config.removePatchOverlaps:
@@ -187,7 +190,8 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
                     yield source
 
     def fetchInBox(self, dataRef, bbox, wcs, pad = 0):
-        """Return reference sources that overlap a region defined by a pixel-coordinate bounding box
+        """!
+        Return reference sources that overlap a region defined by a pixel-coordinate bounding box
         and corresponding Wcs.
 
         @param[in] dataRef    ButlerDataRef; the implied data ID must contain the 'tract' key.
