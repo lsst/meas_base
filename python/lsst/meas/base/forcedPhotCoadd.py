@@ -26,50 +26,50 @@ import lsst.pipe.base
 import lsst.coadd.utils
 import lsst.afw.table
 
-from .forcedImage import *
+from .forcedPhotImage import *
 from .base import *
 from .references import CoaddSrcReferencesTask
 
-__all__ = ("ProcessForcedCoaddConfig", "ProcessForcedCoaddTask")
+__all__ = ("ForcedPhotCoaddConfig", "ForcedPhotCoaddTask")
 
-class ProcessForcedCoaddConfig(ProcessImageForcedConfig):
+class ForcedPhotCoaddConfig(ProcessImageForcedConfig):
     pass
 
 ## @addtogroup LSST_task_documentation
 ## @{
 ## @page processForcedCoaddTask
-## ProcessForcedCoaddTask
-## @copybrief ProcessForcedCoaddTask
+## ForcedPhotCoaddTask
+## @copybrief ForcedPhotCoaddTask
 ## @}
 
-class ProcessForcedCoaddTask(ProcessImageForcedTask):
+class ForcedPhotCoaddTask(ProcessImageForcedTask):
     """!
     A command-line driver for performing forced measurement on coadd images
 
-    This task is a subclass of ProcessForcedImageTask which is specifically for doing forced
+    This task is a subclass of ForcedPhotImageTask which is specifically for doing forced
     measurement on a coadd, using as a reference catalog detections which were made on overlapping
     coadds (i.e. in other bands).
 
-    The run method (inherited from ProcessForcedImageTask) takes a lsst.daf.persistence.ButlerDataRef
+    The run method (inherited from ForcedPhotImageTask) takes a lsst.daf.persistence.ButlerDataRef
     argument that corresponds to a coadd image.  This is used to provide all the inputs and outputs
     for the task:
      - A "*Coadd_src" (e.g. "deepCoadd_src") dataset is used as the reference catalog.  This not loaded
        directly from the passed dataRef, however; only the patch and tract are used, while the filter
        is set by the configuration for the references subtask (see CoaddSrcReferencesTask).
      - A "*Coadd_calexp" (e.g. "deepCoadd_calexp") dataset is used as the measurement image.  Note that
-       this means that ProcessCoaddTask must be run on an image before ProcessForcedCoaddTask, in order
+       this means that ProcessCoaddTask must be run on an image before ForcedPhotCoaddTask, in order
        to generate the "*Coadd_calexp" dataset.
      - A "*Coadd_forced_src" (e.g. "deepCoadd_forced_src") dataset will be written with the output
        measurement catalog.
 
-    In addition to the run method, ProcessForcedCcdTask overrides several methods of ProcessForcedImageTask
+    In addition to the run method, ForcedPhotCcdTask overrides several methods of ForcedPhotImageTask
     to specialize it for coadd processing, including makeIdFactory() and fetchReferences().  None of these
     should be called directly by the user, though it may be useful to override them further in subclasses.
     """
 
-    ConfigClass = ProcessForcedCoaddConfig
+    ConfigClass = ForcedPhotCoaddConfig
     RunnerClass = lsst.pipe.base.ButlerInitializedTaskRunner
-    _DefaultName = "forcedCoaddTask"
+    _DefaultName = "forcedPhotCoaddTask"
     dataPrefix = "deepCoadd_"
 
     def makeIdFactory(self, dataRef):

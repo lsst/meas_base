@@ -32,7 +32,7 @@ import lsst.afw.geom.ellipses
 import lsst.afw.coord
 
 from .sfm import *
-from .forcedImage import *
+from .forcedPhotImage import *
 
 class MakeTestData(object):
     @staticmethod

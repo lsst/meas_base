@@ -28,7 +28,7 @@ import lsst.pipe.base
 import lsst.afw.image
 import lsst.afw.table
 
-from .forcedImage import *
+from .forcedPhotImage import *
 from .base import *
 
 try:
@@ -36,9 +36,9 @@ try:
 except ImportError:
     applyMosaicResults = None
 
-__all__ = ("ProcessForcedCcdConfig", "ProcessForcedCcdTask")
+__all__ = ("ForcedPhotCcdConfig", "ForcedPhotCcdTask")
 
-class ProcessForcedCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
+class ForcedPhotCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
     """A version of DataIdContainer specialized for forced photometry on CCDs.
 
     Required because we need to add "tract" to the raw data ID keys, and that's tricky.
@@ -65,7 +65,7 @@ class ProcessForcedCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
                     )
                 self.refList.append(dataRef)
 
-class ProcessForcedCcdConfig(ProcessImageForcedConfig):
+class ForcedPhotCcdConfig(ProcessImageForcedConfig):
     doApplyUberCal = lsst.pex.config.Field(
         dtype = bool,
         doc = "Apply meas_mosaic ubercal results to input calexps?",
@@ -75,21 +75,21 @@ class ProcessForcedCcdConfig(ProcessImageForcedConfig):
 ## @addtogroup LSST_task_documentation
 ## @{
 ## @page processForcedCcdTask
-## ProcessForcedCcdTask
-## @copybrief ProcessForcedCcdTask
+## ForcedPhotCcdTask
+## @copybrief ForcedPhotCcdTask
 ## @}
 
-class ProcessForcedCcdTask(ProcessImageForcedTask):
+class ForcedPhotCcdTask(ProcessImageForcedTask):
     """!
     A command-line driver for performing forced measurement on CCD images
 
-    This task is a subclass of ProcessForcedImageTask which is specifically for doing forced
+    This task is a subclass of ForcedPhotImageTask which is specifically for doing forced
     measurement on a single CCD exposure, using as a reference catalog the detections which
     were made on overlapping coadds.
 
-    The run method (inherited from ProcessForcedImageTask) takes a lsst.daf.persistence.ButlerDataRef
+    The run method (inherited from ForcedPhotImageTask) takes a lsst.daf.persistence.ButlerDataRef
     argument that corresponds to a single CCD.  This should contain the data ID keys that correspond to
-    the "forced_src" dataset (the output dataset for ProcessForcedCcdTask), which are typically all those
+    the "forced_src" dataset (the output dataset for ForcedPhotCcdTask), which are typically all those
     used to specify the "calexp" dataset (e.g. visit, raft, sensor for LSST data) as well as a coadd
     tract.  The tract is used to look up the appropriate coadd measurement catalogs to use as references
     (e.g. deepCoadd_src; see CoaddSrcReferencesTask for more information). While the tract must be given
@@ -97,15 +97,15 @@ class ProcessForcedCcdTask(ProcessImageForcedTask):
     calexp to be measured, and the filter used to fetch references is set via config
     (BaseReferencesConfig.filter).
 
-    In addition to the run method, ProcessForcedCcdTask overrides several methods of ProcessForcedImageTask
+    In addition to the run method, ForcedPhotCcdTask overrides several methods of ForcedPhotImageTask
     to specialize it for single-CCD processing, including makeIdFactory(), fetchReferences(), and
     getExposure().  None of these should be called directly by the user, though it may be useful
     to override them further in subclasses.
     """
 
-    ConfigClass = ProcessForcedCcdConfig
+    ConfigClass = ForcedPhotCcdConfig
     RunnerClass = lsst.pipe.base.ButlerInitializedTaskRunner
-    _DefaultName = "forcedCcdTask"
+    _DefaultName = "forcedPhotCcdTask"
     dataPrefix = ""
 
     def makeIdFactory(self, dataRef):
@@ -157,7 +157,7 @@ class ProcessForcedCcdTask(ProcessImageForcedTask):
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "forced_src", help="data ID, with raw CCD keys + tract",
-                               ContainerClass=ProcessForcedCcdDataIdContainer)
+                               ContainerClass=ForcedPhotCcdDataIdContainer)
         return parser
 
 

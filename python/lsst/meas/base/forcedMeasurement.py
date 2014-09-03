@@ -43,8 +43,8 @@ that only require a position or shape, they may simply use output SourceCatalog'
 which will generally be set to the transformed position of the reference object before any other plugins are
 run, and hence avoid using the reference catalog at all.
 
-Command-line driver tasks for forced measurement can be found in forcedImage.py, including
-ProcessForcedImageTask, ProcessForcedCcdTask, and ProcessForcedCoaddTask.
+Command-line driver tasks for forced measurement can be found in forcedPhotImage.py, including
+ForcedPhotImageTask, ForcedPhotCcdTask, and ForcedPhotCoaddTask.
 """
 
 import lsst.pex.config
@@ -254,7 +254,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
     source.
 
     Most of the time, ForcedMeasurementTask will be used via one of the subclasses of
-    ProcessForcedImageTask, ProcessForcedCcdTask and ProcessForcedCoaddTask.  These combine
+    ForcedPhotImageTask, ForcedPhotCcdTask and ForcedPhotCoaddTask.  These combine
     this measurement subtask with a "references" subtask (see BaseReferencesTask and
     CoaddSrcReferencesTask) to perform forced measurement using measurements performed on
     another image as the references.  There is generally little reason to use

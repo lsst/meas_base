@@ -130,7 +130,7 @@ class NoiseReplacer(object):
         # If a heavy footprint is available for a child, we will use it. Otherwise,
         # we use the first parent in the parent chain which has a heavy footprint,
         # which with the one level deblender will alway be the topmost parent
-        # NOTE: heavy footprints get destroyed by the transform process in forcedImage.py,
+        # NOTE: heavy footprints get destroyed by the transform process in forcedPhotImage.py,
         # so they are never available for forced measurements.
 
         # Create in the dict heavies = {id:heavyfootprint}

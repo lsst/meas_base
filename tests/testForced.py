@@ -166,7 +166,7 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         os.unlink(os.path.join(DATA_DIR, "ref-0A.fits"))
         os.unlink(os.path.join(DATA_DIR, "refcat-0A.fits"))
 
-    #  Run the measurement (forcedCcd) task with the centroid peak plugin.
+    #  Run the measurement (forcedPhotCcd) task with the centroid peak plugin.
     #  Measurement is done on a Ccd, which means that the coordinates will have
     #  been transformed in generateSources.  Allow some tolerance for this
     def testOnCcd(self):
@@ -199,7 +199,7 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
                 mismatches += 1
         self.assertEqual(mismatches, 0) 
 
-    #  Run the measurement (forcedCcd) task with the centroid peak plugin.
+    #  Run the measurement (forcedPhotCcd) task with the centroid peak plugin.
     #  Measurement is done on the same exposure as was used for the reference catalog
     #  So in this case, the centroid.peak should be exactly equal the peak[0] centroid
     #  Not that this does not have to be run on a Coadd for this test, just an exposure

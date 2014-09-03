@@ -22,7 +22,7 @@
 #
 
 """Base command-line driver task for forced measurement.  Must be inherited to specialize for
-a specific dataset to be used (see ProcessForcedCcdTask, ProcessForcedCoaddTask).
+a specific dataset to be used (see ForcedPhotCcdTask, ForcedPhotCoaddTask).
 """
 
 import lsst.pex.config
@@ -64,8 +64,8 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
     """!
     A base class for command-line forced measurement drivers.
 
-    This is a an abstract class, which is the common ancestor for ProcessForcedCcdTask
-    and ProcessForcedCoaddTask.  It provides the run() method that does most of the
+    This is a an abstract class, which is the common ancestor for ForcedPhotCcdTask
+    and ForcedPhotCoaddTask.  It provides the run() method that does most of the
     work, while delegating a few customization tasks to other methods that are
     overridden by subclasses.
     """
