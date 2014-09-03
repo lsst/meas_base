@@ -20,8 +20,9 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+
 """Base command-line driver task for forced measurement.  Must be inherited to specialize for
-a specific dataset to be used (see ForcedCcdTask, ForcedCoaddTask).
+a specific dataset to be used (see ForcedPhotCcdTask, ForcedPhotCoaddTask).
 """
 
 import lsst.pex.config
@@ -40,7 +41,7 @@ class ProcessImageForcedConfig(lsst.pex.config.Config):
 
     references = lsst.pex.config.ConfigurableField(
         target=CoaddSrcReferencesTask,
-        doc="Retrieve reference source catalog"
+        doc="subtask to retrieve reference source catalog"
         )
     measurement = lsst.pex.config.ConfigurableField(
         target=ForcedMeasurementTask,
@@ -52,7 +53,22 @@ class ProcessImageForcedConfig(lsst.pex.config.Config):
         default = "deep",
     )
 
+## @addtogroup LSST_task_documentation
+## @{
+## @page ProcessImageForcedTask
+## ProcessImageForcedTask
+## @copybrief ProcessImageForcedTask
+## @}
+
 class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
+    """!
+    A base class for command-line forced measurement drivers.
+
+    This is a an abstract class, which is the common ancestor for ForcedPhotCcdTask
+    and ForcedPhotCoaddTask.  It provides the run() method that does most of the
+    work, while delegating a few customization tasks to other methods that are
+    overridden by subclasses.
+    """
     ConfigClass = ProcessImageForcedConfig
     _DefaultName = "processImageForcedTask"
 
@@ -64,8 +80,21 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         flags = MeasurementDataFlags()  # just a placeholder for now
         self.makeSubtask("measurement", refSchema=refSchema, flags=flags)
 
-
     def run(self, dataRef):
+        """!
+        Measure a single exposure using forced detection for a reference catalog.
+
+        @param[in]  dataRef      An lsst.daf.persistence.ButlerDataRef. It is passed to
+                                 the references subtask to load the reference catalog (see the
+                                 CoaddSrcReferencesTask for more information), and
+                                 the getExposure() and writeOutputs() methods (implemented by
+                                 derived classes) to read the measurement image and write the
+                                 outputs.  See derived class documentation for which datasets
+                                 and data ID keys are used.
+
+        @return lsst.pipe.base.Struct containing the source catalog resulting from the
+                forced measurement on the exposure.
+        """
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
         refCat = list(self.fetchReferences(dataRef, exposure))
@@ -94,14 +123,15 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
     def getExposure(self, dataRef):
         """Read input exposure on which to perform the measurements
 
-        @param dataRef       Data reference from butler
+        @param dataRef       Data reference from butler.
         """
         return dataRef.get(self.dataPrefix + "calexp", immediate=True)
 
     def writeOutput(self, dataRef, sources):
         """Write forced source table
 
-        @param dataRef  Data reference from butler
+        @param dataRef  Data reference from butler; the forced_src dataset (with self.dataPrefix included)
+                        is all that will be modified.
         @param sources  SourceCatalog to save
         """
         dataRef.put(sources, self.dataPrefix + "forced_src")

@@ -20,16 +20,15 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-"""Class to measure a Ccd calexp exposure, using a reference catalog from a Coadd
-   See the comment in the parent class in forced.py for more information.
-"""
+
 import argparse
 
-from lsst.pex.config import Config, ConfigurableField, DictField, Field
-from lsst.pipe.base import ArgumentParser,ButlerInitializedTaskRunner,DataIdContainer
+import lsst.pex.config
+import lsst.pipe.base
 import lsst.afw.image
+import lsst.afw.table
 
-from .forcedImage import *
+from .forcedPhotImage import *
 from .base import *
 
 try:
@@ -37,15 +36,15 @@ try:
 except ImportError:
     applyMosaicResults = None
 
-__all__ = ("ProcessForcedCcdConfig", "ProcessForcedCcdTask")
+__all__ = ("ForcedPhotCcdConfig", "ForcedPhotCcdTask")
 
-class ProcessForcedCcdDataIdContainer(DataIdContainer):
+class ForcedPhotCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
     """A version of DataIdContainer specialized for forced photometry on CCDs.
 
     Required because we need to add "tract" to the raw data ID keys, and that's tricky.
     This IdContainer assumes that a calexp is being measured using the detection information
     from the set of coadds which intersect with the calexp.  a set of reference catalog
-    from a coadd which overlaps it.  It needs the calexp id (visit, raft, sensor), but it
+    from a coadd which overlaps it.  It needs the calexp id (e.g. visit, raft, sensor), but it
     also uses the tract to decide what set of coadds to use.  The references from the tract
     whose patches intersect with the calexp are used.
     """
@@ -66,30 +65,56 @@ class ProcessForcedCcdDataIdContainer(DataIdContainer):
                     )
                 self.refList.append(dataRef)
 
-class ProcessForcedCcdConfig(ProcessImageForcedConfig):
-    doApplyUberCal = Field(
+class ForcedPhotCcdConfig(ProcessImageForcedConfig):
+    doApplyUberCal = lsst.pex.config.Field(
         dtype = bool,
         doc = "Apply meas_mosaic ubercal results to input calexps?",
         default = False
     )
 
+## @addtogroup LSST_task_documentation
+## @{
+## @page processForcedCcdTask
+## ForcedPhotCcdTask
+## @copybrief ForcedPhotCcdTask
+## @}
 
-class ProcessForcedCcdTask(ProcessImageForcedTask):
-    """Forced measurement driver task
+class ForcedPhotCcdTask(ProcessImageForcedTask):
+    """!
+    A command-line driver for performing forced measurement on CCD images
 
-    This task is intended as a command-line script base class, in the model of ProcessImageTask
-    (i.e. it should be subclasses for running on Ccds).
+    This task is a subclass of ForcedPhotImageTask which is specifically for doing forced
+    measurement on a single CCD exposure, using as a reference catalog the detections which
+    were made on overlapping coadds.
+
+    The run method (inherited from ForcedPhotImageTask) takes a lsst.daf.persistence.ButlerDataRef
+    argument that corresponds to a single CCD.  This should contain the data ID keys that correspond to
+    the "forced_src" dataset (the output dataset for ForcedPhotCcdTask), which are typically all those
+    used to specify the "calexp" dataset (e.g. visit, raft, sensor for LSST data) as well as a coadd
+    tract.  The tract is used to look up the appropriate coadd measurement catalogs to use as references
+    (e.g. deepCoadd_src; see CoaddSrcReferencesTask for more information). While the tract must be given
+    as part of the dataRef, the patches are determined automatically from the bounding box and WCS of the
+    calexp to be measured, and the filter used to fetch references is set via config
+    (BaseReferencesConfig.filter).
+
+    In addition to the run method, ForcedPhotCcdTask overrides several methods of ForcedPhotImageTask
+    to specialize it for single-CCD processing, including makeIdFactory(), fetchReferences(), and
+    getExposure().  None of these should be called directly by the user, though it may be useful
+    to override them further in subclasses.
     """
 
-    ConfigClass = ProcessForcedCcdConfig
-    RunnerClass = ButlerInitializedTaskRunner
-    _DefaultName = "forcedCcdTask"
+    ConfigClass = ForcedPhotCcdConfig
+    RunnerClass = lsst.pipe.base.ButlerInitializedTaskRunner
+    _DefaultName = "forcedPhotCcdTask"
     dataPrefix = ""
 
     def makeIdFactory(self, dataRef):
-        """For the output table, make a source id for each output from the # exposure and ccd ids
+        """Create an object that generates globally unique source IDs from per-CCD IDs and the CCD ID.
 
-        @param dataRef       Data reference from butler
+        @param dataRef       Data reference from butler.  The "ccdExposureId_bits" and "ccdExposureId"
+                             datasets are accessed.  The data ID must have the keys that correspond
+                             to ccdExposureId, which is generally the same that correspond to "calexp"
+                             (e.g. visit, raft, sensor for LSST data).
         """
         expBits = dataRef.get("ccdExposureId_bits")
         expId = long(dataRef.get("ccdExposureId"))
@@ -98,8 +123,13 @@ class ProcessForcedCcdTask(ProcessImageForcedTask):
     def fetchReferences(self, dataRef, exposure):
         """Return an iterable of reference sources which overlap the exposure
 
-        @param dataRef       Data reference from butler
-        @param exposure      afw Exposure
+        @param dataRef       Data reference from butler corresponding to the image to be measured;
+                             should have tract, patch, and filter keys.
+        @param exposure      lsst.afw.image.Exposure to be measured (used only to obtain a Wcs and bounding
+                             box).
+
+        All work is delegated to the references subtask; see CoaddSrcReferencesTask for information
+        about the default behavior.
         """
         bbox = exposure.getBBox(lsst.afw.image.PARENT)
         return self.references.fetchInBox(dataRef, bbox, exposure.getWcs())
@@ -107,7 +137,9 @@ class ProcessForcedCcdTask(ProcessImageForcedTask):
     def getExposure(self, dataRef):
         """Read input exposure to measure
 
-        @param dataRef       Data reference from butler
+        @param dataRef       Data reference from butler.  Only the 'calexp' dataset is used,
+                             unless config.doApplyUberCal is true, in which case the corresponding
+                             meas_mosaic outputs are used as well.
         """
         exposure = ProcessImageForcedTask.getExposure(self, dataRef)
         if not self.config.doApplyUberCal:
@@ -123,9 +155,9 @@ class ProcessForcedCcdTask(ProcessImageForcedTask):
 
     @classmethod
     def _makeArgumentParser(cls):
-        parser = ArgumentParser(name=cls._DefaultName)
+        parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "forced_src", help="data ID, with raw CCD keys + tract",
-                               ContainerClass=ProcessForcedCcdDataIdContainer)
+                               ContainerClass=ForcedPhotCcdDataIdContainer)
         return parser
 
 
