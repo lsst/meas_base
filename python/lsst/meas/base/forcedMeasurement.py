@@ -236,7 +236,7 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
 
 ## @addtogroup LSST_task_documentation
 ## @{
-## @page ForcedMeasurementTask
+## @page pageForcedMeasurementTask ForcedMeasurementTask
 ## ForcedMeasurementTask
 ## @copybrief ForcedMeasurementTask
 ## @}
