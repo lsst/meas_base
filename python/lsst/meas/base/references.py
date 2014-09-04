@@ -189,7 +189,7 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
                 for source in catalog:
                     yield source
 
-    def fetchInBox(self, dataRef, bbox, wcs, pad = 0):
+    def fetchInBox(self, dataRef, bbox, wcs, pad=0):
         """!
         Return reference sources that overlap a region defined by a pixel-coordinate bounding box
         and corresponding Wcs.
@@ -197,6 +197,8 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
         @param[in] dataRef    ButlerDataRef; the implied data ID must contain the 'tract' key.
         @param[in] bbox       a afw.geom.Box2I or Box2D that defines the region in pixel coordinates
         @param[in] wcs        afw.image.Wcs that maps the bbox to sky coordinates
+        @param[in] pad        a buffer to grow the bounding box by after catalogs have been loaded, but
+                              before filtering them to include just the given bounding box.
 
         @return an iterable of reference sources
         """
