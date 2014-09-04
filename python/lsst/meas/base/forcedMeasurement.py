@@ -215,7 +215,8 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
 
     plugins = ForcedPlugin.registry.makeField(
         multi=True,
-        default=["base_PeakCentroid",
+        default=["base_TransformedCentroid",
+                 "base_TransformedShape"
                  ],
         doc="Plugins to be run and their configuration"
         )
@@ -227,8 +228,8 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         )
 
     def setDefaults(self):
-        self.slots.centroid = "base_PeakCentroid"
-        self.slots.shape = None
+        self.slots.centroid = "base_TransformedCentroid"
+        self.slots.shape = "base_TransformedShape"
         self.slots.apFlux = None
         self.slots.modelFlux = None
         self.slots.psfFlux = None

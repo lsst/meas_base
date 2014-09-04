@@ -207,11 +207,16 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
     def testOnSameWcs(self):
 
         refCat = lsst.afw.table.SourceCatalog.readFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
-
+        refCat.table.defineCentroid("truth")
+        refCat.table.defineShape("truth")
         path = os.path.join(DATA_DIR, 'calexp-0A.fits')
         exposure = lsst.afw.image.ExposureF(path)
         refWcs = exposure.getWcs()
-        task = lsst.meas.base.ForcedMeasurementTask(refCat.getSchema())
+        config = lsst.meas.base.ForcedMeasurementTask.ConfigClass()
+        config.plugins = ["base_PeakCentroid"]
+        config.slots.centroid = "base_PeakCentroid"
+        config.slots.shape = None
+        task = lsst.meas.base.ForcedMeasurementTask(config=config, refSchema=refCat.getSchema())
         result = task.run(exposure, refCat, refWcs)
         sources = result.sources
         mismatches = 0

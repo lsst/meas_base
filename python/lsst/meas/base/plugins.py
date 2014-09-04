@@ -186,12 +186,12 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
         self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixels")
         self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixels")
 
-    def measure(self, measRecord, exposure, refRecord, referenceWcs):
+    def measure(self, measRecord, exposure, refRecord, refWcs):
         targetWcs = exposure.getWcs()
         peak = refRecord.getFootprint().getPeaks()[0]
         result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
-        if not referenceWcs == targetWcs:
-            result = targetWcs.skyToPixel(referenceWcs.pixelToSky(result))
+        if not refWcs == targetWcs:
+            result = targetWcs.skyToPixel(refWcs.pixelToSky(result))
         measRecord.set(self.keyX, result.getX())
         measRecord.set(self.keyY, result.getY())
 
@@ -205,7 +205,7 @@ class ForcedTransformedCentroidConfig(ForcedPluginConfig):
         self.executionOrder = 0.0
 
 class ForcedTransformedCentroidPlugin(ForcedPlugin):
-    """A centroid "algorithm" for forced measurement that simply transforms the centroid
+    """A centroid pseudo-algorithm for forced measurement that simply transforms the centroid
     from the reference catalog to the measurement coordinate system.  This is used as
     the slot centroid by default in forced measurement, allowing subsequent measurements
     to simply refer to the slot value just as they would in single-frame measurement.
@@ -216,13 +216,75 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
     def __init__(self, config, name, schemaMapper, flags, others, metadata):
         ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
         schema = schemaMapper.editOutputSchema()
-        self.key = schema.addField(name, type="PointD", doc="transformed reference centroid", units="pixels")
+        # Allocate x and y fields, join these into a single FunctorKey for ease-of-use.
+        xKey = schema.addField(name + "_x", type="D", doc="transformed reference centroid column",
+                               units="pixels")
+        yKey = schema.addField(name + "_y", type="D", doc="transformed reference centroid row",
+                               units="pixels")
+        self.centroidKey = lsst.afw.table.Point2DKey(xKey, yKey)
+        # Because we're taking the reference position as given, we don't bother transforming its
+        # uncertainty and reporting that here, so there are no sigma or cov fields.  We do propagate
+        # the flag field, if it exists.
+        if "slot_Centroid_flag" in schemaMapper.getInputSchema():
+            self.flagKey = schema.addField(name + "_flag", type="Flag",
+                                           doc="whether the reference centroid is marked as bad")
+        else:
+            self.flagKey = None
 
-    def measure(self, measRecord, exposure, refRecord, referenceWcs):
+    def measure(self, measRecord, exposure, refRecord, refWcs):
         targetWcs = exposure.getWcs()
-        # Note: may be better to transform refRecord.getCentroid() all the way once slots are working better
-        result = targetWcs.skyToPixel(refRecord.getCoord())
-        measRecord.set(self.key, result)
+        if not refWcs == targetWcs:
+            targetPos = targetWcs.skyToPixel(refWcs.pixelToSky(refRecord.getCentroid()))
+            measRecord.set(self.centroidKey, targetPos)
+        if self.flagKey is not None:
+            measRecord.set(self.flagKey, refRecord.getCentroidFlag())
 
 ForcedPlugin.registry.register("base_TransformedCentroid", ForcedTransformedCentroidPlugin)
+
+
+class ForcedTransformedShapeConfig(ForcedPluginConfig):
+
+    def setDefaults(self):
+        ForcedPluginConfig.setDefaults(self)
+        self.executionOrder = 1.0
+
+class ForcedTransformedShapePlugin(ForcedPlugin):
+    """A shape pseudo-algorithm for forced measurement that simply transforms the shape
+    from the reference catalog to the measurement coordinate system.  This is used as
+    the slot shape by default in forced measurement, allowing subsequent measurements
+    to simply refer to the slot value just as they would in single-frame measurement.
+    """
+
+    ConfigClass = ForcedTransformedShapeConfig
+
+    def __init__(self, config, name, schemaMapper, flags, others, metadata):
+        ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
+        schema = schemaMapper.editOutputSchema()
+        # Allocate xx, yy, xy fields, join these into a single FunctorKey for ease-of-use.
+        xxKey = schema.addField(name + "_xx", type="D", doc="transformed reference shape x^2 moment",
+                                units="pixels^2")
+        yyKey = schema.addField(name + "_yy", type="D", doc="transformed reference shape y^2 moment",
+                                units="pixels^2")
+        xyKey = schema.addField(name + "_xy", type="D", doc="transformed reference shape xy moment",
+                                units="pixels^2")
+        self.shapeKey = lsst.afw.table.QuadrupoleKey(xxKey, yyKey, xyKey)
+        # Because we're taking the reference position as given, we don't bother transforming its
+        # uncertainty and reporting that here, so there are no sigma or cov fields.  We do propagate
+        # the flag field, if it exists.
+        if "slot_shape_flag" in schemaMapper.getInputSchema():
+            self.flagKey = schema.addField(name + "_flag", type="Flag",
+                                           doc="whether the reference shape is marked as bad")
+        else:
+            self.flagKey = None
+
+    def measure(self, measRecord, exposure, refRecord, refWcs):
+        targetWcs = exposure.getWcs()
+        if not refWcs == targetWcs:
+            fullTranform = lsst.afw.image.XYTransformFromWcsPair(targetWcs, refWcs)
+            localTransform = fullTransform.linearizeForwardTransform(refRecord.getCentroid())
+            measRecord.set(self.centroidKey, refRecord.getShape().transform(localTransform))
+        if self.flagKey is not None:
+            measRecord.set(self.flagKey, refRecord.getShapeFlag())
+
+ForcedPlugin.registry.register("base_TransformedShape", ForcedTransformedShapePlugin)
 
