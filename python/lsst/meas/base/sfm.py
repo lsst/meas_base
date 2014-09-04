@@ -158,6 +158,8 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
         """!
         Create a new derived class of WrappedSingleFramePlugin from a C++ Algorithm class.
 
+        @param[in]   Base       (implicit) the type associated with this static method, to be used as the
+                                base class for the generated plugin type.
         @param[in]   AlgClass   The name of the (Swigged) C++ Algorithm class this Plugin will delegate to.
         @param[in]   name       The name to use when registering the Plugin (ignored if doRegister=False).
                                 Defaults to the result of generateAlgorithmName(AlgClass).
@@ -214,7 +216,7 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
 
 ## @addtogroup LSST_task_documentation
 ## @{
-## @page singleFrameMeasurementTask
+## @page pageSingleFrameMeasurementTask SingleFrameMeasurementTask
 ## SingleFrameMeasurementTask
 ## @copybrief SingleFrameMeasurementTask
 ## @}

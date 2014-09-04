@@ -75,6 +75,8 @@ class NoiseReplacer(object):
         @param[in]      config       instance of NoiseReplacerConfig
         @param[in,out]  exposure     Exposure to be noise replaced. (All sources replaced on return)
         @param[in]      footprints   dict of {id: (parent, footprint)};
+        @param[in]      log          pex.logging.Log object to use for status messages; no status messages
+                                     will be printed if None
 
         'footprints' is a dict of {id: (parent, footprint)}; when used in SFM, the ID will be the
         source ID, but in forced photometry, this will be the reference ID, as that's what we used to
