@@ -50,7 +50,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
-        sfm_config.plugins = ["centroid.peak", "base_SdssShape"]
+        sfm_config.plugins = ["base_PeakCentroid", "base_SdssShape"]
         sfm_config.slots.centroid = None
         sfm_config.slots.shape = "base_SdssShape"
         sfm_config.slots.psfFlux = None

@@ -56,8 +56,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         flags = MeasurementDataFlags()
 
         #  Basic test of PsfFlux algorithm, no C++ slots
-        sfm_config.plugins = ["centroid.peak", "base_PsfFlux"]
-        sfm_config.slots.centroid = "centroid.peak"
+        sfm_config.plugins = ["base_PeakCentroid", "base_PsfFlux"]
+        sfm_config.slots.centroid = "base_PeakCentroid"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = "base_PsfFlux"
         sfm_config.slots.modelFlux = None

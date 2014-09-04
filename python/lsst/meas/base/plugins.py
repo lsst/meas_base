@@ -76,7 +76,7 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
         measRecord.set(self.keyX, peak.getFx())
         measRecord.set(self.keyY, peak.getFy())
 
-SingleFramePlugin.registry.register("centroid.peak", SingleFramePeakCentroidPlugin)
+SingleFramePlugin.registry.register("base_PeakCentroid", SingleFramePeakCentroidPlugin)
 
 
 class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
@@ -195,7 +195,7 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
         measRecord.set(self.keyX, result.getX())
         measRecord.set(self.keyY, result.getY())
 
-ForcedPlugin.registry.register("centroid.peak", ForcedPeakCentroidPlugin)
+ForcedPlugin.registry.register("base_PeakCentroid", ForcedPeakCentroidPlugin)
 
 
 class ForcedTransformedCentroidConfig(ForcedPluginConfig):
@@ -224,5 +224,5 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
         result = targetWcs.skyToPixel(refRecord.getCoord())
         measRecord.set(self.key, result)
 
-ForcedPlugin.registry.register("centroid.transformed", ForcedTransformedCentroidPlugin)
+ForcedPlugin.registry.register("base_TransformedCentroid", ForcedTransformedCentroidPlugin)
 

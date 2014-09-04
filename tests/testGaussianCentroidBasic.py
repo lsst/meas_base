@@ -60,7 +60,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
-        sfm_config.plugins = ["centroid.peak", "base_GaussianCentroid"]
+        sfm_config.plugins = ["base_PeakCentroid", "base_GaussianCentroid"]
         sfm_config.slots.centroid = "base_GaussianCentroid"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None

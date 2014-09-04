@@ -148,8 +148,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mapper.addMinimalSchema(srccat.getSchema())
         schema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
-        config.plugins = ["centroid.peak"]
-        config.slots.centroid = None #"centroid.peak"
+        config.plugins = ["base_PeakCentroid"]
+        config.slots.centroid = None #"base_PeakCentroid"
         config.slots.shape = None
         config.slots.psfFlux = None 
         config.slots.modelFlux = None
@@ -189,8 +189,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
-        sfm_config.plugins = ["centroid.peak", "test.flux"]
-        sfm_config.slots.centroid = None #"centroid.peak"
+        sfm_config.plugins = ["base_PeakCentroid", "test.flux"]
+        sfm_config.slots.centroid = None #"base_PeakCentroid"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
