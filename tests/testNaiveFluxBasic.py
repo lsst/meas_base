@@ -51,8 +51,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         flags = MeasurementDataFlags()
 
         #  Basic test of NaiveFlux algorithm, no C++ slots
-        sfm_config.plugins = ["centroid.peak", "base_NaiveFlux"]
-        sfm_config.slots.centroid = "centroid.peak"
+        sfm_config.plugins = ["base_PeakCentroid", "base_NaiveFlux"]
+        sfm_config.slots.centroid = "base_PeakCentroid"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None
         sfm_config.slots.instFlux = None

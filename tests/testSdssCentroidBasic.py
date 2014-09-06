@@ -51,7 +51,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
-        sfm_config.plugins = ["centroid.peak", "base_SdssCentroid"]
+        sfm_config.plugins = ["base_PeakCentroid", "base_SdssCentroid"]
         sfm_config.slots.centroid = "base_SdssCentroid"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None
@@ -70,8 +70,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             record = measCat[i]
             centroid = record.getCentroid()
             cov = record.getCentroidErr()
-            peakX = record.get("centroid.peak_x")
-            peakY = record.get("centroid.peak_y")
+            peakX = record.get("base_PeakCentroid_x")
+            peakY = record.get("base_PeakCentroid_y")
             x = record.get("base_SdssCentroid_x")
             y = record.get("base_SdssCentroid_y")
             xerr = record.get("base_SdssCentroid_xSigma")

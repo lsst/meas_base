@@ -38,8 +38,8 @@ class TestForcedMeasurementConfig(lsst.meas.base.ForcedMeasurementConfig):
 
     def setDefaults(self):
         super(lsst.meas.base.ForcedMeasurementConfig, self).setDefaults()
-        self.plugins = ["centroid.peak", "test.flux"]
-        self.slots.centroid = None #"centroid.peak"
+        self.plugins = ["base_PeakCentroid", "test_flux"]
+        self.slots.centroid = None
         self.slots.shape = None
         self.slots.psfFlux = None
         self.slots.modelFlux = None
@@ -62,12 +62,12 @@ class TestFlux(lsst.meas.base.ForcedPlugin):
         super(TestFlux, self).__init__(config, name, schemaMapper, flags,
                                        others, metadata)
         schema = schemaMapper.editOutputSchema()
-        self.fluxKey = schema.addField("test.flux", type=float, doc="sum of flux in object footprint",
+        self.fluxKey = schema.addField("test_flux", type=float, doc="sum of flux in object footprint",
                                        units="dn")
-        self.fluxCountKey = schema.addField("test.fluxcount", type=int,
+        self.fluxCountKey = schema.addField("test_fluxcount", type=int,
                                             doc="number of pixels in object footprint", units="pixels^2")
-        self.backKey = schema.addField("test.back", type=float, doc="avg of flux in background", units="dn")
-        self.backCountKey = schema.addField("test.backcount", type=int,
+        self.backKey = schema.addField("test_back", type=float, doc="avg of flux in background", units="dn")
+        self.backCountKey = schema.addField("test_backcount", type=int,
                                             doc="number of pixels in surrounding background",
                                             units="pixels^2")
 
@@ -105,7 +105,7 @@ class TestFlux(lsst.meas.base.ForcedPlugin):
 
 
 
-lsst.meas.base.ForcedPlugin.registry.register("test.flux", TestFlux)
+lsst.meas.base.ForcedPlugin.registry.register("test_flux", TestFlux)
 
 DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
 
@@ -166,7 +166,7 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         os.unlink(os.path.join(DATA_DIR, "ref-0A.fits"))
         os.unlink(os.path.join(DATA_DIR, "refcat-0A.fits"))
 
-    #  Run the measurement (forcedPhotCcd) task with the centroid peak plugin.
+    #  Run the measurement (forcedPhotCcd) task with the base_PeakCentroid plugin.
     #  Measurement is done on a Ccd, which means that the coordinates will have
     #  been transformed in generateSources.  Allow some tolerance for this
     def testOnCcd(self):
@@ -189,7 +189,7 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         sources = result.sources
         mismatches = 0
 	testidkey = sources.getSchema().find("objectId").key
-	testFluxKey = sources.getSchema().find("test.flux").key
+	testFluxKey = sources.getSchema().find("test_flux").key
 	truthFluxKey = refCat.getSchema().find("truth_flux").key
         for i, source in enumerate(sources):
             testFlux = sources[i].get(testFluxKey)
@@ -199,24 +199,29 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
                 mismatches += 1
         self.assertEqual(mismatches, 0) 
 
-    #  Run the measurement (forcedPhotCcd) task with the centroid peak plugin.
+    #  Run the measurement (forcedPhotCcd) task with the base_PeakCentroid plugin.
     #  Measurement is done on the same exposure as was used for the reference catalog
-    #  So in this case, the centroid.peak should be exactly equal the peak[0] centroid
+    #  So in this case, the base_PeakCentroid should be exactly equal the peak[0] centroid
     #  Not that this does not have to be run on a Coadd for this test, just an exposure
     #  with the same Wcs as the refCat exposure
     def testOnSameWcs(self):
 
         refCat = lsst.afw.table.SourceCatalog.readFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
-
+        refCat.table.defineCentroid("truth")
+        refCat.table.defineShape("truth")
         path = os.path.join(DATA_DIR, 'calexp-0A.fits')
         exposure = lsst.afw.image.ExposureF(path)
         refWcs = exposure.getWcs()
-        task = lsst.meas.base.ForcedMeasurementTask(refCat.getSchema())
+        config = lsst.meas.base.ForcedMeasurementTask.ConfigClass()
+        config.plugins = ["base_PeakCentroid"]
+        config.slots.centroid = "base_PeakCentroid"
+        config.slots.shape = None
+        task = lsst.meas.base.ForcedMeasurementTask(config=config, refSchema=refCat.getSchema())
         result = task.run(exposure, refCat, refWcs)
         sources = result.sources
         mismatches = 0
-        keyX = sources.getSchema().find("centroid.peak_x").key
-        keyY = sources.getSchema().find("centroid.peak_y").key
+        keyX = sources.getSchema().find("base_PeakCentroid_x").key
+        keyY = sources.getSchema().find("base_PeakCentroid_y").key
         for source in sources:
             centroid = source.getFootprint().getPeaks()[0].getCentroid()
             peakcentroid = lsst.afw.geom.geomLib.Point2D(source.get(keyX), source.get(keyY))
