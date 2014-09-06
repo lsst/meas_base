@@ -280,9 +280,9 @@ class ForcedTransformedShapePlugin(ForcedPlugin):
     def measure(self, measRecord, exposure, refRecord, refWcs):
         targetWcs = exposure.getWcs()
         if not refWcs == targetWcs:
-            fullTranform = lsst.afw.image.XYTransformFromWcsPair(targetWcs, refWcs)
+            fullTransform = lsst.afw.image.XYTransformFromWcsPair(targetWcs, refWcs)
             localTransform = fullTransform.linearizeForwardTransform(refRecord.getCentroid())
-            measRecord.set(self.centroidKey, refRecord.getShape().transform(localTransform))
+            measRecord.set(self.shapeKey, refRecord.getShape().transform(localTransform.getLinear()))
         if self.flagKey is not None:
             measRecord.set(self.flagKey, refRecord.getShapeFlag())
 

@@ -27,6 +27,7 @@ MeasurementDataFlags that are shared by the single-frame measurement framework a
 measurement framework.
 """
 
+import traceback
 import collections
 
 import lsst.pipe.base
@@ -212,7 +213,11 @@ class BasePlugin(object):
         be None, and the failure will be logged by the measurement
         framework as a warning.
         """
-        raise NotImplementedError("This algorithm thinks it cannot fail; please report this as a bug.")
+        traceback.print_exc()
+        message = ("The algorithm '%s' thinks it cannot fail, but it did; "
+                   "please report this as a bug (the full traceback is above)."
+                   % self.__class__.__name__)
+        raise NotImplementedError(message)
 
 class MeasurementDataFlags(object):
     """!
