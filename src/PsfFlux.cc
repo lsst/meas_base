@@ -55,6 +55,11 @@ void PsfFluxAlgorithm::apply(
     afw::geom::Box2I fitBBox = psfImage->getBBox(afw::image::PARENT);
     fitBBox.clip(exposure.getBBox(afw::image::PARENT));
     if (fitBBox != psfImage->getBBox(afw::image::PARENT)) {
+        throw LSST_EXCEPT(
+            MeasurementError,
+            getFlagDefinitions()[EDGE].doc,
+            EDGE 
+        );
         result.setFlag(EDGE);
     }
     afw::detection::Footprint fitRegion(fitBBox);

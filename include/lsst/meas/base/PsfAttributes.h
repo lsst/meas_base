@@ -43,7 +43,7 @@ namespace afw {
         template<typename T> class Image;
     }
 }
-namespace meas { namespace base { namespace algorithms {
+namespace meas { namespace base { 
 
 /************************************************************************************************************/
 /**
@@ -82,5 +82,5 @@ private:
 };
 
     
-}}}}
+}}}
 #endif

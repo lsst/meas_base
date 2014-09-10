@@ -58,6 +58,7 @@ public:
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
     enum FlagBits {
+        EDGE,
         NO_PEAK,
         N_FLAGS
     };
@@ -68,6 +69,7 @@ public:
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
         static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
+                {"edge", "Near edge of image"},
                 {"noPeak", "Fitted Centroid has a negative peak"}
             }};
         return flagDefs;

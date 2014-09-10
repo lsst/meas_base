@@ -28,7 +28,7 @@
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Inputs.h"
 #include "lsst/meas/base/ResultMappers.h"
-#include "lsst/meas/base/algorithms/SdssShapeImpl.h"
+#include "lsst/meas/base/detail/SdssShapeImpl.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -59,8 +59,8 @@ public:
     GaussianFluxControl() :
         fixed(false), background(0.0), shiftmax(10.0),
         centroid("shape.sdss.centroid"), shape("shape.sdss"), shapeFlag(".flags"),
-        maxIter(algorithms::SDSS_SHAPE_MAX_ITER),
-        tol1(algorithms::SDSS_SHAPE_TOL1), tol2(algorithms::SDSS_SHAPE_TOL2)
+        maxIter(detail::SDSS_SHAPE_MAX_ITER),
+        tol1(detail::SDSS_SHAPE_TOL1), tol2(detail::SDSS_SHAPE_TOL2)
     {}
 };
 

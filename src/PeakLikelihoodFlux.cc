@@ -29,7 +29,7 @@
 #include "lsst/afw/geom.h"
 #include "lsst/afw/image.h"
 #include "lsst/afw/math.h"
-#include "lsst/meas/base/algorithms/PSF.h"
+#include "lsst/meas/base/PsfAttributes.h"
 
 #include "lsst/meas/base/PeakLikelihoodFlux.h"
 
@@ -140,7 +140,7 @@ void PeakLikelihoodFluxAlgorithm::apply(
     );
 
     // compute weight = 1/sum(PSF^2) for PSF at ctrPix, where PSF is normalized to a sum of 1
-    algorithms::PsfAttributes psfAttr(psfPtr, ctrPixParentInd);
+    PsfAttributes psfAttr(psfPtr, ctrPixParentInd);
     double weight = psfAttr.computeEffectiveArea();
 
     /*

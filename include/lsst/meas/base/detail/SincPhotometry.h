@@ -32,7 +32,7 @@
  */
 namespace lsst {
 namespace meas {
-namespace base { namespace algorithms {
+namespace base {
 namespace detail {
 
 template<typename PixelT>
@@ -46,5 +46,5 @@ template<typename PixelT>
 typename lsst::afw::image::Image<PixelT>::Ptr calcImageKSpaceCplx(double const rad1, double const rad2,
                                                                   double const posAng, double const ell);
 
-}}}}} // xyzzy
+}}}} // end of lsst::meas::base::detail
 #endif

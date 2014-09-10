@@ -38,8 +38,8 @@ namespace ellipses {
     class Ellipse;
 }}}
 namespace meas {
-namespace base { namespace algorithms {
-namespace photometry {
+namespace base {
+namespace detail {
 /*
  * A comparison function that doesn't require equality closer than machine epsilon
  */
@@ -124,5 +124,5 @@ calculateSincApertureFlux(MaskedImageT const& mimage, ///< Image to measure
                           double const innerFactor=0.0 ///< Scale to apply to ellipse for inner boundary
                          );
 
-}}}}} // namespace lsst::meas::base::algorithms::photometry
+}}}} // namespace lsst::meas::base::detail
 #endif
