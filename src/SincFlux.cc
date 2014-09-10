@@ -40,8 +40,6 @@
 
 #include "lsst/afw/detection/FootprintFunctor.h"
 #include "lsst/afw/geom/ellipses/Ellipse.h"
-#include "lsst/meas/base/detail/SincPhotometry.h"
-#include "lsst/meas/base/detail/Photometry.h"
 #include "lsst/meas/base/SincFlux.h"
 
 #include "lsst/pex/exceptions.h"
@@ -321,428 +319,523 @@ namespace {
 
 namespace detail {
 
-    template<typename PixelT>
-    typename afwImage::Image<PixelT>::Ptr
-    calcImageRealSpace(double const rad1, double const rad2, double const taperwidth) {
-        
-        PixelT initweight = 0.0; // initialize the coeff values
+/*
+ * A comparison function that doesn't require equality closer than machine epsilon
+ */
+template <typename T>
+struct fuzzyCompare {
+    bool operator()(T x, T y) const {
+        if (isEqual(x, y)) {
+            return false;
+        }
+        return (x - y < 0) ? true : false;
+    }
+    bool isEqual(T x, T y) const {
+        return ::fabs(x - y) < std::numeric_limits<T>::epsilon();
+    }
+};
 
-        int log2   = static_cast<int>(::ceil(::log10(2.0*rad2)/log10(2.0)));
-        if (log2 < 3) { log2 = 3; }
-        int hwid = pow(2, log2);
-        int width  = 2*hwid - 1;
+/// A singleton to calculate and cache the coefficients for sinc photometry
+///
+/// Caching is only performed for circular apertures (because elliptical
+/// apertures are assumed to be generated dynamically, and hence not expected
+/// to recur).  Caching must be explicitly requested for a particular circular
+/// aperture (using the 'cache' method).
+///
+/// Unless otherwise noted, apertures are elliptical annuli.  The outer boundary
+/// is defined by an ellipse, while the inner boundary is a scaled version of
+/// the outer ellipse.
+template<typename PixelT>
+class SincCoeffs {
+public:
+    typedef afw::image::Image<PixelT> CoeffT;
 
-        int const xwidth     = width;
-        int const ywidth     = width;
+    /// Cache the coefficients for a particular aperture
+    ///
+    /// The aperture is a circular annulus.
+    static void cache(float r1,         ///< Inner radius
+                      float r2          ///< Outer radius
+        );
 
-        int const x0 = -xwidth/2;
-        int const y0 = -ywidth/2;
+    /// Get the coefficients for an aperture
+    ///
+    /// Coefficients are retrieved from the cache, if available; otherwise they
+    /// will be generated.
+    static CONST_PTR(CoeffT)
+    get(afw::geom::ellipses::Axes const& axes, ///< Ellipse defining outer boundary
+        float const innerFactor=0.0            ///< Scale to apply to ellipse for inner boundary
+        );
+
+    /// Calculate the coefficients for an aperture
+    static PTR(CoeffT)
+    calculate(afw::geom::ellipses::Axes const& axes, ///< Ellipse defining outer boundary
+              double const innerFactor=0.0           ///< Scale to apply to ellipse for inner boundary
+        );
+
+private:
+    typedef std::map<float, PTR(CoeffT), fuzzyCompare<float> > CoeffMap;
+    typedef std::map<float, CoeffMap, fuzzyCompare<float> > CoeffMapMap;
+    SincCoeffs() : _cache() {};
+    SincCoeffs(SincCoeffs const&); // unimplemented: singleton
+    void operator=(SincCoeffs const&); // unimplemented: singleton
+    static SincCoeffs& getInstance();
+
+    /// Search the cache for coefficients for an aperture
+    ///
+    /// If the coefficients are not cached, a null shared_ptr will be returned.
+    CONST_PTR(CoeffT)
+    _lookup(afw::geom::ellipses::Axes const& axes, double const innerFactor=0.0) const;
+
+    CoeffMapMap _cache;                 ///< Cache of coefficients
+};
+
+
+/**
+ * Calculate the flux in an elliptical annulus
+ *
+ * The outer boundary is defined by an ellipse, while the inner boundary is a
+ * scaled version of the outer ellipse.
+ */
+template<typename MaskedImageT>
+std::pair<double, double>
+calculateSincApertureFlux(MaskedImageT const& mimage, ///< Image to measure
+                          afw::geom::ellipses::Ellipse const& ellipse, ///< Outer aperture
+                          double const innerFactor=0.0 ///< Scale to apply to ellipse for inner boundary
+                         );
+
+template<typename PixelT>
+typename afwImage::Image<PixelT>::Ptr
+calcImageRealSpace(double const rad1, double const rad2, double const taperwidth) {
     
-        // create an image to hold the coefficient image
-        typename afwImage::Image<PixelT>::Ptr coeffImage =
-            boost::make_shared<afwImage::Image<PixelT> >(afwGeom::ExtentI(xwidth, ywidth), initweight);
-        coeffImage->setXY0(x0, y0);
+    PixelT initweight = 0.0; // initialize the coeff values
 
-        // create the aperture function object
-        // determine the radius to use that makes 'radius' the effective radius of the aperture
-        double tolerance = 1.0e-12;
-        double dr = 1.0e-6;
-        double err = 2.0*tolerance;
-        double apEff = afwGeom::PI*rad2*rad2;
-        double radIn = rad2;
-        int maxIt = 20;
-        int i = 0;
-        while (err > tolerance && i < maxIt) {
-            CircApPolar<double> apPolar1(radIn, taperwidth);
-            CircApPolar<double> apPolar2(radIn+dr, taperwidth); 
-            double a1 = afwGeom::TWOPI * afwMath::integrate(apPolar1, 0.0, radIn+taperwidth, tolerance);
-            double a2 = afwGeom::TWOPI * afwMath::integrate(apPolar2, 0.0, radIn+dr+taperwidth, tolerance);
-            double dadr = (a2 - a1)/dr;
-            double radNew = radIn - (a1 - apEff)/dadr;
-            err = (a1 - apEff)/apEff;
-            radIn = radNew;
-            i++;
+    int log2   = static_cast<int>(::ceil(::log10(2.0*rad2)/log10(2.0)));
+    if (log2 < 3) { log2 = 3; }
+    int hwid = pow(2, log2);
+    int width  = 2*hwid - 1;
+
+    int const xwidth     = width;
+    int const ywidth     = width;
+
+    int const x0 = -xwidth/2;
+    int const y0 = -ywidth/2;
+
+    // create an image to hold the coefficient image
+    typename afwImage::Image<PixelT>::Ptr coeffImage =
+        boost::make_shared<afwImage::Image<PixelT> >(afwGeom::ExtentI(xwidth, ywidth), initweight);
+    coeffImage->setXY0(x0, y0);
+
+    // create the aperture function object
+    // determine the radius to use that makes 'radius' the effective radius of the aperture
+    double tolerance = 1.0e-12;
+    double dr = 1.0e-6;
+    double err = 2.0*tolerance;
+    double apEff = afwGeom::PI*rad2*rad2;
+    double radIn = rad2;
+    int maxIt = 20;
+    int i = 0;
+    while (err > tolerance && i < maxIt) {
+        CircApPolar<double> apPolar1(radIn, taperwidth);
+        CircApPolar<double> apPolar2(radIn+dr, taperwidth); 
+        double a1 = afwGeom::TWOPI * afwMath::integrate(apPolar1, 0.0, radIn+taperwidth, tolerance);
+        double a2 = afwGeom::TWOPI * afwMath::integrate(apPolar2, 0.0, radIn+dr+taperwidth, tolerance);
+        double dadr = (a2 - a1)/dr;
+        double radNew = radIn - (a1 - apEff)/dadr;
+        err = (a1 - apEff)/apEff;
+        radIn = radNew;
+        i++;
+    }
+    CircularAperture<double> ap(rad1, rad2, taperwidth);
+
+    
+    /* ******************************* */
+    // integrate over the aperture
+    
+    // the limits of the integration over the sinc aperture
+    double const limit = rad2 + taperwidth;
+    double const x1 = -limit;
+    double const x2 =  limit;
+    double const y1 = -limit;
+    double const y2 =  limit;
+    
+    for (int iY = y0; iY != y0 + coeffImage->getHeight(); ++iY) {
+        int iX = x0;
+        typename afwImage::Image<PixelT>::x_iterator end = coeffImage->row_end(iY-y0);
+        for (typename afwImage::Image<PixelT>::x_iterator ptr = coeffImage->row_begin(iY-y0); ptr != end; ++ptr) {
+            
+            // create a sinc function in the CircularAperture at our location
+            SincAperture<double> sincAp(ap, iX, iY);
+            
+            // integrate the sinc
+            PixelT integral = afwMath::integrate2d(sincAp, x1, x2, y1, y2, 1.0e-8);
+            
+            // we actually integrated function+1.0 and now must subtract the excess volume
+            // - just force it to zero in the corners
+            double const dx = iX;
+            double const dy = iY;
+            *ptr = (std::sqrt(dx*dx + dy*dy) < xwidth/2) ?
+                integral - (x2 - x1)*(y2 - y1) : 0.0;
+            ++iX;
         }
-        CircularAperture<double> ap(rad1, rad2, taperwidth);
+    }
 
-        
-        /* ******************************* */
-        // integrate over the aperture
-        
-        // the limits of the integration over the sinc aperture
-        double const limit = rad2 + taperwidth;
-        double const x1 = -limit;
-        double const x2 =  limit;
-        double const y1 = -limit;
-        double const y2 =  limit;
-        
-        for (int iY = y0; iY != y0 + coeffImage->getHeight(); ++iY) {
-            int iX = x0;
-            typename afwImage::Image<PixelT>::x_iterator end = coeffImage->row_end(iY-y0);
-            for (typename afwImage::Image<PixelT>::x_iterator ptr = coeffImage->row_begin(iY-y0); ptr != end; ++ptr) {
-                
-                // create a sinc function in the CircularAperture at our location
-                SincAperture<double> sincAp(ap, iX, iY);
-                
-                // integrate the sinc
-                PixelT integral = afwMath::integrate2d(sincAp, x1, x2, y1, y2, 1.0e-8);
-                
-                // we actually integrated function+1.0 and now must subtract the excess volume
-                // - just force it to zero in the corners
-                double const dx = iX;
-                double const dy = iY;
-                *ptr = (std::sqrt(dx*dx + dy*dy) < xwidth/2) ?
-                    integral - (x2 - x1)*(y2 - y1) : 0.0;
-                ++iX;
-            }
+
+    double sum = 0.0;
+    for (int iY = y0; iY != y0 + coeffImage->getHeight(); ++iY) {
+        typename afwImage::Image<PixelT>::x_iterator end = coeffImage->row_end(iY-y0);
+        for (typename afwImage::Image<PixelT>::x_iterator ptr = coeffImage->row_begin(iY-y0); ptr != end; ++ptr) {
+            sum += *ptr;
         }
-
-
-        double sum = 0.0;
-        for (int iY = y0; iY != y0 + coeffImage->getHeight(); ++iY) {
-            typename afwImage::Image<PixelT>::x_iterator end = coeffImage->row_end(iY-y0);
-            for (typename afwImage::Image<PixelT>::x_iterator ptr = coeffImage->row_begin(iY-y0); ptr != end; ++ptr) {
-                sum += *ptr;
-            }
-        }
-        
+    }
+    
 #if 0                           // debugging
-        coeffImage->writeFits("cimage.fits");
+    coeffImage->writeFits("cimage.fits");
 #endif
 
-        return coeffImage;
-    }
+    return coeffImage;
+}
 
 
 
-    class FftShifter {
-    public:
-        FftShifter(int xwid) : _xwid(xwid) {}
-        int shift(int x) {
-            if (x >= _xwid/2) {
-                return x - _xwid/2;
-            } else {
-                return x + _xwid/2 + 1;
-            }
-        }
-    private:
-        int _xwid;
-    };
-
-    std::pair<double, double> rotate(double x, double y, double angle) {
-        double c = ::cos(angle);
-        double s = ::sin(angle);
-        return std::pair<double, double>(x*c + y*s, -x*s + y*c);
-    }
-    
-    /** todo
-     * - try sub pixel shift if it doesn't break even symmetry
-     * - put values directly in an Image
-     * - precompute the plan
-     */
-
-    template<typename PixelT>
-    typename afwImage::Image<PixelT>::Ptr calcImageKSpaceCplx(double const rad1, double const rad2,
-                                                              double const posAng, double const ellipticity
-                                                             ) {
-        
-        // we only need a half-width due to symmetry
-        // make the hwid 2*rad2 so we have some buffer space and round up to the next power of 2
-        int log2   = static_cast<int>(::ceil(::log10(2.0*rad2)/log10(2.0)));
-        if (log2 < 3) { log2 = 3; }
-        int hwid = pow(2, log2);
-        int wid  = 2*hwid - 1;
-        int xcen = wid/2, ycen = wid/2;
-        FftShifter fftshift(wid);
-        
-        boost::shared_array<std::complex<double> > cimg(new std::complex<double>[wid*wid]);
-        std::complex<double> *c = cimg.get();
-        // fftplan args: nx, ny, *in, *out, direction, flags
-        // - done in-situ if *in == *out
-        fftw_plan plan = fftw_plan_dft_2d(wid, wid,
-                                          reinterpret_cast<fftw_complex*>(c),
-                                          reinterpret_cast<fftw_complex*>(c),
-                                          FFTW_BACKWARD, FFTW_ESTIMATE);
-        
-        // compute the k-space values and put them in the cimg array
-        double const twoPiRad1 = afwGeom::TWOPI*rad1;
-        double const twoPiRad2 = afwGeom::TWOPI*rad2;
-        double const scale = (1.0 - ellipticity);
-        for (int iY = 0; iY < wid; ++iY) {
-            int const fY = fftshift.shift(iY);
-            double const ky = (static_cast<double>(iY) - ycen)/wid;
-            
-            for (int iX = 0; iX < wid; ++iX) {
-                
-                int const fX = fftshift.shift(iX);
-                double const kx = static_cast<double>(iX - xcen)/wid;
-
-                // rotate
-                std::pair<double, double> coo = rotate(kx, ky, posAng);
-                double kxr = coo.first;
-                double kyr = coo.second;
-                // rescale
-                double const k = ::sqrt(kxr*kxr + scale*scale*kyr*kyr);
-                
-                double const airy1 = (rad1 > 0 ? rad1*J1(twoPiRad1*k) : 0.0)/k;
-                double const airy2 = rad2*J1(twoPiRad2*k)/k;
-                double const airy = airy2 - airy1;
-                
-                c[fY*wid + fX] = std::complex<double>(scale*airy, 0.0);
-            }
-        }
-        c[0] = scale*afwGeom::PI*(rad2*rad2 - rad1*rad1);
-        
-        // perform the fft and clean up after ourselves
-        fftw_execute(plan);
-        fftw_destroy_plan(plan);
-        
-        // put the coefficients into an image
-        typename afwImage::Image<PixelT>::Ptr coeffImage =
-            boost::make_shared<afwImage::Image<PixelT> >(afwGeom::ExtentI(wid, wid), 0.0);
-        
-        for (int iY = 0; iY != coeffImage->getHeight(); ++iY) {
-            int iX = 0;
-            typename afwImage::Image<PixelT>::x_iterator end = coeffImage->row_end(iY);
-            for (typename afwImage::Image<PixelT>::x_iterator ptr = coeffImage->row_begin(iY); ptr != end; ++ptr) {
-                int fX = fftshift.shift(iX);
-                int fY = fftshift.shift(iY);
-                *ptr = static_cast<PixelT>(c[fY*wid + fX].real()/(wid*wid));
-                iX++;
-            }
-        }
-        
-        // reset the origin to be the middle of the image
-        coeffImage->setXY0(-wid/2, -wid/2);
-        return coeffImage;
-    }
-
-
-    
-    // I'm not sure why this doesn't work with DCT-I (REDFT00), the DCT should take advantage of symmetry
-    // and be much faster than the DFT.  It runs but the numbers are slightly off ...
-    // but I have to do it as real-to-halfcplx (R2HC) to get the correct numbers.
-
-    template<typename PixelT>
-    typename afwImage::Image<PixelT>::Ptr calcImageKSpaceReal(double const rad1, double const rad2) {
-        
-        // we only need a half-width due to symmertry
-        // make the hwid 2*rad2 so we have some buffer space and round up to the next power of 2
-        int log2   = static_cast<int>(::ceil(::log10(2.0*rad2)/log10(2.0)));
-        if (log2 < 3) { log2 = 3; }
-        int hwid = pow(2, log2);
-        int wid  = 2*hwid - 1;
-        int xcen = wid/2, ycen = wid/2;
-        FftShifter fftshift(wid);
-        
-        boost::shared_array<double> cimg(new double[wid*wid]);
-        double *c = cimg.get();
-        // fftplan args: nx, ny, *in, *out, kindx, kindy, flags
-        // - done in-situ if *in == *out
-        fftw_plan plan = fftw_plan_r2r_2d(wid, wid, c, c, FFTW_R2HC, FFTW_R2HC, FFTW_ESTIMATE);
-        
-        // compute the k-space values and put them in the cimg array
-        double const twoPiRad1 = afwGeom::TWOPI*rad1;
-        double const twoPiRad2 = afwGeom::TWOPI*rad2;
-        for (int iY = 0; iY < wid; ++iY) {
-            
-            int const fY = fftshift.shift(iY);
-            double const ky = (static_cast<double>(iY) - ycen)/wid;
-            
-            for (int iX = 0; iX < wid; ++iX) {
-                int const fX = fftshift.shift(iX);
-                
-                // emacs indent breaks if this isn't separte
-                double const iXcen = static_cast<double>(iX - xcen);
-                double const kx = iXcen/wid;
-
-                double const k = ::sqrt(kx*kx + ky*ky);
-                double const airy1 = (rad1 > 0 ? rad1*J1(twoPiRad1*k) : 0.0)/k;
-                double const airy2 = rad2*J1(twoPiRad2*k)/k;
-                double const airy = airy2 - airy1;
-                c[fY*wid + fX] = airy;
-
-            }
-        }
-        int fxy = fftshift.shift(wid/2);
-        c[fxy*wid + fxy] = afwGeom::PI*(rad2*rad2 - rad1*rad1);
-        
-        // perform the fft and clean up after ourselves
-        fftw_execute(plan);
-        fftw_destroy_plan(plan);
-        
-        // put the coefficients into an image
-        typename afwImage::Image<PixelT>::Ptr coeffImage =
-            boost::make_shared<afwImage::Image<PixelT> >(afwGeom::ExtentI(wid, wid), 0.0);
-        
-        for (int iY = 0; iY != coeffImage->getHeight(); ++iY) {
-            int iX = 0;
-            typename afwImage::Image<PixelT>::x_iterator end = coeffImage->row_end(iY);
-            for (typename afwImage::Image<PixelT>::x_iterator ptr = coeffImage->row_begin(iY); ptr != end; ++ptr) {
-                
-                // now need to reflect the quadrant we solved to the other three
-                int fX = iX < hwid ? hwid - iX - 1 : iX - hwid + 1;
-                int fY = iY < hwid ? hwid - iY - 1 : iY - hwid + 1;
-                *ptr = static_cast<PixelT>(c[fY*wid + fX]/(wid*wid));
-                iX++;
-            }
-        }
-    
-        // reset the origin to be the middle of the image
-        coeffImage->setXY0(-wid/2, -wid/2);
-        return coeffImage;
-    }
-    
-
-    template<typename PixelT>
-    SincCoeffs<PixelT>& SincCoeffs<PixelT>::getInstance()
-    {
-        static SincCoeffs<PixelT> instance;
-        return instance;
-    }
-    
-    template<typename PixelT>
-    void SincCoeffs<PixelT>::cache(float r1, float r2)
-    {
-        if (r1 < 0.0 || r2 < r1) {
-            throw LSST_EXCEPT(pexExceptions::InvalidParameterError,
-                              (boost::format("Invalid r1,r2 = %f,%f") % r1 % r2).str());
-        }
-        double const innerFactor = r1/r2;
-        afw::geom::ellipses::Axes axes(r2, r2, 0.0);
-        if (!getInstance()._lookup(axes, innerFactor)) {
-            PTR(typename SincCoeffs<PixelT>::CoeffT) coeff = calculate(axes, innerFactor);
-            coeff->markPersistent();
-            getInstance()._cache[r2][innerFactor] = coeff;
-        }
-    }
-    
-    template<typename PixelT>
-    CONST_PTR(typename SincCoeffs<PixelT>::CoeffT)
-    SincCoeffs<PixelT>::get(afw::geom::ellipses::Axes const& axes, float const innerFactor)
-    {
-        CONST_PTR(CoeffT) coeff = getInstance()._lookup(axes, innerFactor);
-        return coeff ? coeff : calculate(axes, innerFactor);
-    }
-    
-    template<typename PixelT>
-    CONST_PTR(typename SincCoeffs<PixelT>::CoeffT)
-    SincCoeffs<PixelT>::_lookup(afw::geom::ellipses::Axes const& axes, double const innerFactor) const
-    {
-        if (innerFactor < 0.0 || innerFactor > 1.0) {
-            throw LSST_EXCEPT(pexExceptions::InvalidParameterError,
-                              (boost::format("innerFactor = %f is not between 0 and 1") % innerFactor).str());
-        }
-    
-        CONST_PTR(typename SincCoeffs<PixelT>::CoeffT) const null = CONST_PTR(SincCoeffs<PixelT>::CoeffT)();
-    
-        // We only cache circular apertures
-        if (!fuzzyCompare<float>().isEqual(axes.getA(), axes.getB())) {
-            return null;
-        }
-        typename CoeffMapMap::const_iterator iter1 = _cache.find(axes.getA());
-        if (iter1 == _cache.end()) {
-            return null;
-        }
-        typename CoeffMap::const_iterator iter2 = iter1->second.find(innerFactor);
-        return (iter2 == iter1->second.end()) ? null : iter2->second;
-    }
-    
-    template<typename PixelT>
-    PTR(typename SincCoeffs<PixelT>::CoeffT)
-    SincCoeffs<PixelT>::calculate(afw::geom::ellipses::Axes const& axes, double const innerFactor)
-    {
-        if (innerFactor < 0.0 || innerFactor > 1.0) {
-            throw LSST_EXCEPT(pexExceptions::InvalidParameterError,
-                              (boost::format("innerFactor = %f is not between 0 and 1") % innerFactor).str());
-        }
-    
-        // Kspace-real is fastest, but only slightly faster than kspace cplx
-        // but real won't work for elliptical apertures due to symmetries assumed for real transform
-    
-        double const rad1 = axes.getA() * innerFactor;
-        double const rad2 = axes.getA();
-        // if there's no angle and no ellipticity ... cache it/see if we have it cached
-        if (fuzzyCompare<float>().isEqual(axes.getA(), axes.getB())) {
-            // here we call the real transform
-            return detail::calcImageKSpaceReal<PixelT>(rad1, rad2);
+class FftShifter {
+public:
+    FftShifter(int xwid) : _xwid(xwid) {}
+    int shift(int x) {
+        if (x >= _xwid/2) {
+            return x - _xwid/2;
         } else {
-            // here we call the complex transform
-            double const ellipticity = 1.0 - axes.getB()/axes.getA();
-            return detail::calcImageKSpaceCplx<PixelT>(rad1, rad2, axes.getTheta(), ellipticity);
+            return x + _xwid/2 + 1;
+        }
+    }
+private:
+    int _xwid;
+};
+
+std::pair<double, double> rotate(double x, double y, double angle) {
+    double c = ::cos(angle);
+    double s = ::sin(angle);
+    return std::pair<double, double>(x*c + y*s, -x*s + y*c);
+}
+
+/** todo
+ * - try sub pixel shift if it doesn't break even symmetry
+ * - put values directly in an Image
+ * - precompute the plan
+ */
+
+template<typename PixelT>
+typename afwImage::Image<PixelT>::Ptr calcImageKSpaceCplx(double const rad1, double const rad2,
+                                                          double const posAng, double const ellipticity
+                                                         ) {
+    
+    // we only need a half-width due to symmetry
+    // make the hwid 2*rad2 so we have some buffer space and round up to the next power of 2
+    int log2   = static_cast<int>(::ceil(::log10(2.0*rad2)/log10(2.0)));
+    if (log2 < 3) { log2 = 3; }
+    int hwid = pow(2, log2);
+    int wid  = 2*hwid - 1;
+    int xcen = wid/2, ycen = wid/2;
+    FftShifter fftshift(wid);
+    
+    boost::shared_array<std::complex<double> > cimg(new std::complex<double>[wid*wid]);
+    std::complex<double> *c = cimg.get();
+    // fftplan args: nx, ny, *in, *out, direction, flags
+    // - done in-situ if *in == *out
+    fftw_plan plan = fftw_plan_dft_2d(wid, wid,
+                                      reinterpret_cast<fftw_complex*>(c),
+                                      reinterpret_cast<fftw_complex*>(c),
+                                      FFTW_BACKWARD, FFTW_ESTIMATE);
+    
+    // compute the k-space values and put them in the cimg array
+    double const twoPiRad1 = afwGeom::TWOPI*rad1;
+    double const twoPiRad2 = afwGeom::TWOPI*rad2;
+    double const scale = (1.0 - ellipticity);
+    for (int iY = 0; iY < wid; ++iY) {
+        int const fY = fftshift.shift(iY);
+        double const ky = (static_cast<double>(iY) - ycen)/wid;
+        
+        for (int iX = 0; iX < wid; ++iX) {
+            
+            int const fX = fftshift.shift(iX);
+            double const kx = static_cast<double>(iX - xcen)/wid;
+
+            // rotate
+            std::pair<double, double> coo = rotate(kx, ky, posAng);
+            double kxr = coo.first;
+            double kyr = coo.second;
+            // rescale
+            double const k = ::sqrt(kxr*kxr + scale*scale*kyr*kyr);
+            
+            double const airy1 = (rad1 > 0 ? rad1*J1(twoPiRad1*k) : 0.0)/k;
+            double const airy2 = rad2*J1(twoPiRad2*k)/k;
+            double const airy = airy2 - airy1;
+            
+            c[fY*wid + fX] = std::complex<double>(scale*airy, 0.0);
+        }
+    }
+    c[0] = scale*afwGeom::PI*(rad2*rad2 - rad1*rad1);
+    
+    // perform the fft and clean up after ourselves
+    fftw_execute(plan);
+    fftw_destroy_plan(plan);
+    
+    // put the coefficients into an image
+    typename afwImage::Image<PixelT>::Ptr coeffImage =
+        boost::make_shared<afwImage::Image<PixelT> >(afwGeom::ExtentI(wid, wid), 0.0);
+    
+    for (int iY = 0; iY != coeffImage->getHeight(); ++iY) {
+        int iX = 0;
+        typename afwImage::Image<PixelT>::x_iterator end = coeffImage->row_end(iY);
+        for (typename afwImage::Image<PixelT>::x_iterator ptr = coeffImage->row_begin(iY); ptr != end; ++ptr) {
+            int fX = fftshift.shift(iX);
+            int fY = fftshift.shift(iY);
+            *ptr = static_cast<PixelT>(c[fY*wid + fX].real()/(wid*wid));
+            iX++;
         }
     }
     
+    // reset the origin to be the middle of the image
+    coeffImage->setXY0(-wid/2, -wid/2);
+    return coeffImage;
+}
+
+
+
+// I'm not sure why this doesn't work with DCT-I (REDFT00), the DCT should take advantage of symmetry
+// and be much faster than the DFT.  It runs but the numbers are slightly off ...
+// but I have to do it as real-to-halfcplx (R2HC) to get the correct numbers.
+
+template<typename PixelT>
+typename afwImage::Image<PixelT>::Ptr calcImageKSpaceReal(double const rad1, double const rad2) {
     
-    /************************************************************************************************************/
-    /**
-     * Workhorse routine to calculate elliptical aperture fluxes
-     */
-    template<typename MaskedImageT>
-    std::pair<double, double>
-    calculateSincApertureFlux(MaskedImageT const& mimage, afw::geom::ellipses::Ellipse const& ellipse,
-                              double const innerFactor)
-    {
-        double flux = std::numeric_limits<double>::quiet_NaN();
-        double fluxErr = std::numeric_limits<double>::quiet_NaN();
+    // we only need a half-width due to symmertry
+    // make the hwid 2*rad2 so we have some buffer space and round up to the next power of 2
+    int log2   = static_cast<int>(::ceil(::log10(2.0*rad2)/log10(2.0)));
+    if (log2 < 3) { log2 = 3; }
+    int hwid = pow(2, log2);
+    int wid  = 2*hwid - 1;
+    int xcen = wid/2, ycen = wid/2;
+    FftShifter fftshift(wid);
+    
+    boost::shared_array<double> cimg(new double[wid*wid]);
+    double *c = cimg.get();
+    // fftplan args: nx, ny, *in, *out, kindx, kindy, flags
+    // - done in-situ if *in == *out
+    fftw_plan plan = fftw_plan_r2r_2d(wid, wid, c, c, FFTW_R2HC, FFTW_R2HC, FFTW_ESTIMATE);
+    
+    // compute the k-space values and put them in the cimg array
+    double const twoPiRad1 = afwGeom::TWOPI*rad1;
+    double const twoPiRad2 = afwGeom::TWOPI*rad2;
+    for (int iY = 0; iY < wid; ++iY) {
         
-        typedef typename MaskedImageT::Image Image;
-        typedef typename Image::Pixel Pixel;
-        typedef typename Image::Ptr ImagePtr;
+        int const fY = fftshift.shift(iY);
+        double const ky = (static_cast<double>(iY) - ycen)/wid;
         
-        // BBox for data image
-        afwGeom::BoxI imageBBox(mimage.getBBox(afwImage::PARENT));
-    
-    
-        // make the coeff image
-        // compute c_i as double integral over aperture def g_i(), and sinc()
-        CONST_PTR(Image) cimage0 = SincCoeffs<Pixel>::get(ellipse.getCore(), innerFactor);
+        for (int iX = 0; iX < wid; ++iX) {
+            int const fX = fftshift.shift(iX);
             
-        // as long as we're asked for the same radius, we don't have to recompute cimage0
-        // shift to center the aperture on the object being measured
-        ImagePtr cimage = afwMath::offsetImage(*cimage0, ellipse.getCenter().getX(), ellipse.getCenter().getY());
-        afwGeom::BoxI bbox(cimage->getBBox(afwImage::PARENT));
-    #if 0
-        // I (Steve Bickerton) think this should work, but doesn't.
-        // For the time being, I'll do the bounds check here
-        // ... should determine why bbox/image behaviour not as expected.
-        afwGeom::BoxI mbbox(mimage.getBBox(afwImage::PARENT));
-        bbox.clip(mbbox);
-        afwGeom::Point2I cimXy0(cimage->getXY0());
-        bbox.shift(-cimage->getX0(), -cimage->getY0());
-        cimage = typename Image::Ptr(new Image(*cimage, bbox, false));
-        cimage->setXY0(cimXy0);
-    #else
-        int x1 = (cimage->getX0() < mimage.getX0()) ? mimage.getX0() : cimage->getX0();
-        int y1 = (cimage->getY0() < mimage.getY0()) ? mimage.getY0() : cimage->getY0();
-        int x2 = (cimage->getX0() + cimage->getWidth() > mimage.getX0() + mimage.getWidth()) ?
-            mimage.getX0() + mimage.getWidth() - 1 : cimage->getX0() + cimage->getWidth() - 1;
-        int y2 = (cimage->getY0() + cimage->getHeight() > mimage.getY0() + mimage.getHeight()) ?
-            mimage.getY0() + mimage.getHeight() - 1 : cimage->getY0() + cimage->getHeight() - 1; 
-        
-        // if the dimensions changed, put the image in a smaller bbox
-        if ( (x2 - x1 + 1 != cimage->getWidth()) || (y2 - y1 + 1 != cimage->getHeight()) ) {
-            bbox = afwGeom::BoxI(afwGeom::Point2I(x1 - cimage->getX0(), y1 - cimage->getY0()),
-                                 afwGeom::Extent2I(x2 - x1 + 1, y2 - y1 + 1));
-            cimage = ImagePtr(new Image(*cimage, bbox, afwImage::LOCAL, false));
-            
-            // shift back to correct place
-            cimage = afwMath::offsetImage(*cimage, x1, y1);
-    		bbox = afwGeom::BoxI(afwGeom::Point2I(x1, y1), 
-    							  afwGeom::Extent2I(x2-x1+1, y2-y1+1));
+            // emacs indent breaks if this isn't separte
+            double const iXcen = static_cast<double>(iX - xcen);
+            double const kx = iXcen/wid;
+
+            double const k = ::sqrt(kx*kx + ky*ky);
+            double const airy1 = (rad1 > 0 ? rad1*J1(twoPiRad1*k) : 0.0)/k;
+            double const airy2 = rad2*J1(twoPiRad2*k)/k;
+            double const airy = airy2 - airy1;
+            c[fY*wid + fX] = airy;
+
         }
-    #endif
-            
-        // pass the image and cimage into the wfluxFunctor to do the sum
-        FootprintWeightFlux<MaskedImageT, Image> wfluxFunctor(mimage, cimage);
-        
-        afwDet::Footprint foot(bbox, imageBBox);
-        wfluxFunctor.apply(foot);
-        flux = wfluxFunctor.getSum();
-        fluxErr = ::sqrt(wfluxFunctor.getSumVar());
-    
-        return std::make_pair(flux, fluxErr);
     }
+    int fxy = fftshift.shift(wid/2);
+    c[fxy*wid + fxy] = afwGeom::PI*(rad2*rad2 - rad1*rad1);
+    
+    // perform the fft and clean up after ourselves
+    fftw_execute(plan);
+    fftw_destroy_plan(plan);
+    
+    // put the coefficients into an image
+    typename afwImage::Image<PixelT>::Ptr coeffImage =
+        boost::make_shared<afwImage::Image<PixelT> >(afwGeom::ExtentI(wid, wid), 0.0);
+    
+    for (int iY = 0; iY != coeffImage->getHeight(); ++iY) {
+        int iX = 0;
+        typename afwImage::Image<PixelT>::x_iterator end = coeffImage->row_end(iY);
+        for (typename afwImage::Image<PixelT>::x_iterator ptr = coeffImage->row_begin(iY); ptr != end; ++ptr) {
+            
+            // now need to reflect the quadrant we solved to the other three
+            int fX = iX < hwid ? hwid - iX - 1 : iX - hwid + 1;
+            int fY = iY < hwid ? hwid - iY - 1 : iY - hwid + 1;
+            *ptr = static_cast<PixelT>(c[fY*wid + fX]/(wid*wid));
+            iX++;
+        }
+    }
+
+    // reset the origin to be the middle of the image
+    coeffImage->setXY0(-wid/2, -wid/2);
+    return coeffImage;
+}
+
+
+template<typename PixelT>
+SincCoeffs<PixelT>& SincCoeffs<PixelT>::getInstance()
+{
+    static SincCoeffs<PixelT> instance;
+    return instance;
+}
+
+template<typename PixelT>
+void SincCoeffs<PixelT>::cache(float r1, float r2)
+{
+    if (r1 < 0.0 || r2 < r1) {
+        throw LSST_EXCEPT(pexExceptions::InvalidParameterError,
+                          (boost::format("Invalid r1,r2 = %f,%f") % r1 % r2).str());
+    }
+    double const innerFactor = r1/r2;
+    afw::geom::ellipses::Axes axes(r2, r2, 0.0);
+    if (!getInstance()._lookup(axes, innerFactor)) {
+        PTR(typename SincCoeffs<PixelT>::CoeffT) coeff = calculate(axes, innerFactor);
+        coeff->markPersistent();
+        getInstance()._cache[r2][innerFactor] = coeff;
+    }
+}
+
+template<typename PixelT>
+CONST_PTR(typename SincCoeffs<PixelT>::CoeffT)
+SincCoeffs<PixelT>::get(afw::geom::ellipses::Axes const& axes, float const innerFactor)
+{
+    CONST_PTR(CoeffT) coeff = getInstance()._lookup(axes, innerFactor);
+    return coeff ? coeff : calculate(axes, innerFactor);
+}
+
+template<typename PixelT>
+CONST_PTR(typename SincCoeffs<PixelT>::CoeffT)
+SincCoeffs<PixelT>::_lookup(afw::geom::ellipses::Axes const& axes, double const innerFactor) const
+{
+    if (innerFactor < 0.0 || innerFactor > 1.0) {
+        throw LSST_EXCEPT(pexExceptions::InvalidParameterError,
+                          (boost::format("innerFactor = %f is not between 0 and 1") % innerFactor).str());
+    }
+
+    CONST_PTR(typename SincCoeffs<PixelT>::CoeffT) const null = CONST_PTR(SincCoeffs<PixelT>::CoeffT)();
+
+    // We only cache circular apertures
+    if (!fuzzyCompare<float>().isEqual(axes.getA(), axes.getB())) {
+        return null;
+    }
+    typename CoeffMapMap::const_iterator iter1 = _cache.find(axes.getA());
+    if (iter1 == _cache.end()) {
+        return null;
+    }
+    typename CoeffMap::const_iterator iter2 = iter1->second.find(innerFactor);
+    return (iter2 == iter1->second.end()) ? null : iter2->second;
+}
+
+template<typename PixelT>
+PTR(typename SincCoeffs<PixelT>::CoeffT)
+SincCoeffs<PixelT>::calculate(afw::geom::ellipses::Axes const& axes, double const innerFactor)
+{
+    if (innerFactor < 0.0 || innerFactor > 1.0) {
+        throw LSST_EXCEPT(pexExceptions::InvalidParameterError,
+                          (boost::format("innerFactor = %f is not between 0 and 1") % innerFactor).str());
+    }
+
+    // Kspace-real is fastest, but only slightly faster than kspace cplx
+    // but real won't work for elliptical apertures due to symmetries assumed for real transform
+
+    double const rad1 = axes.getA() * innerFactor;
+    double const rad2 = axes.getA();
+    // if there's no angle and no ellipticity ... cache it/see if we have it cached
+    if (fuzzyCompare<float>().isEqual(axes.getA(), axes.getB())) {
+        // here we call the real transform
+        return detail::calcImageKSpaceReal<PixelT>(rad1, rad2);
+    } else {
+        // here we call the complex transform
+        double const ellipticity = 1.0 - axes.getB()/axes.getA();
+        return detail::calcImageKSpaceCplx<PixelT>(rad1, rad2, axes.getTheta(), ellipticity);
+    }
+}
+
+
+/************************************************************************************************************/
+/**
+ * Workhorse routine to calculate elliptical aperture fluxes
+ */
+template<typename MaskedImageT>
+std::pair<double, double>
+calculateSincApertureFlux(MaskedImageT const& mimage, afw::geom::ellipses::Ellipse const& ellipse,
+                          double const innerFactor)
+{
+    double flux = std::numeric_limits<double>::quiet_NaN();
+    double fluxErr = std::numeric_limits<double>::quiet_NaN();
+    
+    typedef typename MaskedImageT::Image Image;
+    typedef typename Image::Pixel Pixel;
+    typedef typename Image::Ptr ImagePtr;
+    
+    // BBox for data image
+    afwGeom::BoxI imageBBox(mimage.getBBox(afwImage::PARENT));
+
+
+    // make the coeff image
+    // compute c_i as double integral over aperture def g_i(), and sinc()
+    CONST_PTR(Image) cimage0 = SincCoeffs<Pixel>::get(ellipse.getCore(), innerFactor);
+        
+    // as long as we're asked for the same radius, we don't have to recompute cimage0
+    // shift to center the aperture on the object being measured
+    ImagePtr cimage = afwMath::offsetImage(*cimage0, ellipse.getCenter().getX(), ellipse.getCenter().getY());
+    afwGeom::BoxI bbox(cimage->getBBox(afwImage::PARENT));
+#if 0
+    // I (Steve Bickerton) think this should work, but doesn't.
+    // For the time being, I'll do the bounds check here
+    // ... should determine why bbox/image behaviour not as expected.
+    afwGeom::BoxI mbbox(mimage.getBBox(afwImage::PARENT));
+    bbox.clip(mbbox);
+    afwGeom::Point2I cimXy0(cimage->getXY0());
+    bbox.shift(-cimage->getX0(), -cimage->getY0());
+    cimage = typename Image::Ptr(new Image(*cimage, bbox, false));
+    cimage->setXY0(cimXy0);
+#else
+    int x1 = (cimage->getX0() < mimage.getX0()) ? mimage.getX0() : cimage->getX0();
+    int y1 = (cimage->getY0() < mimage.getY0()) ? mimage.getY0() : cimage->getY0();
+    int x2 = (cimage->getX0() + cimage->getWidth() > mimage.getX0() + mimage.getWidth()) ?
+        mimage.getX0() + mimage.getWidth() - 1 : cimage->getX0() + cimage->getWidth() - 1;
+    int y2 = (cimage->getY0() + cimage->getHeight() > mimage.getY0() + mimage.getHeight()) ?
+        mimage.getY0() + mimage.getHeight() - 1 : cimage->getY0() + cimage->getHeight() - 1; 
+    
+    // if the dimensions changed, put the image in a smaller bbox
+    if ( (x2 - x1 + 1 != cimage->getWidth()) || (y2 - y1 + 1 != cimage->getHeight()) ) {
+        bbox = afwGeom::BoxI(afwGeom::Point2I(x1 - cimage->getX0(), y1 - cimage->getY0()),
+                             afwGeom::Extent2I(x2 - x1 + 1, y2 - y1 + 1));
+        cimage = ImagePtr(new Image(*cimage, bbox, afwImage::LOCAL, false));
+        
+        // shift back to correct place
+        cimage = afwMath::offsetImage(*cimage, x1, y1);
+		bbox = afwGeom::BoxI(afwGeom::Point2I(x1, y1), 
+							  afwGeom::Extent2I(x2-x1+1, y2-y1+1));
+    }
+#endif
+        
+    // pass the image and cimage into the wfluxFunctor to do the sum
+    FootprintWeightFlux<MaskedImageT, Image> wfluxFunctor(mimage, cimage);
+    
+    afwDet::Footprint foot(bbox, imageBBox);
+    wfluxFunctor.apply(foot);
+    flux = wfluxFunctor.getSum();
+    fluxErr = ::sqrt(wfluxFunctor.getSumVar());
+
+    return std::make_pair(flux, fluxErr);
+}
+
+template<typename PixelT>
+typename lsst::afw::image::Image<PixelT>::Ptr calcImageRealSpace(double const rad1, double const rad2,
+                                                                 double const taper=0.1);
+
+template<typename PixelT>
+typename lsst::afw::image::Image<PixelT>::Ptr calcImageKSpaceReal(double const rad1, double const rad2);
+
+template<typename PixelT>
+typename lsst::afw::image::Image<PixelT>::Ptr calcImageKSpaceCplx(double const rad1, double const rad2,
+                                                                  double const posAng, double const ell);
 
 }  // end of detail namespace
     

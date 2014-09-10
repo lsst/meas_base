@@ -22,7 +22,6 @@
  */
 #include "ndarray/eigen.h"
 #include "lsst/meas/base/GaussianCentroid.h"
-#include "lsst/meas/base/FittedModel.h"
 
 #include <algorithm>
 #include "Eigen/Core"
@@ -45,7 +44,7 @@ struct Fit2d {
     typedef Eigen::Matrix<double, FittedModel::NPARAM, 1> Vector;
 
     template<typename PixelT>
-    explicit Fit2d(afwImage::Image<PixelT> const& im) : wide(32), rast(*new std::vector<Raster>(wide*wide)) {
+    explicit Fit2d(afw::image::Image<PixelT> const& im) : wide(32), rast(*new std::vector<Raster>(wide*wide)) {
         ncols = im.getWidth();
         nrows = im.getHeight();
 
@@ -326,7 +325,7 @@ static void cond2(Fit2d *fit) {
  *  First guess for 2-D Gaussian
  */
 template<typename PixelT>
-static void fg2(afwImage::Image<PixelT> const& im,     ///< The image
+static void fg2(afw::image::Image<PixelT> const& im,     ///< The image
                 double x0, double y0,   ///< Initial guess for the position
                 Fit2d *fit              ///< Information needed for the fit
                ) {
@@ -458,7 +457,7 @@ static void fg2(afwImage::Image<PixelT> const& im,     ///< The image
  *  Compute centroids with 2-D Gaussian fitter
  */
 template<typename PixelT>
-FittedModel twodg(afwImage::Image<PixelT> const& im,           ///< The image to fit
+FittedModel twodg(afw::image::Image<PixelT> const& im,           ///< The image to fit
                   double x0,                    ///< Initial guess for position, column
                   double y0                     ///<                             and row
                  ) {
@@ -499,9 +498,9 @@ FittedModel twodg(afwImage::Image<PixelT> const& im,           ///< The image to
 #define MAKE_TWODG(IMAGE_T) \
     template FittedModel twodg(IMAGE_T const& im, double x0, double y0)
 
-MAKE_TWODG(afwImage::Image<float>);
-MAKE_TWODG(afwImage::Image<double>);
-MAKE_TWODG(afwImage::Image<int>);
+MAKE_TWODG(afw::image::Image<float>);
+MAKE_TWODG(afw::image::Image<double>);
+MAKE_TWODG(afw::image::Image<int>);
 
 } // end anonymous namespace
 
