@@ -21,7 +21,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import os
 import unittest
 import numpy
 
@@ -123,7 +122,7 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         psfImage = self.calexp.getPsf().computeImage(self.record.get(self.centroidKey))
         bbox = psfImage.getBBox(lsst.afw.image.PARENT)
         bbox.grow(-1)
-        subExposure = self.calexp.Factory(self.calexp, bbox)
+        subExposure = self.calexp.Factory(self.calexp, bbox, lsst.afw.image.PARENT)
         result = lsst.meas.base.PsfFluxAlgorithm.Result()
         self.assertRaises(
             lsst.meas.base.MeasurementError,
