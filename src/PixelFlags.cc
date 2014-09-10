@@ -57,7 +57,7 @@ public:
 private:
     typename MaskedImageT::Mask::Pixel _bits;
 };
-}
+}  // end anonymous namespace
 
 PixelFlagsAlgorithm::ResultMapper PixelFlagsAlgorithm::makeResultMapper(
     afw::table::Schema & schema, std::string const & name, Control const & ctrl

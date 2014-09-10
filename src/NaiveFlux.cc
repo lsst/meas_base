@@ -31,7 +31,7 @@
 
 namespace lsst { namespace meas { namespace base {
 
-namespace {
+namespace { //anonymous
 
 template <typename MaskedImageT>
 class FootprintFlux : public lsst::afw::detection::FootprintFunctor<MaskedImageT> {
@@ -137,7 +137,7 @@ struct getSum2 {
     double sum;                         // \sum_i(x_i)
     double sum2;                        // \sum_i(x_i^2)
 };
-}
+} // end anonymous namespace
 
 NaiveFluxAlgorithm::ResultMapper NaiveFluxAlgorithm::makeResultMapper(
     afw::table::Schema & schema, std::string const & name, Control const & ctrl

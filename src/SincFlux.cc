@@ -744,10 +744,8 @@ namespace detail {
         return std::make_pair(flux, fluxErr);
     }
 
-}  // end of photometry namespace
+}  // end of detail namespace
     
-
-
 
 SincFluxAlgorithm::ResultMapper SincFluxAlgorithm::makeResultMapper(
     afw::table::Schema & schema, std::string const & name, Control const & ctrl

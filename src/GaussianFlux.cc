@@ -34,6 +34,7 @@
 
 namespace lsst { namespace meas { namespace base {
 
+namespace { // anonymous
 
 /************************************************************************************************************/
     
@@ -105,6 +106,7 @@ double getPsfFactor(lsst::afw::detection::Psf const & psf, afw::geom::Point2D co
     return result.first;
 }
 
+} // end anonymous
 
 GaussianFluxAlgorithm::ResultMapper GaussianFluxAlgorithm::makeResultMapper(
     afw::table::Schema & schema, std::string const & name, Control const & ctrl

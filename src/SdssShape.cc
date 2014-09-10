@@ -437,11 +437,9 @@ calcmom(ImageT const& image,            // the image data
 
 } // anonymous namespace
 
-
-namespace detail {
-
 /************************************************************************************************************/
 
+namespace detail {
 /**
  * Workhorse for adaptive moments
  */
@@ -737,21 +735,6 @@ getFixedMomentsFlux(ImageT const& image,               ///< the data to process
     return std::make_pair(shape.getI0()*scale, shape.getI0Err()*scale);
 }
 
-
-#define INSTANTIATE_IMAGE(IMAGE) \
-    template bool getAdaptiveMoments<IMAGE>( \
-        IMAGE const&, double, double, double, double, SdssShapeImpl*, int, float, float); \
-    template std::pair<double, double> getFixedMomentsFlux<IMAGE>( \
-        IMAGE const&, double, double, double, SdssShapeImpl const&); \
-
-#define INSTANTIATE_PIXEL(PIXEL) \
-    INSTANTIATE_IMAGE(lsst::afw::image::Image<PIXEL>); \
-    INSTANTIATE_IMAGE(lsst::afw::image::MaskedImage<PIXEL>);
-
-INSTANTIATE_PIXEL(int);
-INSTANTIATE_PIXEL(float);
-INSTANTIATE_PIXEL(double);
-
 } // end detail namespace
 
 SdssShapeExtras::SdssShapeExtras() :
@@ -919,6 +902,20 @@ void SdssShapeAlgorithm::apply(
 ) {
     apply(exposure.getMaskedImage(), *inputs.footprint, inputs.position, result, ctrl);
 }
+
+#define INSTANTIATE_IMAGE(IMAGE) \
+    template bool detail::getAdaptiveMoments<IMAGE>( \
+        IMAGE const&, double, double, double, double, SdssShapeImpl*, int, float, float); \
+    template std::pair<double, double> detail::getFixedMomentsFlux<IMAGE>( \
+        IMAGE const&, double, double, double, detail::SdssShapeImpl const&); \
+
+#define INSTANTIATE_PIXEL(PIXEL) \
+    INSTANTIATE_IMAGE(lsst::afw::image::Image<PIXEL>); \
+    INSTANTIATE_IMAGE(lsst::afw::image::MaskedImage<PIXEL>);
+
+INSTANTIATE_PIXEL(int);
+INSTANTIATE_PIXEL(float);
+INSTANTIATE_PIXEL(double);
 
 #define INSTANTIATE(T)                                                  \
     template  void SdssShapeAlgorithm::apply(      \

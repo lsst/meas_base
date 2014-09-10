@@ -107,14 +107,11 @@ float astrom_errors(float skyVar,       // variance of pixels at the sky level
     return(xVar >= 0 ? sqrt(xVar) : NAN);
 }
 
-//}
-
 /************************************************************************************************************/
 /*
  * Estimate the position of an object, assuming we know that it's approximately the size of the PSF 
  */
 
-#if 1
 template<typename ImageXy_locatorT, typename VarImageXy_locatorT>
 void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
                        double *dxc,     // output; error in xCenter
@@ -225,7 +222,6 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     *sizeX2 = tauX2;                    // return the estimates of the (object size)^2
     *sizeY2 = tauY2;
 }
-#endif
 
 template<typename MaskedImageXy_locatorT>
 void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
@@ -380,7 +376,7 @@ smoothAndBinImage(CONST_PTR(lsst::afw::detection::Psf) psf,
     return std::make_pair(smoothedImage, smoothingSigma);
 }
 
-}
+}  // end anonymous namespace
 
 SdssCentroidAlgorithm::ResultMapper SdssCentroidAlgorithm::makeResultMapper(
     afw::table::Schema & schema, std::string const & name, Control const & ctrl
@@ -526,5 +522,5 @@ void SdssCentroidAlgorithm::apply(
 INSTANTIATE(float);
 INSTANTIATE(double);
 
-}}} // namespace lsst::meas::base
+}}} // end namespace lsst::meas::base
 
