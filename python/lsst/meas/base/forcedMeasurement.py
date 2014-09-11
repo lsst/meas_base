@@ -50,7 +50,8 @@ ForcedPhotImageTask, ForcedPhotCcdTask, and ForcedPhotCoaddTask.
 import lsst.pex.config
 import lsst.pipe.base
 
-from .base import *
+from .base import BasePlugin, BasePluginConfig, BaseMeasurementConfig, BaseMeasurementTask, \
+    PluginRegistry, generateAlgorithmName, NoiseReplacer
 
 __all__ = ("ForcedPluginConfig", "ForcedPlugin", "WrappedForcedPlugin",
            "ForcedMeasurementConfig", "ForcedMeasurementTask")
@@ -401,7 +402,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         table = sources.table
         table.setMetadata(self.algMetadata)
         table.preallocate(len(refCat))
-        expRegion = exposure.getBBox(lsst.afw.image.PARENT)
+        expRegion = exposure.getBBox()
         targetWcs = exposure.getWcs()
         for ref in refCat:
             newSource = sources.addNew()

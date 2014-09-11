@@ -120,7 +120,7 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         when it should be.
         """
         psfImage = self.calexp.getPsf().computeImage(self.record.get(self.centroidKey))
-        bbox = psfImage.getBBox(lsst.afw.image.PARENT)
+        bbox = psfImage.getBBox()
         bbox.grow(-1)
         subExposure = self.calexp.Factory(self.calexp, bbox, lsst.afw.image.PARENT)
         result = lsst.meas.base.PsfFluxAlgorithm.Result()
@@ -156,7 +156,7 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         image = psf.computeImage(position)
         exposure1 = lsst.afw.image.ExposureD(lsst.afw.image.MaskedImageD(image))
         exposure1.setPsf(psf)
-        footprint = lsst.afw.detection.Footprint(image.getBBox(lsst.afw.image.PARENT))
+        footprint = lsst.afw.detection.Footprint(image.getBBox())
         result1 = lsst.meas.base.PsfFluxAlgorithm.Result()
         lsst.meas.base.PsfFluxAlgorithm.apply(exposure1, position, result1)
         self.assertClose(result1.flux, 1.0)

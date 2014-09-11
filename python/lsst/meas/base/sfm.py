@@ -33,8 +33,8 @@ import lsst.pex.config
 import lsst.pipe.base
 import lsst.daf.base
 
-from .base import *
-from .noiseReplacer import *
+from .base import BasePlugin, BasePluginConfig, BaseMeasurementConfig, BaseMeasurementTask, \
+    PluginRegistry, generateAlgorithmName, NoiseReplacer
 
 __all__ = ("SingleFramePluginConfig", "SingleFramePlugin", "WrappedSingleFramePlugin",
            "SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")

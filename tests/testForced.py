@@ -128,7 +128,7 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
                                             catalog.getSchema().find("truth_y").key)
         coordKey = catalog.getSchema().find("coord").key
         for rec in catalog:
-            expRegion = exposure.getBBox(lsst.afw.image.PARENT)
+            expRegion = exposure.getBBox()
             expRegion.shift(lsst.afw.geom.Extent2I(1000,1000))
             ref_footprint = rec.getFootprint().transform(wcs, refwcs, expRegion, True)
             peaks = rec.getFootprint().getPeaks()

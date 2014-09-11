@@ -21,7 +21,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import os
 import numpy
 import lsst.utils.tests
 
@@ -31,13 +30,12 @@ import lsst.afw.detection
 import lsst.afw.geom.ellipses
 import lsst.afw.coord
 
-from .sfm import *
-from .forcedPhotImage import *
+from .sfm import SingleFrameMeasurementTask
 
 class MakeTestData(object):
     @staticmethod
     def drawGaussian(image, flux, ellipse):
-        bbox = image.getBBox(lsst.afw.image.PARENT)
+        bbox = image.getBBox()
         x, y = numpy.meshgrid(numpy.arange(bbox.getBeginX(), bbox.getEndX()),
                               numpy.arange(bbox.getBeginY(), bbox.getEndY()))
         t = ellipse.getGridTransform()
@@ -170,7 +168,7 @@ class MakeTestData(object):
 
         # First pass: generate full-size images, each containing a single object, and add them into
         # the Exposure
-        images = {record.getId(): lsst.afw.image.ImageF(exposure.getBBox(lsst.afw.image.PARENT))
+        images = {record.getId(): lsst.afw.image.ImageF(exposure.getBBox())
                   for record in catalog}
         for record in catalog:
             if record.get(nChildKey) != 0: continue
