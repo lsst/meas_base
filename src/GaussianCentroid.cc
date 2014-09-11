@@ -540,13 +540,6 @@ void GaussianCentroidAlgorithm::apply(
             NO_PEAK
         );
     }
-    if (x < 0 || x >= image.getWidth() || y < 0 || y >= image.getHeight()) {
-        throw LSST_EXCEPT(
-            MeasurementError,
-            getFlagDefinitions()[EDGE].doc,
-            EDGE
-        );
-    }
 
     result.x = lsst::afw::image::indexToPosition(image.getX0()) + fit.params[FittedModel::X0];
     result.y = lsst::afw::image::indexToPosition(image.getY0()) + fit.params[FittedModel::Y0];

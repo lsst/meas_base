@@ -29,11 +29,54 @@
 #include "lsst/afw/geom.h"
 #include "lsst/afw/image.h"
 #include "lsst/afw/math.h"
-#include "lsst/meas/base/PsfAttributes.h"
 
 #include "lsst/meas/base/PeakLikelihoodFlux.h"
 
 namespace lsst { namespace meas { namespace base {
+namespace {
+/**
+ * @brief Constructor for PsfAttributes
+ */
+PsfAttributes::PsfAttributes(
+        CONST_PTR(lsst::afw::detection::Psf) psf, ///< The psf whose attributes we want
+        int const iX,                       ///< the x position in the frame we want the attributes at
+        int const iY                        ///< the y position in the frame we want the attributes at
+                            )
+{
+    // N.b. (iX, iY) are ints so that we know this image is centered in the central pixel of _psfImage
+    _psfImage = psf->computeImage(afw::geom::PointD(iX, iY));
+}
+
+/**
+ * @brief Constructor for PsfAttributes
+ */
+PsfAttributes::PsfAttributes(
+        CONST_PTR(lsst::afw::detection::Psf) psf, ///< The psf whose attributes we want
+        lsst::afw::geom::Point2I const& cen       ///< the position in the frame we want the attributes at
+                            ) :
+    // N.b. cen is a PointI so that we know this image is centered in the central pixel of _psfImage
+    _psfImage(psf->computeImage(afw::geom::PointD(cen)))
+{
+}
+
+/**
+ * @brief Compute the effective area of the psf ( sum(I)^2/sum(I^2) )
+ *
+ */
+double PsfAttributes::computeEffectiveArea() const {
+    
+    double sum = 0.0;
+    double sumsqr = 0.0;
+    for (int iY = 0; iY != _psfImage->getHeight(); ++iY) {
+        afw::image::Image<double>::x_iterator end = _psfImage->row_end(iY);
+        for (afw::image::Image<double>::x_iterator ptr = _psfImage->row_begin(iY); ptr != end; ++ptr) {
+            sum += *ptr;
+            sumsqr += (*ptr)*(*ptr);
+        }
+    }
+    return sum*sum/sumsqr;
+}
+}  // end of anonymous
 
 PeakLikelihoodFluxAlgorithm::ResultMapper PeakLikelihoodFluxAlgorithm::makeResultMapper(
     afw::table::Schema & schema, std::string const & name, Control const & ctrl

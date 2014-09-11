@@ -31,6 +31,45 @@
 
 namespace lsst { namespace meas { namespace base {
 
+namespace {
+/************************************************************************************************************/
+/**
+ * @class PsfAttributes
+ *
+ * A class to contain various attributes of the Psf
+ * - most notably, a width (1-D RMS size) to be used to
+ *   make a single gaussian psf for fast convolution.
+ *
+ * \deprecated
+ * This class is deprecated in favour of virtual methods on Psf
+ *
+ * An example of the new API is:
+ * \code
+ * afwGeom::ellipses::Quadrupole shape = psf->computeShape();
+ * double const smoothingSigma = shape.getDeterminantRadius();
+ * \endcode
+ */
+class PsfAttributes {
+public:
+    enum Method { ADAPTIVE_MOMENT,      ///< Calculate width using adaptive Gaussian weights
+                  FIRST_MOMENT,         ///< Calculate width using \<r>
+                  SECOND_MOMENT,        ///< Calculate width using \<r^2>
+                  NOISE_EQUIVALENT,     ///< Calculate width as sqrt(n_eff/(4 pi))
+                  BICKERTON             ///< Weight \<r^2> by I^2 to avoid negative fluxes
+    };
+
+    PsfAttributes(CONST_PTR(lsst::afw::detection::Psf) psf, int const iX, int const iY);
+    PsfAttributes(CONST_PTR(lsst::afw::detection::Psf) psf, lsst::afw::geom::Point2I const& cen);
+    
+    double computeGaussianWidth(Method how=ADAPTIVE_MOMENT) const;
+    double computeEffectiveArea() const;
+    
+private:
+    PTR(lsst::afw::image::Image<double>) _psfImage;
+};
+
+}  // end of anonymous
+
 /**
  *  @brief C++ control object for peak likelihood flux.
  *

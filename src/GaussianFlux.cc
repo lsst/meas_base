@@ -37,7 +37,7 @@ namespace lsst { namespace meas { namespace base {
 namespace { // anonymous
 
 /************************************************************************************************************/
-    
+
 template<typename ImageT>
 std::pair<double, double>
 getGaussianFlux(
@@ -81,16 +81,16 @@ double getPsfFactor(lsst::afw::detection::Psf const & psf, afw::geom::Point2D co
     typedef lsst::afw::detection::Psf::Image PsfImageT;
     PTR(PsfImageT) psfImage; // the image of the PSF
     PTR(PsfImageT) psfImageNoPad;   // Unpadded image of PSF
-    
+
     int const pad = 5;
     try {
         psfImageNoPad = psf.computeImage(center);
-        
+
         psfImage = PTR(PsfImageT)(
             new PsfImageT(psfImageNoPad->getDimensions() + lsst::afw::geom::Extent2I(2*pad))
             );
         lsst::afw::geom::BoxI middleBBox(lsst::afw::geom::Point2I(pad, pad), psfImageNoPad->getDimensions());
-        
+
         PTR(PsfImageT) middle(new PsfImageT(*psfImage, middleBBox, lsst::afw::image::LOCAL));
         *middle <<= *psfImageNoPad;
     } catch (lsst::pex::exceptions::Exception & e) {
@@ -124,7 +124,7 @@ void GaussianFluxAlgorithm::apply(
     PTR(afw::detection::Psf const) psf = exposure.getPsf();
     if (!psf) {
         throw LSST_EXCEPT(
-            lsst::meas::base::MeasurementError,
+            MeasurementError,
             getFlagDefinitions()[NO_PSF].doc,
             NO_PSF
         );

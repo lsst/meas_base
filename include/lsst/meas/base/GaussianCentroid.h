@@ -24,8 +24,6 @@
 #ifndef LSST_MEAS_BASE_GaussianCentroid_h_INCLUDED
 #define LSST_MEAS_BASE_GaussianCentroid_h_INCLUDED
 
-#include <cmath>
-#include <vector>
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Inputs.h"
@@ -35,7 +33,7 @@ namespace lsst { namespace meas { namespace base {
 
 struct FittedModel {
     enum { PEAK = 0, SKY, X0, Y0, SIGMA, NPARAM };
-    
+
     enum {
         BAD_GUESS = -11,
         TOO_FEW = -12,
@@ -88,7 +86,6 @@ public:
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
     enum FlagBits {
-        EDGE,
         NO_PEAK,
         N_FLAGS
     };
@@ -99,7 +96,6 @@ public:
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
         static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
-                {"edge", "Near edge of image"},
                 {"noPeak", "Fitted Centroid has a negative peak"}
             }};
         return flagDefs;
