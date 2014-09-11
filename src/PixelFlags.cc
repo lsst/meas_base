@@ -49,8 +49,7 @@ void PixelFlagsAlgorithm::apply(
     algorithms::FootprintBits<MaskedImageT> func(mimage);
 
 //  Catch centroids off the image or NAN
-    if (!mimage.getBBox().contains(afw::geom::Point2I(center) -
-                                                     afw::geom::Extent2I(mimage.getXY0()))) {
+    if (!mimage.getBBox(afw::image::PARENT).contains(afw::geom::Point2I(center))) {
        result.setFlag(EDGE);
     }
 
