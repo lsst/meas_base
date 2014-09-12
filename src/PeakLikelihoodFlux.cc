@@ -106,8 +106,6 @@ void PeakLikelihoodFluxAlgorithm::apply(
     typedef typename afw::image::Exposure<T>::MaskedImageT MaskedImageT;
     MaskedImageT const& mimage = exposure.getMaskedImage();
 
-    // BBox for data image
-    afw::geom::BoxI imageBBox(mimage.getBBox());
 /**
  * Given an image and a pixel position, return a Flux
  *
