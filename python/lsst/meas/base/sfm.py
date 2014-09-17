@@ -134,9 +134,9 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
 
     def measure(self, measRecord, exposure):
         inputs = self.AlgClass.Input(measRecord)
-        result = self.AlgClass.Result()
-        self.AlgClass.apply(exposure, inputs, result, self.config.makeControl())
-        self.resultMapper.apply(measRecord, result)
+        self.result = self.AlgClass.Result()
+        self.AlgClass.apply(exposure, inputs, self.result, self.config.makeControl())
+        self.resultMapper.apply(measRecord, self.result)
 
     def measureN(self, measCat, exposure):
         assert hasattr(AlgClass, "applyN")  # would be better if we could delete this method somehow
@@ -151,6 +151,7 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
     def fail(self, measRecord, error=None):
         # The ResultMapper will set detailed flag bits describing the error if error is not None,
         # and set a general failure bit otherwise.
+        self.resultMapper.apply(measRecord, self.result)
         self.resultMapper.fail(measRecord, None if error is None else error.cpp)
 
     @classmethod
@@ -202,11 +203,13 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
         default=["base_PixelFlags",
                  "base_SdssCentroid",
                  "base_GaussianCentroid",
+                 "base_NaiveCentroid",
                  "base_SdssShape",
                  "base_GaussianFlux",
                  "base_NaiveFlux",
                  "base_PsfFlux",
                  "base_SincFlux",
+                 "base_PeakLikelihoodFlux",
                  "base_ClassificationExtendedness",
                  "base_SkyCoord",
                  ],
@@ -321,10 +324,15 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         if schema.getVersion() == 0:
             raise lsst.pex.exceptions.LogicError("schema must have version=1")
         self.schema = schema
+        # make a place at the beginning for the centroid plugin to run first
+        if self.config.slots.centroid != None:
+            self.plugins[self.config.slots.centroid] = None
         # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
             self.plugins[name] = PluginClass(config, name, schema=schema, flags=flags,
                 others=self.plugins, metadata=self.algMetadata)
+           
+        
 
     def run(self, measCat, exposure):
         """!

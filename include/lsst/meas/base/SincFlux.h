@@ -33,7 +33,7 @@
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Inputs.h"
 #include "lsst/meas/base/ResultMappers.h"
-#include "lsst/meas/base/algorithms/SdssShapeImpl.h"
+#include "lsst/meas/base/detail/SdssShapeImpl.h"
 
 namespace lsst { namespace meas { namespace base {
 

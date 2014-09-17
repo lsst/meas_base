@@ -7,7 +7,7 @@
 #include "lsst/afw/geom/ellipses.h"
 #include "lsst/afw/geom/Angle.h"
 
-namespace lsst { namespace meas { namespace base { namespace algorithms { 
+namespace lsst { namespace meas { namespace base { namespace detail { 
 
 int const SDSS_SHAPE_MAX_ITER = 100;  // Default maximum number of iterations
 float const SDSS_SHAPE_TOL1 = 1.0e-5; // Default convergence tolerance for e1,e2
