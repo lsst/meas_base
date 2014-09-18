@@ -51,9 +51,9 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         flags = MeasurementDataFlags()
 
         #  Basic test of GaussianFlux algorithm, no C++ slots
-        sfm_config.plugins = ["base_SdssCentroid", "base_GaussianFlux"]
+        sfm_config.plugins = ["base_SdssCentroid", "base_GaussianFlux", "base_SdssShape"]
         sfm_config.slots.centroid = "base_SdssCentroid"
-        sfm_config.slots.shape = None
+        sfm_config.slots.shape = "base_SdssShape"
         sfm_config.slots.psfFlux = None
         sfm_config.slots.instFlux = None
         sfm_config.slots.apFlux = None
@@ -69,11 +69,10 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             record = measCat[i]
             srcRec = srccat[i]
             # check all the flags
-            self.assertFalse(record.get("base_GaussianFlux_flag"))
+            self.assertFalse(record.get("base_GaussianFlux_flag") and not record.get("base_SdssShape_flag"))
             self.assertFalse(record.get("base_GaussianFlux_flag_noPsf"))
             self.assertFalse(record.get("base_GaussianFlux_flag_noGoodPixels"))
             self.assertFalse(record.get("base_GaussianFlux_flag_edge"))
-            self.assertFalse(record.get("base_GaussianFlux_flag_noFixed"))
             # check the slots
             flux = record.get("base_GaussianFlux_flux")
             fluxerr = record.get("base_GaussianFlux_fluxSigma")
@@ -81,8 +80,9 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             # if a star, see if the flux measured is decent
             if srcRec.get("truth_isStar"):
                 self.assertClose(truthFlux, flux, atol=None, rtol=.1)
-            self.assertEqual(record.getModelFlux(), flux) 
-            self.assertEqual(record.getModelFluxErr(), fluxerr) 
+            if (not record.get("base_GaussianFlux_flag")):
+                self.assertEqual(record.getModelFlux(), flux) 
+                self.assertEqual(record.getModelFluxErr(), fluxerr) 
 
 
 def suite():
