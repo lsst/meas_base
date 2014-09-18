@@ -68,44 +68,6 @@ getGaussianFlux(
     return std::make_pair(flux, fluxErr);
 }
 
-
-
-
-/*
- * Apply the algorithm to the PSF model
- */
-double getPsfFactor(lsst::afw::detection::Psf const & psf, afw::geom::Point2D const & center, double shiftmax,
-                    int maxIter=detail::SDSS_SHAPE_MAX_ITER, float tol1=detail::SDSS_SHAPE_TOL1,
-                    float tol2=detail::SDSS_SHAPE_TOL2) {
-
-    typedef lsst::afw::detection::Psf::Image PsfImageT;
-    PTR(PsfImageT) psfImage; // the image of the PSF
-    PTR(PsfImageT) psfImageNoPad;   // Unpadded image of PSF
-
-    int const pad = 5;
-    try {
-        psfImageNoPad = psf.computeImage(center);
-
-        psfImage = PTR(PsfImageT)(
-            new PsfImageT(psfImageNoPad->getDimensions() + lsst::afw::geom::Extent2I(2*pad))
-            );
-        lsst::afw::geom::BoxI middleBBox(lsst::afw::geom::Point2I(pad, pad), psfImageNoPad->getDimensions());
-
-        PTR(PsfImageT) middle(new PsfImageT(*psfImage, middleBBox, lsst::afw::image::LOCAL));
-        *middle <<= *psfImageNoPad;
-    } catch (lsst::pex::exceptions::Exception & e) {
-        LSST_EXCEPT_ADD(e, (boost::format("Computing PSF at (%.3f, %.3f)")
-                            % center.getX() % center.getY()).str());
-        throw e;
-    }
-    // Estimate the GaussianFlux for the Psf
-    double const psfXCen = 0.5*(psfImage->getWidth() - 1); // Center of (21x21) image is (10.0, 10.0)
-    double const psfYCen = 0.5*(psfImage->getHeight() - 1);
-    std::pair<double, double> const result = getGaussianFlux(*psfImage, 0.0, psfXCen, psfYCen, shiftmax,
-                                                             maxIter, tol1, tol2);
-    return result.first;
-}
-
 } // end anonymous
 
 GaussianFluxAlgorithm::ResultMapper GaussianFluxAlgorithm::makeResultMapper(
@@ -117,19 +79,21 @@ GaussianFluxAlgorithm::ResultMapper GaussianFluxAlgorithm::makeResultMapper(
 template <typename T>
 void GaussianFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
-    afw::geom::Point2D const & center,
+    afw::geom::Point2D const & centroid,
+    afw::geom::ellipses::Quadrupole const & shape,
+    bool const & shapeFlag,
     Result & result,
     Control const & ctrl
 ) {
     PTR(afw::detection::Psf const) psf = exposure.getPsf();
     if (!psf) {
         throw LSST_EXCEPT(
-            MeasurementError,
+            lsst::meas::base::MeasurementError,
             getFlagDefinitions()[NO_PSF].doc,
             NO_PSF
         );
     }
-    PTR(afw::detection::Psf::Image) psfImage = psf->computeImage(center);
+    PTR(afw::detection::Psf::Image) psfImage = psf->computeImage(centroid);
     afw::geom::Box2I fitBBox = psfImage->getBBox(afw::image::PARENT);
     fitBBox.clip(exposure.getBBox(afw::image::PARENT));
     if (fitBBox != psfImage->getBBox(afw::image::PARENT)) {
@@ -159,49 +123,15 @@ void GaussianFluxAlgorithm::apply(
     typedef typename MaskedImageT::Image ImageT;
     typename afw::image::Exposure<T>::MaskedImageT const& mimage = exposure.getMaskedImage();
 
-    double const xcen = center.getX() - mimage.getX0(); ///< column position in image pixel coords
-    double const ycen = center.getY() - mimage.getY0(); ///< row position
+    double const xcen = centroid.getX() - mimage.getX0(); ///< column position in image pixel coords
+    double const ycen = centroid.getY() - mimage.getY0(); ///< row position
 
-    std::pair<double, double> oldresult;
-    if (ctrl.fixed) {
-        throw LSST_EXCEPT(
-            lsst::meas::base::MeasurementError,
-            getFlagDefinitions()[NO_FIXED].doc,
-            NO_FIXED
-        );
-    /*
-        // Fixed aperture, defined by detail::SDSS shape measurement made elsewhere
-        if (source.get(_shapeFlagKey)) {
-            throw LSST_EXCEPT(pexExceptions::RuntimeError, "Shape measurement failed");
-        }
-        detail::SdssShapeImpl sdss(source.get(_centroidKey), source.get(_shapeKey));
-        oldresult = detail::getFixedMomentsFlux(mimage, ctrl.background, xcen, ycen, sdss);
-    */
-    } else {
-        // FIXME: propagate detail::SDSS shape measurement flags.
-        /*
-         * Find the object's adaptive-moments.  N.b. it would be better to use the SdssShape measurement
-         * as this code repeats the work of that measurement
-         */
-        oldresult = getGaussianFlux<MaskedImageT>(mimage, ctrl.background, xcen, ycen, ctrl.shiftmax, ctrl.maxIter,
+    std::pair<double, double> fluxResult;
+    fluxResult = getGaussianFlux(mimage, ctrl.background, xcen, ycen, ctrl.shiftmax, ctrl.maxIter,
                                  ctrl.tol1, ctrl.tol2);
-    }
+    result.flux =  fluxResult.first;
+    result.fluxSigma = fluxResult.second;
 
-    result.flux =  oldresult.first;
-    result.fluxSigma = oldresult.second;
-
-/*  Remove the psf scaling for first port -- pgee
-    if (!exposure.hasPsf()) {
-        throw LSST_EXCEPT(
-            lsst::meas::base::MeasurementError,
-            getFlagDefinitions()[NO_PSF].doc,
-            NO_PSF
-        );
-    }
-    double psfFactor = getPsfFactor(*exposure.getPsf(), center, ctrl.shiftmax,
-                                    ctrl.maxIter, ctrl.tol1, ctrl.tol2);
-    result.fluxCorrectionKeys.psfFactor =  psfFactor;
-*/
     //  End of meas_algorithms code
 }
 
@@ -212,13 +142,15 @@ void GaussianFluxAlgorithm::apply(
     Result & result,
     Control const & ctrl
 ) {
-    apply(exposure, inputs.position, result, ctrl);
+    apply(exposure, inputs.position, inputs.shape, inputs.shapeFlag, result, ctrl);
 }
 
 #define INSTANTIATE(T)                                                  \
     template  void GaussianFluxAlgorithm::apply(          \
         afw::image::Exposure<T> const & exposure,                       \
-        afw::geom::Point2D const & position,                            \
+        afw::geom::Point2D const & centroid, \
+        afw::geom::ellipses::Quadrupole const & shape, \
+        bool const & shapeFlag, \
         Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \

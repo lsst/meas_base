@@ -51,9 +51,9 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         flags = MeasurementDataFlags()
 
         #  Basic test of GaussianFlux algorithm, no C++ slots
-        sfm_config.plugins = ["base_SdssCentroid", "base_GaussianFlux"]
+        sfm_config.plugins = ["base_SdssCentroid", "base_GaussianFlux", "base_SdssShape"]
         sfm_config.slots.centroid = "base_SdssCentroid"
-        sfm_config.slots.shape = None
+        sfm_config.slots.shape = "base_SdssShape"
         sfm_config.slots.psfFlux = None
         sfm_config.slots.instFlux = None
         sfm_config.slots.apFlux = None
@@ -73,7 +73,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             self.assertFalse(record.get("base_GaussianFlux_flag_noPsf"))
             self.assertFalse(record.get("base_GaussianFlux_flag_noGoodPixels"))
             self.assertFalse(record.get("base_GaussianFlux_flag_edge"))
-            self.assertFalse(record.get("base_GaussianFlux_flag_noFixed"))
             # check the slots
             flux = record.get("base_GaussianFlux_flux")
             fluxerr = record.get("base_GaussianFlux_fluxSigma")

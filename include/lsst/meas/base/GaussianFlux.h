@@ -37,13 +37,8 @@ namespace lsst { namespace meas { namespace base {
  */
 class GaussianFluxControl {
 public:
-    LSST_CONTROL_FIELD(fixed, bool,
-                       "if true, use existing shape and centroid measurements instead of fitting");
     LSST_CONTROL_FIELD(background, double, "FIXME! NEVER DOCUMENTED!");
     LSST_CONTROL_FIELD(shiftmax, double, "FIXME! NEVER DOCUMENTED!");
-    LSST_CONTROL_FIELD(centroid, std::string, "name of centroid field to use if fixed is true");
-    LSST_CONTROL_FIELD(shape, std::string, "name of shape field to use if fixed is true");
-    LSST_CONTROL_FIELD(shapeFlag, std::string, "suffix of shape field flag to check if fixed is true");
     LSST_CONTROL_FIELD(maxIter, int, "Maximum number of iterations");
     LSST_CONTROL_FIELD(tol1, float, "Convergence tolerance for e1,e2");
     LSST_CONTROL_FIELD(tol2, float, "Convergence tolerance for FWHM");
@@ -57,13 +52,11 @@ public:
      *  All control classes should define a default constructor that sets all fields to their default values.
      */
     GaussianFluxControl() :
-        fixed(false), background(0.0), shiftmax(10.0),
-        centroid("shape.sdss.centroid"), shape("shape.sdss"), shapeFlag(".flags"),
+        background(0.0), shiftmax(10.0),
         maxIter(detail::SDSS_SHAPE_MAX_ITER),
         tol1(detail::SDSS_SHAPE_TOL1), tol2(detail::SDSS_SHAPE_TOL2)
     {}
 };
-
 
 /**
  *  @brief A measurement algorithm that estimates flux using an elliptical Gaussian weight.
@@ -84,7 +77,6 @@ public:
         NO_PSF=0,
         NO_GOOD_PIXELS,
         EDGE,
-        NO_FIXED,
         N_FLAGS
     };
 
@@ -97,7 +89,6 @@ public:
                 {"noPsf", "No Psf object attached to the Exposure object being measured"},
                 {"noGoodPixels", "No usable pixels in fit region"},
                 {"edge", "Could not use full PSF model image in fit because of proximity to exposure border"},
-                {"noFixed", "Fixed option has been deprecated"}
             }};
         return flagDefs;
     }
@@ -120,7 +111,7 @@ public:
     /**
      *  GaussianFluxAlgorithm only needs a centroid and footprint as input.
      */
-    typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
+    typedef FootprintCentroidShapeInput Input; // type passed to apply in addition to Exposure.
 
     /**
      *  @brief Create an object that transfers Result values to a record associated with the given schema
@@ -137,7 +128,9 @@ public:
     template <typename T>
     static void apply(
         afw::image::Exposure<T> const & exposure,
-        afw::geom::Point2D const & position,
+        afw::geom::Point2D const & centroid,
+        afw::geom::ellipses::Quadrupole const & shape,
+        bool const & shapeFlag,
         Result & result,
         Control const & ctrl=Control()
     );
