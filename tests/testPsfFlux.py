@@ -67,10 +67,8 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             )
         self.assertEqual(result1.flux, result2.flux)
         self.assertEqual(result1.fluxSigma, result2.fluxSigma)
-        self.assertFalse(result1.getFlag(lsst.meas.base.PsfFluxAlgorithm.NO_PSF))
         self.assertFalse(result1.getFlag(lsst.meas.base.PsfFluxAlgorithm.NO_GOOD_PIXELS))
         self.assertFalse(result1.getFlag(lsst.meas.base.PsfFluxAlgorithm.EDGE))
-        self.assertFalse(result2.getFlag(lsst.meas.base.PsfFluxAlgorithm.NO_PSF))
         self.assertFalse(result2.getFlag(lsst.meas.base.PsfFluxAlgorithm.NO_GOOD_PIXELS))
         self.assertFalse(result2.getFlag(lsst.meas.base.PsfFluxAlgorithm.EDGE))
         # rng dependent
@@ -139,7 +137,7 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         self.calexp.setPsf(None)
         result = lsst.meas.base.PsfFluxAlgorithm.Result()
         self.assertRaises(
-            lsst.meas.base.MeasurementError,
+            lsst.meas.base.FatalAlgorithmError,
             lsst.meas.base.PsfFluxAlgorithm.apply,
             self.calexp,
             self.record.get(self.centroidKey),
@@ -187,7 +185,6 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         measCat = self.runSingleFrameMeasurementTask("base_PsfFlux")
         for record in measCat:
             self.assertFalse(record.get("base_PsfFlux_flag"))
-            self.assertFalse(record.get("base_PsfFlux_flag_noPsf"))
             self.assertFalse(record.get("base_PsfFlux_flag_noGoodPixels"))
             self.assertFalse(record.get("base_PsfFlux_flag_edge"))
             if record.get("truth_isStar"):

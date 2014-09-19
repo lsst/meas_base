@@ -110,7 +110,6 @@ public:
      *  as the N_FLAGS value is used by the Result and ResultMapper objects.
      */
     enum FlagBits {
-        NO_PSF=0,
         NO_GOOD_PIXELS,
         EDGE,
         N_FLAGS
@@ -129,7 +128,6 @@ public:
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
         static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
-                {"noPsf", "No Psf object attached to the Exposure object being measured"},
                 {"noGoodPixels", "No usable pixels in fit region"},
                 {"edge", "Could not use full PSF model image in fit because of proximity to exposure border"}
             }};

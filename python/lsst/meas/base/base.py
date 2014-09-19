@@ -36,7 +36,7 @@ import lsst.pex.config
 from .baseLib import *
 from .noiseReplacer import *
 
-FATAL_EXCEPTIONS = (MemoryError,)  # Exceptions that the framework should always propagate up
+FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)  # Exceptions that the framework should always propagate up
 
 def generateAlgorithmName(AlgClass):
     """Generate a string name for an algorithm class that strips away terms that are generally redundant

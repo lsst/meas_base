@@ -55,9 +55,8 @@ void GaussianFluxAlgorithm::apply(
     PTR(afw::detection::Psf const) psf = exposure.getPsf();
     if (!psf) {
         throw LSST_EXCEPT(
-            lsst::meas::base::MeasurementError,
-            getFlagDefinitions()[NO_PSF].doc,
-            NO_PSF
+            FatalAlgorithmError,
+            "GaussianFlux algorithm requires a Psf with every exposure"
         );
     }
     PTR(afw::detection::Psf::Image) psfImage = psf->computeImage(centroid);

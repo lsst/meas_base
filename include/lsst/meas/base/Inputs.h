@@ -30,6 +30,7 @@
 #include "lsst/afw/geom/ellipses/Quadrupole.h"
 #include "lsst/afw/detection/Footprint.h"
 #include "lsst/afw/table/Source.h"
+#include "lsst/meas/base/exceptions.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -95,8 +96,18 @@ struct FootprintCentroidShapeInput : public FootprintCentroidInput {
     ) : FootprintCentroidInput(footprint_, position_), shape(shape_), shapeFlag(shapeFlag_) {}
 
     explicit FootprintCentroidShapeInput(afw::table::SourceRecord const & record) :
-        FootprintCentroidInput(record), shape(record.getShape()), shapeFlag(record.getShapeFlag())
-    {}
+        FootprintCentroidInput(record)
+    {
+        if (record.getTable()->hasShapeSlot()) {
+            shape = record.getShape();
+            shapeFlag = record.getShapeFlag();
+        } else {
+            throw LSST_EXCEPT(
+                lsst::meas::base::FatalAlgorithmError,
+                "Shape slot must be setup for algorithm to be run"
+            );
+        }
+    }
 
     static Vector makeVector(afw::table::SourceCatalog const & catalog);
 
