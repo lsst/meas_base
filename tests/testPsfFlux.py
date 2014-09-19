@@ -122,7 +122,7 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         psfImage = self.calexp.getPsf().computeImage(self.record.get(self.centroidKey))
         bbox = psfImage.getBBox()
         bbox.grow(-1)
-        subExposure = self.calexp.Factory(self.calexp, bbox, lsst.afw.image.PARENT)
+        subExposure = self.calexp.Factory(self.calexp, bbox, lsst.afw.image.LOCAL)
         result = lsst.meas.base.PsfFluxAlgorithm.Result()
         self.assertRaises(
             lsst.meas.base.MeasurementError,
