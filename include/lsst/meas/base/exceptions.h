@@ -74,6 +74,32 @@ private:
 };
 
 /**
+ *  @brief Exception to be thrown when a measurement algorithm experiences a fatal erro.
+ *
+ *  This error type causes the meas_base framework to throw completely out of the measurement loop
+ *  which is run for each exposure, sourceCatalog pair.
+ */
+class FatalAlgorithmError : public pex::exceptions::RuntimeError {
+public:
+
+    /// Constructor; should only be invoked from Python macro
+    FatalAlgorithmError(std::string const & message) :
+        pex::exceptions::RuntimeError(message)
+    {}
+
+    /// Constructor; should only be invoked by the LSST_EXCEPT macro (see class docs)
+    FatalAlgorithmError(LSST_EARGS_TYPED) :
+        pex::exceptions::RuntimeError(LSST_EARGS_UNTYPED)
+    {}
+
+    virtual char const* getType(void) const throw() { return "lsst::meas::base::FatalAlgorithmError *"; };
+
+    virtual lsst::pex::exceptions::Exception* clone(void) const {
+        return new FatalAlgorithmError(*this);
+    };
+};
+
+/**
  *  @brief Exception to be thrown when a measurement algorithm encounters a NaN or infinite pixel.
  *
  *  When caught by the plugin framework, this exception will generate a log message.
