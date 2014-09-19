@@ -81,8 +81,6 @@ SingleFramePlugin.registry.register("base_PeakCentroid", SingleFramePeakCentroid
 
 class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
 
-    usePeak = lsst.pex.config.Field(dtype=bool, default=False, optional=True,
-                                  doc="use footprint peak instead of centroid slot ")
     def setDefaults(self):
         SingleFramePluginConfig.setDefaults(self)
         self.executionOrder = 5.0
@@ -99,13 +97,7 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
         # Also, there should be a python Exception of the appropriate type for this error
         if not exposure.hasWcs():
             raise Exception("Wcs not attached to exposure.  Required for " + self.name + " algorithm")
-        # this is a temporary hack around, since centroid don't work yet
-        if self.config.usePeak:
-            peak = measRecord.getFootprint().getPeaks()[0]
-            coord = exposure.getWcs().pixelToSky(peak.getFx(), peak.getFy())
-            measRecord.setCoord(coord)
-        else:
-            measRecord.updateCoord(exposure.getWcs())
+        measRecord.updateCoord(exposure.getWcs())
 
     def fail(self, measRecord, error=None):
         # Override fail() to do nothing in the case of an exception: this is not ideal,
