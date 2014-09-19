@@ -34,41 +34,8 @@
 
 namespace lsst { namespace meas { namespace base {
 
-namespace { // anonymous
 
 /************************************************************************************************************/
-
-template<typename ImageT>
-std::pair<double, double>
-getGaussianFlux(
-    ImageT const& mimage,           // the data to process
-    double background,               // background level
-    double xcen, double ycen,         // centre of object
-    double shiftmax,                  // max allowed centroid shift
-    int maxIter=detail::SDSS_SHAPE_MAX_ITER, ///< Maximum number of iterations
-    float tol1=detail::SDSS_SHAPE_TOL1, ///< Convergence tolerance for e1,e2
-    float tol2=detail::SDSS_SHAPE_TOL2, ///< Convergence tolerance for FWHM
-    PTR(detail::SdssShapeImpl) shape=PTR(detail::SdssShapeImpl)() // detail::SDSS shape measurement
-) {
-    double flux = std::numeric_limits<double>::quiet_NaN();
-    double fluxErr = std::numeric_limits<double>::quiet_NaN();
-
-    if (!shape) {
-        shape = boost::make_shared<detail::SdssShapeImpl>();
-    }
-
-    if (!getAdaptiveMoments(mimage, background, xcen, ycen, shiftmax, shape.get(),
-                                    maxIter, tol1, tol2)) {
-    } else {
-        double const scale = shape->getFluxScale();
-        flux = scale*shape->getI0();
-        fluxErr = scale*shape->getI0Err();
-    }
-
-    return std::make_pair(flux, fluxErr);
-}
-
-} // end anonymous
 
 GaussianFluxAlgorithm::ResultMapper GaussianFluxAlgorithm::makeResultMapper(
     afw::table::Schema & schema, std::string const & name, Control const & ctrl
@@ -127,8 +94,12 @@ void GaussianFluxAlgorithm::apply(
     double const ycen = centroid.getY() - mimage.getY0(); ///< row position
 
     std::pair<double, double> fluxResult;
-    fluxResult = getGaussianFlux(mimage, ctrl.background, xcen, ycen, ctrl.shiftmax, ctrl.maxIter,
-                                 ctrl.tol1, ctrl.tol2);
+    // Fixed aperture, defined by detail::SDSS shape measurement made elsewhere
+    if (shapeFlag) {
+        throw LSST_EXCEPT(pex::exceptions::RuntimeError, "Shape measurement failed");
+    }
+    detail::SdssShapeImpl sdss(centroid, shape);
+    fluxResult = detail::getFixedMomentsFlux(mimage, ctrl.background, xcen, ycen, sdss);
     result.flux =  fluxResult.first;
     result.fluxSigma = fluxResult.second;
 
