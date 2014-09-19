@@ -422,9 +422,8 @@ void SdssCentroidAlgorithm::apply(
         // FIXME: the above logic is probably bad; this option should probably be a config parameter
         //psf.reset(new meas_algorithms::DoubleGaussianPsf(11, 11, 0.01));
         throw LSST_EXCEPT(
-            lsst::meas::base::MeasurementError,
-            getFlagDefinitions()[NO_PSF].doc,
-            NO_PSF
+            FatalAlgorithmError,
+            "SdssCentroid algorithm requires a Psf with every exposure"
         );
     }
 

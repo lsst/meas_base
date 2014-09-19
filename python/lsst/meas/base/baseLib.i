@@ -257,4 +257,5 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 
 %import "lsst/pex/exceptions/exceptionsLib.i"
 %declareException(MeasurementError, lsst.pex.exceptions.RuntimeError, lsst::meas::base::MeasurementError)
+%declareException(FatalAlgorithmError, lsst.pex.exceptions.RuntimeError, lsst::meas::base::FatalAlgorithmError)
 %declareException(PixelValueError, lsst.pex.exceptions.DomainError, lsst::meas::base::PixelValueError)
