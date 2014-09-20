@@ -33,6 +33,43 @@ import lsst.meas.base.tests
 
 numpy.random.seed(123)
 
+def compareValues(val1, val2, tol1, tol2=None):
+    if numpy.isnan(val1) and numpy.isnan(val2): return True
+    if val1 == val2: return True
+    if (tol2 == None):
+        if (val1+val2) == 0:
+            if not val1 == 0:
+                return abs((val1-val2)/val1) < tol1
+        return abs(2.0*(val1-val2)/(val1+val2)) < tol1
+    else:
+        return abs(val1-val2) < tol2
+def comparePoints(point1, point2, offset, tol1, tol2=None):
+    if not compareValues(point1.getX()+offset, point2.getX(), tol1): return False
+    return compareValues(point1.getY()+offset, point2.getY(), tol1)
+
+def compareQuads(quad1, quad2, tol1, tol2=None):
+    if not compareValues(quad1.getIxx(), quad2.getIxx(), tol1, tol2): return False
+    if not compareValues(quad1.getIyy(), quad2.getIyy(), tol1, tol2): return False
+    if not compareValues(quad1.getIxy(), quad2.getIxy(), tol1, tol2): return False
+    return True
+
+def compareArrays(array1, array2, relDiff):
+    if not array1.shape[0] == array2.shape[0] or not array1.shape[1] == array2.shape[1]:
+         return False
+    for i in range(array1.shape[0]):
+        for j in range(array1.shape[1]):
+            val1 = array1[i][j]
+            val2 = array2[i][j]
+            if numpy.isnan(val1) and numpy.isnan(val2):
+                continue
+            if numpy.isnan(val1) or numpy.isnan(val2):
+                return False
+            if abs(val1 == val2): continue
+            if abs(2.0*(val1-val2)/(val1+val2)) < relDiff: continue
+            return False
+    return True
+
+
 # This task if just to define a ForcedMeasurementTask with no required plugins
 class TestForcedMeasurementConfig(lsst.meas.base.ForcedMeasurementConfig):
 
@@ -205,8 +242,6 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
     def testOnSameWcs(self):
 
         refCat = lsst.afw.table.SourceCatalog.readFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
-        refCat.table.defineCentroid("truth")
-        refCat.table.defineShape("truth")
         path = os.path.join(DATA_DIR, 'calexp-0A.fits')
         exposure = lsst.afw.image.ExposureF(path)
         refWcs = exposure.getWcs()
@@ -215,6 +250,8 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         config.slots.centroid = "base_PeakCentroid"
         config.slots.shape = None
         task = lsst.meas.base.ForcedMeasurementTask(config=config, refSchema=refCat.getSchema())
+        refCat.table.defineCentroid("truth")
+        refCat.table.defineShape("truth")
         result = task.run(exposure, refCat, refWcs)
         sources = result.sources
         mismatches = 0
@@ -233,32 +270,47 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
         self.assertEqual(mismatches, 0)
 
     def testDefaultPlugins(self):
-
-        refCat = lsst.afw.table.SourceCatalog.readFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
-        refCat.table.defineCentroid("truth")
-        refCat.table.defineShape("truth")
         path = os.path.join(DATA_DIR, 'calexp-0A.fits')
         exposure = lsst.afw.image.ExposureF(path)
-        refWcs = exposure.getWcs()
+        refCat = lsst.afw.table.SourceCatalog.readFits(os.path.join(DATA_DIR, "refcat-0A.fits"))
+        path = os.path.join(DATA_DIR, 'ref-0A.fits')
+        ref = lsst.afw.image.ExposureF(path)
+        refWcs = ref.getWcs()
+        rec = refCat[1]
+        foot = rec.getFootprint()
+        mapper = lsst.afw.table.SchemaMapper(refCat.getSchema())
+        minimalSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
+        mapper.addMinimalSchema(minimalSchema)
+        mapper.addMapping(refCat.getSchema().find('truth_flux').key, 'truth_flux')
+        mapper.addMapping(refCat.getSchema().find('truth_x').key, 'truth_x')
+        mapper.addMapping(refCat.getSchema().find('truth_y').key, 'truth_y')
+        mapper.addMapping(refCat.getSchema().find('truth_xx').key, 'truth_xx')
+        mapper.addMapping(refCat.getSchema().find('truth_yy').key, 'truth_yy')
+        mapper.addMapping(refCat.getSchema().find('truth_xy').key, 'truth_xy')
+        newRefCat = lsst.afw.table.SourceCatalog(mapper.getOutputSchema()) 
+        newRefCat.extend(refCat, mapper=mapper)
         config = lsst.meas.base.ForcedMeasurementTask.ConfigClass()
-        task = lsst.meas.base.ForcedMeasurementTask(config=config, refSchema=refCat.getSchema())
-        result = task.run(exposure, refCat, refWcs)
+        task = lsst.meas.base.ForcedMeasurementTask(config=config, refSchema=newRefCat.getSchema())
+        newRefCat.getTable().defineCentroid("truth")
+        newRefCat.getTable().defineShape("truth")
+        result = task.run(exposure, list(newRefCat), refWcs)
         sources = result.sources
-        plugins = [
-                 "base_GaussianFlux",
-                 "base_NaiveFlux",
-                 "base_PsfFlux",
-                 "base_SincFlux",]
-        for plugin in plugins:
-            sources[0].get(plugin + "_flux")
 
-        plugins = ["base_TransformedCentroid",]
-        for plugin in plugins:
-            sources[0].get(plugin + "_x")
-
-        plugins = ["base_TransformedShape",]
-        for plugin in plugins:
-            sources[0].get(plugin + "_xx")
+        for i, source in enumerate(sources):
+            plugins = [
+                     "base_NaiveFlux",
+                     "base_PsfFlux",
+                     "base_SincFlux",]
+            for plugin in plugins:
+                assert(compareValues(source.get(plugin + "_flux"), newRefCat[i].get('truth_flux'), 2))
+    
+            plugins = ["base_TransformedCentroid",]
+            for plugin in plugins:
+                assert(comparePoints(source.getCentroid(), newRefCat[i].getCentroid(), 1000, .01))
+    
+            plugins = ["base_TransformedShape",]
+            for plugin in plugins:
+                assert(compareQuads(source.getShape(), newRefCat[i].getShape(), None, .01))
 
 
 
