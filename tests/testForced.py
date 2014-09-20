@@ -103,8 +103,6 @@ class TestFlux(lsst.meas.base.ForcedPlugin):
         measRecord.set(self.backKey, bigFlux - flux)
         measRecord.set(self.backCountKey, bigArea - area)
 
-
-
 lsst.meas.base.ForcedPlugin.registry.register("test_flux", TestFlux)
 
 DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
@@ -233,6 +231,36 @@ class ForcedTestCase(lsst.utils.tests.TestCase):
                 print "Mismatch: ", source.getId(), distance, distX, distY
 
         self.assertEqual(mismatches, 0)
+
+    def testDefaultPlugins(self):
+
+        refCat = lsst.afw.table.SourceCatalog.readFits(os.path.join(DATA_DIR, "truthcat-0A.fits"))
+        refCat.table.defineCentroid("truth")
+        refCat.table.defineShape("truth")
+        path = os.path.join(DATA_DIR, 'calexp-0A.fits')
+        exposure = lsst.afw.image.ExposureF(path)
+        refWcs = exposure.getWcs()
+        config = lsst.meas.base.ForcedMeasurementTask.ConfigClass()
+        task = lsst.meas.base.ForcedMeasurementTask(config=config, refSchema=refCat.getSchema())
+        result = task.run(exposure, refCat, refWcs)
+        sources = result.sources
+        plugins = [
+                 "base_GaussianFlux",
+                 "base_NaiveFlux",
+                 "base_PsfFlux",
+                 "base_SincFlux",]
+        for plugin in plugins:
+            sources[0].get(plugin + "_flux")
+
+        plugins = ["base_TransformedCentroid",]
+        for plugin in plugins:
+            sources[0].get(plugin + "_x")
+
+        plugins = ["base_TransformedShape",]
+        for plugin in plugins:
+            sources[0].get(plugin + "_xx")
+
+
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
