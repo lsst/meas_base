@@ -48,6 +48,15 @@ WrappedSingleFramePlugin.generate(GaussianFluxAlgorithm)
 WrappedSingleFramePlugin.generate(NaiveCentroidAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(PeakLikelihoodFluxAlgorithm)
 WrappedForcedPlugin.generate(PsfFluxAlgorithm)
+WrappedForcedPlugin.generate(SdssShapeAlgorithm, executionOrder=1.0)
+WrappedForcedPlugin.generate(SdssCentroidAlgorithm, executionOrder=0.0)
+WrappedForcedPlugin.generate(SincFluxAlgorithm)
+WrappedForcedPlugin.generate(PixelFlagsAlgorithm, executionOrder=0.0)
+WrappedForcedPlugin.generate(NaiveFluxAlgorithm)
+WrappedForcedPlugin.generate(GaussianCentroidAlgorithm, executionOrder=0.0)
+WrappedForcedPlugin.generate(GaussianFluxAlgorithm)
+WrappedForcedPlugin.generate(NaiveCentroidAlgorithm, executionOrder=0.0)
+WrappedForcedPlugin.generate(PeakLikelihoodFluxAlgorithm)
 
 # --- Single-Frame Measurement Plugins ---
 
