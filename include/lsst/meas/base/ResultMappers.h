@@ -26,6 +26,7 @@
 
 #include "lsst/afw/table/Schema.h"
 #include "lsst/afw/table/BaseRecord.h"
+#include "lsst/afw/table/arrays.h"
 #include "lsst/meas/base/Results.h"
 
 namespace lsst { namespace meas { namespace base {

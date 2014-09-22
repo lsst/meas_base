@@ -267,3 +267,5 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %declareException(MeasurementError, lsst.pex.exceptions.RuntimeError, lsst::meas::base::MeasurementError)
 %declareException(FatalAlgorithmError, lsst.pex.exceptions.RuntimeError, lsst::meas::base::FatalAlgorithmError)
 %declareException(PixelValueError, lsst.pex.exceptions.DomainError, lsst::meas::base::PixelValueError)
+
+%include "lsst/meas/base/ApertureFlux.i"

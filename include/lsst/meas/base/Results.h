@@ -165,7 +165,13 @@ struct FluxComponent {
     Flux flux; ///< Measured flux in DN.
     FluxErrElement fluxSigma; ///< 1-Sigma error (sqrt of variance) on flux in DN.
 
-    FluxComponent(); ///< Constructor; initializes everything to NaN.
+    /// Default constructor; initializes everything to NaN.
+    FluxComponent();
+
+    /// Constructor from flux and its uncertainty
+    explicit FluxComponent(Flux flux_, FluxErrElement fluxSigma_) :
+        flux(flux_), fluxSigma(fluxSigma_)
+    {}
 };
 
 /**
