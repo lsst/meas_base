@@ -130,9 +130,9 @@ void GaussianFluxAlgorithm::apply(
         );
     }
     PTR(afw::detection::Psf::Image) psfImage = psf->computeImage(center);
-    afw::geom::Box2I fitBBox = psfImage->getBBox(afw::image::PARENT);
-    fitBBox.clip(exposure.getBBox(afw::image::PARENT));
-    if (fitBBox != psfImage->getBBox(afw::image::PARENT)) {
+    afw::geom::Box2I fitBBox = psfImage->getBBox();
+    fitBBox.clip(exposure.getBBox());
+    if (fitBBox != psfImage->getBBox()) {
         result.setFlag(EDGE);
     }
     afw::detection::Footprint fitRegion(fitBBox);
