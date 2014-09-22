@@ -30,6 +30,14 @@ FluxComponent::FluxComponent() :
     fluxSigma(std::numeric_limits<FluxErrElement>::quiet_NaN())
 {}
 
+MultiApertureFluxComponent::MultiApertureFluxComponent(int size) :
+    flux(ndarray::allocate(size)),
+    fluxSigma(ndarray::allocate(size))
+{
+    flux.deep() = std::numeric_limits<Flux>::quiet_NaN();
+    fluxSigma.deep() = std::numeric_limits<FluxErrElement>::quiet_NaN();
+}
+
 CentroidComponent::CentroidComponent() :
     x(std::numeric_limits<CentroidElement>::quiet_NaN()),
     y(std::numeric_limits<CentroidElement>::quiet_NaN()),

@@ -165,7 +165,38 @@ struct FluxComponent {
     Flux flux; ///< Measured flux in DN.
     FluxErrElement fluxSigma; ///< 1-Sigma error (sqrt of variance) on flux in DN.
 
-    FluxComponent(); ///< Constructor; initializes everything to NaN.
+    /// Default constructor; initializes everything to NaN.
+    FluxComponent();
+
+    /// Constructor from flux and its uncertainty
+    explicit FluxComponent(Flux flux_, FluxErrElement fluxSigma_) :
+        flux(flux_), fluxSigma(fluxSigma_)
+    {}
+};
+
+/**
+ *  @brief A reusable component for result structs that contain an array of flux measurements.
+ *
+ *  Flux measurements and their errors should always be in DN.
+ */
+struct MultiApertureFluxComponent {
+    ndarray::Array<Flux,1,1> flux; ///< Measured flux in DN.
+    ndarray::Array<FluxErrElement,1,1> fluxSigma; ///< 1-Sigma error (sqrt of variance) on flux in DN.
+
+    /// Return a FluxComponent corresponding to the ith flux
+    FluxComponent const get(int i) const { return FluxComponent(flux[i], fluxSigma[i]); }
+
+    /// Return set the ith flux and its uncertainty to the values in the given FluxComponent
+    void set(int i, FluxComponent const & c) const {
+        flux[i] = c.flux;
+        fluxSigma[i] = c.fluxSigma;
+    }
+
+    /// Default constructor; arrays will remain empty
+    MultiApertureFluxComponent() {}
+
+    /// Constructor; arrays will be allocated to the given size and filled with NaN
+    explicit MultiApertureFluxComponent(int size);
 };
 
 /**
