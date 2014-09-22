@@ -826,17 +826,6 @@ calculateSincApertureFlux(MaskedImageT const& mimage, afw::geom::ellipses::Ellip
     return std::make_pair(flux, fluxErr);
 }
 
-template<typename PixelT>
-typename lsst::afw::image::Image<PixelT>::Ptr calcImageRealSpace(double const rad1, double const rad2,
-                                                                 double const taper=0.1);
-
-template<typename PixelT>
-typename lsst::afw::image::Image<PixelT>::Ptr calcImageKSpaceReal(double const rad1, double const rad2);
-
-template<typename PixelT>
-typename lsst::afw::image::Image<PixelT>::Ptr calcImageKSpaceCplx(double const rad1, double const rad2,
-                                                                  double const posAng, double const ell);
-
 }  // end of detail namespace
     
 
