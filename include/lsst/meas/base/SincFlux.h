@@ -45,8 +45,6 @@ public:
 
     LSST_CONTROL_FIELD(radius1, double, "major axis of inner boundary (pixels)");
     LSST_CONTROL_FIELD(radius2, double, "major axis of outer boundary (pixels)");
-    LSST_CONTROL_FIELD(angle, double, "measured from x anti-clockwise; radians");
-    LSST_CONTROL_FIELD(ellipticity, double, "1 - b/a");
 
     /**
      *  @brief Default constructor
@@ -54,7 +52,7 @@ public:
      *  All control classes should define a default constructor that sets all fields to their default values.
      */
     SincFluxControl() :
-        radius1(0.0), radius2(7.0), angle(0.0), ellipticity(0.0) {}
+        radius1(0.0), radius2(7.0) {}
 };
 
 
