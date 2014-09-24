@@ -40,138 +40,140 @@ ApertureFluxControl::ApertureFluxControl() : radii(10), maxSincRadius(10.0), shi
     std::copy(defaultRadii.begin(), defaultRadii.end(), radii.begin());
 }
 
-ApertureFluxComponent::ApertureFluxComponent(int size) :
-    flux(ndarray::allocate(size)),
-    fluxSigma(ndarray::allocate(size))
-{
-    flux.deep() = std::numeric_limits<Flux>::quiet_NaN();
-    fluxSigma.deep() = std::numeric_limits<FluxErrElement>::quiet_NaN();
-}
-
-ApertureFluxComponentMapper::ApertureFluxComponentMapper(
-    afw::table::Schema & schema,
-    std::string const & prefix,
-    std::vector<double> const & radii
-) :
-    _flux(
+ApertureFluxAlgorithm::ApertureFluxAlgorithm(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::Schema & schema
+) : _ctrl(ctrl),
+    _fluxKey(
         afw::table::ArrayKey<Flux>::addFields(
             schema,
-            prefix + "_flux",
+            name + "_flux",
             "flux within %f pixel aperture",
             "dn",
-            radii
+            ctrl.radii
         )
     ),
-    _fluxSigma(
+    _fluxSigmaKey(
         afw::table::ArrayKey<Flux>::addFields(
             schema,
-            prefix + "_fluxSigma",
+            name + "_fluxSigma",
             "1-sigma uncertainty on flux within %f pixel aperture",
             "dn",
-            radii
+            ctrl.radii
+        )
+    )
+{
+    _flagKeys.reserve(ctrl.radii.size());
+    for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
+        _flagKeys.push_back(FlagKeys(name, schema, ctrl.radii[i]));
+    }
+}
+
+ApertureFluxAlgorithm::FlagKeys::FlagKeys(
+    std::string const & name, afw::table::Schema & schema, int index
+) :
+    failed(
+        schema.addField<afw::table::Flag>(
+            (boost::format("%s_flag_%d") % name % index).str(),
+            (boost::format("flag set if aperture %d failed for any reason") % index).str()
+        )
+    ),
+    apertureTruncated(
+        schema.addField<afw::table::Flag>(
+            (boost::format("%s_flag_apertureTruncated_%d") % name % index).str(),
+            (boost::format("flag set if aperture %d did not fit within the measurement image") % index).str()
+        )
+    ),
+    sincCoeffsTruncated(
+        schema.addField<afw::table::Flag>(
+            (boost::format("%s_flag_sincCoeffsTruncated_%d") % name % index).str(),
+            (boost::format("flag set if the full sinc coefficient image for aperture %d did not "
+                           "fit within the measurement image") % index).str()
         )
     )
 {}
 
-void ApertureFluxComponentMapper::apply(
-    afw::table::BaseRecord & record,
-    ApertureFluxComponent const & result
+void ApertureFluxAlgorithm::copyResultToRecord(
+    Result const & result,
+    afw::table::SourceRecord & record,
+    int index
 ) const {
-    record.set(_flux, result.flux);
-    record.set(_fluxSigma, result.fluxSigma);
-}
-
-ApertureFluxAlgorithm::ResultMapper ApertureFluxAlgorithm::makeResultMapper(
-    afw::table::Schema & schema,
-    std::string const & name,
-    Control const & ctrl
-) {
-    // We do the caching here because this routine is always called once before we run in plugin mode,
-    // and ApertureFluxAlgorithm doesn't really have a useful constructor, since it only has static methods.
-    for (std::vector<double>::const_iterator i = ctrl.radii.begin(); i != ctrl.radii.end(); ++i) {
-        if (*i > ctrl.maxSincRadius) break;
-        SincCoeffs<float>::cache(0.0, *i);
+    record.set(_fluxKey[index], result.flux);
+    record.set(_fluxSigmaKey[index], result.fluxSigma);
+    if (result.getFlag(APERTURE_TRUNCATED)) {
+        record.set(_flagKeys[index].apertureTruncated, true);
+        record.set(_flagKeys[index].failed, true);
     }
-    return ResultMapper(schema, name, ctrl.radii);
-}
-
-template <typename T>
-void ApertureFluxAlgorithm::apply(
-    afw::image::MaskedImage<T> const & image,
-    afw::geom::Point2D const & position,
-    Result & result,
-    Control const & ctrl
-) {
-    ApertureFluxComponent arrays(ctrl.radii.size()); // invoke this constructor to initialize arrays
-    result.flux = arrays.flux;
-    result.fluxSigma = arrays.fluxSigma;
-    for (std::size_t n = 0; n < ctrl.radii.size(); ++n) {
-        afw::geom::ellipses::Ellipse ellipse(
-            afw::geom::ellipses::Axes(ctrl.radii[n], ctrl.radii[n]),
-            position
-        );
-        result.set(n, computeFlux(image, ellipse, ctrl));
+    if (result.getFlag(SINC_COEFFS_TRUNCATED)) {
+        record.set(_flagKeys[index].sincCoeffsTruncated, true);
+        // TODO DM-464: set suspect flag
     }
 }
 
+namespace {
+
+// Helper function for computeSincFlux get Sinc flux coefficients, and handle cases where the coeff
+// image needs to be clipped to fit in the ommeasurement image
 template <typename T>
-void ApertureFluxAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    Input const & inputs,
-    Result & result,
-    Control const & ctrl
+CONST_PTR(afw::image::Image<T>) getSincCoeffs(
+    afw::geom::Box2I const & bbox,                // measurement image bbox we need to fit inside
+    afw::geom::ellipses::Ellipse const & ellipse, // ellipse that defines the aperture
+    ApertureFluxAlgorithm::Result & result,       // result object where we set flags if we do clip
+    ApertureFluxAlgorithm::Control const & ctrl   // configuration
 ) {
-    apply(exposure.getMaskedImage(), inputs.position, result, ctrl);
+    CONST_PTR(afw::image::Image<T>) cImage = SincCoeffs<T>::get(ellipse.getCore(), 0.0);
+    cImage = afw::math::offsetImage(
+        *cImage,
+        ellipse.getCenter().getX(),
+        ellipse.getCenter().getY(),
+        ctrl.shiftKernel
+    );
+    if (!bbox.contains(cImage->getBBox())) {
+        // We had to clip out at least part part of the coeff image,
+        // but since that's much larger than the aperture (and close
+        // to zero outside the aperture), it may not be a serious
+        // problem.
+        result.setFlag(ApertureFluxAlgorithm::SINC_COEFFS_TRUNCATED);
+        afw::geom::Box2I overlap = cImage->getBBox();
+        overlap.clip(bbox);
+        if (!overlap.contains(afw::geom::Box2I(ellipse.computeBBox()))) {
+            // The clipping was indeed serious, as we we did have to clip within
+            // the aperture; can't expect any decent answer at this point.
+            result.setFlag(ApertureFluxAlgorithm::APERTURE_TRUNCATED);
+        }
+        cImage = boost::make_shared< afw::image::Image<T> >(*cImage, overlap);
+    }
+    return cImage;
 }
 
+} // anonymous
+
 template <typename T>
-Flux ApertureFluxAlgorithm::computeSincFlux(
+ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux(
     afw::image::Image<T> const & image,
     afw::geom::ellipses::Ellipse const & ellipse,
     Control const & ctrl
 ) {
-    CONST_PTR(afw::image::Image<T>) cImage = SincCoeffs<T>::get(ellipse.getCore(), 0.0);
-    cImage = afw::math::offsetImage(
-        *cImage,
-        ellipse.getCenter().getX(),
-        ellipse.getCenter().getY(),
-        ctrl.shiftKernel
-    );
-    if (!image.getBBox(afw::image::PARENT).contains(cImage->getBBox(afw::image::PARENT))) {
-        throw LSST_EXCEPT(
-            MeasurementError,
-            (boost::format("Measurement image with (bbox=%s) is not large enough for aperture (bbox=%s)")
-             % image.getBBox(afw::image::PARENT) % cImage->getBBox(afw::image::PARENT)).str(),
-            EDGE
-        );
-    }
-    afw::image::Image<T> subImage(image, cImage->getBBox(afw::image::PARENT), afw::image::PARENT);
-    return (subImage.getArray().template asEigen<Eigen::ArrayXpr>()
-            * cImage->getArray().template asEigen<Eigen::ArrayXpr>()).sum();
+    Result result;
+    CONST_PTR(afw::image::Image<T>) cImage = getSincCoeffs<T>(image.getBBox(), ellipse, result, ctrl);
+    if (result.getFlag(APERTURE_TRUNCATED)) return result;
+    afw::image::Image<T> subImage(image, cImage->getBBox());
+    result.flux = (subImage.getArray().template asEigen<Eigen::ArrayXpr>()
+                   * cImage->getArray().template asEigen<Eigen::ArrayXpr>()).sum();
+    return result;
 }
+
 template <typename T>
-FluxComponent ApertureFluxAlgorithm::computeSincFlux(
+ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux(
     afw::image::MaskedImage<T> const & image,
     afw::geom::ellipses::Ellipse const & ellipse,
     Control const & ctrl
 ) {
-    CONST_PTR(afw::image::Image<T>) cImage = SincCoeffs<T>::get(ellipse.getCore(), 0.0);
-    cImage = afw::math::offsetImage(
-        *cImage,
-        ellipse.getCenter().getX(),
-        ellipse.getCenter().getY(),
-        ctrl.shiftKernel
-    );
-    if (!image.getBBox(afw::image::PARENT).contains(cImage->getBBox(afw::image::PARENT))) {
-        throw LSST_EXCEPT(
-            MeasurementError,
-            (boost::format("Measurement image with (bbox=%s) is not large enough for aperture (bbox=%s)")
-             % image.getBBox(afw::image::PARENT) % cImage->getBBox(afw::image::PARENT)).str(),
-            EDGE
-        );
-    }
+    Result result;
+    CONST_PTR(afw::image::Image<T>) cImage = getSincCoeffs<T>(image.getBBox(), ellipse, result, ctrl);
+    if (result.getFlag(APERTURE_TRUNCATED)) return result;
     afw::image::MaskedImage<T> subImage(image, cImage->getBBox(afw::image::PARENT), afw::image::PARENT);
-    FluxComponent result;
     result.flux = (subImage.getImage()->getArray().template asEigen<Eigen::ArrayXpr>()
                    * cImage->getArray().template asEigen<Eigen::ArrayXpr>()).sum();
     result.fluxSigma = std::sqrt(
@@ -182,21 +184,18 @@ FluxComponent ApertureFluxAlgorithm::computeSincFlux(
 }
 
 template <typename T>
-Flux ApertureFluxAlgorithm::computeNaiveFlux(
+ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeNaiveFlux(
     afw::image::Image<T> const & image,
     afw::geom::ellipses::Ellipse const & ellipse,
     Control const & ctrl
 ) {
+    Result result;
     afw::geom::ellipses::PixelRegion region(ellipse); // behaves mostly like a Footprint
-    if (!image.getBBox(afw::image::PARENT).contains(region.getBBox())) {
-        throw LSST_EXCEPT(
-            MeasurementError,
-            (boost::format("Measurement image with (bbox=%s) is not large enough for aperture (bbox=%s)")
-             % image.getBBox(afw::image::PARENT) % region.getBBox()).str(),
-            EDGE
-        );
+    if (!image.getBBox().contains(region.getBBox())) {
+        result.setFlag(APERTURE_TRUNCATED);
+        return result;
     }
-    Flux flux = 0;
+    result.flux = 0;
     for (
         afw::geom::ellipses::PixelRegion::Iterator spanIter = region.begin(), spanEnd = region.end();
         spanIter != spanEnd;
@@ -206,26 +205,22 @@ Flux ApertureFluxAlgorithm::computeNaiveFlux(
             spanIter->getBeginX() - image.getX0(),
             spanIter->getY() - image.getY0()
         );
-        flux += std::accumulate(pixIter, pixIter + spanIter->getWidth(), 0.0);
+        result.flux += std::accumulate(pixIter, pixIter + spanIter->getWidth(), 0.0);
     }
-    return flux;
+    return result;
 }
 
 template <typename T>
-FluxComponent ApertureFluxAlgorithm::computeNaiveFlux(
+ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeNaiveFlux(
     afw::image::MaskedImage<T> const & image,
     afw::geom::ellipses::Ellipse const & ellipse,
     Control const & ctrl
 ) {
-    FluxComponent result;
+    Result result;
     afw::geom::ellipses::PixelRegion region(ellipse); // behaves mostly like a Footprint
-    if (!image.getBBox(afw::image::PARENT).contains(region.getBBox())) {
-        throw LSST_EXCEPT(
-            MeasurementError,
-            (boost::format("Measurement image with (bbox=%s) is not large enough for aperture (bbox=%s)")
-             % image.getBBox(afw::image::PARENT) % region.getBBox()).str(),
-            EDGE
-        );
+    if (!image.getBBox().contains(region.getBBox())) {
+        result.setFlag(APERTURE_TRUNCATED);
+        return result;
     }
     result.flux = 0.0;
     result.fluxSigma = 0.0;
@@ -251,44 +246,30 @@ FluxComponent ApertureFluxAlgorithm::computeNaiveFlux(
 }
 
 
-#define INSTANTIATE(T)                                          \
-    template                                                    \
-    void ApertureFluxAlgorithm::apply(                          \
-        afw::image::MaskedImage<T> const &,                     \
-        afw::geom::Point2D const &,                             \
-        Result &,                                               \
-        Control const &                                         \
-    );                                                          \
-    template                                                    \
-    void ApertureFluxAlgorithm::apply(                          \
-        afw::image::Exposure<T> const &,                        \
-        Input const &,                                          \
-        Result &,                                               \
-        Control const &                                         \
-    );                                                          \
-    template                                                    \
-    Flux ApertureFluxAlgorithm::computeSincFlux(                \
-        afw::image::Image<T> const &,                           \
-        afw::geom::ellipses::Ellipse const &,                   \
-        Control const &                                         \
-    );                                                          \
-    template                                                    \
-    FluxComponent ApertureFluxAlgorithm::computeSincFlux(       \
-        afw::image::MaskedImage<T> const &,                     \
-        afw::geom::ellipses::Ellipse const &,                   \
-        Control const &                                         \
-    );                                                          \
-    template                                                    \
-    Flux ApertureFluxAlgorithm::computeNaiveFlux(               \
-        afw::image::Image<T> const &,                           \
-        afw::geom::ellipses::Ellipse const &,                   \
-        Control const &                                         \
-    );                                                          \
-    template                                                    \
-    FluxComponent ApertureFluxAlgorithm::computeNaiveFlux(      \
-        afw::image::MaskedImage<T> const &,                     \
-        afw::geom::ellipses::Ellipse const &,                   \
-        Control const &                                         \
+#define INSTANTIATE(T)                                                  \
+    template                                                            \
+    ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux( \
+        afw::image::Image<T> const &,                                   \
+        afw::geom::ellipses::Ellipse const &,                           \
+        Control const &                                                 \
+    );                                                                  \
+    template                                                            \
+    ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux( \
+        afw::image::MaskedImage<T> const &,                             \
+        afw::geom::ellipses::Ellipse const &,                           \
+        Control const &                                                 \
+    );                                                                  \
+    template                                                            \
+    ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeNaiveFlux( \
+        afw::image::Image<T> const &,                                   \
+        afw::geom::ellipses::Ellipse const &,                           \
+        Control const &                                                 \
+    );                                                                  \
+    template                                                            \
+    ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeNaiveFlux( \
+        afw::image::MaskedImage<T> const &,                             \
+        afw::geom::ellipses::Ellipse const &,                           \
+        Control const &                                                 \
     )
 
 INSTANTIATE(float);

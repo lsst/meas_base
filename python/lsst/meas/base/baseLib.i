@@ -239,18 +239,6 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %wrapMeasurementAlgorithm1(lsst::meas::base, NaiveFluxAlgorithm, NaiveFluxControl,
                            FootprintCentroidInput, FluxComponent)
 
-%include "lsst/meas/base/ApertureFlux.h"
-%template(apply) lsst::meas::base::ApertureFluxAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::ApertureFluxAlgorithm::apply<double>;
-%template(computeNaiveFlux) lsst::meas::base::ApertureFluxAlgorithm::computeNaiveFlux<float>;
-%template(computeNaiveFlux) lsst::meas::base::ApertureFluxAlgorithm::computeNaiveFlux<double>;
-%template(computeSincFlux) lsst::meas::base::ApertureFluxAlgorithm::computeSincFlux<float>;
-%template(computesincFlux) lsst::meas::base::ApertureFluxAlgorithm::computeSincFlux<double>;
-%template(computeFlux) lsst::meas::base::ApertureFluxAlgorithm::computeFlux<float>;
-%template(computeFlux) lsst::meas::base::ApertureFluxAlgorithm::computeFlux<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, ApertureFluxAlgorithm, ApertureFluxControl,
-                           FootprintCentroidInput, ApertureFluxComponent)
-
 %include "lsst/meas/base/PeakLikelihoodFlux.h"
 %template(apply) lsst::meas::base::PeakLikelihoodFluxAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::PeakLikelihoodFluxAlgorithm::apply<double>;
@@ -274,6 +262,24 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %template(apply) lsst::meas::base::PixelFlagsAlgorithm::apply<double>;
 %wrapMeasurementAlgorithm0(lsst::meas::base, PixelFlagsAlgorithm, PixelFlagsControl, FootprintCentroidInput)
 %include "lsst/meas/base/PixelFlags.h"
+
+%include "lsst/meas/base/ApertureFlux.h"
+%template(ApertureFluxFlagsComponent)
+    lsst::meas::base::FlagsComponent<lsst::meas::base::ApertureFluxAlgorithm>;
+%template(ApertureFluxResult1) lsst::meas::base::Result1<
+    lsst::meas::base::ApertureFluxAlgorithm,
+    lsst::meas::base::FluxComponent
+    >;
+%pythoncode %{
+ApertureFluxAlgorithm.Result = ApertureFluxResult1;
+ApertureFluxAlgorithm.Control = ApertureFluxControl;
+%}
+%template(computeNaiveFlux) lsst::meas::base::ApertureFluxAlgorithm::computeNaiveFlux<float>;
+%template(computeNaiveFlux) lsst::meas::base::ApertureFluxAlgorithm::computeNaiveFlux<double>;
+%template(computeSincFlux) lsst::meas::base::ApertureFluxAlgorithm::computeSincFlux<float>;
+%template(computesincFlux) lsst::meas::base::ApertureFluxAlgorithm::computeSincFlux<double>;
+%template(computeFlux) lsst::meas::base::ApertureFluxAlgorithm::computeFlux<float>;
+%template(computeFlux) lsst::meas::base::ApertureFluxAlgorithm::computeFlux<double>;
 
 %import "lsst/pex/exceptions/exceptionsLib.i"
 %declareException(MeasurementError, lsst.pex.exceptions.RuntimeError, lsst::meas::base::MeasurementError)

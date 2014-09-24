@@ -27,7 +27,7 @@ import numpy
 import lsst.afw.geom
 import lsst.afw.table
 import lsst.utils.tests
-import lsst.meas.base.tests
+from lsst.meas.base import ApertureFluxAlgorithm
 
 class ApertureFluxTestCase(lsst.utils.tests.TestCase):
     """Test case for the ApertureFlux algorithm/plugins
@@ -38,7 +38,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         self.exposure = lsst.afw.image.ExposureF(self.bbox)
         self.exposure.getMaskedImage().getImage().set(1.0)
         self.exposure.getMaskedImage().getVariance().set(0.25)
-        self.ctrl = lsst.meas.base.ApertureFluxAlgorithm.Control()
+        self.ctrl = ApertureFluxAlgorithm.Control()
 
     def tearDown(self):
         del self.bbox
@@ -59,21 +59,94 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                      lsst.afw.geom.Point2D(60.0, -60.5),
                      lsst.afw.geom.Point2D(60.5, -60.5)]
         radii = [12.0, 17.0]
-        maskedImage = self.exposure.getMaskedImage()
-        image = maskedImage.getImage()
         for position in positions:
             for radius in radii:
                 ellipse = lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(radius, radius, 0.0),
                                                          position)
                 area = self.computeNaiveArea(position, radius)
-                self.assertClose(
-                    lsst.meas.base.ApertureFluxAlgorithm.computeNaiveFlux(image, ellipse, self.ctrl),
+                # test that this isn't the same as the sinc flux
+                self.assertNotClose(
+                    ApertureFluxAlgorithm.computeSincFlux(self.exposure.getMaskedImage().getImage(),
+                                                          ellipse, self.ctrl).flux,
                     area
                 )
-                self.assertClose(
-                    lsst.meas.base.ApertureFluxAlgorithm.computeFlux(image, ellipse, self.ctrl),
+                # test that all the ways we could invoke naive flux measurement produce the expected result
+                def check(method, image):
+                    result = method(image, ellipse, self.ctrl)
+                    self.assertClose(result.flux, area)
+                    self.assertFalse(result.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
+                    self.assertFalse(result.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
+                    if hasattr(image, "getVariance"):
+                        self.assertClose(result.fluxSigma, (area*0.25)**0.5)
+                    else:
+                        self.assertTrue(numpy.isnan(result.fluxSigma))
+                check(ApertureFluxAlgorithm.computeNaiveFlux, self.exposure.getMaskedImage())
+                check(ApertureFluxAlgorithm.computeNaiveFlux, self.exposure.getMaskedImage().getImage())
+                check(ApertureFluxAlgorithm.computeFlux, self.exposure.getMaskedImage())
+                check(ApertureFluxAlgorithm.computeFlux, self.exposure.getMaskedImage().getImage())
+        # test failure conditions when the aperture itself is truncated
+        invalid = ApertureFluxAlgorithm.computeNaiveFlux(
+            self.exposure.getMaskedImage().getImage(),
+            lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(12.0, 12.0),
+                                           lsst.afw.geom.Point2D(25.0, -60.0)),
+            self.ctrl
+            )
+        self.assertTrue(invalid.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
+        self.assertFalse(invalid.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
+        self.assertTrue(numpy.isnan(invalid.flux))
+
+    def testSinc(self):
+        positions = [lsst.afw.geom.Point2D(60.0, -60.0),
+                     lsst.afw.geom.Point2D(60.5, -60.0),
+                     lsst.afw.geom.Point2D(60.0, -60.5),
+                     lsst.afw.geom.Point2D(60.5, -60.5)]
+        radii = [7.0, 9.0]
+        for position in positions:
+            for radius in radii:
+                ellipse = lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(radius, radius, 0.0),
+                                                         position)
+                area = ellipse.getCore().getArea()
+                # test that this isn't the same as the naive flux
+                self.assertNotClose(
+                    ApertureFluxAlgorithm.computeNaiveFlux(self.exposure.getMaskedImage().getImage(),
+                                                           ellipse, self.ctrl).flux,
                     area
                 )
+                # test that all the ways we could invoke sinc flux measurement produce the expected result
+                def check(method, image):
+                    result = method(image, ellipse, self.ctrl)
+                    self.assertClose(result.flux, area, rtol=1E-3)
+                    self.assertFalse(result.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
+                    self.assertFalse(result.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
+                    if hasattr(image, "getVariance"):
+                        self.assertFalse(numpy.isnan(result.fluxSigma))
+                    else:
+                        self.assertTrue(numpy.isnan(result.fluxSigma))
+                check(ApertureFluxAlgorithm.computeSincFlux, self.exposure.getMaskedImage())
+                check(ApertureFluxAlgorithm.computeSincFlux, self.exposure.getMaskedImage().getImage())
+                check(ApertureFluxAlgorithm.computeFlux, self.exposure.getMaskedImage())
+                check(ApertureFluxAlgorithm.computeFlux, self.exposure.getMaskedImage().getImage())
+        # test failure conditions when the aperture itself is truncated
+        invalid1 = ApertureFluxAlgorithm.computeSincFlux(
+            self.exposure.getMaskedImage().getImage(),
+            lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0),
+                                           lsst.afw.geom.Point2D(25.0, -60.0)),
+            self.ctrl
+            )
+        self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
+        self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
+        self.assertTrue(numpy.isnan(invalid1.flux))
+        # test failure conditions when the aperture is not truncated, but the sinc coeffs are
+        invalid2 = ApertureFluxAlgorithm.computeSincFlux(
+            self.exposure.getMaskedImage().getImage(),
+            lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0),
+                                           lsst.afw.geom.Point2D(30.0, -60.0)),
+            self.ctrl
+            )
+        self.assertFalse(invalid2.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
+        self.assertTrue(invalid2.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
+        self.assertFalse(numpy.isnan(invalid2.flux))
+
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
