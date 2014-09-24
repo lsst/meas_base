@@ -23,6 +23,7 @@
 
 %{
 #include "lsst/meas/base/ApertureFlux.h"
+#include "lsst/meas/base/CircularApertureFlux.h"
 %}
 
 %include "lsst/meas/base/ApertureFlux.h"
@@ -43,3 +44,5 @@ ApertureFluxAlgorithm.Control = ApertureFluxControl;
 %template(computesincFlux) lsst::meas::base::ApertureFluxAlgorithm::computeSincFlux<double>;
 %template(computeFlux) lsst::meas::base::ApertureFluxAlgorithm::computeFlux<float>;
 %template(computeFlux) lsst::meas::base::ApertureFluxAlgorithm::computeFlux<double>;
+
+%include "lsst/meas/base/CircularApertureFlux.h"
