@@ -178,6 +178,20 @@ public:
         Control const & ctrl=Control()
     );
 
+    /**
+     *  @brief Measure the configured apertures using the Plugin API.
+     *
+     *  This is the version that will be called by both the SFM and forced measurement framework.  It will
+     *  delegate to the other overload of apply().
+     */
+    template <typename T>
+    static void apply(
+        afw::image::Exposure<T> const & exposure,
+        Input const & inputs,
+        Result & result,
+        Control const & ctrl=Control()
+    );
+
     //@{
     /**  Compute the flux (and optionally, uncertanties) within an aperture using Sinc photometry
      *

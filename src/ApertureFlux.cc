@@ -86,6 +86,12 @@ ApertureFluxAlgorithm::ResultMapper ApertureFluxAlgorithm::makeResultMapper(
     std::string const & name,
     Control const & ctrl
 ) {
+    // We do the caching here because this routine is always called once before we run in plugin mode,
+    // and ApertureFluxAlgorithm doesn't really have a useful constructor, since it only has static methods.
+    for (std::vector<double>::const_iterator i = ctrl.radii.begin(); i != ctrl.radii.end(); ++i) {
+        if (*i > ctrl.maxSincRadius) break;
+        SincCoeffs<float>::cache(0.0, *i);
+    }
     return ResultMapper(schema, name, ctrl.radii);
 }
 
@@ -106,6 +112,16 @@ void ApertureFluxAlgorithm::apply(
         );
         result.set(n, computeFlux(image, ellipse, ctrl));
     }
+}
+
+template <typename T>
+void ApertureFluxAlgorithm::apply(
+    afw::image::Exposure<T> const & exposure,
+    Input const & inputs,
+    Result & result,
+    Control const & ctrl
+) {
+    apply(exposure.getMaskedImage(), inputs.position, result, ctrl);
 }
 
 template <typename T>
@@ -240,6 +256,13 @@ FluxComponent ApertureFluxAlgorithm::computeNaiveFlux(
     void ApertureFluxAlgorithm::apply(                          \
         afw::image::MaskedImage<T> const &,                     \
         afw::geom::Point2D const &,                             \
+        Result &,                                               \
+        Control const &                                         \
+    );                                                          \
+    template                                                    \
+    void ApertureFluxAlgorithm::apply(                          \
+        afw::image::Exposure<T> const &,                        \
+        Input const &,                                          \
         Result &,                                               \
         Control const &                                         \
     );                                                          \
