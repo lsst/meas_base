@@ -49,6 +49,61 @@ public:
 
 };
 
+/**
+ *  @brief A reusable component for result structs that contain an array of flux measurements.
+ *
+ *  Flux measurements and their errors should always be in DN.
+ */
+struct ApertureFluxComponent {
+    ndarray::Array<Flux,1,1> flux; ///< Measured flux in DN.
+    ndarray::Array<FluxErrElement,1,1> fluxSigma; ///< 1-Sigma error (sqrt of variance) on flux in DN.
+
+    /// Return a FluxComponent corresponding to the ith flux
+    FluxComponent const get(int i) const { return FluxComponent(flux[i], fluxSigma[i]); }
+
+    /// Return set the ith flux and its uncertainty to the values in the given FluxComponent
+    void set(int i, FluxComponent const & c) const {
+        flux[i] = c.flux;
+        fluxSigma[i] = c.fluxSigma;
+    }
+
+    /// Default constructor; arrays will remain empty
+    ApertureFluxComponent() {}
+
+    /// Constructor; arrays will be allocated to the given size and filled with NaN
+    explicit ApertureFluxComponent(int size);
+};
+
+/**
+ *  @brief An object that transfers values from ApertureFluxComponent to afw::table::BaseRecord
+ *
+ *  This should be included in one of @ref measBaseResultMapperTemplates to correspond with using
+ *  ApertureFluxComponent in the same position in one of @ref measBaseResultTemplates, and will otherwise
+ *  not be used directly by users.
+ */
+class ApertureFluxComponentMapper {
+public:
+
+    /**
+     *  @brief Construct the mapper, adding fields to the given schema and saving their keys
+     *
+     *  The given prefix will form the first part of all fields, and the uncertainty argument
+     *  sets which uncertainty fields will be added to the schema and transferred during apply().
+     */
+    ApertureFluxComponentMapper(
+        afw::table::Schema & schema,
+        std::string const & prefix,
+        std::vector<double> const & radii
+    );
+
+    /// Transfer values from the result struct to the record
+    void apply(afw::table::BaseRecord & record, ApertureFluxComponent const & result) const;
+
+private:
+    afw::table::ArrayKey<Flux> _flux;
+    afw::table::ArrayKey<FluxErrElement> _fluxSigma;
+};
+
 class ApertureFluxAlgorithm {
 public:
 

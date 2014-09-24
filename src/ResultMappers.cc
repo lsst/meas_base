@@ -51,39 +51,6 @@ void FluxComponentMapper::apply(afw::table::BaseRecord & record, FluxComponent c
     }
 }
 
-MultiApertureFluxComponentMapper::MultiApertureFluxComponentMapper(
-    afw::table::Schema & schema,
-    std::string const & prefix,
-    std::vector<double> const & radii
-) :
-    _flux(
-        afw::table::ArrayKey<Flux>::addFields(
-            schema,
-            prefix + "_flux",
-            "flux within %f pixel aperture",
-            "dn",
-            radii
-        )
-    ),
-    _fluxSigma(
-        afw::table::ArrayKey<Flux>::addFields(
-            schema,
-            prefix + "_fluxSigma",
-            "1-sigma uncertainty on flux within %f pixel aperture",
-            "dn",
-            radii
-        )
-    )
-{}
-
-void MultiApertureFluxComponentMapper::apply(
-    afw::table::BaseRecord & record,
-    MultiApertureFluxComponent const & result
-) const {
-    record.set(_flux, result.flux);
-    record.set(_fluxSigma, result.fluxSigma);
-}
-
 CentroidComponentMapper::CentroidComponentMapper(
     afw::table::Schema & schema,
     std::string const & prefix,

@@ -155,37 +155,6 @@ private:
 
 
 /**
- *  @brief An object that transfers values from MultiApertureFluxComponent to afw::table::BaseRecord
- *
- *  This should be included in one of @ref measBaseResultMapperTemplates to correspond with using
- *  MultiApertureFluxComponent in the same position in one of @ref measBaseResultTemplates, and will otherwise
- *  not be used directly by users.
- */
-class MultiApertureFluxComponentMapper {
-public:
-
-    /**
-     *  @brief Construct the mapper, adding fields to the given schema and saving their keys
-     *
-     *  The given prefix will form the first part of all fields, and the uncertainty argument
-     *  sets which uncertainty fields will be added to the schema and transferred during apply().
-     */
-    MultiApertureFluxComponentMapper(
-        afw::table::Schema & schema,
-        std::string const & prefix,
-        std::vector<double> const & radii
-    );
-
-    /// Transfer values from the result struct to the record
-    void apply(afw::table::BaseRecord & record, MultiApertureFluxComponent const & result) const;
-
-private:
-    afw::table::ArrayKey<Flux> _flux;
-    afw::table::ArrayKey<FluxErrElement> _fluxSigma;
-};
-
-
-/**
  *  @brief An object that transfers values from CentroidComponent to afw::table::BaseRecord
  *
  *  This should be included in one of @ref measBaseResultMapperTemplates to correspond with using

@@ -32,6 +32,47 @@
 
 namespace lsst { namespace meas { namespace base {
 
+ApertureFluxComponent::ApertureFluxComponent(int size) :
+    flux(ndarray::allocate(size)),
+    fluxSigma(ndarray::allocate(size))
+{
+    flux.deep() = std::numeric_limits<Flux>::quiet_NaN();
+    fluxSigma.deep() = std::numeric_limits<FluxErrElement>::quiet_NaN();
+}
+
+ApertureFluxComponentMapper::ApertureFluxComponentMapper(
+    afw::table::Schema & schema,
+    std::string const & prefix,
+    std::vector<double> const & radii
+) :
+    _flux(
+        afw::table::ArrayKey<Flux>::addFields(
+            schema,
+            prefix + "_flux",
+            "flux within %f pixel aperture",
+            "dn",
+            radii
+        )
+    ),
+    _fluxSigma(
+        afw::table::ArrayKey<Flux>::addFields(
+            schema,
+            prefix + "_fluxSigma",
+            "1-sigma uncertainty on flux within %f pixel aperture",
+            "dn",
+            radii
+        )
+    )
+{}
+
+void ApertureFluxComponentMapper::apply(
+    afw::table::BaseRecord & record,
+    ApertureFluxComponent const & result
+) const {
+    record.set(_flux, result.flux);
+    record.set(_fluxSigma, result.fluxSigma);
+}
+
 template <typename T>
 Flux ApertureFluxAlgorithm::computeSincFlux(
     afw::image::Image<T> const & image,
