@@ -28,9 +28,20 @@ import lsst.afw.geom
 import lsst.afw.table
 import lsst.utils.tests
 from lsst.meas.base import ApertureFluxAlgorithm
+import lsst.meas.base.tests
+
+numpy.random.seed(1234567)
+
+# n.b. Some tests here depend on the noise realization in the test data
+# or from the numpy random number generator.
+# For the current test data and seed value, they pass, but they may not
+# if the test data is regenerated or the seed value changes.  I've marked
+# these with an "rng dependent" comment.  In most cases, they test that
+# the measured flux lies within 2 sigma of the correct value, which we
+# should expect to fail sometimes.
 
 class ApertureFluxTestCase(lsst.utils.tests.TestCase):
-    """Test case for the ApertureFlux algorithm/plugins
+    """Test case for the ApertureFlux algorithm base class
     """
 
     def setUp(self):
@@ -147,6 +158,58 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         self.assertTrue(invalid2.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
         self.assertFalse(numpy.isnan(invalid2.flux))
 
+class CircularApertureFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
+    """Test case for the CircularApertureFlux algorithm/plugin
+    """
+
+    def setUp(self):
+        lsst.meas.base.tests.AlgorithmTestCase.setUp(self)
+
+    def tearDown(self):
+        lsst.meas.base.tests.AlgorithmTestCase.tearDown(self)
+
+    def testSingleFramePlugin(self):
+        config = lsst.meas.base.SingleFrameMeasurementConfig()
+        config.plugins["base_CircularApertureFlux"].maxSincRadius = 20
+        ctrl = config.plugins["base_CircularApertureFlux"].makeControl()
+        measCat = self.runSingleFrameMeasurementTask("base_CircularApertureFlux", config=config)
+        metadata = measCat.getMetadata()
+        radii = metadata.get("base_CircularApertureFlux_radii")
+        self.assertEqual(list(radii), list(ctrl.radii))
+        for record in measCat:
+            lastFlux = 0.0
+            lastFluxSigma = 0.0
+            for n, radius in enumerate(radii):
+                # Test that the flags are what we expect
+                if radius <= ctrl.maxSincRadius:
+                    self.assertFalse(record.get("base_CircularApertureFlux_flag_%d" % n))
+                    self.assertFalse(record.get("base_CircularApertureFlux_flag_apertureTruncated_%d" % n))
+                    self.assertEqual(
+                        record.get("base_CircularApertureFlux_flag_sincCoeffsTruncated_%d" % n),
+                        radius > 12
+                    )
+                else:
+                    self.assertFalse(record.get("base_CircularApertureFlux_flag_sincCoeffsTruncated_%d" % n))
+                    self.assertEqual(record.get("base_CircularApertureFlux_flag_%d" % n), radius > 50)
+                    self.assertEqual(record.get("base_CircularApertureFlux_flag_apertureTruncated_%d" % n),
+                                     radius > 50)
+                # Test that the fluxes and uncertainties increase as we increase the apertures, or that
+                # they match the true flux within 2 sigma.  This is just a test as to whether the values
+                # are reasonable.  As to whether the values are exactly correct, we rely on the tests on
+                # ApertureFluxAlgorithm's static methods, as the way the plugins code calls that is
+                # extremely simple, so if the results we get are reasonable, it's hard to imagine
+                # how they could be incorrect if ApertureFluxAlgorithm's tests are valid.
+                currentFlux = record.get("base_CircularApertureFlux_flux_%d" % n)
+                currentFluxSigma = record.get("base_CircularApertureFlux_fluxSigma_%d" % n)
+                if not record.get("base_CircularApertureFlux_flag_%d" % n):
+                    self.assertTrue(currentFlux > lastFlux
+                                    or (record.get("truth_flux") - currentFlux) < 2*currentFluxSigma)
+                    self.assertGreater(currentFluxSigma, lastFluxSigma)
+                    lastFlux = currentFlux
+                    lastFluxSigma = currentFluxSigma
+                else:
+                    self.assertTrue(numpy.isnan(currentFlux))
+                    self.assertTrue(numpy.isnan(currentFluxSigma))
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
@@ -155,6 +218,7 @@ def suite():
 
     suites = []
     suites += unittest.makeSuite(ApertureFluxTestCase)
+    suites += unittest.makeSuite(CircularApertureFluxTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 

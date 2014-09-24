@@ -114,7 +114,7 @@ void ApertureFluxAlgorithm::copyResultToRecord(
 namespace {
 
 // Helper function for computeSincFlux get Sinc flux coefficients, and handle cases where the coeff
-// image needs to be clipped to fit in the ommeasurement image
+// image needs to be clipped to fit in the measurement image
 template <typename T>
 CONST_PTR(afw::image::Image<T>) getSincCoeffs(
     afw::geom::Box2I const & bbox,                // measurement image bbox we need to fit inside
