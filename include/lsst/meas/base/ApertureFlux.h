@@ -34,7 +34,7 @@ namespace lsst { namespace meas { namespace base {
 class ApertureFluxControl {
 public:
 
-    ApertureFluxControl() : maxSincRadius(10.0), shiftKernel("lanczos5") {}
+    ApertureFluxControl();
 
     LSST_CONTROL_FIELD(
         radii, std::vector<double>,
