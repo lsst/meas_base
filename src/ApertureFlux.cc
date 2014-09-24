@@ -73,6 +73,33 @@ void ApertureFluxComponentMapper::apply(
     record.set(_fluxSigma, result.fluxSigma);
 }
 
+ApertureFluxAlgorithm::ResultMapper ApertureFluxAlgorithm::makeResultMapper(
+    afw::table::Schema & schema,
+    std::string const & name,
+    Control const & ctrl
+) {
+    return ResultMapper(schema, name, ctrl.radii);
+}
+
+template <typename T>
+void ApertureFluxAlgorithm::apply(
+    afw::image::MaskedImage<T> const & image,
+    afw::geom::Point2D const & position,
+    Result & result,
+    Control const & ctrl
+) {
+    ApertureFluxComponent arrays(ctrl.radii.size()); // invoke this constructor to initialize arrays
+    result.flux = arrays.flux;
+    result.fluxSigma = arrays.fluxSigma;
+    for (std::size_t n = 0; n < ctrl.radii.size(); ++n) {
+        afw::geom::ellipses::Ellipse ellipse(
+            afw::geom::ellipses::Axes(ctrl.radii[n], ctrl.radii[n]),
+            position
+        );
+        result.set(n, computeFlux(image, ellipse, ctrl));
+    }
+}
+
 template <typename T>
 Flux ApertureFluxAlgorithm::computeSincFlux(
     afw::image::Image<T> const & image,
@@ -88,9 +115,10 @@ Flux ApertureFluxAlgorithm::computeSincFlux(
     );
     if (!image.getBBox(afw::image::PARENT).contains(cImage->getBBox(afw::image::PARENT))) {
         throw LSST_EXCEPT(
-            pex::exceptions::InvalidParameterError,
+            MeasurementError,
             (boost::format("Measurement image with (bbox=%s) is not large enough for aperture (bbox=%s)")
-             % image.getBBox(afw::image::PARENT) % cImage->getBBox(afw::image::PARENT)).str()
+             % image.getBBox(afw::image::PARENT) % cImage->getBBox(afw::image::PARENT)).str(),
+            EDGE
         );
     }
     afw::image::Image<T> subImage(image, cImage->getBBox(afw::image::PARENT), afw::image::PARENT);
@@ -112,9 +140,10 @@ FluxComponent ApertureFluxAlgorithm::computeSincFlux(
     );
     if (!image.getBBox(afw::image::PARENT).contains(cImage->getBBox(afw::image::PARENT))) {
         throw LSST_EXCEPT(
-            pex::exceptions::InvalidParameterError,
+            MeasurementError,
             (boost::format("Measurement image with (bbox=%s) is not large enough for aperture (bbox=%s)")
-             % image.getBBox(afw::image::PARENT) % cImage->getBBox(afw::image::PARENT)).str()
+             % image.getBBox(afw::image::PARENT) % cImage->getBBox(afw::image::PARENT)).str(),
+            EDGE
         );
     }
     afw::image::MaskedImage<T> subImage(image, cImage->getBBox(afw::image::PARENT), afw::image::PARENT);
@@ -137,9 +166,10 @@ Flux ApertureFluxAlgorithm::computeNaiveFlux(
     afw::geom::ellipses::PixelRegion region(ellipse); // behaves mostly like a Footprint
     if (!image.getBBox(afw::image::PARENT).contains(region.getBBox())) {
         throw LSST_EXCEPT(
-            pex::exceptions::InvalidParameterError,
+            MeasurementError,
             (boost::format("Measurement image with (bbox=%s) is not large enough for aperture (bbox=%s)")
-             % image.getBBox(afw::image::PARENT) % region.getBBox()).str()
+             % image.getBBox(afw::image::PARENT) % region.getBBox()).str(),
+            EDGE
         );
     }
     Flux flux = 0;
@@ -167,9 +197,10 @@ FluxComponent ApertureFluxAlgorithm::computeNaiveFlux(
     afw::geom::ellipses::PixelRegion region(ellipse); // behaves mostly like a Footprint
     if (!image.getBBox(afw::image::PARENT).contains(region.getBBox())) {
         throw LSST_EXCEPT(
-            pex::exceptions::InvalidParameterError,
+            MeasurementError,
             (boost::format("Measurement image with (bbox=%s) is not large enough for aperture (bbox=%s)")
-             % image.getBBox(afw::image::PARENT) % region.getBBox()).str()
+             % image.getBBox(afw::image::PARENT) % region.getBBox()).str(),
+            EDGE
         );
     }
     result.flux = 0.0;
@@ -197,6 +228,13 @@ FluxComponent ApertureFluxAlgorithm::computeNaiveFlux(
 
 
 #define INSTANTIATE(T)                                          \
+    template                                                    \
+    void ApertureFluxAlgorithm::apply(                          \
+        afw::image::MaskedImage<T> const &,                     \
+        afw::geom::Point2D const &,                             \
+        Result &,                                               \
+        Control const &                                         \
+    );                                                          \
     template                                                    \
     Flux ApertureFluxAlgorithm::computeSincFlux(                \
         afw::image::Image<T> const &,                           \

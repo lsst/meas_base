@@ -37,6 +37,11 @@ public:
     ApertureFluxControl() : maxSincRadius(10.0), shiftKernel("lanczos5") {}
 
     LSST_CONTROL_FIELD(
+        radii, std::vector<double>,
+        "Radius (in pixels) of apertures."
+    );
+
+    LSST_CONTROL_FIELD(
         maxSincRadius, double,
         "Maximum radius (in pixels) for which the sinc algorithm should be used instead of the "
         "faster naive algorithm.  For elliptical apertures, this is the minor axis radius."
@@ -107,7 +112,71 @@ private:
 class ApertureFluxAlgorithm {
 public:
 
+    /**
+     *  Flags that correspond to failure modes of the algorithm.
+     *
+     *  @todo A known problem here is that we only have one flag for all apertures; it's entirely
+     *  possible only some apertures (generally, the larger ones) failed, but we'd have to set a
+     *  bit for each of them.  It's hard to avoid this with the current Algorithm interface, but
+     *  we should be able to address that when we redesign it (DM-828, DM-1130).
+     */
+    enum FlagBits {
+        EDGE=0, ///< One or more apertures did not fit within the measurement image
+        N_FLAGS
+    };
+
+    /// @copydoc PsfFluxAlgorithm::getFlagDefinitions()
+    static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
+        static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
+                {"edge", "one or more apertures did not fit within the measurement image"},
+            }};
+        return flagDefs;
+    }
+
+    /// Typedef to the control object associated with this algorithm, defined above.
     typedef ApertureFluxControl Control;
+
+    /// Type returned by apply(); combines arrays of fluxes and flux errors with flags.
+    typedef Result1<
+        ApertureFluxAlgorithm,
+        ApertureFluxComponent
+        > Result;
+
+    /// Class that copies values from the Result object to a SourceRecord.
+    typedef ResultMapper1<
+        ApertureFluxAlgorithm,
+        ApertureFluxComponentMapper
+        > ResultMapper;
+
+    /**
+     *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
+     *  Exposure being measured.  For circular apertures, we only need a centroid..
+     */
+    typedef FootprintCentroidInput Input;
+
+    /// @copydoc PsfFluxAlgorithm::makeResultMapper
+    static ResultMapper makeResultMapper(
+        afw::table::Schema & schema,
+        std::string const & name,
+        Control const & ctrl=Control()
+    );
+
+    /**
+     *  Measure the configured apertures on the given image.
+     *
+     *  @param[in]   image       MaskedImage to be measured.
+     *  @param[in]   position    Center position of all apertures.
+     *  @param[out]  result      Output object to fill.
+     *  @param[in]   ctrl        Control object that defines the aperture sizes and the details of how
+     *                           to compute them.
+     */
+    template <typename T>
+    static void apply(
+        afw::image::MaskedImage<T> const & image,
+        afw::geom::Point2D const & position,
+        Result & result,
+        Control const & ctrl=Control()
+    );
 
     //@{
     /**  Compute the flux (and optionally, uncertanties) within an aperture using Sinc photometry
@@ -178,8 +247,8 @@ public:
         Control const & ctrl=Control()
     ) {
         return (afw::geom::ellipses::Axes(ellipse.getCore()).getB() <= ctrl.maxSincRadius)
-            ? computeSincRadius(image, ellipse, ctrl)
-            : computeNaiveRadius(image, ellipse, ctrl);
+            ? computeSincFlux(image, ellipse, ctrl)
+            : computeNaiveFlux(image, ellipse, ctrl);
     }
     template <typename T>
     static FluxComponent computeFlux(
@@ -188,8 +257,8 @@ public:
         Control const & ctrl=Control()
     ) {
         return (afw::geom::ellipses::Axes(ellipse.getCore()).getB() <= ctrl.maxSincRadius)
-            ? computeSincRadius(image, ellipse, ctrl)
-            : computeNaiveRadius(image, ellipse, ctrl);
+            ? computeSincFlux(image, ellipse, ctrl)
+            : computeNaiveFlux(image, ellipse, ctrl);
     }
     //@}
 
