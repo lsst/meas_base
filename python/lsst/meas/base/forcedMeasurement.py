@@ -159,8 +159,8 @@ class WrappedForcedPlugin(ForcedPlugin):
         # TODO: check flags
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
-        inputs = self.AlgClass.Input(measRecord)
         self.result = self.AlgClass.Result()
+        inputs = self.AlgClass.Input(measRecord)
         self.AlgClass.apply(exposure, inputs, self.result, self.config.makeControl())
         self.resultMapper.apply(measRecord, self.result)
 
