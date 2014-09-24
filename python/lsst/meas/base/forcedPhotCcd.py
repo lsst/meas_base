@@ -28,8 +28,7 @@ import lsst.pipe.base
 import lsst.afw.image
 import lsst.afw.table
 
-from .forcedPhotImage import *
-from .base import *
+from .forcedPhotImage import ProcessImageForcedTask, ProcessImageForcedConfig
 
 try:
     from lsst.meas.mosaic import applyMosaicResults
@@ -131,7 +130,7 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
         All work is delegated to the references subtask; see CoaddSrcReferencesTask for information
         about the default behavior.
         """
-        bbox = exposure.getBBox(lsst.afw.image.PARENT)
+        bbox = exposure.getBBox()
         return self.references.fetchInBox(dataRef, bbox, exposure.getWcs())
 
     def getExposure(self, dataRef):

@@ -50,7 +50,8 @@ ForcedPhotImageTask, ForcedPhotCcdTask, and ForcedPhotCoaddTask.
 import lsst.pex.config
 import lsst.pipe.base
 
-from .base import *
+from .base import BasePlugin, BasePluginConfig, BaseMeasurementConfig, BaseMeasurementTask, \
+    PluginRegistry, generateAlgorithmName, NoiseReplacer
 
 __all__ = ("ForcedPluginConfig", "ForcedPlugin", "WrappedForcedPlugin",
            "ForcedMeasurementConfig", "ForcedMeasurementTask")
@@ -159,8 +160,9 @@ class WrappedForcedPlugin(ForcedPlugin):
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
         inputs = self.AlgClass.Input(measRecord)
-        result = self.AlgClass.apply(exposure, inputs, self.config.makeControl())
-        self.resultMapper.apply(measRecord, result)
+        self.result = self.AlgClass.Result()
+        self.AlgClass.apply(exposure, inputs, self.result, self.config.makeControl())
+        self.resultMapper.apply(measRecord, self.result)
 
     def measureN(self, measCat, exposure, refCat, refWcs):
         assert hasattr(AlgClass, "applyN")  # would be better if we could delete this method somehow
@@ -172,7 +174,8 @@ class WrappedForcedPlugin(ForcedPlugin):
     def fail(self, measRecord, error=None):
         # The ResultMapper will set detailed flag bits describing the error if error is not None,
         # and set a general failure bit otherwise.
-        self.resultMapper.fail(measRecord, error)
+        self.resultMapper.apply(measRecord, self.result)
+        self.resultMapper.fail(measRecord, None if error is None else error.cpp)
 
     @classmethod
     def generate(Base, AlgClass, name=None, doRegister=True, ConfigClass=None, executionOrder=None):
@@ -216,7 +219,11 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
     plugins = ForcedPlugin.registry.makeField(
         multi=True,
         default=["base_TransformedCentroid",
-                 "base_TransformedShape"
+                 "base_TransformedShape",
+                 "base_GaussianFlux",
+                 "base_NaiveFlux",
+                 "base_PsfFlux",
+                 "base_SincFlux",
                  ],
         doc="Plugins to be run and their configuration"
         )
@@ -401,7 +408,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         table = sources.table
         table.setMetadata(self.algMetadata)
         table.preallocate(len(refCat))
-        expRegion = exposure.getBBox(lsst.afw.image.PARENT)
+        expRegion = exposure.getBBox()
         targetWcs = exposure.getWcs()
         for ref in refCat:
             newSource = sources.addNew()
