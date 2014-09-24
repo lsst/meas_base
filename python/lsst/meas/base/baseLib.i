@@ -206,7 +206,8 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %include "lsst/meas/base/PsfFlux.h"
 %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, PsfFluxAlgorithm, PsfFluxControl, FootprintCentroidInput, FluxComponent)
+%wrapMeasurementAlgorithm1(lsst::meas::base, PsfFluxAlgorithm, PsfFluxControl, FootprintCentroidInput,
+                           FluxComponent)
 
 %include "lsst/meas/base/SdssShape.h"
 %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
@@ -217,37 +218,44 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %include "lsst/meas/base/SincFlux.h"
 %template(apply) lsst::meas::base::SincFluxAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::SincFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, SincFluxAlgorithm, SincFluxControl, FootprintCentroidInput, FluxComponent)
+%wrapMeasurementAlgorithm1(lsst::meas::base, SincFluxAlgorithm, SincFluxControl,
+                           FootprintCentroidInput, FluxComponent)
 
 %include "lsst/meas/base/GaussianFlux.h"
 %template(apply) lsst::meas::base::GaussianFluxAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::GaussianFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, GaussianFluxAlgorithm, GaussianFluxControl, FootprintCentroidShapeInput, FluxComponent)
+%wrapMeasurementAlgorithm1(lsst::meas::base, GaussianFluxAlgorithm, GaussianFluxControl,
+                           FootprintCentroidInput, FluxComponent)
 
 %include "lsst/meas/base/GaussianCentroid.h"
 %template(apply) lsst::meas::base::GaussianCentroidAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::GaussianCentroidAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, GaussianCentroidAlgorithm, GaussianCentroidControl, FootprintCentroidInput, CentroidComponent)
+%wrapMeasurementAlgorithm1(lsst::meas::base, GaussianCentroidAlgorithm, GaussianCentroidControl,
+                           FootprintCentroidInput, CentroidComponent)
 
 %include "lsst/meas/base/NaiveFlux.h"
 %template(apply) lsst::meas::base::NaiveFluxAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::NaiveFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, NaiveFluxAlgorithm, NaiveFluxControl, FootprintCentroidInput, FluxComponent)
+%wrapMeasurementAlgorithm1(lsst::meas::base, NaiveFluxAlgorithm, NaiveFluxControl,
+                           FootprintCentroidInput, FluxComponent)
 
 %include "lsst/meas/base/PeakLikelihoodFlux.h"
 %template(apply) lsst::meas::base::PeakLikelihoodFluxAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::PeakLikelihoodFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, PeakLikelihoodFluxAlgorithm, PeakLikelihoodFluxControl, FootprintCentroidInput, FluxComponent)
+%wrapMeasurementAlgorithm1(lsst::meas::base, PeakLikelihoodFluxAlgorithm, PeakLikelihoodFluxControl,
+                           FootprintCentroidInput, FluxComponent)
 
 %include "lsst/meas/base/NaiveCentroid.h"
 %template(apply) lsst::meas::base::NaiveCentroidAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::NaiveCentroidAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, NaiveCentroidAlgorithm, NaiveCentroidControl, FootprintCentroidInput, CentroidComponent)
+%wrapMeasurementAlgorithm1(lsst::meas::base, NaiveCentroidAlgorithm,
+                           NaiveCentroidControl, FootprintCentroidInput, CentroidComponent)
 
 %include "lsst/meas/base/SdssCentroid.h"
 %template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, SdssCentroidAlgorithm, SdssCentroidControl, FootprintCentroidInput, CentroidComponent)
+%wrapMeasurementAlgorithm1(lsst::meas::base, SdssCentroidAlgorithm,
+                           SdssCentroidControl, FootprintCentroidInput, CentroidComponent)
 
 %include "lsst/meas/base/PixelFlags.h"
 %template(apply) lsst::meas::base::PixelFlagsAlgorithm::apply<float>;
