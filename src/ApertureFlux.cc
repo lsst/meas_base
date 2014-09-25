@@ -66,7 +66,7 @@ ApertureFluxAlgorithm::ApertureFluxAlgorithm(
 {
     _flagKeys.reserve(ctrl.radii.size());
     for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
-        _flagKeys.push_back(FlagKeys(name, schema, ctrl.radii[i]));
+        _flagKeys.push_back(FlagKeys(name, schema, i));
     }
 }
 
