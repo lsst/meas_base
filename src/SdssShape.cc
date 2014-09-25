@@ -863,8 +863,8 @@ void SdssShapeAlgorithm::apply(
  * We need to measure the PSF's moments even if we failed on the object
  * N.b. This isn't yet implemented (but the code's available from SDSS)
  */
-    result.x = shapeImpl.getX();
-    result.y = shapeImpl.getY();
+    result.x = shapeImpl.getX() + mimage.getX0();
+    result.y = shapeImpl.getY() + mimage.getY0();
     // FIXME: should do off-diagonal covariance elements too
     result.xSigma = shapeImpl.getXErr();
     result.ySigma = shapeImpl.getYErr();
