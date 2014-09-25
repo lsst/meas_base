@@ -222,7 +222,7 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %include "lsst/meas/base/GaussianFlux.h"
 %template(apply) lsst::meas::base::GaussianFluxAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::GaussianFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, GaussianFluxAlgorithm, GaussianFluxControl, FootprintCentroidInput, FluxComponent)
+%wrapMeasurementAlgorithm1(lsst::meas::base, GaussianFluxAlgorithm, GaussianFluxControl, FootprintCentroidShapeInput, FluxComponent)
 
 %include "lsst/meas/base/GaussianCentroid.h"
 %template(apply) lsst::meas::base::GaussianCentroidAlgorithm::apply<float>;

@@ -85,15 +85,17 @@ struct FootprintCentroidShapeInput : public FootprintCentroidInput {
     typedef std::vector<FootprintCentroidShapeInput> Vector;
 
     afw::geom::ellipses::Quadrupole shape;
+    bool shapeFlag;
 
     FootprintCentroidShapeInput(
         PTR(afw::detection::Footprint) footprint_,
         afw::geom::Point2D const & position_,
-        afw::geom::ellipses::Quadrupole const & shape_
-    ) : FootprintCentroidInput(footprint_, position_), shape(shape_) {}
+        afw::geom::ellipses::Quadrupole const & shape_,
+        bool const & shapeFlag_
+    ) : FootprintCentroidInput(footprint_, position_), shape(shape_), shapeFlag(shapeFlag_) {}
 
     explicit FootprintCentroidShapeInput(afw::table::SourceRecord const & record) :
-        FootprintCentroidInput(record), shape(record.getShape())
+        FootprintCentroidInput(record), shape(record.getShape()), shapeFlag(record.getShapeFlag())
     {}
 
     static Vector makeVector(afw::table::SourceCatalog const & catalog);

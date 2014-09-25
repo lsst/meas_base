@@ -133,8 +133,8 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
         # TODO: check flags
 
     def measure(self, measRecord, exposure):
-        inputs = self.AlgClass.Input(measRecord)
         self.result = self.AlgClass.Result()
+        inputs = self.AlgClass.Input(measRecord)
         self.AlgClass.apply(exposure, inputs, self.result, self.config.makeControl())
         self.resultMapper.apply(measRecord, self.result)
 
