@@ -79,7 +79,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             xycov = record.get("base_SdssCentroid_x_y_Cov")
 
             self.assertFalse(record.get("base_SdssCentroid_flag"))
-            self.assertFalse(record.get("base_SdssCentroid_flag_noPsf"))
             self.assertFalse(record.get("base_SdssCentroid_flag_badData"))
             self.assertFalse(record.get("base_SdssCentroid_flag_edge"))
             self.assertClose(peakX, x, atol=None, rtol=.02)

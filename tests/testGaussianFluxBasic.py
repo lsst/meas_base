@@ -70,7 +70,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             srcRec = srccat[i]
             # check all the flags
             self.assertFalse(record.get("base_GaussianFlux_flag") and not record.get("base_SdssShape_flag"))
-            self.assertFalse(record.get("base_GaussianFlux_flag_noPsf"))
             self.assertFalse(record.get("base_GaussianFlux_flag_noGoodPixels"))
             self.assertFalse(record.get("base_GaussianFlux_flag_edge"))
             # check the slots

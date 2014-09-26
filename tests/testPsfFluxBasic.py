@@ -73,7 +73,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             srcRec = srccat[i]
             # check all the flags
             self.assertFalse(record.get("base_PsfFlux_flag"))
-            self.assertFalse(record.get("base_PsfFlux_flag_noPsf"))
             self.assertFalse(record.get("base_PsfFlux_flag_noGoodPixels"))
             self.assertFalse(record.get("base_PsfFlux_flag_edge"))
             flux = record.get("base_PsfFlux_flux")

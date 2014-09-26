@@ -70,7 +70,6 @@ public:
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
     enum FlagBits {
-        NO_PSF,
         EDGE,
         BAD_DATA,
         N_FLAGS
@@ -82,7 +81,6 @@ public:
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
         static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
-                {"noPsf", "Exposure has no attached Psf"},
                 {"badData", "Algorithm could not measure this data"},
                 {"edge", "Object too close to edge"}
             }};
