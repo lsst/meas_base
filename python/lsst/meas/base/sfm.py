@@ -72,7 +72,7 @@ class SingleFramePlugin(BasePlugin):
         @param[in]  others       A PluginMap of previously-initialized plugins
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
-        super(SingleFramePlugin, self).__init__()
+        BasePlugin.__init__(self)
         self.config = config
         self.name = name
 
@@ -128,7 +128,7 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
     AlgClass = None
 
     def __init__(self, config, name, schema, flags, others, metadata):
-        super(WrappedSingleFramePlugin, self).__init__(config, name, schema, flags, others, metadata)
+        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
         self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
         # TODO: check flags
 

@@ -82,7 +82,7 @@ class ForcedPlugin(BasePlugin):
         @param[in]  others       A PluginMap of previously-initialized plugins
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
-        super(ForcedPlugin, self).__init__()
+        BasePlugin.__init__(self)
         self.config = config
         self.name = name
 
@@ -153,7 +153,7 @@ class WrappedForcedPlugin(ForcedPlugin):
     AlgClass = None
 
     def __init__(self, config, name, schemaMapper, flags, others, metadata):
-        super(WrappedForcedPlugin, self).__init__(config, name, schemaMapper, flags, others, metadata)
+        ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
         schema = schemaMapper.editOutputSchema()
         self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
         # TODO: check flags
