@@ -417,10 +417,11 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             newSource = sources.addNew()
             newSource.assign(ref, self.mapper)
             footprint = newSource.getFootprint()
-            # if heavy, just transform the "light footprint" and leave the rest behind
-            if footprint.isHeavy():
-                footprint = lsst.afw.detection.Footprint(footprint)
-            if not refWcs == targetWcs:
-                footprint = footprint.transform(refWcs, targetWcs, expRegion, True)
-            newSource.setFootprint(footprint)
+            if footprint is not None:
+                # if heavy, just transform the "light footprint" and leave the rest behind
+                if footprint.isHeavy():
+                    footprint = lsst.afw.detection.Footprint(footprint)
+                if not refWcs == targetWcs:
+                    footprint = footprint.transform(refWcs, targetWcs, expRegion, True)
+                newSource.setFootprint(footprint)
         return sources
