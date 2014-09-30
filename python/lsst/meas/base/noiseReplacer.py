@@ -428,3 +428,19 @@ class VariancePlaneNoiseGenerator(GaussianNoiseGenerator):
             rim += self.mean
         return rim
 
+
+class DummyNoiseReplacer(object):
+    """!
+    A do-nothing standin for NoiseReplacer, used when we want to disable NoiseReplacer
+
+    DummyNoiseReplacer has all the public methods of NoiseReplacer, but none of them do anything.
+    """
+
+    def insertSource(self, id):
+        pass
+
+    def removeSource(self, id):
+        pass
+
+    def end(self):
+        pass

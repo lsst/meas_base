@@ -34,7 +34,7 @@ import lsst.pipe.base
 import lsst.daf.base
 
 from .base import BasePlugin, BasePluginConfig, BaseMeasurementConfig, BaseMeasurementTask, \
-    PluginRegistry, generateAlgorithmName, NoiseReplacer
+    PluginRegistry, generateAlgorithmName, NoiseReplacer, DummyNoiseReplacer
 
 __all__ = ("SingleFramePluginConfig", "SingleFramePlugin", "WrappedSingleFramePlugin",
            "SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
@@ -359,7 +359,10 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         # of the source pixels so that they can be restored one at a time for measurement.
         # After the NoiseReplacer is constructed, all pixels in the exposure.getMaskedImage()
         # which belong to objects in measCat will be replaced with noise
-        noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
+        if self.config.doReplaceWithNoise:
+            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
+        else:
+            noiseReplacer = DummyNoiseReplacer()
 
         # First, create a catalog of all parentless sources
         # Loop through all the parent sources, first processing the children, then the parent

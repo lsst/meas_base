@@ -51,7 +51,7 @@ import lsst.pex.config
 import lsst.pipe.base
 
 from .base import BasePlugin, BasePluginConfig, BaseMeasurementConfig, BaseMeasurementTask, \
-    PluginRegistry, generateAlgorithmName, NoiseReplacer
+    PluginRegistry, generateAlgorithmName, NoiseReplacer, DummyNoiseReplacer
 
 __all__ = ("ForcedPluginConfig", "ForcedPlugin", "WrappedForcedPlugin",
            "ForcedMeasurementConfig", "ForcedMeasurementTask")
@@ -355,7 +355,10 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.config.slots.setupTable(sources.table)
 
         # convert the footprints to the coordinate system of the exposure
-        noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
+        if self.config.doReplaceWithNoise:
+            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
+        else:
+            noiseReplacer = DummyNoiseReplacer()
 
         # Create parent cat which slices both the referenceCat and measCat (sources)
         # first, get the reference and source records which have no parent
