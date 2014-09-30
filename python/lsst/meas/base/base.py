@@ -130,6 +130,29 @@ class PluginRegistry(lsst.pex.config.Registry):
     def makeField(self, doc, default=None, optional=False, multi=False):
         return lsst.pex.config.RegistryField(doc, self, default, optional, multi)
 
+
+def register(name):
+    """!
+    A Python decorator to invoke register(name), on a base class's PluginRegistry.
+    For example,
+    @code
+    @register("base_TransformedCentroid")
+    class ForcedTransformedCentroidPlugin(ForcedPlugin):
+        ...
+    @endcode
+    is equivalent to:
+    @code
+    class ForcedTransformedCentroidPlugin(ForcedPlugin):
+        ...
+    @ForcedPlugin.registry.register("base_TransformedCentroid", ForcedTransformedCentroidPlugin)
+    @enedcode
+    """
+    def decorate(PluginClass):
+        PluginClass.registry.register(name, PluginClass)
+        return PluginClass
+    return decorate
+
+
 class PluginMap(collections.OrderedDict):
     """!
     Map of plugins to be run for a task
