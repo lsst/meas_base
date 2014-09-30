@@ -360,7 +360,8 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         # of the source pixels so that they can be restored one at a time for measurement.
         # After the NoiseReplacer is constructed, all pixels in the exposure.getMaskedImage()
         # which belong to objects in measCat will be replaced with noise
-        noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
+        if self.config.doReplaceWithNoise:
+            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
 
         # First, create a catalog of all parentless sources
         # Loop through all the parent sources, first processing the children, then the parent
@@ -374,18 +375,23 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
             measChildCat = measCat.getChildren(measParentRecord.getId())
             # TODO: skip this loop if there are no plugins configured for single-object mode
             for measChildRecord in measChildCat:
-                noiseReplacer.insertSource(measChildRecord.getId())
+                if self.config.doReplaceWithNoise:
+                    noiseReplacer.insertSource(measChildRecord.getId())
                 self.callMeasure(measChildRecord, exposure)
-                noiseReplacer.removeSource(measChildRecord.getId())
+                if self.config.doReplaceWithNoise:
+                    noiseReplacer.removeSource(measChildRecord.getId())
             # Then insert the parent footprint, and measure that
-            noiseReplacer.insertSource(measParentRecord.getId())
+            if self.config.doReplaceWithNoise:
+                noiseReplacer.insertSource(measParentRecord.getId())
             self.callMeasure(measParentRecord, exposure)
             # Finally, process both the parent and the child set through measureN
             self.callMeasureN(measParentCat[parentIdx:parentIdx+1], exposure)
             self.callMeasureN(measChildCat, exposure)
-            noiseReplacer.removeSource(measParentRecord.getId())
+            if self.config.doReplaceWithNoise:
+                noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
-        noiseReplacer.end()
+        if self.config.doReplaceWithNoise:
+            noiseReplacer.end()
 
     def measure(self, measCat, exposure):
         """!

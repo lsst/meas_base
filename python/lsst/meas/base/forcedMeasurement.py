@@ -355,7 +355,8 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.config.slots.setupTable(sources.table)
 
         # convert the footprints to the coordinate system of the exposure
-        noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
+        if self.config.doReplaceWithNoise:
+            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
 
         # Create parent cat which slices both the referenceCat and measCat (sources)
         # first, get the reference and source records which have no parent
@@ -366,19 +367,24 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             refChildCat, measChildCat = referenceCat.getChildren(refParentRecord.getId(), sources)
             # TODO: skip this loop if there are no plugins configured for single-object mode
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
-                noiseReplacer.insertSource(refChildRecord.getId())
+                if self.config.doReplaceWithNoise:
+                    noiseReplacer.insertSource(refChildRecord.getId())
                 self.callMeasure(measChildRecord, exposure, refChildRecord, refWcs)
-                noiseReplacer.removeSource(refChildRecord.getId())
+                if self.config.doReplaceWithNoise:
+                    noiseReplacer.removeSource(refChildRecord.getId())
 
             # then process the parent record
-            noiseReplacer.insertSource(refParentRecord.getId())
+            if self.config.doReplaceWithNoise:
+                noiseReplacer.insertSource(refParentRecord.getId())
             self.callMeasure(measParentRecord, exposure, refParentRecord, refWcs)
             self.callMeasureN(measParentCat[parentIdx:parentIdx+1], exposure,
                               refParentCat[parentIdx:parentIdx+1])
             # measure all the children simultaneously
             self.callMeasureN(measChildCat, exposure, refChildCat)
-            noiseReplacer.removeSource(refParentRecord.getId())
-        noiseReplacer.end()
+            if self.config.doReplaceWithNoise:
+                noiseReplacer.removeSource(refParentRecord.getId())
+        if self.config.doReplaceWithNoise:
+            noiseReplacer.end()
         return lsst.pipe.base.Struct(sources=sources)
 
     def generateSources(self, exposure, refCat, refWcs, idFactory=None):
