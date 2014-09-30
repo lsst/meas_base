@@ -120,6 +120,7 @@ class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
         SingleFramePluginConfig.setDefaults(self)
         self.executionOrder = 0.0
 
+@register("base_PeakCentroid")
 class SingleFramePeakCentroidPlugin(SingleFramePlugin):
     """
     A centroid algorithm that simply uses the first (i.e. highest) Peak in the Source's
@@ -139,8 +140,6 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
         measRecord.set(self.keyX, peak.getFx())
         measRecord.set(self.keyY, peak.getFy())
 
-SingleFramePlugin.registry.register("base_PeakCentroid", SingleFramePeakCentroidPlugin)
-
 
 class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
 
@@ -148,6 +147,7 @@ class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
         SingleFramePluginConfig.setDefaults(self)
         self.executionOrder = 5.0
 
+@register("base_SkyCoord")
 class SingleFrameSkyCoordPlugin(SingleFramePlugin):
     """
     A measurement plugin that sets the "coord" field (part of the Source minimal schema)
@@ -168,8 +168,6 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
         # Should consider fixing as part of DM-1011
         pass
 
-SingleFramePlugin.registry.register("base_SkyCoord", SingleFrameSkyCoordPlugin)
-
 class SingleFrameClassificationConfig(SingleFramePluginConfig):
 
     fluxRatio = lsst.pex.config.Field(dtype=float, default=.925, optional=True,
@@ -182,6 +180,7 @@ class SingleFrameClassificationConfig(SingleFramePluginConfig):
         SingleFramePluginConfig.setDefaults(self)
         self.executionOrder = 5.0
 
+@register("base_ClassificationExtendedness")
 class SingleFrameClassificationPlugin(SingleFramePlugin):
     """
     A binary measure of the extendedness of a source, based a simple cut on the ratio of the
@@ -217,7 +216,6 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
         # instead.
         pass
 
-SingleFramePlugin.registry.register("base_ClassificationExtendedness", SingleFrameClassificationPlugin)
 
 # --- Forced Plugins ---
 
@@ -227,6 +225,7 @@ class ForcedPeakCentroidConfig(ForcedPluginConfig):
         ForcedPluginConfig.setDefaults(self)
         self.executionOrder = 0.0
 
+@register("base_PeakCentroid")
 class ForcedPeakCentroidPlugin(ForcedPlugin):
     """
     The forced peak centroid is like the SFM peak centroid plugin, except that it must transform
@@ -250,8 +249,6 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
         measRecord.set(self.keyX, result.getX())
         measRecord.set(self.keyY, result.getY())
 
-ForcedPlugin.registry.register("base_PeakCentroid", ForcedPeakCentroidPlugin)
-
 
 class ForcedTransformedCentroidConfig(ForcedPluginConfig):
 
@@ -259,6 +256,7 @@ class ForcedTransformedCentroidConfig(ForcedPluginConfig):
         ForcedPluginConfig.setDefaults(self)
         self.executionOrder = 0.0
 
+@register("base_TransformedCentroid")
 class ForcedTransformedCentroidPlugin(ForcedPlugin):
     """A centroid pseudo-algorithm for forced measurement that simply transforms the centroid
     from the reference catalog to the measurement coordinate system.  This is used as
@@ -294,8 +292,6 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
         if self.flagKey is not None:
             measRecord.set(self.flagKey, refRecord.getCentroidFlag())
 
-ForcedPlugin.registry.register("base_TransformedCentroid", ForcedTransformedCentroidPlugin)
-
 
 class ForcedTransformedShapeConfig(ForcedPluginConfig):
 
@@ -303,6 +299,7 @@ class ForcedTransformedShapeConfig(ForcedPluginConfig):
         ForcedPluginConfig.setDefaults(self)
         self.executionOrder = 1.0
 
+@register("base_TransformedShape")
 class ForcedTransformedShapePlugin(ForcedPlugin):
     """A shape pseudo-algorithm for forced measurement that simply transforms the shape
     from the reference catalog to the measurement coordinate system.  This is used as
@@ -340,6 +337,3 @@ class ForcedTransformedShapePlugin(ForcedPlugin):
             measRecord.set(self.shapeKey, refRecord.getShape().transform(localTransform.getLinear()))
         if self.flagKey is not None:
             measRecord.set(self.flagKey, refRecord.getShapeFlag())
-
-ForcedPlugin.registry.register("base_TransformedShape", ForcedTransformedShapePlugin)
-
