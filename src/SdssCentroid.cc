@@ -36,12 +36,12 @@
 namespace lsst { namespace meas { namespace base {
 
 namespace {
-    
+
 /************************************************************************************************************/
 
 float const AMPAST4 = 1.33;           // amplitude of `4th order' corr compared to theory
 
-/* 
+/*
  * Do the Gaussian quartic interpolation for the position
  * of the maximum for three equally spaced values vm,v0,vp, assumed to be at
  * abscissae -1,0,1; the answer is returned as *cen
@@ -57,9 +57,9 @@ static int inter4(float vm, float v0, float vp, float *cen) {
     if (d2 <= 0.0f || v0 <= 0.0f) {
         return(1);
     }
-    
+
     *cen = s/d2*(1.0 + AMPAST4*sp*sm/(d2*v0));
-    
+
     return fabs(*cen) < 1 ? 0 : 1;
 }
 
@@ -81,7 +81,7 @@ float astrom_errors(float skyVar,       // variance of pixels at the sky level
     float const sigma2 = sigma*sigma;   /* == sigma^2 */
     float sVar, dVar;                   /* variances of s and d */
     float xVar;                         /* variance of centroid, x */
-    
+
     if (fabs(As) < std::numeric_limits<float>::min() ||
         fabs(d)  < std::numeric_limits<float>::min()) {
         return(1e3);
@@ -109,7 +109,7 @@ float astrom_errors(float skyVar,       // variance of pixels at the sky level
 
 /************************************************************************************************************/
 /*
- * Estimate the position of an object, assuming we know that it's approximately the size of the PSF 
+ * Estimate the position of an object, assuming we know that it's approximately the size of the PSF
  */
 
 template<typename ImageXy_locatorT, typename VarImageXy_locatorT>
@@ -159,12 +159,12 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
  */
     float m0x = 0, m1x = 0, m2x = 0;
     float m0y = 0, m1y = 0, m2y = 0;
-    
+
     int quarticBad = 0;
     quarticBad += inter4(im(-1, -1), im( 0, -1), im( 1, -1), &m0x);
     quarticBad += inter4(im(-1,  0), im( 0,  0), im( 1,  0), &m1x);
     quarticBad += inter4(im(-1,  1), im( 0,  1), im( 1,  1), &m2x);
-   
+
     quarticBad += inter4(im(-1, -1), im(-1,  0), im(-1,  1), &m0y);
     quarticBad += inter4(im( 0, -1), im( 0,  0), im( 0,  1), &m1y);
     quarticBad += inter4(im( 1, -1), im( 1,  0), im( 1,  1), &m2y);
@@ -181,12 +181,12 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
         double const smx = 0.5*(m2x - m0x);
         double const smy = 0.5*(m2y - m0y);
         double const dm2x = m1x - 0.5*(m0x + m2x);
-        double const dm2y = m1y - 0.5*(m0y + m2y);      
+        double const dm2y = m1y - 0.5*(m0y + m2y);
         double const dx = m1x + dy0*(smx - dy0*dm2x); // first quartic approx
         double const dy = m1y + dx0*(smy - dx0*dm2y);
         double const dx4 = m1x + dy*(smx - dy*dm2x);    // second quartic approx
         double const dy4 = m1y + dx*(smy - dx*dm2y);
-      
+
         xc = dx4;
         yc = dy4;
         sigmaX2 = vpk/d2x - (1 + 6*dx0*dx0)/4; // widths^2 in x
@@ -196,7 +196,7 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
      * Now for the errors.
      */
     float tauX2 = sigmaX2;              // width^2 of _un_ smoothed object
-    float tauY2 = sigmaY2; 
+    float tauY2 = sigmaY2;
     tauX2 -= smoothingSigma*smoothingSigma;              // correct for smoothing
     tauY2 -= smoothingSigma*smoothingSigma;
 
@@ -207,8 +207,8 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
         tauY2 = smoothingSigma*smoothingSigma;
     }
 
-    float const skyVar = (vim(-1, -1) + vim( 0, -1) + vim( 1, -1) + 
-                          vim(-1,  0)               + vim( 1,  0) + 
+    float const skyVar = (vim(-1, -1) + vim( 0, -1) + vim( 1, -1) +
+                          vim(-1,  0)               + vim( 1,  0) +
                           vim(-1,  1) + vim( 0,  1) + vim( 1,  1))/8.0; // Variance in sky
     float const sourceVar = vim(0, 0);                         // extra variance of peak due to its photons
     float const A = vpk*sqrt((sigmaX2/tauX2)*(sigmaY2/tauY2)); // peak of Unsmoothed object
@@ -270,12 +270,12 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
  */
     float m0x = 0, m1x = 0, m2x = 0;
     float m0y = 0, m1y = 0, m2y = 0;
-    
+
     int quarticBad = 0;
     quarticBad += inter4(mim.image(-1, -1), mim.image( 0, -1), mim.image( 1, -1), &m0x);
     quarticBad += inter4(mim.image(-1,  0), mim.image( 0,  0), mim.image( 1,  0), &m1x);
     quarticBad += inter4(mim.image(-1,  1), mim.image( 0,  1), mim.image( 1,  1), &m2x);
-   
+
     quarticBad += inter4(mim.image(-1, -1), mim.image(-1,  0), mim.image(-1,  1), &m0y);
     quarticBad += inter4(mim.image( 0, -1), mim.image( 0,  0), mim.image( 0,  1), &m1y);
     quarticBad += inter4(mim.image( 1, -1), mim.image( 1,  0), mim.image( 1,  1), &m2y);
@@ -292,12 +292,12 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
         double const smx = 0.5*(m2x - m0x);
         double const smy = 0.5*(m2y - m0y);
         double const dm2x = m1x - 0.5*(m0x + m2x);
-        double const dm2y = m1y - 0.5*(m0y + m2y);      
+        double const dm2y = m1y - 0.5*(m0y + m2y);
         double const dx = m1x + dy0*(smx - dy0*dm2x); // first quartic approx
         double const dy = m1y + dx0*(smy - dx0*dm2y);
         double const dx4 = m1x + dy*(smx - dy*dm2x);    // second quartic approx
         double const dy4 = m1y + dx*(smy - dx*dm2y);
-      
+
         xc = dx4;
         yc = dy4;
         sigmaX2 = vpk/d2x - (1 + 6*dx0*dx0)/4; // widths^2 in x
@@ -307,7 +307,7 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
      * Now for the errors.
      */
     float tauX2 = sigmaX2;              // width^2 of _un_ smoothed object
-    float tauY2 = sigmaY2; 
+    float tauY2 = sigmaY2;
     tauX2 -= smoothingSigma*smoothingSigma;              // correct for smoothing
     tauY2 -= smoothingSigma*smoothingSigma;
 
@@ -318,8 +318,8 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
         tauY2 = smoothingSigma*smoothingSigma;
     }
 
-    float const skyVar = (mim.variance(-1, -1) + mim.variance( 0, -1) + mim.variance( 1, -1) + 
-                          mim.variance(-1,  0)                        + mim.variance( 1,  0) + 
+    float const skyVar = (mim.variance(-1, -1) + mim.variance( 0, -1) + mim.variance( 1, -1) +
+                          mim.variance(-1,  0)                        + mim.variance( 1,  0) +
                           mim.variance(-1,  1) + mim.variance( 0,  1) + mim.variance( 1,  1)
                          )/8.0; // Variance in sky
     float const sourceVar = mim.variance(0, 0);                // extra variance of peak due to its photons
@@ -335,7 +335,7 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     *sizeY2 = tauY2;
 
     *peakVal = vpk;
-}    
+}
 
 template<typename MaskedImageT>
 std::pair<MaskedImageT, double>
@@ -359,12 +359,12 @@ smoothAndBinImage(CONST_PTR(lsst::afw::detection::Psf) psf,
 
     lsst::afw::geom::BoxI bbox(lsst::afw::geom::Point2I(x - binX*(2 + kWidth/2), y - binY*(2 + kHeight/2)),
                        lsst::afw::geom::ExtentI(binX*(3 + kWidth + 1), binY*(3 + kHeight + 1)));
-        
+
     // image to smooth, a shallow copy
     MaskedImageT subImage = MaskedImageT(mimage, bbox, lsst::afw::image::LOCAL);
     PTR(MaskedImageT) binnedImage = lsst::afw::math::binImage(subImage, binX, binY, lsst::afw::math::MEAN);
     binnedImage->setXY0(subImage.getXY0());
-    // image to smooth into, a deep copy.  
+    // image to smooth into, a deep copy.
     MaskedImageT smoothedImage = MaskedImageT(*binnedImage, true);
     assert(smoothedImage.getWidth()/2  == kWidth/2  + 2); // assumed by the code that uses smoothedImage
     assert(smoothedImage.getHeight()/2 == kHeight/2 + 2);
