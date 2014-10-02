@@ -240,8 +240,11 @@ class AlgorithmTestCase(lsst.utils.tests.TestCase):
         config.plugins.names = (plugin,) + tuple(dependencies)
         schemaMapper = lsst.afw.table.SchemaMapper(self.truth.schema)
         schemaMapper.addMinimalSchema(self.truth.schema)
-        task = SingleFrameMeasurementTask(schema=schemaMapper.editOutputSchema(), config=config, flags=flags)
+        algMetadata = lsst.daf.base.PropertyList()
+        task = SingleFrameMeasurementTask(schema=schemaMapper.editOutputSchema(), algMetadata=algMetadata,
+                                          config=config, flags=flags)
         measCat = lsst.afw.table.SourceCatalog(task.schema)
+        measCat.table.setMetadata(algMetadata)
         measCat.extend(self.truth, schemaMapper)
         measCat.getTable().defineModelFlux("truth")
         measCat.getTable().defineCentroid("truth")

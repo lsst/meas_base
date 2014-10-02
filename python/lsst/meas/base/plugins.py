@@ -58,6 +58,60 @@ WrappedForcedPlugin.generate(GaussianFluxAlgorithm)
 WrappedForcedPlugin.generate(NaiveCentroidAlgorithm, executionOrder=0.0)
 WrappedForcedPlugin.generate(PeakLikelihoodFluxAlgorithm)
 
+# --- Aperture Flux Measurement Plugins ---
+
+# The aperture flux algorithms are wrapped differently (and more verbosely) than the rest, because
+# the C++ wrapping mechanism we originally came up with wasn't sufficiently general to handle
+# algorithms with a dynamically-determined set of flag fields.  That will be fixed in the future
+# in DM-1130.
+
+class CircularApertureFluxSingleFramePlugin(SingleFramePlugin):
+    """!
+    Measure a sequence of circular aperture fluxes.
+
+    See the C++ CircularApertureFluxAlgorithm class for more information.
+    """
+
+    ConfigClass = lsst.pex.config.makeConfigClass(
+        ApertureFluxControl,
+        base=SingleFramePlugin.ConfigClass
+    )
+
+    def __init__(self, config, name, schema, flags, others, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
+        for radius in self.config.radii:
+            metadata.add("base_CircularApertureFlux_radii", radius)
+        self.algorithm = CircularApertureFluxAlgorithm(config.makeControl(), name, schema)
+
+    def measure(self, measRecord, exposure):
+        self.algorithm.measure(measRecord, exposure)
+
+SingleFramePlugin.registry.register("base_CircularApertureFlux", CircularApertureFluxSingleFramePlugin)
+
+class CircularApertureFluxForcedPlugin(ForcedPlugin):
+    """!
+    Measure a sequence of circular aperture fluxes.
+
+    See the C++ CircularApertureFluxAlgorithm class for more information.
+    """
+
+    ConfigClass = lsst.pex.config.makeConfigClass(
+        ApertureFluxControl,
+        base=ForcedPlugin.ConfigClass
+    )
+
+    def __init__(self, config, name, schemaMapper, flags, others, metadata):
+        ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
+        for radius in self.config.radii:
+            metadata.add("base_CircularApertureFlux_radii", radius)
+        schema = schemaMapper.editOutputSchema()
+        self.algorithm = CircularApertureFluxAlgorithm(config.makeControl(), name, schema)
+
+    def measure(self, measRecord, exposure, refRecord, refWcs):
+        self.algorithm.measure(measRecord, exposure)
+
+ForcedPlugin.registry.register("base_CircularApertureFlux", CircularApertureFluxForcedPlugin)
+
 # --- Single-Frame Measurement Plugins ---
 
 class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
