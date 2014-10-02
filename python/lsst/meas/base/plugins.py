@@ -235,6 +235,8 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
         if not refWcs == targetWcs:
             targetPos = targetWcs.skyToPixel(refWcs.pixelToSky(refRecord.getCentroid()))
             measRecord.set(self.centroidKey, targetPos)
+        else:
+            measRecord.set(self.centroidKey, refRecord.getCentroid())
         if self.flagKey is not None:
             measRecord.set(self.flagKey, refRecord.getCentroidFlag())
 
@@ -269,7 +271,7 @@ class ForcedTransformedShapePlugin(ForcedPlugin):
         # Because we're taking the reference position as given, we don't bother transforming its
         # uncertainty and reporting that here, so there are no sigma or cov fields.  We do propagate
         # the flag field, if it exists.
-        if "slot_shape_flag" in schemaMapper.getInputSchema():
+        if "slot_Shape_flag" in schemaMapper.getInputSchema():
             self.flagKey = schema.addField(name + "_flag", type="Flag",
                                            doc="whether the reference shape is marked as bad")
         else:
@@ -281,5 +283,7 @@ class ForcedTransformedShapePlugin(ForcedPlugin):
             fullTransform = lsst.afw.image.XYTransformFromWcsPair(targetWcs, refWcs)
             localTransform = fullTransform.linearizeForwardTransform(refRecord.getCentroid())
             measRecord.set(self.shapeKey, refRecord.getShape().transform(localTransform.getLinear()))
+        else:
+            measRecord.set(self.shapeKey, refRecord.getShape())
         if self.flagKey is not None:
             measRecord.set(self.flagKey, refRecord.getShapeFlag())
