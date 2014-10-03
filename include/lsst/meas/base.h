@@ -38,5 +38,7 @@
 #include "lsst/meas/base/NaiveFlux.h"
 #include "lsst/meas/base/NaiveCentroid.h"
 #include "lsst/meas/base/PeakLikelihoodFlux.h"
+#include "lsst/meas/base/ApertureFlux.h"
+#include "lsst/meas/base/CircularApertureFlux.h"
 
 #endif // !LSST_MEAS_base_h_INCLUDED
