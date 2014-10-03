@@ -119,7 +119,7 @@ static void dcalc2(Fit2d *fit,                  // the struct carrying all the f
     double const x0 = el[FittedModel::X0];
     double const y0 = el[FittedModel::Y0];
     double const s = el[FittedModel::SIGMA];
-    
+
     if (a <= 0.0) {
         fit->status = FittedModel::BAD_A;
         return;
@@ -129,7 +129,7 @@ static void dcalc2(Fit2d *fit,                  // the struct carrying all the f
     } else {
         fit->status = 0;
     }
-    
+
     beta->setZero();
     alpha->setZero();
 
@@ -142,7 +142,7 @@ static void dcalc2(Fit2d *fit,                  // the struct carrying all the f
         double const dx = (fit->rast[i].x - x0)/s;
         double const dy = (fit->rast[i].y - y0)/s;
         double const d = hypot(dx, dy);
-        
+
         if (d >= fit->dc2zmin && d <= fit->dc2zmax) {
             double const arg = exp(-d*d/2.0);
             double const funct = a*arg + b;
@@ -300,7 +300,7 @@ static void cond2(Fit2d *fit) {
         fit->status = FittedModel::BAD_WIDTH;
         return;
     }
-    
+
     double const ex = fabs(fit->param[FittedModel::X0] - fit->elnew[FittedModel::X0]);
     double const ey = fabs(fit->param[FittedModel::Y0] - fit->elnew[FittedModel::Y0]);
     if (ex > fit->lost || ey > fit->lost) {
@@ -482,10 +482,6 @@ FittedModel twodg(afw::image::Image<PixelT> const& im,           ///< The image 
         curf2(&fit);
         cond2(&fit);
     }
-
-#if 0
-    twodgMinuit(&fit);
-#endif
 
     std::vector<double> params(FittedModel::NPARAM);
     std::copy(&fit.elnew[0], &fit.elnew[0] + fit.elnew.size(), params.begin());

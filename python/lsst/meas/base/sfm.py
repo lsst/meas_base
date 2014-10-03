@@ -209,7 +209,6 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
                  "base_NaiveFlux",
                  "base_PsfFlux",
                  "base_SincFlux",
-                 "base_PeakLikelihoodFlux",
                  "base_ClassificationExtendedness",
                  "base_SkyCoord",
                  ],
@@ -331,8 +330,8 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
             self.plugins[name] = PluginClass(config, name, schema=schema, flags=flags,
                 others=self.plugins, metadata=self.algMetadata)
-           
-        
+
+
 
     def run(self, measCat, exposure):
         """!
