@@ -51,7 +51,7 @@ import lsst.pex.config
 import lsst.pipe.base
 
 from .base import BasePlugin, BasePluginConfig, BaseMeasurementConfig, BaseMeasurementTask, \
-    PluginRegistry, generateAlgorithmName, NoiseReplacer
+    PluginRegistry, generateAlgorithmName, NoiseReplacer, DummyNoiseReplacer
 
 __all__ = ("ForcedPluginConfig", "ForcedPlugin", "WrappedForcedPlugin",
            "ForcedMeasurementConfig", "ForcedMeasurementTask")
@@ -82,7 +82,7 @@ class ForcedPlugin(BasePlugin):
         @param[in]  others       A PluginMap of previously-initialized plugins
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
-        super(ForcedPlugin, self).__init__()
+        BasePlugin.__init__(self)
         self.config = config
         self.name = name
 
@@ -153,7 +153,7 @@ class WrappedForcedPlugin(ForcedPlugin):
     AlgClass = None
 
     def __init__(self, config, name, schemaMapper, flags, others, metadata):
-        super(WrappedForcedPlugin, self).__init__(config, name, schemaMapper, flags, others, metadata)
+        ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
         schema = schemaMapper.editOutputSchema()
         self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
         # TODO: check flags
@@ -355,7 +355,10 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.config.slots.setupTable(sources.table)
 
         # convert the footprints to the coordinate system of the exposure
-        noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
+        if self.config.doReplaceWithNoise:
+            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
+        else:
+            noiseReplacer = DummyNoiseReplacer()
 
         # Create parent cat which slices both the referenceCat and measCat (sources)
         # first, get the reference and source records which have no parent
@@ -414,10 +417,11 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             newSource = sources.addNew()
             newSource.assign(ref, self.mapper)
             footprint = newSource.getFootprint()
-            # if heavy, just transform the "light footprint" and leave the rest behind
-            if footprint.isHeavy():
-                footprint = lsst.afw.detection.Footprint(footprint)
-            if not refWcs == targetWcs:
-                footprint = footprint.transform(refWcs, targetWcs, expRegion, True)
-            newSource.setFootprint(footprint)
+            if footprint is not None:
+                # if heavy, just transform the "light footprint" and leave the rest behind
+                if footprint.isHeavy():
+                    footprint = lsst.afw.detection.Footprint(footprint)
+                if not refWcs == targetWcs:
+                    footprint = footprint.transform(refWcs, targetWcs, expRegion, True)
+                newSource.setFootprint(footprint)
         return sources
