@@ -1,3 +1,4 @@
+#if 0
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
@@ -54,3 +55,4 @@ void CircularApertureFluxAlgorithm::measure(
 }
 
 }}} // namespace lsst::meas::base
+#endif

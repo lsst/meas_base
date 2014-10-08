@@ -28,6 +28,7 @@
 #include "lsst/meas/base/Results.h"
 #include "lsst/meas/base/ResultMappers.h"
 #include "lsst/meas/base/Inputs.h"
+#if 0
 #include "lsst/meas/base/PsfFlux.h"
 #include "lsst/meas/base/SincFlux.h"
 #include "lsst/meas/base/SdssCentroid.h"
@@ -40,5 +41,6 @@
 #include "lsst/meas/base/PeakLikelihoodFlux.h"
 #include "lsst/meas/base/ApertureFlux.h"
 #include "lsst/meas/base/CircularApertureFlux.h"
+#endif
 
 #endif // !LSST_MEAS_base_h_INCLUDED

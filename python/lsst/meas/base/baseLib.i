@@ -203,6 +203,8 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
                             ALGORITHM##Result4, ALGORITHM##ResultMapper4)
 %enddef
 
+#if 0
+
 %include "lsst/meas/base/PsfFlux.h"
 %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<double>;
@@ -263,9 +265,13 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %wrapMeasurementAlgorithm0(lsst::meas::base, PixelFlagsAlgorithm, PixelFlagsControl, FootprintCentroidInput)
 %include "lsst/meas/base/PixelFlags.h"
 
+#endif
+
 %import "lsst/pex/exceptions/exceptionsLib.i"
 %declareException(MeasurementError, lsst.pex.exceptions.RuntimeError, lsst::meas::base::MeasurementError)
 %declareException(FatalAlgorithmError, lsst.pex.exceptions.RuntimeError, lsst::meas::base::FatalAlgorithmError)
 %declareException(PixelValueError, lsst.pex.exceptions.DomainError, lsst::meas::base::PixelValueError)
 
+#if 0
 %include "lsst/meas/base/ApertureFlux.i"
+#endif

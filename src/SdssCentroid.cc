@@ -1,3 +1,4 @@
+#if 0
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
@@ -523,3 +524,4 @@ INSTANTIATE(double);
 
 }}} // end namespace lsst::meas::base
 
+#endif

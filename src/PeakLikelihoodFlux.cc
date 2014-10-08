@@ -1,3 +1,4 @@
+#if 0
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
@@ -270,3 +271,4 @@ INSTANTIATE(float);
 INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
+#endif
