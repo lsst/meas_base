@@ -33,6 +33,7 @@
 #include "lsst/meas/base/ShapeUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"
+#include "lsst/meas/base/Algorithm.h"
 #include "lsst/meas/base/PsfFlux.h"
 #include "lsst/meas/base/SincFlux.h"
 #include "lsst/meas/base/SdssCentroid.h"
