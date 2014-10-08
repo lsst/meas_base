@@ -33,35 +33,9 @@
 #include "lsst/afw/geom/Point.h"
 #include "lsst/afw/geom/ellipses/Quadrupole.h"
 #include "lsst/meas/base/exceptions.h"
+#include "lsst/meas/base/constants.h"
 
 namespace lsst { namespace meas { namespace base {
-
-/**
- *  @brief An enum used to specify how much uncertainty information measurement algorithms provide.
- *
- *  Currently, only ResultMappers (not Results) make use of these distinctions; Result structs always
- *  have data members that could hold the full-covariance, but may set some of these to NaN.  The
- *  ResultMapper knows that their individual compoents may only produce a sigma, or no error field
- *  at all.  When the Results are written to the output record, this information is heeded.
- */
-enum UncertaintyEnum {
-    NO_UNCERTAINTY = 0, ///< Algorithm provides no uncertainy information at all
-    SIGMA_ONLY = 1,     ///< Only the diagonal elements of the covariance matrix are provided
-    FULL_COVARIANCE = 2 ///< The full covariance matrix is provided
-};
-
-//@{ Typedefs that define the C++ types we typically use for common measurements
-typedef int ElementCount;
-typedef double Flux;
-typedef double FluxErrElement;
-typedef float ErrElement;
-typedef double CentroidElement;
-typedef double ShapeElement;
-typedef afw::geom::Point<CentroidElement,2> Centroid;
-typedef Eigen::Matrix<ErrElement,2,2,Eigen::DontAlign> CentroidCov;
-typedef afw::geom::ellipses::Quadrupole Shape;
-typedef Eigen::Matrix<ErrElement,3,3,Eigen::DontAlign> ShapeCov;
-//@}
 
 /**
  *  @brief Simple POD struct used to define and document flags
