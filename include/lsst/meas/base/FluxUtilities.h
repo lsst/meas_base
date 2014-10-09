@@ -75,7 +75,10 @@ public:
     FluxResultKey() : _flux(), _fluxSigma() {}
 
     /// Construct from a pair of Keys
-    FluxResultKey(afw::table::Key<Flux> const & flux, afw::table::Key<FluxErrElement> const & fluxSigma) :
+    FluxResultKey(
+        afw::table::Key<meas::base::Flux> const & flux,  // namespace qualification to unconfuse swig
+        afw::table::Key<FluxErrElement> const & fluxSigma
+    ) :
         _flux(flux), _fluxSigma(fluxSigma)
     {}
 
@@ -108,7 +111,7 @@ public:
     bool isValid() const { return _flux.isValid() && _fluxSigma.isValid(); }
 
     /// Return the underlying flux Key
-    afw::table::Key<Flux> getFlux() const { return _flux; }
+    afw::table::Key<meas::base::Flux> getFlux() const { return _flux; }
 
     /// Return the underlying fluxSigma Key
     afw::table::Key<FluxErrElement> getFluxSigma() const { return _fluxSigma; }
