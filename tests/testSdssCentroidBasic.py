@@ -23,6 +23,7 @@
 
 import math
 import os
+import lsst.afw.image
 from lsst.afw.table import Schema, SchemaMapper, SourceCatalog, SourceTable
 from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
 from lsst.meas.base.base import *
@@ -91,6 +92,25 @@ class SdssCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             self.assertClose(xerr*xerr, cov[0,0], rtol=.01)
             self.assertClose(yerr*yerr, cov[1,1], rtol=.01)
 
+    def testEdge(self):
+        self.truth.defineCentroid("truth")
+        centroid = self.truth[0].getCentroid()
+        psfImage = self.calexp.getPsf().computeImage(centroid)
+        # construct a box that won't fit the full PSF model
+        bbox = psfImage.getBBox()
+        bbox.grow(-5)
+        subImage = lsst.afw.image.ExposureF(self.calexp, bbox)
+        subCat = self.measCat[:1]
+        # we also need to install a smaller footprint, or NoiseReplacer complains before we even get to
+        # measuring the centriod
+        measRecord = subCat[0]
+        newFootprint = lsst.afw.detection.Footprint(bbox)
+        newFootprint.getPeaks().push_back(measRecord.getFootprint().getPeaks()[0])
+        measRecord.setFootprint(newFootprint)
+        # just measure the one object we've prepared for
+        self.task.measure(subCat, subImage)
+        self.assertTrue(measRecord.get("base_SdssCentroid_flag"))
+        self.assertTrue(measRecord.get("base_SdssCentroid_flag_edge"))
 
 def suite():
     """Returns a suite containing all the test cases in this module."""

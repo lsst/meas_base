@@ -361,9 +361,18 @@ smoothAndBinImage(CONST_PTR(lsst::afw::detection::Psf) psf,
                        lsst::afw::geom::ExtentI(binX*(3 + kWidth + 1), binY*(3 + kHeight + 1)));
 
     // image to smooth, a shallow copy
-    MaskedImageT subImage = MaskedImageT(mimage, bbox, lsst::afw::image::LOCAL);
-    PTR(MaskedImageT) binnedImage = lsst::afw::math::binImage(subImage, binX, binY, lsst::afw::math::MEAN);
-    binnedImage->setXY0(subImage.getXY0());
+    PTR(MaskedImageT) subImage;
+    try {
+        subImage.reset(new MaskedImageT(mimage, bbox, lsst::afw::image::LOCAL));
+    } catch (pex::exceptions::LengthError & err) {
+        throw LSST_EXCEPT(
+            MeasurementError,
+            SdssCentroidAlgorithm::getFlagDefinitions()[SdssCentroidAlgorithm::EDGE].doc,
+            SdssCentroidAlgorithm::EDGE
+        );
+    }
+    PTR(MaskedImageT) binnedImage = lsst::afw::math::binImage(*subImage, binX, binY, lsst::afw::math::MEAN);
+    binnedImage->setXY0(subImage->getXY0());
     // image to smooth into, a deep copy.
     MaskedImageT smoothedImage = MaskedImageT(*binnedImage, true);
     assert(smoothedImage.getWidth()/2  == kWidth/2  + 2); // assumed by the code that uses smoothedImage
