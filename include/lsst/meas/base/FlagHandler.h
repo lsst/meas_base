@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2013 LSST Corporation.
+ * Copyright 2008-2014 LSST Corporation.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -47,13 +47,19 @@ class FlagHandler {
 public:
 
     explicit FlagHandler(
+        afw::table::Schema & schema,
+        std::string const & prefix,
         FlagDefinition const * begin,
         FlagDefinition const * end
     );
 
-    bool get(afw::table::BaseRecord const & record, int i) const;
+    bool get(afw::table::BaseRecord const & record, int i) const {
+        return record.get(_keys[i]);
+    }
 
-    void set(afw::table::BaseRecord & record, int i, bool value) const;
+    void set(afw::table::BaseRecord & record, int i, bool value) const {
+        record.set(_keys[i], value);
+    }
 
     void fail(afw::table::BaseRecord & record, MeasurementError const * error=NULL) const;
 
