@@ -50,8 +50,7 @@ ForcedPhotImageTask, ForcedPhotCcdTask, and ForcedPhotCoaddTask.
 import lsst.pex.config
 import lsst.pipe.base
 
-from .base import BasePlugin, BasePluginConfig, BaseMeasurementConfig, BaseMeasurementTask, \
-    PluginRegistry, generateAlgorithmName, NoiseReplacer, DummyNoiseReplacer
+from .base import *
 
 __all__ = ("ForcedPluginConfig", "ForcedPlugin", "WrappedForcedPlugin",
            "ForcedMeasurementConfig", "ForcedMeasurementTask")
@@ -156,6 +155,7 @@ class WrappedForcedPlugin(ForcedPlugin):
         ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
         schema = schemaMapper.editOutputSchema()
         self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
+        addDependencyFlagAliases(self.AlgClass, name, schema)
         # TODO: check flags
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
