@@ -70,7 +70,7 @@ public:
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
     enum FlagBits {
-        EDGE,
+        EDGE=0,
         BAD_DATA,
         N_FLAGS
     };
@@ -81,8 +81,8 @@ public:
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
         static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
-                {"badData", "Algorithm could not measure this data"},
-                {"edge", "Object too close to edge"}
+                {"edge", "Object too close to edge"},
+                {"badData", "Algorithm could not measure this data"}
             }};
         return flagDefs;
     }
