@@ -161,6 +161,9 @@ class WrappedForcedPlugin(ForcedPlugin):
     def measure(self, measRecord, exposure, refRecord, refWcs):
         result = self.AlgClass.Result()
         inputs = self.AlgClass.Input(measRecord)
+        if inputs.hasFlaggedDependencies():
+            self.fail(measRecord)
+            return  # bail out early: something we needed from another plugin failed
         try:
             self.AlgClass.apply(exposure, inputs, result, self.config.makeControl())
         finally:
@@ -171,6 +174,10 @@ class WrappedForcedPlugin(ForcedPlugin):
         inputs = self.AlgClass.Input.Vector(measCat)
         results = []
         for i in range(len(measCat)):
+            if inputs[i].hasFlaggedDependencies():
+                for measRecord in measCat:
+                    self.fail(measRecord)
+                return  # bail out early: something we needed from another plugin failed
             results.append(self.AlgClass.Result())
         try:
             self.AlgClass.applyN(exposure, inputs, results, self.config.makeControl())
