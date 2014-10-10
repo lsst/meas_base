@@ -171,7 +171,15 @@ void NaiveFluxAlgorithm::apply(
         ctrl.radius,
         imageBBox
         );
-    fluxFunctor.apply(foot);
+    try {
+        fluxFunctor.apply(foot);
+    } catch (pex::exceptions::LengthError &) {
+        throw LSST_EXCEPT(
+            MeasurementError,
+            getFlagDefinitions()[EDGE].doc,
+            EDGE
+        );
+    }
 
     result.flux = fluxFunctor.getSum();
     result.fluxSigma = ::sqrt(fluxFunctor.getSumVar());
