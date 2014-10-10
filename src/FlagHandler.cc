@@ -31,18 +31,21 @@ FlagHandler::FlagHandler(
     FlagDefinition const * begin,
     FlagDefinition const * end
 ) {
-    _keys.reserve(end - begin);
+    _vector.reserve(end - begin);
     for (FlagDefinition const * iter = begin; iter != end; ++iter) {
-        _keys.push_back(
-            schema.addField<afw::table::Flag>(schema.join(prefix, iter->name), iter->doc)
+        _vector.push_back(
+            std::make_pair(
+                *iter,
+                schema.addField<afw::table::Flag>(schema.join(prefix, iter->name), iter->doc)
+            )
         );
     }
 }
 
-void FlagHandler::fail(afw::table::BaseRecord & record, MeasurementError const * error) const {
-    record.set(_keys[0], true);
+void FlagHandler::handleFailure(afw::table::BaseRecord & record, MeasurementError const * error) const {
+    record.set(_vector[0].second, true);
     if (error) {
-        record.set(_keys[error->getFlagBit()], true);
+        record.set(_vector[error->getFlagBit()].second, true);
     }
 }
 

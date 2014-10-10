@@ -46,6 +46,8 @@ struct FlagDefinition {
 class FlagHandler {
 public:
 
+    FlagHandler() {}
+
     explicit FlagHandler(
         afw::table::Schema & schema,
         std::string const & prefix,
@@ -53,21 +55,23 @@ public:
         FlagDefinition const * end
     );
 
-    bool get(afw::table::BaseRecord const & record, int i) const {
-        return record.get(_keys[i]);
+    FlagDefinition getDefinition(int i) const { return _vector[i].first; }
+
+    bool getValue(afw::table::BaseRecord const & record, int i) const {
+        return record.get(_vector[i].second);
     }
 
-    void set(afw::table::BaseRecord & record, int i, bool value) const {
-        record.set(_keys[i], value);
+    void setValue(afw::table::BaseRecord & record, int i, bool value) const {
+        record.set(_vector[i].second, value);
     }
 
-    void fail(afw::table::BaseRecord & record, MeasurementError const * error=NULL) const;
+    void handleFailure(afw::table::BaseRecord & record, MeasurementError const * error=NULL) const;
 
 private:
 
-    typedef std::vector< afw::table::Key<afw::table::Flag> > FlagKeyVector;
+    typedef std::vector< std::pair<FlagDefinition, afw::table::Key<afw::table::Flag> > > Vector;
 
-    FlagKeyVector _keys;
+    Vector _vector;
 };
 
 }}} // lsst::meas::base
