@@ -33,8 +33,7 @@ import lsst.pex.config
 import lsst.pipe.base
 import lsst.daf.base
 
-from .base import BasePlugin, BasePluginConfig, BaseMeasurementConfig, BaseMeasurementTask, \
-    PluginRegistry, generateAlgorithmName, NoiseReplacer, DummyNoiseReplacer
+from .base import *
 
 __all__ = ("SingleFramePluginConfig", "SingleFramePlugin", "WrappedSingleFramePlugin",
            "SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
@@ -130,6 +129,7 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
     def __init__(self, config, name, schema, flags, others, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
         self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
+        addDependencyFlagAliases(self.AlgClass, name, schema)
         # TODO: check flags
 
     def measure(self, measRecord, exposure):
