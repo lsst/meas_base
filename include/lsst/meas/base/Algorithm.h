@@ -25,14 +25,16 @@
 #define LSST_MEAS_BASE_Algorithm_h_INCLUDED
 
 #include "lsst/afw/table/fwd.h"
+#include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/exceptions.h"
+#include "lsst/meas/base/FlagHandler.h"
 
 namespace lsst { namespace meas { namespace base {
 
 class BaseAlgorithm {
 public:
 
-    void fail(
+    virtual void fail(
         afw::table::SourceRecord & measRecord,
         MeasurementError * error=NULL
     ) const = 0;
@@ -44,12 +46,12 @@ public:
 class SingleFrameAlgorithm : public virtual BaseAlgorithm {
 public:
 
-    void measure(
+    virtual void measure(
         afw::table::SourceRecord & measRecord,
         afw::image::Exposure<float> const & exposure
     ) const = 0;
 
-    void measureN(
+    virtual void measureN(
         afw::table::SourceCatalog const & measCat,
         afw::image::Exposure<float> const & exposure
     ) const;
@@ -59,14 +61,14 @@ public:
 class ForcedAlgorithm : public virtual BaseAlgorithm {
 public:
 
-    void measure(
+    virtual void measure(
         afw::table::SourceRecord & measRecord,
         afw::image::Exposure<float> const & exposure,
         afw::table::SourceRecord const & refRecord,
         afw::image::Wcs const & refWcs
     ) const = 0;
 
-    void measureN(
+    virtual void measureN(
         afw::table::SourceCatalog const & measCat,
         afw::image::Exposure<float> const & exposure,
         afw::table::SourceCatalog const & refRecord,
@@ -78,7 +80,10 @@ public:
 class SimpleAlgorithm : public SingleFrameAlgorithm, public ForcedAlgorithm {
 public:
 
-    void measure(
+    using SingleFrameAlgorithm::measure;
+    using SingleFrameAlgorithm::measureN;
+
+    virtual void measure(
         afw::table::SourceRecord & measRecord,
         afw::image::Exposure<float> const & exposure,
         afw::table::SourceRecord const & refRecord,
@@ -87,7 +92,7 @@ public:
         measure(measRecord, exposure);
     }
 
-    void measureN(
+    virtual void measureN(
         afw::table::SourceCatalog const & measCat,
         afw::image::Exposure<float> const & exposure,
         afw::table::SourceCatalog const & refRecord,
