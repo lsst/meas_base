@@ -28,17 +28,7 @@
 #include "lsst/meas/base/Results.h"
 #include "lsst/meas/base/ResultMappers.h"
 #include "lsst/meas/base/Inputs.h"
-#include "lsst/meas/base/PsfFlux.h"
-#include "lsst/meas/base/SincFlux.h"
 #include "lsst/meas/base/SdssCentroid.h"
-#include "lsst/meas/base/SdssShape.h"
-#include "lsst/meas/base/PixelFlags.h"
-#include "lsst/meas/base/GaussianFlux.h"
-#include "lsst/meas/base/GaussianCentroid.h"
-#include "lsst/meas/base/NaiveFlux.h"
-#include "lsst/meas/base/NaiveCentroid.h"
-#include "lsst/meas/base/PeakLikelihoodFlux.h"
-#include "lsst/meas/base/ApertureFlux.h"
-#include "lsst/meas/base/CircularApertureFlux.h"
+
 
 #endif // !LSST_MEAS_base_h_INCLUDED

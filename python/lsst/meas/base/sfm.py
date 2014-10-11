@@ -200,17 +200,8 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
 
     plugins = SingleFramePlugin.registry.makeField(
         multi=True,
-        default=["base_PixelFlags",
+        default=[
                  "base_SdssCentroid",
-                 "base_GaussianCentroid",
-                 "base_NaiveCentroid",
-                 "base_SdssShape",
-                 "base_GaussianFlux",
-                 "base_NaiveFlux",
-                 "base_PsfFlux",
-                 "base_SincFlux",
-                 "base_ClassificationExtendedness",
-                 "base_SkyCoord",
                  ],
         doc="Plugins to be run and their configuration"
         )
