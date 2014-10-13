@@ -48,7 +48,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mapper = SchemaMapper(srccat.getSchema())
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
-        flags = MeasurementDataFlags()
 
         #  Basic test of Classification algorithm, no C++ slots
         sfm_config.plugins = ["base_SdssCentroid", "base_PsfFlux", "base_SincFlux",
@@ -59,7 +58,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         sfm_config.slots.modelFlux = "base_SincFlux"
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
-        task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
+        task = SingleFrameMeasurementTask(outschema, config=sfm_config)
         measCat = SourceCatalog(outschema)
         measCat.extend(srccat, mapper=mapper)
         # now run the SFM task with the test plugin

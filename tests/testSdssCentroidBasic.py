@@ -50,7 +50,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mapper = SchemaMapper(srccat.getSchema())
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
-        flags = MeasurementDataFlags()
         sfm_config.plugins = ["base_PeakCentroid", "base_SdssCentroid"]
         sfm_config.slots.centroid = "base_SdssCentroid"
         sfm_config.slots.shape = None
@@ -58,7 +57,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         sfm_config.slots.modelFlux = None
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
-        task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
+        task = SingleFrameMeasurementTask(outschema, config=sfm_config)
         measCat = SourceCatalog(outschema)
         measCat.defineCentroid("base_SdssCentroid")
         measCat.extend(srccat, mapper=mapper)

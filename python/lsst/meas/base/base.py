@@ -22,9 +22,8 @@
 #
 """Base and utility classes for measurement frameworks
 
-This includes base classes for plugins and tasks and utility classes such as PluginMap and
-MeasurementDataFlags that are shared by the single-frame measurement framework and the forced
-measurement framework.
+This includes base classes for plugins and tasks and utility classes such as PluginMap
+that are shared by the single-frame measurement framework and the forced measurement framework.
 """
 
 import traceback
@@ -241,25 +240,6 @@ class BasePlugin(object):
                    "please report this as a bug (the full traceback is above)."
                    % self.__class__.__name__)
         raise NotImplementedError(message)
-
-class MeasurementDataFlags(object):
-    """!
-    Flags that describe data to be measured, allowing plugins with the same signature but
-    different requirements to assert their appropriateness for the data they will be run on.
-
-    This is just a placeholder for now; see DM-1026.
-    """
-
-    PRECONVOLVED = 0x01  # the image has already been convolved with its PSF;
-                         # set for preconvolved difference images and Kaiser-style coadds
-
-    DIFFERENCE = 0x02    # the image is a difference, and hence may have negative surface brightnesses
-
-    COADD = 0x04  # the image is a coadd
-
-    NO_PSF = 0x08 # the image has no Psf object attached
-
-    NO_WCS = 0x10 # the image has no Wcs object attached
 
 class SourceSlotConfig(lsst.pex.config.Config):
     """!
