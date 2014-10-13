@@ -48,7 +48,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mapper = SchemaMapper(srccat.getSchema())
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
-        flags = MeasurementDataFlags()
 
         #  Basic test of SincFlux algorithm, no C++ slots
         sfm_config.plugins = ["base_PeakCentroid", "base_SincFlux"]
@@ -60,7 +59,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         sfm_config.slots.instFlux = "base_SincFlux"
         sfm_config.plugins["base_SincFlux"].radius1 = 0.0
         sfm_config.plugins["base_SincFlux"].radius2 = 16.0
-        task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
+        task = SingleFrameMeasurementTask(outschema, config=sfm_config)
         measCat = SourceCatalog(outschema)
         measCat.extend(srccat, mapper=mapper)
         # now run the SFM task with the test plugin
