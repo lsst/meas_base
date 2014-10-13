@@ -21,8 +21,11 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+#include "boost/array.hpp"
+
 #include "ndarray/eigen.h"
 
+#include "lsst/afw/table/Source.h"
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/detection/FootprintArray.h"
 #include "lsst/afw/detection/FootprintArray.cc"
@@ -30,19 +33,28 @@
 
 namespace lsst { namespace meas { namespace base {
 
-PsfFluxAlgorithm::ResultMapper PsfFluxAlgorithm::makeResultMapper(
-    afw::table::Schema & schema, std::string const & name, Control const & ctrl
-) {
-    return ResultMapper(schema, name, SIGMA_ONLY);
+PsfFluxAlgorithm::PsfFluxAlgorithm(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::Schema & schema
+) : _ctrl(ctrl),
+    _fluxResultKey(
+        FluxResultKey::addFields(schema, name, "flux derived from linear least-squares fit of PSF model")
+    ),
+    _centroidExtractor(schema, name)
+{
+    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag"},
+        {"flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit"},
+        {"flag_edge", "object was too close to the edge of the image to use the full PSF model"}
+    }};
+    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }
 
-template <typename T>
-void PsfFluxAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    afw::geom::Point2D const & position,
-    Result & result,
-    Control const & ctrl
-) {
+void PsfFluxAlgorithm::measure(
+    afw::table::SourceRecord & measRecord,
+    afw::image::Exposure<float> const & exposure
+) const {
     PTR(afw::detection::Psf const) psf = exposure.getPsf();
     if (!psf) {
         throw LSST_EXCEPT(
@@ -50,18 +62,20 @@ void PsfFluxAlgorithm::apply(
             "PsfFlux algorithm requires a Psf with every exposure"
         );
     }
+    afw::geom::Point2D position = _centroidExtractor(measRecord, _flagHandler);
     PTR(afw::detection::Psf::Image) psfImage = psf->computeImage(position);
     afw::geom::Box2I fitBBox = psfImage->getBBox();
     fitBBox.clip(exposure.getBBox());
     if (fitBBox != psfImage->getBBox()) {
-        result.setFlag(EDGE);
+        _flagHandler.setValue(measRecord, FAILURE, true);  // if we had a suspect flag, we'd set that instead
+        _flagHandler.setValue(measRecord, EDGE, true);
     }
     afw::detection::Footprint fitRegion(fitBBox);
-    if (!ctrl.badMaskPlanes.empty()) {
+    if (!_ctrl.badMaskPlanes.empty()) {
         afw::image::MaskPixel badBits = 0x0;
         for (
-            std::vector<std::string>::const_iterator i = ctrl.badMaskPlanes.begin();
-            i != ctrl.badMaskPlanes.end();
+            std::vector<std::string>::const_iterator i = _ctrl.badMaskPlanes.begin();
+            i != _ctrl.badMaskPlanes.end();
             ++i
         ) {
             badBits |= exposure.getMaskedImage().getMask()->getPlaneBitMask(*i);
@@ -71,12 +85,12 @@ void PsfFluxAlgorithm::apply(
     if (fitRegion.getArea() == 0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            getFlagDefinitions()[NO_GOOD_PIXELS].doc,
+            _flagHandler.getDefinition(NO_GOOD_PIXELS).doc,
             NO_GOOD_PIXELS
         );
     }
     typedef afw::detection::Psf::Pixel PsfPixel;
-    typedef typename afw::image::MaskedImage<T>::Variance::Pixel VarPixel;
+    typedef typename afw::image::MaskedImage<float>::Variance::Pixel VarPixel;
     ndarray::EigenView<PsfPixel,1,1,Eigen::ArrayXpr> model(
         afw::detection::flattenArray(
             fitRegion,
@@ -84,7 +98,7 @@ void PsfFluxAlgorithm::apply(
             psfImage->getXY0()
         )
     );
-    ndarray::EigenView<T,1,1,Eigen::ArrayXpr> data(
+    ndarray::EigenView<float,1,1,Eigen::ArrayXpr> data(
         afw::detection::flattenArray(
             fitRegion,
             exposure.getMaskedImage().getImage()->getArray(),
@@ -99,52 +113,22 @@ void PsfFluxAlgorithm::apply(
         )
     );
     PsfPixel alpha = model.matrix().squaredNorm();
-    result.flux = model.matrix().dot(data.matrix().template cast<PsfPixel>()) / alpha;
+    FluxResult result;
+    result.flux = model.matrix().dot(data.matrix().cast<PsfPixel>()) / alpha;
     // If we're not using per-pixel weights to compute the flux, we'll still want to compute the
     // variance as if we had, so we'll apply the weights to the model vector now, and update alpha.
-    result.fluxSigma = std::sqrt(model.square().matrix().dot(variance.matrix().template cast<PsfPixel>()))
+    result.fluxSigma = std::sqrt(model.square().matrix().dot(variance.matrix().cast<PsfPixel>()))
         / alpha;
     if (!utils::isfinite(result.flux) || !utils::isfinite(result.fluxSigma)) {
         throw LSST_EXCEPT(PixelValueError, "Invalid pixel value detected in image.");
     }
-    // Currently, the only flag which allows the algorithm to continue to the end is EDGE
-    // Now throw out once the result is written to set the error flag
-    if (result.getFlag(EDGE)) {
-        throw LSST_EXCEPT(
-            MeasurementError,
-            getFlagDefinitions()[EDGE].doc,
-            EDGE
-        );
-    }
+    measRecord.set(_fluxResultKey, result);
 }
 
-template <typename T>
-void PsfFluxAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    Input const & inputs,
-    Result & result,
-    Control const & ctrl
-) {
-    apply(exposure, inputs.position, result, ctrl);
+void PsfFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+    _flagHandler.handleFailure(measRecord, error);
 }
 
-#define INSTANTIATE(T)                                                  \
-    template  void PsfFluxAlgorithm::apply(          \
-        afw::image::Exposure<T> const & exposure,                       \
-        afw::geom::Point2D const & position,                            \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    );                                                                  \
-    template                                                            \
-     void PsfFluxAlgorithm::apply(                   \
-        afw::image::Exposure<T> const & exposure,                       \
-        Input const & inputs,                                           \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    )
-
-INSTANTIATE(float);
-INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
 
