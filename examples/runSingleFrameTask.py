@@ -75,9 +75,8 @@ def run(display=False):
     for plugin in ["base_SdssCentroid", "base_SdssShape", "base_SincFlux", "base_GaussianFlux"]:
         config.plugins.names.add(plugin)
     config.slots.psfFlux = None
-    flags = MeasurementDataFlags()
 
-    measureTask = SingleFrameMeasurementTask(schema, flags, config=config)
+    measureTask = SingleFrameMeasurementTask(schema, config=config)
 
     #
     # Print the schema the configuration produced

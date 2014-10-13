@@ -66,7 +66,7 @@ class ForcedPlugin(BasePlugin):
 
     ConfigClass = ForcedPluginConfig
 
-    def __init__(self, config, name, schemaMapper, flags, others, metadata):
+    def __init__(self, config, name, schemaMapper, others, metadata):
         """Initialize the measurement object.
 
         @param[in]  config       An instance of this class's ConfigClass.
@@ -76,8 +76,6 @@ class ForcedPlugin(BasePlugin):
                                       output schema.  While most plugins will not need to map
                                       fields from the reference schema, if they do so, those fields
                                       will be transferred before any plugins are run.
-        @param[in]  flags        A set of bitflags describing the data that the plugin
-                                 should check to see if it supports.  See MeasuremntDataFlags.
         @param[in]  others       A PluginMap of previously-initialized plugins
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
@@ -151,12 +149,11 @@ class WrappedForcedPlugin(ForcedPlugin):
 
     AlgClass = None
 
-    def __init__(self, config, name, schemaMapper, flags, others, metadata):
-        ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
+    def __init__(self, config, name, schemaMapper, others, metadata):
+        ForcedPlugin.__init__(self, config, name, schemaMapper, others, metadata)
         schema = schemaMapper.editOutputSchema()
         self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
         addDependencyFlagAliases(self.AlgClass, name, schema)
-        # TODO: check flags
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
         result = self.AlgClass.Result()
@@ -288,7 +285,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
     ConfigClass = ForcedMeasurementConfig
 
-    def __init__(self, refSchema, algMetadata=None, flags=None, **kwds):
+    def __init__(self, refSchema, algMetadata=None, **kwds):
         """!
         Initialize the task.  Set up the execution order of the plugins and initialize
         the plugins, giving each plugin an opportunity to add its measurement fields to
@@ -304,7 +301,6 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                                    later passed to generateSources() and/or run().
         @param[in,out] algMetadata lsst.daf.base.PropertyList used to record information about
                                    each algorithm.  An empty PropertyList will be created if None.
-        @param[in]     flags       lsst.meas.base.MeasurementDataFlags
         @param[in]     **kwds      Keyword arguments passed from lsst.pipe.base.Task.__init__
         """
         super(ForcedMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
@@ -314,7 +310,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             refItem = refSchema.find(refName)
             self.mapper.addMapping(refItem.key, targetName)
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
-            self.plugins[name] = PluginClass(config, name, self.mapper, flags=flags,
+            self.plugins[name] = PluginClass(config, name, self.mapper,
                                              others=self.plugins, metadata=self.algMetadata)
 
     def run(self, exposure, refCat, refWcs, idFactory=None):

@@ -228,7 +228,7 @@ class AlgorithmTestCase(lsst.utils.tests.TestCase):
         del self.truth
         del self.calexp
 
-    def runSingleFrameMeasurementTask(self, plugin, dependencies=(), flags=None, config=None):
+    def runSingleFrameMeasurementTask(self, plugin, dependencies=(), config=None):
         if config is None:
             config = SingleFrameMeasurementTask.ConfigClass()
         config.slots.centroid = None
@@ -242,7 +242,7 @@ class AlgorithmTestCase(lsst.utils.tests.TestCase):
         schemaMapper.addMinimalSchema(self.truth.schema)
         algMetadata = lsst.daf.base.PropertyList()
         task = SingleFrameMeasurementTask(schema=schemaMapper.editOutputSchema(), algMetadata=algMetadata,
-                                          config=config, flags=flags)
+                                          config=config)
         measCat = lsst.afw.table.SourceCatalog(task.schema)
         measCat.table.setMetadata(algMetadata)
         measCat.extend(self.truth, schemaMapper)

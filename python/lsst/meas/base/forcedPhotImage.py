@@ -77,8 +77,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         self.makeSubtask("references")
         if not refSchema:
             refSchema = self.references.getSchema(butler)
-        flags = MeasurementDataFlags()  # just a placeholder for now
-        self.makeSubtask("measurement", refSchema=refSchema, flags=flags)
+        self.makeSubtask("measurement", refSchema=refSchema)
 
     def run(self, dataRef):
         """!

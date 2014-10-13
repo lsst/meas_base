@@ -77,8 +77,8 @@ class CircularApertureFluxSingleFramePlugin(SingleFramePlugin):
         base=SingleFramePlugin.ConfigClass
     )
 
-    def __init__(self, config, name, schema, flags, others, metadata):
-        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
+    def __init__(self, config, name, schema, others, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, others, metadata)
         for radius in self.config.radii:
             metadata.add("base_CircularApertureFlux_radii", radius)
         self.algorithm = CircularApertureFluxAlgorithm(config.makeControl(), name, schema)
@@ -100,8 +100,8 @@ class CircularApertureFluxForcedPlugin(ForcedPlugin):
         base=ForcedPlugin.ConfigClass
     )
 
-    def __init__(self, config, name, schemaMapper, flags, others, metadata):
-        ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
+    def __init__(self, config, name, schemaMapper, others, metadata):
+        ForcedPlugin.__init__(self, config, name, schemaMapper, others, metadata)
         for radius in self.config.radii:
             metadata.add("base_CircularApertureFlux_radii", radius)
         schema = schemaMapper.editOutputSchema()
@@ -130,8 +130,8 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
 
     ConfigClass = SingleFramePeakCentroidConfig
 
-    def __init__(self, config, name, schema, flags, others, metadata):
-        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
+    def __init__(self, config, name, schema, others, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, others, metadata)
         self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixels")
         self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixels")
 
@@ -194,8 +194,8 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
     """
     ConfigClass = SingleFrameClassificationConfig
 
-    def __init__(self, config, name, schema, flags, others, metadata):
-        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
+    def __init__(self, config, name, schema, others, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, others, metadata)
         self.keyProbability = schema.addField(name + "_value", type="D",
                                               doc="Set to 1 for extended sources, 0 for point sources.")
 
@@ -234,8 +234,8 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
     """
     ConfigClass = ForcedPeakCentroidConfig
 
-    def __init__(self, config, name, schemaMapper, flags, others, metadata):
-        ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
+    def __init__(self, config, name, schemaMapper, others, metadata):
+        ForcedPlugin.__init__(self, config, name, schemaMapper, others, metadata)
         schema = schemaMapper.editOutputSchema()
         self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixels")
         self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixels")
@@ -266,8 +266,8 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
 
     ConfigClass = ForcedTransformedCentroidConfig
 
-    def __init__(self, config, name, schemaMapper, flags, others, metadata):
-        ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
+    def __init__(self, config, name, schemaMapper, others, metadata):
+        ForcedPlugin.__init__(self, config, name, schemaMapper, others, metadata)
         schema = schemaMapper.editOutputSchema()
         # Allocate x and y fields, join these into a single FunctorKey for ease-of-use.
         xKey = schema.addField(name + "_x", type="D", doc="transformed reference centroid column",
@@ -311,8 +311,8 @@ class ForcedTransformedShapePlugin(ForcedPlugin):
 
     ConfigClass = ForcedTransformedShapeConfig
 
-    def __init__(self, config, name, schemaMapper, flags, others, metadata):
-        ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
+    def __init__(self, config, name, schemaMapper, others, metadata):
+        ForcedPlugin.__init__(self, config, name, schemaMapper, others, metadata)
         schema = schemaMapper.editOutputSchema()
         # Allocate xx, yy, xy fields, join these into a single FunctorKey for ease-of-use.
         xxKey = schema.addField(name + "_xx", type="D", doc="transformed reference shape x^2 moment",

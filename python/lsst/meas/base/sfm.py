@@ -58,7 +58,7 @@ class SingleFramePlugin(BasePlugin):
     registry = PluginRegistry(SingleFramePluginConfig)
     ConfigClass = SingleFramePluginConfig
 
-    def __init__(self, config, name, schema, flags, others, metadata):
+    def __init__(self, config, name, schema, others, metadata):
         """!
         Initialize the measurement object.
 
@@ -66,8 +66,6 @@ class SingleFramePlugin(BasePlugin):
         @param[in]  name         The string the plugin was registered with.
         @param[in,out]  schema   The Source schema.  New fields should be added here to
                                  hold measurements produced by this plugin.
-        @param[in]  flags        A set of bitflags describing the data that the plugin
-                                 should check to see if it supports.  See MeasuremntDataFlags.
         @param[in]  others       A PluginMap of previously-initialized plugins
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
@@ -126,11 +124,10 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
 
     AlgClass = None
 
-    def __init__(self, config, name, schema, flags, others, metadata):
-        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
+    def __init__(self, config, name, schema, others, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, others, metadata)
         self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
         addDependencyFlagAliases(self.AlgClass, name, schema)
-        # TODO: check flags
 
     def measure(self, measRecord, exposure):
         result = self.AlgClass.Result()
@@ -283,10 +280,6 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
     While a reasonable set of plugins is configured by default, we'll customize the list.
     We also need to unset one of the slots at the same time, because we're
     not running the algorithm that it' set to by default, and that would cause problems later:
-    @until config.slot
-    MeasurementDataFlags are just a placeholder for now; eventually they'll be used to tell plugins about
-    certain features of the data, such as whether the data being processed is a difference image, a regular
-    image, or a coadd, or whether it has been "preconvolved" by the PSF.
     @until flags
 
     Now, finally, we can construct the measurement task:
@@ -316,7 +309,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
 
     ConfigClass = SingleFrameMeasurementConfig
 
-    def __init__(self, schema, algMetadata=None, flags=None, **kwds):
+    def __init__(self, schema, algMetadata=None, **kwds):
         """!
         Initialize the task. Set up the execution order of the plugins and initialize
         the plugins, giving each plugin an opportunity to add its measurement fields to
@@ -326,7 +319,6 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
                                    measurement fields from the plugins already
         @param[in,out] algMetadata lsst.daf.base.PropertyList used to record information about
                                    each algorithm.  An empty PropertyList will be created if None.
-        @param[in]     flags       lsst.meas.base.MeasurementDataFlags
         @param[in]     **kwds      Keyword arguments forwarded to lsst.pipe.base.Task.__init__
         """
         super(SingleFrameMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
@@ -338,7 +330,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
             self.plugins[self.config.slots.centroid] = None
         # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
-            self.plugins[name] = PluginClass(config, name, schema=schema, flags=flags,
+            self.plugins[name] = PluginClass(config, name, schema=schema,
                 others=self.plugins, metadata=self.algMetadata)
 
 
