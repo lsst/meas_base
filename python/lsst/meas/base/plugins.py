@@ -37,7 +37,6 @@ from .forcedMeasurement import *
 
 # --- Wrapped C++ Plugins ---
 
-WrappedSingleFramePlugin.generate(PsfFluxAlgorithm)
 WrappedSingleFramePlugin.generate(SdssShapeAlgorithm, executionOrder=1.0)
 WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(SincFluxAlgorithm)
@@ -47,7 +46,6 @@ WrappedSingleFramePlugin.generate(GaussianCentroidAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(GaussianFluxAlgorithm)
 WrappedSingleFramePlugin.generate(NaiveCentroidAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(PeakLikelihoodFluxAlgorithm)
-WrappedForcedPlugin.generate(PsfFluxAlgorithm)
 WrappedForcedPlugin.generate(SdssShapeAlgorithm, executionOrder=1.0)
 WrappedForcedPlugin.generate(SdssCentroidAlgorithm, executionOrder=0.0)
 WrappedForcedPlugin.generate(SincFluxAlgorithm)
@@ -57,6 +55,37 @@ WrappedForcedPlugin.generate(GaussianCentroidAlgorithm, executionOrder=0.0)
 WrappedForcedPlugin.generate(GaussianFluxAlgorithm)
 WrappedForcedPlugin.generate(NaiveCentroidAlgorithm, executionOrder=0.0)
 WrappedForcedPlugin.generate(PeakLikelihoodFluxAlgorithm)
+
+@register("base_PsfFlux")
+class PsfFluxSingleFramePlugin(SingleFramePlugin):
+
+    ConfigClass = lsst.pex.config.makeConfigClass(PsfFluxControl, base=SingleFramePluginConfig)
+
+    def __init__(self, config, name, schema, flags, others, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
+        self.cpp = PsfFluxAlgorithm(config.makeControl(), name, schema)
+
+    def measure(self, measRecord, exposure):
+        self.cpp.measure(measRecord, exposure)
+
+    def fail(self, measRecord, error=None):
+        self.cpp.fail(measRecord, error.cpp if error is not None else None)
+
+@register("base_PsfFlux")
+class PsfFluxForcedPlugin(ForcedPlugin):
+
+    ConfigClass = lsst.pex.config.makeConfigClass(PsfFluxControl, base=ForcedPluginConfig)
+
+    def __init__(self, config, name, schemaMapper, flags, others, metadata):
+        ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
+        self.cpp = PsfFluxAlgorithm(config.makeControl(), name, schemaMapper.editOutputSchema())
+
+    def measure(self, measRecord, exposure, refRecord, refWcs):
+        self.cpp.measure(measRecord, exposure)
+
+    def fail(self, measRecord, error=None):
+        self.cpp.fail(measRecord, error.cpp if error is not None else None)
+
 
 # --- Aperture Flux Measurement Plugins ---
 
