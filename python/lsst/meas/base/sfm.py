@@ -59,7 +59,7 @@ class SingleFramePlugin(BasePlugin):
     registry = PluginRegistry(SingleFramePluginConfig)
     ConfigClass = SingleFramePluginConfig
 
-    def __init__(self, config, name, schema, others, metadata):
+    def __init__(self, config, name, schema, metadata):
         """!
         Initialize the measurement object.
 
@@ -67,7 +67,6 @@ class SingleFramePlugin(BasePlugin):
         @param[in]  name         The string the plugin was registered with.
         @param[in,out]  schema   The Source schema.  New fields should be added here to
                                  hold measurements produced by this plugin.
-        @param[in]  others       A PluginMap of previously-initialized plugins
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
         BasePlugin.__init__(self)
@@ -125,8 +124,8 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
 
     AlgClass = None
 
-    def __init__(self, config, name, schema, others, metadata):
-        SingleFramePlugin.__init__(self, config, name, schema, others, metadata)
+    def __init__(self, config, name, schema, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
 
     def measure(self, measRecord, exposure):
@@ -320,8 +319,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
             self.plugins[self.config.slots.centroid] = None
         # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
-            self.plugins[name] = PluginClass(config, name, schema=schema,
-                others=self.plugins, metadata=self.algMetadata)
+            self.plugins[name] = PluginClass(config, name, schema=schema, metadata=self.algMetadata)
 
 
 
