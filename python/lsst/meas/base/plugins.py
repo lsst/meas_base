@@ -34,10 +34,10 @@ from .base import *
 from .baseLib import *
 from .sfm import *
 from .forcedMeasurement import *
+from .wrappers import *
 
 # --- Wrapped C++ Plugins ---
 
-WrappedSingleFramePlugin.generate(PsfFluxAlgorithm)
 WrappedSingleFramePlugin.generate(SdssShapeAlgorithm, executionOrder=1.0)
 WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(SincFluxAlgorithm)
@@ -47,7 +47,6 @@ WrappedSingleFramePlugin.generate(GaussianCentroidAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(GaussianFluxAlgorithm)
 WrappedSingleFramePlugin.generate(NaiveCentroidAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(PeakLikelihoodFluxAlgorithm)
-WrappedForcedPlugin.generate(PsfFluxAlgorithm)
 WrappedForcedPlugin.generate(SdssShapeAlgorithm, executionOrder=1.0)
 WrappedForcedPlugin.generate(SdssCentroidAlgorithm, executionOrder=0.0)
 WrappedForcedPlugin.generate(SincFluxAlgorithm)
@@ -57,6 +56,8 @@ WrappedForcedPlugin.generate(GaussianCentroidAlgorithm, executionOrder=0.0)
 WrappedForcedPlugin.generate(GaussianFluxAlgorithm)
 WrappedForcedPlugin.generate(NaiveCentroidAlgorithm, executionOrder=0.0)
 WrappedForcedPlugin.generate(PeakLikelihoodFluxAlgorithm)
+
+wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl)
 
 # --- Aperture Flux Measurement Plugins ---
 

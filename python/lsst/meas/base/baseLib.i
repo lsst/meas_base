@@ -207,12 +207,6 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
                             ALGORITHM##Result4, ALGORITHM##ResultMapper4)
 %enddef
 
-%include "lsst/meas/base/PsfFlux.h"
-%template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, PsfFluxAlgorithm, PsfFluxControl, FootprintCentroidInput,
-                           FluxComponent)
-
 %include "lsst/meas/base/SdssShape.h"
 %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
@@ -273,3 +267,6 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %declareException(PixelValueError, lsst.pex.exceptions.DomainError, lsst::meas::base::PixelValueError)
 
 %include "lsst/meas/base/ApertureFlux.i"
+
+%feature("notabstract") lsst::meas::base::PsfFluxAlgorithm;
+%include "lsst/meas/base/PsfFlux.h"
