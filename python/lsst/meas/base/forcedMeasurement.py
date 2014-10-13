@@ -66,7 +66,7 @@ class ForcedPlugin(BasePlugin):
 
     ConfigClass = ForcedPluginConfig
 
-    def __init__(self, config, name, schemaMapper, others, metadata):
+    def __init__(self, config, name, schemaMapper, metadata):
         """Initialize the measurement object.
 
         @param[in]  config       An instance of this class's ConfigClass.
@@ -76,7 +76,6 @@ class ForcedPlugin(BasePlugin):
                                       output schema.  While most plugins will not need to map
                                       fields from the reference schema, if they do so, those fields
                                       will be transferred before any plugins are run.
-        @param[in]  others       A PluginMap of previously-initialized plugins
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
         BasePlugin.__init__(self)
@@ -149,8 +148,8 @@ class WrappedForcedPlugin(ForcedPlugin):
 
     AlgClass = None
 
-    def __init__(self, config, name, schemaMapper, others, metadata):
-        ForcedPlugin.__init__(self, config, name, schemaMapper, others, metadata)
+    def __init__(self, config, name, schemaMapper, metadata):
+        ForcedPlugin.__init__(self, config, name, schemaMapper, metadata)
         schema = schemaMapper.editOutputSchema()
         self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
         addDependencyFlagAliases(self.AlgClass, name, schema)
@@ -310,8 +309,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             refItem = refSchema.find(refName)
             self.mapper.addMapping(refItem.key, targetName)
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
-            self.plugins[name] = PluginClass(config, name, self.mapper,
-                                             others=self.plugins, metadata=self.algMetadata)
+            self.plugins[name] = PluginClass(config, name, self.mapper, metadata=self.algMetadata)
 
     def run(self, exposure, refCat, refWcs, idFactory=None):
         """!
