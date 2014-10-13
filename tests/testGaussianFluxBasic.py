@@ -36,38 +36,28 @@ numpy.random.seed(1234)
 
 DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
 
-class SFMTestCase(lsst.utils.tests.TestCase):
+class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
     def testAlgorithm(self):
-
-        srccat, bbox = MakeTestData.makeCatalog()
-        exposure = MakeTestData.makeEmptyExposure(bbox)
-        MakeTestData.fillImages(srccat, exposure)
-       
-        sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        mapper = SchemaMapper(srccat.getSchema())
-        mapper.addMinimalSchema(srccat.getSchema())
-        outschema = mapper.getOutputSchema()
+        sfmConfig = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
+        mapper = SchemaMapper(self.truth.getSchema())
+        mapper.addMinimalSchema(self.truth.getSchema())
+        outSchema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
-
         #  Basic test of GaussianFlux algorithm, no C++ slots
-        sfm_config.plugins = ["base_SdssCentroid", "base_GaussianFlux", "base_SdssShape"]
-        sfm_config.slots.centroid = "base_SdssCentroid"
-        sfm_config.slots.shape = "base_SdssShape"
-        sfm_config.slots.psfFlux = None
-        sfm_config.slots.instFlux = None
-        sfm_config.slots.apFlux = None
-        sfm_config.slots.modelFlux = "base_GaussianFlux"
-        task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
-        measCat = SourceCatalog(outschema)
-        #measCat.getTable().defineCentroid("base_SdssCentroid")
-        #measCat.getTable().defineModelFlux("base_GaussianFlux")
-        measCat.extend(srccat, mapper=mapper)
+        sfmConfig.plugins = ["base_SdssCentroid", "base_GaussianFlux", "base_SdssShape"]
+        sfmConfig.slots.centroid = "base_SdssCentroid"
+        sfmConfig.slots.shape = "base_SdssShape"
+        sfmConfig.slots.psfFlux = None
+        sfmConfig.slots.instFlux = None
+        sfmConfig.slots.apFlux = None
+        sfmConfig.slots.modelFlux = "base_GaussianFlux"
+        task = SingleFrameMeasurementTask(outSchema, flags, config=sfmConfig)
+        measCat = SourceCatalog(outSchema)
+        measCat.extend(self.truth, mapper=mapper)
         # now run the SFM task with the test plugin
-        task.run(measCat, exposure)
-        for i in range(len(measCat)):
-            record = measCat[i]
-            srcRec = srccat[i]
+        task.run(measCat, self.calexp)
+        for record in measCat:
             # check all the flags
             self.assertFalse(record.get("base_GaussianFlux_flag") and not record.get("base_SdssShape_flag"))
             self.assertFalse(record.get("base_GaussianFlux_flag_noGoodPixels"))
@@ -75,13 +65,13 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             # check the slots
             flux = record.get("base_GaussianFlux_flux")
             fluxerr = record.get("base_GaussianFlux_fluxSigma")
-            truthFlux = srcRec.get("truth_flux")
+            truthFlux = record.get("truth_flux")
             # if a star, see if the flux measured is decent
-            if srcRec.get("truth_isStar"):
+            if record.get("truth_isStar"):
                 self.assertClose(truthFlux, flux, atol=None, rtol=.1)
             if (not record.get("base_GaussianFlux_flag")):
-                self.assertEqual(record.getModelFlux(), flux) 
-                self.assertEqual(record.getModelFluxErr(), fluxerr) 
+                self.assertEqual(record.getModelFlux(), flux)
+                self.assertEqual(record.getModelFluxErr(), fluxerr)
 
 
 def suite():
