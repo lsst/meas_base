@@ -57,9 +57,9 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         measCat.extend(self.truth, mapper=mapper)
         # now run the SFM task with the test plugin
         task.run(measCat, self.calexp)
-        for record in measCat:
+        for record in measCat[:2]:
             # check all the flags
-            self.assertFalse(record.get("base_GaussianFlux_flag") and not record.get("base_SdssShape_flag"))
+            self.assertFalse(record.get("base_GaussianFlux_flag"))
             # check the slots
             flux = record.get("base_GaussianFlux_flux")
             fluxerr = record.get("base_GaussianFlux_fluxSigma")
@@ -70,7 +70,12 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             if (not record.get("base_GaussianFlux_flag")):
                 self.assertEqual(record.getModelFlux(), flux)
                 self.assertEqual(record.getModelFluxErr(), fluxerr)
-
+        # on the third test source (which is a blended parent), the SdssShape algorithm fails because the
+        # centroid moves around too much, which gives us an opportunity to test GaussianFlux's error handling
+        for record in measCat[2:3]:
+            self.assertTrue(record.get("base_GaussianFlux_flag"))
+            self.assertTrue(record.get("base_GaussianFlux_flag_badShape"))
+            self.assertFalse(record.get("base_GaussianFlux_flag_badCentroid"))
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
