@@ -52,38 +52,6 @@ void GaussianFluxAlgorithm::apply(
     Result & result,
     Control const & ctrl
 ) {
-    PTR(afw::detection::Psf const) psf = exposure.getPsf();
-    if (!psf) {
-        throw LSST_EXCEPT(
-            FatalAlgorithmError,
-            "GaussianFlux algorithm requires a Psf with every exposure"
-        );
-    }
-    PTR(afw::detection::Psf::Image) psfImage = psf->computeImage(centroid);
-    afw::geom::Box2I fitBBox = psfImage->getBBox();
-    fitBBox.clip(exposure.getBBox());
-    if (fitBBox != psfImage->getBBox()) {
-        result.setFlag(EDGE);
-    }
-    afw::detection::Footprint fitRegion(fitBBox);
-    if (!ctrl.badMaskPlanes.empty()) {
-        afw::image::MaskPixel badBits = 0x0;
-        for (
-            std::vector<std::string>::const_iterator i = ctrl.badMaskPlanes.begin();
-            i != ctrl.badMaskPlanes.end();
-            ++i
-        ) {
-            badBits |= exposure.getMaskedImage().getMask()->getPlaneBitMask(*i);
-        }
-        fitRegion.intersectMask(*exposure.getMaskedImage().getMask(), badBits);
-    }
-    if (fitRegion.getArea() == 0) {
-        throw LSST_EXCEPT(
-            lsst::meas::base::MeasurementError,
-            getFlagDefinitions()[NO_GOOD_PIXELS].doc,
-            NO_GOOD_PIXELS
-        );
-    }
     //  This code came straight out of the GaussianFlux.apply() in meas_algorithms with few changes
     typedef typename afw::image::Exposure<T>::MaskedImageT MaskedImageT;
     typedef typename MaskedImageT::Image ImageT;

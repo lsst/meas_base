@@ -60,8 +60,6 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         for record in measCat:
             # check all the flags
             self.assertFalse(record.get("base_GaussianFlux_flag") and not record.get("base_SdssShape_flag"))
-            self.assertFalse(record.get("base_GaussianFlux_flag_noGoodPixels"))
-            self.assertFalse(record.get("base_GaussianFlux_flag_edge"))
             # check the slots
             flux = record.get("base_GaussianFlux_flux")
             fluxerr = record.get("base_GaussianFlux_fluxSigma")
