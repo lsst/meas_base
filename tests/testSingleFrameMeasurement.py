@@ -41,8 +41,8 @@ class TestCentroidConfig(SingleFramePluginConfig):
 class TestCentroid(SingleFramePlugin):
     ConfigClass = TestCentroidConfig
 
-    def __init__(self, config, name, schema=None, others=None, metadata=None):
-        SingleFramePlugin.__init__(self, config, name, schema, others, metadata)
+    def __init__(self, config, name, schema=None, metadata=None):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.xKey = schema.addField("centroid.x", type=float, doc="x component relative to image",
                                     units="pixels")
         self.yKey = schema.addField("centroid.y", type=float, doc="y component relative to image",
@@ -65,8 +65,8 @@ class TestFluxConfig(SingleFramePluginConfig):
 class TestFlux(SingleFramePlugin):
     ConfigClass = TestFluxConfig
 
-    def __init__(self, config, name, schema=None, others=None, metadata=None):
-        SingleFramePlugin.__init__(self, config, name, schema, others, metadata)
+    def __init__(self, config, name, schema=None, metadata=None):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.fluxKey = schema.addField("test.flux", type=float, doc="sum of flux in object footprint",
                                        units="dn")
         self.fluxCountKey = schema.addField("test.fluxCount", type=int,
