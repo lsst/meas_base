@@ -114,7 +114,6 @@ public:
         afw::image::Exposure<T> const & exposure,
         afw::geom::Point2D const & centroid,
         afw::geom::ellipses::Quadrupole const & shape,
-        bool const & shapeFlag,
         Result & result,
         Control const & ctrl=Control()
     );

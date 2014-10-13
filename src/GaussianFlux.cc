@@ -48,7 +48,6 @@ void GaussianFluxAlgorithm::apply(
     afw::image::Exposure<T> const & exposure,
     afw::geom::Point2D const & centroid,
     afw::geom::ellipses::Quadrupole const & shape,
-    bool const & shapeFlag,
     Result & result,
     Control const & ctrl
 ) {
@@ -60,13 +59,10 @@ void GaussianFluxAlgorithm::apply(
     double const xcen = centroid.getX() - mimage.getX0(); ///< column position in image pixel coords
     double const ycen = centroid.getY() - mimage.getY0(); ///< row position
 
-    std::pair<double, double> fluxResult;
-    // Fixed aperture, defined by detail::SDSS shape measurement made elsewhere
-    if (shapeFlag) {
-        throw LSST_EXCEPT(pex::exceptions::RuntimeError, "Shape measurement failed");
-    }
+
     detail::SdssShapeImpl sdss(centroid, shape);
-    fluxResult = detail::getFixedMomentsFlux(mimage, ctrl.background, xcen, ycen, sdss);
+    std::pair<double, double> fluxResult
+        = detail::getFixedMomentsFlux(mimage, ctrl.background, xcen, ycen, sdss);
     result.flux =  fluxResult.first;
     result.fluxSigma = fluxResult.second;
 
@@ -80,7 +76,7 @@ void GaussianFluxAlgorithm::apply(
     Result & result,
     Control const & ctrl
 ) {
-    apply(exposure, inputs.position, inputs.shape, inputs.shapeFlag, result, ctrl);
+    apply(exposure, inputs.position, inputs.shape, result, ctrl);
 }
 
 #define INSTANTIATE(T)                                                  \
@@ -88,7 +84,6 @@ void GaussianFluxAlgorithm::apply(
         afw::image::Exposure<T> const & exposure,                       \
         afw::geom::Point2D const & centroid, \
         afw::geom::ellipses::Quadrupole const & shape, \
-        bool const & shapeFlag, \
         Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \
