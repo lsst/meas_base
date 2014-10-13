@@ -77,6 +77,7 @@ public:
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
     enum FlagBits {
+        EDGE,
         N_FLAGS
     };
 
@@ -85,7 +86,9 @@ public:
      *         in catalog schemas.
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
-        static boost::array<FlagDef,N_FLAGS> const flagDefs = {};
+        static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
+            {"edge", "source is too close to the edge of the field to compute the given aperture"}
+        }};
         return flagDefs;
     }
 

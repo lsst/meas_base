@@ -23,7 +23,8 @@
 
 import math
 import os
-from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
+import lsst.afw.image
+from lsst.afw.table import Schema, SchemaMapper, SourceCatalog, SourceTable
 from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
 from lsst.meas.base.base import *
 from lsst.meas.base.tests import *
@@ -35,39 +36,41 @@ numpy.random.seed(1234)
 
 DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
 
-class SFMTestCase(lsst.utils.tests.TestCase):
+class SdssCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
-    def testAlgorithm(self):
-
-        srccat, bbox = MakeTestData.makeCatalog()
-        exposure = MakeTestData.makeEmptyExposure(bbox)
-        MakeTestData.fillImages(srccat, exposure)
-
-        sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        
+    def setUp(self):
+        lsst.meas.base.tests.AlgorithmTestCase.setUp(self)
+        sfmConfig = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
         # add the measurement fields to the outputSchema and make a catalog with it
         # then extend with the mapper to copy the extant data
-        mapper = SchemaMapper(srccat.getSchema())
-        mapper.addMinimalSchema(srccat.getSchema())
-        outschema = mapper.getOutputSchema()
+        mapper = SchemaMapper(self.truth.getSchema())
+        mapper.addMinimalSchema(self.truth.getSchema())
+        outSchema = mapper.getOutputSchema()
         flags = MeasurementDataFlags()
-        sfm_config.plugins = ["base_PeakCentroid", "base_SdssCentroid"]
-        sfm_config.slots.centroid = "base_SdssCentroid"
-        sfm_config.slots.shape = None
-        sfm_config.slots.psfFlux = None
-        sfm_config.slots.modelFlux = None
-        sfm_config.slots.apFlux = None
-        sfm_config.slots.instFlux = None
-        task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
-        measCat = SourceCatalog(outschema)
-        measCat.defineCentroid("base_SdssCentroid")
-        measCat.extend(srccat, mapper=mapper)
-        # now run the SFM task with the test plugin
-        task.run(measCat, exposure)
+        sfmConfig.plugins = ["base_PeakCentroid", "base_SdssCentroid"]
+        sfmConfig.slots.centroid = "base_SdssCentroid"
+        sfmConfig.slots.shape = None
+        sfmConfig.slots.psfFlux = None
+        sfmConfig.slots.modelFlux = None
+        sfmConfig.slots.apFlux = None
+        sfmConfig.slots.instFlux = None
+        self.task = SingleFrameMeasurementTask(outSchema, flags, config=sfmConfig)
+        self.measCat = SourceCatalog(outSchema)
+        self.measCat.defineCentroid("base_SdssCentroid")
+        self.measCat.extend(self.truth, mapper=mapper)
 
-        truthFluxkey = srccat.getSchema().find("truth_flux").key
-        for i in range(len(measCat)):
-            record = measCat[i]
+    def tearDown(self):
+        lsst.meas.base.tests.AlgorithmTestCase.tearDown(self)
+        del self.task
+        del self.measCat
+
+    def testAlgorithm(self):
+        # now run the SFM task with the test plugin
+        self.task.run(self.measCat, self.calexp)
+
+        truthFluxkey = self.truth.getSchema().find("truth_flux").key
+        for i in range(len(self.measCat)):
+            record = self.measCat[i]
             centroid = record.getCentroid()
             cov = record.getCentroidErr()
             peakX = record.get("base_PeakCentroid_x")
@@ -89,6 +92,25 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             self.assertClose(xerr*xerr, cov[0,0], rtol=.01)
             self.assertClose(yerr*yerr, cov[1,1], rtol=.01)
 
+    def testEdge(self):
+        self.truth.defineCentroid("truth")
+        centroid = self.truth[0].getCentroid()
+        psfImage = self.calexp.getPsf().computeImage(centroid)
+        # construct a box that won't fit the full PSF model
+        bbox = psfImage.getBBox()
+        bbox.grow(-5)
+        subImage = lsst.afw.image.ExposureF(self.calexp, bbox)
+        subCat = self.measCat[:1]
+        # we also need to install a smaller footprint, or NoiseReplacer complains before we even get to
+        # measuring the centriod
+        measRecord = subCat[0]
+        newFootprint = lsst.afw.detection.Footprint(bbox)
+        newFootprint.getPeaks().push_back(measRecord.getFootprint().getPeaks()[0])
+        measRecord.setFootprint(newFootprint)
+        # just measure the one object we've prepared for
+        self.task.measure(subCat, subImage)
+        self.assertTrue(measRecord.get("base_SdssCentroid_flag"))
+        self.assertTrue(measRecord.get("base_SdssCentroid_flag_edge"))
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
@@ -96,7 +118,7 @@ def suite():
     lsst.utils.tests.init()
 
     suites = []
-    suites += unittest.makeSuite(SFMTestCase)
+    suites += unittest.makeSuite(SdssCentroidTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
