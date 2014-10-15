@@ -1,3 +1,4 @@
+
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
@@ -21,6 +22,37 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+// Centroid algorithms
+%{
+#include "lsst/meas/base/SdssCentroid.h"
+%}
+
+%include "lsst/meas/base/SdssCentroid.h"
+
+%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, SdssCentroidAlgorithm,
+                           SdssCentroidControl, FootprintCentroidInput, CentroidComponent)
+
+%include "lsst/meas/base/GaussianCentroid.h"
+%template(apply) lsst::meas::base::GaussianCentroidAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::GaussianCentroidAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, GaussianCentroidAlgorithm, GaussianCentroidControl,
+                           FootprintCentroidInput, CentroidComponent)
+
+%include "lsst/meas/base/NaiveCentroid.h"
+%template(apply) lsst::meas::base::NaiveCentroidAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::NaiveCentroidAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, NaiveCentroidAlgorithm,
+                           NaiveCentroidControl, FootprintCentroidInput, CentroidComponent)
+
+%include "lsst/meas/base/SdssCentroid.h"
+%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm1(lsst::meas::base, SdssCentroidAlgorithm,
+                           SdssCentroidControl, FootprintCentroidInput, CentroidComponent)
+
+// Flux algorithms
 %include "lsst/meas/base/PsfFlux.h"
 %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<double>;
@@ -51,3 +83,20 @@
 %wrapMeasurementAlgorithm1(lsst::meas::base, PeakLikelihoodFluxAlgorithm, PeakLikelihoodFluxControl,
                            FootprintCentroidInput, FluxComponent)
 
+// Shape algorithms
+
+%include "lsst/meas/base/SdssShape.h"
+%template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm4(lsst::meas::base, SdssShapeAlgorithm, SdssShapeControl, FootprintCentroidInput,
+                          ShapeComponent, CentroidComponent, FluxComponent, SdssShapeExtras)
+
+// Miscellaneous algorithms
+
+%include "lsst/meas/base/PixelFlags.h"
+%template(apply) lsst::meas::base::PixelFlagsAlgorithm::apply<float>;
+%template(apply) lsst::meas::base::PixelFlagsAlgorithm::apply<double>;
+%wrapMeasurementAlgorithm0(lsst::meas::base, PixelFlagsAlgorithm, PixelFlagsControl, FootprintCentroidInput)
+%include "lsst/meas/base/PixelFlags.h"
+
+%include "ApertureFlux.i"

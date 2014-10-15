@@ -203,14 +203,10 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
                             ALGORITHM##Result4, ALGORITHM##ResultMapper4)
 %enddef
 
-%include "lsst/meas/base/centroidLib.i"
-%include "lsst/meas/base/fluxLib.i"
-%include "lsst/meas/base/shapeLib.i"
-%include "lsst/meas/base/miscLib.i"
+%include "lsst/meas/base/pluginsLib.i"
 
 %import "lsst/pex/exceptions/exceptionsLib.i"
 %declareException(MeasurementError, lsst.pex.exceptions.RuntimeError, lsst::meas::base::MeasurementError)
 %declareException(FatalAlgorithmError, lsst.pex.exceptions.RuntimeError, lsst::meas::base::FatalAlgorithmError)
 %declareException(PixelValueError, lsst.pex.exceptions.DomainError, lsst::meas::base::PixelValueError)
 
-%include "lsst/meas/base/ApertureFlux.i"
