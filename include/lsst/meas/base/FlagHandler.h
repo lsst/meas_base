@@ -46,6 +46,8 @@ struct FlagDefinition {
 class FlagHandler {
 public:
 
+    enum { FAILURE=0 };
+
     FlagHandler() {}
 
     explicit FlagHandler(
