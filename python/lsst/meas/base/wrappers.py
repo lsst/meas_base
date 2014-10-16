@@ -116,7 +116,7 @@ def wrapAlgorithm(Base, AlgClass, factory, name=None, Control=None, ConfigClass=
             Control = AlgClass.Control
         ConfigClass = wrapAlgorithmControl(Base.ConfigClass, Control, **kwds)
     PluginClass = type(AlgClass.__name__ + Base.__name__, (Base,),
-                       dict(AlgClass=AlgClass, ConfigClass=ConfigClass, factory=factory))
+                       dict(AlgClass=AlgClass, ConfigClass=ConfigClass, factory=staticmethod(factory)))
     if doRegister:
         if name is None:
             name = generateAlgorithmName(AlgClass)
