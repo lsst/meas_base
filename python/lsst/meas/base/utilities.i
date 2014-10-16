@@ -26,6 +26,7 @@
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/meas/base/ShapeUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
+#include "lsst/meas/base/InputUtilities.h"
 #include "lsst/afw/table.h"
 %}
 
@@ -41,3 +42,4 @@
 %include "lsst/meas/base/CentroidUtilities.h"
 %include "lsst/meas/base/ShapeUtilities.h"
 %include "lsst/meas/base/FlagHandler.h"
+%include "lsst/meas/base/InputUtilities.h"

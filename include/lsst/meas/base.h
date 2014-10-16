@@ -28,6 +28,7 @@
 #include "lsst/meas/base/Results.h"
 #include "lsst/meas/base/ResultMappers.h"
 #include "lsst/meas/base/Inputs.h"
+#include "lsst/meas/base/InputUtilities.h"
 #include "lsst/meas/base/Algorithm.h"
 #include "lsst/meas/base/PsfFlux.h"
 #include "lsst/meas/base/SincFlux.h"
