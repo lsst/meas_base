@@ -34,6 +34,7 @@ from .base import *
 from .baseLib import *
 from .sfm import *
 from .forcedMeasurement import *
+from .wrappers import *
 
 # --- Wrapped C++ Plugins ---
 
@@ -56,36 +57,7 @@ WrappedForcedPlugin.generate(GaussianFluxAlgorithm)
 WrappedForcedPlugin.generate(NaiveCentroidAlgorithm, executionOrder=0.0)
 WrappedForcedPlugin.generate(PeakLikelihoodFluxAlgorithm)
 
-@register("base_PsfFlux")
-class PsfFluxSingleFramePlugin(SingleFramePlugin):
-
-    ConfigClass = lsst.pex.config.makeConfigClass(PsfFluxControl, base=SingleFramePluginConfig)
-
-    def __init__(self, config, name, schema, metadata):
-        SingleFramePlugin.__init__(self, config, name, schema, metadata)
-        self.cpp = PsfFluxAlgorithm(config.makeControl(), name, schema)
-
-    def measure(self, measRecord, exposure):
-        self.cpp.measure(measRecord, exposure)
-
-    def fail(self, measRecord, error=None):
-        self.cpp.fail(measRecord, error.cpp if error is not None else None)
-
-@register("base_PsfFlux")
-class PsfFluxForcedPlugin(ForcedPlugin):
-
-    ConfigClass = lsst.pex.config.makeConfigClass(PsfFluxControl, base=ForcedPluginConfig)
-
-    def __init__(self, config, name, schemaMapper, metadata):
-        ForcedPlugin.__init__(self, config, name, schemaMapper, metadata)
-        self.cpp = PsfFluxAlgorithm(config.makeControl(), name, schemaMapper.editOutputSchema())
-
-    def measure(self, measRecord, exposure, refRecord, refWcs):
-        self.cpp.measure(measRecord, exposure)
-
-    def fail(self, measRecord, error=None):
-        self.cpp.fail(measRecord, error.cpp if error is not None else None)
-
+wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl)
 
 # --- Aperture Flux Measurement Plugins ---
 
