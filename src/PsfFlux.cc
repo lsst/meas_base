@@ -40,7 +40,8 @@ PsfFluxAlgorithm::PsfFluxAlgorithm(
 ) : _ctrl(ctrl),
     _fluxResultKey(
         FluxResultKey::addFields(schema, name, "flux derived from linear least-squares fit of PSF model")
-    )
+    ),
+    _centroidExtractor(schema, name)
 {
     static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag"},
@@ -61,8 +62,7 @@ void PsfFluxAlgorithm::measure(
             "PsfFlux algorithm requires a Psf with every exposure"
         );
     }
-    // TODO: check if centroid is valid, unflagged
-    afw::geom::Point2D position = measRecord.getCentroid();
+    afw::geom::Point2D position = _centroidExtractor(measRecord, _flagHandler);
     PTR(afw::detection::Psf::Image) psfImage = psf->computeImage(position);
     afw::geom::Box2I fitBBox = psfImage->getBBox();
     fitBBox.clip(exposure.getBBox());

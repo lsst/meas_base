@@ -28,6 +28,7 @@
 #include "lsst/meas/base/Algorithm.h"
 #include "lsst/meas/base/FluxUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
+#include "lsst/meas/base/InputUtilities.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -98,6 +99,7 @@ private:
     Control _ctrl;
     FluxResultKey _fluxResultKey;
     FlagHandler _flagHandler;;
+    SafeCentroidExtractor _centroidExtractor;
 };
 
 }}} // namespace lsst::meas::base
