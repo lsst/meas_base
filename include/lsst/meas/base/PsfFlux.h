@@ -66,8 +66,8 @@ public:
 class PsfFluxAlgorithm : public SimpleAlgorithm {
 public:
 
-    enum Flags {
-        FAILURE=0,
+    enum {
+        FAILURE=FlagHandler::FAILURE,
         NO_GOOD_PIXELS,
         EDGE,
         N_FLAGS
