@@ -50,7 +50,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
         sfm_config.plugins = ["base_PeakCentroid", "base_SdssShape"]
-        sfm_config.slots.centroid = None
+        sfm_config.slots.centroid = "base_PeakCentroid"
         sfm_config.slots.shape = "base_SdssShape"
         sfm_config.slots.psfFlux = None
         sfm_config.slots.modelFlux = None
@@ -65,6 +65,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         truthShapeKey = lsst.afw.table.QuadrupoleKey(srccat.schema.find("truth_xx").key,
                                                      srccat.schema.find("truth_yy").key,
                                                      srccat.schema.find("truth_xy").key)
+
         for i in range(len(measCat)):
             record = measCat[i]
             srcRec = srccat[i]
@@ -74,18 +75,12 @@ class SFMTestCase(lsst.utils.tests.TestCase):
             xxSigma = record.get("base_SdssShape_xxSigma")
             yySigma = record.get("base_SdssShape_yySigma")
             xySigma = record.get("base_SdssShape_xySigma")
-            xxyyCov = record.get("base_SdssShape_xx_yy_Cov")
-            xxxyCov = record.get("base_SdssShape_xx_xy_Cov")
-            yyxyCov = record.get("base_SdssShape_yy_xy_Cov")
             trueShape = srcRec.get(truthShapeKey)
             shape = record.getShape()
             cov = record.getShapeErr()
             self.assertClose(xxSigma*xxSigma, cov[0,0], rtol = .01)
             self.assertClose(yySigma*yySigma, cov[1,1], rtol = .01)
             self.assertClose(xySigma*xySigma, cov[2,2], rtol = .01)
-            self.assertTrue(numpy.isnan(xxyyCov) and numpy.isnan(cov[0,1]))
-            self.assertTrue(numpy.isnan(xxxyCov) and numpy.isnan(cov[0,2]))
-            self.assertTrue(numpy.isnan(yyxyCov) and numpy.isnan(cov[1,2]))
             if not numpy.isnan(trueShape.getIxx()):
                 self.assertFalse(record.get("base_SdssShape_flag"))
                 self.assertFalse(record.get("base_SdssShape_flag_unweightedBad"))

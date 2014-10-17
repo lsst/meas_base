@@ -24,20 +24,15 @@
 #ifndef LSST_MEAS_BASE_SdssShape_h_INCLUDED
 #define LSST_MEAS_BASE_SdssShape_h_INCLUDED
 
-/**
- *  @file lsst/meas/base/SdssShape.h
- *
- *  This file is one of two (the other is PsfFlux.h) intended to serve as an tutorial example on
- *  how to implement new Algorithms.  PsfFluxAlgorithm is a particularly simple algorithm, while
- *  SdssShapeAlgorithm is more complex.
- *
- *  See @ref measBaseImplementingNew for a general overview of the steps required.
- */
+#include <bitset>
 
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
-#include "lsst/meas/base/Inputs.h"
-#include "lsst/meas/base/ResultMappers.h"
+#include "lsst/meas/base/FluxUtilities.h"
+#include "lsst/meas/base/CentroidUtilities.h"
+#include "lsst/meas/base/ShapeUtilities.h"
+#include "lsst/meas/base/InputUtilities.h"
+#include "lsst/meas/base/Algorithm.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -60,20 +55,35 @@ public:
 };
 
 /**
- *  @brief Additional results for SdssShapeAlgorithm
+ *  Namespace-only struct enumerating the failure modes of SdssShape.
  *
- *  Unlike PsfFlux, some of SdssShape's outputs aren't handled by the standard FluxComponent,
- *  CentroidComponent, and ShapeComponent classes, so we have to define a Component class here
- *  to handle just those output which require special handling.
+ *  This struct simply serves as a namespace for the failure flags, in a way that allows us to easily
+ *  include them in related classes (by inheriting from this class).
+ */
+struct SdssShapeFlags {
+    enum {
+        FAILURE=FlagHandler::FAILURE,
+        UNWEIGHTED_BAD,
+        UNWEIGHTED,
+        SHIFT,
+        MAXITER,
+        N_FLAGS
+    };
+};
+
+/**
+ *  @brief Result object SdssShapeAlgorithm
  *
- *  A corresponding ComponentMapper class is also required (see below).
+ *  Because we have use cases for running SdssShape outside of the measurement framework (in particular,
+ *  we need to run it on PSF model images), we provide an interface that doesn't need to use SourceRecord
+ *  for its inputs and outputs.  Instead, it returns an instance of this class.
  *
  *  Note: for what I guess are historical reasons, SdssShape computes covariance terms between the flux
  *  and the shape, but not between the flux and centroid or centroid and shape.
  *
  *  This should logically be an inner class, but Swig doesn't know how to parse those.
  */
-class SdssShapeExtras {
+class SdssShapeResult : public ShapeResult, public CentroidResult, public FluxResult, public SdssShapeFlags {
 public:
     ShapeElement xy4;       ///< A fourth moment used in lensing (RHL needs to clarify; not in the old docs)
     ErrElement xy4Sigma;    ///< 1-Sigma uncertainty on xy4
@@ -81,46 +91,80 @@ public:
     ErrElement flux_yy_Cov; ///< flux, yy term in the uncertainty covariance matrix
     ErrElement flux_xy_Cov; ///< flux, xy term in the uncertainty covariance matrix
 
-    SdssShapeExtras(); ///< Constructor; initializes everything to NaN
+#ifndef SWIG
+    std::bitset<N_FLAGS> flags; ///< Status flags (see SdssShapeFlags).
+#endif
+
+    /// Flag getter for Swig, which doesn't understand std::bitset
+    bool getFlag(int index) const { return flags[index]; }
+
+    SdssShapeResult(); ///< Constructor; initializes everything to NaN
+
 };
 
 /**
- *  @brief Object that transfers additional SdssShapeAlgorithm results to afw::table records
+ *  @brief A FunctorKey that maps SdssShapeResult to afw::table Records.
  *
- *  Because we have custom outputs, we also have to define how to transfer those outputs to
- *  records.  We just follow the pattern established by the other ComponentMapper classes.
- *
- *  This should logically be an inner class, but Swig doesn't know how to parse those.
+ *  This is used internally by SdssShapeAlgorithm to transfer results from SdssShapeResult to SourceRecord,
+ *  but it can also be used in the other direction by codes that need to extra an SdssShapeResult from
+ *  a record.
  */
-class SdssShapeExtrasMapper {
+class SdssShapeResultKey : public afw::table::FunctorKey<SdssShapeResult>, public SdssShapeFlags {
 public:
 
     /**
-     *  @brief Allocate fields in the schema and save keys for future use.
+     *  @brief Add the appropriate fields to a Schema, and return a SdssShapeResultKey that manages them
      *
-     *  Unlike the standard ComponentMappers, SdssShapeExtrasMappers takes a Control instance
-     *  as its third argument.  It doesn't actually need it, but this is a good pattern to
-     *  establish as some algorithms' outputs *will* depend on the Control object's values, and
-     *  the mapper needs to have some kind of third argument in order to work with
-     *  @ref measBaseResultMapperTemplates.
-     *
-     *  All fields should start with the given prefix and an underscore.
+     *  @param[in,out] schema  Schema to add fields to.
+     *  @param[in]     name    Name prefix for all fields; "_xx", "_yy", etc. will be appended to this
+     *                         to form the full field names.
      */
-    SdssShapeExtrasMapper(
+    static SdssShapeResultKey addFields(
         afw::table::Schema & schema,
-        std::string const & prefix,
-        SdssShapeControl const & control=SdssShapeControl()
+        std::string const & name
     );
 
-    /// Transfer values from the result struct to the record.
-    void apply(afw::table::BaseRecord & record, SdssShapeExtras const & result) const;
+    /// Default constructor; instance will not be usuable unless subsequently assigned to.
+    SdssShapeResultKey() {}
+
+    /**
+     *  @brief Construct from a subschema, assuming _xx, _yy, etc. subfields
+     *
+     *  If a schema has "a_xx", "a_yy", etc. fields, this constructor allows you to construct
+     *  a SdssShapeResultKey via:
+     *  @code
+     *  SdssShapeResultKey k(schema["a"]);
+     *  @endcode
+     */
+    SdssShapeResultKey(afw::table::SubSchema const & s);
+
+    /// Get a CentroidResult from the given record
+    virtual SdssShapeResult get(afw::table::BaseRecord const & record) const;
+
+    /// Set a CentroidResult in the given record
+    virtual void set(afw::table::BaseRecord & record, SdssShapeResult const & value) const;
+
+    //@{
+    /// Compare the FunctorKey for equality with another, using the underlying Keys
+    bool operator==(SdssShapeResultKey const & other) const;
+    bool operator!=(SdssShapeResultKey const & other) const { return !(*this == other); }
+    //@}
+
+    /// Return True if the key is valid.
+    bool isValid() const;
+
+    FlagHandler const & getFlagHandler() const { return _flagHandler; }
 
 private:
+    ShapeResultKey _shapeResult;
+    CentroidResultKey _centroidResult;
+    FluxResultKey _fluxResult;
     afw::table::Key<ShapeElement> _xy4;
     afw::table::Key<ErrElement> _xy4Sigma;
     afw::table::Key<ErrElement> _flux_xx_Cov;
     afw::table::Key<ErrElement> _flux_yy_Cov;
     afw::table::Key<ErrElement> _flux_xy_Cov;
+    FlagHandler _flagHandler;
 };
 
 /**
@@ -129,134 +173,51 @@ private:
  *  This algorithm measures the weighted second moments of an image using a Gaussian weight function, which
  *  is iteratively updated to match the current weights.  If this iteration does not converge, it can fall
  *  back to using unweighted moments, which can be significantly noisier.
- *
- *  As an Algorithm class, all of SdssShapeAlgorithm's core functionality is available via static methods
- *  (in fact, there should be no reason to ever construct an instance).
- *
- *  Almost all of the implementation of SdssShapeAlgorithm is here and in SdssShapeAlgorithm.cc, but there
- *  are also a few key lines in the Swig .i file:
- *  @code
- *  %include "lsst/meas/base/SdssShape.h"
- *  %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
- *  %template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
- *  %wrapMeasurementAlgorithm4(lsst::meas::base, SdssShapeAlgorithm, SdssShapeControl, FootprintCentroidInput,
- *                             ShapeComponent, CentroidComponent, FluxComponent, SdssShapeExtras)
- *  @endcode
- *  and in the pure Python layer:
- *  @code
- *  WrappedSingleFramePlugin.generate(SdssShapeAlgorithm)
- *  @endcode
- *  The former ensure the Algorithm class is fully wrapped via Swig (including @c %%template instantiations
- *  of its @c Result and @c ResultMapper classes), and the latter actually generates the Config class and
- *  the Plugin classes and registers them.
  */
-class SdssShapeAlgorithm {
+class SdssShapeAlgorithm : public SimpleAlgorithm, public SdssShapeFlags {
 public:
 
-    /// @copydoc PsfFluxAlgorithm::FlagBits
-    enum FlagBits {
-        UNWEIGHTED_BAD=0,
-        UNWEIGHTED,
-        SHIFT,
-        MAXITER,
-        N_FLAGS
-    };
-
-    /// @copydoc PsfFluxAlgorithm::getFlagDefinitions()
-    static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
-        static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
-                {"unweightedBad", "Both weighted and unweighted moments were invalid"},
-                {"unweighted", "Weighted moments converged to an invalid value; using unweighted moments"},
-                {"shift", "centroid shifted by more than the maximum allowed amount"},
-                {"maxIter", "Too many iterations in adaptive moments"}
-            }};
-        return flagDefs;
-    }
-
-    /// A typedef to the Control object for this algorithm, defined above.
-    /// The control object contains the configuration parameters for this algorithm.
     typedef SdssShapeControl Control;
+    typedef SdssShapeResult Result;
+    typedef SdssShapeResultKey ResultKey;
 
-    /**
-     *  This is the type returned by apply().  Because SdssShapeAlgorithm measures a flux, a centroid, a
-     *  shape, and some other things, we concatenate all those together using the 4-parameter Result
-     *  template. A Flags component is always included with these templates as well.
-     */
-    typedef Result4<
-        SdssShapeAlgorithm,
-        ShapeComponent,
-        CentroidComponent,
-        FluxComponent,
-        SdssShapeExtras
-    > Result;
+    SdssShapeAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
 
-    /// @copydoc PsfFluxAlgorithm::ResultMapper
-    typedef ResultMapper4<
-        SdssShapeAlgorithm,
-        ShapeComponentMapper,
-        CentroidComponentMapper,
-        FluxComponentMapper,
-        SdssShapeExtrasMapper
-    > ResultMapper;
-
-    /**
-     *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  SdssShapeAlgorithm needs a centroid, so we can use FootprintCentroidInput.
-     */
-    typedef FootprintCentroidInput Input;
-
-    /// @copydoc PsfFluxAlgorithm::makeResultMapper
-    static ResultMapper makeResultMapper(
-        afw::table::Schema & schema,
-        std::string const & name,
-        Control const & ctrl=Control()
-    );
-
-    /**
-     *  @brief Measure the shape of a source using the SdssShape algorithm.
-     *
-     *  This is the overload of apply() that does all the work, and it's designed to be as easy to use
-     *  as possible. The arguments contain everything needed, and nothing more: a MaskedImage is supplied
-     *  (not an Exposure) because we just need the pixel data and mask.  Because the Plugin framework
-     *  calls a different overload of apply() (the one that takes an Input object), it doesn't care what
-     *  the signature of this one is.
-     */
     template <typename T>
-    static void apply(
+    static Result apply(
         afw::image::MaskedImage<T> const & image,
         afw::detection::Footprint const & footprint,
         afw::geom::Point2D const & position,
-        Result & result,
         Control const & ctrl=Control()
     );
 
-    /**
-     *  @brief A limited implementation of SdssShape that runs on images with no variance plane, and
-     *         hence reports no uncertainties.
-     */
     template <typename T>
-    static void apply(
+    static Result apply(
         afw::image::Image<T> const & exposure,
         afw::detection::Footprint const & footprint,
         afw::geom::Point2D const & position,
-        Result & result,
         Control const & ctrl=Control()
     );
 
-    /**
-     *  @brief Apply the SdssShape algorithm to a single source using the Plugin API.
-     *
-     *  This is the version that will be called by both the SFM framework.  It will delegate to the other
-     *  overload of apply().
-     */
-    template <typename T>
-    static void apply(
-        afw::image::Exposure<T> const & exposure,
-        Input const & inputs,
-        Result & result,
-        Control const & ctrl=Control()
-    );
+private:
 
+    // These are private so they doesn't shadow the other overloads in base classes;
+    // we can still call it via the public method on the base class.  We could have
+    // used a using declaration instead, but Swig had trouble with that here.
+
+    virtual void measure(
+        afw::table::SourceRecord & measRecord,
+        afw::image::Exposure<float> const & exposure
+    ) const;
+
+    virtual void fail(
+        afw::table::SourceRecord & measRecord,
+        MeasurementError * error=NULL
+    ) const;
+
+    Control _ctrl;
+    ResultKey _resultKey;
+    SafeCentroidExtractor _centroidExtractor;
 };
 
 }}} // namespace lsst::meas::base
