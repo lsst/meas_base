@@ -48,7 +48,7 @@ PsfFluxAlgorithm::PsfFluxAlgorithm(
         {"flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit"},
         {"flag_edge", "object was too close to the edge of the image to use the full PSF model"}
     }};
-    _flagHandler = FlagHandler(schema, name, flagDefs.begin(), flagDefs.end());
+    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }
 
 void PsfFluxAlgorithm::measure(

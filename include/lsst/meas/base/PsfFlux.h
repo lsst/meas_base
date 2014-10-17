@@ -98,7 +98,7 @@ private:
 
     Control _ctrl;
     FluxResultKey _fluxResultKey;
-    FlagHandler _flagHandler;;
+    FlagHandler _flagHandler;
     SafeCentroidExtractor _centroidExtractor;
 };
 
