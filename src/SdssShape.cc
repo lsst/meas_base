@@ -31,6 +31,7 @@
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/geom/Angle.h"
 #include "lsst/afw/geom/ellipses.h"
+#include "lsst/afw/table/Source.h"
 
 #include "lsst/meas/base/exceptions.h"
 #include "lsst/meas/base/SdssShape.h"
@@ -737,7 +738,8 @@ getFixedMomentsFlux(ImageT const& image,               ///< the data to process
 
 } // end detail namespace
 
-SdssShapeExtras::SdssShapeExtras() :
+
+SdssShapeResult::SdssShapeResult() :
     xy4(std::numeric_limits<ShapeElement>::quiet_NaN()),
     xy4Sigma(std::numeric_limits<ShapeElement>::quiet_NaN()),
     flux_xx_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
@@ -745,81 +747,134 @@ SdssShapeExtras::SdssShapeExtras() :
     flux_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN())
 {}
 
-SdssShapeExtrasMapper::SdssShapeExtrasMapper(
+static boost::array<FlagDefinition,SdssShapeFlags::N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag, set if anything went wrong"},
+        {"flag_unweightedBad", "Both weighted and unweighted moments were invalid"},
+        {"flag_unweighted", "Weighted moments converged to an invalid value; using unweighted moments"},
+        {"flag_shift", "centroid shifted by more than the maximum allowed amount"},
+        {"flag_maxIter", "Too many iterations in adaptive moments"}
+    }};
+
+SdssShapeResultKey SdssShapeResultKey::addFields(
     afw::table::Schema & schema,
-    std::string const & prefix,
-    SdssShapeControl const &
-) :
-    _xy4(
-        schema.addField(
-            afw::table::Field<ShapeElement>(
-                // TODO: get more mathematically precise documentation on this from RHL
-                prefix + "_xy4", "4th moment used in certain shear-estimation algorithms", "pixels^4"
-            ), true // doReplace
-        )
-    ),
-    _xy4Sigma(
-        schema.addField(
-            afw::table::Field<ErrElement>(
-                prefix + "_xy4Sigma", "uncertainty on " + prefix + "_xy4", "pixels^4"
-            ),
-            true
-        )
-    ),
-    _flux_xx_Cov(
-        schema.addField(
-            afw::table::Field<ErrElement>(
-                prefix + "_flux_xx_Cov",
-                "uncertainty covariance between " + prefix + "_flux and " + prefix + "_xx",
-                "dn*pixels^2"
-            ),
-            true
-        )
-    ),
-    _flux_yy_Cov(
-        schema.addField(
-            afw::table::Field<ErrElement>(
-                prefix + "_flux_yy_Cov",
-                "uncertainty covariance between " + prefix + "_flux and " + prefix + "_yy",
-                "dn*pixels^2"
-            ),
-            true
-        )
-    ),
-    _flux_xy_Cov(
-        schema.addField(
-            afw::table::Field<ErrElement>(
-                prefix + "_flux_xy_Cov",
-                "uncertainty covariance between " + prefix + "_flux and " + prefix + "_xy",
-                "dn*pixels^2"
-            ),
-            true
-        )
-    )
+    std::string const & name
+) {
+    SdssShapeResultKey r;
+    r._shapeResult = ShapeResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments",
+                                               SIGMA_ONLY);
+    r._centroidResult = CentroidResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments",
+                                                     SIGMA_ONLY);
+    r._fluxResult = FluxResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments");
+    r._xy4 = schema.addField<ShapeElement>(
+        // TODO: get more mathematically precise documentation on this from RHL
+        schema.join(name, "xy4"), "4th moment used in certain shear-estimation algorithms", "pixels^4"
+    );
+    r._xy4Sigma = schema.addField<ErrElement>(
+        schema.join(name, "xy4Sigma"),
+        "uncertainty on %s" + schema.join(name, "xy4"), "pixels^4"
+    );
+    r._flux_xx_Cov = schema.addField<ErrElement>(
+        schema.join(name, "flux", "xx", "Cov"),
+        (boost::format("uncertainty covariance between %s and %s")
+         % schema.join(name, "flux") % schema.join(name, "xx")).str(),
+        "dn*pixels^2"
+    );
+    r._flux_yy_Cov = schema.addField<ErrElement>(
+        schema.join(name, "flux", "yy", "Cov"),
+        (boost::format("uncertainty covariance between %s and %s")
+         % schema.join(name, "flux") % schema.join(name, "yy")).str(),
+        "dn*pixels^2"
+    );
+    r._flux_xy_Cov = schema.addField<ErrElement>(
+        schema.join(name, "flux", "xy", "Cov"),
+        (boost::format("uncertainty covariance between %s and %s")
+         % schema.join(name, "flux") % schema.join(name, "xy")).str(),
+        "dn*pixels^2"
+    );
+    r._flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+    return r;
+}
+
+SdssShapeResultKey::SdssShapeResultKey(afw::table::SubSchema const & s) :
+    _shapeResult(s),
+    _centroidResult(s),
+    _fluxResult(s),
+    _xy4(s["xy4"]),
+    _xy4Sigma(s["xy4Sigma"]),
+    _flux_xx_Cov(s["flux"]["xx"]["Cov"]),
+    _flux_yy_Cov(s["flux"]["yy"]["Cov"]),
+    _flux_xy_Cov(s["flux"]["xy"]["Cov"]),
+    _flagHandler(s, flagDefs.begin(), flagDefs.end())
 {}
 
-void SdssShapeExtrasMapper::apply(afw::table::BaseRecord & record, SdssShapeExtras const & result) const {
-    record.set(_xy4, result.xy4);
-    record.set(_xy4Sigma, result.xy4Sigma);
-    record.set(_flux_xx_Cov, result.flux_xx_Cov);
-    record.set(_flux_yy_Cov, result.flux_yy_Cov);
-    record.set(_flux_xy_Cov, result.flux_xy_Cov);
+SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const & record) const {
+    SdssShapeResult result;
+    static_cast<ShapeResult&>(result) = record.get(_shapeResult);
+    static_cast<CentroidResult&>(result) = record.get(_centroidResult);
+    static_cast<FluxResult&>(result) = record.get(_fluxResult);
+    result.xy4 = record.get(_xy4);
+    result.xy4Sigma = record.get(_xy4Sigma);
+    result.flux_xx_Cov = record.get(_flux_xx_Cov);
+    result.flux_yy_Cov = record.get(_flux_yy_Cov);
+    result.flux_xy_Cov = record.get(_flux_xy_Cov);
+    for (int n = 0; n < N_FLAGS; ++n) {
+        result.flags[n] = _flagHandler.getValue(record, n);
+    }
+    return result;
 }
 
-SdssShapeAlgorithm::ResultMapper SdssShapeAlgorithm::makeResultMapper(
-    afw::table::Schema & schema,
-    std::string const & name,
-    Control const & ctrl
-) {
-    return ResultMapper(schema, name, FULL_COVARIANCE, SIGMA_ONLY, FULL_COVARIANCE, ctrl);
+void SdssShapeResultKey::set(afw::table::BaseRecord & record, SdssShapeResult const & value) const {
+    record.set(_shapeResult, value);
+    record.set(_centroidResult, value);
+    record.set(_fluxResult, value);
+    record.set(_xy4, value.xy4);
+    record.set(_xy4Sigma, value.xy4Sigma);
+    record.set(_flux_xx_Cov, value.flux_xx_Cov);
+    record.set(_flux_yy_Cov, value.flux_yy_Cov);
+    record.set(_flux_xy_Cov, value.flux_xy_Cov);
+    for (int n = 0; n < N_FLAGS; ++n) {
+        _flagHandler.setValue(record, n, value.flags[n]);
+    }
 }
+
+bool SdssShapeResultKey::operator==(SdssShapeResultKey const & other) const {
+    return _shapeResult == other._shapeResult &&
+        _centroidResult == other._centroidResult &&
+        _fluxResult == other._fluxResult &&
+        _xy4 == other._xy4 &&
+        _xy4Sigma == other._xy4Sigma &&
+        _flux_xx_Cov == other._flux_xx_Cov &&
+        _flux_yy_Cov == other._flux_yy_Cov &&
+        _flux_xy_Cov == other._flux_xy_Cov;
+    // don't bother with flags - if we've gotten this far, it's basically impossible the flags don't match
+}
+
+bool SdssShapeResultKey::isValid() const {
+    return _shapeResult.isValid() &&
+        _centroidResult.isValid() &&
+        _fluxResult.isValid() &&
+        _xy4.isValid() &&
+        _xy4Sigma.isValid() &&
+        _flux_xx_Cov.isValid() &&
+        _flux_yy_Cov.isValid() &&
+        _flux_xy_Cov.isValid();
+    // don't bother with flags - if we've gotten this far, it's basically impossible the flags don't match
+}
+
+SdssShapeAlgorithm::SdssShapeAlgorithm(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::Schema & schema
+)
+  : _resultKey(ResultKey::addFields(schema, name)),
+    _centroidExtractor(schema, name)
+{}
 
 template <typename T>
-void SdssShapeAlgorithm::apply(
+SdssShapeResult SdssShapeAlgorithm::apply(
     afw::image::Image<T> const & exposure,
     afw::detection::Footprint const & footprint,
     afw::geom::Point2D const & center,
-    Result & result,
     Control const & control
 ) {
     throw LSST_EXCEPT(
@@ -829,11 +884,10 @@ void SdssShapeAlgorithm::apply(
 }
 
 template <typename T>
-void SdssShapeAlgorithm::apply(
+SdssShapeResult SdssShapeAlgorithm::apply(
     afw::image::MaskedImage<T> const & mimage,
     afw::detection::Footprint const & footprint,
     afw::geom::Point2D const & center,
-    Result & result,
     Control const & control
 ) {
     typedef typename afw::image::MaskedImage<T> MaskedImageT;
@@ -850,19 +904,15 @@ void SdssShapeAlgorithm::apply(
         shiftmax = 10;
     }
 
+    SdssShapeResult result;
     detail::SdssShapeImpl shapeImpl;
     try {
         detail::getAdaptiveMoments(mimage, control.background, xcen, ycen, shiftmax, &shapeImpl,
-                                         control.maxIter, control.tol1, control.tol2);
+                                   control.maxIter, control.tol1, control.tol2);
     } catch (pex::exceptions::Exception & err) {
-    // There used to be code here to set the flags, but the Result object
-    // gets lost when the throw happens.
-        throw;
+        result.flags[FAILURE] = true;
     }
-/*
- * We need to measure the PSF's moments even if we failed on the object
- * N.b. This isn't yet implemented (but the code's available from SDSS)
- */
+
     result.x = shapeImpl.getX() + mimage.getX0();
     result.y = shapeImpl.getY() + mimage.getY0();
     // FIXME: should do off-diagonal covariance elements too
@@ -876,32 +926,41 @@ void SdssShapeAlgorithm::apply(
     result.yySigma = shapeImpl.getIyyErr();
     result.xySigma = shapeImpl.getIxyErr();
 
-    // Now set the flags from SdssShapeImpl, then throw out if one is set.
-    int lastFlag = -1;
+    // Now set the flags from SdssShapeImpl
     for (int n = 0; n < detail::SdssShapeImpl::N_FLAGS; ++n) {
         if (shapeImpl.getFlag(detail::SdssShapeImpl::Flag(n))) {
-            result.setFlag(FlagBits(n));
-            lastFlag = n;
+            result.flags[n + 1] = true;
         }
     }
-    if (lastFlag >= 0) {
-        throw LSST_EXCEPT(
-            MeasurementError,
-            getFlagDefinitions()[lastFlag].doc,
-            FlagBits(lastFlag)
-        );
-    }
+    return result;
 }
 
-template <typename T>
-void SdssShapeAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    Input const & inputs,
-    Result & result,
-    Control const & ctrl
-) {
-    apply(exposure.getMaskedImage(), *inputs.footprint, inputs.position, result, ctrl);
+void SdssShapeAlgorithm::measure(
+    afw::table::SourceRecord & measRecord,
+    afw::image::Exposure<float> const & exposure
+) const {
+    if (!measRecord.getFootprint()) {
+        throw LSST_EXCEPT(
+            pex::exceptions::RuntimeError,
+            "No Footprint attached to SourceRecord"
+        );
+    }
+    SdssShapeResult result = apply(
+        exposure.getMaskedImage(), *measRecord.getFootprint(),
+        _centroidExtractor(measRecord, _resultKey.getFlagHandler()),
+        _ctrl
+    );
+    measRecord.set(_resultKey, result);
 }
+
+void SdssShapeAlgorithm::fail(
+    afw::table::SourceRecord & measRecord,
+    MeasurementError * error
+) const {
+    _resultKey.getFlagHandler().handleFailure(measRecord, error);
+}
+
+
 
 #define INSTANTIATE_IMAGE(IMAGE) \
     template bool detail::getAdaptiveMoments<IMAGE>( \
@@ -918,27 +977,18 @@ INSTANTIATE_PIXEL(float);
 INSTANTIATE_PIXEL(double);
 
 #define INSTANTIATE(T)                                                  \
-    template  void SdssShapeAlgorithm::apply(      \
+    template SdssShapeResult SdssShapeAlgorithm::apply(                 \
         afw::image::MaskedImage<T> const & exposure,                    \
         afw::detection::Footprint const & footprint,                    \
         afw::geom::Point2D const & position,                            \
-        Result & result,                                          \
         Control const & ctrl                                            \
     );                                                                  \
-    template  void SdssShapeAlgorithm::apply(      \
+    template SdssShapeResult SdssShapeAlgorithm::apply(                 \
         afw::image::Image<T> const & exposure,                          \
         afw::detection::Footprint const & footprint,                    \
         afw::geom::Point2D const & position,                            \
-        Result & result,                                          \
         Control const & ctrl                                            \
-    );                                                                  \
-    template                                                            \
-     void SdssShapeAlgorithm::apply(               \
-        afw::image::Exposure<T> const & exposure,                       \
-        Input const & inputs,                                           \
-        Result & result,                                                \
-        Control const & ctrl                                            \
-    );
+    )
 
 INSTANTIATE(float);
 INSTANTIATE(double);

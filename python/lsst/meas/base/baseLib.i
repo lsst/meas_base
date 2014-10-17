@@ -207,12 +207,6 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
                             ALGORITHM##Result4, ALGORITHM##ResultMapper4)
 %enddef
 
-%include "lsst/meas/base/SdssShape.h"
-%template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm4(lsst::meas::base, SdssShapeAlgorithm, SdssShapeControl, FootprintCentroidInput,
-                          ShapeComponent, CentroidComponent, FluxComponent, SdssShapeExtras)
-
 %include "lsst/meas/base/SincFlux.h"
 %template(apply) lsst::meas::base::SincFluxAlgorithm::apply<float>;
 %template(apply) lsst::meas::base::SincFluxAlgorithm::apply<double>;
@@ -270,3 +264,6 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 
 %feature("notabstract") lsst::meas::base::PsfFluxAlgorithm;
 %include "lsst/meas/base/PsfFlux.h"
+
+%feature("notabstract") lsst::meas::base::SdssShapeAlgorithm;
+%include "lsst/meas/base/SdssShape.h"
