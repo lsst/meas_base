@@ -95,7 +95,7 @@ public:
     {}
 
     /**
-     *  @brief Construct from a subschema, assuming centroid and centroidSigma subfields
+     *  @brief Construct from a subschema, assuming _x, _y, etc. subfields
      *
      *  If a schema has "a_x", "a_y", etc. fields, this constructor allows you to construct
      *  a CentroidResultKey via:

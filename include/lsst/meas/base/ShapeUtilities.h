@@ -109,7 +109,7 @@ public:
     {}
 
     /**
-     *  @brief Construct from a subschema, assuming shape and shapeSigma subfields
+     *  @brief Construct from a subschema, assuming _xx, _yy, etc. subfields
      *
      *  If a schema has "a_xx", "a_yy", etc. fields, this constructor allows you to construct
      *  a ShapeResultKey via:
