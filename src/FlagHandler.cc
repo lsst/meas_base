@@ -25,20 +25,34 @@
 
 namespace lsst { namespace meas { namespace base {
 
-FlagHandler::FlagHandler(
+FlagHandler FlagHandler::addFields(
     afw::table::Schema & schema,
     std::string const & prefix,
     FlagDefinition const * begin,
     FlagDefinition const * end
 ) {
-    _vector.reserve(end - begin);
+    FlagHandler r;
+    r._vector.reserve(end - begin);
     for (FlagDefinition const * iter = begin; iter != end; ++iter) {
-        _vector.push_back(
+        r._vector.push_back(
             std::make_pair(
                 *iter,
                 schema.addField<afw::table::Flag>(schema.join(prefix, iter->name), iter->doc)
             )
         );
+    }
+    return r;
+}
+
+FlagHandler::FlagHandler(
+    afw::table::SubSchema const & s,
+    FlagDefinition const * begin,
+    FlagDefinition const * end
+) {
+    _vector.reserve(end - begin);
+    for (FlagDefinition const * iter = begin; iter != end; ++iter) {
+        afw::table::Key<afw::table::Flag> key = s[iter->name];
+        _vector.push_back(std::make_pair(*iter, key));
     }
 }
 

@@ -50,9 +50,15 @@ public:
 
     FlagHandler() {}
 
-    explicit FlagHandler(
+    static FlagHandler addFields(
         afw::table::Schema & schema,
         std::string const & prefix,
+        FlagDefinition const * begin,
+        FlagDefinition const * end
+    );
+
+    FlagHandler(
+        afw::table::SubSchema const & s,
         FlagDefinition const * begin,
         FlagDefinition const * end
     );
