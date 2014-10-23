@@ -33,8 +33,7 @@ import lsst.pex.config
 import lsst.pipe.base
 import lsst.daf.base
 
-from .base import BasePlugin, BasePluginConfig, BaseMeasurementConfig, BaseMeasurementTask, \
-    PluginRegistry, generateAlgorithmName, NoiseReplacer, DummyNoiseReplacer
+from .base import *
 
 __all__ = ("SingleFramePluginConfig", "SingleFramePlugin", "WrappedSingleFramePlugin",
            "SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
@@ -130,28 +129,39 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
     def __init__(self, config, name, schema, flags, others, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
         self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
+        addDependencyFlagAliases(self.AlgClass, name, schema)
         # TODO: check flags
 
     def measure(self, measRecord, exposure):
-        self.result = self.AlgClass.Result()
+        result = self.AlgClass.Result()
         inputs = self.AlgClass.Input(measRecord)
-        self.AlgClass.apply(exposure, inputs, self.result, self.config.makeControl())
-        self.resultMapper.apply(measRecord, self.result)
+        if inputs.hasFlaggedDependencies():
+            self.fail(measRecord)
+            return  # bail out early: something we needed from another plugin failed
+        try:
+            self.AlgClass.apply(exposure, inputs, result, self.config.makeControl())
+        finally:
+            self.resultMapper.apply(measRecord, result)
 
     def measureN(self, measCat, exposure):
         assert hasattr(AlgClass, "applyN")  # would be better if we could delete this method somehow
         inputs = self.AlgClass.Input.Vector(measCat)
         results = []
         for i in range(len(measCat)):
+            if inputs[i].hasFlaggedDependencies():
+                for measRecord in measCat:
+                    self.fail(measRecord)
+                return  # bail out early: something we needed from another plugin failed
             results.append(self.AlgClass.Result())
-        self.AlgClass.applyN(exposure, inputs, results, self.config.makeControl())
-        for result, measRecord in zip(results, measCat):
-            self.resultMapper.apply(measRecord, result)
+        try:
+            self.AlgClass.applyN(exposure, inputs, results, self.config.makeControl())
+        finally:
+            for result, measRecord in zip(results, measCat):
+                self.resultMapper.apply(measRecord, result)
 
     def fail(self, measRecord, error=None):
         # The ResultMapper will set detailed flag bits describing the error if error is not None,
         # and set a general failure bit otherwise.
-        self.resultMapper.apply(measRecord, self.result)
         self.resultMapper.fail(measRecord, None if error is None else error.cpp)
 
     @classmethod

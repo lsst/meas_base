@@ -63,6 +63,8 @@ struct FootprintInput {
 
     static Vector makeVector(afw::table::SourceCatalog const & catalog);
 
+    bool hasFlaggedDependencies() const { return false; }
+
 };
 
 /// An Input struct for algorithms that require a position as well as a Footprint
@@ -78,6 +80,8 @@ struct FootprintCentroidInput : public FootprintInput {
     FootprintCentroidInput(afw::table::SourceRecord const & record);
 
     static Vector makeVector(afw::table::SourceCatalog const & catalog);
+
+    bool hasFlaggedDependencies() const { return false; }
 
 };
 
@@ -110,6 +114,8 @@ struct FootprintCentroidShapeInput : public FootprintCentroidInput {
     }
 
     static Vector makeVector(afw::table::SourceCatalog const & catalog);
+
+    bool hasFlaggedDependencies() const { return shapeFlag; }
 
 };
 

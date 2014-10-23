@@ -38,13 +38,6 @@ namespace lsst { namespace meas { namespace base {
 class GaussianFluxControl {
 public:
     LSST_CONTROL_FIELD(background, double, "FIXME! NEVER DOCUMENTED!");
-    LSST_CONTROL_FIELD(shiftmax, double, "FIXME! NEVER DOCUMENTED!");
-    LSST_CONTROL_FIELD(maxIter, int, "Maximum number of iterations");
-    LSST_CONTROL_FIELD(tol1, float, "Convergence tolerance for e1,e2");
-    LSST_CONTROL_FIELD(tol2, float, "Convergence tolerance for FWHM");
-    LSST_CONTROL_FIELD(usePixelWeights, bool, "Whether to use per-pixel inverse variance as weights");
-    LSST_CONTROL_FIELD(badMaskPlanes, std::vector<std::string>,
-                       "Mask planes that indicate pixels that should be excluded from the fit");
 
     /**
      *  @brief Default constructor
@@ -52,9 +45,7 @@ public:
      *  All control classes should define a default constructor that sets all fields to their default values.
      */
     GaussianFluxControl() :
-        background(0.0), shiftmax(10.0),
-        maxIter(detail::SDSS_SHAPE_MAX_ITER),
-        tol1(detail::SDSS_SHAPE_TOL1), tol2(detail::SDSS_SHAPE_TOL2)
+        background(0.0)
     {}
 };
 
@@ -74,9 +65,7 @@ public:
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
     enum FlagBits {
-        NO_GOOD_PIXELS,
-        EDGE,
-        N_FLAGS
+        N_FLAGS=0
     };
 
     /**
@@ -84,10 +73,7 @@ public:
      *         in catalog schemas.
      */
     static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
-        static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
-                {"noGoodPixels", "No usable pixels in fit region"},
-                {"edge", "Could not use full PSF model image in fit because of proximity to exposure border"},
-            }};
+        static boost::array<FlagDef,N_FLAGS> const flagDefs = {};
         return flagDefs;
     }
 
@@ -128,7 +114,6 @@ public:
         afw::image::Exposure<T> const & exposure,
         afw::geom::Point2D const & centroid,
         afw::geom::ellipses::Quadrupole const & shape,
-        bool const & shapeFlag,
         Result & result,
         Control const & ctrl=Control()
     );
