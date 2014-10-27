@@ -50,8 +50,7 @@ ForcedPhotImageTask, ForcedPhotCcdTask, and ForcedPhotCoaddTask.
 import lsst.pex.config
 import lsst.pipe.base
 
-from .base import BasePlugin, BasePluginConfig, BaseMeasurementConfig, BaseMeasurementTask, \
-    PluginRegistry, generateAlgorithmName, NoiseReplacer, DummyNoiseReplacer
+from .base import *
 
 __all__ = ("ForcedPluginConfig", "ForcedPlugin", "WrappedForcedPlugin",
            "ForcedMeasurementConfig", "ForcedMeasurementTask")
@@ -156,25 +155,39 @@ class WrappedForcedPlugin(ForcedPlugin):
         ForcedPlugin.__init__(self, config, name, schemaMapper, flags, others, metadata)
         schema = schemaMapper.editOutputSchema()
         self.resultMapper = self.AlgClass.makeResultMapper(schema, name, config.makeControl())
+        addDependencyFlagAliases(self.AlgClass, name, schema)
         # TODO: check flags
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
-        self.result = self.AlgClass.Result()
+        result = self.AlgClass.Result()
         inputs = self.AlgClass.Input(measRecord)
-        self.AlgClass.apply(exposure, inputs, self.result, self.config.makeControl())
-        self.resultMapper.apply(measRecord, self.result)
+        if inputs.hasFlaggedDependencies():
+            self.fail(measRecord)
+            return  # bail out early: something we needed from another plugin failed
+        try:
+            self.AlgClass.apply(exposure, inputs, result, self.config.makeControl())
+        finally:
+            self.resultMapper.apply(measRecord, result)
 
     def measureN(self, measCat, exposure, refCat, refWcs):
         assert hasattr(AlgClass, "applyN")  # would be better if we could delete this method somehow
         inputs = self.AlgClass.Input.Vector(measCat)
-        results = self.AlgClass.applyN(exposure, inputs, self.config.makeControl())
-        for result, measRecord in zip(results, measCat):
-            self.resultMapper.apply(measRecord, result)
+        results = []
+        for i in range(len(measCat)):
+            if inputs[i].hasFlaggedDependencies():
+                for measRecord in measCat:
+                    self.fail(measRecord)
+                return  # bail out early: something we needed from another plugin failed
+            results.append(self.AlgClass.Result())
+        try:
+            self.AlgClass.applyN(exposure, inputs, results, self.config.makeControl())
+        finally:
+            for result, measRecord in zip(results, measCat):
+                self.resultMapper.apply(measRecord, result)
 
     def fail(self, measRecord, error=None):
         # The ResultMapper will set detailed flag bits describing the error if error is not None,
         # and set a general failure bit otherwise.
-        self.resultMapper.apply(measRecord, self.result)
         self.resultMapper.fail(measRecord, None if error is None else error.cpp)
 
     @classmethod
