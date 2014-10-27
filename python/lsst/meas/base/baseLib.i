@@ -203,69 +203,10 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
                             ALGORITHM##Result4, ALGORITHM##ResultMapper4)
 %enddef
 
-%include "lsst/meas/base/PsfFlux.h"
-%template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, PsfFluxAlgorithm, PsfFluxControl, FootprintCentroidInput,
-                           FluxComponent)
-
-%include "lsst/meas/base/SdssShape.h"
-%template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm4(lsst::meas::base, SdssShapeAlgorithm, SdssShapeControl, FootprintCentroidInput,
-                          ShapeComponent, CentroidComponent, FluxComponent, SdssShapeExtras)
-
-%include "lsst/meas/base/SincFlux.h"
-%template(apply) lsst::meas::base::SincFluxAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::SincFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, SincFluxAlgorithm, SincFluxControl,
-                           FootprintCentroidInput, FluxComponent)
-
-%include "lsst/meas/base/GaussianFlux.h"
-%template(apply) lsst::meas::base::GaussianFluxAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::GaussianFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, GaussianFluxAlgorithm, GaussianFluxControl,
-                           FootprintCentroidShapeInput, FluxComponent)
-
-%include "lsst/meas/base/GaussianCentroid.h"
-%template(apply) lsst::meas::base::GaussianCentroidAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::GaussianCentroidAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, GaussianCentroidAlgorithm, GaussianCentroidControl,
-                           FootprintCentroidInput, CentroidComponent)
-
-%include "lsst/meas/base/NaiveFlux.h"
-%template(apply) lsst::meas::base::NaiveFluxAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::NaiveFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, NaiveFluxAlgorithm, NaiveFluxControl,
-                           FootprintCentroidInput, FluxComponent)
-
-%include "lsst/meas/base/PeakLikelihoodFlux.h"
-%template(apply) lsst::meas::base::PeakLikelihoodFluxAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::PeakLikelihoodFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, PeakLikelihoodFluxAlgorithm, PeakLikelihoodFluxControl,
-                           FootprintCentroidInput, FluxComponent)
-
-%include "lsst/meas/base/NaiveCentroid.h"
-%template(apply) lsst::meas::base::NaiveCentroidAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::NaiveCentroidAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, NaiveCentroidAlgorithm,
-                           NaiveCentroidControl, FootprintCentroidInput, CentroidComponent)
-
-%include "lsst/meas/base/SdssCentroid.h"
-%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, SdssCentroidAlgorithm,
-                           SdssCentroidControl, FootprintCentroidInput, CentroidComponent)
-
-%include "lsst/meas/base/PixelFlags.h"
-%template(apply) lsst::meas::base::PixelFlagsAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::PixelFlagsAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm0(lsst::meas::base, PixelFlagsAlgorithm, PixelFlagsControl, FootprintCentroidInput)
-%include "lsst/meas/base/PixelFlags.h"
+%include "lsst/meas/base/pluginsLib.i"
 
 %import "lsst/pex/exceptions/exceptionsLib.i"
 %declareException(MeasurementError, lsst.pex.exceptions.RuntimeError, lsst::meas::base::MeasurementError)
 %declareException(FatalAlgorithmError, lsst.pex.exceptions.RuntimeError, lsst::meas::base::FatalAlgorithmError)
 %declareException(PixelValueError, lsst.pex.exceptions.DomainError, lsst::meas::base::PixelValueError)
 
-%include "lsst/meas/base/ApertureFlux.i"
