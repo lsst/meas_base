@@ -77,6 +77,10 @@ void PixelFlagsAlgorithm::apply(
     FootprintBits<MaskedImageT> func(mimage);
 
 //  Catch centroids off the image or NAN
+    if (lsst::utils::isnan(center.getX()) || lsst::utils::isnan(center.getY())) {
+        throw LSST_EXCEPT(pex::exceptions::InvalidParameterError,
+                          "Center point passed to PixelFlagsALgorithm is NaN");
+    } 
     if (!mimage.getBBox().contains(afw::geom::Point2I(center) -
                                                      afw::geom::Extent2I(mimage.getXY0()))) {
        result.setFlag(EDGE);
