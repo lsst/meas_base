@@ -81,10 +81,6 @@ void PixelFlagsAlgorithm::apply(
         throw LSST_EXCEPT(pex::exceptions::InvalidParameterError,
                           "Center point passed to PixelFlagsALgorithm is NaN");
     } 
-    if (!mimage.getBBox().contains(afw::geom::Point2I(center) -
-                                                     afw::geom::Extent2I(mimage.getXY0()))) {
-       result.setFlag(EDGE);
-    }
 
     // Check for bits set in the source's Footprint
     func.apply(footprint);
