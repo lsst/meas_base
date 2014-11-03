@@ -80,7 +80,7 @@ void PixelFlagsAlgorithm::apply(
     if (lsst::utils::isnan(center.getX()) || lsst::utils::isnan(center.getY())) {
         throw LSST_EXCEPT(pex::exceptions::InvalidParameterError,
                           "Center point passed to PixelFlagsALgorithm is NaN");
-    } 
+    }
 
     // Check for bits set in the source's Footprint
     func.apply(footprint);
