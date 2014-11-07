@@ -745,7 +745,16 @@ SdssShapeResult::SdssShapeResult() :
     flux_xx_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
     flux_yy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
     flux_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN())
-{}
+{
+    names.push_back("_shapeResult");
+    names.push_back("_centroidResult");
+    names.push_back("_fluxResult");
+    names.push_back("xy4");
+    names.push_back("xy4Sigma");
+    names.push_back("flux_xx_Cov");
+    names.push_back("flux_yy_Cov");
+    names.push_back("flux_xy_Cov");
+}
 
 static boost::array<FlagDefinition,SdssShapeFlags::N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag, set if anything went wrong"},
@@ -809,9 +818,9 @@ SdssShapeResultKey::SdssShapeResultKey(afw::table::SubSchema const & s) :
 
 SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const & record) const {
     SdssShapeResult result;
-    static_cast<ShapeResult&>(result) = record.get(_shapeResult);
-    static_cast<CentroidResult&>(result) = record.get(_centroidResult);
-    static_cast<FluxResult&>(result) = record.get(_fluxResult);
+    result._shapeResult = record.get(_shapeResult);
+    result._centroidResult = record.get(_centroidResult);
+    result._fluxResult = record.get(_fluxResult);
     result.xy4 = record.get(_xy4);
     result.xy4Sigma = record.get(_xy4Sigma);
     result.flux_xx_Cov = record.get(_flux_xx_Cov);
@@ -824,9 +833,9 @@ SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const & record) c
 }
 
 void SdssShapeResultKey::set(afw::table::BaseRecord & record, SdssShapeResult const & value) const {
-    record.set(_shapeResult, value);
-    record.set(_centroidResult, value);
-    record.set(_fluxResult, value);
+    record.set(_shapeResult, value._shapeResult);
+    record.set(_centroidResult, value._centroidResult);
+    record.set(_fluxResult, value._fluxResult);
     record.set(_xy4, value.xy4);
     record.set(_xy4Sigma, value.xy4Sigma);
     record.set(_flux_xx_Cov, value.flux_xx_Cov);
@@ -913,18 +922,18 @@ SdssShapeResult SdssShapeAlgorithm::apply(
         result.flags[FAILURE] = true;
     }
 
-    result.x = shapeImpl.getX() + mimage.getX0();
-    result.y = shapeImpl.getY() + mimage.getY0();
+    result._centroidResult.x = shapeImpl.getX() + mimage.getX0();
+    result._centroidResult.y = shapeImpl.getY() + mimage.getY0();
     // FIXME: should do off-diagonal covariance elements too
-    result.xSigma = shapeImpl.getXErr();
-    result.ySigma = shapeImpl.getYErr();
-    result.xx = shapeImpl.getIxx();
-    result.yy = shapeImpl.getIyy();
-    result.xy = shapeImpl.getIxy();
+    result._centroidResult.xSigma = shapeImpl.getXErr();
+    result._centroidResult.ySigma = shapeImpl.getYErr();
+    result._shapeResult.xx = shapeImpl.getIxx();
+    result._shapeResult.yy = shapeImpl.getIyy();
+    result._shapeResult.xy = shapeImpl.getIxy();
     // FIXME: should do off-diagonal covariance elements too
-    result.xxSigma = shapeImpl.getIxxErr();
-    result.yySigma = shapeImpl.getIyyErr();
-    result.xySigma = shapeImpl.getIxyErr();
+    result._shapeResult.xxSigma = shapeImpl.getIxxErr();
+    result._shapeResult.yySigma = shapeImpl.getIyyErr();
+    result._shapeResult.xySigma = shapeImpl.getIxyErr();
 
     // Now set the flags from SdssShapeImpl
     for (int n = 0; n < detail::SdssShapeImpl::N_FLAGS; ++n) {

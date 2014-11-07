@@ -83,14 +83,17 @@ struct SdssShapeFlags {
  *
  *  This should logically be an inner class, but Swig doesn't know how to parse those.
  */
-class SdssShapeResult : public ShapeResult, public CentroidResult, public FluxResult, public SdssShapeFlags {
+class SdssShapeResult : public ShapeResult, public SdssShapeFlags {
 public:
+    ShapeResult _shapeResult;
+    CentroidResult _centroidResult;
+    FluxResult _fluxResult;
     ShapeElement xy4;       ///< A fourth moment used in lensing (RHL needs to clarify; not in the old docs)
     ErrElement xy4Sigma;    ///< 1-Sigma uncertainty on xy4
     ErrElement flux_xx_Cov; ///< flux, xx term in the uncertainty covariance matrix
     ErrElement flux_yy_Cov; ///< flux, yy term in the uncertainty covariance matrix
     ErrElement flux_xy_Cov; ///< flux, xy term in the uncertainty covariance matrix
-
+    std::vector<std::string> names;
 #ifndef SWIG
     std::bitset<N_FLAGS> flags; ///< Status flags (see SdssShapeFlags).
 #endif
@@ -155,7 +158,7 @@ public:
 
     FlagHandler const & getFlagHandler() const { return _flagHandler; }
 
-private:
+public:
     ShapeResultKey _shapeResult;
     CentroidResultKey _centroidResult;
     FluxResultKey _fluxResult;

@@ -23,7 +23,7 @@
 
 import math
 import os
-from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
+from lsst.afw.table import Schema,SubSchema,SchemaMapper,SourceCatalog,SourceTable
 from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
 from lsst.meas.base.base import *
 from lsst.meas.base.tests import *
@@ -61,7 +61,8 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         measCat.extend(srccat, mapper=mapper)
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
-
+        import pdb
+        pdb.set_trace()
         truthShapeKey = lsst.afw.table.QuadrupoleKey(srccat.schema.find("truth_xx").key,
                                                      srccat.schema.find("truth_yy").key,
                                                      srccat.schema.find("truth_xy").key)
