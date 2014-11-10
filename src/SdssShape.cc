@@ -739,22 +739,13 @@ getFixedMomentsFlux(ImageT const& image,               ///< the data to process
 } // end detail namespace
 
 
-SdssShapeResult::SdssShapeResult() :
-    xy4(std::numeric_limits<ShapeElement>::quiet_NaN()),
-    xy4Sigma(std::numeric_limits<ShapeElement>::quiet_NaN()),
-    flux_xx_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
-    flux_yy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
-    flux_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN())
-{
-    names.push_back("_shapeResult");
-    names.push_back("_centroidResult");
-    names.push_back("_fluxResult");
-    names.push_back("xy4");
-    names.push_back("xy4Sigma");
-    names.push_back("flux_xx_Cov");
-    names.push_back("flux_yy_Cov");
-    names.push_back("flux_xy_Cov");
-}
+SdssShapeResult::SdssShapeResult()
+//    xy4(std::numeric_limits<ShapeElement>::quiet_NaN()),
+//    xy4Sigma(std::numeric_limits<ShapeElement>::quiet_NaN()),
+//    flux_xx_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
+//    flux_yy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
+//    flux_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN())
+{}
 
 static boost::array<FlagDefinition,SdssShapeFlags::N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag, set if anything went wrong"},
@@ -769,37 +760,10 @@ SdssShapeResultKey SdssShapeResultKey::addFields(
     std::string const & name
 ) {
     SdssShapeResultKey r;
-    r._shapeResult = ShapeResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments",
-                                               SIGMA_ONLY);
-    r._centroidResult = CentroidResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments",
-                                                     SIGMA_ONLY);
-    r._fluxResult = FluxResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments");
-    r._xy4 = schema.addField<ShapeElement>(
-        // TODO: get more mathematically precise documentation on this from RHL
-        schema.join(name, "xy4"), "4th moment used in certain shear-estimation algorithms", "pixels^4"
-    );
-    r._xy4Sigma = schema.addField<ErrElement>(
-        schema.join(name, "xy4Sigma"),
-        "uncertainty on %s" + schema.join(name, "xy4"), "pixels^4"
-    );
-    r._flux_xx_Cov = schema.addField<ErrElement>(
-        schema.join(name, "flux", "xx", "Cov"),
-        (boost::format("uncertainty covariance between %s and %s")
-         % schema.join(name, "flux") % schema.join(name, "xx")).str(),
-        "dn*pixels^2"
-    );
-    r._flux_yy_Cov = schema.addField<ErrElement>(
-        schema.join(name, "flux", "yy", "Cov"),
-        (boost::format("uncertainty covariance between %s and %s")
-         % schema.join(name, "flux") % schema.join(name, "yy")).str(),
-        "dn*pixels^2"
-    );
-    r._flux_xy_Cov = schema.addField<ErrElement>(
-        schema.join(name, "flux", "xy", "Cov"),
-        (boost::format("uncertainty covariance between %s and %s")
-         % schema.join(name, "flux") % schema.join(name, "xy")).str(),
-        "dn*pixels^2"
-    );
+    init();
+    fAddFields[0](schema, name, r);
+    fAddFields[1](schema, name, r);
+    fAddFields[2](schema, name, r);
     r._flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
     return r;
 }
@@ -808,24 +772,16 @@ SdssShapeResultKey::SdssShapeResultKey(afw::table::SubSchema const & s) :
     _shapeResult(s),
     _centroidResult(s),
     _fluxResult(s),
-    _xy4(s["xy4"]),
-    _xy4Sigma(s["xy4Sigma"]),
-    _flux_xx_Cov(s["flux"]["xx"]["Cov"]),
-    _flux_yy_Cov(s["flux"]["yy"]["Cov"]),
-    _flux_xy_Cov(s["flux"]["xy"]["Cov"]),
     _flagHandler(s, flagDefs.begin(), flagDefs.end())
-{}
+{
+}
 
 SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const & record) const {
     SdssShapeResult result;
-    result._shapeResult = record.get(_shapeResult);
-    result._centroidResult = record.get(_centroidResult);
-    result._fluxResult = record.get(_fluxResult);
-    result.xy4 = record.get(_xy4);
-    result.xy4Sigma = record.get(_xy4Sigma);
-    result.flux_xx_Cov = record.get(_flux_xx_Cov);
-    result.flux_yy_Cov = record.get(_flux_yy_Cov);
-    result.flux_xy_Cov = record.get(_flux_xy_Cov);
+
+    for (unsigned int i = 0; i < nFields; i++) {
+        fGet[i](record, result, this);    
+    }
     for (int n = 0; n < N_FLAGS; ++n) {
         result.flags[n] = _flagHandler.getValue(record, n);
     }
@@ -833,14 +789,6 @@ SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const & record) c
 }
 
 void SdssShapeResultKey::set(afw::table::BaseRecord & record, SdssShapeResult const & value) const {
-    record.set(_shapeResult, value._shapeResult);
-    record.set(_centroidResult, value._centroidResult);
-    record.set(_fluxResult, value._fluxResult);
-    record.set(_xy4, value.xy4);
-    record.set(_xy4Sigma, value.xy4Sigma);
-    record.set(_flux_xx_Cov, value.flux_xx_Cov);
-    record.set(_flux_yy_Cov, value.flux_yy_Cov);
-    record.set(_flux_xy_Cov, value.flux_xy_Cov);
     for (int n = 0; n < N_FLAGS; ++n) {
         _flagHandler.setValue(record, n, value.flags[n]);
     }
@@ -849,25 +797,13 @@ void SdssShapeResultKey::set(afw::table::BaseRecord & record, SdssShapeResult co
 bool SdssShapeResultKey::operator==(SdssShapeResultKey const & other) const {
     return _shapeResult == other._shapeResult &&
         _centroidResult == other._centroidResult &&
-        _fluxResult == other._fluxResult &&
-        _xy4 == other._xy4 &&
-        _xy4Sigma == other._xy4Sigma &&
-        _flux_xx_Cov == other._flux_xx_Cov &&
-        _flux_yy_Cov == other._flux_yy_Cov &&
-        _flux_xy_Cov == other._flux_xy_Cov;
-    // don't bother with flags - if we've gotten this far, it's basically impossible the flags don't match
+        _fluxResult == other._fluxResult;
 }
 
 bool SdssShapeResultKey::isValid() const {
     return _shapeResult.isValid() &&
         _centroidResult.isValid() &&
-        _fluxResult.isValid() &&
-        _xy4.isValid() &&
-        _xy4Sigma.isValid() &&
-        _flux_xx_Cov.isValid() &&
-        _flux_yy_Cov.isValid() &&
-        _flux_xy_Cov.isValid();
-    // don't bother with flags - if we've gotten this far, it's basically impossible the flags don't match
+        _fluxResult.isValid();
 }
 
 SdssShapeAlgorithm::SdssShapeAlgorithm(
@@ -875,7 +811,7 @@ SdssShapeAlgorithm::SdssShapeAlgorithm(
     std::string const & name,
     afw::table::Schema & schema
 )
-  : _resultKey(ResultKey::addFields(schema, name)),
+  : _resultKey(_resultKey.addFields(schema, name)),
     _centroidExtractor(schema, name)
 {}
 
@@ -959,7 +895,10 @@ void SdssShapeAlgorithm::measure(
         _centroidExtractor(measRecord, _resultKey.getFlagHandler()),
         _ctrl
     );
-    measRecord.set(_resultKey, result);
+    for (unsigned int i = 0; i < _resultKey.nFields; i++) {
+        _resultKey.fSet[i](measRecord, result, &_resultKey);    
+    }
+    _resultKey.set(measRecord, result);
 }
 
 void SdssShapeAlgorithm::fail(

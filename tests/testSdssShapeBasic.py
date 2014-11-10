@@ -23,7 +23,7 @@
 
 import math
 import os
-from lsst.afw.table import Schema,SubSchema,SchemaMapper,SourceCatalog,SourceTable
+from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
 from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
 from lsst.meas.base.base import *
 from lsst.meas.base.tests import *
@@ -61,8 +61,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         measCat.extend(srccat, mapper=mapper)
         # now run the SFM task with the test plugin
         task.run(measCat, exposure)
-        import pdb
-        pdb.set_trace()
+
         truthShapeKey = lsst.afw.table.QuadrupoleKey(srccat.schema.find("truth_xx").key,
                                                      srccat.schema.find("truth_yy").key,
                                                      srccat.schema.find("truth_xy").key)
@@ -92,10 +91,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
                 y = record.get("base_SdssShape_y")
                 xSigma = record.get("base_SdssShape_xSigma")
                 ySigma = record.get("base_SdssShape_ySigma")
-                flux = record.get("base_SdssShape_flux")
-                fluxSigma = record.get("base_SdssShape_fluxSigma")
-                xy4 = record.get("base_SdssShape_xy4")
-                xy4Sigma = record.get("base_SdssShape_xy4Sigma")
                 self.assertClose(xx, trueShape.getIxx(), atol=None, rtol=.12)
                 self.assertClose(yy, trueShape.getIyy(), atol=None, rtol=.12)
                 # commented out because of a bug

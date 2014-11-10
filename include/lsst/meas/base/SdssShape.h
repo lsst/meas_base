@@ -34,6 +34,35 @@
 #include "lsst/meas/base/InputUtilities.h"
 #include "lsst/meas/base/Algorithm.h"
 
+#define MAKE_RESULT_FIELD(NAME, VARNAME, DOC, UNCERTAINTY) \
+    static void VARNAME##AddFields(afw::table::Schema & schema, std::string const & name, SdssShapeResultKey & key) { \
+        key.VARNAME = NAME##ResultKey::addFields(schema, name, DOC, UNCERTAINTY); \
+    } \
+    static void VARNAME##Set(afw::table::BaseRecord & record, SdssShapeResult const & value, SdssShapeResultKey const * key) { \
+        record.set(key->VARNAME, value.VARNAME); \
+    } \
+    static void VARNAME##Get(afw::table::BaseRecord const & record, SdssShapeResult & value, SdssShapeResultKey const * key) { \
+        value.VARNAME = record.get(key->VARNAME); \
+    } 
+
+#define INIT_RESULT_FIELDS3(RESULT1, RESULT2, RESULT3)\
+    unsigned int nFields;\
+    void (*fAddFields[3]) (afw::table::Schema & schema, std::string const & name, SdssShapeResultKey & key);\
+    void (*fSet[3]) (afw::table::BaseRecord & record, SdssShapeResult const & value, SdssShapeResultKey const * key);\
+    void (*fGet[3]) (afw::table::BaseRecord const & record, SdssShapeResult & value, SdssShapeResultKey const * key);\
+    void init() {\
+        nFields = 3;\
+        fAddFields[0] = RESULT1##AddFields;\
+        fAddFields[1] = RESULT2##AddFields;\
+        fAddFields[2] = RESULT3##AddFields;\
+        fSet[0] = RESULT1##Set;\
+        fSet[1] = RESULT2##Set;\
+        fSet[2] = RESULT3##Set;\
+        fGet[0] = RESULT1##Get;\
+        fGet[1] = RESULT2##Get;\
+        fGet[2] = RESULT3##Get;\
+    }
+
 namespace lsst { namespace meas { namespace base {
 
 /**
@@ -70,7 +99,6 @@ struct SdssShapeFlags {
         N_FLAGS
     };
 };
-
 /**
  *  @brief Result object SdssShapeAlgorithm
  *
@@ -83,17 +111,16 @@ struct SdssShapeFlags {
  *
  *  This should logically be an inner class, but Swig doesn't know how to parse those.
  */
-class SdssShapeResult : public ShapeResult, public SdssShapeFlags {
+class SdssShapeResult : public SdssShapeFlags {
 public:
     ShapeResult _shapeResult;
     CentroidResult _centroidResult;
     FluxResult _fluxResult;
-    ShapeElement xy4;       ///< A fourth moment used in lensing (RHL needs to clarify; not in the old docs)
-    ErrElement xy4Sigma;    ///< 1-Sigma uncertainty on xy4
-    ErrElement flux_xx_Cov; ///< flux, xx term in the uncertainty covariance matrix
-    ErrElement flux_yy_Cov; ///< flux, yy term in the uncertainty covariance matrix
-    ErrElement flux_xy_Cov; ///< flux, xy term in the uncertainty covariance matrix
-    std::vector<std::string> names;
+//    ShapeElement xy4;       ///< A fourth moment used in lensing (RHL needs to clarify; not in the old docs)
+//    ErrElement xy4Sigma;    ///< 1-Sigma uncertainty on xy4
+//    ErrElement flux_xx_Cov; ///< flux, xx term in the uncertainty covariance matrix
+//    ErrElement flux_yy_Cov; ///< flux, yy term in the uncertainty covariance matrix
+//    ErrElement flux_xy_Cov; ///< flux, xy term in the uncertainty covariance matrix
 #ifndef SWIG
     std::bitset<N_FLAGS> flags; ///< Status flags (see SdssShapeFlags).
 #endif
@@ -112,7 +139,7 @@ public:
  *  but it can also be used in the other direction by codes that need to extra an SdssShapeResult from
  *  a record.
  */
-class SdssShapeResultKey : public afw::table::FunctorKey<SdssShapeResult>, public SdssShapeFlags {
+class SdssShapeResultKey : public SdssShapeFlags {
 public:
 
     /**
@@ -122,7 +149,7 @@ public:
      *  @param[in]     name    Name prefix for all fields; "_xx", "_yy", etc. will be appended to this
      *                         to form the full field names.
      */
-    static SdssShapeResultKey addFields(
+    SdssShapeResultKey addFields(
         afw::table::Schema & schema,
         std::string const & name
     );
@@ -158,15 +185,14 @@ public:
 
     FlagHandler const & getFlagHandler() const { return _flagHandler; }
 
-public:
     ShapeResultKey _shapeResult;
     CentroidResultKey _centroidResult;
     FluxResultKey _fluxResult;
-    afw::table::Key<ShapeElement> _xy4;
-    afw::table::Key<ErrElement> _xy4Sigma;
-    afw::table::Key<ErrElement> _flux_xx_Cov;
-    afw::table::Key<ErrElement> _flux_yy_Cov;
-    afw::table::Key<ErrElement> _flux_xy_Cov;
+
+    MAKE_RESULT_FIELD(Centroid,_centroidResult, "Centroid result from SdssShape", SIGMA_ONLY);
+    MAKE_RESULT_FIELD(Shape,_shapeResult, "Shape result from SdssShape", SIGMA_ONLY);
+    MAKE_RESULT_FIELD(Flux,_fluxResult, "Flux result from SdssShape:", SIGMA_ONLY);
+    INIT_RESULT_FIELDS3(_centroidResult, _shapeResult, _fluxResult);
     FlagHandler _flagHandler;
 };
 

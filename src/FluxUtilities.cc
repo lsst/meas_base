@@ -34,7 +34,9 @@ FluxResult::FluxResult() :
 FluxResultKey FluxResultKey::addFields(
     afw::table::Schema & schema,
     std::string const & name,
-    std::string const & doc
+    std::string const & doc,
+    UncertaintyEnum uncertainty
+
 ) {
     FluxResultKey result;
     result._flux = schema.addField<Flux>(schema.join(name, "flux"), doc, "dn");
