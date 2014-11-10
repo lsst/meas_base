@@ -68,7 +68,9 @@ public:
     static FluxResultKey addFields(
         afw::table::Schema & schema,
         std::string const & name,
-        std::string const & doc
+        std::string const & doc,
+        UncertaintyEnum uncertainty=SIGMA_ONLY
+
     );
 
     /// Default constructor; instance will not be usuable unless subsequently assigned to.

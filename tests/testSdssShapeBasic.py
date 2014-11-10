@@ -91,10 +91,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
                 y = record.get("base_SdssShape_y")
                 xSigma = record.get("base_SdssShape_xSigma")
                 ySigma = record.get("base_SdssShape_ySigma")
-                flux = record.get("base_SdssShape_flux")
-                fluxSigma = record.get("base_SdssShape_fluxSigma")
-                xy4 = record.get("base_SdssShape_xy4")
-                xy4Sigma = record.get("base_SdssShape_xy4Sigma")
                 self.assertClose(xx, trueShape.getIxx(), atol=None, rtol=.12)
                 self.assertClose(yy, trueShape.getIyy(), atol=None, rtol=.12)
                 # commented out because of a bug
