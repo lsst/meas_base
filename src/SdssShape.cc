@@ -760,10 +760,11 @@ SdssShapeResultKey SdssShapeResultKey::addFields(
     std::string const & name
 ) {
     SdssShapeResultKey r;
-    init();
-    fAddFields[0](schema, name, r);
-    fAddFields[1](schema, name, r);
-    fAddFields[2](schema, name, r);
+    SdssShapeResult rr;    
+    rr.init();
+    rr.fAddFields[0](schema, name, r);
+    rr.fAddFields[1](schema, name, r);
+    rr.fAddFields[2](schema, name, r);
     r._flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
     return r;
 }
@@ -778,9 +779,9 @@ SdssShapeResultKey::SdssShapeResultKey(afw::table::SubSchema const & s) :
 
 SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const & record) const {
     SdssShapeResult result;
-
-    for (unsigned int i = 0; i < nFields; i++) {
-        fGet[i](record, result, this);    
+    result.init();
+    for (unsigned int i = 0; i < result.nFields; i++) {
+        result.fGet[i](record, result, this);    
     }
     for (int n = 0; n < N_FLAGS; ++n) {
         result.flags[n] = _flagHandler.getValue(record, n);
@@ -895,8 +896,9 @@ void SdssShapeAlgorithm::measure(
         _centroidExtractor(measRecord, _resultKey.getFlagHandler()),
         _ctrl
     );
-    for (unsigned int i = 0; i < _resultKey.nFields; i++) {
-        _resultKey.fSet[i](measRecord, result, &_resultKey);    
+    result.init();
+    for (unsigned int i = 0; i < result.nFields; i++) {
+        result.fSet[i](measRecord, result, &_resultKey);    
     }
     _resultKey.set(measRecord, result);
 }

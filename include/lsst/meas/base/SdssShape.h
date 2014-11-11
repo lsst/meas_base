@@ -35,6 +35,7 @@
 #include "lsst/meas/base/Algorithm.h"
 
 #define MAKE_RESULT_FIELD(NAME, VARNAME, DOC, UNCERTAINTY) \
+    NAME##Result VARNAME; \
     static void VARNAME##AddFields(afw::table::Schema & schema, std::string const & name, SdssShapeResultKey & key) { \
         key.VARNAME = NAME##ResultKey::addFields(schema, name, DOC, UNCERTAINTY); \
     } \
@@ -99,39 +100,8 @@ struct SdssShapeFlags {
         N_FLAGS
     };
 };
-/**
- *  @brief Result object SdssShapeAlgorithm
- *
- *  Because we have use cases for running SdssShape outside of the measurement framework (in particular,
- *  we need to run it on PSF model images), we provide an interface that doesn't need to use SourceRecord
- *  for its inputs and outputs.  Instead, it returns an instance of this class.
- *
- *  Note: for what I guess are historical reasons, SdssShape computes covariance terms between the flux
- *  and the shape, but not between the flux and centroid or centroid and shape.
- *
- *  This should logically be an inner class, but Swig doesn't know how to parse those.
- */
-class SdssShapeResult : public SdssShapeFlags {
-public:
-    ShapeResult _shapeResult;
-    CentroidResult _centroidResult;
-    FluxResult _fluxResult;
-//    ShapeElement xy4;       ///< A fourth moment used in lensing (RHL needs to clarify; not in the old docs)
-//    ErrElement xy4Sigma;    ///< 1-Sigma uncertainty on xy4
-//    ErrElement flux_xx_Cov; ///< flux, xx term in the uncertainty covariance matrix
-//    ErrElement flux_yy_Cov; ///< flux, yy term in the uncertainty covariance matrix
-//    ErrElement flux_xy_Cov; ///< flux, xy term in the uncertainty covariance matrix
-#ifndef SWIG
-    std::bitset<N_FLAGS> flags; ///< Status flags (see SdssShapeFlags).
-#endif
 
-    /// Flag getter for Swig, which doesn't understand std::bitset
-    bool getFlag(int index) const { return flags[index]; }
-
-    SdssShapeResult(); ///< Constructor; initializes everything to NaN
-
-};
-
+class SdssShapeResult;
 /**
  *  @brief A FunctorKey that maps SdssShapeResult to afw::table Records.
  *
@@ -184,14 +154,50 @@ public:
     bool isValid() const;
 
     FlagHandler const & getFlagHandler() const { return _flagHandler; }
-
     ShapeResultKey _shapeResult;
     CentroidResultKey _centroidResult;
     FluxResultKey _fluxResult;
 
+private:
+//    afw::table::Key<ShapeElement> _xy4;
+//    afw::table::Key<ErrElement> _xy4Sigma;
+//    afw::table::Key<ErrElement> _flux_xx_Cov;
+//    afw::table::Key<ErrElement> _flux_yy_Cov;
+//    afw::table::Key<ErrElement> _flux_xy_Cov;
+    FlagHandler _flagHandler;
+};
+
+/**
+ *  @brief Result object SdssShapeAlgorithm
+ *
+ *  Because we have use cases for running SdssShape outside of the measurement framework (in particular,
+ *  we need to run it on PSF model images), we provide an interface that doesn't need to use SourceRecord
+ *  for its inputs and outputs.  Instead, it returns an instance of this class.
+ *
+ *  Note: for what I guess are historical reasons, SdssShape computes covariance terms between the flux
+ *  and the shape, but not between the flux and centroid or centroid and shape.
+ *
+ *  This should logically be an inner class, but Swig doesn't know how to parse those.
+ */
+class SdssShapeResult : public SdssShapeFlags {
+public:
     MAKE_RESULT_FIELD(Centroid,_centroidResult, "Centroid result from SdssShape", SIGMA_ONLY);
     MAKE_RESULT_FIELD(Shape,_shapeResult, "Shape result from SdssShape", SIGMA_ONLY);
     MAKE_RESULT_FIELD(Flux,_fluxResult, "Flux result from SdssShape:", SIGMA_ONLY);
+//    ShapeElement xy4;       ///< A fourth moment used in lensing (RHL needs to clarify; not in the old docs)
+//    ErrElement xy4Sigma;    ///< 1-Sigma uncertainty on xy4
+//    ErrElement flux_xx_Cov; ///< flux, xx term in the uncertainty covariance matrix
+//    ErrElement flux_yy_Cov; ///< flux, yy term in the uncertainty covariance matrix
+//    ErrElement flux_xy_Cov; ///< flux, xy term in the uncertainty covariance matrix
+
+#ifndef SWIG
+    std::bitset<N_FLAGS> flags; ///< Status flags (see SdssShapeFlags).
+#endif
+
+    /// Flag getter for Swig, which doesn't understand std::bitset
+    bool getFlag(int index) const { return flags[index]; }
+
+    SdssShapeResult(); ///< Constructor; initializes everything to NaN
     INIT_RESULT_FIELDS3(_centroidResult, _shapeResult, _fluxResult);
     FlagHandler _flagHandler;
 };
