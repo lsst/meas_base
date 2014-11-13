@@ -36,6 +36,8 @@
 
 namespace lsst { namespace meas { namespace base {
 
+class SdssShapeResult;
+
 /**
  *  @brief A C++ control class to handle SdssShapeAlgorithm's configuration
  *
@@ -55,61 +57,13 @@ public:
 };
 
 /**
- *  Namespace-only struct enumerating the failure modes of SdssShape.
- *
- *  This struct simply serves as a namespace for the failure flags, in a way that allows us to easily
- *  include them in related classes (by inheriting from this class).
- */
-struct SdssShapeFlags {
-    enum {
-        FAILURE=FlagHandler::FAILURE,
-        UNWEIGHTED_BAD,
-        UNWEIGHTED,
-        SHIFT,
-        MAXITER,
-        N_FLAGS
-    };
-};
-
-/**
- *  @brief Result object SdssShapeAlgorithm
- *
- *  Because we have use cases for running SdssShape outside of the measurement framework (in particular,
- *  we need to run it on PSF model images), we provide an interface that doesn't need to use SourceRecord
- *  for its inputs and outputs.  Instead, it returns an instance of this class.
- *
- *  Note: for what I guess are historical reasons, SdssShape computes covariance terms between the flux
- *  and the shape, but not between the flux and centroid or centroid and shape.
- *
- *  This should logically be an inner class, but Swig doesn't know how to parse those.
- */
-class SdssShapeResult : public ShapeResult, public CentroidResult, public FluxResult, public SdssShapeFlags {
-public:
-    ShapeElement xy4;       ///< A fourth moment used in lensing (RHL needs to clarify; not in the old docs)
-    ErrElement xy4Sigma;    ///< 1-Sigma uncertainty on xy4
-    ErrElement flux_xx_Cov; ///< flux, xx term in the uncertainty covariance matrix
-    ErrElement flux_yy_Cov; ///< flux, yy term in the uncertainty covariance matrix
-    ErrElement flux_xy_Cov; ///< flux, xy term in the uncertainty covariance matrix
-
-#ifndef SWIG
-    std::bitset<N_FLAGS> flags; ///< Status flags (see SdssShapeFlags).
-#endif
-
-    /// Flag getter for Swig, which doesn't understand std::bitset
-    bool getFlag(int index) const { return flags[index]; }
-
-    SdssShapeResult(); ///< Constructor; initializes everything to NaN
-
-};
-
-/**
  *  @brief A FunctorKey that maps SdssShapeResult to afw::table Records.
  *
  *  This is used internally by SdssShapeAlgorithm to transfer results from SdssShapeResult to SourceRecord,
  *  but it can also be used in the other direction by codes that need to extra an SdssShapeResult from
  *  a record.
  */
-class SdssShapeResultKey : public afw::table::FunctorKey<SdssShapeResult>, public SdssShapeFlags {
+class SdssShapeResultKey : public afw::table::FunctorKey<SdssShapeResult> {
 public:
 
     /**
@@ -174,12 +128,21 @@ private:
  *  is iteratively updated to match the current weights.  If this iteration does not converge, it can fall
  *  back to using unweighted moments, which can be significantly noisier.
  */
-class SdssShapeAlgorithm : public SimpleAlgorithm, public SdssShapeFlags {
+class SdssShapeAlgorithm : public SimpleAlgorithm {
 public:
 
     typedef SdssShapeControl Control;
     typedef SdssShapeResult Result;
     typedef SdssShapeResultKey ResultKey;
+
+    enum {
+        FAILURE=FlagHandler::FAILURE,
+        UNWEIGHTED_BAD,
+        UNWEIGHTED,
+        SHIFT,
+        MAXITER,
+        N_FLAGS
+    };
 
     SdssShapeAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
 
@@ -218,6 +181,37 @@ private:
     Control _ctrl;
     ResultKey _resultKey;
     SafeCentroidExtractor _centroidExtractor;
+};
+
+/**
+ *  @brief Result object SdssShapeAlgorithm
+ *
+ *  Because we have use cases for running SdssShape outside of the measurement framework (in particular,
+ *  we need to run it on PSF model images), we provide an interface that doesn't need to use SourceRecord
+ *  for its inputs and outputs.  Instead, it returns an instance of this class.
+ *
+ *  Note: for what I guess are historical reasons, SdssShape computes covariance terms between the flux
+ *  and the shape, but not between the flux and centroid or centroid and shape.
+ *
+ *  This should logically be an inner class, but Swig doesn't know how to parse those.
+ */
+class SdssShapeResult : public ShapeResult, public CentroidResult, public FluxResult {
+public:
+    ShapeElement xy4;       ///< A fourth moment used in lensing (RHL needs to clarify; not in the old docs)
+    ErrElement xy4Sigma;    ///< 1-Sigma uncertainty on xy4
+    ErrElement flux_xx_Cov; ///< flux, xx term in the uncertainty covariance matrix
+    ErrElement flux_yy_Cov; ///< flux, yy term in the uncertainty covariance matrix
+    ErrElement flux_xy_Cov; ///< flux, xy term in the uncertainty covariance matrix
+
+#ifndef SWIG
+    std::bitset<SdssShapeAlgorithm::N_FLAGS> flags; ///< Status flags (see SdssShapeAlgorithm).
+#endif
+
+    /// Flag getter for Swig, which doesn't understand std::bitset
+    bool getFlag(int index) const { return flags[index]; }
+
+    SdssShapeResult(); ///< Constructor; initializes everything to NaN
+
 };
 
 }}} // namespace lsst::meas::base

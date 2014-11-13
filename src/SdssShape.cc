@@ -747,7 +747,7 @@ SdssShapeResult::SdssShapeResult() :
     flux_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN())
 {}
 
-static boost::array<FlagDefinition,SdssShapeFlags::N_FLAGS> const flagDefs = {{
+static boost::array<FlagDefinition,SdssShapeAlgorithm::N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag, set if anything went wrong"},
         {"flag_unweightedBad", "Both weighted and unweighted moments were invalid"},
         {"flag_unweighted", "Weighted moments converged to an invalid value; using unweighted moments"},
@@ -817,7 +817,7 @@ SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const & record) c
     result.flux_xx_Cov = record.get(_flux_xx_Cov);
     result.flux_yy_Cov = record.get(_flux_yy_Cov);
     result.flux_xy_Cov = record.get(_flux_xy_Cov);
-    for (int n = 0; n < N_FLAGS; ++n) {
+    for (int n = 0; n < SdssShapeAlgorithm::N_FLAGS; ++n) {
         result.flags[n] = _flagHandler.getValue(record, n);
     }
     return result;
@@ -832,7 +832,7 @@ void SdssShapeResultKey::set(afw::table::BaseRecord & record, SdssShapeResult co
     record.set(_flux_xx_Cov, value.flux_xx_Cov);
     record.set(_flux_yy_Cov, value.flux_yy_Cov);
     record.set(_flux_xy_Cov, value.flux_xy_Cov);
-    for (int n = 0; n < N_FLAGS; ++n) {
+    for (int n = 0; n < SdssShapeAlgorithm::N_FLAGS; ++n) {
         _flagHandler.setValue(record, n, value.flags[n]);
     }
 }
