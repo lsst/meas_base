@@ -69,7 +69,7 @@ Basic routines to talk to lsst::meas::base classes
 
 %immutable lsst::meas::base::FlagDef::name;
 %immutable lsst::meas::base::FlagDef::doc;
-%include "lsst/meas/base/exceptions.h"
+%include "lsst/meas/base/exceptions.i"
 %include "lsst/meas/base/Results.h"
 %include "lsst/meas/base/ResultMappers.h"
 %include "lsst/meas/base/Inputs.h"
