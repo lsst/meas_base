@@ -90,7 +90,7 @@ void PsfFluxAlgorithm::measure(
         );
     }
     typedef afw::detection::Psf::Pixel PsfPixel;
-    typedef typename afw::image::MaskedImage<float>::Variance::Pixel VarPixel;
+    typedef afw::image::MaskedImage<float>::Variance::Pixel VarPixel;
     ndarray::EigenView<PsfPixel,1,1,Eigen::ArrayXpr> model(
         afw::detection::flattenArray(
             fitRegion,
