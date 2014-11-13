@@ -95,9 +95,8 @@ class TestForcedMeasurementTask(lsst.meas.base.ForcedMeasurementTask):
 
 class TestFlux(lsst.meas.base.ForcedPlugin):
 
-    def __init__(self, config, name, schemaMapper, flags=None, others=None, metadata=None):
-        super(TestFlux, self).__init__(config, name, schemaMapper, flags,
-                                       others, metadata)
+    def __init__(self, config, name, schemaMapper, metadata=None):
+        super(TestFlux, self).__init__(config, name, schemaMapper, metadata)
         schema = schemaMapper.editOutputSchema()
         self.fluxKey = schema.addField("test_flux", type=float, doc="sum of flux in object footprint",
                                        units="dn")

@@ -53,11 +53,6 @@
                            SdssCentroidControl, FootprintCentroidInput, CentroidComponent)
 
 // Flux algorithms
-%include "lsst/meas/base/PsfFlux.h"
-%template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::PsfFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, PsfFluxAlgorithm, PsfFluxControl, FootprintCentroidInput,
-                           FluxComponent)
 
 %include "lsst/meas/base/SincFlux.h"
 %template(apply) lsst::meas::base::SincFluxAlgorithm::apply<float>;
@@ -83,14 +78,6 @@
 %wrapMeasurementAlgorithm1(lsst::meas::base, PeakLikelihoodFluxAlgorithm, PeakLikelihoodFluxControl,
                            FootprintCentroidInput, FluxComponent)
 
-// Shape algorithms
-
-%include "lsst/meas/base/SdssShape.h"
-%template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm4(lsst::meas::base, SdssShapeAlgorithm, SdssShapeControl, FootprintCentroidInput,
-                          ShapeComponent, CentroidComponent, FluxComponent, SdssShapeExtras)
-
 // Miscellaneous algorithms
 
 %include "lsst/meas/base/PixelFlags.h"
@@ -99,4 +86,10 @@
 %wrapMeasurementAlgorithm0(lsst::meas::base, PixelFlagsAlgorithm, PixelFlagsControl, FootprintCentroidInput)
 %include "lsst/meas/base/PixelFlags.h"
 
-%include "ApertureFlux.i"
+%include "lsst/meas/base/ApertureFlux.i"
+
+%feature("notabstract") lsst::meas::base::PsfFluxAlgorithm;
+%include "lsst/meas/base/PsfFlux.h"
+
+%feature("notabstract") lsst::meas::base::SdssShapeAlgorithm;
+%include "lsst/meas/base/SdssShape.h"

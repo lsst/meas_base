@@ -43,7 +43,6 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         mapper = SchemaMapper(self.truth.getSchema())
         mapper.addMinimalSchema(self.truth.getSchema())
         outSchema = mapper.getOutputSchema()
-        flags = MeasurementDataFlags()
         #  Basic test of GaussianFlux algorithm, no C++ slots
         sfmConfig.plugins = ["base_SdssCentroid", "base_GaussianFlux", "base_SdssShape"]
         sfmConfig.slots.centroid = "base_SdssCentroid"
@@ -52,7 +51,7 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         sfmConfig.slots.instFlux = None
         sfmConfig.slots.apFlux = None
         sfmConfig.slots.modelFlux = "base_GaussianFlux"
-        task = SingleFrameMeasurementTask(outSchema, flags, config=sfmConfig)
+        task = SingleFrameMeasurementTask(outSchema, config=sfmConfig)
         measCat = SourceCatalog(outSchema)
         measCat.extend(self.truth, mapper=mapper)
         # now run the SFM task with the test plugin

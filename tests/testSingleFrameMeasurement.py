@@ -41,8 +41,8 @@ class TestCentroidConfig(SingleFramePluginConfig):
 class TestCentroid(SingleFramePlugin):
     ConfigClass = TestCentroidConfig
 
-    def __init__(self, config, name, schema=None, flags=None, others=None, metadata=None):
-        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
+    def __init__(self, config, name, schema=None, metadata=None):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.xKey = schema.addField("centroid.x", type=float, doc="x component relative to image",
                                     units="pixels")
         self.yKey = schema.addField("centroid.y", type=float, doc="y component relative to image",
@@ -65,8 +65,8 @@ class TestFluxConfig(SingleFramePluginConfig):
 class TestFlux(SingleFramePlugin):
     ConfigClass = TestFluxConfig
 
-    def __init__(self, config, name, schema=None, flags=None, others=None, metadata=None):
-        SingleFramePlugin.__init__(self, config, name, schema, flags, others, metadata)
+    def __init__(self, config, name, schema=None, metadata=None):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.fluxKey = schema.addField("test.flux", type=float, doc="sum of flux in object footprint",
                                        units="dn")
         self.fluxCountKey = schema.addField("test.fluxCount", type=int,
@@ -135,7 +135,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         #  catalog with footprints, but not measurement fields added
         path = os.path.join(DATA_DIR, 'truthcat-0C.fits')
         srccat = SourceCatalog.readFits(path)
-        flags = MeasurementDataFlags()
 
         # Read a catalog which should be the same as the catalog of processCcd
         # prior to measurement.  Create an empty catalog with the same schema
@@ -143,11 +142,10 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         # to the new catalog
         schema = srccat.getSchema()
         config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        task = SingleFrameMeasurementTask(schema, flags, config=config)
+        task = SingleFrameMeasurementTask(schema, config=config)
         mapper = SchemaMapper(srccat.getSchema())
         mapper.addMinimalSchema(srccat.getSchema())
         schema = mapper.getOutputSchema()
-        flags = MeasurementDataFlags()
         config.plugins = ["base_PeakCentroid"]
         config.slots.centroid = None #"base_PeakCentroid"
         config.slots.shape = None
@@ -155,7 +153,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         config.slots.modelFlux = None
         config.slots.apFlux = None
         config.slots.instFlux = None
-        task = SingleFrameMeasurementTask(schema, flags, config=config)
+        task = SingleFrameMeasurementTask(schema, config=config)
         measCat = SourceCatalog(schema)
         measCat.extend(srccat, mapper=mapper)
 
@@ -188,7 +186,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         mapper = SchemaMapper(srccat.getSchema())
         mapper.addMinimalSchema(srccat.getSchema())
         outschema = mapper.getOutputSchema()
-        flags = MeasurementDataFlags()
         sfm_config.plugins = ["base_PeakCentroid", "test.flux"]
         sfm_config.slots.centroid = None #"base_PeakCentroid"
         sfm_config.slots.shape = None
@@ -196,7 +193,7 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         sfm_config.slots.modelFlux = None
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
-        task = SingleFrameMeasurementTask(outschema, flags, config=sfm_config)
+        task = SingleFrameMeasurementTask(outschema, config=sfm_config)
         measCat = SourceCatalog(outschema)
         measCat.extend(srccat, mapper=mapper)
         # now run the SFM task with the test plugin

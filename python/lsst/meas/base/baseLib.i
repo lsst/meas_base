@@ -67,9 +67,13 @@ Basic routines to talk to lsst::meas::base classes
 %import "lsst/pex/config.h"
 %import "lsst/afw/image/Exposure.h"
 
+%include "lsst/meas/base/constants.h"
+%include "lsst/meas/base/exceptions.i"
+%include "lsst/meas/base/utilities.i"
+%include "lsst/meas/base/Algorithm.h"
+
 %immutable lsst::meas::base::FlagDef::name;
 %immutable lsst::meas::base::FlagDef::doc;
-%include "lsst/meas/base/exceptions.h"
 %include "lsst/meas/base/Results.h"
 %include "lsst/meas/base/ResultMappers.h"
 %include "lsst/meas/base/Inputs.h"
@@ -204,9 +208,3 @@ ALGORITHM.ResultMapper = RESULT_MAPPER
 %enddef
 
 %include "lsst/meas/base/pluginsLib.i"
-
-%import "lsst/pex/exceptions/exceptionsLib.i"
-%declareException(MeasurementError, lsst.pex.exceptions.RuntimeError, lsst::meas::base::MeasurementError)
-%declareException(FatalAlgorithmError, lsst.pex.exceptions.RuntimeError, lsst::meas::base::FatalAlgorithmError)
-%declareException(PixelValueError, lsst.pex.exceptions.DomainError, lsst::meas::base::PixelValueError)
-

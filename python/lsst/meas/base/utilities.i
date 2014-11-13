@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2013 LSST Corporation.
+ * Copyright 2008-2014 LSST Corporation.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -21,30 +21,25 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_MEAS_base_h_INCLUDED
-#define LSST_MEAS_base_h_INCLUDED
-
-#include "lsst/meas/base/exceptions.h"
-#include "lsst/meas/base/Results.h"
-#include "lsst/meas/base/ResultMappers.h"
-#include "lsst/meas/base/Inputs.h"
+%{
 #include "lsst/meas/base/FluxUtilities.h"
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/meas/base/ShapeUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"
-#include "lsst/meas/base/Algorithm.h"
-#include "lsst/meas/base/PsfFlux.h"
-#include "lsst/meas/base/SincFlux.h"
-#include "lsst/meas/base/SdssCentroid.h"
-#include "lsst/meas/base/SdssShape.h"
-#include "lsst/meas/base/PixelFlags.h"
-#include "lsst/meas/base/GaussianFlux.h"
-#include "lsst/meas/base/GaussianCentroid.h"
-#include "lsst/meas/base/NaiveFlux.h"
-#include "lsst/meas/base/NaiveCentroid.h"
-#include "lsst/meas/base/PeakLikelihoodFlux.h"
-#include "lsst/meas/base/ApertureFlux.h"
-#include "lsst/meas/base/CircularApertureFlux.h"
+#include "lsst/afw/table.h"
+%}
 
-#endif // !LSST_MEAS_base_h_INCLUDED
+%import "lsst/afw/table/tableLib.i"
+
+%immutable lsst::meas::base::FlagDefinition::name;
+%immutable lsst::meas::base::FlagDefinition::doc;
+
+%declareNumPyConverters(lsst::meas::base::CentroidCov);
+%declareNumPyConverters(lsst::meas::base::ShapeCov);
+
+%include "lsst/meas/base/FluxUtilities.h"
+%include "lsst/meas/base/CentroidUtilities.h"
+%include "lsst/meas/base/ShapeUtilities.h"
+%include "lsst/meas/base/FlagHandler.h"
+%include "lsst/meas/base/InputUtilities.h"
