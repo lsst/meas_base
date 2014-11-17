@@ -31,8 +31,10 @@
 
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
-#include "lsst/meas/base/Inputs.h"
-#include "lsst/meas/base/ResultMappers.h"
+#include "lsst/meas/base/Algorithm.h"
+#include "lsst/meas/base/CentroidUtilities.h"
+#include "lsst/meas/base/FlagHandler.h"
+#include "lsst/meas/base/InputUtilities.h"
 #include "lsst/meas/base/detail/SdssShapeImpl.h"
 
 namespace lsst { namespace meas { namespace base {
@@ -56,7 +58,7 @@ public:
  *  @brief A measurement algorithm that gets mask bits from the exposure and sets flag bits to summarize which
  *         bits are set within a source's footprint.
  */
-class PixelFlagsAlgorithm {
+class PixelFlagsAlgorithm : public SimpleAlgorithm {
 public:
 
     /**
@@ -65,6 +67,7 @@ public:
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
     enum FlagBits {
+        FAILURE=FlagHandler::FAILURE,
         EDGE,
         INTERPOLATED,
         INTERPOLATED_CENTER,
@@ -76,75 +79,32 @@ public:
         N_FLAGS
     };
 
-    /**
-     *  @brief Return an array of (name, doc) tuples that describes the flags and sets the names used
-     *         in catalog schemas.
-     */
-    static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
-        static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
-                {"edge", "Could not use full PSF model image in fit because of proximity to exposure border"},
-                {"interpolated", "Interpolated pixel in the source footprint"},
-                {"interpolatedCenter", "Interpolated pixel in the source center"},
-                {"saturated", "Saturated pixel in the source footprint"},
-                {"saturatedCenter", "Saturated pixel in the source center"},
-                {"cr", "Cosmic ray in the source footprint"},
-                {"crCenter", "Cosmic ray in the source center"},
-                {"bad", "Bad pixel in the source footprint"}
-
-            }};
-        return flagDefs;
-    }
-
     /// A typedef to the Control object for this algorithm, defined above.
+    /// The control object contains the configuration parameters for this algorithm.
     typedef PixelFlagsControl Control;
 
-    /**
-     *  Result is the type returned by apply().
-     */
-    typedef Result0<PixelFlagsAlgorithm> Result;
+    PixelFlagsAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
 
-    /**
-     *  ResultMapper for PixelFlagsAlgorithm, which includes only flag fields.
-     */
-    typedef ResultMapper0<PixelFlagsAlgorithm> ResultMapper;
+private:
 
-    /**
-     *  PixelFlagsAlgorithm only needs a footprint
-     */
-    typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
+    // These are private so they doesn't shadow the other overloads in base classes;
+    // we can still call it via the public method on the base class.  We could have
+    // used a using declaration instead, but Swig had trouble with that here.
 
-    /**
-     *  @brief Create an object that transfers Result values to a record associated with the given schema
-     */
-    static ResultMapper makeResultMapper(
-        afw::table::Schema & schema,
-        std::string const & prefix,
-        Control const & ctrl=Control()
-    );
+    virtual void measure(
+        afw::table::SourceRecord & measRecord,
+        afw::image::Exposure<float> const & exposure
+    ) const;
 
-    /**
-     *  @brief Collect and summarize the masked image flags of the source footprint
-     */
-    template <typename T>
-    static void apply(
-        afw::image::MaskedImage<T> const & image,
-        afw::geom::Point2D const & position,
-        afw::detection::Footprint const & footprint,
-        Result & result,
-        Control const & ctrl=Control()
-    );
+    virtual void fail(
+        afw::table::SourceRecord & measRecord,
+        MeasurementError * error=NULL
+    ) const;
 
-    /**
-     *  @brief Apply the PixelFlags to a single source using the Plugin API.
-     */
-    template <typename T>
-    static void apply(
-        afw::image::Exposure<T> const & exposure,
-        Input const & inputs,
-        Result & result,
-        Control const & ctrl=Control()
-    );
-
+    Control _ctrl;
+    CentroidResultKey _centroidKey;
+    FlagHandler _flagHandler;
+    SafeCentroidExtractor _centroidExtractor;
 };
 
 }}} // namespace lsst::meas::base

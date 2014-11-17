@@ -21,6 +21,7 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 #include "ndarray/eigen.h"
+#include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/GaussianCentroid.h"
 
 #include <algorithm>
@@ -500,26 +501,35 @@ MAKE_TWODG(afw::image::Image<int>);
 
 } // end anonymous namespace
 
-GaussianCentroidAlgorithm::ResultMapper GaussianCentroidAlgorithm::makeResultMapper(
-    afw::table::Schema & schema, std::string const & name, Control const & ctrl
-) {
-    return ResultMapper(schema, name, NO_UNCERTAINTY);
+GaussianCentroidAlgorithm::GaussianCentroidAlgorithm(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::Schema & schema
+) : _ctrl(ctrl),
+    _centroidKey(
+        CentroidResultKey::addFields(schema, name, "centroid from Gaussian Centroid algorithm", SIGMA_ONLY)
+    ),
+    _centroidExtractor(schema, name)
+{
+    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag, set if anything went wrong"},
+        {"flag_noPeak", "Fitted Centroid has a negative peak"}
+    }};
+    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }
 
-template <typename T>
-void GaussianCentroidAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    afw::geom::Point2D const & center,
-    Result & result,
-    Control const & ctrl
-) {
-    // This code has been moved essentially without change from meas_algorithms
-    // The only changes were:
-    // Change the exceptions to MeasurementErrors with the correct flag bits
-    // Change to set values in result rather than in a source record.
-    result.x = center.getX(); result.y = center.getY(); // better than NaN
 
-    typedef afw::image::Image<T> ImageT;
+void GaussianCentroidAlgorithm::measure(
+    afw::table::SourceRecord & measRecord,
+    afw::image::Exposure<float> const & exposure
+) const {
+
+    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
+    CentroidResult result;
+    result.x = center.getX();
+    result.y = center.getY();
+    measRecord.set(_centroidKey, result); // better than NaN
+    typedef afw::image::Image<float> ImageT;
     ImageT const& image = *exposure.getMaskedImage().getImage();
 
     int x = static_cast<int>(center.getX() + 0.5);
@@ -532,45 +542,22 @@ void GaussianCentroidAlgorithm::apply(
     if (fit.params[FittedModel::PEAK] <= 0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            getFlagDefinitions()[NO_PEAK].doc,
+            _flagHandler.getDefinition(NO_PEAK).doc,
             NO_PEAK
         );
     }
-
     result.x = lsst::afw::image::indexToPosition(image.getX0()) + fit.params[FittedModel::X0];
     result.y = lsst::afw::image::indexToPosition(image.getY0()) + fit.params[FittedModel::Y0];
+    _flagHandler.setValue(measRecord, FAILURE, false);  // if we had a suspect flag, we'd set that instead
+    measRecord.set(_centroidKey, result);
 
     // FIXME: should report uncertainty
 }
 
-template <typename T>
-void GaussianCentroidAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    Input const & inputs,
-    Result & result,
-    Control const & ctrl
-) {
-    apply(exposure, inputs.position, result, ctrl);
+
+void GaussianCentroidAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+    _flagHandler.handleFailure(measRecord, error);
 }
-
-#define INSTANTIATE(T)                                                  \
-    template void GaussianCentroidAlgorithm::apply(          \
-        afw::image::Exposure<T> const & exposure,                       \
-        afw::geom::Point2D const & position,                            \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    );                                                                  \
-    template                                                            \
-     void GaussianCentroidAlgorithm::apply(                   \
-        afw::image::Exposure<T> const & exposure,                       \
-        Input const & inputs,                                           \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    )
-
-INSTANTIATE(float);
-INSTANTIATE(double);
-
 }}} // namespace lsst::meas::base
 
 
