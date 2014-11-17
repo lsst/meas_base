@@ -78,7 +78,6 @@ class SdssCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             y = record.get("base_SdssCentroid_y")
             xerr = record.get("base_SdssCentroid_xSigma")
             yerr = record.get("base_SdssCentroid_ySigma")
-            xycov = record.get("base_SdssCentroid_x_y_Cov")
 
             self.assertFalse(record.get("base_SdssCentroid_flag"))
             self.assertFalse(record.get("base_SdssCentroid_flag_badData"))

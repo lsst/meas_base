@@ -30,6 +30,7 @@
 #include "lsst/afw/math/ConvolveImage.h"
 #include "lsst/afw/math/offsetImage.h"
 #include "lsst/afw/geom/Angle.h"
+#include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/SdssCentroid.h"
 
 
@@ -342,7 +343,8 @@ std::pair<MaskedImageT, double>
 smoothAndBinImage(CONST_PTR(lsst::afw::detection::Psf) psf,
             int const x, const int y,
             MaskedImageT const& mimage,
-            int binX, int binY)
+            int binX, int binY,
+            FlagHandler _flagHandler)
 {
     lsst::afw::geom::Point2D const center(x + mimage.getX0(), y + mimage.getY0());
     lsst::afw::geom::ellipses::Quadrupole const& shape = psf->computeShape(center);
@@ -367,7 +369,7 @@ smoothAndBinImage(CONST_PTR(lsst::afw::detection::Psf) psf,
     } catch (pex::exceptions::LengthError & err) {
         throw LSST_EXCEPT(
             MeasurementError,
-            SdssCentroidAlgorithm::getFlagDefinitions()[SdssCentroidAlgorithm::EDGE].doc,
+            _flagHandler.getDefinition(SdssCentroidAlgorithm::EDGE).doc,
             SdssCentroidAlgorithm::EDGE
         );
     }
@@ -387,26 +389,35 @@ smoothAndBinImage(CONST_PTR(lsst::afw::detection::Psf) psf,
 
 }  // end anonymous namespace
 
-SdssCentroidAlgorithm::ResultMapper SdssCentroidAlgorithm::makeResultMapper(
-    afw::table::Schema & schema, std::string const & name, Control const & ctrl
-) {
-    return ResultMapper(schema, name, FULL_COVARIANCE);
+SdssCentroidAlgorithm::SdssCentroidAlgorithm(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::Schema & schema
+) : _ctrl(ctrl),
+    _centroidKey( 
+        CentroidResultKey::addFields(schema, name, "centroid from Sdss Centroid algorithm", SIGMA_ONLY)
+    ),
+    _centroidExtractor(schema, name)
+{   
+    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag, set if anything went wrong"},
+        {"flag_edge", "Object too close to edge"},
+        {"flag_badData", "Algorithm could not measure this data"}
+    }};
+    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }
+void SdssCentroidAlgorithm::measure(
+    afw::table::SourceRecord & measRecord,
+    afw::image::Exposure<float> const & exposure
+) const {
 
-template <typename T>
-void SdssCentroidAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    afw::geom::Point2D const & center,
-    Result & result,
-    Control const & ctrl
-) {
+    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
+    CentroidResult result;
+    result.x = center.getX();
+    result.y = center.getY();
+    measRecord.set(_centroidKey, result); // better than NaN
 
-    // This code has been moved essentially without change from meas_algorithms
-    // The only changes were:
-    // Change the exceptions to MeasurementErrors with the correct flag bits
-    // Change to set values in result rather than in a source record.
-    result.x = center.getX(); result.y = center.getY(); // better than NaN
-    typedef typename afw::image::Exposure<T>::MaskedImageT MaskedImageT;
+    typedef typename afw::image::Exposure<float>::MaskedImageT MaskedImageT;
     typedef typename MaskedImageT::Image ImageT;
     typedef typename MaskedImageT::Variance VarianceT;
 
@@ -420,7 +431,7 @@ void SdssCentroidAlgorithm::apply(
     if (x < 0 || x >= image.getWidth() || y < 0 || y >= image.getHeight()) {
             throw LSST_EXCEPT(
             lsst::meas::base::MeasurementError,
-            getFlagDefinitions()[EDGE].doc,
+            _flagHandler.getDefinition(EDGE).doc,
             EDGE
         );
     }
@@ -439,8 +450,8 @@ void SdssCentroidAlgorithm::apply(
     int binX = 1;
     int binY = 1;
     double xc=0., yc=0., dxc=0., dyc=0.;            // estimated centre and error therein
-    for(int binsize = 1; binsize <= ctrl.binmax; binsize *= 2) {
-        std::pair<MaskedImageT, double> result = smoothAndBinImage(psf, x, y, mimage, binX, binY);
+    for(int binsize = 1; binsize <= _ctrl.binmax; binsize *= 2) {
+        std::pair<MaskedImageT, double> result = smoothAndBinImage(psf, x, y, mimage, binX, binY, _flagHandler);
         MaskedImageT const smoothedImage = result.first;
         double const smoothingSigma = result.second;
 
@@ -467,13 +478,13 @@ void SdssCentroidAlgorithm::apply(
             xc += x;                    // xc, yc are measured relative to pixel (x, y)
             yc += y;
 
-            double const fac = ctrl.wfac*(1 + smoothingSigma*smoothingSigma);
+            double const fac = _ctrl.wfac*(1 + smoothingSigma*smoothingSigma);
             double const facX2 = fac*binX*binX;
             double const facY2 = fac*binY*binY;
 
             if (sizeX2 < facX2 && ::pow(xc - x, 2) < facX2 &&
                 sizeY2 < facY2 && ::pow(yc - y, 2) < facY2) {
-                if (binsize > 1 || ctrl.peakMin < 0.0 || peakVal > ctrl.peakMin) {
+                if (binsize > 1 || _ctrl.peakMin < 0.0 || peakVal > _ctrl.peakMin) {
                     break;
                 }
             }
@@ -488,7 +499,7 @@ void SdssCentroidAlgorithm::apply(
         catch(lsst::pex::exceptions::Exception &e) {
             throw LSST_EXCEPT(
                 MeasurementError,
-                getFlagDefinitions()[BAD_DATA].doc,
+                _flagHandler.getDefinition(BAD_DATA).doc,
                 BAD_DATA
             );
         }
@@ -498,37 +509,15 @@ void SdssCentroidAlgorithm::apply(
 
     result.xSigma = sqrt(dxc*dxc);
     result.ySigma = sqrt(dyc*dyc);
-    // FIXME: should include off-diagonal term in covariance
-    result.x_y_Cov = 0.0;
+    measRecord.set(_centroidKey, result);
+    _flagHandler.setValue(measRecord, FAILURE, false);
+
 }
 
-template <typename T>
-void SdssCentroidAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    Input const & inputs,
-    Result & result,
-    Control const & ctrl
-) {
-    apply(exposure, inputs.position, result, ctrl);
+
+void SdssCentroidAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+    _flagHandler.handleFailure(measRecord, error);
 }
-
-#define INSTANTIATE(T)                                                  \
-    template  void SdssCentroidAlgorithm::apply(          \
-        afw::image::Exposure<T> const & exposure,                       \
-        afw::geom::Point2D const & position,                            \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    );                                                                  \
-    template                                                            \
-     void SdssCentroidAlgorithm::apply(                   \
-        afw::image::Exposure<T> const & exposure,                       \
-        Input const & inputs,                                           \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    )
-
-INSTANTIATE(float);
-INSTANTIATE(double);
 
 }}} // end namespace lsst::meas::base
 

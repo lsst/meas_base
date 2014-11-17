@@ -22,36 +22,6 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-// Centroid algorithms
-%{
-#include "lsst/meas/base/SdssCentroid.h"
-%}
-
-%include "lsst/meas/base/SdssCentroid.h"
-
-%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, SdssCentroidAlgorithm,
-                           SdssCentroidControl, FootprintCentroidInput, CentroidComponent)
-
-%include "lsst/meas/base/GaussianCentroid.h"
-%template(apply) lsst::meas::base::GaussianCentroidAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::GaussianCentroidAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, GaussianCentroidAlgorithm, GaussianCentroidControl,
-                           FootprintCentroidInput, CentroidComponent)
-
-%include "lsst/meas/base/NaiveCentroid.h"
-%template(apply) lsst::meas::base::NaiveCentroidAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::NaiveCentroidAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, NaiveCentroidAlgorithm,
-                           NaiveCentroidControl, FootprintCentroidInput, CentroidComponent)
-
-%include "lsst/meas/base/SdssCentroid.h"
-%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::SdssCentroidAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, SdssCentroidAlgorithm,
-                           SdssCentroidControl, FootprintCentroidInput, CentroidComponent)
-
 // Flux algorithms
 
 %include "lsst/meas/base/SincFlux.h"
@@ -80,16 +50,22 @@
 
 // Miscellaneous algorithms
 
-%include "lsst/meas/base/PixelFlags.h"
-%template(apply) lsst::meas::base::PixelFlagsAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::PixelFlagsAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm0(lsst::meas::base, PixelFlagsAlgorithm, PixelFlagsControl, FootprintCentroidInput)
-%include "lsst/meas/base/PixelFlags.h"
-
 %include "lsst/meas/base/ApertureFlux.i"
 
 %feature("notabstract") lsst::meas::base::PsfFluxAlgorithm;
 %include "lsst/meas/base/PsfFlux.h"
+
+%feature("notabstract") lsst::meas::base::GaussianCentroidAlgorithm;
+%include "lsst/meas/base/GaussianCentroid.h"
+
+%feature("notabstract") lsst::meas::base::NaiveCentroidAlgorithm;
+%include "lsst/meas/base/NaiveCentroid.h"
+
+%feature("notabstract") lsst::meas::base::SdssCentroidAlgorithm;
+%include "lsst/meas/base/SdssCentroid.h"
+
+%feature("notabstract") lsst::meas::base::PixelFlagsAlgorithm;
+%include "lsst/meas/base/PixelFlags.h"
 
 %feature("notabstract") lsst::meas::base::SdssShapeAlgorithm;
 %include "lsst/meas/base/SdssShape.h"

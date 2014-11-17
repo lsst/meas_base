@@ -21,32 +21,42 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 #include "ndarray/eigen.h"
+#include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/NaiveCentroid.h"
 
 
 namespace lsst { namespace meas { namespace base {
 
-
-NaiveCentroidAlgorithm::ResultMapper NaiveCentroidAlgorithm::makeResultMapper(
-    afw::table::Schema & schema, std::string const & name, Control const & ctrl
-) {
-    return ResultMapper(schema, name, NO_UNCERTAINTY);
+NaiveCentroidAlgorithm::NaiveCentroidAlgorithm(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::Schema & schema
+) : _ctrl(ctrl),
+    _centroidKey(
+        CentroidResultKey::addFields(schema, name, "centroid from Naive Centroid algorithm", SIGMA_ONLY)
+    ),
+    _centroidExtractor(schema, name)
+{
+    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag, set if anything went wrong"},
+        {"flag_noCounts", "Object to be centroided has no counts"},
+        {"flag_edge", "Object too close to edge"}
+    }};
+    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }
 
-template <typename T>
-void NaiveCentroidAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    afw::geom::Point2D const & center,
-    Result & result,
-    Control const & ctrl
-) {
+void NaiveCentroidAlgorithm::measure(
+    afw::table::SourceRecord & measRecord,
+    afw::image::Exposure<float> const & exposure
+) const {
+    
+    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
+    CentroidResult result;
+    result.x = center.getX();
+    result.y = center.getY(); 
+    measRecord.set(_centroidKey, result); // better than NaN
 
-    // This code has been moved essentially without change from meas_algorithms
-    // The only changes were:
-    // Change the exceptions to MeasurementErrors with the correct flag bits
-    // Change to set values in result rather than in a source record.
-    result.x = center.getX(); result.y = center.getY(); // better than NaN
-    typedef afw::image::Image<T> ImageT;
+    typedef afw::image::Image<float> ImageT;
     ImageT const& image = *exposure.getMaskedImage().getImage();
 
     int x = center.getX();  // FIXME: this is different from GaussianCentroid and SdssCentroid here,
@@ -59,7 +69,7 @@ void NaiveCentroidAlgorithm::apply(
 
         throw LSST_EXCEPT(
             MeasurementError,
-            getFlagDefinitions()[EDGE].doc,
+            _flagHandler.getDefinition(EDGE).doc,
             EDGE
         );
     }
@@ -70,12 +80,12 @@ void NaiveCentroidAlgorithm::apply(
         (im(-1,  1) + im( 0,  1) + im( 1,  1) +
          im(-1,  0) + im( 0,  0) + im( 1,  0) +
          im(-1, -1) + im( 0, -1) + im( 1, -1))
-        - 9 * ctrl.background;
+        - 9 * _ctrl.background;
 
     if (sum == 0.0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            getFlagDefinitions()[NO_COUNTS].doc,
+            _flagHandler.getDefinition(NO_COUNTS).doc,
             NO_COUNTS
         );
     }
@@ -90,37 +100,14 @@ void NaiveCentroidAlgorithm::apply(
 
     result.x = lsst::afw::image::indexToPosition(x + image.getX0()) + sum_x / sum;
     result.y = lsst::afw::image::indexToPosition(y + image.getY0()) + sum_y / sum;
-
-    // FIXME: should report uncertainty
+    measRecord.set(_centroidKey, result);
+    _flagHandler.setValue(measRecord, FAILURE, false);  // if we had a suspect flag, we'd set that instead
 }
 
-template <typename T>
-void NaiveCentroidAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    Input const & inputs,
-    Result & result,
-    Control const & ctrl
-) {
-    apply(exposure, inputs.position, result, ctrl);
+
+void NaiveCentroidAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+    _flagHandler.handleFailure(measRecord, error);
 }
-
-#define INSTANTIATE(T)                                                  \
-    template  void NaiveCentroidAlgorithm::apply(          \
-        afw::image::Exposure<T> const & exposure,                       \
-        afw::geom::Point2D const & position,                            \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    );                                                                  \
-    template                                                            \
-     void NaiveCentroidAlgorithm::apply(                   \
-        afw::image::Exposure<T> const & exposure,                       \
-        Input const & inputs,                                           \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    )
-
-INSTANTIATE(float);
-INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
 
