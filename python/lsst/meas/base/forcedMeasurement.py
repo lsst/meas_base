@@ -308,6 +308,12 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         for refName, targetName in self.config.copyColumns.items():
             refItem = refSchema.find(refName)
             self.mapper.addMapping(refItem.key, targetName)
+        # Make a place at the beginning for the centroid plugin to run first (because it's an OrderedDict,
+        # adding an empty element in advance means it will get run first when it's reassigned to the
+        # actual Plugin).
+        if self.config.slots.centroid != None:
+            self.plugins[self.config.slots.centroid] = None
+        # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
             self.plugins[name] = PluginClass(config, name, self.mapper, metadata=self.algMetadata)
 

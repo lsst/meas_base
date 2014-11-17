@@ -324,7 +324,9 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         if schema.getVersion() == 0:
             raise lsst.pex.exceptions.LogicError("schema must have version=1")
         self.schema = schema
-        # make a place at the beginning for the centroid plugin to run first
+        # Make a place at the beginning for the centroid plugin to run first (because it's an OrderedDict,
+        # adding an empty element in advance means it will get run first when it's reassigned to the
+        # actual Plugin).
         if self.config.slots.centroid != None:
             self.plugins[self.config.slots.centroid] = None
         # Init the plugins, sorted by execution order.  At the same time add to the schema
