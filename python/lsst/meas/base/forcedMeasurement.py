@@ -305,6 +305,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         super(ForcedMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
         self.mapper = lsst.afw.table.SchemaMapper(refSchema, lsst.afw.table.Schema(1))
         self.mapper.addMinimalSchema(lsst.afw.table.SourceTable.makeMinimalSchema())
+        self.config.slots.setupSchema(self.mapper.editOutputSchema())
         for refName, targetName in self.config.copyColumns.items():
             refItem = refSchema.find(refName)
             self.mapper.addMapping(refItem.key, targetName)
@@ -365,7 +366,6 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         # Build a catalog of just the references we intend to measure
         referenceCat = lsst.afw.table.SourceCatalog(self.mapper.getInputSchema())
         referenceCat.extend(refList)
-        self.config.slots.setupTable(sources.table)
 
         # convert the footprints to the coordinate system of the exposure
         if self.config.doReplaceWithNoise:

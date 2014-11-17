@@ -324,6 +324,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         if schema.getVersion() == 0:
             raise lsst.pex.exceptions.LogicError("schema must have version=1")
         self.schema = schema
+        self.config.slots.setupSchema(schema)
         # Make a place at the beginning for the centroid plugin to run first (because it's an OrderedDict,
         # adding an empty element in advance means it will get run first when it's reassigned to the
         # actual Plugin).
@@ -353,7 +354,6 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
             exposure = measCat
             measCat = temp
         assert measCat.getSchema().contains(self.schema)
-        self.config.slots.setupTable(measCat.table)
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
             for measRecord in measCat}
 
