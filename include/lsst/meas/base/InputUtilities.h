@@ -41,9 +41,8 @@ public:
      *  Construct the extractor, creating a flag alias that indicates failure in the input centroid
      *  by linking to the slot centroid flag.
      *
-     *  @param[out] schema   Schema to which the alias should be added.  Note that the target of the
-     *                       alias, "slot_Centroid_flag", need not be present yet, as aliases are
-     *                       only resolved when actually used.
+     *  @param[out] schema   Schema to which the alias should be added.  The "slot_Centroid" alias
+     *                       must already be present in the Schema's AliasMap.
      *  @param[in]  name     The name of the algorithm; the flag alias added will be
      *                       "<name>_flag_badCentroid".
      */
@@ -90,9 +89,8 @@ public:
      *  Construct the extractor, creating a flag alias that indicates failure in the input centroid
      *  by linking to the slot shape flag.
      *
-     *  @param[out] schema   Schema to which the alias should be added.  Note that the target of the
-     *                       alias, "slot_Shape_flag", need not be present yet, as aliases are
-     *                       only resolved when actually used.
+     *  @param[out] schema   Schema to which the alias should be added.  The "slot_Shape" alias
+     *                       must already be present in the Schema's AliasMap.
      *  @param[in]  name     The name of the algorithm; the flag alias added will be
      *                       "<name>_flag_badShape".
      */

@@ -50,9 +50,9 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         if ctrl is None:
             ctrl = lsst.meas.base.PsfFluxControl()
         schema = self.mapper.getOutputSchema()
+        schema.getAliasMap().set("slot_Centroid", "truth")
         algorithm = lsst.meas.base.PsfFluxAlgorithm(ctrl, "base_PsfFlux", schema)
         measCat = lsst.afw.table.SourceCatalog(schema)
-        measCat.defineCentroid("truth")
         measRecord = measCat.addNew()
         measRecord.assign(self.truth[0], self.mapper)
         return algorithm, measRecord
