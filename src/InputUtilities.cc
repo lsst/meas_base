@@ -29,38 +29,84 @@
 
 namespace lsst { namespace meas { namespace base {
 
-SafeCentroidExtractor::SafeCentroidExtractor(afw::table::Schema & schema, std::string const & name) :
-    _name(name)
+SafeCentroidExtractor::SafeCentroidExtractor(
+    afw::table::Schema & schema,
+    std::string const & name,
+    bool isCentroider
+) :
+    _name(name),
+    _isCentroider(isCentroider)
 {
     // Instead of aliasing e.g. MyAlgorithm_flag_badCentroid->slot_Centroid_flag, we actually
     // look up the target of slot_Centroid_flag, and alias that to MyAlgorithm_flag_badCentroid.
     // That way, if someone changes the slots later, after we've already done the measurement,
     // this alias still points to the right thing.
     std::string slotFlagName = schema.getAliasMap()->apply(schema.join("slot", "Centroid", "flag"));
-    schema.getAliasMap()->set(schema.join(name, "flag", "badCentroid"), slotFlagName);
+    if (_isCentroider) {
+        if (slotFlagName != schema.join(name, "flag")) {
+            // only setup the alias if this isn't the slot algorithm itself (otherwise it'd be circular)
+            schema.getAliasMap()->set(schema.join(name, "flag", "badInitialCentroid"), slotFlagName);
+        }
+    } else {
+        schema.getAliasMap()->set(schema.join(name, "flag", "badCentroid"), slotFlagName);
+    }
 }
+
+namespace {
+
+afw::geom::Point2D extractPeak(afw::table::SourceRecord const & record, std::string const & name) {
+    afw::geom::Point2D result;
+    PTR(afw::detection::Footprint) footprint = record.getFootprint();
+    if (!footprint) {
+        throw LSST_EXCEPT(
+            pex::exceptions::RuntimeError,
+            (boost::format("%s: Centroid slot value is NaN, but no Footprint attached to record")
+             % name).str()
+        );
+    }
+    if (footprint->getPeaks().empty()) {
+        throw LSST_EXCEPT(
+            pex::exceptions::RuntimeError,
+            (boost::format("%s: Centroid slot value is NaN, but Footprint has no Peaks")
+             % name).str()
+        );
+    }
+    result.setX(footprint->getPeaks().front()->getFx());
+    result.setY(footprint->getPeaks().front()->getFy());
+    return result;
+}
+
+} // anonymous
 
 afw::geom::Point2D SafeCentroidExtractor::operator()(
     afw::table::SourceRecord & record,
     FlagHandler const & flags
 ) const {
     if (!record.getTable()->getCentroidKey().isValid()) {
-        throw LSST_EXCEPT(
-            FatalAlgorithmError,
-            (boost::format("%s requires a centroid, but the centroid slot is not defined") % _name).str()
-        );
+        if (_isCentroider) {
+            return extractPeak(record, _name);
+        } else {
+            throw LSST_EXCEPT(
+                FatalAlgorithmError,
+                (boost::format("%s requires a centroid, but the centroid slot is not defined") % _name).str()
+            );
+        }
     }
     afw::geom::Point2D result = record.getCentroid();
     if (utils::isnan(result.getX()) || utils::isnan(result.getY())) {
         if (!record.getTable()->getCentroidFlagKey().isValid()) {
-            throw LSST_EXCEPT(
-                pex::exceptions::RuntimeError,
-                (boost::format("%s: Centroid slot value is NaN, but there is no Centroid slot flag "
-                               "(is the executionOrder for %s lower than that of the slot Centroid?)")
-                 % _name % _name).str()
-            );
+            if (_isCentroider) {
+                return extractPeak(record, _name);
+            } else {
+                throw LSST_EXCEPT(
+                    pex::exceptions::RuntimeError,
+                    (boost::format("%s: Centroid slot value is NaN, but there is no Centroid slot flag "
+                                   "(is the executionOrder for %s lower than that of the slot Centroid?)")
+                     % _name % _name).str()
+                );
+            }
         }
-        if (!record.getCentroidFlag()) {
+        if (!record.getCentroidFlag() && !_isCentroider) {
             throw LSST_EXCEPT(
                 pex::exceptions::RuntimeError,
                 (boost::format("%s: Centroid slot value is NaN, but the Centroid slot flag is not set "
@@ -68,27 +114,14 @@ afw::geom::Point2D SafeCentroidExtractor::operator()(
                  % _name % _name).str()
             );
         }
-        PTR(afw::detection::Footprint) footprint = record.getFootprint();
-        if (!footprint) {
-            throw LSST_EXCEPT(
-                pex::exceptions::RuntimeError,
-                (boost::format("%s: Centroid slot value is NaN, but no Footprint attached to record")
-                 % _name).str()
-            );
+        result = extractPeak(record, _name);
+        if (!_isCentroider) {
+            // set the general flag, because using the Peak might affect the current measurement
+            flags.setValue(record, FlagHandler::FAILURE, true);
         }
-        if (footprint->getPeaks().empty()) {
-            throw LSST_EXCEPT(
-                pex::exceptions::RuntimeError,
-                (boost::format("%s: Centroid slot value is NaN, but Footprint has no Peaks")
-                 % _name).str()
-            );
-        }
-        result.setX(footprint->getPeaks().front()->getFx());
-        result.setY(footprint->getPeaks().front()->getFy());
-        // set the general flag, because using the Peak might affect the current measurement
-        flags.setValue(record, FlagHandler::FAILURE, true);
-    } else if (record.getTable()->getCentroidFlagKey().isValid() && record.getCentroidFlag()) {
-        // we got a usable value, but the centroid flag might still be set, and that might affect
+    } else if (!_isCentroider && record.getTable()->getCentroidFlagKey().isValid()
+               && record.getCentroidFlag()) {
+        // we got a usable value, but the centroid flag is still be set, and that might affect
         // the current measurement
         flags.setValue(record, FlagHandler::FAILURE, true);
     }
