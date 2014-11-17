@@ -45,8 +45,13 @@ public:
      *                       must already be present in the Schema's AliasMap.
      *  @param[in]  name     The name of the algorithm; the flag alias added will be
      *                       "<name>_flag_badCentroid".
+     *  @param[in]  isCentroider    Indicates whether the calling algorithm is itself a centroid
+     *                              measurement algorithm.  If true,, falling back to the Peak
+     *                              because there was no previous centroider or a previous centroider
+     *                              failed will not cause the general failure flag of the current
+     *                              algorithm to be set.
      */
-    SafeCentroidExtractor(afw::table::Schema & schema, std::string const & name);
+    SafeCentroidExtractor(afw::table::Schema & schema, std::string const & name, bool isCentroider=false);
 
     /**
      *  Extract a position from the given record.
@@ -76,6 +81,7 @@ public:
 
 private:
     std::string _name;
+    bool _isCentroider;
 };
 
 /**
