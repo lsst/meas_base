@@ -56,7 +56,7 @@ afw::geom::Point2D SafeCentroidExtractor::operator()(
                  % _name % _name).str()
             );
         }
-        if ((_name != record.getTable()->getCentroidDefinition()) && !record.getCentroidFlag()) {
+        if (!record.getCentroidFlag()) {
             throw LSST_EXCEPT(
                 pex::exceptions::RuntimeError,
                 (boost::format("%s: Centroid slot value is NaN, but the Centroid slot flag is not set "
