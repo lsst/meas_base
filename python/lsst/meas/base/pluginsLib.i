@@ -22,38 +22,24 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-// Flux algorithms
-
-%include "lsst/meas/base/SincFlux.h"
-%template(apply) lsst::meas::base::SincFluxAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::SincFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, SincFluxAlgorithm, SincFluxControl,
-                           FootprintCentroidInput, FluxComponent)
-
-%include "lsst/meas/base/GaussianFlux.h"
-%template(apply) lsst::meas::base::GaussianFluxAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::GaussianFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, GaussianFluxAlgorithm, GaussianFluxControl,
-                           FootprintCentroidShapeInput, FluxComponent)
-
-%include "lsst/meas/base/NaiveFlux.h"
-%template(apply) lsst::meas::base::NaiveFluxAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::NaiveFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, NaiveFluxAlgorithm, NaiveFluxControl,
-                           FootprintCentroidInput, FluxComponent)
-
-%include "lsst/meas/base/PeakLikelihoodFlux.h"
-%template(apply) lsst::meas::base::PeakLikelihoodFluxAlgorithm::apply<float>;
-%template(apply) lsst::meas::base::PeakLikelihoodFluxAlgorithm::apply<double>;
-%wrapMeasurementAlgorithm1(lsst::meas::base, PeakLikelihoodFluxAlgorithm, PeakLikelihoodFluxControl,
-                           FootprintCentroidInput, FluxComponent)
-
 // Miscellaneous algorithms
 
 %include "lsst/meas/base/ApertureFlux.i"
 
 %feature("notabstract") lsst::meas::base::PsfFluxAlgorithm;
 %include "lsst/meas/base/PsfFlux.h"
+
+%feature("notabstract") lsst::meas::base::SincFluxAlgorithm;
+%include "lsst/meas/base/SincFlux.h"
+
+%feature("notabstract") lsst::meas::base::NaiveFluxAlgorithm;
+%include "lsst/meas/base/NaiveFlux.h"
+
+%feature("notabstract") lsst::meas::base::PeakLikelihoodFluxAlgorithm;
+%include "lsst/meas/base/PeakLikelihoodFlux.h"
+
+%feature("notabstract") lsst::meas::base::GaussianFluxAlgorithm;
+%include "lsst/meas/base/GaussianFlux.h"
 
 %feature("notabstract") lsst::meas::base::GaussianCentroidAlgorithm;
 %include "lsst/meas/base/GaussianCentroid.h"
