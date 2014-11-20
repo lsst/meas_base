@@ -60,14 +60,16 @@ afw::geom::Point2D extractPeak(afw::table::SourceRecord const & record, std::str
     if (!footprint) {
         throw LSST_EXCEPT(
             pex::exceptions::RuntimeError,
-            (boost::format("%s: Centroid slot value is NaN, but no Footprint attached to record")
+            (boost::format("%s requires centroid, but the centroid slot value is NaN and the record has "
+                           "no Footprint attached (Footprints are required by the measurement framework)")
              % name).str()
         );
     }
     if (footprint->getPeaks().empty()) {
         throw LSST_EXCEPT(
             pex::exceptions::RuntimeError,
-            (boost::format("%s: Centroid slot value is NaN, but Footprint has no Peaks")
+            (boost::format("%s requires a centroid, but the centroid slot value is NaN and the Footprint "
+                           "has no Peaks (Peaks are required by the measurement framework)")
              % name).str()
         );
     }
@@ -100,7 +102,8 @@ afw::geom::Point2D SafeCentroidExtractor::operator()(
             } else {
                 throw LSST_EXCEPT(
                     pex::exceptions::RuntimeError,
-                    (boost::format("%s: Centroid slot value is NaN, but there is no Centroid slot flag "
+                    (boost::format("%s requires a centroid, but the centroid slot value is NaN, and there "
+                                   "is no centroid slot flag "
                                    "(is the executionOrder for %s lower than that of the slot Centroid?)")
                      % _name % _name).str()
                 );
@@ -109,7 +112,8 @@ afw::geom::Point2D SafeCentroidExtractor::operator()(
         if (!record.getCentroidFlag() && !_isCentroider) {
             throw LSST_EXCEPT(
                 pex::exceptions::RuntimeError,
-                (boost::format("%s: Centroid slot value is NaN, but the Centroid slot flag is not set "
+                (boost::format("%s requires a centroid, but the centroid slot value is NaN, but the "
+                               "centroid slot flag is not set "
                                "(is the executionOrder for %s lower than that of the slot Centroid?)")
                  % _name % _name).str()
             );
@@ -154,7 +158,8 @@ afw::geom::ellipses::Quadrupole SafeShapeExtractor::operator()(
         if (!record.getTable()->getShapeFlagKey().isValid()) {
             throw LSST_EXCEPT(
                 pex::exceptions::RuntimeError,
-                (boost::format("%s: Shape slot value is NaN, but there is no Shape slot flag "
+                (boost::format("%s requires a shape, but the shape slot value is NaN, and there is no "
+                               "shape slot flag "
                                "(is the executionOrder for %s lower than that of the slot Shape?)")
                  % _name % _name).str()
             );
@@ -162,7 +167,8 @@ afw::geom::ellipses::Quadrupole SafeShapeExtractor::operator()(
         if (!record.getShapeFlag()) {
             throw LSST_EXCEPT(
                 pex::exceptions::RuntimeError,
-                (boost::format("%s: Shape slot value is NaN, but the Shape slot flag is not set "
+                (boost::format("%s requires a shpe, but the shape slot value is NaN, and the shape slot "
+                               "flag is not set "
                                "(is the executionOrder for %s lower than that of the slot Shape?)")
                  % _name % _name).str()
             );
