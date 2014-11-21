@@ -141,15 +141,15 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         # plus the schema items for the SFM task, then transfer the existing data
         # to the new catalog
         schema = srccat.getSchema()
+        schema.disconnectAliases()  # don't want to set slot aliases in srccat, just the new catalog
         config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        task = SingleFrameMeasurementTask(schema, config=config)
-        mapper = SchemaMapper(srccat.getSchema())
-        mapper.addMinimalSchema(srccat.getSchema())
+        mapper = SchemaMapper(schema)
+        mapper.addMinimalSchema(schema)
         schema = mapper.getOutputSchema()
         config.plugins = ["base_PeakCentroid"]
-        config.slots.centroid = None #"base_PeakCentroid"
+        config.slots.centroid = "base_PeakCentroid"
         config.slots.shape = None
-        config.slots.psfFlux = None 
+        config.slots.psfFlux = None
         config.slots.modelFlux = None
         config.slots.apFlux = None
         config.slots.instFlux = None

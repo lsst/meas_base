@@ -41,13 +41,17 @@ public:
      *  Construct the extractor, creating a flag alias that indicates failure in the input centroid
      *  by linking to the slot centroid flag.
      *
-     *  @param[out] schema   Schema to which the alias should be added.  Note that the target of the
-     *                       alias, "slot_Centroid_flag", need not be present yet, as aliases are
-     *                       only resolved when actually used.
+     *  @param[out] schema   Schema to which the alias should be added.  The "slot_Centroid" alias
+     *                       must already be present in the Schema's AliasMap.
      *  @param[in]  name     The name of the algorithm; the flag alias added will be
      *                       "<name>_flag_badCentroid".
+     *  @param[in]  isCentroider    Indicates whether the calling algorithm is itself a centroid
+     *                              measurement algorithm.  If true,, falling back to the Peak
+     *                              because there was no previous centroider or a previous centroider
+     *                              failed will not cause the general failure flag of the current
+     *                              algorithm to be set.
      */
-    SafeCentroidExtractor(afw::table::Schema & schema, std::string const & name);
+    SafeCentroidExtractor(afw::table::Schema & schema, std::string const & name, bool isCentroider=false);
 
     /**
      *  Extract a position from the given record.
@@ -77,6 +81,7 @@ public:
 
 private:
     std::string _name;
+    bool _isCentroider;
 };
 
 /**
@@ -90,9 +95,8 @@ public:
      *  Construct the extractor, creating a flag alias that indicates failure in the input centroid
      *  by linking to the slot shape flag.
      *
-     *  @param[out] schema   Schema to which the alias should be added.  Note that the target of the
-     *                       alias, "slot_Shape_flag", need not be present yet, as aliases are
-     *                       only resolved when actually used.
+     *  @param[out] schema   Schema to which the alias should be added.  The "slot_Shape" alias
+     *                       must already be present in the Schema's AliasMap.
      *  @param[in]  name     The name of the algorithm; the flag alias added will be
      *                       "<name>_flag_badShape".
      */

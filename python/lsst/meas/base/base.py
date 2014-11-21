@@ -285,19 +285,19 @@ class SourceSlotConfig(lsst.pex.config.Config):
     instFlux = lsst.pex.config.Field(dtype=str, default="base_GaussianFlux", optional=True,
                                      doc="the name of the algorithm used to set the source inst flux slot")
 
-    def setupTable(self, table, prefix=None):
-        """Convenience method to setup a table's slots according to the config definition.
+    def setupSchema(self, schema):
+        """Convenience method to setup a Schema's slots according to the config definition.
 
         This is defined in the Config class to support use in unit tests without needing
         to construct a Task object.
         """
-        if prefix is None: prefix = ""
-        if self.centroid is not None: table.defineCentroid(prefix + self.centroid)
-        if self.shape is not None: table.defineShape(prefix + self.shape)
-        if self.apFlux is not None: table.defineApFlux(prefix + self.apFlux)
-        if self.modelFlux is not None: table.defineModelFlux(prefix + self.modelFlux)
-        if self.psfFlux is not None: table.definePsfFlux(prefix + self.psfFlux)
-        if self.instFlux is not None: table.defineInstFlux(prefix + self.instFlux)
+        aliases = schema.getAliasMap()
+        if self.centroid is not None: aliases.set("slot_Centroid", self.centroid)
+        if self.shape is not None: aliases.set("slot_Shape", self.shape)
+        if self.apFlux is not None: aliases.set("slot_ApFlux", self.apFlux)
+        if self.modelFlux is not None: aliases.set("slot_ModelFlux", self.modelFlux)
+        if self.psfFlux is not None: aliases.set("slot_PsfFlux", self.psfFlux)
+        if self.instFlux is not None: aliases.set("slot_InstFlux", self.instFlux)
 
 
 class BaseMeasurementConfig(lsst.pex.config.Config):
