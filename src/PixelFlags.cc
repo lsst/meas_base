@@ -25,7 +25,6 @@
 
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/detection/FootprintFunctor.h"
-#include "lsst/afw/geom/ellipses/Ellipse.h"
 #include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/PixelFlags.h"
 
@@ -94,7 +93,7 @@ void PixelFlagsAlgorithm::measure(
 
     FootprintBits<MaskedImageT> func(mimage);
 
-//  Catch centroids off the image or NAN
+//  Catch NAN in centroid estimate
     if (lsst::utils::isnan(center.getX()) || lsst::utils::isnan(center.getY())) {
         throw LSST_EXCEPT(pex::exceptions::InvalidParameterError,
                           "Center point passed to PixelFlagsALgorithm is NaN");

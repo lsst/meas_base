@@ -38,16 +38,11 @@ from .wrappers import *
 
 # --- Wrapped C++ Plugins ---
 
-WrappedSingleFramePlugin.generate(SincFluxAlgorithm)
-WrappedSingleFramePlugin.generate(NaiveFluxAlgorithm)
-WrappedSingleFramePlugin.generate(GaussianFluxAlgorithm)
-WrappedSingleFramePlugin.generate(PeakLikelihoodFluxAlgorithm)
-WrappedForcedPlugin.generate(SincFluxAlgorithm)
-WrappedForcedPlugin.generate(NaiveFluxAlgorithm)
-WrappedForcedPlugin.generate(GaussianFluxAlgorithm)
-WrappedForcedPlugin.generate(PeakLikelihoodFluxAlgorithm)
-
 wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl)
+wrapSimpleAlgorithm(NaiveFluxAlgorithm, Control=NaiveFluxControl)
+wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxControl)
+wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl)
+wrapSimpleAlgorithm(SincFluxAlgorithm, Control=SincFluxControl)
 wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl, executionOrder=0.0)
 wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl, executionOrder=0.0)
 wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl, executionOrder=0.0)

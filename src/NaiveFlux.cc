@@ -25,8 +25,8 @@
 
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/geom/Box.h"
-#include "lsst/afw/geom/ellipses/Ellipse.h"
 #include "lsst/afw/detection/FootprintFunctor.h"
+#include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/NaiveFlux.h"
 
 namespace lsst { namespace meas { namespace base {
@@ -139,20 +139,31 @@ struct getSum2 {
 };
 } // end anonymous namespace
 
-NaiveFluxAlgorithm::ResultMapper NaiveFluxAlgorithm::makeResultMapper(
-    afw::table::Schema & schema, std::string const & name, Control const & ctrl
-) {
-    return ResultMapper(schema, name, SIGMA_ONLY);
-}
+NaiveFluxAlgorithm::NaiveFluxAlgorithm(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::Schema & schema
+) : _ctrl(ctrl),
+    _fluxResultKey(
+        FluxResultKey::addFields(schema, name, "flux from Naive Flux algorithm")
+    ),
+    _centroidExtractor(schema, name)
+{
+    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag, set if anything went wrong"},
+        {"flag_edge", "source is too close to the edge of the field to compute the given aperture"}
+    }};
+    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+}   
 
-template <typename T>
-void NaiveFluxAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    afw::geom::Point2D const & center,
-    Result & result,
-    Control const & ctrl
-) {
-    typename afw::image::Exposure<T>::MaskedImageT const& mimage = exposure.getMaskedImage();
+void NaiveFluxAlgorithm::measure(
+    afw::table::SourceRecord & measRecord,
+    afw::image::Exposure<float> const & exposure
+) const {
+    FluxResult result;
+    // Get the centroid from a previous centroid measurement
+    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
+    typename afw::image::Exposure<float>::MaskedImageT const& mimage = exposure.getMaskedImage();
 
     double const xcen = center.getX();   ///< object's column position
     double const ycen = center.getY();   ///< object's row position
@@ -165,10 +176,10 @@ void NaiveFluxAlgorithm::apply(
 
     /* ******************************************************* */
     // Aperture flux
-    FootprintFlux<typename afw::image::Exposure<T>::MaskedImageT> fluxFunctor(mimage);
+    FootprintFlux<typename afw::image::Exposure<float>::MaskedImageT> fluxFunctor(mimage);
     afw::detection::Footprint const foot(
         afw::geom::PointI(ixcen, iycen),
-        ctrl.radius,
+        _ctrl.radius,
         imageBBox
         );
     try {
@@ -176,41 +187,20 @@ void NaiveFluxAlgorithm::apply(
     } catch (pex::exceptions::LengthError &) {
         throw LSST_EXCEPT(
             MeasurementError,
-            getFlagDefinitions()[EDGE].doc,
+            _flagHandler.getDefinition(EDGE).doc,
             EDGE
         );
     }
 
     result.flux = fluxFunctor.getSum();
     result.fluxSigma = ::sqrt(fluxFunctor.getSumVar());
+    measRecord.set(_fluxResultKey, result);
+    _flagHandler.setValue(measRecord, FAILURE, false);
 }
-
-template <typename T>
-void NaiveFluxAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    Input const & inputs,
-    Result & result,
-    Control const & ctrl
-) {
-    apply(exposure, inputs.position, result, ctrl);
-}
-
-#define INSTANTIATE(T)                                                  \
-    template  void NaiveFluxAlgorithm::apply(          \
-        afw::image::Exposure<T> const & exposure,                       \
-        afw::geom::Point2D const & position,                            \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    );                                                                  \
-    template                                                            \
-     void NaiveFluxAlgorithm::apply(                   \
-        afw::image::Exposure<T> const & exposure,                       \
-        Input const & inputs,                                           \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    )
-
-INSTANTIATE(float);
-INSTANTIATE(double);
+    
+    
+void NaiveFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+    _flagHandler.handleFailure(measRecord, error);
+}   
 
 }}} // namespace lsst::meas::base
