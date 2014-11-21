@@ -25,9 +25,10 @@
 #define LSST_MEAS_BASE_GaussianCentroid_h_INCLUDED
 
 #include "lsst/pex/config.h"
-#include "lsst/afw/image/Exposure.h"
-#include "lsst/meas/base/Inputs.h"
-#include "lsst/meas/base/ResultMappers.h"
+#include "lsst/meas/base/Algorithm.h"
+#include "lsst/meas/base/CentroidUtilities.h"
+#include "lsst/meas/base/FlagHandler.h"
+#include "lsst/meas/base/InputUtilities.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -63,6 +64,7 @@ struct FittedModel {
  *  @brief A C++ control class to handle GaussianCentroidAlgorithm's configuration
  *
  *  At present, GaussianCentroidAlgorithm has no configuration options.
+ *  Also, it does not currently set an error, though it should
  */
 class GaussianCentroidControl {
 public:
@@ -77,7 +79,7 @@ public:
 /**
  *  @brief A class that calculates a centroid by fitting a circular Gaussian to the image.
  */
-class GaussianCentroidAlgorithm {
+class GaussianCentroidAlgorithm : public SimpleAlgorithm {
 public:
 
     /**
@@ -86,78 +88,37 @@ public:
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
     enum FlagBits {
+        FAILURE=FlagHandler::FAILURE,
         NO_PEAK,
         N_FLAGS
     };
-
-    /**
-     *  @brief Return an array of (name, doc) tuples that describes the flags and sets the names used
-     *         in catalog schemas.
-     */
-    static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
-        static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
-                {"noPeak", "Fitted Centroid has a negative peak"}
-            }};
-        return flagDefs;
-    }
 
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.
     typedef GaussianCentroidControl Control;
 
-    /**
-     *  This is the type returned by apply().
-     */
-    typedef Result1<
-        GaussianCentroidAlgorithm,
-        CentroidComponent
-    > Result;
+    GaussianCentroidAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
 
-    /// @copydoc PsfFluxAlgorithm::ResultMapper
-    typedef ResultMapper1<
-        GaussianCentroidAlgorithm,
-        CentroidComponentMapper
-    > ResultMapper;
+private:
 
+    // These are private so they doesn't shadow the other overloads in base classes;
+    // we can still call it via the public method on the base class.  We could have
+    // used a using declaration instead, but Swig had trouble with that here.
 
-    /**
-     *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  GaussianCentroidAlgorithm only needs a centroid, so we use
-     *  FootprintCentroidInput.
-     */
-    typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
+    virtual void measure(
+        afw::table::SourceRecord & measRecord,
+        afw::image::Exposure<float> const & exposure
+    ) const;
 
-    /**
-     *  @brief Create an object that transfers Result values to a record associated with the given schema
-     */
-    static ResultMapper makeResultMapper(
-        afw::table::Schema & schema,
-        std::string const & prefix,
-        Control const & ctrl=Control()
-    );
+    virtual void fail(
+        afw::table::SourceRecord & measRecord,
+        MeasurementError * error=NULL
+    ) const;
 
-    /**
-     *  @brief Measure the centroid of a source using the GaussianCentroid algorithm.
-     */
-    template <typename T>
-    static void apply(
-        afw::image::Exposure<T> const & exposure,
-        afw::geom::Point2D const & position,
-        Result & result,
-        Control const & ctrl=Control()
-    );
-
-    /**
-     *  @brief Apply the GaussianCentroid to a single source using the Plugin API.
-     */
-    template <typename T>
-    static void apply(
-        afw::image::Exposure<T> const & exposure,
-        Input const & inputs,
-        Result & result,
-        Control const & ctrl=Control()
-    );
-
+    Control _ctrl;
+    CentroidResultKey _centroidKey;
+    FlagHandler _flagHandler;
+    SafeCentroidExtractor _centroidExtractor;
 };
 
 }}} // namespace lsst::meas::base

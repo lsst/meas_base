@@ -38,24 +38,20 @@ from .wrappers import *
 
 # --- Wrapped C++ Plugins ---
 
-WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(SincFluxAlgorithm)
-WrappedSingleFramePlugin.generate(PixelFlagsAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(NaiveFluxAlgorithm)
-WrappedSingleFramePlugin.generate(GaussianCentroidAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(GaussianFluxAlgorithm)
-WrappedSingleFramePlugin.generate(NaiveCentroidAlgorithm, executionOrder=0.0)
 WrappedSingleFramePlugin.generate(PeakLikelihoodFluxAlgorithm)
-WrappedForcedPlugin.generate(SdssCentroidAlgorithm, executionOrder=0.0)
 WrappedForcedPlugin.generate(SincFluxAlgorithm)
-WrappedForcedPlugin.generate(PixelFlagsAlgorithm, executionOrder=0.0)
 WrappedForcedPlugin.generate(NaiveFluxAlgorithm)
-WrappedForcedPlugin.generate(GaussianCentroidAlgorithm, executionOrder=0.0)
 WrappedForcedPlugin.generate(GaussianFluxAlgorithm)
-WrappedForcedPlugin.generate(NaiveCentroidAlgorithm, executionOrder=0.0)
 WrappedForcedPlugin.generate(PeakLikelihoodFluxAlgorithm)
 
 wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl)
+wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl, executionOrder=0.0)
+wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl, executionOrder=0.0)
+wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl, executionOrder=0.0)
+wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl, executionOrder=2.0)
 wrapSimpleAlgorithm(SdssShapeAlgorithm, Control=SdssShapeControl, executionOrder=1.0)
 
 # --- Aperture Flux Measurement Plugins ---
