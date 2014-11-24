@@ -213,11 +213,11 @@ protected:
 
     void copyResultToRecord(Result const & result, afw::table::SourceRecord & record, int index) const;
 
+    Control _ctrl;
     afw::table::ArrayKey<Flux> _fluxKey;
     afw::table::ArrayKey<FluxErrElement> _fluxSigmaKey;
     std::vector<FlagKeys> _flagKeys;
 
-    Control _ctrl;
 };
 struct ApertureFluxResult : public FluxResult {
 

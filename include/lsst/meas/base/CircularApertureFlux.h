@@ -62,3 +62,4 @@ private:
 }}} // namespace lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_CircularApertureFlux_h_INCLUDED
+

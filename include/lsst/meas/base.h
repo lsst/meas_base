@@ -25,9 +25,6 @@
 #define LSST_MEAS_base_h_INCLUDED
 
 #include "lsst/meas/base/exceptions.h"
-#include "lsst/meas/base/Results.h"
-#include "lsst/meas/base/ResultMappers.h"
-#include "lsst/meas/base/Inputs.h"
 #include "lsst/meas/base/FluxUtilities.h"
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/meas/base/ShapeUtilities.h"
