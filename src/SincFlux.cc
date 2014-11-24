@@ -26,6 +26,7 @@
 #include "lsst/pex/exceptions.h"
 #include "lsst/afw/detection/FootprintFunctor.h"
 #include "lsst/afw/math/offsetImage.h"
+#include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/SincCoeffs.h"
 #include "lsst/meas/base/SincFlux.h"
 
@@ -168,60 +169,49 @@ calculateSincApertureFlux(MaskedImageT const& mimage, afw::geom::ellipses::Ellip
 
 } // anonymous
 
-SincFluxAlgorithm::ResultMapper SincFluxAlgorithm::makeResultMapper(
-    afw::table::Schema & schema, std::string const & name, Control const & ctrl
-) {
-    // calculate the needed coefficients
-    SincCoeffs<float>::cache(ctrl.radius1, ctrl.radius2);
-    return ResultMapper(schema, name, SIGMA_ONLY);
-}
+SincFluxAlgorithm::SincFluxAlgorithm(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::Schema & schema
+) : _ctrl(ctrl),
+    _fluxResultKey(
+        FluxResultKey::addFields(schema, name, "flux from Sinc Flux algorithm")
+    ),
+    _centroidExtractor(schema, name)
+{
+    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag, set if anything went wrong"},
+    }};
+    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+}   
 
-template <typename T>
-void SincFluxAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    afw::geom::Point2D const & center,
-    Result & result,
-    Control const & ctrl
-) {
-    afw::geom::ellipses::Axes const axes(ctrl.radius2, ctrl.radius2);
+void SincFluxAlgorithm::measure(
+    afw::table::SourceRecord & measRecord,
+    afw::image::Exposure<float> const & exposure
+) const {
+    
+    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
+    FluxResult result;
+
+    afw::geom::ellipses::Axes const axes(_ctrl.radius2, _ctrl.radius2);
     std::pair<double, double> fluxes = calculateSincApertureFlux(exposure.getMaskedImage(),
                                                                  afw::geom::ellipses::Ellipse(axes, center),
-                                                                 ctrl.radius1/ctrl.radius2);
+                                                                 _ctrl.radius1/_ctrl.radius2);
     double flux = fluxes.first;
     double fluxErr = fluxes.second;
     result.flux = flux;
     result.fluxSigma = fluxErr;
 
     //  End of meas_algorithms code
+    
+    measRecord.set(_fluxResultKey, result);
+    _flagHandler.setValue(measRecord, FAILURE, false);
 }
-
-template <typename T>
-void SincFluxAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    Input const & inputs,
-    Result & result,
-    Control const & ctrl
-) {
-    apply(exposure, inputs.position, result, ctrl);
-}
-
-#define INSTANTIATE(T)                                  \
-    template  void SincFluxAlgorithm::apply(            \
-        afw::image::Exposure<T> const & exposure,       \
-        afw::geom::Point2D const & position,            \
-        Result & result,                                \
-        Control const & ctrl                            \
-    );                                                  \
-    template                                            \
-    void SincFluxAlgorithm::apply(                      \
-        afw::image::Exposure<T> const & exposure,       \
-        Input const & inputs,                           \
-        Result & result,                                \
-        Control const & ctrl                            \
-    )
-
-INSTANTIATE(float);
-INSTANTIATE(double);
+    
+    
+void SincFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+    _flagHandler.handleFailure(measRecord, error);
+} 
 
 }}} // namespace lsst::meas::base
 

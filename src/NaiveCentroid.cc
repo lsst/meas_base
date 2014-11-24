@@ -35,7 +35,7 @@ NaiveCentroidAlgorithm::NaiveCentroidAlgorithm(
     _centroidKey(
         CentroidResultKey::addFields(schema, name, "centroid from Naive Centroid algorithm", SIGMA_ONLY)
     ),
-    _centroidExtractor(schema, name)
+    _centroidExtractor(schema, name, true)
 {
     static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag, set if anything went wrong"},

@@ -72,7 +72,6 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         # on the third test source (which is a blended parent), the SdssShape algorithm fails because the
         # centroid moves around too much, which gives us an opportunity to test GaussianFlux's error handling
         for record in measCat[2:3]:
-            self.assertTrue(record.get("base_GaussianFlux_flag"))
             self.assertTrue(record.get("base_GaussianFlux_flag_badShape"))
             self.assertFalse(record.get("base_GaussianFlux_flag_badCentroid"))
 
