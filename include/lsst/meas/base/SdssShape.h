@@ -47,7 +47,7 @@ class SdssShapeControl {
 public:
     LSST_CONTROL_FIELD(background, double, "Additional value to add to background");
     LSST_CONTROL_FIELD(maxIter, int, "Maximum number of iterations");
-    LSST_CONTROL_FIELD(maxShift, double, "Maximum centroid shift");
+    LSST_CONTROL_FIELD(maxShift, double, "Maximum centroid shift, limited to 2-10");
     LSST_CONTROL_FIELD(tol1, float, "Convergence tolerance for e1,e2");
     LSST_CONTROL_FIELD(tol2, float, "Convergence tolerance for FWHM");
 

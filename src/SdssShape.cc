@@ -897,7 +897,7 @@ SdssShapeResult SdssShapeAlgorithm::apply(
     xcen -= mimage.getX0();             // work in image Pixel coordinates
     ycen -= mimage.getY0();
 
-    float shiftmax = 1;                 // Max allowed centroid shift \todo XXX set shiftmax from Policy
+    float shiftmax = control.maxShift;   // Max allowed centroid shift
     if (shiftmax < 2) {
         shiftmax = 2;
     } else if (shiftmax > 10) {
