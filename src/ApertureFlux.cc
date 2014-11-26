@@ -27,6 +27,7 @@
 
 #include "lsst/afw/math/offsetImage.h"
 #include "lsst/afw/geom/ellipses/PixelRegion.h"
+#include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/SincCoeffs.h"
 #include "lsst/meas/base/ApertureFlux.h"
 
@@ -64,10 +65,6 @@ ApertureFluxAlgorithm::ApertureFluxAlgorithm(
         )
     )
 {
-    _flagKeys.reserve(ctrl.radii.size());
-    for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
-        _flagKeys.push_back(FlagKeys(name, schema, i));
-    }
 }
 
 ApertureFluxAlgorithm::FlagKeys::FlagKeys(
@@ -245,8 +242,40 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeNaiveFlux(
     return result;
 }
 
+template <typename T>
+ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeFlux(
+    afw::image::Image<T> const & image,
+    afw::geom::ellipses::Ellipse const & ellipse,
+    Control const & ctrl
+) {
+    return (afw::geom::ellipses::Axes(ellipse.getCore()).getB() <= ctrl.maxSincRadius)
+        ? computeSincFlux(image, ellipse, ctrl)
+        : computeNaiveFlux(image, ellipse, ctrl);
+}
 
+template <typename T>
+ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeFlux(
+    afw::image::MaskedImage<T> const & image,
+    afw::geom::ellipses::Ellipse const & ellipse,
+    Control const & ctrl
+) {
+    return (afw::geom::ellipses::Axes(ellipse.getCore()).getB() <= ctrl.maxSincRadius)
+        ? computeSincFlux(image, ellipse, ctrl)
+        : computeNaiveFlux(image, ellipse, ctrl);
+}
 #define INSTANTIATE(T)                                                  \
+    template                                                            \
+    ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeFlux( \
+        afw::image::Image<T> const &,                                   \
+        afw::geom::ellipses::Ellipse const &,                           \
+        Control const &                                                 \
+    );                                                                  \
+    template                                                            \
+    ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeFlux( \
+        afw::image::MaskedImage<T> const &,                             \
+        afw::geom::ellipses::Ellipse const &,                           \
+        Control const &                                                 \
+    );                                                                  \
     template                                                            \
     ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux( \
         afw::image::Image<T> const &,                                   \
@@ -276,3 +305,4 @@ INSTANTIATE(float);
 INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
+

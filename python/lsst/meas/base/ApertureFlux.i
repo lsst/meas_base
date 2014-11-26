@@ -28,14 +28,8 @@
 
 %include "lsst/meas/base/ApertureFlux.h"
 
-%template(ApertureFluxFlagsComponent)
-    lsst::meas::base::FlagsComponent<lsst::meas::base::ApertureFluxAlgorithm>;
-%template(ApertureFluxResult1) lsst::meas::base::Result1<
-    lsst::meas::base::ApertureFluxAlgorithm,
-    lsst::meas::base::FluxComponent
-    >;
 %pythoncode %{
-ApertureFluxAlgorithm.Result = ApertureFluxResult1;
+ApertureFluxAlgorithm.Result = ApertureFluxResult;
 ApertureFluxAlgorithm.Control = ApertureFluxControl;
 %}
 %template(computeNaiveFlux) lsst::meas::base::ApertureFluxAlgorithm::computeNaiveFlux<float>;
@@ -44,5 +38,3 @@ ApertureFluxAlgorithm.Control = ApertureFluxControl;
 %template(computesincFlux) lsst::meas::base::ApertureFluxAlgorithm::computeSincFlux<double>;
 %template(computeFlux) lsst::meas::base::ApertureFluxAlgorithm::computeFlux<float>;
 %template(computeFlux) lsst::meas::base::ApertureFluxAlgorithm::computeFlux<double>;
-
-%include "lsst/meas/base/CircularApertureFlux.h"
