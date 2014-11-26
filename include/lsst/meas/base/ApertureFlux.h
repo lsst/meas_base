@@ -27,11 +27,12 @@
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/afw/table/arrays.h"
-#include "lsst/afw/table/Source.h"
-#include "lsst/meas/base/Results.h"
+#include "lsst/meas/base/Algorithm.h"
+#include "lsst/meas/base/FluxUtilities.h"
+#include "lsst/meas/base/CentroidUtilities.h"
+#include "lsst/meas/base/FlagHandler.h"
 
 namespace lsst { namespace meas { namespace base {
-
 
 /**
  *  Configuration object for multiple-aperture flux algorithms
@@ -58,7 +59,6 @@ public:
     );
 
 };
-
 /**
  *  Base class for multiple-aperture photometry algorithms
  *
@@ -80,6 +80,8 @@ public:
  *  SincFlux and NaiveFlux.  We can't do that yet, though, as we still can't use ApertureFlux outputs
  *  in slots (DM-1218).
  */
+class ApertureFluxResult;
+
 class ApertureFluxAlgorithm {
 public:
 
@@ -90,21 +92,12 @@ public:
         N_FLAGS
     };
 
-    /// @copydoc PsfFluxAlgorithm::getFlagDefinitions()
-    static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
-        static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
-                {"apertureTruncated", "aperture did not fit within the measurement image (fatal)"},
-                {"sincCoeffsTruncated",
-                 "the extended coeffs used by the sinc algorithm did not fit within the measurement image"},
-            }};
-        return flagDefs;
-    }
 
     /// Typedef to the control object associated with this algorithm, defined above.
     typedef ApertureFluxControl Control;
 
     /// Result object returned by static methods.
-    typedef Result1<ApertureFluxAlgorithm,FluxComponent> Result;
+    typedef ApertureFluxResult Result;
 
     //@{
     /**  Compute the flux (and optionally, uncertanties) within an aperture using Sinc photometry
@@ -173,21 +166,14 @@ public:
         afw::image::Image<T> const & image,
         afw::geom::ellipses::Ellipse const & ellipse,
         Control const & ctrl=Control()
-    ) {
-        return (afw::geom::ellipses::Axes(ellipse.getCore()).getB() <= ctrl.maxSincRadius)
-            ? computeSincFlux(image, ellipse, ctrl)
-            : computeNaiveFlux(image, ellipse, ctrl);
-    }
+    );
+
     template <typename T>
     static Result computeFlux(
         afw::image::MaskedImage<T> const & image,
         afw::geom::ellipses::Ellipse const & ellipse,
         Control const & ctrl=Control()
-    ) {
-        return (afw::geom::ellipses::Axes(ellipse.getCore()).getB() <= ctrl.maxSincRadius)
-            ? computeSincFlux(image, ellipse, ctrl)
-            : computeNaiveFlux(image, ellipse, ctrl);
-    }
+    );
     //@}
 
     /**
@@ -227,11 +213,28 @@ protected:
 
     void copyResultToRecord(Result const & result, afw::table::SourceRecord & record, int index) const;
 
-    Control const _ctrl;
     afw::table::ArrayKey<Flux> _fluxKey;
     afw::table::ArrayKey<FluxErrElement> _fluxSigmaKey;
     std::vector<FlagKeys> _flagKeys;
+
+    Control _ctrl;
 };
+struct ApertureFluxResult : public FluxResult {
+
+    /// Return the flag value associated with the given bit
+    bool getFlag(typename ApertureFluxAlgorithm::FlagBits bit) const { return _flags[bit]; }
+
+    /// Set the flag value associated with the given bit
+    void setFlag(typename ApertureFluxAlgorithm::FlagBits bit, bool value=true) { _flags[bit] = value; }
+
+    /// Clear (i.e. set to false) the flag associated with the given bit
+    void unsetFlag(typename ApertureFluxAlgorithm::FlagBits bit) { _flags[bit] = false; }
+
+private:
+
+    std::bitset<ApertureFluxAlgorithm::N_FLAGS> _flags;
+};
+
 
 }}} // namespace lsst::meas::base
 
