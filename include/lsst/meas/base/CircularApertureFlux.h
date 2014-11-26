@@ -37,6 +37,12 @@ namespace lsst { namespace meas { namespace base {
 
 class CircularApertureFluxAlgorithm : public SimpleAlgorithm , public ApertureFluxAlgorithm{
 public:
+
+    enum FlagBits {
+        FAILURE=FlagHandler::FAILURE,
+        N_FLAGS
+    };
+
     typedef ApertureFluxControl Control;
     CircularApertureFluxAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema, daf::base::PropertySet & metadata);
 
@@ -62,4 +68,3 @@ private:
 }}} // namespace lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_CircularApertureFlux_h_INCLUDED
-

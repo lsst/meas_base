@@ -304,4 +304,5 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeFlux(
 INSTANTIATE(float);
 INSTANTIATE(double);
 
-}}}
+}}} // namespace lsst::meas::base
+

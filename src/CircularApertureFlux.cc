@@ -37,21 +37,28 @@ CircularApertureFluxAlgorithm::CircularApertureFluxAlgorithm(
     _centroidExtractor(schema, name)
 {
     for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
-        if (ctrl.radii[i] > ctrl.maxSincRadius) break;
-        SincCoeffs<float>::cache(0.0, ctrl.radii[i]);
         metadata.add(name + "_radii", ctrl.radii[i]);
+        if (ctrl.radii[i] < ctrl.maxSincRadius) {
+            SincCoeffs<float>::cache(0.0, ctrl.radii[i]);
+        }
     }
+
     _flagKeys.reserve(ctrl.radii.size());
     for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
         _flagKeys.push_back(FlagKeys(name, schema, i));
     }
+
+    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag, set if anything went wrong"},
+    }};
+    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }
 
 void CircularApertureFluxAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
 ) const {
-    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);   
+    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
     afw::geom::ellipses::Ellipse ellipse(afw::geom::ellipses::Axes(1.0, 1.0, 0.0), center);
     PTR(afw::geom::ellipses::Axes) axes
         = boost::static_pointer_cast<afw::geom::ellipses::Axes>(ellipse.getCorePtr());
