@@ -58,7 +58,6 @@ void GaussianFluxAlgorithm::measure(
     afw::geom::Point2D centroid = _centroidExtractor(measRecord, _flagHandler);
     afw::geom::ellipses::Quadrupole shape = _shapeExtractor(measRecord, _flagHandler);
     FluxResult result;
-
     //  This code came straight out of the GaussianFlux.apply() in meas_algorithms with few changes
     typename afw::image::Exposure<float>::MaskedImageT const& mimage = exposure.getMaskedImage();
 
