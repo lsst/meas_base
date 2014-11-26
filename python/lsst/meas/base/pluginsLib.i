@@ -22,7 +22,7 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-// Miscellaneous algorithms
+// flux algorithms
 
 %include "lsst/meas/base/ApertureFlux.i"
 
@@ -41,6 +41,8 @@
 %feature("notabstract") lsst::meas::base::GaussianFluxAlgorithm;
 %include "lsst/meas/base/GaussianFlux.h"
 
+// centroid algorithms
+
 %feature("notabstract") lsst::meas::base::GaussianCentroidAlgorithm;
 %include "lsst/meas/base/GaussianCentroid.h"
 
@@ -50,10 +52,15 @@
 %feature("notabstract") lsst::meas::base::SdssCentroidAlgorithm;
 %include "lsst/meas/base/SdssCentroid.h"
 
-%feature("notabstract") lsst::meas::base::PixelFlagsAlgorithm;
-%include "lsst/meas/base/PixelFlags.h"
+// shape algorithms
 
 %feature("notabstract") lsst::meas::base::SdssShapeAlgorithm;
 %include "lsst/meas/base/SdssShape.h"
 %template (apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
 %template (apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
+
+// miscellaneous algorithms
+
+%feature("notabstract") lsst::meas::base::PixelFlagsAlgorithm;
+%include "lsst/meas/base/PixelFlags.h"
+

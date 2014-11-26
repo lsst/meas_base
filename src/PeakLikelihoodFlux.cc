@@ -65,10 +65,10 @@ public:
 
     PsfAttributes(CONST_PTR(lsst::afw::detection::Psf) psf, int const iX, int const iY);
     PsfAttributes(CONST_PTR(lsst::afw::detection::Psf) psf, lsst::afw::geom::Point2I const& cen);
-    
+
     double computeGaussianWidth(Method how=ADAPTIVE_MOMENT) const;
     double computeEffectiveArea() const;
-    
+
 private:
     PTR(lsst::afw::image::Image<double>) _psfImage;
 };
@@ -103,7 +103,7 @@ PsfAttributes::PsfAttributes(
  *
  */
 double PsfAttributes::computeEffectiveArea() const {
-    
+
     double sum = 0.0;
     double sumsqr = 0.0;
     for (int iY = 0; iY != _psfImage->getHeight(); ++iY) {

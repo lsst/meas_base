@@ -80,13 +80,13 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(
         {"flag_bad", "Bad pixel in the source footprint"}
     }};
     _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
-}  
+}
 
-void PixelFlagsAlgorithm::measure( 
+void PixelFlagsAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
 ) const {
-    
+
     afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
     typedef typename afw::image::MaskedImage<float> MaskedImageT;
     MaskedImageT mimage = exposure.getMaskedImage();

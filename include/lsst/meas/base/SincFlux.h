@@ -75,7 +75,7 @@ public:
 class SincFluxAlgorithm : public SimpleAlgorithm {
 public:
 
-    enum FlagBits {
+    enum {
         FAILURE=FlagHandler::FAILURE,
         N_FLAGS
     };

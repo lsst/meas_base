@@ -36,9 +36,7 @@ namespace afwImage = lsst::afw::image;
 namespace afwMath = lsst::afw::math;
 namespace afwGeom = lsst::afw::geom;
 
-namespace lsst {
-namespace meas {
-namespace base {
+namespace lsst { namespace meas { namespace base {
 
 namespace {
 
@@ -183,7 +181,7 @@ SincFluxAlgorithm::SincFluxAlgorithm(
         {"flag", "general failure flag, set if anything went wrong"},
     }};
     _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
-}   
+}
 
 void SincFluxAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
@@ -203,15 +201,15 @@ void SincFluxAlgorithm::measure(
     result.fluxSigma = fluxErr;
 
     //  End of meas_algorithms code
-    
+
     measRecord.set(_fluxResultKey, result);
     _flagHandler.setValue(measRecord, FAILURE, false);
 }
-    
-    
+
+
 void SincFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
     _flagHandler.handleFailure(measRecord, error);
-} 
+}
 
 }}} // namespace lsst::meas::base
 
