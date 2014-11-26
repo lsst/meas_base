@@ -74,7 +74,7 @@ public:
 class NaiveFluxAlgorithm : public SimpleAlgorithm {
 public:
 
-    enum FlagBits {
+    enum {
         FAILURE=FlagHandler::FAILURE,
         EDGE,
         N_FLAGS

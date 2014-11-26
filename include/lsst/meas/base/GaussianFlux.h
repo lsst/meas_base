@@ -28,7 +28,6 @@
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Algorithm.h"
 #include "lsst/meas/base/FluxUtilities.h"
-//#include "lsst/meas/base/ShapeUtilities.h"
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"
@@ -57,13 +56,13 @@ public:
  *  @brief A measurement algorithm that estimates flux using an elliptical Gaussian weight.
  *
  *  This algorithm computes flux as the dot product of an elliptical Gaussian weight function
- *  with the image.  The size and ellipticity of the weight function is determined using the
+ *  with the image.  The size and ellipticity of the weight function are determined using the
  *  SdssShape algorithm, or retreived from a named field.
  */
 class GaussianFluxAlgorithm : public SimpleAlgorithm {
 public:
 
-    enum FlagBits {
+    enum {
         FAILURE=FlagHandler::FAILURE,
         N_FLAGS
     };
@@ -76,8 +75,8 @@ public:
 
 private:
 
-    // These are private so they doesn't shadow the other overloads in base classes;
-    // we can still call it via the public method on the base class.  We could have
+    // These are private so they don't shadow the other overloads in base classes;
+    // we can still call them via the public method on the base class.  We could have
     // used a using declaration instead, but Swig had trouble with that here.
 
     virtual void measure(

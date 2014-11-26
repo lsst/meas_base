@@ -66,7 +66,7 @@ public:
      *
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
-    enum FlagBits {
+    enum {
         FAILURE=FlagHandler::FAILURE,
         EDGE,
         INTERPOLATED,

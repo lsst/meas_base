@@ -49,7 +49,7 @@ GaussianFluxAlgorithm::GaussianFluxAlgorithm(
         {"flag", "general failure flag, set if anything went wrong"}
     }};
     _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
-}   
+}
 
 void GaussianFluxAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
@@ -63,22 +63,18 @@ void GaussianFluxAlgorithm::measure(
     //  This code came straight out of the GaussianFlux.apply() in meas_algorithms with few changes
     typename afw::image::Exposure<float>::MaskedImageT const& mimage = exposure.getMaskedImage();
 
-    double const xcen = centroid.getX(); // - mimage.getX0(); ///< column position in image pixel coords
-    double const ycen = centroid.getY(); // - mimage.getY0(); ///< row position
-
-
     detail::SdssShapeImpl sdss(centroid, shape);
     std::pair<double, double> fluxResult
-        = detail::getFixedMomentsFlux(mimage, _ctrl.background, xcen, ycen, sdss);
+        = detail::getFixedMomentsFlux(mimage, _ctrl.background, centroid.getX(), centroid.getY(), sdss);
     result.flux =  fluxResult.first;
     result.fluxSigma = fluxResult.second;
     measRecord.set(_fluxResultKey, result);
     _flagHandler.setValue(measRecord, FAILURE, false);
 }
-    
-    
+
+
 void GaussianFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
     _flagHandler.handleFailure(measRecord, error);
-}   
+}
 
 }}} // namespace lsst::meas::base

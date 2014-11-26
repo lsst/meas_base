@@ -87,7 +87,7 @@ public:
      *
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
-    enum FlagBits {
+    enum {
         FAILURE=FlagHandler::FAILURE,
         NO_PEAK,
         N_FLAGS

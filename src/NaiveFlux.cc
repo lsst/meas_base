@@ -44,7 +44,7 @@ public:
     void reset() {
         _sum = _sumVar = 0.0;
     }
-    void reset(lsst::afw::detection::Footprint const&) {}        
+    void reset(lsst::afw::detection::Footprint const&) {}
 
     /// @brief method called for each pixel by apply()
     void operator()(typename MaskedImageT::xy_locator loc, ///< locator pointing at the pixel
@@ -76,11 +76,11 @@ public:
                        ) : lsst::afw::detection::FootprintFunctor<MaskedImageT>(mimage),
                            _wimage(wimage),
                            _sum(0.0), _sumVar(0.0), _x0(0), _y0(0) {}
-    
+
     /// @brief Reset everything for a new Footprint
     void reset(lsst::afw::detection::Footprint const& foot) {
         _sum = _sumVar = 0.0;
-        
+
         lsst::afw::geom::BoxI const& bbox(foot.getBBox());
         _x0 = bbox.getMinX();
         _y0 = bbox.getMinY();
@@ -94,7 +94,7 @@ public:
         }
     }
     void reset() {}
-    
+
     /// @brief method called for each pixel by apply()
     void operator()(typename MaskedImageT::xy_locator iloc, ///< locator pointing at the image pixel
                     int x,                                 ///< column-position of pixel
@@ -119,7 +119,7 @@ private:
     int _x0, _y0;                                     // the origin of the current Footprint
 };
 
-            
+
 /*****************************************************************************************************/
 /**
  * Accumulate sum(x) and sum(x**2)
@@ -127,13 +127,13 @@ private:
 template<typename T>
 struct getSum2 {
     getSum2() : sum(0.0), sum2(0.0) {}
-    
+
     getSum2& operator+(T x) {
         sum += x;
         sum2 += x*x;
         return *this;
     }
-    
+
     double sum;                         // \sum_i(x_i)
     double sum2;                        // \sum_i(x_i^2)
 };
@@ -154,7 +154,7 @@ NaiveFluxAlgorithm::NaiveFluxAlgorithm(
         {"flag_edge", "source is too close to the edge of the field to compute the given aperture"}
     }};
     _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
-}   
+}
 
 void NaiveFluxAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
@@ -197,10 +197,10 @@ void NaiveFluxAlgorithm::measure(
     measRecord.set(_fluxResultKey, result);
     _flagHandler.setValue(measRecord, FAILURE, false);
 }
-    
-    
+
+
 void NaiveFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
     _flagHandler.handleFailure(measRecord, error);
-}   
+}
 
 }}} // namespace lsst::meas::base

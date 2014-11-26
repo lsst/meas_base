@@ -70,7 +70,7 @@ public:
 class PeakLikelihoodFluxAlgorithm : public SimpleAlgorithm {
 public:
 
-    enum FlagBits {
+    enum {
         FAILURE=FlagHandler::FAILURE,
         N_FLAGS
     };

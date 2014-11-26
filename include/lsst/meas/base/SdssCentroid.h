@@ -65,7 +65,7 @@ public:
 class SdssCentroidAlgorithm : public SimpleAlgorithm {
 public:
 
-    enum FlagBits {
+    enum {
         FAILURE=FlagHandler::FAILURE,
         EDGE,
         BAD_DATA,
