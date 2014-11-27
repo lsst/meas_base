@@ -213,22 +213,21 @@ protected:
 
     void copyResultToRecord(Result const & result, afw::table::SourceRecord & record, int index) const;
 
+    Control _ctrl;
     afw::table::ArrayKey<Flux> _fluxKey;
     afw::table::ArrayKey<FluxErrElement> _fluxSigmaKey;
     std::vector<FlagKeys> _flagKeys;
-
-    Control _ctrl;
 };
 struct ApertureFluxResult : public FluxResult {
 
     /// Return the flag value associated with the given bit
-    bool getFlag(typename ApertureFluxAlgorithm::FlagBits bit) const { return _flags[bit]; }
+    bool getFlag(ApertureFluxAlgorithm::FlagBits bit) const { return _flags[bit]; }
 
     /// Set the flag value associated with the given bit
-    void setFlag(typename ApertureFluxAlgorithm::FlagBits bit, bool value=true) { _flags[bit] = value; }
+    void setFlag(ApertureFluxAlgorithm::FlagBits bit, bool value=true) { _flags[bit] = value; }
 
     /// Clear (i.e. set to false) the flag associated with the given bit
-    void unsetFlag(typename ApertureFluxAlgorithm::FlagBits bit) { _flags[bit] = false; }
+    void unsetFlag(ApertureFluxAlgorithm::FlagBits bit) { _flags[bit] = false; }
 
 private:
 

@@ -74,7 +74,7 @@ void NaiveCentroidAlgorithm::measure(
         );
     }
 
-    typename ImageT::xy_locator im = image.xy_at(x, y);
+    ImageT::xy_locator im = image.xy_at(x, y);
 
     double const sum =
         (im(-1,  1) + im( 0,  1) + im( 1,  1) +

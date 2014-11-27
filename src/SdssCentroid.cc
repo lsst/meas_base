@@ -418,9 +418,9 @@ void SdssCentroidAlgorithm::measure(
     result.y = center.getY();
     measRecord.set(_centroidKey, result); // better than NaN
 
-    typedef typename afw::image::Exposure<float>::MaskedImageT MaskedImageT;
-    typedef typename MaskedImageT::Image ImageT;
-    typedef typename MaskedImageT::Variance VarianceT;
+    typedef afw::image::Exposure<float>::MaskedImageT MaskedImageT;
+    typedef MaskedImageT::Image ImageT;
+    typedef MaskedImageT::Variance VarianceT;
 
     MaskedImageT const& mimage = exposure.getMaskedImage();
     ImageT const& image = *mimage.getImage();
@@ -456,7 +456,7 @@ void SdssCentroidAlgorithm::measure(
         MaskedImageT const smoothedImage = result.first;
         double const smoothingSigma = result.second;
 
-        typename MaskedImageT::xy_locator mim = smoothedImage.xy_at(smoothedImage.getWidth()/2,
+        MaskedImageT::xy_locator mim = smoothedImage.xy_at(smoothedImage.getWidth()/2,
                                                                     smoothedImage.getHeight()/2);
 
         try {
