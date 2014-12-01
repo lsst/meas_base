@@ -31,6 +31,7 @@
 #include "lsst/meas/base/FluxUtilities.h"
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
+#include "lsst/meas/base/InputUtilities.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -59,6 +60,9 @@ public:
     );
 
 };
+
+class ApertureFluxResult;
+
 /**
  *  Base class for multiple-aperture photometry algorithms
  *
@@ -80,16 +84,20 @@ public:
  *  SincFlux and NaiveFlux.  We can't do that yet, though, as we still can't use ApertureFlux outputs
  *  in slots (DM-1218).
  */
-class ApertureFluxResult;
-
-class ApertureFluxAlgorithm {
+class ApertureFluxAlgorithm : public SimpleAlgorithm {
 public:
 
     /// @copydoc PsfFluxAlgorithm::FlagBits
-    enum FlagBits {
+
+    enum {
+        FAILURE=0,
+        N_FLAGS
+    };
+
+    enum ResultFlagBits {
         APERTURE_TRUNCATED=0,
         SINC_COEFFS_TRUNCATED,
-        N_FLAGS
+        RESULT_N_FLAGS
     };
 
 
@@ -182,7 +190,8 @@ public:
     explicit ApertureFluxAlgorithm(
         Control const & ctrl,
         std::string const & name,
-        afw::table::Schema & schema
+        afw::table::Schema & schema,
+        daf::base::PropertySet & metadata
     );
 
     /**
@@ -196,7 +205,12 @@ public:
     virtual void measure(
         afw::table::SourceRecord & record,
         afw::image::Exposure<float> const & exposure
-    ) const = 0;
+    ) const;
+
+    void fail(
+        afw::table::SourceRecord & measRecord,
+        MeasurementError * error=NULL
+    ) const;
 
     virtual ~ApertureFluxAlgorithm() {}
 
@@ -213,7 +227,9 @@ protected:
 
     void copyResultToRecord(Result const & result, afw::table::SourceRecord & record, int index) const;
 
-    Control _ctrl;
+    Control const _ctrl;
+    SafeCentroidExtractor _centroidExtractor;
+    FlagHandler _flagHandler;
     afw::table::ArrayKey<Flux> _fluxKey;
     afw::table::ArrayKey<FluxErrElement> _fluxSigmaKey;
     std::vector<FlagKeys> _flagKeys;
@@ -221,17 +237,17 @@ protected:
 struct ApertureFluxResult : public FluxResult {
 
     /// Return the flag value associated with the given bit
-    bool getFlag(ApertureFluxAlgorithm::FlagBits bit) const { return _flags[bit]; }
+    bool getFlag(ApertureFluxAlgorithm::ResultFlagBits bit) const { return _flags[bit]; }
 
     /// Set the flag value associated with the given bit
-    void setFlag(ApertureFluxAlgorithm::FlagBits bit, bool value=true) { _flags[bit] = value; }
+    void setFlag(ApertureFluxAlgorithm::ResultFlagBits bit, bool value=true) { _flags[bit] = value; }
 
     /// Clear (i.e. set to false) the flag associated with the given bit
-    void unsetFlag(ApertureFluxAlgorithm::FlagBits bit) { _flags[bit] = false; }
+    void unsetFlag(ApertureFluxAlgorithm::ResultFlagBits bit) { _flags[bit] = false; }
 
 private:
 
-    std::bitset<ApertureFluxAlgorithm::N_FLAGS> _flags;
+    std::bitset<ApertureFluxAlgorithm::RESULT_N_FLAGS> _flags;
 };
 
 

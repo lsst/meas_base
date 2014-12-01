@@ -35,34 +35,24 @@
 
 namespace lsst { namespace meas { namespace base {
 
-class CircularApertureFluxAlgorithm : public SimpleAlgorithm , public ApertureFluxAlgorithm{
+class CircularApertureFluxAlgorithm : public ApertureFluxAlgorithm{
 public:
 
-    enum FlagBits {
-        FAILURE=FlagHandler::FAILURE,
-        N_FLAGS
-    };
+    CircularApertureFluxAlgorithm(Control const & ctrl, std::string const & name, 
+        afw::table::Schema & schema, daf::base::PropertySet & metadata);
 
-    typedef ApertureFluxControl Control;
-    CircularApertureFluxAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema, daf::base::PropertySet & metadata);
-
-private:
-
-    // These are private so they doesn't shadow the other overloads in base classes;
-    // we can still call it via the public method on the base class.  We could have
-    // used a using declaration instead, but Swig had trouble with that here.
-
+    /**
+     *  Measure the configured apertures on the given image.
+     *
+     *  Python plugins will delegate to this method.
+     *
+     *  @param[in,out] record      Record used to save outputs and retrieve positions.
+     *  @param[in]     exposure    Image to be measured.
+     */
     virtual void measure(
-        afw::table::SourceRecord & measRecord,
+        afw::table::SourceRecord & record,
         afw::image::Exposure<float> const & exposure
     ) const;
-
-    virtual void fail(
-        afw::table::SourceRecord & measRecord,
-        MeasurementError * error=NULL
-    ) const;
-    SafeCentroidExtractor _centroidExtractor;
-    FlagHandler _flagHandler;
 };
 
 }}} // namespace lsst::meas::base

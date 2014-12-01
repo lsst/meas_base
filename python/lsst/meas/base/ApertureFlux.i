@@ -26,6 +26,7 @@
 #include "lsst/meas/base/CircularApertureFlux.h"
 %}
 
+// %feature("notabstract") lsst::meas::base::ApertureFluxAlgorithm;
 %include "lsst/meas/base/ApertureFlux.h"
 
 %pythoncode %{
@@ -35,6 +36,9 @@ ApertureFluxAlgorithm.Control = ApertureFluxControl;
 %template(computeNaiveFlux) lsst::meas::base::ApertureFluxAlgorithm::computeNaiveFlux<float>;
 %template(computeNaiveFlux) lsst::meas::base::ApertureFluxAlgorithm::computeNaiveFlux<double>;
 %template(computeSincFlux) lsst::meas::base::ApertureFluxAlgorithm::computeSincFlux<float>;
-%template(computesincFlux) lsst::meas::base::ApertureFluxAlgorithm::computeSincFlux<double>;
+%template(computeSincFlux) lsst::meas::base::ApertureFluxAlgorithm::computeSincFlux<double>;
 %template(computeFlux) lsst::meas::base::ApertureFluxAlgorithm::computeFlux<float>;
 %template(computeFlux) lsst::meas::base::ApertureFluxAlgorithm::computeFlux<double>;
+
+%feature("notabstract") lsst::meas::base::CircularApertureFluxAlgorithm;
+%include "lsst/meas/base/CircularApertureFlux.h"

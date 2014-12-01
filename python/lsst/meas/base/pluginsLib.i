@@ -26,9 +26,6 @@
 
 %include "lsst/meas/base/ApertureFlux.i"
 
-%feature("notabstract") lsst::meas::base::CircularApertureFluxAlgorithm;
-%include "lsst/meas/base/CircularApertureFlux.h"
-
 %feature("notabstract") lsst::meas::base::PsfFluxAlgorithm;
 %include "lsst/meas/base/PsfFlux.h"
 

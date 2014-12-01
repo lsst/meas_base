@@ -33,25 +33,12 @@ CircularApertureFluxAlgorithm::CircularApertureFluxAlgorithm(
     std::string const & name,
     afw::table::Schema & schema,
     daf::base::PropertySet & metadata
-) : ApertureFluxAlgorithm(ctrl, name, schema),
-    _centroidExtractor(schema, name)
+) : ApertureFluxAlgorithm(ctrl, name, schema, metadata)
 {
     for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
-        metadata.add(name + "_radii", ctrl.radii[i]);
-        if (ctrl.radii[i] < ctrl.maxSincRadius) {
-            SincCoeffs<float>::cache(0.0, ctrl.radii[i]);
-        }
+        if (ctrl.radii[i] > ctrl.maxSincRadius) break;
+        SincCoeffs<float>::cache(0.0, ctrl.radii[i]);
     }
-
-    _flagKeys.reserve(ctrl.radii.size());
-    for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
-        _flagKeys.push_back(FlagKeys(name, schema, i));
-    }
-
-    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag, set if anything went wrong"},
-    }};
-    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }
 
 void CircularApertureFluxAlgorithm::measure(
@@ -68,10 +55,6 @@ void CircularApertureFluxAlgorithm::measure(
         ApertureFluxAlgorithm::Result result = computeFlux(exposure.getMaskedImage(), ellipse, _ctrl);
         copyResultToRecord(result, measRecord, i);
     }
-}
-
-void CircularApertureFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
-    _flagHandler.handleFailure(measRecord, error);
 }
 
 }}} // namespace lsst::meas::base
