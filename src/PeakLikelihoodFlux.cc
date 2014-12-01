@@ -31,6 +31,7 @@
 #include "lsst/afw/math.h"
 
 #include "lsst/meas/base/PeakLikelihoodFlux.h"
+#include "lsst/afw/table/Source.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -64,10 +65,10 @@ public:
 
     PsfAttributes(CONST_PTR(lsst::afw::detection::Psf) psf, int const iX, int const iY);
     PsfAttributes(CONST_PTR(lsst::afw::detection::Psf) psf, lsst::afw::geom::Point2I const& cen);
-    
+
     double computeGaussianWidth(Method how=ADAPTIVE_MOMENT) const;
     double computeEffectiveArea() const;
-    
+
 private:
     PTR(lsst::afw::image::Image<double>) _psfImage;
 };
@@ -102,7 +103,7 @@ PsfAttributes::PsfAttributes(
  *
  */
 double PsfAttributes::computeEffectiveArea() const {
-    
+
     double sum = 0.0;
     double sumsqr = 0.0;
     for (int iY = 0; iY != _psfImage->getHeight(); ++iY) {
@@ -116,12 +117,6 @@ double PsfAttributes::computeEffectiveArea() const {
 }
 
 } // end anonymous namespace
-
-PeakLikelihoodFluxAlgorithm::ResultMapper PeakLikelihoodFluxAlgorithm::makeResultMapper(
-    afw::table::Schema & schema, std::string const & name, Control const & ctrl
-) {
-    return ResultMapper(schema, name, SIGMA_ONLY);
-}
 
 /**
 Compute the value of one pixel of an image after a fractional pixel shift
@@ -177,15 +172,30 @@ typename afw::image::MaskedImage<T>::SinglePixel computeShiftedValue(
     return afw::math::convolveAtAPoint<MaskedImageT, MaskedImageT>(
         mimageLoc, warpingKernelLoc, warpingKernelPtr->getWidth(), warpingKernelPtr->getHeight());
 }
+PeakLikelihoodFluxAlgorithm::PeakLikelihoodFluxAlgorithm(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::Schema & schema
+) : _ctrl(ctrl),
+    _fluxResultKey(
+        FluxResultKey::addFields(schema, name, "flux from PeakLikelihood Flux algorithm")
+    ),
+    _centroidExtractor(schema, name)
+{
+    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag, set if anything went wrong"}
+    }};
+    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+}
 
-template <typename T>
-void PeakLikelihoodFluxAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    afw::geom::Point2D const & center,
-    Result & result,
-    Control const & ctrl
-) {
-    typedef typename afw::image::Exposure<T>::MaskedImageT MaskedImageT;
+void PeakLikelihoodFluxAlgorithm::measure(
+    afw::table::SourceRecord & measRecord,
+    afw::image::Exposure<float> const & exposure
+) const {
+    // get the value from the centroid slot only
+    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
+    FluxResult result;
+    typedef afw::image::Exposure<float>::MaskedImageT MaskedImageT;
     MaskedImageT const& mimage = exposure.getMaskedImage();
 
 /**
@@ -227,9 +237,9 @@ void PeakLikelihoodFluxAlgorithm::apply(
      * Compute value of image at center of source, as shifted by a fractional pixel to center the source
      * on ctrPix.
      */
-    typename MaskedImageT::SinglePixel mimageCtrPix = computeShiftedValue(
+    MaskedImageT::SinglePixel mimageCtrPix = computeShiftedValue(
         mimage,
-        ctrl.warpingKernelName,
+        _ctrl.warpingKernelName,
         afw::geom::Point2D(xCtrPixParentIndFrac.second, yCtrPixParentIndFrac.second),
         ctrPixParentInd
     );
@@ -237,36 +247,13 @@ void PeakLikelihoodFluxAlgorithm::apply(
     double var = mimageCtrPix.variance()*weight*weight;
     result.flux = flux;
     result.fluxSigma = std::sqrt(var);
+    measRecord.set(_fluxResultKey, result);
+    _flagHandler.setValue(measRecord, FAILURE, false);
 
-    /* ******************************************************* */
 }
 
-template <typename T>
-void PeakLikelihoodFluxAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    Input const & inputs,
-    Result & result,
-    Control const & ctrl
-) {
-    apply(exposure, inputs.position, result, ctrl);
+void PeakLikelihoodFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+    _flagHandler.handleFailure(measRecord, error);
 }
-
-#define INSTANTIATE(T)                                                  \
-    template  void PeakLikelihoodFluxAlgorithm::apply(          \
-        afw::image::Exposure<T> const & exposure,                       \
-        afw::geom::Point2D const & position,                            \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    );                                                                  \
-    template                                                            \
-     void PeakLikelihoodFluxAlgorithm::apply(                   \
-        afw::image::Exposure<T> const & exposure,                       \
-        Input const & inputs,                                           \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    )
-
-INSTANTIATE(float);
-INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base

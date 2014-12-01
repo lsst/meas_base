@@ -23,80 +23,58 @@
 
 #include "ndarray/eigen.h"
 
-#include "Eigen/Core"
-#include "Eigen/LU"
-
 #include "lsst/afw/detection/Psf.h"
+#include "lsst/afw/geom/Box.h"
+#include "lsst/afw/geom/ellipses/Ellipse.h"
 #include "lsst/afw/detection/FootprintArray.h"
 #include "lsst/afw/detection/FootprintArray.cc"
+#include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/GaussianFlux.h"
 #include "lsst/meas/base/detail/SdssShapeImpl.h"
 
 namespace lsst { namespace meas { namespace base {
 
-
-/************************************************************************************************************/
-
-GaussianFluxAlgorithm::ResultMapper GaussianFluxAlgorithm::makeResultMapper(
-    afw::table::Schema & schema, std::string const & name, Control const & ctrl
-) {
-    return ResultMapper(schema, name, SIGMA_ONLY);
+GaussianFluxAlgorithm::GaussianFluxAlgorithm(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::Schema & schema
+) : _ctrl(ctrl),
+    _fluxResultKey(
+        FluxResultKey::addFields(schema, name, "flux from Gaussian Flux algorithm")
+    ),
+    _centroidExtractor(schema, name),
+    _shapeExtractor(schema, name)
+{
+    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag, set if anything went wrong"}
+    }};
+    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }
 
-template <typename T>
-void GaussianFluxAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    afw::geom::Point2D const & centroid,
-    afw::geom::ellipses::Quadrupole const & shape,
-    Result & result,
-    Control const & ctrl
-) {
+void GaussianFluxAlgorithm::measure(
+    afw::table::SourceRecord & measRecord,
+    afw::image::Exposure<float> const & exposure
+) const {
+    // get the value from the centroid slot only
+    afw::geom::Point2D centroid = _centroidExtractor(measRecord, _flagHandler);
+    afw::geom::ellipses::Quadrupole shape = _shapeExtractor(measRecord, _flagHandler);
+    FluxResult result;
+
     //  This code came straight out of the GaussianFlux.apply() in meas_algorithms with few changes
-    typedef typename afw::image::Exposure<T>::MaskedImageT MaskedImageT;
-    typedef typename MaskedImageT::Image ImageT;
-    typename afw::image::Exposure<T>::MaskedImageT const& mimage = exposure.getMaskedImage();
-
-    double const xcen = centroid.getX() - mimage.getX0(); ///< column position in image pixel coords
-    double const ycen = centroid.getY() - mimage.getY0(); ///< row position
-
+    afw::image::Exposure<float>::MaskedImageT const& mimage = exposure.getMaskedImage();
 
     detail::SdssShapeImpl sdss(centroid, shape);
     std::pair<double, double> fluxResult
-        = detail::getFixedMomentsFlux(mimage, ctrl.background, xcen, ycen, sdss);
+        = detail::getFixedMomentsFlux(mimage, _ctrl.background, centroid.getX(), centroid.getY(), sdss);
     result.flux =  fluxResult.first;
     result.fluxSigma = fluxResult.second;
-
-    //  End of meas_algorithms code
+    measRecord.set(_fluxResultKey, result);
+    _flagHandler.setValue(measRecord, FAILURE, false);
 }
 
-template <typename T>
-void GaussianFluxAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    Input const & inputs,
-    Result & result,
-    Control const & ctrl
-) {
-    apply(exposure, inputs.position, inputs.shape, result, ctrl);
+
+void GaussianFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+    _flagHandler.handleFailure(measRecord, error);
 }
-
-#define INSTANTIATE(T)                                                  \
-    template  void GaussianFluxAlgorithm::apply(          \
-        afw::image::Exposure<T> const & exposure,                       \
-        afw::geom::Point2D const & centroid, \
-        afw::geom::ellipses::Quadrupole const & shape, \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    );                                                                  \
-    template                                                            \
-     void GaussianFluxAlgorithm::apply(                   \
-        afw::image::Exposure<T> const & exposure,                       \
-        Input const & inputs,                                           \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    )
-
-INSTANTIATE(float);
-INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
-

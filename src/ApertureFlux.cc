@@ -27,6 +27,7 @@
 
 #include "lsst/afw/math/offsetImage.h"
 #include "lsst/afw/geom/ellipses/PixelRegion.h"
+#include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/SincCoeffs.h"
 #include "lsst/meas/base/ApertureFlux.h"
 
@@ -43,8 +44,11 @@ ApertureFluxControl::ApertureFluxControl() : radii(10), maxSincRadius(10.0), shi
 ApertureFluxAlgorithm::ApertureFluxAlgorithm(
     Control const & ctrl,
     std::string const & name,
-    afw::table::Schema & schema
+    afw::table::Schema & schema,
+    daf::base::PropertySet & metadata
+
 ) : _ctrl(ctrl),
+    _centroidExtractor(schema, name),
     _fluxKey(
         afw::table::ArrayKey<Flux>::addFields(
             schema,
@@ -64,10 +68,19 @@ ApertureFluxAlgorithm::ApertureFluxAlgorithm(
         )
     )
 {
+    for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
+        metadata.add(name + "_radii", ctrl.radii[i]);
+    }
+
     _flagKeys.reserve(ctrl.radii.size());
     for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
         _flagKeys.push_back(FlagKeys(name, schema, i));
     }
+
+    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag, set if anything went wrong"},
+    }};
+    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }
 
 ApertureFluxAlgorithm::FlagKeys::FlagKeys(
@@ -109,6 +122,16 @@ void ApertureFluxAlgorithm::copyResultToRecord(
         record.set(_flagKeys[index].sincCoeffsTruncated, true);
         // TODO DM-464: set suspect flag
     }
+}
+
+
+void ApertureFluxAlgorithm::measure(
+    afw::table::SourceRecord & measRecord,
+    afw::image::Exposure<float> const & exposure
+) const {};
+
+void ApertureFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+    _flagHandler.handleFailure(measRecord, error);
 }
 
 namespace {
@@ -245,8 +268,40 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeNaiveFlux(
     return result;
 }
 
+template <typename T>
+ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeFlux(
+    afw::image::Image<T> const & image,
+    afw::geom::ellipses::Ellipse const & ellipse,
+    Control const & ctrl
+) {
+    return (afw::geom::ellipses::Axes(ellipse.getCore()).getB() <= ctrl.maxSincRadius)
+        ? computeSincFlux(image, ellipse, ctrl)
+        : computeNaiveFlux(image, ellipse, ctrl);
+}
 
+template <typename T>
+ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeFlux(
+    afw::image::MaskedImage<T> const & image,
+    afw::geom::ellipses::Ellipse const & ellipse,
+    Control const & ctrl
+) {
+    return (afw::geom::ellipses::Axes(ellipse.getCore()).getB() <= ctrl.maxSincRadius)
+        ? computeSincFlux(image, ellipse, ctrl)
+        : computeNaiveFlux(image, ellipse, ctrl);
+}
 #define INSTANTIATE(T)                                                  \
+    template                                                            \
+    ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeFlux( \
+        afw::image::Image<T> const &,                                   \
+        afw::geom::ellipses::Ellipse const &,                           \
+        Control const &                                                 \
+    );                                                                  \
+    template                                                            \
+    ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeFlux( \
+        afw::image::MaskedImage<T> const &,                             \
+        afw::geom::ellipses::Ellipse const &,                           \
+        Control const &                                                 \
+    );                                                                  \
     template                                                            \
     ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux( \
         afw::image::Image<T> const &,                                   \
@@ -276,3 +331,4 @@ INSTANTIATE(float);
 INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
+

@@ -38,79 +38,18 @@ from .wrappers import *
 
 # --- Wrapped C++ Plugins ---
 
-WrappedSingleFramePlugin.generate(SdssCentroidAlgorithm, executionOrder=0.0)
-WrappedSingleFramePlugin.generate(SincFluxAlgorithm)
-WrappedSingleFramePlugin.generate(PixelFlagsAlgorithm, executionOrder=0.0)
-WrappedSingleFramePlugin.generate(NaiveFluxAlgorithm)
-WrappedSingleFramePlugin.generate(GaussianCentroidAlgorithm, executionOrder=0.0)
-WrappedSingleFramePlugin.generate(GaussianFluxAlgorithm)
-WrappedSingleFramePlugin.generate(NaiveCentroidAlgorithm, executionOrder=0.0)
-WrappedSingleFramePlugin.generate(PeakLikelihoodFluxAlgorithm)
-WrappedForcedPlugin.generate(SdssCentroidAlgorithm, executionOrder=0.0)
-WrappedForcedPlugin.generate(SincFluxAlgorithm)
-WrappedForcedPlugin.generate(PixelFlagsAlgorithm, executionOrder=0.0)
-WrappedForcedPlugin.generate(NaiveFluxAlgorithm)
-WrappedForcedPlugin.generate(GaussianCentroidAlgorithm, executionOrder=0.0)
-WrappedForcedPlugin.generate(GaussianFluxAlgorithm)
-WrappedForcedPlugin.generate(NaiveCentroidAlgorithm, executionOrder=0.0)
-WrappedForcedPlugin.generate(PeakLikelihoodFluxAlgorithm)
-
 wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl)
+wrapSimpleAlgorithm(NaiveFluxAlgorithm, Control=NaiveFluxControl)
+wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxControl)
+wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl)
+wrapSimpleAlgorithm(SincFluxAlgorithm, Control=SincFluxControl)
+wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl, executionOrder=0.0)
+wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl, executionOrder=0.0)
+wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl, executionOrder=0.0)
+wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl, executionOrder=2.0)
 wrapSimpleAlgorithm(SdssShapeAlgorithm, Control=SdssShapeControl, executionOrder=1.0)
 
-# --- Aperture Flux Measurement Plugins ---
-
-# The aperture flux algorithms are wrapped differently (and more verbosely) than the rest, because
-# the C++ wrapping mechanism we originally came up with wasn't sufficiently general to handle
-# algorithms with a dynamically-determined set of flag fields.  That will be fixed in the future
-# in DM-1130.
-
-class CircularApertureFluxSingleFramePlugin(SingleFramePlugin):
-    """!
-    Measure a sequence of circular aperture fluxes.
-
-    See the C++ CircularApertureFluxAlgorithm class for more information.
-    """
-
-    ConfigClass = lsst.pex.config.makeConfigClass(
-        ApertureFluxControl,
-        base=SingleFramePlugin.ConfigClass
-    )
-
-    def __init__(self, config, name, schema, metadata):
-        SingleFramePlugin.__init__(self, config, name, schema, metadata)
-        for radius in self.config.radii:
-            metadata.add("base_CircularApertureFlux_radii", radius)
-        self.algorithm = CircularApertureFluxAlgorithm(config.makeControl(), name, schema)
-
-    def measure(self, measRecord, exposure):
-        self.algorithm.measure(measRecord, exposure)
-
-SingleFramePlugin.registry.register("base_CircularApertureFlux", CircularApertureFluxSingleFramePlugin)
-
-class CircularApertureFluxForcedPlugin(ForcedPlugin):
-    """!
-    Measure a sequence of circular aperture fluxes.
-
-    See the C++ CircularApertureFluxAlgorithm class for more information.
-    """
-
-    ConfigClass = lsst.pex.config.makeConfigClass(
-        ApertureFluxControl,
-        base=ForcedPlugin.ConfigClass
-    )
-
-    def __init__(self, config, name, schemaMapper, metadata):
-        ForcedPlugin.__init__(self, config, name, schemaMapper, metadata)
-        for radius in self.config.radii:
-            metadata.add("base_CircularApertureFlux_radii", radius)
-        schema = schemaMapper.editOutputSchema()
-        self.algorithm = CircularApertureFluxAlgorithm(config.makeControl(), name, schema)
-
-    def measure(self, measRecord, exposure, refRecord, refWcs):
-        self.algorithm.measure(measRecord, exposure)
-
-ForcedPlugin.registry.register("base_CircularApertureFlux", CircularApertureFluxForcedPlugin)
+wrapSimpleAlgorithm(CircularApertureFluxAlgorithm, needsMetadata=True, Control=ApertureFluxControl)
 
 # --- Single-Frame Measurement Plugins ---
 

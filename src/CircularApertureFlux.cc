@@ -21,6 +21,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+#include "lsst/afw/table/Source.h"
+#include "lsst/meas/base/ApertureFlux.h"
 #include "lsst/meas/base/CircularApertureFlux.h"
 #include "lsst/meas/base/SincCoeffs.h"
 
@@ -29,8 +31,9 @@ namespace lsst { namespace meas { namespace base {
 CircularApertureFluxAlgorithm::CircularApertureFluxAlgorithm(
     Control const & ctrl,
     std::string const & name,
-    afw::table::Schema & schema
-) : ApertureFluxAlgorithm(ctrl, name, schema)
+    afw::table::Schema & schema,
+    daf::base::PropertySet & metadata
+) : ApertureFluxAlgorithm(ctrl, name, schema, metadata)
 {
     for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
         if (ctrl.radii[i] > ctrl.maxSincRadius) break;
@@ -39,17 +42,18 @@ CircularApertureFluxAlgorithm::CircularApertureFluxAlgorithm(
 }
 
 void CircularApertureFluxAlgorithm::measure(
-    afw::table::SourceRecord & record,
+    afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
 ) const {
-    afw::geom::ellipses::Ellipse ellipse(afw::geom::ellipses::Axes(1.0, 1.0, 0.0), record.getCentroid());
+    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
+    afw::geom::ellipses::Ellipse ellipse(afw::geom::ellipses::Axes(1.0, 1.0, 0.0), center);
     PTR(afw::geom::ellipses::Axes) axes
         = boost::static_pointer_cast<afw::geom::ellipses::Axes>(ellipse.getCorePtr());
     for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
         axes->setA(_ctrl.radii[i]);
         axes->setB(_ctrl.radii[i]);
-        Result result = computeFlux(exposure.getMaskedImage(), ellipse, _ctrl);
-        copyResultToRecord(result, record, i);
+        ApertureFluxAlgorithm::Result result = computeFlux(exposure.getMaskedImage(), ellipse, _ctrl);
+        copyResultToRecord(result, measRecord, i);
     }
 }
 
