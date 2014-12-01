@@ -26,8 +26,11 @@
 
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
-#include "lsst/meas/base/Inputs.h"
-#include "lsst/meas/base/ResultMappers.h"
+#include "lsst/meas/base/Algorithm.h"
+#include "lsst/meas/base/FluxUtilities.h"
+#include "lsst/meas/base/CentroidUtilities.h"
+#include "lsst/meas/base/FlagHandler.h"
+#include "lsst/meas/base/InputUtilities.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -64,82 +67,40 @@ public:
  *  @brief A measurement algorithm that estimates the peak flux, using a filtered image
     which has been convolved with its own PSF.
  */
-class PeakLikelihoodFluxAlgorithm {
+class PeakLikelihoodFluxAlgorithm : public SimpleAlgorithm {
 public:
 
-    /**
-     *  @brief Flag bits to be used with the 'flags' data member of the Result object.
-     *
-     *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
-     */
-    enum FlagBits {
+    enum {
+        FAILURE=FlagHandler::FAILURE,
         N_FLAGS
     };
-
-    /**
-     *  @brief Return an array of (name, doc) tuples that describes the flags and sets the names used
-     *         in catalog schemas.
-     */
-    static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
-        static boost::array<FlagDef,N_FLAGS> const flagDefs = {};
-        return flagDefs;
-    }
 
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.
     typedef PeakLikelihoodFluxControl Control;
 
-    /**
-     *  Result is the type returned by apply().  Because PeakLikelihoodFluxAlgorithm only measures a flux
-     *  and its uncertainty, we can use the single predefined component, FluxComponent, without any
-     *  modification.
-     */
-    typedef Result1<PeakLikelihoodFluxAlgorithm,FluxComponent> Result;
+    PeakLikelihoodFluxAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
 
-    /**
-     *  The ResultMapper typedef here must exactly corresponds to the the Result typedef defined above:
-     *  There is a ComponentMapper corresponding to each Component.
-     */
-    typedef ResultMapper1<PeakLikelihoodFluxAlgorithm,FluxComponentMapper> ResultMapper;
+private:
 
-    /**
-     *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  PeakLikelihoodFluxAlgorithm only needs a centroid, so we use
-     *  FootprintCentroidInput.
-     */
-    typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
+    // These are private so they doesn't shadow the other overloads in base classes;
+    // we can still call it via the public method on the base class.  We could have
+    // used a using declaration instead, but Swig had trouble with that here.
 
-    /**
-     *  @brief Create an object that transfers Result values to a record associated with the given schema
-     */
-    static ResultMapper makeResultMapper(
-        afw::table::Schema & schema,
-        std::string const & prefix,
-        Control const & ctrl=Control()
-    );
+    virtual void measure(
+        afw::table::SourceRecord & measRecord,
+        afw::image::Exposure<float> const & exposure
+    ) const;
 
-    /**
-     *  @brief Measure the flux of a source using the PeakLikelihoodFlux algorithm.
-     */
-    template <typename T>
-    static void apply(
-        afw::image::Exposure<T> const & exposure,
-        afw::geom::Point2D const & position,
-        Result & result,
-        Control const & ctrl=Control()
-    );
+    virtual void fail(
+        afw::table::SourceRecord & measRecord,
+        MeasurementError * error=NULL
+    ) const;
 
-    /**
-     *  @brief Apply the PeakLikelihoodFlux algorithm to a single source using the Plugin API.
-     */
-    template <typename T>
-    static void apply(
-        afw::image::Exposure<T> const & exposure,
-        Input const & inputs,
-        Result & result,
-        Control const & ctrl=Control()
-    );
-
+    Control _ctrl;
+    FluxResultKey _fluxResultKey;
+    FlagHandler _flagHandler;
+    SafeCentroidExtractor _centroidExtractor;
 };
 
 }}} // namespace lsst::meas::base

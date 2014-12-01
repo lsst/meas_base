@@ -33,8 +33,11 @@
 
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
-#include "lsst/meas/base/Inputs.h"
-#include "lsst/meas/base/ResultMappers.h"
+#include "lsst/meas/base/Algorithm.h"
+#include "lsst/meas/base/FluxUtilities.h"
+#include "lsst/meas/base/CentroidUtilities.h"
+#include "lsst/meas/base/FlagHandler.h"
+#include "lsst/meas/base/InputUtilities.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -68,86 +71,41 @@ public:
  *  algorithm capable of computing multiple apertures (see DM-837) and handling elliptical
  *  apertures.
  */
-class NaiveFluxAlgorithm {
+class NaiveFluxAlgorithm : public SimpleAlgorithm {
 public:
 
-    /**
-     *  @brief Flag bits to be used with the 'flags' data member of the Result object.
-     *
-     *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
-     */
-    enum FlagBits {
+    enum {
+        FAILURE=FlagHandler::FAILURE,
         EDGE,
         N_FLAGS
     };
-
-    /**
-     *  @brief Return an array of (name, doc) tuples that describes the flags and sets the names used
-     *         in catalog schemas.
-     */
-    static boost::array<FlagDef,N_FLAGS> const & getFlagDefinitions() {
-        static boost::array<FlagDef,N_FLAGS> const flagDefs = {{
-            {"edge", "source is too close to the edge of the field to compute the given aperture"}
-        }};
-        return flagDefs;
-    }
 
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.
     typedef NaiveFluxControl Control;
 
-    /**
-     *  Result is the type returned by apply().  Because NaiveFluxAlgorithm only measures a flux and its
-     *  uncertainty, we can use the single predefined component, FluxComponent, without any modification.
-     */
-    typedef Result1<NaiveFluxAlgorithm,FluxComponent> Result;
+    NaiveFluxAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
 
-    /**
-     *  The ResultMapper typedef here must exactly corresponds to the the Result typedef defined above:
-     *  There is a ComponentMapper corresponding to each Component.
-     */
-    typedef ResultMapper1<NaiveFluxAlgorithm,FluxComponentMapper> ResultMapper;
+private:
 
-    /**
-     *  In the actual overload of apply() used by the Plugin system, this is the only argument besides the
-     *  Exposure being measured.  NaiveFluxAlgorithm only needs a centroid, so we use FootprintCentroidInput.
-     */
-    typedef FootprintCentroidInput Input; // type passed to apply in addition to Exposure.
+    // These are private so they doesn't shadow the other overloads in base classes;
+    // we can still call it via the public method on the base class.  We could have
+    // used a using declaration instead, but Swig had trouble with that here.
 
-    /**
-     *  @brief Create an object that transfers Result values to a record associated with the given schema
-     *
-     *  This is called by the Plugin wrapper system to create a ResultMapper.  It's responsible for calling
-     *  the ResultMapper constructor, forwarding the schema and prefix arguments and providing the correct
-     *  values for the uncertainty arguments.
-     */
-    static ResultMapper makeResultMapper(
-        afw::table::Schema & schema,
-        std::string const & prefix,
-        Control const & ctrl=Control()
-    );
+    virtual void measure(
+        afw::table::SourceRecord & measRecord,
+        afw::image::Exposure<float> const & exposure
+    ) const;
 
-    /**
-     *  @brief Measure the flux of a source using the NaiveFlux algorithm.
-     */
-    template <typename T>
-    static void apply(
-        afw::image::Exposure<T> const & exposure,
-        afw::geom::Point2D const & position,
-        Result & result,
-        Control const & ctrl=Control()
-    );
+    virtual void fail(
+        afw::table::SourceRecord & measRecord,
+        MeasurementError * error=NULL
+    ) const;
 
-    /**
-     *  @brief Apply the NaiveFlux to a single source using the Plugin API.
-     */
-    template <typename T>
-    static void apply(
-        afw::image::Exposure<T> const & exposure,
-        Input const & inputs,
-        Result & result,
-        Control const & ctrl=Control()
-    );
+    Control _ctrl;
+    FluxResultKey _fluxResultKey;
+    FlagHandler _flagHandler;
+    SafeCentroidExtractor _centroidExtractor;
 
 };
 

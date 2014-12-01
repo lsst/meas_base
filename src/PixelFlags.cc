@@ -25,7 +25,7 @@
 
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/detection/FootprintFunctor.h"
-#include "lsst/afw/geom/ellipses/Ellipse.h"
+#include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/PixelFlags.h"
 
 namespace lsst { namespace meas { namespace base {
@@ -58,49 +58,67 @@ private:
     typename MaskedImageT::Mask::Pixel _bits;
 };
 }  // end anonymous namespace
-
-PixelFlagsAlgorithm::ResultMapper PixelFlagsAlgorithm::makeResultMapper(
-    afw::table::Schema & schema, std::string const & name, Control const & ctrl
-) {
-    return ResultMapper(schema, name, SIGMA_ONLY);
+PixelFlagsAlgorithm::PixelFlagsAlgorithm(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::Schema & schema
+) : _ctrl(ctrl),
+    _centroidKey(
+        CentroidResultKey::addFields(schema, name, "centroid from Naive Centroid algorithm", SIGMA_ONLY)
+    ),
+    _centroidExtractor(schema, name)
+{
+    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag, set if anything went wrong"},
+        {"flag_edge", "Could not use full PSF model image in fit because of proximity to exposure border"},
+        {"flag_interpolated", "Interpolated pixel in the source footprint"},
+        {"flag_interpolatedCenter", "Interpolated pixel in the source center"},
+        {"flag_saturated", "Saturated pixel in the source footprint"},
+        {"flag_saturatedCenter", "Saturated pixel in the source center"},
+        {"flag_cr", "Cosmic ray in the source footprint"},
+        {"flag_crCenter", "Cosmic ray in the source center"},
+        {"flag_bad", "Bad pixel in the source footprint"}
+    }};
+    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }
 
-template <typename T>
-void PixelFlagsAlgorithm::apply(
-    afw::image::MaskedImage<T> const & mimage,
-    afw::geom::Point2D const & center,
-    afw::detection::Footprint const & footprint,
-    Result & result,
-    Control const & ctrl
-) {
-    typedef typename afw::image::MaskedImage<T> MaskedImageT;
+void PixelFlagsAlgorithm::measure(
+    afw::table::SourceRecord & measRecord,
+    afw::image::Exposure<float> const & exposure
+) const {
+
+    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
+    typedef typename afw::image::MaskedImage<float> MaskedImageT;
+    MaskedImageT mimage = exposure.getMaskedImage();
+
     FootprintBits<MaskedImageT> func(mimage);
 
-//  Catch centroids off the image or NAN
+//  Catch NAN in centroid estimate
     if (lsst::utils::isnan(center.getX()) || lsst::utils::isnan(center.getY())) {
         throw LSST_EXCEPT(pex::exceptions::InvalidParameterError,
                           "Center point passed to PixelFlagsALgorithm is NaN");
     }
 //  Catch centroids off the image
     if (!mimage.getBBox().contains(afw::geom::Point2I(center))) {
-       result.setFlag(EDGE);
+       _flagHandler.setValue(measRecord, EDGE, true);
     }
     // Check for bits set in the source's Footprint
+    afw::detection::Footprint const & footprint(*measRecord.getFootprint());
     func.apply(footprint);
     if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("EDGE")) {
-        result.setFlag(EDGE);
+        _flagHandler.setValue(measRecord, EDGE, true);
     }
     if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("BAD")) {
-        result.setFlag(BAD);
+        _flagHandler.setValue(measRecord, BAD, true);
     }
     if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("INTRP")) {
-        result.setFlag(INTERPOLATED);
+        _flagHandler.setValue(measRecord, INTERPOLATED, true);
     }
     if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("SAT")) {
-        result.setFlag(SATURATED);
+        _flagHandler.setValue(measRecord, SATURATED, true);
     }
     if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("CR")) {
-        result.setFlag(CR);
+        _flagHandler.setValue(measRecord, CR, true);
     }
 
     // Check for bits set in the 3x3 box around the center
@@ -109,44 +127,20 @@ void PixelFlagsAlgorithm::apply(
     afw::detection::Footprint const middle(afw::geom::BoxI(llc, afw::geom::ExtentI(3))); // central 3x3
     func.apply(middle);
     if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("INTRP")) {
-        result.setFlag(INTERPOLATED_CENTER);
+        _flagHandler.setValue(measRecord, INTERPOLATED_CENTER, true);
     }
     if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("SAT")) {
-        result.setFlag(SATURATED_CENTER);
+        _flagHandler.setValue(measRecord, SATURATED_CENTER, true);
     }
     if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("CR")) {
-        result.setFlag(CR_CENTER);
+        _flagHandler.setValue(measRecord, CR_CENTER, true);
     }
+    _flagHandler.setValue(measRecord, FAILURE, false);
 }
 
-template <typename T>
-void PixelFlagsAlgorithm::apply(
-    afw::image::Exposure<T> const & exposure,
-    Input const & inputs,
-    Result & result,
-    Control const & ctrl
-) {
-    apply(exposure.getMaskedImage(), inputs.position, *inputs.footprint, result, ctrl);
+void PixelFlagsAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+    _flagHandler.handleFailure(measRecord, error);
 }
-
-#define INSTANTIATE(T)                                                  \
-    template  void PixelFlagsAlgorithm::apply(        \
-        afw::image::MaskedImage<T> const & mimage,                       \
-        afw::geom::Point2D const & position,                            \
-        afw::detection::Footprint const & footprint,                    \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    );                                                                  \
-    template                                                            \
-     void PixelFlagsAlgorithm::apply(                 \
-        afw::image::Exposure<T> const & exposure,                       \
-        Input const & inputs,                                           \
-        Result & result,                                          \
-        Control const & ctrl                                            \
-    );
-
-INSTANTIATE(float);
-INSTANTIATE(double);
 
 }}} // namespace lsst::meas::base
 
