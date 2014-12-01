@@ -195,7 +195,7 @@ void PeakLikelihoodFluxAlgorithm::measure(
     // get the value from the centroid slot only
     afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
     FluxResult result;
-    typedef typename afw::image::Exposure<float>::MaskedImageT MaskedImageT;
+    typedef afw::image::Exposure<float>::MaskedImageT MaskedImageT;
     MaskedImageT const& mimage = exposure.getMaskedImage();
 
 /**
@@ -237,7 +237,7 @@ void PeakLikelihoodFluxAlgorithm::measure(
      * Compute value of image at center of source, as shifted by a fractional pixel to center the source
      * on ctrPix.
      */
-    typename MaskedImageT::SinglePixel mimageCtrPix = computeShiftedValue(
+    MaskedImageT::SinglePixel mimageCtrPix = computeShiftedValue(
         mimage,
         _ctrl.warpingKernelName,
         afw::geom::Point2D(xCtrPixParentIndFrac.second, yCtrPixParentIndFrac.second),

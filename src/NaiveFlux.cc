@@ -163,7 +163,7 @@ void NaiveFluxAlgorithm::measure(
     FluxResult result;
     // Get the centroid from a previous centroid measurement
     afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
-    typename afw::image::Exposure<float>::MaskedImageT const& mimage = exposure.getMaskedImage();
+    afw::image::Exposure<float>::MaskedImageT const& mimage = exposure.getMaskedImage();
 
     double const xcen = center.getX();   ///< object's column position
     double const ycen = center.getY();   ///< object's row position
@@ -176,7 +176,7 @@ void NaiveFluxAlgorithm::measure(
 
     /* ******************************************************* */
     // Aperture flux
-    FootprintFlux<typename afw::image::Exposure<float>::MaskedImageT> fluxFunctor(mimage);
+    FootprintFlux<afw::image::Exposure<float>::MaskedImageT> fluxFunctor(mimage);
     afw::detection::Footprint const foot(
         afw::geom::PointI(ixcen, iycen),
         _ctrl.radius,

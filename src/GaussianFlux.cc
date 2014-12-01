@@ -61,7 +61,7 @@ void GaussianFluxAlgorithm::measure(
     FluxResult result;
 
     //  This code came straight out of the GaussianFlux.apply() in meas_algorithms with few changes
-    typename afw::image::Exposure<float>::MaskedImageT const& mimage = exposure.getMaskedImage();
+    afw::image::Exposure<float>::MaskedImageT const& mimage = exposure.getMaskedImage();
 
     detail::SdssShapeImpl sdss(centroid, shape);
     std::pair<double, double> fluxResult

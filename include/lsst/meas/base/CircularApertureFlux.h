@@ -24,31 +24,22 @@
 #ifndef LSST_MEAS_BASE_CircularApertureFlux_h_INCLUDED
 #define LSST_MEAS_BASE_CircularApertureFlux_h_INCLUDED
 
+#include "lsst/pex/config.h"
+#include "lsst/daf/base/PropertySet.h"
+#include "lsst/afw/image/Exposure.h"
+#include "lsst/meas/base/Algorithm.h"
+#include "lsst/meas/base/FluxUtilities.h"
+#include "lsst/meas/base/CentroidUtilities.h"
+#include "lsst/meas/base/InputUtilities.h"
 #include "lsst/meas/base/ApertureFlux.h"
 
 namespace lsst { namespace meas { namespace base {
 
-/**
- *  Plugin algorithm that computes flux within a sequence of circular apertures.
- *
- *  This algorithm automatically transitions between using the sinc photometry algorithm
- *  and naive apertures at a configured radius (see ApertureFluxControl).
- *
- *  As with other ApertureFluxAlgorithm subclasses, CircularApertureFluxAlgorithm cannot
- *  be wrapped via WrappedSingleFramePlugin or WrappedForcedPlugin; see ApertureFluxAlgorithm
- *  and the CircularApertureFluxPlugin classes in plugins.py for more information.
- */
-class CircularApertureFluxAlgorithm : public ApertureFluxAlgorithm {
+class CircularApertureFluxAlgorithm : public ApertureFluxAlgorithm{
 public:
 
-    /**
-     *  Construct the algorithm and add its fields to the given Schema.
-     */
-    explicit CircularApertureFluxAlgorithm(
-        Control const & ctrl,
-        std::string const & name,
-        afw::table::Schema & schema
-    );
+    CircularApertureFluxAlgorithm(Control const & ctrl, std::string const & name, 
+        afw::table::Schema & schema, daf::base::PropertySet & metadata);
 
     /**
      *  Measure the configured apertures on the given image.
@@ -62,7 +53,6 @@ public:
         afw::table::SourceRecord & record,
         afw::image::Exposure<float> const & exposure
     ) const;
-
 };
 
 }}} // namespace lsst::meas::base

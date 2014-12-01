@@ -88,7 +88,7 @@ void PixelFlagsAlgorithm::measure(
 ) const {
 
     afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
-    typedef typename afw::image::MaskedImage<float> MaskedImageT;
+    typedef afw::image::MaskedImage<float> MaskedImageT;
     MaskedImageT mimage = exposure.getMaskedImage();
 
     FootprintBits<MaskedImageT> func(mimage);
