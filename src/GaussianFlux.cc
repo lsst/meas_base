@@ -65,7 +65,7 @@ void GaussianFluxAlgorithm::measure(
 
     detail::SdssShapeImpl sdss(centroid, shape);
     std::pair<double, double> fluxResult
-        = detail::getFixedMomentsFlux(mimage, _ctrl.background, centroid.getX(), centroid.getY(), sdss);
+        = detail::getFixedMomentsFlux(mimage, _ctrl.background, centroid.getX()-mimage.getX0(), centroid.getY()-mimage.getY0(), sdss);
     result.flux =  fluxResult.first;
     result.fluxSigma = fluxResult.second;
     measRecord.set(_fluxResultKey, result);
