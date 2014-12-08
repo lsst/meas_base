@@ -714,7 +714,7 @@ getFixedMomentsFlux(ImageT const& image,               ///< the data to process
     bool const interp = shouldInterp(shape.getIxx(), shape.getIyy(), weights.get<0>().second);
 
     double I0 = 0;                      // amplitude of Gaussian
-    calcmom<true>(ImageAdaptor<ImageT>().getImage(image), xcen - image.getX0(), ycen - image.getX0(),
+    calcmom<true>(ImageAdaptor<ImageT>().getImage(image), xcen - image.getX0(), ycen - image.getY0(),
                   bbox, bkgd, interp, w11, w12, w22,
                   &I0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     /*
@@ -724,7 +724,7 @@ getFixedMomentsFlux(ImageT const& image,               ///< the data to process
 
     {
         int ix = static_cast<int>(xcen - image.getX0());
-        int iy = static_cast<int>(ycen - image.getX0());
+        int iy = static_cast<int>(ycen - image.getY0());
         float bkgd_var = 
             ImageAdaptor<ImageT>().getVariance(image, ix, iy); // XXX Overestimate as it includes object
 
