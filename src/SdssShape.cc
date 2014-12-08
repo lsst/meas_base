@@ -691,8 +691,8 @@ template<typename ImageT>
 std::pair<double, double>
 getFixedMomentsFlux(ImageT const& image,               ///< the data to process
                     double bkgd,                       ///< background level
-                    double xcen,                       ///< x-centre of object
-                    double ycen,                       ///< y-centre of object
+                    double xcen,                       ///< x-centre of object (PARENT coordinates)
+                    double ycen,                       ///< y-centre of object (PARENT coordinates)
                     SdssShapeImpl const& shape_ ///< The SdssShape of the object
     )
 {
@@ -714,7 +714,8 @@ getFixedMomentsFlux(ImageT const& image,               ///< the data to process
     bool const interp = shouldInterp(shape.getIxx(), shape.getIyy(), weights.get<0>().second);
 
     double I0 = 0;                      // amplitude of Gaussian
-    calcmom<true>(ImageAdaptor<ImageT>().getImage(image), xcen, ycen, bbox, bkgd, interp, w11, w12, w22,
+    calcmom<true>(ImageAdaptor<ImageT>().getImage(image), xcen - image.getX0(), ycen - image.getY0(),
+                  bbox, bkgd, interp, w11, w12, w22,
                   &I0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     /*
      * We have enerything we need, but it isn't quite packaged right; we need an initialised SdssShapeImpl
@@ -722,8 +723,8 @@ getFixedMomentsFlux(ImageT const& image,               ///< the data to process
     shape.setI0(I0);
 
     {
-        int ix = static_cast<int>(xcen);
-        int iy = static_cast<int>(ycen);
+        int ix = static_cast<int>(xcen - image.getX0());
+        int iy = static_cast<int>(ycen - image.getY0());
         float bkgd_var = 
             ImageAdaptor<ImageT>().getVariance(image, ix, iy); // XXX Overestimate as it includes object
 
