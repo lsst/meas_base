@@ -247,7 +247,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
 
 
 
-    def run(self, measCat, exposure):
+    def run(self, measCat, exposure, noiseImage = None):
         """!
         Run single frame measurement over an exposure and source catalog
 
@@ -273,7 +273,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         # After the NoiseReplacer is constructed, all pixels in the exposure.getMaskedImage()
         # which belong to objects in measCat will be replaced with noise
         if self.config.doReplaceWithNoise:
-            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
+            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, noiseImage=noiseImage, log=self.log)
         else:
             noiseReplacer = DummyNoiseReplacer()
 

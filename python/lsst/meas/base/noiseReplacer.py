@@ -68,7 +68,7 @@ class NoiseReplacer(object):
 
     ConfigClass = NoiseReplacerConfig
 
-    def __init__(self, config, exposure, footprints, log=None):
+    def __init__(self, config, exposure, footprints, noiseImage=None, log=None):
         """!
         Initialize the NoiseReplacer.
 
@@ -91,7 +91,6 @@ class NoiseReplacer(object):
         topmost parent in the objects parent chain must be used.  The heavy footprint for that source
         is created in this class from the masked image.
         """
-        noiseImage=None
         noiseMeanVar=None
         self.noiseSource = config.noiseSource
         self.noiseOffset = config.noiseOffset
@@ -357,6 +356,8 @@ class ImageNoiseGenerator(NoiseGenerator):
         img: an afwImage.ImageF
         """
         self.mim = afwImage.MaskedImageF(img)
+        self.mean = afwMath.makeStatistics(img, afwMath.MEAN)
+        self.std = afwMath.makeStatistics(img, afwMath.STDEV)
 
     def getMaskedImage(self, bb):
         return self.mim
