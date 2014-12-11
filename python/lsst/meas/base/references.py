@@ -155,8 +155,8 @@ class CoaddSrcReferencesConfig(BaseReferencesTask.ConfigClass):
 
 class CoaddSrcReferencesTask(BaseReferencesTask):
     """!
-    A references task implementation that loads the coadd_src dataset directly from disk using
-    the butler.
+    A references task implementation that loads the coadd_datasetSuffix dataset directly from
+    disk using the butler.
     """
 
     ConfigClass = CoaddSrcReferencesConfig
@@ -172,7 +172,8 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
         BaseReferencesTask.__init__(self, butler=butler, schema=schema, **kwargs)
         if schema is None:
             assert butler is not None, "No butler nor schema provided"
-            schema = butler.get(self.config.coaddName + "Coadd_src_schema", immediate=True).getSchema()
+            schema = butler.get("{}Coadd_{}_schema".format(self.config.coaddName, self.datasetSuffix),
+                                immediate=True).getSchema()
         self.schema = schema
 
     def getWcs(self, dataRef):
@@ -183,8 +184,8 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
 
     def fetchInPatches(self, dataRef, patchList):
         """!
-        An implementation of BaseReferencesTask.fetchInPatches that loads 'coadd_src' catalogs
-        using the butler.
+        An implementation of BaseReferencesTask.fetchInPatches that loads 'coadd_' + datasetSuffix
+        catalogs using the butler.
 
         The given dataRef must include the tract in its dataId.
         """
