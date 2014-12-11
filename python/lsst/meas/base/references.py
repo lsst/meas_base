@@ -233,3 +233,18 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
         if pad:
             bbox.grow(pad)
         return self.subset(self.fetchInPatches(dataRef, patchList), bbox, wcs)
+
+
+class MultiBandReferencesConfig(CoaddSrcReferencesTask.ConfigClass):
+
+    def validate(self):
+        if self.filter is not None:
+            raise FieldValidationError(field=MultiBandReferencesConfig.filter, config=self,
+                                       msg="Filter should not be set for the multiband processing scheme")
+        CoaddSrcReferencesTask.validate(self)
+
+
+class MultiBandReferencesTask(CoaddSrcReferencesTask):
+    """Loads references from the multiband processing scheme"""
+    ConfigClass = MultiBandReferencesConfig
+    datasetSuffix = "ref"
