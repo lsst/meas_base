@@ -72,6 +72,10 @@ class ForcedPhotCoaddTask(ProcessImageForcedTask):
     _DefaultName = "forcedPhotCoaddTask"
     dataPrefix = "deepCoadd_"
 
+    def getExposure(self, dataRef):
+        name = self.config.coaddName + "Coadd"
+        return dataRef.get(name) if dataRef.datasetExists(name) else None
+
     def makeIdFactory(self, dataRef):
         """Create an object that generates globally unique source IDs from per-CCD IDs and the CCD ID.
 
