@@ -247,7 +247,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
 
 
 
-    def run(self, measCat, exposure, noiseImage = None):
+    def run(self, measCat, exposure, noiseImage=None):
         """!
         Run single frame measurement over an exposure and source catalog
 
@@ -257,6 +257,8 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
 
         @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
                                  be measured and the associated Psf, Wcs, etc.
+        @param[in] noiseImage    optional lsst.afw.image.ImageF for test which need to control
+                                 noiseReplacement
         """
         # Temporary workaround for change in order of arguments; will be removed when transition
         # from meas_algorithms to meas_base is complete.

@@ -75,6 +75,8 @@ class NoiseReplacer(object):
         @param[in]      config       instance of NoiseReplacerConfig
         @param[in,out]  exposure     Exposure to be noise replaced. (All sources replaced on return)
         @param[in]      footprints   dict of {id: (parent, footprint)};
+        @param[in]      noiseImage   an afw.image.ImageF used as a predictable noise replacement source
+                                     (for tests only)
         @param[in]      log          pex.logging.Log object to use for status messages; no status messages
                                      will be printed if None
 
