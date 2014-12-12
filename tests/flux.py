@@ -92,6 +92,7 @@ class FluxTestCase(unittest.TestCase):
         source = catalog.addNew()
         source.setFootprint(self.footprint)
         task.run(self.exposure, catalog)
+        # FIX-ME these tests temporarily removed because correctfluxes is not available
         # flux.psf.psffactor should be 1.0 because it's just the dot product of the PSF with itself
         #self.assertClose(source.get("base_PsfFlux_psfFactor"), 1.0)
         # flux.gaussian.psffactor should be the dot product of a Gaussian with a double-Gaussian PSF.
