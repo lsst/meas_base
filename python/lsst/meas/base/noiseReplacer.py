@@ -68,13 +68,15 @@ class NoiseReplacer(object):
 
     ConfigClass = NoiseReplacerConfig
 
-    def __init__(self, config, exposure, footprints, log=None):
+    def __init__(self, config, exposure, footprints, noiseImage=None, log=None):
         """!
         Initialize the NoiseReplacer.
 
         @param[in]      config       instance of NoiseReplacerConfig
         @param[in,out]  exposure     Exposure to be noise replaced. (All sources replaced on return)
         @param[in]      footprints   dict of {id: (parent, footprint)};
+        @param[in]      noiseImage   an afw.image.ImageF used as a predictable noise replacement source
+                                     (for tests only)
         @param[in]      log          pex.logging.Log object to use for status messages; no status messages
                                      will be printed if None
 
@@ -91,7 +93,6 @@ class NoiseReplacer(object):
         topmost parent in the objects parent chain must be used.  The heavy footprint for that source
         is created in this class from the masked image.
         """
-        noiseImage=None
         noiseMeanVar=None
         self.noiseSource = config.noiseSource
         self.noiseOffset = config.noiseOffset
@@ -357,6 +358,8 @@ class ImageNoiseGenerator(NoiseGenerator):
         img: an afwImage.ImageF
         """
         self.mim = afwImage.MaskedImageF(img)
+        self.mean = afwMath.makeStatistics(img, afwMath.MEAN)
+        self.std = afwMath.makeStatistics(img, afwMath.STDEV)
 
     def getMaskedImage(self, bb):
         return self.mim
