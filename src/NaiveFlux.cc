@@ -161,6 +161,7 @@ void NaiveFluxAlgorithm::measure(
     afw::image::Exposure<float> const & exposure
 ) const {
     FluxResult result;
+    // Get the centroid from a previous centroid measurement
     afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
     afw::image::Exposure<float>::MaskedImageT const& mimage = exposure.getMaskedImage();
 
