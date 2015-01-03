@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2013 LSST Corporation.
+# Copyright 2008-2014 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -32,21 +32,6 @@ import lsst.meas.algorithms
 import lsst.meas.base
 import lsst.utils.tests
 
-def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
-    schema = afwTable.SourceTable.makeMinimalSchema()
-    if centroid:
-        schema.addField(centroid + "_x", type=float)
-        schema.addField(centroid + "_y", type=float)
-        schema.addField(centroid + "_flag", type='Flag')
-    if metadata:
-        plugin = alg(control, name, schema, dafBase.PropertySet())
-    else:
-        plugin = alg(control, name, schema)
-    cat = afwTable.SourceCatalog(schema)
-    if centroid:
-        cat.defineCentroid(centroid)
-    return plugin, cat
-
 class FluxTestCase(unittest.TestCase):
 
     def assertClose(self, a, b, rtol=1E-5, atol=1E-8):
@@ -61,6 +46,7 @@ class FluxTestCase(unittest.TestCase):
         crpix = lsst.afw.geom.Point2D(0,0)
         cdelt = (0.2 * lsst.afw.geom.arcseconds).asDegrees()
         wcs = lsst.afw.image.makeWcs(crval, crpix, cdelt, 0.0, 0.0, cdelt)
+        #   wcs added to allow the default algorithm set to run (arbitrary, but needed by SkyCoord.
         self.exposure.setWcs(wcs)
         # for convenience, we'll put the source at the origin
         self.exposure.setXY0(lsst.afw.geom.Point2I(-100,-100))
@@ -77,6 +63,7 @@ class FluxTestCase(unittest.TestCase):
         self.footprint.getPeaks().append(lsst.afw.detection.Peak(0,0))
         self.config = lsst.meas.base.SingleFrameMeasurementConfig()
         self.config.doReplaceWithNoise = False
+
     def tearDown(self):
         del self.psf
         del self.exposure
@@ -85,13 +72,19 @@ class FluxTestCase(unittest.TestCase):
     def measure(self, radius=None):
         if radius is not None:
             self.config.algorithms["base_SincFlux"].radius = radius
-         #   self.config.algorithms["correctfluxes"].apCorrRadius = radius
+        #   NOTE:  remove testing of flux correction until it is implemented.
+        #   self.config.algorithms["correctfluxes"].apCorrRadius = radius
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(config=self.config, schema=schema)
+        schema.addField("centroid_x", type=float)
+        schema.addField("centroid_y", type=float)
+        schema.addField("centroid_flag", type='Flag')
         catalog = lsst.afw.table.SourceCatalog(schema)
+        catalog.defineCentroid("centroid")
         source = catalog.addNew()
         source.setFootprint(self.footprint)
         task.run(self.exposure, catalog)
+        #   NOTE:  remove testing of flux correction until it is implemented.
         # flux.psf.psffactor should be 1.0 because it's just the dot product of the PSF with itself
         #self.assertClose(source.get("base_PsfFlux_psfFactor"), 1.0)
         # flux.gaussian.psffactor should be the dot product of a Gaussian with a double-Gaussian PSF.
@@ -101,9 +94,11 @@ class FluxTestCase(unittest.TestCase):
     def testGaussian(self):
         """Test that we can measure a Gaussian flux"""
 
+        #   NOTE:  remove testing of flux correction until it is implemented.
         #self.config.algorithms["correctfluxes"].doApCorr = False
         source = self.measure()
-
+        #   NOTE:  also, GaussianFlux algorithm in meas_base is not the same as
+        #          in the previous meas_algorithms version.  There is a ticket for this.
         self.assertClose(self.flux, source.get("base_GaussianFlux_flux"), rtol=.05)
         self.assertTrue(numpy.isfinite(source.get("base_GaussianFlux_fluxSigma")))
 

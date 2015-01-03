@@ -1,7 +1,7 @@
-// -*- lsst-c++ -*-
+// -*- LSST-C++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2013 LSST Corporation.
+ * Copyright 2008-2014 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -24,9 +24,9 @@
 #ifndef LSST_MEAS_BASE_SillyCentroid_h_INCLUDED
 #define LSST_MEAS_BASE_SillyCentroid_h_INCLUDED
 
-#include <stdio.h>
 #include <execinfo.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include "lsst/pex/config.h"
@@ -43,7 +43,7 @@ namespace test { namespace foo { namespace bar {
  */
 class SillyCentroidControl {
 public:
-    LSST_CONTROL_FIELD(param, double, "Value to subtrace from the centroid position");
+    LSST_CONTROL_FIELD(param, double, "Value to offset the centroid position in both x and y");
 
     /**
      *  @brief Default constructor
@@ -84,7 +84,8 @@ public:
         lsst::afw::table::Schema & schema
     ) : _ctrl(ctrl),
         _centroidKey(
-            lsst::meas::base::CentroidResultKey::addFields(schema, name, "centroid from Silly Centroid algorithm", lsst::meas::base::SIGMA_ONLY)
+            lsst::meas::base::CentroidResultKey::addFields(schema, name,
+            "centroid from Silly Centroid algorithm", lsst::meas::base::SIGMA_ONLY)
         ),
         _centroidExtractor(schema, name, true)
     {
@@ -93,17 +94,17 @@ public:
             {"flag_noCounts", "Object to be centroided has no counts"},
             {"flag_edge", "Object too close to edge"}
         }};
-        _flagHandler = lsst::meas::base::FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+        _flagHandler = lsst::meas::base::FlagHandler::addFields(schema, name, flagDefs.begin(),
+                       flagDefs.end());
     }
     
 
 private:
 
-    // These are private so they doesn't shadow the other overloads in base classes;
+    // measure and fail are private so they doesn't shadow the other overloads in base classes;
     // we can still call it via the public method on the base class.  We could have
     // used a using declaration instead, but Swig had trouble with that here.
 
-    Control _ctrl;
 
     void measure(
         lsst::afw::table::SourceRecord & measRecord,
@@ -125,6 +126,7 @@ private:
         _flagHandler.handleFailure(measRecord, error);
     }
     
+    Control _ctrl;
     
     lsst::meas::base::CentroidResultKey _centroidKey;
     lsst::meas::base::FlagHandler _flagHandler;

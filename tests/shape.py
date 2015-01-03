@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008, 2009, 2010 LSST Corporation.
+# Copyright 2008-2014 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -88,8 +88,9 @@ class ShapeTestCase(unittest.TestCase):
         control = measBase.SdssShapeControl()
         control.background = bkgd
         control.maxShift = 2
-        plugin, cat = makePluginAndCat(measBase.SdssShapeAlgorithm, "test", control)
-        cat.defineCentroid("test")
+        plugin, cat = makePluginAndCat(measBase.SdssShapeAlgorithm, "test", control, centroid="centroid")
+        
+        #cat.defineCentroid("test")
         cat.defineShape("test")
         #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         #
@@ -154,6 +155,8 @@ class ShapeTestCase(unittest.TestCase):
             footprint = afwDetection.FootprintSet(im, afwDetection.Threshold(110)).getFootprints()[0]
             source = cat.addNew()
             source.setFootprint(footprint)
+            source.set("centroid_x", footprint.getPeaks()[0].getCentroid().getX())
+            source.set("centroid_y", footprint.getPeaks()[0].getCentroid().getY())
             plugin.measure(source, exp)
 
             if False:
@@ -166,6 +169,8 @@ class ShapeTestCase(unittest.TestCase):
                 print "I_yy:  %.5f %.5f" % (Iyy, sigma_yy)
                 print "A2, B2 = %.5f, %.5f" % (A2, B2)
 
+            print source.getX(), source.getY(), x, y
+            print source.getIxx(), sigma_xx, source.getIyy(), sigma_yy, source.getIxy(), sigma_xy
             self.assertTrue(abs(x - source.getX()) < 1e-4, "%g v. %g" % (x, source.getX()))
             self.assertTrue(abs(y - source.getY()) < 1e-4, "%g v. %g" % (y, source.getY()))
             self.assertTrue(abs(source.getIxx() - sigma_xx) < tol*(1 + sigma_xx),

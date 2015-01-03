@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-
 # 
 # LSST Data Management System
-# Copyright 2008, 2009, 2010 LSST Corporation.
+# Copyright 2008-2014 AURA/LSST.
 # 
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -29,7 +28,6 @@ import math
 import pdb                          # we may want to say pdb.set_trace()
 import unittest
 
-import eups
 import lsst.pex.exceptions as pexExceptions
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
@@ -44,21 +42,6 @@ try:
     type(verbose)
 except NameError:
     verbose = 0
-
-def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
-    schema = afwTable.SourceTable.makeMinimalSchema()
-    if centroid:
-        schema.addField(centroid + "_x", type=float)
-        schema.addField(centroid + "_y", type=float)
-        schema.addField(centroid + "_flag", type='Flag')
-    if metadata:
-        plugin = alg(control, name, schema, dafBase.PropertySet())
-    else:
-        plugin = alg(control, name, schema)
-    cat = afwTable.SourceCatalog.make(schema)
-    if centroid:
-        cat.defineCentroid(centroid)
-    return plugin, cat
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -99,7 +82,8 @@ class CentroidTestCase(unittest.TestCase):
 
     def testMeasureCentroid(self):
         """Test that we can use our silly centroid through the usual Tasks"""
-        lsst.meas.base.wrapSimpleAlgorithm(testlib.SillyCentroidAlgorithm, Control=testlib.SillyCentroidControl, executionOrder=0.0)
+        lsst.meas.base.wrapSimpleAlgorithm(testlib.SillyCentroidAlgorithm,
+            Control=testlib.SillyCentroidControl, executionOrder=0.0)
         control = testlib.SillyCentroidControl()
         x, y = 10, 20
 
@@ -110,7 +94,8 @@ class CentroidTestCase(unittest.TestCase):
         exp = afwImage.makeExposure(im)
 
         schema = afwTable.SourceTable.makeMinimalSchema()
-        schema.addField("flags_negative", type="Flag", doc="set if source was detected as significantly negative")
+        schema.addField("flags_negative", type="Flag", doc=
+            "set if source was detected as significantly negative")
         sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
         sfm_config.plugins = ["testlib_SillyCentroid"]
         sfm_config.plugins["testlib_SillyCentroid"].param = 5

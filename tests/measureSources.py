@@ -1,6 +1,27 @@
 #!/usr/bin/env python
+#
+# LSST Data Management System
+# Copyright 2008-2014 AURA/LSST.
+#
+# This product includes software developed by the
+# LSST Project (http://www.lsst.org/).
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
+# see <http://www.lsstcorp.org/LegalNotices/>.
+#
 """
-Tests for measuring things
+Tests for measuring sources using the meas_base framework
 
 Run with:
    python measureSources.py
@@ -200,7 +221,6 @@ class MeasureSourcesTestCase(unittest.TestCase):
                         self.assertLess(source.get("test_flux"), measFlux)
 
         # source so near edge of image that PSF does not overlap exposure should result in failure
-
         for edgePos in (
             (1, 50),
             (50, 1),
@@ -261,11 +281,13 @@ class MeasureSourcesTestCase(unittest.TestCase):
             ]
         for x, y, setFlags in [(1, 50, [measBase.PixelFlagsAlgorithm.EDGE]),
                                (40, 20, [measBase.PixelFlagsAlgorithm.BAD]),
-                               (20, 20, [measBase.PixelFlagsAlgorithm.SATURATED_CENTER, measBase.PixelFlagsAlgorithm.SATURATED]),
+                               (20, 20, [measBase.PixelFlagsAlgorithm.SATURATED_CENTER, 
+                                         measBase.PixelFlagsAlgorithm.SATURATED]),
                                (20, 22, [measBase.PixelFlagsAlgorithm.SATURATED]),
-                               (60, 60, [measBase.PixelFlagsAlgorithm.INTERPOLATED_CENTER, measBase.PixelFlagsAlgorithm.INTERPOLATED]),
+                               (60, 60, [measBase.PixelFlagsAlgorithm.INTERPOLATED_CENTER, 
+                                         measBase.PixelFlagsAlgorithm.INTERPOLATED]),
                                (60, 62, [measBase.PixelFlagsAlgorithm.INTERPOLATED]),
-                    ]:
+            ]:
             foot = afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5)
             source = cat.makeRecord()
             source.setFootprint(foot)
@@ -279,8 +301,8 @@ class MeasureSourcesTestCase(unittest.TestCase):
                 else:
                     self.assertFalse(value, "Flag %s should not be set for %f,%f" % (flag, x, y))
 
-        # the code in the algorithm which this test originally exercised is now
-        # preempted by a throw in InputUtilities.py
+        # the new code in meas_base InputUtilities.py now throws when a Nan is set in the
+        # centroid slot and the algorithm attempts to get the default center position
         source = cat.makeRecord()
         source.set("centroid_x", float("NAN"))
         source.set("centroid_y", 40)

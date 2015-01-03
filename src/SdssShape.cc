@@ -722,8 +722,8 @@ getFixedMomentsFlux(ImageT const& image,               ///< the data to process
     shape.setI0(I0);
 
     {
-        int ix = static_cast<int>(xcen);
-        int iy = static_cast<int>(ycen);
+        int ix = static_cast<int>(xcen - image.getX0());
+        int iy = static_cast<int>(ycen - image.getY0());
         float bkgd_var = 
             ImageAdaptor<ImageT>().getVariance(image, ix, iy); // XXX Overestimate as it includes object
 

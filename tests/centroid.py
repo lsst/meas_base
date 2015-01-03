@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-
 #
 # LSST Data Management System
-# Copyright 2008, 2009, 2010 LSST Corporation.
+# Copyright 2008-2014 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -38,7 +37,6 @@ import lsst.utils.tests as utilsTests
 import lsst.afw.detection.detectionLib as afwDetection
 
 import lsst.afw.display.ds9 as ds9
-from lsst.meas.base.tests import *
 
 try:
     type(verbose)
@@ -51,24 +49,9 @@ if False:
     if not dataDir:
         raise RuntimeError("Must set up afwdata to run these tests")
 
-def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
-    schema = afwTable.SourceTable.makeMinimalSchema()
-    if centroid:
-        schema.addField(centroid + "_x", type=float)
-        schema.addField(centroid + "_y", type=float)
-        schema.addField(centroid + "_flag", type='Flag')
-    if metadata:
-        plugin = alg(control, name, schema, dafBase.PropertySet())
-    else:
-        plugin = alg(control, name, schema)
-    cat = afwTable.SourceCatalog(schema)
-    if centroid:
-        cat.defineCentroid(centroid)
-    return plugin, cat
-
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-class CentroidTestCase(lsst.utils.tests.TestCase):
+class CentroidTestCase(utilsTests.TestCase):
     """A test case for centroiding"""
 
     def setUp(self):
@@ -95,6 +78,8 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
             im = imageFactory(afwGeom.ExtentI(100, 100))
             im.setXY0(afwGeom.Point2I(x0, y0))
 
+            #   This fixed DoubleGaussianPsf replaces a computer generated one.
+            #   The values are not anything in particular, just a reasonable size.
             psf = algorithms.DoubleGaussianPsf(15, 15, 3.0, 6.0, 1.0)
             exp = afwImage.makeExposure(im)
             exp.setPsf(psf)
@@ -106,7 +91,7 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
 
             source = table.addNew()
             foot = afwDetection.Footprint(exp.getBBox(afwImage.LOCAL))
-            foot.getPeaks().push_back(lsst.afw.detection.Peak(x+x0, y+y0))
+            foot.getPeaks().push_back(afwDetection.Peak(x + x0, y + y0))
             source.setFootprint(foot)
 
             centroider.measure(source, exp)
@@ -152,7 +137,7 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-class SingleFrameMeasurementTaskTestCase(lsst.utils.tests.TestCase):
+class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
     """A test case for the SingleFrameMeasurementTask"""
 
     def mySetup(self, runCentroider=True):
@@ -174,11 +159,10 @@ class SingleFrameMeasurementTaskTestCase(lsst.utils.tests.TestCase):
 
         source = measCat.addNew()
         fp = afwDetection.Footprint(self.exp.getBBox(afwImage.LOCAL))
-        fp.getPeaks().push_back(lsst.afw.detection.Peak(50,50))
+        fp.getPeaks().push_back(afwDetection.Peak(50,50))
         source.setFootprint(fp)
         # Then run the default SFM task.  Results not checked
         task.run(measCat, self.exp)
-    #  This test really tests both that a plugin can measure things correctly,
         return source
 
     def setUp(self):
@@ -202,7 +186,8 @@ class SingleFrameMeasurementTaskTestCase(lsst.utils.tests.TestCase):
         s = self.mySetup()
 
         # this does not match exactly, and it used to
-        self.assertClose(s.getCentroid(), afwGeom.PointD(self.xcen, self.ycen), rtol=.05)
+        print s.getCentroid(), self.xcen, self.ycen
+        self.assertClose(s.getCentroid(), afwGeom.PointD(self.xcen, self.ycen), rtol=.01)
 
     def testNoCentroider(self):
         """Check that we can disable running a centroid algorithm"""
