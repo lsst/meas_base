@@ -867,7 +867,8 @@ SdssShapeAlgorithm::SdssShapeAlgorithm(
     std::string const & name,
     afw::table::Schema & schema
 )
-  : _resultKey(ResultKey::addFields(schema, name)),
+  : _ctrl(ctrl),
+    _resultKey(ResultKey::addFields(schema, name)),
     _centroidExtractor(schema, name)
 {}
 
