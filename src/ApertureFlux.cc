@@ -128,7 +128,12 @@ void ApertureFluxAlgorithm::copyResultToRecord(
 void ApertureFluxAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
-) const {};
+) const {
+    throw LSST_EXCEPT(
+        pex::exceptions::LogicError,
+        "Not implemented"
+    );
+}
 
 void ApertureFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
     _flagHandler.handleFailure(measRecord, error);
