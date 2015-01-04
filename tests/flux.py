@@ -45,22 +45,24 @@ class FluxTestCase(unittest.TestCase):
         crval = lsst.afw.coord.IcrsCoord(45.0*lsst.afw.geom.degrees, 45.0*lsst.afw.geom.degrees)
         crpix = lsst.afw.geom.Point2D(0,0)
         cdelt = (0.2 * lsst.afw.geom.arcseconds).asDegrees()
-        wcs = lsst.afw.image.makeWcs(crval, crpix, cdelt, 0.0, 0.0, cdelt)
+        wcs = lsst.afw.image.makeWcs(crval, crpix, cdelt, 100.0, 100.0, cdelt)
         #   wcs added to allow the default algorithm set to run (arbitrary, but needed by SkyCoord.
         self.exposure.setWcs(wcs)
         # for convenience, we'll put the source at the origin
-        self.exposure.setXY0(lsst.afw.geom.Point2I(-100,-100))
+        self.exposure.setXY0(lsst.afw.geom.Point2I(0,0))
         self.exposure.getMaskedImage().getVariance()[:] = 1.0
-        self.psf = lsst.meas.algorithms.DoubleGaussianPsf(71, 71, 8.0, 15.0, 1.0)
+        self.psf = lsst.meas.algorithms.DoubleGaussianPsf(61, 61, 8.0, 15.0, 1.0)
         self.exposure.setPsf(self.psf)
         self.flux = 50.0
         psfImage = self.psf.computeImage()
+        #   place psfImage on same coordinates as exposure: (image size - psf size)/2
+        psfImage.setXY0(70, 70)
         box = psfImage.getBBox()
         image = self.exposure.getMaskedImage().getImage()
         subImage = image.Factory(image, box, lsst.afw.image.PARENT, False)
         subImage.scaledPlus(self.flux, psfImage.convertF())
         self.footprint = lsst.afw.detection.Footprint(box)
-        self.footprint.getPeaks().append(lsst.afw.detection.Peak(0,0))
+        self.footprint.getPeaks().append(lsst.afw.detection.Peak(100,100))
         self.config = lsst.meas.base.SingleFrameMeasurementConfig()
         self.config.doReplaceWithNoise = False
 
