@@ -28,7 +28,6 @@ import lsst.afw.geom
 import lsst.afw.image
 import lsst.afw.detection
 import lsst.afw.table
-import lsst.meas.algorithms
 import lsst.meas.base
 import lsst.utils.tests
 
@@ -51,7 +50,7 @@ class FluxTestCase(unittest.TestCase):
         # for convenience, we'll put the source at the origin
         self.exposure.setXY0(lsst.afw.geom.Point2I(0,0))
         self.exposure.getMaskedImage().getVariance()[:] = 1.0
-        self.psf = lsst.meas.algorithms.DoubleGaussianPsf(61, 61, 8.0, 15.0, 1.0)
+        self.psf = lsst.afw.detection.GaussianPsf(61, 61, 8.0)
         self.exposure.setPsf(self.psf)
         self.flux = 50.0
         psfImage = self.psf.computeImage()

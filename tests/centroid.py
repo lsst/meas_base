@@ -31,10 +31,10 @@ import lsst.pex.exceptions as pexExceptions
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
-import lsst.meas.algorithms as algorithms
 import lsst.meas.base as measBase
 import lsst.utils.tests as utilsTests
 import lsst.afw.detection.detectionLib as afwDetection
+import lsst.afw.detection
 
 import lsst.afw.display.ds9 as ds9
 
@@ -80,7 +80,7 @@ class CentroidTestCase(utilsTests.TestCase):
 
             #   This fixed DoubleGaussianPsf replaces a computer generated one.
             #   The values are not anything in particular, just a reasonable size.
-            psf = algorithms.DoubleGaussianPsf(15, 15, 3.0, 6.0, 1.0)
+            psf = lsst.afw.detection.GaussianPsf(15, 15, 3.0)
             exp = afwImage.makeExposure(im)
             exp.setPsf(psf)
             #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -169,7 +169,7 @@ class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
         """Make the image we'll measure"""
 
         self.exp = afwImage.ExposureF(100, 100)
-        psf = algorithms.DoubleGaussianPsf(15, 15, 3.0, 6.0, 1.0)
+        psf = lsst.afw.detection.GaussianPsf(15, 15, 3.0)
         self.exp.setPsf(psf)
         self.I0, self.xcen, self.ycen = 1000.0, 50.5, 50.0
         im = self.exp.getMaskedImage().getImage()
@@ -252,7 +252,7 @@ class MonetTestCase(unittest.TestCase):
 
     def monetFile(self, file):
         """Return a Monet file used for regression testing"""
-        return os.path.join(eups.productDir("meas_algorithms"), "tests", "Monet", file)
+        return os.path.join(eups.productDir("meas_base"), "tests", "Monet", file)
 
     def readTruth(self, filename):
         """Read Dave Monet's truth table"""

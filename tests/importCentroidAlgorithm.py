@@ -35,7 +35,6 @@ import lsst.afw.table as afwTable
 import lsst.afw.detection as afwDetection
 import lsst.meas.base
 import lsst.utils.tests as utilsTests
-import lsst.meas.algorithms
 import testlib
 
 try:
