@@ -279,7 +279,7 @@ class MonetTestCase(unittest.TestCase):
             yc = (bbox.getMinY() + bbox.getMaxY())//2
 
             if display:
-                ds9.dot("x", c.getX(), c.getY(), ctype=ds9.GREEN)
+                ds9.dot("x", xc, yc, ctype=ds9.GREEN)
         #
         # OK, we've measured all the sources.  Compare positions with Dave Monet's values
         #
