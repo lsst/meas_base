@@ -82,27 +82,6 @@ def Version0FlagMapper(flags):
             _flags.append(name)
     return _flags
 
-def addDependencyFlagAliases(AlgClass, name, schema):
-    """!
-    Add aliases to flag fields that an algorithm depends on.
-
-    When an algorithm relies on the slot centroid or shape as an input, it can fail (or be unreliable)
-    simply because the algorithm it depends on failed.  In that case, we already have a flag field
-    that indicates why the algorithm failed (the slot failure flag), but it's not obviously connected
-    to the failure of the dependent algorithm.  This function adds aliases to the appropriate slot flag
-    for C++ algorithms that depend on that slot, in the namespace of the dependent algorithm.
-
-    @param[in]  AlgClass    Swig-wrappped C++ algorithm class; must have a class attribute Input that
-                            constains the type of Input object it requires.
-    @param[in]  name        Name of the dependent algorithm
-    @param[out] schema      Schema to add the aliases to
-
-    """
-    if issubclass(AlgClass.Input, FootprintCentroidInput):
-        schema.getAliasMap().set("%s_flag_badCentroid" % name, "slot_Centroid_flag")
-    if issubclass(AlgClass.Input, FootprintCentroidShapeInput):
-        schema.getAliasMap().set("%s_flag_badShape" % name, "slot_Shape_flag")
-
 
 class PluginRegistry(lsst.pex.config.Registry):
     """!
