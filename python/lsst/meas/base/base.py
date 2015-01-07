@@ -35,7 +35,8 @@ import lsst.pex.config
 from .baseLib import *
 from .noiseReplacer import *
 
-FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)  # Exceptions that the framework should always propagate up
+# Exceptions that the measurement tasks should always propagate up to their callers
+FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)
 
 def generateAlgorithmName(AlgClass):
     """Generate a string name for an algorithm class that strips away terms that are generally redundant
