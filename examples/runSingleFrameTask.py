@@ -34,7 +34,7 @@ import lsst.afw.image              as afwImage
 import lsst.afw.display.ds9        as ds9
 import lsst.meas.algorithms        as measAlg
 from lsst.meas.algorithms.detection import SourceDetectionTask
-from lsst.meas.base import SingleFrameMeasurementTask, MeasurementDataFlags
+from lsst.meas.base import SingleFrameMeasurementTask
 
 def loadData():
     """Prepare the data we need to run the example"""
@@ -66,7 +66,7 @@ def run(display=False):
     config.thresholdPolarity = "both"
     config.background.isNanSafe = True
     config.thresholdValue = 3
-    detectionTask = SourceDetectionTask(config=config, schema=schema, tableVersion=1)
+    detectionTask = SourceDetectionTask(config=config, schema=schema)
     #
     # And the measurement Task
     #
@@ -87,7 +87,6 @@ def run(display=False):
     # Create the output table
     #
     tab = afwTable.SourceTable.make(schema)
-    tab.setVersion(1)
     #
     # Process the data
     #
