@@ -166,7 +166,7 @@ def register(name):
     class ForcedTransformedCentroidPlugin(ForcedPlugin):
         ...
     @ForcedPlugin.registry.register("base_TransformedCentroid", ForcedTransformedCentroidPlugin)
-    @enedcode
+    @endcode
     """
     def decorate(PluginClass):
         PluginClass.registry.register(name, PluginClass)

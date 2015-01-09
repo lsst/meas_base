@@ -107,8 +107,8 @@ is only available when measurements from a coadd are used as the reference.
 While essentially any measurement plugin can be run in forced mode, typically only photometric measurements
 are scientifically useful (though centroids and shapes may be useful for quality metrics).  In fact, in
 forced mode we typically configure pseudo-measurements to provide the shape and centroid slots, and it is
-these - not anything special about the forced measurement framework that constrains measurements.  In
-particular, we generally use the
+these --- rather than anything special about the forced measurement framework --- that constrains
+measurements.  In particular, we generally use the
 @ref plugins.ForcedTransformedCentroidPlugin "ForcedTransformedCentroidPlugin" and
 @ref plugins.ForcedTransformedShapePlugin "ForcedTransformedShapePlugin"
 to provide

@@ -167,53 +167,70 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
 
     See meas_algorithms_detection_Example for more information on SourceDetectionTask.
 
-    Import the tasks (there are some other standard imports; read the file if you're confused)
+    First, import the required tasks (there are some other standard imports;
+    read the file if you're confused):
+
     @skip SourceDetectionTask
     @until SingleFrameMeasurementTask
 
     We need to create our tasks before processing any data as the task constructors
     can add extra columns to the schema.  The most important argument we pass these to these
-    is a lsst.afw.table.Schema object, which contains information about the fields (i.e. columns) of the
+    is an lsst.afw.table.Schema object, which contains information about the fields (i.e. columns) of the
     measurement catalog we'll create, including names, types, and additional documentation.
     Tasks that operate on a catalog are typically passed a Schema upon construction, to which
-    they'll add the fields they'll fill later when run.  We construct a mostly empty Schema that
+    they add the fields they'll fill later when run.  We construct a mostly empty Schema that
     contains just the fields required for a SourceCatalog like this:
+
     @skipline schema
+
     Now we can configure and create the SourceDetectionTask:
+
     @until detectionTask
+
     (tableVersion is a temporary parameter that will be removed after the transition from the meas_algorithms
     Tasks to the meas_base Tasks is complete; for now, setting tableVersion=1 is necessary when using
     meas_base Tasks via pipe_tasks drivers).
 
     We then move on to configuring the measurement task:
+
     @until config
+
     While a reasonable set of plugins is configured by default, we'll customize the list.
     We also need to unset one of the slots at the same time, because we're
-    not running the algorithm that it' set to by default, and that would cause problems later:
-    @until flags
+    not running the algorithm that it's set to by default, and that would cause problems later:
+
+    @until psfFlux
 
     Now, finally, we can construct the measurement task:
-    @until measureTask
+
+    @skipline measureTask
 
     After constructing all the tasks, we can inspect the Schema we've created:
+
     @skipline print schema
+
     All of the fields in the
     schema can be accessed via the get() method on a record object.  See afwTable for more
     information.
 
     We're now ready to process the data (we could loop over multiple exposures/catalogs using the same
     task objects).  First create the output table and process the image to find sources:
+
     @skipline afwTable
     @skip result
     @until sources
 
     Then measure them:
+
     @skipline measure
 
-    We then might plot the results (@em e.g. if you set @c --ds9 on the command line)
+    We then might plot the results (@em e.g. if you set `--ds9` on the command line)
+
     @skip display
     @until RED
+
     and end up with something like
+
     @image html runSingleFrameTask-ds9.png
     """
 
