@@ -72,7 +72,7 @@ template <typename MaskedImageT, typename WeightImageT>
 class FootprintWeightFlux : public lsst::afw::detection::FootprintFunctor<MaskedImageT> {
 public:
     FootprintWeightFlux(MaskedImageT const& mimage,          ///< The image the source lives in
-                        typename WeightImageT::Ptr wimage    ///< The weight image
+                        PTR(WeightImageT) wimage    ///< The weight image
                        ) : lsst::afw::detection::FootprintFunctor<MaskedImageT>(mimage),
                            _wimage(wimage),
                            _sum(0.0), _sumVar(0.0), _x0(0), _y0(0) {}
@@ -113,7 +113,7 @@ public:
     double getSumVar() const { return _sumVar; }
 
 private:
-    typename WeightImageT::Ptr const& _wimage;        // The weight image
+    PTR(WeightImageT) _wimage;                        // The weight image
     double _sum;                                      // our desired sum
     double _sumVar;                                   // The variance of our desired sum
     int _x0, _y0;                                     // the origin of the current Footprint
