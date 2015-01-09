@@ -17,6 +17,5 @@ doc/doxygen.conf
 python/lsst/meas/base/version.py
 python/lsst/meas/base/*.pyc
 python/lsst/meas/base/baseLib.py
-tests/testFitsTables
 tests/.tests
 ups/*.cfgc
