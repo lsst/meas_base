@@ -88,7 +88,7 @@ public:
     double getSumVar() const { return _sumVar; }
 
 private:
-    typename WeightImageT::Ptr const& _wimage;        // The weight image
+    PTR(WeightImageT const) _wimage;                  // The weight image
     double _sum;                                      // our desired sum
     double _sumVar;                                   // sum of the variance
     int _x0, _y0;                                     // the origin of the current Footprint
