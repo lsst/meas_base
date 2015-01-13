@@ -115,7 +115,7 @@ class PluginRegistry(lsst.pex.config.Registry):
         def ConfigClass(self): return self.PluginClass.ConfigClass
 
         def __call__(self, config):
-            return (config.executionOrder, self.name, config, self.PluginClass)
+            return (self.PluginClass.getExecutionOrder(), self.name, config, self.PluginClass)
 
     def register(self, name, PluginClass):
         """!
@@ -160,8 +160,9 @@ class PluginMap(collections.OrderedDict):
     """!
     Map of plugins to be run for a task
 
-    We assume Plugins are added to the PluginMap according to their executionOrder, so this
-    class doesn't actually do any of the sorting (though it does have to maintain that order).
+    We assume Plugins are added to the PluginMap according to their "Execution Order", so this
+    class doesn't actually do any of the sorting (though it does have to maintain that order,
+    which it does by inheriting from OrderedDict).
     """
 
     def iter(self):
@@ -190,27 +191,6 @@ class BasePluginConfig(lsst.pex.config.Config):
     defined here.
     """
 
-    executionOrder = lsst.pex.config.Field(
-        dtype=float, default=2.0,
-        doc="""Sets the relative order of plugins (smaller numbers run first).
-
-In general, the following values should be used (intermediate values
-are also allowed, but should be avoided unless they are needed):
-   0.0 ------ centroids and other algorithms that require only a Footprint and
-              its Peaks as input
-   1.0 ------ shape measurements and other algorithms that require
-              getCentroid() to return a good centroid in addition to a
-              Footprint and its Peaks.
-   2.0 ------ flux algorithms that require both getShape() and getCentroid()
-              in addition to the Footprint and its Peaks
-   3.0 ------ Corrections applied to fluxes (i.e. aperture corrections, tying
-              model to PSF fluxes). All flux measurements should have an
-              executionOrder < 3.0, while all algorithms that rely on corrected
-              fluxes (i.e. classification) should have executionOrder > 3.0.
-"""
-        )
-
-
     doMeasure = lsst.pex.config.Field(dtype=bool, default=True,
                                       doc="whether to run this plugin in single-object mode")
 
@@ -223,6 +203,26 @@ class BasePlugin(object):
     This is the base class for SingleFramePlugin and ForcedPlugin; derived classes should inherit
     from one of those.
     """
+
+    @staticmethod
+    def getExecutionOrder():
+        """Sets the relative order of plugins (smaller numbers run first).
+
+        In general, the following values should be used (intermediate values
+        are also allowed, but should be avoided unless they are needed):
+        0.0 ------ centroids and other algorithms that require only a Footprint and
+                   its Peaks as input
+        1.0 ------ shape measurements and other algorithms that require
+                   getCentroid() to return a good centroid in addition to a
+                   Footprint and its Peaks.
+        2.0 ------ flux algorithms that require both getShape() and getCentroid()
+                   in addition to the Footprint and its Peaks
+        3.0 ------ algorithms that operate on fluxes (e.g. classification,
+                   aperture correction).
+
+        Must be reimplemented (as a static or class method) by concrete derived classes.
+        """
+        raise NotImplementedError("All plugins must implement getExecutionOrder()")
 
     def fail(self, measRecord, error=None):
         """!
