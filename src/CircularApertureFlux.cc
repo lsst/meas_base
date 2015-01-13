@@ -57,4 +57,8 @@ void CircularApertureFluxAlgorithm::measure(
     }
 }
 
+void CircularApertureFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+    _flagHandler.handleFailure(measRecord, error);
+}
+
 }}} // namespace lsst::meas::base

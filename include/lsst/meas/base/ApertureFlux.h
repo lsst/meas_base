@@ -84,7 +84,7 @@ class ApertureFluxResult;
  *  SincFlux and NaiveFlux.  We can't do that yet, though, as we still can't use ApertureFlux outputs
  *  in slots (DM-1218).
  */
-class ApertureFluxAlgorithm : public SimpleAlgorithm {
+class ApertureFluxAlgorithm : public SimpleAlgorithm{
 public:
 
     /// @copydoc PsfFluxAlgorithm::FlagBits
@@ -205,12 +205,12 @@ public:
     virtual void measure(
         afw::table::SourceRecord & record,
         afw::image::Exposure<float> const & exposure
-    ) const;
+    ) const = 0;
 
     void fail(
         afw::table::SourceRecord & measRecord,
         MeasurementError * error=NULL
-    ) const;
+    ) const = 0;
 
     virtual ~ApertureFluxAlgorithm() {}
 
