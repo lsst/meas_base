@@ -35,12 +35,21 @@ import lsst.afw.table as afwTable
 import lsst.afw.detection as afwDetection
 import lsst.meas.base
 import lsst.utils.tests as utilsTests
-import testlib
+import testLib
 
 try:
     type(verbose)
 except NameError:
     verbose = 0
+
+lsst.meas.base.wrapSimpleAlgorithm(
+    testLib.SillyCentroidAlgorithm,
+    # algorithm name is specified manually here because testLib isn't in a normal Python package;
+    # normally this is unnecessary
+    name="testLib_SillyCentroid",
+    Control=testLib.SillyCentroidControl,
+    executionOrder=0.0
+)
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -62,13 +71,13 @@ class CentroidTestCase(unittest.TestCase):
             im = imageFactory(afwGeom.ExtentI(100, 100))
             exp = afwImage.makeExposure(im)
             for offset in (0,1,2):
-                control = testlib.SillyCentroidControl()
+                control = testLib.SillyCentroidControl()
                 control.param = offset
                 x, y = 10, 20
                 schema = afwTable.SourceTable.makeMinimalSchema()
                 schema.addField("centroid_x", type=float)
                 schema.addField("centroid_y", type=float)
-                plugin = testlib.SillyCentroidAlgorithm(control, "test", schema)
+                plugin = testLib.SillyCentroidAlgorithm(control, "test", schema)
                 measCat = afwTable.SourceCatalog(schema)
                 measCat.defineCentroid("centroid")
                 source = measCat.makeRecord()
@@ -81,9 +90,7 @@ class CentroidTestCase(unittest.TestCase):
 
     def testMeasureCentroid(self):
         """Test that we can use our silly centroid through the usual Tasks"""
-        lsst.meas.base.wrapSimpleAlgorithm(testlib.SillyCentroidAlgorithm,
-            Control=testlib.SillyCentroidControl, executionOrder=0.0)
-        control = testlib.SillyCentroidControl()
+        control = testLib.SillyCentroidControl()
         x, y = 10, 20
 
         im = afwImage.MaskedImageF(afwGeom.ExtentI(512, 512))
@@ -96,9 +103,9 @@ class CentroidTestCase(unittest.TestCase):
         schema.addField("flags_negative", type="Flag", doc=
             "set if source was detected as significantly negative")
         sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        sfm_config.plugins = ["testlib_SillyCentroid"]
-        sfm_config.plugins["testlib_SillyCentroid"].param = 5
-        sfm_config.slots.centroid = "testlib_SillyCentroid"
+        sfm_config.plugins = ["testLib_SillyCentroid"]
+        sfm_config.plugins["testLib_SillyCentroid"].param = 5
+        sfm_config.slots.centroid = "testLib_SillyCentroid"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = None
         sfm_config.slots.instFlux = None
@@ -109,8 +116,8 @@ class CentroidTestCase(unittest.TestCase):
         measCat = afwTable.SourceCatalog(schema)
         measCat.defineCentroid("centroid")
         source = measCat.addNew()
-        source.set("testlib_SillyCentroid_x", x)
-        source.set("testlib_SillyCentroid_y", y)
+        source.set("testLib_SillyCentroid_x", x)
+        source.set("testLib_SillyCentroid_y", y)
         source.set("parent", 0)
         source.set("flags_negative", False)
 

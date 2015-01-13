@@ -21,14 +21,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-%define testlib_DOCSTRING
-"
-Basic routines to talk to test::foo:bar classes
-"
-%enddef
-
 %feature("autodoc", "1");
-%module(package="lsst.meas.base", docstring=testlib_DOCSTRING) testlib
+%module testLib
 
 %{
 #include "lsst/pex/logging.h"

@@ -183,7 +183,7 @@ def wrapSingleFrameAlgorithm(AlgClass, name=None, needsMetadata=False, hasMeasur
         else:
             def factory(config, name, schema, metadata):
                 return AlgClass(config.makeControl(), name, schema)
-    return wrapAlgorithm(WrappedSingleFramePlugin, AlgClass, factory=factory,
+    return wrapAlgorithm(WrappedSingleFramePlugin, AlgClass, factory=factory, name=name,
                          hasMeasureN=hasMeasureN, **kwds)
 
 
@@ -264,7 +264,7 @@ def wrapForcedAlgorithm(AlgClass, name=None, needsMetadata=False, hasMeasureN=Fa
         else:
             def factory(config, name, schemaMapper, metadata):
                 return AlgClass(config.makeControl(), name, extractSchemaArg(schemaMapper))
-    return wrapAlgorithm(WrappedForcedPlugin, AlgClass, factory=factory, **kwds)
+    return wrapAlgorithm(WrappedForcedPlugin, AlgClass, factory=factory, name=name, **kwds)
 
 
 def wrapSimpleAlgorithm(AlgClass, name=None, needsMetadata=False, hasMeasureN=False, **kwds):
