@@ -205,9 +205,9 @@ public:
     virtual void measure(
         afw::table::SourceRecord & record,
         afw::image::Exposure<float> const & exposure
-    ) const;
+    ) const = 0;
 
-    void fail(
+    virtual void fail(
         afw::table::SourceRecord & measRecord,
         MeasurementError * error=NULL
     ) const;

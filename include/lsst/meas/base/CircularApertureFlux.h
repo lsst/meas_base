@@ -35,7 +35,7 @@
 
 namespace lsst { namespace meas { namespace base {
 
-class CircularApertureFluxAlgorithm : public ApertureFluxAlgorithm{
+class CircularApertureFluxAlgorithm : public ApertureFluxAlgorithm {
 public:
 
     CircularApertureFluxAlgorithm(Control const & ctrl, std::string const & name, 
@@ -49,6 +49,9 @@ public:
      *  @param[in,out] record      Record used to save outputs and retrieve positions.
      *  @param[in]     exposure    Image to be measured.
      */
+
+private:
+
     virtual void measure(
         afw::table::SourceRecord & record,
         afw::image::Exposure<float> const & exposure
