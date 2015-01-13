@@ -114,7 +114,7 @@ class CentroidTestCase(unittest.TestCase):
         sfm_config.doReplaceWithNoise = False
         task = lsst.meas.base.SingleFrameMeasurementTask(schema, config=sfm_config)
         measCat = afwTable.SourceCatalog(schema)
-        measCat.defineCentroid("centroid")
+        measCat.defineCentroid("testLib_SillyCentroid")
         source = measCat.addNew()
         source.set("testLib_SillyCentroid_x", x)
         source.set("testLib_SillyCentroid_y", y)
