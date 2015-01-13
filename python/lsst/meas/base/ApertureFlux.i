@@ -26,7 +26,7 @@
 #include "lsst/meas/base/CircularApertureFlux.h"
 %}
 
-// %feature("notabstract") lsst::meas::base::ApertureFluxAlgorithm;
+%feature("abstract") lsst::meas::base::ApertureFluxAlgorithm;
 %include "lsst/meas/base/ApertureFlux.h"
 
 %pythoncode %{

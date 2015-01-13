@@ -35,11 +35,13 @@
 
 namespace lsst { namespace meas { namespace base {
 
-class CircularApertureFluxAlgorithm : public ApertureFluxAlgorithm{
+class CircularApertureFluxAlgorithm : public ApertureFluxAlgorithm {
 public:
 
     CircularApertureFluxAlgorithm(Control const & ctrl, std::string const & name, 
         afw::table::Schema & schema, daf::base::PropertySet & metadata);
+
+private:
 
     /**
      *  Measure the configured apertures on the given image.
