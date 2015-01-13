@@ -217,20 +217,12 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         @param[in]     **kwds      Keyword arguments passed from lsst.pipe.base.Task.__init__
         """
         super(ForcedMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
-        self.mapper = lsst.afw.table.SchemaMapper(refSchema, lsst.afw.table.Schema(1))
-        self.mapper.addMinimalSchema(lsst.afw.table.SourceTable.makeMinimalSchema())
-        self.config.slots.setupSchema(self.mapper.editOutputSchema())
+        self.schemaMapper = lsst.afw.table.SchemaMapper(refSchema, lsst.afw.table.Schema(1))
+        self.schemaMapper.addMinimalSchema(lsst.afw.table.SourceTable.makeMinimalSchema())
         for refName, targetName in self.config.copyColumns.items():
             refItem = refSchema.find(refName)
-            self.mapper.addMapping(refItem.key, targetName)
-        # Make a place at the beginning for the centroid plugin to run first (because it's an OrderedDict,
-        # adding an empty element in advance means it will get run first when it's reassigned to the
-        # actual Plugin).
-        if self.config.slots.centroid != None:
-            self.plugins[self.config.slots.centroid] = None
-        # Init the plugins, sorted by execution order.  At the same time add to the schema
-        for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
-            self.plugins[name] = PluginClass(config, name, self.mapper, metadata=self.algMetadata)
+            self.schemaMapper.addMapping(refItem.key, targetName)
+        self.initializePlugins(self, schemaMapper=self.schemaMapper)
 
     def run(self, exposure, refCat, refWcs, idFactory=None):
         """!
@@ -278,7 +270,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.log.info("Performing forced measurement on %d sources" % len(refList))
 
         # Build a catalog of just the references we intend to measure
-        referenceCat = lsst.afw.table.SourceCatalog(self.mapper.getInputSchema())
+        referenceCat = lsst.afw.table.SourceCatalog(self.schemaMapper.getInputSchema())
         referenceCat.extend(refList)
 
         # convert the footprints to the coordinate system of the exposure
@@ -332,7 +324,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         """
         if idFactory == None:
             idFactory = lsst.afw.table.IdFactory.makeSimple()
-        schema = self.mapper.getOutputSchema()
+        schema = self.schemaMapper.getOutputSchema()
         table = lsst.afw.table.SourceTable.make(schema, idFactory)
         sources = lsst.afw.table.SourceCatalog(table)
         table = sources.table
@@ -342,7 +334,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         targetWcs = exposure.getWcs()
         for ref in refCat:
             newSource = sources.addNew()
-            newSource.assign(ref, self.mapper)
+            newSource.assign(ref, self.schemaMapper)
             footprint = newSource.getFootprint()
             if footprint is not None:
                 # if heavy, just transform the "light footprint" and leave the rest behind

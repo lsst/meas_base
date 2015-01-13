@@ -26,6 +26,7 @@ This includes base classes for plugins and tasks and utility classes such as Plu
 that are shared by the single-frame measurement framework and the forced measurement framework.
 """
 
+import re
 import traceback
 import collections
 
@@ -37,6 +38,21 @@ from .noiseReplacer import *
 
 # Exceptions that the measurement tasks should always propagate up to their callers
 FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)
+
+#
+# Constant dict of the predefined slots and their types.
+#
+# This essentially duplicates information in afw::table::SourceTable, but we don't have a way to pull
+# it out of there right now, and it's best to wait to address that until we can remove the
+# meas_algorithms measurement system and simplify SourceTable at the same time.
+SLOT_TYPES = {
+    "Centroid": "Centroid",
+    "Shape": "Shape",
+    "PsfFlux", "Flux",
+    "ModelFlux", "Flux",
+    "ApFlux", "Flux",
+    "InstFlux", "Flux",
+}
 
 def generateAlgorithmName(AlgClass):
     """Generate a string name for an algorithm class that strips away terms that are generally redundant
@@ -188,6 +204,10 @@ class BasePluginConfig(lsst.pex.config.Config):
     defined here.
     """
 
+    # A dict of index values that can be used to fill slots, and the types these
+    # correspond to.
+    SLOT_CHOICES = {}
+
     executionOrder = lsst.pex.config.Field(
         dtype=float, default=2.0,
         doc="""Sets the relative order of plugins (smaller numbers run first).
@@ -207,7 +227,6 @@ are also allowed, but should be avoided unless they are needed):
               fluxes (i.e. classification) should have executionOrder > 3.0.
 """
         )
-
 
     doMeasure = lsst.pex.config.Field(dtype=bool, default=True,
                                       doc="whether to run this plugin in single-object mode")
@@ -243,41 +262,7 @@ class BasePlugin(object):
                    % self.__class__.__name__)
         raise NotImplementedError(message)
 
-class SourceSlotConfig(lsst.pex.config.Config):
-    """!
-    Slot configuration which assigns a particular named plugin to each of a set of
-    slots.  Each slot allows a type of measurement to be fetched from the SourceTable
-    without knowing which algorithm was used to produced the data.
-
-    NOTE: the default algorithm for each slot must be registered, even if the default is not used.
-    """
-
-    centroid = lsst.pex.config.Field(dtype=str, default="base_SdssCentroid", optional=True,
-                                     doc="the name of the centroiding algorithm used to set source x,y")
-    shape = lsst.pex.config.Field(dtype=str, default="base_SdssShape", optional=True,
-                                  doc="the name of the algorithm used to set source moments parameters")
-    apFlux = lsst.pex.config.Field(dtype=str, default="base_SincFlux", optional=True,
-                                   doc="the name of the algorithm used to set the source aperture flux slot")
-    modelFlux = lsst.pex.config.Field(dtype=str, default="base_GaussianFlux", optional=True,
-                                      doc="the name of the algorithm used to set the source model flux slot")
-    psfFlux = lsst.pex.config.Field(dtype=str, default="base_PsfFlux", optional=True,
-                                    doc="the name of the algorithm used to set the source psf flux slot")
-    instFlux = lsst.pex.config.Field(dtype=str, default="base_GaussianFlux", optional=True,
-                                     doc="the name of the algorithm used to set the source inst flux slot")
-
-    def setupSchema(self, schema):
-        """Convenience method to setup a Schema's slots according to the config definition.
-
-        This is defined in the Config class to support use in unit tests without needing
-        to construct a Task object.
-        """
-        aliases = schema.getAliasMap()
-        if self.centroid is not None: aliases.set("slot_Centroid", self.centroid)
-        if self.shape is not None: aliases.set("slot_Shape", self.shape)
-        if self.apFlux is not None: aliases.set("slot_ApFlux", self.apFlux)
-        if self.modelFlux is not None: aliases.set("slot_ModelFlux", self.modelFlux)
-        if self.psfFlux is not None: aliases.set("slot_PsfFlux", self.psfFlux)
-        if self.instFlux is not None: aliases.set("slot_InstFlux", self.instFlux)
+    
 
 
 class BaseMeasurementConfig(lsst.pex.config.Config):
@@ -285,9 +270,50 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
     Base config class for all measurement driver tasks.
     """
 
-    slots = lsst.pex.config.ConfigField(
-        dtype = SourceSlotConfig,
-        doc="Mapping from algorithms to special aliases in Source."
+    # Regular expression used to match slot definitions
+    _SLOT_REGEXP = re.compile("(?P<plugin>\w+)((\[(?P<n>\d+)\])|(\['(?P<s1>\w+)'\])|(\[\"(?P<s2>\w+)\"\]))?")
+
+    def _parseSlot(self, name):
+        """Parse a re.Match object corresponding to _SLOT_REGEXP, returning a tuple of
+        (<plugin-name>, <index>)
+        """
+        value = self.slots[name]
+        # n.b. regexp enforces that we have at most one of the groups below non-None
+        match = self._SLOT_REGEXP.match(value)
+        if not match:
+            raise lsst.pex.config.FieldValidationError(
+                type(self).slots,
+                self,
+                "Cannot parse %r for %s slot" % (value, name)
+                )
+        index = (int(match.group("n")) if match.group("n") else None)
+        if index is None: index = match.group("s1")
+        if index is None: index = match.group("s2")
+        return (match.get("plugin"), index)
+
+    slots = lsst.pex.config.DictField(
+        keytype=str,
+        itemtype=str,
+        doc=("Defines a mapping from algorithms to special aliases in Source.\n"
+             "The allowed Keys are: Centroid, Shape, PsfFlux, ModelFlux, ApFlux, and\n"
+             "InstFlux.  Values are the name of a measurement plugin of the appropriate\n"
+             "type, optionally followed by an algorithm-dependent numeric or string\n"
+             "index in square brackets, e.g.:\n"
+             "\n"
+             "measurement.slots['Centroid'] = 'base_SdssCentroid'\n"
+             "measurement.slots['ApFlux'] = 'base_CircularApertureFlux[2]\n"
+             "measurement.slots['ModelFlux'] = 'modelfit_CModel['exp']\n"
+             "\n"
+             "Valid indices for a particular plugin are listed in the SLOT_CHOICES\n"
+             "sequence in the plugin's config class."),
+        default={
+            "Centroid": "base_SdssCentroid",
+            "Shape": "base_SdssShape",
+            "PsfFlux": "base_PsfFlux",
+            "ModelFlux": "base_GaussianFlux",
+            "ApFlux": "base_SincFlux",
+            "InstFlux": "base_GaussianFlux",
+            }
         )
 
     doReplaceWithNoise = lsst.pex.config.Field(dtype=bool, default=True, optional=False,
@@ -300,17 +326,26 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
 
     def validate(self):
         lsst.pex.config.Config.validate(self)
-        if self.slots.centroid is not None and self.slots.centroid not in self.plugins.names:
-            raise ValueError("source centroid slot algorithm is not being run.")
-        if self.slots.shape is not None and self.slots.shape not in self.plugins.names:
-            raise ValueError("source shape slot algorithm '%s' is not being run." % self.slots.shape)
-        for slot in (self.slots.psfFlux, self.slots.apFlux, self.slots.modelFlux, self.slots.instFlux):
-            if slot is not None:
-                for name in self.plugins.names:
-                    if len(name) <= len(slot) and name == slot[:len(name)]:
-                        break
-                else:
-                    raise ValueError("source flux slot algorithm '%s' is not being run." % slot)
+        for slotName in self.slots:
+            if slotName not in self._SLOT_TYPES:
+                raise lsst.pex.config.FieldValidationError(
+                    type(self).slots,
+                    self,
+                    "Unsupported slot: %r" % slotName
+                    )
+            plugin, index = self._parseSlot(slotName)
+            if plugin not in self.plugins.names:
+                raise lsst.pex.config.FieldValidationError(
+                    type(self).slots,
+                    self,
+                    "Plugin %r for %s slot is not being run" % (plugin, slotName)
+                    )
+            if index not in self.plugins[plugin].SLOT_CHOICES:
+                raise lsst.pex.config.FieldValidationError(
+                    type(self).slots,,
+                    self,
+                    "%r is not a valid index for %r in slot %s" % (index, plugin, slotName)
+                    )
 
 
 ## @addtogroup LSST_task_documentation
@@ -351,6 +386,29 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         if algMetadata is None:
             algMetadata = lsst.daf.base.PropertyList()
         self.algMetadata = algMetadata
+
+    def initializePlugins(self, **kwds):
+        # Transform slots config dict values by parsing strings into Structs of plugin name and index,
+        # then reversing the mapping so the plugins are keys, and each value is a list of Structs of
+        # (slot, index).  We do this so we can initialize the slots in the order we initialize
+        # plugins, so dependent plugins can expect to see the slots they need already setup by the
+        # time they're initialized.
+        slotsByPlugin = {}
+        for slotName in self.config.slots:
+            plugin, index = self._parseSlot(slotName)
+            slotsByPlugin.setdefault(plugin, []).append((slotName, index))
+        # Make a place at the beginning for the centroid plugin to run first (because it's an OrderedDict,
+        # adding an empty element in advance means it will get run first when it's reassigned to the
+        # actual Plugin).
+        if "Centroid" in self.config.slots:
+            self.plugins[self.config.slots["Centroid"].plugin] = None
+        # Initialize the plugins, sorted by execution order.  At the same time add fields to the schema
+        for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
+            plugin = PluginClass(config, name, metadata=self.algMetadata, **kwds)
+            self.plugins[name] = plugin
+            for slotName, index in slotsByPlugin.get(name, []):
+                plugin.setupSlot(slotName, 
+
 
     def callMeasure(self, measRecord, *args, **kwds):
         """!
