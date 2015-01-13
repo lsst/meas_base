@@ -41,6 +41,10 @@ class TestCentroidConfig(SingleFramePluginConfig):
 class TestCentroid(SingleFramePlugin):
     ConfigClass = TestCentroidConfig
 
+    @staticmethod
+    def getExecutionOrder():
+        return 0.0
+
     def __init__(self, config, name, schema=None, metadata=None):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.xKey = schema.addField("centroid.x", type=float, doc="x component relative to image",
@@ -64,6 +68,10 @@ class TestFluxConfig(SingleFramePluginConfig):
 
 class TestFlux(SingleFramePlugin):
     ConfigClass = TestFluxConfig
+
+    @staticmethod
+    def getExecutionOrder():
+        return 2.0
 
     def __init__(self, config, name, schema=None, metadata=None):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
