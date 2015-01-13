@@ -95,6 +95,10 @@ class TestForcedMeasurementTask(lsst.meas.base.ForcedMeasurementTask):
 
 class TestFlux(lsst.meas.base.ForcedPlugin):
 
+    @staticmethod
+    def getExecutionOrder():
+        return 2.0
+
     def __init__(self, config, name, schemaMapper, metadata=None):
         super(TestFlux, self).__init__(config, name, schemaMapper, metadata)
         schema = schemaMapper.editOutputSchema()

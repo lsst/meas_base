@@ -39,7 +39,7 @@ class WrappedForcedPlugin(ForcedPlugin):
         self.cpp.fail(measRecord, error.cpp if error is not None else None)
 
 
-def wrapAlgorithmControl(Base, Control, hasMeasureN=False, executionOrder=None):
+def wrapAlgorithmControl(Base, Control, hasMeasureN=False):
     """!
     Wrap a C++ algorithm's control class into a Python Config class.
 
@@ -48,7 +48,6 @@ def wrapAlgorithmControl(Base, Control, hasMeasureN=False, executionOrder=None):
     @param[in] Control           Control class to be wrapped (a Swigged C++ class)
     @param[in] hasMeasureN       Whether the plugin supports fitting multiple objects at once (if so, a
                                  config option to enable/disable this will be added).
-    @param[in] executionOrder    If not None, an override for the default executionOrder for this plugin.
 
     @return a new subclass of lsst.pex.config.Config
 
@@ -71,13 +70,11 @@ def wrapAlgorithmControl(Base, Control, hasMeasureN=False, executionOrder=None):
         # If we don't have to add that Config field, we can delegate all of the work to
         # pex_config's makeControlClass
         ConfigClass = lsst.pex.config.makeConfigClass(Control, module=Control.__module__, base=Base)
-    if executionOrder is not None:
-        ConfigClass.executionOrder.default = float(executionOrder)
     return ConfigClass
 
 
-def wrapAlgorithm(Base, AlgClass, factory, name=None, Control=None, ConfigClass=None, doRegister=True,
-                  **kwds):
+def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=None,
+                  ConfigClass=None, doRegister=True, **kwds):
     """!
     Wrap a C++ Algorithm class into a Python Plugin class.
 
@@ -91,6 +88,8 @@ def wrapAlgorithm(Base, AlgClass, factory, name=None, Control=None, ConfigClass=
                                four arguments, either (config, name, schema, metadata) or
                                (config, name, schemaMapper, metadata), depending on whether the algorithm is
                                single-frame or forced.
+    @param[in] executionOrder  The order this plugin should be run, relative to others
+                               (see BasePlugin.getExecutionOrder()).
     @param[in] name            String to use when registering the algorithm.  Ignored if doRegistry=False,
                                set to generateAlgorithmName(AlgClass) if None.
     @param[in] Control         Swigged C++ Control class for the algorithm; AlgClass.Control is used if None.
@@ -115,8 +114,11 @@ def wrapAlgorithm(Base, AlgClass, factory, name=None, Control=None, ConfigClass=
         if Control is None:
             Control = AlgClass.Control
         ConfigClass = wrapAlgorithmControl(Base.ConfigClass, Control, **kwds)
+    def getExecutionOrder():
+        return executionOrder
     PluginClass = type(AlgClass.__name__ + Base.__name__, (Base,),
-                       dict(AlgClass=AlgClass, ConfigClass=ConfigClass, factory=staticmethod(factory)))
+                       dict(AlgClass=AlgClass, ConfigClass=ConfigClass, factory=staticmethod(factory),
+                            getExecutionOrder=staticmethod(getExecutionOrder)))
     if doRegister:
         if name is None:
             name = generateAlgorithmName(AlgClass)
@@ -124,13 +126,16 @@ def wrapAlgorithm(Base, AlgClass, factory, name=None, Control=None, ConfigClass=
     return PluginClass
 
 
-def wrapSingleFrameAlgorithm(AlgClass, name=None, needsMetadata=False, hasMeasureN=False, **kwds):
+def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False, hasMeasureN=False,
+                             **kwds):
     """!
     Wrap a C++ SingleFrameAlgorithm class into a Python SingleFramePlugin class.
 
     @param[in] AlgClass        Swigged C++ Algorithm class to convert; must be a subclass of
                                SingleFrameAlgorithm, or an unrelated class with the same measure(),
                                measureN(), and fail() signatures.
+    @param[in] executionOrder  The order this plugin should be run, relative to others
+                               (see BasePlugin.getExecutionOrder()).
     @param[in] name            String to use when registering the algorithm.  Ignored if doRegistry=False,
                                set to generateAlgorithmName(AlgClass) if None.
     @param[in] needsMetadata   Sets whether the AlgClass's constructor should be passed a PropertySet
@@ -183,18 +188,20 @@ def wrapSingleFrameAlgorithm(AlgClass, name=None, needsMetadata=False, hasMeasur
         else:
             def factory(config, name, schema, metadata):
                 return AlgClass(config.makeControl(), name, schema)
-    return wrapAlgorithm(WrappedSingleFramePlugin, AlgClass, factory=factory, name=name,
-                         hasMeasureN=hasMeasureN, **kwds)
+    return wrapAlgorithm(WrappedSingleFramePlugin, AlgClass, executionOrder=executionOrder, name=name,
+                         factory=factory, hasMeasureN=hasMeasureN, **kwds)
 
 
-def wrapForcedAlgorithm(AlgClass, name=None, needsMetadata=False, hasMeasureN=False, needsSchemaOnly=False,
-                        **kwds):
+def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False,
+                        hasMeasureN=False, needsSchemaOnly=False, **kwds):
     """!
     Wrap a C++ ForcedAlgorithm class into a Python ForcedPlugin class.
 
     @param[in] AlgClass        Swigged C++ Algorithm class to convert; must be a subclass of
                                ForcedAlgorithm, or an unrelated class with the same measure(), measureN(),
                                and fail() signatures.
+    @param[in] executionOrder  The order this plugin should be run, relative to others
+                               (see BasePlugin.getExecutionOrder()).
     @param[in] name            String to use when registering the algorithm.  Ignored if doRegistry=False,
                                set to generateAlgorithmName(AlgClass) if None.
     @param[in] needsMetadata   Sets whether the AlgClass's constructor should be passed a PropertySet
@@ -264,16 +271,19 @@ def wrapForcedAlgorithm(AlgClass, name=None, needsMetadata=False, hasMeasureN=Fa
         else:
             def factory(config, name, schemaMapper, metadata):
                 return AlgClass(config.makeControl(), name, extractSchemaArg(schemaMapper))
-    return wrapAlgorithm(WrappedForcedPlugin, AlgClass, factory=factory, name=name, **kwds)
+    return wrapAlgorithm(WrappedForcedPlugin, AlgClass, executionOrder=executionOrder, name=name,
+                         factory=factory, **kwds)
 
 
-def wrapSimpleAlgorithm(AlgClass, name=None, needsMetadata=False, hasMeasureN=False, **kwds):
+def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False, hasMeasureN=False, **kwds):
     """!
     Wrap a C++ SimpleAlgorithm class into both a Python SingleFramePlugin and ForcedPlugin classes
 
     @param[in] AlgClass        Swigged C++ Algorithm class to convert; must be a subclass of
                                simpleAlgorithm, or an unrelated class with the same measure(), measureN(),
                                and fail() signatures.
+    @param[in] executionOrder  The order this plugin should be run, relative to others
+                               (see BasePlugin.getExecutionOrder()).
     @param[in] name            String to use when registering the algorithm.  Ignored if doRegistry=False,
                                set to generateAlgorithmName(AlgClass) if None.
     @param[in] needsMetadata   Sets whether the AlgClass's constructor should be passed a PropertySet
@@ -311,6 +321,7 @@ def wrapSimpleAlgorithm(AlgClass, name=None, needsMetadata=False, hasMeasureN=Fa
     @endverbatim
     If both are True, the metadata PropertySet precedes the doMeasureN bool.
     """
-    return (wrapSingleFrameAlgorithm(AlgClass, name=name, needsMetadata=needsMetadata, **kwds),
-            wrapForcedAlgorithm(AlgClass, name=name, needsMetadata=needsMetadata,
-                                needsSchemaOnly=True, **kwds))
+    return (wrapSingleFrameAlgorithm(AlgClass, executionOrder=executionOrder, name=name,
+                                     needsMetadata=needsMetadata, **kwds),
+            wrapForcedAlgorithm(AlgClass, executionOrder=executionOrder, name=name,
+                                needsMetadata=needsMetadata, needsSchemaOnly=True, **kwds))
