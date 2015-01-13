@@ -87,7 +87,8 @@ class PluginRegistry(lsst.pex.config.Registry):
     """!
     Base class for plugin registries
 
-    The Plugin class allowed in the registry is defined on the ctor of the registry
+    The Plugin class allowed in the registry is defined in the ctor of the registry.
+
     Single-frame and forced plugins have different registries.
     """
 
@@ -95,8 +96,9 @@ class PluginRegistry(lsst.pex.config.Registry):
         """!
         Class used as the actual element in the registry
 
-        Rather than constructing a Plugin instance, it returns a tuple
-        of (runlevel, name, config, PluginClass), which can then
+        Rather than constructing a Plugin instance, its __call__ method
+        (invoked by RegistryField.apply) returns a tuple
+        of (executionOrder, name, config, PluginClass), which can then
         be sorted before the plugins are instantiated.
         """
 
@@ -104,7 +106,7 @@ class PluginRegistry(lsst.pex.config.Registry):
 
         def __init__(self, name, PluginClass):
             """!
-            Initialize registry with Plugin Class
+            Create a Configurable object for the given PluginClass and name
             """
             self.name = name
             self.PluginClass = PluginClass
