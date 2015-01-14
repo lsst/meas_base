@@ -68,9 +68,7 @@ class SingleFramePlugin(BasePlugin):
                                  hold measurements produced by this plugin.
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
-        BasePlugin.__init__(self)
-        self.config = config
-        self.name = name
+        BasePlugin.__init__(self, config, name)
 
     def measure(self, measRecord, exposure):
         """!

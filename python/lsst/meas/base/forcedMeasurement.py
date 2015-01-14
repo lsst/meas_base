@@ -78,9 +78,7 @@ class ForcedPlugin(BasePlugin):
                                       will be transferred before any plugins are run.
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
-        BasePlugin.__init__(self)
-        self.config = config
-        self.name = name
+        BasePlugin.__init__(self, config, name)
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
         """Measure the properties of a source on a single image, given data from a
