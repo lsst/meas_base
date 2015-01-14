@@ -72,46 +72,12 @@ class MakeTestData(object):
         # a bright, isolated star near (50, 50)
         record = catalog.addNew()
         record.set(nChildKey, 0)
-        record.set(centroidKey, lsst.afw.geom.Point2D(50.1, 49.8))
-        record.set(fluxKey, 100000.0)
+        record.set(centroidKey, lsst.afw.geom.Point2D(100.0, 100.0))
+        # record.set(fluxKey, 100000.0)
+        record.set(fluxKey, 60000.0)
         record.set(shapeKey, lsst.afw.geom.ellipses.Quadrupole(0.0, 0.0, 0.0))
         record.set(starFlagKey, True)
-        # a moderately-resolved, isolated galaxy near (150, 50)
-        record = catalog.addNew()
-        record.set(nChildKey, 0)
-        record.set(centroidKey, lsst.afw.geom.Point2D(150.3, 50.2))
-        record.set(fluxKey, 75000.0)
-        record.set(shapeKey, lsst.afw.geom.ellipses.Quadrupole(8.0, 6.0, 0.5))
-        record.set(starFlagKey, False)
-        # a blend of a star and galaxy near (95, 150) and (105, 150)
-        parent = catalog.addNew()
-        parent.set(nChildKey, 2)
-        record1 = catalog.addNew()
-        record1.set(nChildKey, 0)
-        record1.setParent(parent.getId())
-        record1.set(centroidKey, lsst.afw.geom.Point2D(95.4, 149.9))
-        record1.set(fluxKey, 80000.0)
-        record1.set(shapeKey, lsst.afw.geom.ellipses.Quadrupole(0.0, 0.0, 0.0))
-        record1.set(starFlagKey, True)
-        record2 = catalog.addNew()
-        record2.set(nChildKey, 0)
-        record2.setParent(parent.getId())
-        record2.set(centroidKey, lsst.afw.geom.Point2D(104.8, 150.2))
-        record2.set(fluxKey, 120000.0)
-        record2.set(shapeKey, lsst.afw.geom.ellipses.Quadrupole(10.0, 7.0, -0.5))
-        record2.set(starFlagKey, False)
-        parent.set(fluxKey, record1.get(fluxKey) + record2.get(fluxKey))
-        parent.set(starFlagKey, False)
-        parent.set(
-            centroidKey,
-            lsst.afw.geom.Point2D(
-                (lsst.afw.geom.Extent2D(record1.get(centroidKey)) * record1.get(fluxKey)
-                 + lsst.afw.geom.Extent2D(record2.get(centroidKey)) * record2.get(fluxKey))
-                / parent.get(fluxKey)
-                )
-            )
-        # we don't bother setting the truth values for parent's shape, since we don't need them
-        # for sims and don't expect to be able to measure them well anyway.
+
         return catalog, bbox
 
     @staticmethod
@@ -195,19 +161,6 @@ class MakeTestData(object):
             fpSet.setMask(exposure.getMaskedImage().getMask(), "DETECTED")
             record.setFootprint(fpSet.getFootprints()[0])
 
-        # Third pass: for all parent objects, make "perfectly deblended" child HeavyFootprints using the
-        # true, noise-free single-object images to divide the flux.
-        for parent in catalog.getChildren(0):
-            print "Processing parent object", parent.getId()
-            for child in catalog.getChildren(parent.getId()):
-                print "Processing child object", child.getId()
-                parent0to1 = numpy.array(images[parent.getId()].getArray())
-                parent0to1[parent0to1==0] = 1.0
-                # fraction = images[child.getId()].getArray() / images[parent.getId()].getArray()
-                fraction = images[child.getId()].getArray() / parent0to1
-                deblend = lsst.afw.image.MaskedImageF(exposure.getMaskedImage(), True)
-                deblend.getImage().getArray()[:,:] *= fraction
-                child.setFootprint(lsst.afw.detection.HeavyFootprintF(child.getFootprint(), deblend))
         return images
 
 class AlgorithmTestCase(lsst.utils.tests.TestCase):
