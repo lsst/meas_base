@@ -224,6 +224,17 @@ class BasePlugin(object):
         """
         raise NotImplementedError("All plugins must implement getExecutionOrder()")
 
+    def __init__(self, config, name):
+        """!
+        Initialize the measurement object.
+
+        @param[in]  config       An instance of this class's ConfigClass.
+        @param[in]  name         The string the plugin was registered with.
+        """
+        object.__init__(self)
+        self.config = config
+        self.name = name
+
     def fail(self, measRecord, error=None):
         """!
         Record a failure of the measure or measureN() method.
