@@ -371,6 +371,27 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
             algMetadata = lsst.daf.base.PropertyList()
         self.algMetadata = algMetadata
 
+    def initializePlugins(self, **kwds):
+        """Initialize the plugins (and slots) according to the configuration.
+
+        Derived class constructors should call this method to fill the self.plugins
+        attribute and add correspond output fields and slot aliases to the output schema.
+
+        In addition to the attributes added by BaseMeasurementTask.__init__, a self.schema
+        attribute holding the output schema must also be present before this method is called, .
+
+        Keyword arguments are forwarded directly to plugin constructors, allowing derived
+        classes to use plugins with different signatures.
+        """
+        # Make a place at the beginning for the centroid plugin to run first (because it's an OrderedDict,
+        # adding an empty element in advance means it will get run first when it's reassigned to the
+        # actual Plugin).
+        if self.config.slots.centroid != None:
+            self.plugins[self.config.slots.centroid] = None
+        # Init the plugins, sorted by execution order.  At the same time add to the schema
+        for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
+            self.plugins[name] = PluginClass(config, name, metadata=self.algMetadata, **kwds)
+
     def callMeasure(self, measRecord, *args, **kwds):
         """!
         Call the measure() method on all plugins, handling exceptions in a consistent way.
