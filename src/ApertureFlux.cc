@@ -83,6 +83,10 @@ ApertureFluxAlgorithm::ApertureFluxAlgorithm(
     _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }
 
+void ApertureFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+    _flagHandler.handleFailure(measRecord, error);
+}
+
 ApertureFluxAlgorithm::FlagKeys::FlagKeys(
     std::string const & name, afw::table::Schema & schema, int index
 ) :
@@ -122,16 +126,6 @@ void ApertureFluxAlgorithm::copyResultToRecord(
         record.set(_flagKeys[index].sincCoeffsTruncated, true);
         // TODO DM-464: set suspect flag
     }
-}
-
-
-void ApertureFluxAlgorithm::measure(
-    afw::table::SourceRecord & measRecord,
-    afw::image::Exposure<float> const & exposure
-) const {};
-
-void ApertureFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
-    _flagHandler.handleFailure(measRecord, error);
 }
 
 namespace {
