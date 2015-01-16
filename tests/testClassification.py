@@ -1,4 +1,4 @@
-#!/usr/bintenv python
+#!/usr/bin/env python
 #
 # LSST Data Management System
 # Copyright 2008-2013 LSST Corporation.
@@ -76,6 +76,15 @@ class SFMTestCase (lsst.meas.base.tests.AlgorithmTestCase):
                 self.assertEqual(probability, 1.0)
 
     def testFlags(self):
+        """ Test all the failure modes of this algorithm, as well as checking that it succeeds when it should
+
+            Since this algorithm depends on having a ModelFlux and a PsfFlux measurement, it is a failure
+            mode when either is NAN, or when ModelFluxFlag or PsfFluxFlag is True.
+
+            When psfFluxFactor != 0, the PsfFluxErr cannot be NAN, but otherwise is ignored
+
+            When modelFluxFactor != 0, the ModelFluxErr cannot be NAN, but otherwise is ignored
+        """
         exp = afwImage.ExposureF()
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
 
@@ -91,7 +100,7 @@ class SFMTestCase (lsst.meas.base.tests.AlgorithmTestCase):
         task = SingleFrameMeasurementTask(schema, config=sfm_config)
         measCat = SourceCatalog(schema)
 
-        #  Test no error case
+        #  Test no error case - all necessary values are set
         source = measCat.addNew()
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
@@ -100,7 +109,7 @@ class SFMTestCase (lsst.meas.base.tests.AlgorithmTestCase):
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertFalse(source.get("base_ClassificationExtendedness_flag"))
 
-        #  Test psfFlux flag case 
+        #  Test psfFlux flag case - failure in PsfFlux
         source = measCat.addNew()
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
@@ -111,7 +120,7 @@ class SFMTestCase (lsst.meas.base.tests.AlgorithmTestCase):
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
-        #  Test modelFlux flag case 
+        #  Test modelFlux flag case - falure in ModelFlux
         source = measCat.addNew()
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
@@ -122,7 +131,7 @@ class SFMTestCase (lsst.meas.base.tests.AlgorithmTestCase):
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
-        #  Test modelFlux NAN case 
+        #  Test modelFlux NAN case
         source = measCat.addNew()
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
@@ -132,7 +141,7 @@ class SFMTestCase (lsst.meas.base.tests.AlgorithmTestCase):
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
-        #  Test psfFlux NAN case 
+        #  Test psfFlux NAN case
         source = measCat.addNew()
         source.set("base_PsfFlux_fluxSigma", 1)
         source.set("base_SincFlux_flux", 200)
@@ -142,7 +151,7 @@ class SFMTestCase (lsst.meas.base.tests.AlgorithmTestCase):
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
-        #  Test modelFluxErr NAN case
+        #  Test modelFluxErr NAN case when modelErrFactor is zero and non-zero
         sfm_config.plugins["base_ClassificationExtendedness"].modelErrFactor = 0.
         source = measCat.addNew()
         source.set("base_PsfFlux_flux", 100)
@@ -159,7 +168,7 @@ class SFMTestCase (lsst.meas.base.tests.AlgorithmTestCase):
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
-        #  Test modelFluxErr NAN case
+        #  Test psfFluxErr NAN case when psfErrFactor is zero and non-zero
         sfm_config.plugins["base_ClassificationExtendedness"].psfErrFactor = 0.
         source = measCat.addNew()
         source.set("base_PsfFlux_flux", 100)
@@ -175,8 +184,6 @@ class SFMTestCase (lsst.meas.base.tests.AlgorithmTestCase):
         source.set("base_SincFlux_flux", 200)
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
-
-
 
 def suite():
     """Returns a suite containing all the test cases in this module."""

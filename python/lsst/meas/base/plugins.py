@@ -153,6 +153,11 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
         flux2 = psfFlux
         if not self.config.psfErrFactor == 0:
             flux2 += self.config.psfErrFactor*psfFluxErr
+
+        # A generic failure occurs when either FluxFlag is set to True
+        # A generic failure also occurs if either calculated flux value is NAN:
+        #     this can occur if the Flux field itself is NAN,
+        #     or the ErrFactor != 0 and the FluxErr is NAN
         if numpy.isnan(flux1) or numpy.isnan(flux2) or modelFluxFlag or psfFluxFlag:
             self.fail(measRecord)
         else:
