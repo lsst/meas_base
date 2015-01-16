@@ -137,23 +137,38 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.keyProbability = schema.addField(name + "_value", type="D",
                                               doc="Set to 1 for extended sources, 0 for point sources.")
+        self.keyFlag = schema.addField(name + "_flag", type="Flag", doc="Set to 1 for any fatal failure.")
 
     def measure(self, measRecord, exposure):
         modelFlux = measRecord.getModelFlux()
         modelFluxErr = measRecord.getModelFluxErr()
+        modelFluxFlag = measRecord.getModelFluxFlag()
         psfFlux = measRecord.getPsfFlux()
         psfFluxErr = measRecord.getPsfFluxErr()
-        flux1 = self.config.fluxRatio*modelFlux + self.config.modelErrFactor*modelFluxErr
-        flux2 = psfFlux + self.config.psfErrFactor*psfFluxErr
-        if flux1 < flux2:
-            measRecord.set(self.keyProbability, 0.0)
+        psfFluxFlag = measRecord.getPsfFluxFlag()
+        flux1 = self.config.fluxRatio*modelFlux
+        if not self.config.modelErrFactor == 0:
+            flux1 += self.config.modelErrFactor*modelFluxErr
+        flux2 = psfFlux
+        if not self.config.psfErrFactor == 0:
+            flux2 += self.config.psfErrFactor*psfFluxErr
+
+        # A generic failure occurs when either FluxFlag is set to True
+        # A generic failure also occurs if either calculated flux value is NAN:
+        #     this can occur if the Flux field itself is NAN,
+        #     or the ErrFactor != 0 and the FluxErr is NAN
+        if numpy.isnan(flux1) or numpy.isnan(flux2) or modelFluxFlag or psfFluxFlag:
+            self.fail(measRecord)
         else:
-            measRecord.set(self.keyProbability, 1.0);
+            if flux1 < flux2:
+                measRecord.set(self.keyProbability, 0.0)
+            else:
+                measRecord.set(self.keyProbability, 1.0)
 
     def fail(self, measRecord, error=None):
         # Override fail() to do nothing in the case of an exception.  We should be setting a flag
         # instead.
-        pass
+        measRecord.set(self.keyFlag, True)
 
 
 # --- Forced Plugins ---
