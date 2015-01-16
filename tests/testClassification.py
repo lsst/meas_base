@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bintenv python
 #
 # LSST Data Management System
 # Copyright 2008-2013 LSST Corporation.
@@ -36,7 +36,7 @@ numpy.random.seed(1234)
 
 DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
 
-class SFMTestCase(lsst.utils.tests.TestCase):
+class SFMTestCase (lsst.meas.base.tests.AlgorithmTestCase):
 
     def testAlgorithm(self):
 
@@ -74,6 +74,109 @@ class SFMTestCase(lsst.utils.tests.TestCase):
                 self.assertEqual(probability, 0.0)
             else:
                 self.assertEqual(probability, 1.0)
+
+    def testFlags(self):
+        exp = afwImage.ExposureF()
+        schema = lsst.afw.table.SourceTable.makeMinimalSchema()
+
+        sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
+        sfm_config.plugins = ["base_SdssCentroid", "base_PsfFlux", "base_SincFlux",
+                              "base_ClassificationExtendedness"]
+        sfm_config.slots.centroid = "base_SdssCentroid"
+        sfm_config.slots.shape = None
+        sfm_config.slots.psfFlux = "base_PsfFlux"
+        sfm_config.slots.modelFlux = "base_SincFlux"
+        sfm_config.slots.apFlux = None
+        sfm_config.slots.instFlux = None
+        task = SingleFrameMeasurementTask(schema, config=sfm_config)
+        measCat = SourceCatalog(schema)
+
+        #  Test no error case
+        source = measCat.addNew()
+        source.set("base_PsfFlux_flux", 100)
+        source.set("base_PsfFlux_fluxSigma", 1)
+        source.set("base_SincFlux_flux", 200)
+        source.set("base_SincFlux_fluxSigma", 2)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        self.assertFalse(source.get("base_ClassificationExtendedness_flag"))
+
+        #  Test psfFlux flag case 
+        source = measCat.addNew()
+        source.set("base_PsfFlux_flux", 100)
+        source.set("base_PsfFlux_fluxSigma", 1)
+        source.set("base_SincFlux_flux", 200)
+        source.set("base_SincFlux_fluxSigma", 2)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        source.set("base_PsfFlux_flag", True)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
+
+        #  Test modelFlux flag case 
+        source = measCat.addNew()
+        source.set("base_PsfFlux_flux", 100)
+        source.set("base_PsfFlux_fluxSigma", 1)
+        source.set("base_SincFlux_flux", 200)
+        source.set("base_SincFlux_fluxSigma", 2)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        source.set("base_SincFlux_flag", True)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
+
+        #  Test modelFlux NAN case 
+        source = measCat.addNew()
+        source.set("base_PsfFlux_flux", 100)
+        source.set("base_PsfFlux_fluxSigma", 1)
+        source.set("base_SincFlux_fluxSigma", 2)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        source.set("base_SincFlux_flag", True)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
+
+        #  Test psfFlux NAN case 
+        source = measCat.addNew()
+        source.set("base_PsfFlux_fluxSigma", 1)
+        source.set("base_SincFlux_flux", 200)
+        source.set("base_SincFlux_fluxSigma", 2)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        source.set("base_SincFlux_flag", True)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
+
+        #  Test modelFluxErr NAN case
+        sfm_config.plugins["base_ClassificationExtendedness"].modelErrFactor = 0.
+        source = measCat.addNew()
+        source.set("base_PsfFlux_flux", 100)
+        source.set("base_PsfFlux_fluxSigma", 1)
+        source.set("base_SincFlux_flux", 200)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        self.assertFalse(source.get("base_ClassificationExtendedness_flag"))
+
+        sfm_config.plugins["base_ClassificationExtendedness"].modelErrFactor = 1.
+        source = measCat.addNew()
+        source.set("base_PsfFlux_flux", 100)
+        source.set("base_PsfFlux_fluxSigma", 1)
+        source.set("base_SincFlux_flux", 200)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
+
+        #  Test modelFluxErr NAN case
+        sfm_config.plugins["base_ClassificationExtendedness"].psfErrFactor = 0.
+        source = measCat.addNew()
+        source.set("base_PsfFlux_flux", 100)
+        source.set("base_SincFlux_fluxSigma", 1)
+        source.set("base_SincFlux_flux", 200)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        self.assertFalse(source.get("base_ClassificationExtendedness_flag"))
+
+        sfm_config.plugins["base_ClassificationExtendedness"].psfErrFactor = 1.
+        source = measCat.addNew()
+        source.set("base_PsfFlux_flux", 100)
+        source.set("base_SincFlux_fluxSigma", 1)
+        source.set("base_SincFlux_flux", 200)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
+
+
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
