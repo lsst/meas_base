@@ -164,7 +164,7 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
             if flux1 < flux2:
                 measRecord.set(self.keyProbability, 0.0)
             else:
-                measRecord.set(self.keyProbability, 1.0);
+                measRecord.set(self.keyProbability, 1.0)
 
     def fail(self, measRecord, error=None):
         # Override fail() to do nothing in the case of an exception.  We should be setting a flag
