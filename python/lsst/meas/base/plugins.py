@@ -66,7 +66,6 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
     Footprint as the centroid.  This is of course a relatively poor measure of the true
     centroid of the object; this algorithm is provided mostly for testing and debugging.
     """
-
     ConfigClass = SingleFramePeakCentroidConfig
 
     def __init__(self, config, name, schema, metadata):
@@ -79,6 +78,18 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
         measRecord.set(self.keyX, peak.getFx())
         measRecord.set(self.keyY, peak.getFy())
 
+    def genCalibrate(self, oldSchema, mapper):
+        mapFunctions = SingleFramePlugin.genCalibrate(self, oldSchema, mapper)
+        newSchema = mapper.editOutputSchema()
+        keyRevX = newSchema.addField(self.name + "_revX", type="D", doc="reversed centroid", units="pixels")
+        keyRevY = newSchema.addField(self.name + "_revY", type="D", doc="reversed centroid", units="pixels")
+        keyRevProduct = newSchema.addField(self.name + "_revProduct", type="D", doc="centroid product", units="pixels")
+        def map_fn(oldRecord, newRecord):
+            newRecord.set(keyRevX, -1.0 * oldRecord.get(self.keyX))
+            newRecord.set(keyRevY, -1.0 * oldRecord.get(self.keyY))
+            newRecord.set(keyRevProduct, oldRecord.get(self.keyX) * oldRecord.get(self.keyY))
+        mapFunctions.append(map_fn)
+        return mapFunctions
 
 class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
 
