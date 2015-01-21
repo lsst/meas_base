@@ -128,7 +128,7 @@ class MeasureSourcesTestCase(unittest.TestCase):
         plugin.measure(source, exp)
 
         for i, r in enumerate(radii):
-            currentFlux = source.get("test_flux_%d" % i)
+            currentFlux = source.get("test_%d_flux" % i)
             self.assertAlmostEqual(10.0*math.pi*r*r/currentFlux, 1.0, places=4)
 
     def testPeakLikelihoodFlux(self):

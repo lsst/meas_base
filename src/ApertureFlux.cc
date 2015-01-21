@@ -23,6 +23,8 @@
 
 #include <numeric>
 
+#include "boost/array.hpp"
+
 #include "ndarray/eigen.h"
 
 #include "lsst/afw/math/offsetImage.h"
@@ -41,6 +43,34 @@ ApertureFluxControl::ApertureFluxControl() : radii(10), maxSincRadius(10.0), shi
     std::copy(defaultRadii.begin(), defaultRadii.end(), radii.begin());
 }
 
+namespace {
+
+boost::array<FlagDefinition,ApertureFluxAlgorithm::N_FLAGS> const & getFlagDefinitions() {
+    static boost::array<FlagDefinition,ApertureFluxAlgorithm::N_FLAGS> flagDefs = {{
+        {"flag", "flag set if aperture failed for any reason"},
+        {"flag_apertureTruncated", "flag set if aperture did not fit within the measurement image"},
+        {"flag_sincCoeffsTruncated",
+         "flag set if the full sinc coefficient image for aperture %d did not "
+         "fit within the measurement image"}
+    }};
+    return flagDefs;
+}
+
+} // anonymous
+
+ApertureFluxAlgorithm::Keys::Keys(
+    afw::table::Schema & schema, std::string const & prefix, std::string const & doc, bool isSinc
+) :
+    fluxKey(FluxResultKey::addFields(schema, prefix, doc)),
+    flags(
+        FlagHandler::addFields(
+            schema, prefix,
+            getFlagDefinitions().begin(),
+            getFlagDefinitions().begin() + (isSinc ? 3 : 2)
+        )
+    )
+{}
+
 ApertureFluxAlgorithm::ApertureFluxAlgorithm(
     Control const & ctrl,
     std::string const & name,
@@ -48,83 +78,40 @@ ApertureFluxAlgorithm::ApertureFluxAlgorithm(
     daf::base::PropertySet & metadata
 
 ) : _ctrl(ctrl),
-    _centroidExtractor(schema, name),
-    _fluxKey(
-        afw::table::ArrayKey<Flux>::addFields(
-            schema,
-            name + "_flux",
-            "flux within %f pixel aperture",
-            "dn",
-            ctrl.radii
-        )
-    ),
-    _fluxSigmaKey(
-        afw::table::ArrayKey<Flux>::addFields(
-            schema,
-            name + "_fluxSigma",
-            "1-sigma uncertainty on flux within %f pixel aperture",
-            "dn",
-            ctrl.radii
-        )
-    )
+    _centroidExtractor(schema, name)
 {
+    _keys.reserve(ctrl.radii.size());
     for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
         metadata.add(name + "_radii", ctrl.radii[i]);
+        std::string prefix = (boost::format("%s_%d") % name % i).str();
+        std::string doc = (boost::format("flux within %f-pixel aperture") % ctrl.radii[i]).str();
+        _keys.push_back(Keys(schema, prefix, doc, ctrl.radii[i] <= ctrl.maxSincRadius));
     }
-
-    _flagKeys.reserve(ctrl.radii.size());
-    for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
-        _flagKeys.push_back(FlagKeys(name, schema, i));
-    }
-
-    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag, set if anything went wrong"},
-    }};
-    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }
 
 void ApertureFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
-    _flagHandler.handleFailure(measRecord, error);
+    // This should only get called in the case of completely unexpected failures, so it's not terrible
+    // that we just set the general failure flags for all radii here instead of trying to figure out
+    // which ones we've already done.  Any known failure modes are handled inside measure().
+    for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
+        _keys[i].flags.handleFailure(measRecord, error);
+    }
 }
-
-ApertureFluxAlgorithm::FlagKeys::FlagKeys(
-    std::string const & name, afw::table::Schema & schema, int index
-) :
-    failed(
-        schema.addField<afw::table::Flag>(
-            (boost::format("%s_flag_%d") % name % index).str(),
-            (boost::format("flag set if aperture %d failed for any reason") % index).str()
-        )
-    ),
-    apertureTruncated(
-        schema.addField<afw::table::Flag>(
-            (boost::format("%s_flag_apertureTruncated_%d") % name % index).str(),
-            (boost::format("flag set if aperture %d did not fit within the measurement image") % index).str()
-        )
-    ),
-    sincCoeffsTruncated(
-        schema.addField<afw::table::Flag>(
-            (boost::format("%s_flag_sincCoeffsTruncated_%d") % name % index).str(),
-            (boost::format("flag set if the full sinc coefficient image for aperture %d did not "
-                           "fit within the measurement image") % index).str()
-        )
-    )
-{}
 
 void ApertureFluxAlgorithm::copyResultToRecord(
     Result const & result,
     afw::table::SourceRecord & record,
     int index
 ) const {
-    record.set(_fluxKey[index], result.flux);
-    record.set(_fluxSigmaKey[index], result.fluxSigma);
+    record.set(_keys[index].fluxKey, result);
+    if (result.getFlag(FAILURE)) {
+        _keys[index].flags.setValue(record, FAILURE, true);
+    }
     if (result.getFlag(APERTURE_TRUNCATED)) {
-        record.set(_flagKeys[index].apertureTruncated, true);
-        record.set(_flagKeys[index].failed, true);
+        _keys[index].flags.setValue(record, APERTURE_TRUNCATED, true);
     }
     if (result.getFlag(SINC_COEFFS_TRUNCATED)) {
-        record.set(_flagKeys[index].sincCoeffsTruncated, true);
-        // TODO DM-464: set suspect flag
+        _keys[index].flags.setValue(record, SINC_COEFFS_TRUNCATED, true);
     }
 }
 
@@ -158,6 +145,7 @@ CONST_PTR(afw::image::Image<T>) getSincCoeffs(
             // The clipping was indeed serious, as we we did have to clip within
             // the aperture; can't expect any decent answer at this point.
             result.setFlag(ApertureFluxAlgorithm::APERTURE_TRUNCATED);
+            result.setFlag(ApertureFluxAlgorithm::FAILURE);
         }
         cImage = boost::make_shared< afw::image::Image<T> >(*cImage, overlap);
     }
@@ -210,6 +198,7 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeNaiveFlux(
     afw::geom::ellipses::PixelRegion region(ellipse); // behaves mostly like a Footprint
     if (!image.getBBox().contains(region.getBBox())) {
         result.setFlag(APERTURE_TRUNCATED);
+        result.setFlag(FAILURE);
         return result;
     }
     result.flux = 0;
@@ -237,6 +226,7 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeNaiveFlux(
     afw::geom::ellipses::PixelRegion region(ellipse); // behaves mostly like a Footprint
     if (!image.getBBox().contains(region.getBBox())) {
         result.setFlag(APERTURE_TRUNCATED);
+        result.setFlag(FAILURE);
         return result;
     }
     result.flux = 0.0;
