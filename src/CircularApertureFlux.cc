@@ -45,11 +45,13 @@ void CircularApertureFluxAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
 ) const {
-    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
-    afw::geom::ellipses::Ellipse ellipse(afw::geom::ellipses::Axes(1.0, 1.0, 0.0), center);
+    afw::geom::ellipses::Ellipse ellipse(afw::geom::ellipses::Axes(1.0, 1.0, 0.0));
     PTR(afw::geom::ellipses::Axes) axes
         = boost::static_pointer_cast<afw::geom::ellipses::Axes>(ellipse.getCorePtr());
     for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
+        // the centroid is the same every time, but we want the centroid extractor's flag-setting to
+        // be applied for every radius
+        ellipse.setCenter(_centroidExtractor(measRecord, getFlagHandler(i)));
         axes->setA(_ctrl.radii[i]);
         axes->setB(_ctrl.radii[i]);
         ApertureFluxAlgorithm::Result result = computeFlux(exposure.getMaskedImage(), ellipse, _ctrl);
