@@ -436,12 +436,10 @@ void SdssCentroidAlgorithm::measure(
             EDGE
         );
     }
-    /*
-     * If a PSF is provided, smooth the object with that PSF
-     */
-    if (!psf) {                  // image is presumably already smoothed
-        // FIXME: the above logic is probably bad; this option should probably be a config parameter
-        //psf.reset(new meas_algorithms::DoubleGaussianPsf(11, 11, 0.01));
+
+    // Algorithm uses a least-squares fit (implemented via a convolution) to a symmetrized PSF model.
+    // If you don't have a Psf, you need to use another centroider, such as GaussianCentroider.
+    if (!psf) {
         throw LSST_EXCEPT(
             FatalAlgorithmError,
             "SdssCentroid algorithm requires a Psf with every exposure"

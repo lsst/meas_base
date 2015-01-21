@@ -52,7 +52,7 @@ def loadData():
     exposure.setPsf(psf)
 
     im = exposure.getMaskedImage().getImage()
-    im -= numpy.median(im.getArray())
+    im -= float(numpy.median(im.getArray()))
 
     return exposure
 
