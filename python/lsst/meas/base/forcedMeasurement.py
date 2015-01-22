@@ -142,9 +142,8 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         default=["base_TransformedCentroid",
                  "base_TransformedShape",
                  "base_GaussianFlux",
-                 "base_NaiveFlux",
+                 "base_CircularApertureFlux",
                  "base_PsfFlux",
-                 "base_SincFlux",
                  ],
         doc="Plugins to be run and their configuration"
         )
