@@ -182,6 +182,10 @@ public:
         daf::base::PropertySet & metadata
     );
 
+    virtual ~ApertureFluxAlgorithm() {}
+
+protected:
+
     /**
      *  Measure the configured apertures on the given image.
      *
@@ -200,11 +204,6 @@ public:
         afw::table::SourceRecord & measRecord,
         MeasurementError * error=NULL
     ) const;
-
-    virtual ~ApertureFluxAlgorithm() {}
-
-
-protected:
 
     void copyResultToRecord(Result const & result, afw::table::SourceRecord & record, int index) const;
 
