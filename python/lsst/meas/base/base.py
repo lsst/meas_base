@@ -35,7 +35,8 @@ import lsst.pex.config
 from .baseLib import *
 from .noiseReplacer import *
 
-FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)  # Exceptions that the framework should always propagate up
+# Exceptions that the measurement tasks should always propagate up to their callers
+FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)
 
 def generateAlgorithmName(AlgClass):
     """Generate a string name for an algorithm class that strips away terms that are generally redundant
@@ -81,33 +82,13 @@ def Version0FlagMapper(flags):
             _flags.append(name)
     return _flags
 
-def addDependencyFlagAliases(AlgClass, name, schema):
-    """!
-    Add aliases to flag fields that an algorithm depends on.
-
-    When an algorithm relies on the slot centroid or shape as an input, it can fail (or be unreliable)
-    simply because the algorithm it depends on failed.  In that case, we already have a flag field
-    that indicates why the algorithm failed (the slot failure flag), but it's not obviously connected
-    to the failure of the dependent algorithm.  This function adds aliases to the appropriate slot flag
-    for C++ algorithms that depend on that slot, in the namespace of the dependent algorithm.
-
-    @param[in]  AlgClass    Swig-wrappped C++ algorithm class; must have a class attribute Input that
-                            constains the type of Input object it requires.
-    @param[in]  name        Name of the dependent algorithm
-    @param[out] schema      Schema to add the aliases to
-
-    """
-    if issubclass(AlgClass.Input, FootprintCentroidInput):
-        schema.getAliasMap().set("%s_flag_badCentroid" % name, "slot_Centroid_flag")
-    if issubclass(AlgClass.Input, FootprintCentroidShapeInput):
-        schema.getAliasMap().set("%s_flag_badShape" % name, "slot_Shape_flag")
-
 
 class PluginRegistry(lsst.pex.config.Registry):
     """!
     Base class for plugin registries
 
-    The Plugin class allowed in the registry is defined on the ctor of the registry
+    The Plugin class allowed in the registry is defined in the ctor of the registry.
+
     Single-frame and forced plugins have different registries.
     """
 
@@ -115,8 +96,9 @@ class PluginRegistry(lsst.pex.config.Registry):
         """!
         Class used as the actual element in the registry
 
-        Rather than constructing a Plugin instance, it returns a tuple
-        of (runlevel, name, config, PluginClass), which can then
+        Rather than constructing a Plugin instance, its __call__ method
+        (invoked by RegistryField.apply) returns a tuple
+        of (executionOrder, name, config, PluginClass), which can then
         be sorted before the plugins are instantiated.
         """
 
@@ -124,7 +106,7 @@ class PluginRegistry(lsst.pex.config.Registry):
 
         def __init__(self, name, PluginClass):
             """!
-            Initialize registry with Plugin Class
+            Create a Configurable object for the given PluginClass and name
             """
             self.name = name
             self.PluginClass = PluginClass
@@ -133,7 +115,7 @@ class PluginRegistry(lsst.pex.config.Registry):
         def ConfigClass(self): return self.PluginClass.ConfigClass
 
         def __call__(self, config):
-            return (config.executionOrder, self.name, config, self.PluginClass)
+            return (self.PluginClass.getExecutionOrder(), self.name, config, self.PluginClass)
 
     def register(self, name, PluginClass):
         """!
@@ -178,8 +160,9 @@ class PluginMap(collections.OrderedDict):
     """!
     Map of plugins to be run for a task
 
-    We assume Plugins are added to the PluginMap according to their executionOrder, so this
-    class doesn't actually do any of the sorting (though it does have to maintain that order).
+    We assume Plugins are added to the PluginMap according to their "Execution Order", so this
+    class doesn't actually do any of the sorting (though it does have to maintain that order,
+    which it does by inheriting from OrderedDict).
     """
 
     def iter(self):
@@ -208,27 +191,6 @@ class BasePluginConfig(lsst.pex.config.Config):
     defined here.
     """
 
-    executionOrder = lsst.pex.config.Field(
-        dtype=float, default=2.0,
-        doc="""Sets the relative order of plugins (smaller numbers run first).
-
-In general, the following values should be used (intermediate values
-are also allowed, but should be avoided unless they are needed):
-   0.0 ------ centroids and other algorithms that require only a Footprint and
-              its Peaks as input
-   1.0 ------ shape measurements and other algorithms that require
-              getCentroid() to return a good centroid in addition to a
-              Footprint and its Peaks.
-   2.0 ------ flux algorithms that require both getShape() and getCentroid()
-              in addition to the Footprint and its Peaks
-   3.0 ------ Corrections applied to fluxes (i.e. aperture corrections, tying
-              model to PSF fluxes). All flux measurements should have an
-              executionOrder < 3.0, while all algorithms that rely on corrected
-              fluxes (i.e. classification) should have executionOrder > 3.0.
-"""
-        )
-
-
     doMeasure = lsst.pex.config.Field(dtype=bool, default=True,
                                       doc="whether to run this plugin in single-object mode")
 
@@ -241,6 +203,32 @@ class BasePlugin(object):
     This is the base class for SingleFramePlugin and ForcedPlugin; derived classes should inherit
     from one of those.
     """
+
+    @staticmethod
+    def getExecutionOrder():
+        """Sets the relative order of plugins (smaller numbers run first).
+
+        In general, the following values should be used (intermediate values
+        are also allowed, but should be avoided unless they are needed):
+        0.0 ------ centroids and other algorithms that require only a Footprint and
+                   its Peaks as input
+        1.0 ------ shape measurements and other algorithms that require
+                   getCentroid() to return a good centroid in addition to a
+                   Footprint and its Peaks.
+        2.0 ------ flux algorithms that require both getShape() and getCentroid()
+                   in addition to the Footprint and its Peaks
+        3.0 ------ algorithms that operate on fluxes (e.g. classification,
+                   aperture correction).
+
+        Must be reimplemented (as a static or class method) by concrete derived classes.
+
+        This approach was chosen instead of a full graph-based analysis of dependencies
+        because algorithm dependencies are usually both quite simple and entirely substitutable:
+        an algorithm that requires a centroid can typically make use of any centroid algorithms
+        outputs.  That makes it relatively easy to figure out the correct value to use for any
+        particular algorithm.
+        """
+        raise NotImplementedError("All plugins must implement getExecutionOrder()")
 
     def fail(self, measRecord, error=None):
         """!

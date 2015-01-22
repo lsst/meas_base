@@ -38,26 +38,24 @@ from .wrappers import *
 
 # --- Wrapped C++ Plugins ---
 
-wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl)
-wrapSimpleAlgorithm(NaiveFluxAlgorithm, Control=NaiveFluxControl)
-wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxControl)
-wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl)
-wrapSimpleAlgorithm(SincFluxAlgorithm, Control=SincFluxControl)
+wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl, executionOrder=2.0)
+wrapSimpleAlgorithm(NaiveFluxAlgorithm, Control=NaiveFluxControl, executionOrder=2.0)
+wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxControl, executionOrder=2.0)
+wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl, executionOrder=2.0)
+wrapSimpleAlgorithm(SincFluxAlgorithm, Control=SincFluxControl, executionOrder=2.0)
 wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl, executionOrder=0.0)
 wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl, executionOrder=0.0)
 wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl, executionOrder=0.0)
 wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl, executionOrder=2.0)
 wrapSimpleAlgorithm(SdssShapeAlgorithm, Control=SdssShapeControl, executionOrder=1.0)
 
-wrapSimpleAlgorithm(CircularApertureFluxAlgorithm, needsMetadata=True, Control=ApertureFluxControl)
+wrapSimpleAlgorithm(CircularApertureFluxAlgorithm, needsMetadata=True, Control=ApertureFluxControl,
+                    executionOrder=2.0)
 
 # --- Single-Frame Measurement Plugins ---
 
 class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
-
-    def setDefaults(self):
-        SingleFramePluginConfig.setDefaults(self)
-        self.executionOrder = 0.0
+    pass
 
 @register("base_PeakCentroid")
 class SingleFramePeakCentroidPlugin(SingleFramePlugin):
@@ -68,6 +66,10 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
     """
 
     ConfigClass = SingleFramePeakCentroidConfig
+
+    @staticmethod
+    def getExecutionOrder():
+        return 0.0
 
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
@@ -81,10 +83,7 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
 
 
 class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
-
-    def setDefaults(self):
-        SingleFramePluginConfig.setDefaults(self)
-        self.executionOrder = 5.0
+    pass
 
 @register("base_SkyCoord")
 class SingleFrameSkyCoordPlugin(SingleFramePlugin):
@@ -92,7 +91,12 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
     A measurement plugin that sets the "coord" field (part of the Source minimal schema)
     using the slot centroid and the Wcs attached to the Exposure.
     """
+
     ConfigClass = SingleFrameSkyCoordConfig
+
+    @staticmethod
+    def getExecutionOrder():
+        return 1.0
 
     def measure(self, measRecord, exposure):
         # there should be a base class method for handling this exception. Put this on a later ticket
@@ -107,6 +111,7 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
         # Should consider fixing as part of DM-1011
         pass
 
+
 class SingleFrameClassificationConfig(SingleFramePluginConfig):
 
     fluxRatio = lsst.pex.config.Field(dtype=float, default=.925, optional=True,
@@ -115,9 +120,6 @@ class SingleFrameClassificationConfig(SingleFramePluginConfig):
                                   doc="correction factor for modelFlux error")
     psfErrFactor = lsst.pex.config.Field(dtype=float, default=0.0, optional=True,
                                   doc="correction factor for psfFlux error")
-    def setDefaults(self):
-        SingleFramePluginConfig.setDefaults(self)
-        self.executionOrder = 5.0
 
 @register("base_ClassificationExtendedness")
 class SingleFrameClassificationPlugin(SingleFramePlugin):
@@ -131,7 +133,12 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
     magnitude and the model magnitude vs. the PSF magnitude, and look for where the cloud of galaxies
     begins.
     """
+
     ConfigClass = SingleFrameClassificationConfig
+
+    @staticmethod
+    def getExecutionOrder():
+        return 5.0
 
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
@@ -174,10 +181,7 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
 # --- Forced Plugins ---
 
 class ForcedPeakCentroidConfig(ForcedPluginConfig):
-
-    def setDefaults(self):
-        ForcedPluginConfig.setDefaults(self)
-        self.executionOrder = 0.0
+    pass
 
 @register("base_PeakCentroid")
 class ForcedPeakCentroidPlugin(ForcedPlugin):
@@ -186,7 +190,12 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
     the peak coordinate from the original (reference) coordinate system to the coordinate system
     of the exposure being measured.
     """
+
     ConfigClass = ForcedPeakCentroidConfig
+
+    @staticmethod
+    def getExecutionOrder():
+        return 0.0
 
     def __init__(self, config, name, schemaMapper, metadata):
         ForcedPlugin.__init__(self, config, name, schemaMapper, metadata)
@@ -205,10 +214,7 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
 
 
 class ForcedTransformedCentroidConfig(ForcedPluginConfig):
-
-    def setDefaults(self):
-        ForcedPluginConfig.setDefaults(self)
-        self.executionOrder = 0.0
+    pass
 
 @register("base_TransformedCentroid")
 class ForcedTransformedCentroidPlugin(ForcedPlugin):
@@ -219,6 +225,10 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
     """
 
     ConfigClass = ForcedTransformedCentroidConfig
+
+    @staticmethod
+    def getExecutionOrder():
+        return 0.0
 
     def __init__(self, config, name, schemaMapper, metadata):
         ForcedPlugin.__init__(self, config, name, schemaMapper, metadata)
@@ -250,10 +260,7 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
 
 
 class ForcedTransformedShapeConfig(ForcedPluginConfig):
-
-    def setDefaults(self):
-        ForcedPluginConfig.setDefaults(self)
-        self.executionOrder = 1.0
+    pass
 
 @register("base_TransformedShape")
 class ForcedTransformedShapePlugin(ForcedPlugin):
@@ -264,6 +271,10 @@ class ForcedTransformedShapePlugin(ForcedPlugin):
     """
 
     ConfigClass = ForcedTransformedShapeConfig
+
+    @staticmethod
+    def getExecutionOrder():
+        return 1.0
 
     def __init__(self, config, name, schemaMapper, metadata):
         ForcedPlugin.__init__(self, config, name, schemaMapper, metadata)
