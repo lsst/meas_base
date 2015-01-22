@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2013 LSST Corporation.
+ * Copyright 2008-2015 LSST Corporation.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -32,13 +32,11 @@
 #include "lsst/meas/base/InputUtilities.h"
 #include "lsst/meas/base/Algorithm.h"
 #include "lsst/meas/base/PsfFlux.h"
-#include "lsst/meas/base/SincFlux.h"
 #include "lsst/meas/base/SdssCentroid.h"
 #include "lsst/meas/base/SdssShape.h"
 #include "lsst/meas/base/PixelFlags.h"
 #include "lsst/meas/base/GaussianFlux.h"
 #include "lsst/meas/base/GaussianCentroid.h"
-#include "lsst/meas/base/NaiveFlux.h"
 #include "lsst/meas/base/NaiveCentroid.h"
 #include "lsst/meas/base/PeakLikelihoodFlux.h"
 #include "lsst/meas/base/ApertureFlux.h"

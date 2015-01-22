@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008, 2009, 2010, 2014 LSST Corporation.
+# Copyright 2008-2015 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -275,7 +275,7 @@ class SourceSlotConfig(lsst.pex.config.Config):
                                      doc="the name of the centroiding algorithm used to set source x,y")
     shape = lsst.pex.config.Field(dtype=str, default="base_SdssShape", optional=True,
                                   doc="the name of the algorithm used to set source moments parameters")
-    apFlux = lsst.pex.config.Field(dtype=str, default="base_SincFlux", optional=True,
+    apFlux = lsst.pex.config.Field(dtype=str, default="base_CircularApertureFlux_0", optional=True,
                                    doc="the name of the algorithm used to set the source aperture flux slot")
     modelFlux = lsst.pex.config.Field(dtype=str, default="base_GaussianFlux", optional=True,
                                       doc="the name of the algorithm used to set the source model flux slot")

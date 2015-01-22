@@ -211,6 +211,11 @@ class CircularApertureFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
                 else:
                     self.assertTrue(numpy.isnan(currentFlux))
                     self.assertTrue(numpy.isnan(currentFluxSigma))
+            # When measuring an isolated point source with a sufficiently large aperture, we should
+            # recover the known input flux.
+            if record.get("truth_isStar") and record.get("parent") == 0:
+                self.assertClose(record.get("base_CircularApertureFlux_6_flux"), record.get("truth_flux"),
+                                 rtol=0.02)
 
 def suite():
     """Returns a suite containing all the test cases in this module."""

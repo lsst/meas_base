@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008, 2009, 2010, 2014 LSST Corporation.
+# Copyright 2008-2015 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -121,9 +121,8 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
                  "base_NaiveCentroid",
                  "base_SdssShape",
                  "base_GaussianFlux",
-                 "base_NaiveFlux",
                  "base_PsfFlux",
-                 "base_SincFlux",
+                 "base_CircularApertureFlux",
                  "base_ClassificationExtendedness",
                  "base_SkyCoord",
                  ],
