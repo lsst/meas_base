@@ -72,9 +72,10 @@ def run(display=False):
     #
     config = SingleFrameMeasurementTask.ConfigClass()
     config.plugins.names.clear()
-    for plugin in ["base_SdssCentroid", "base_SdssShape", "base_SincFlux", "base_GaussianFlux"]:
+    for plugin in ["base_SdssCentroid", "base_SdssShape", "base_CircularApertureFlux", "base_GaussianFlux"]:
         config.plugins.names.add(plugin)
     config.slots.psfFlux = None
+    config.slots.apFlux = "base_CircularApertureFlux_0"
 
     measureTask = SingleFrameMeasurementTask(schema, config=config)
 
@@ -106,7 +107,7 @@ def run(display=False):
                 xy = s.getCentroid()
                 ds9.dot('+', *xy, ctype=ds9.CYAN if s.get("flags_negative") else ds9.GREEN, frame=frame)
                 ds9.dot(s.getShape(), *xy, ctype=ds9.RED, frame=frame)
-                ds9.dot('o', *xy, size=config.plugins["base_SincFlux"].radius2, ctype=ds9.YELLOW, frame=frame)
+                ds9.dot('o', *xy, size=config.plugins["base_CircularApertureFlux"].radii[0], ctype=ds9.YELLOW, frame=frame)
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
