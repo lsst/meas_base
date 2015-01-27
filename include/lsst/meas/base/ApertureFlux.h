@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2014 LSST Corporation.
+ * Copyright 2008-2015 LSST Corporation.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -61,45 +61,33 @@ public:
 
 };
 
+
 class ApertureFluxResult;
+
 
 /**
  *  Base class for multiple-aperture photometry algorithms
  *
- *  ApertureFluxAlgorithm provides concrete implementations for single-aperture flux measurements,
+ *  ApertureFluxAlgorithm serves as an intermediate base class for all aperture fluxes, which it assumes
+ *  have that capability of measuring multiple apertures (even if they are not always configured to do
+ *  so).
+ *
+ *  Concrete implementations for single-aperture flux measurements are provided as static methods,
  *  as well as a consistent interface and control object for its derived classes.  Currently, we only
- *  have one such derived class, CircularApertureFluxAlgorithm, but in the future we anticipate adding
+ *  have one derived class, CircularApertureFluxAlgorithm, but in the future we anticipate adding
  *  more derived classes for e.g. elliptical apertures, or apertures that are circular in sky coordinates
  *  rather than pixel coordinates.
- *
- *  Because the Result/ResultMapper system doesn't support the kind of flags ApertureFluxAlgorithm needs,
- *  we mostly don't use it here (though we use a Result object for the output of the single-aperture
- *  static methods), and that makes for a bit more boilerplate when creating Python plugins for
- *  these algorithms.  Hopefully that will be resolved in DM-1130.  In the meantime, this means that
- *  ApertureFluxAlgorithm and its subclasses cannot be wrapped using the WrappedSingleFramePlugin
- *  class, as most of the other C++ algorithm classes are.  Instead, manual plugin classes must be
- *  created that call the C++ measure() method.
- *
- *  Ultimately, ApertureFlux derived classes will fully replace the existing single-aperture plugins,
- *  SincFlux and NaiveFlux.  We can't do that yet, though, as we still can't use ApertureFlux outputs
- *  in slots (DM-1218).
  */
 class ApertureFluxAlgorithm : public SimpleAlgorithm {
 public:
 
     /// @copydoc PsfFluxAlgorithm::FlagBits
-
-    enum {
+    enum FlagBits {
         FAILURE=0,
+        APERTURE_TRUNCATED,
+        SINC_COEFFS_TRUNCATED,
         N_FLAGS
     };
-
-    enum ResultFlagBits {
-        APERTURE_TRUNCATED=0,
-        SINC_COEFFS_TRUNCATED,
-        RESULT_N_FLAGS
-    };
-
 
     /// Typedef to the control object associated with this algorithm, defined above.
     typedef ApertureFluxControl Control;
@@ -194,6 +182,10 @@ public:
         daf::base::PropertySet & metadata
     );
 
+    virtual ~ApertureFluxAlgorithm() {}
+
+protected:
+
     /**
      *  Measure the configured apertures on the given image.
      *
@@ -207,47 +199,50 @@ public:
         afw::image::Exposure<float> const & exposure
     ) const = 0;
 
+    /// @copydoc BaseAlgorithm::fail
     virtual void fail(
         afw::table::SourceRecord & measRecord,
         MeasurementError * error=NULL
     ) const;
 
-    virtual ~ApertureFluxAlgorithm() {}
-
-protected:
-
-    struct FlagKeys {
-
-        FlagKeys(std::string const & name, afw::table::Schema & schema, int index);
-
-        afw::table::Key<afw::table::Flag> failed;
-        afw::table::Key<afw::table::Flag> apertureTruncated;
-        afw::table::Key<afw::table::Flag> sincCoeffsTruncated;
-    };
-
     void copyResultToRecord(Result const & result, afw::table::SourceRecord & record, int index) const;
+
+    FlagHandler const & getFlagHandler(int index) const { return _keys[index].flags; }
 
     Control const _ctrl;
     SafeCentroidExtractor _centroidExtractor;
-    FlagHandler _flagHandler;
-    afw::table::ArrayKey<Flux> _fluxKey;
-    afw::table::ArrayKey<FluxErrElement> _fluxSigmaKey;
-    std::vector<FlagKeys> _flagKeys;
-};
-struct ApertureFluxResult : public FluxResult {
-
-    /// Return the flag value associated with the given bit
-    bool getFlag(ApertureFluxAlgorithm::ResultFlagBits bit) const { return _flags[bit]; }
-
-    /// Set the flag value associated with the given bit
-    void setFlag(ApertureFluxAlgorithm::ResultFlagBits bit, bool value=true) { _flags[bit] = value; }
-
-    /// Clear (i.e. set to false) the flag associated with the given bit
-    void unsetFlag(ApertureFluxAlgorithm::ResultFlagBits bit) { _flags[bit] = false; }
 
 private:
 
-    std::bitset<ApertureFluxAlgorithm::RESULT_N_FLAGS> _flags;
+    struct Keys {
+        FluxResultKey fluxKey;
+        FlagHandler flags;
+
+        Keys(afw::table::Schema & schema, std::string const & prefix, std::string const & doc, bool isSinc);
+    };
+
+    std::vector<Keys> _keys;
+};
+
+
+/**
+ *  A Result struct for running an aperture flux algorithm with a single radius.
+ *
+ *  This simply extends FluxResult to add the appropriate error flags for aperture fluxes.
+ */
+struct ApertureFluxResult : public FluxResult {
+
+    /// Return the flag value associated with the given bit
+    bool getFlag(ApertureFluxAlgorithm::FlagBits bit) const { return _flags[bit]; }
+
+    /// Set the flag value associated with the given bit
+    void setFlag(ApertureFluxAlgorithm::FlagBits bit, bool value=true) { _flags[bit] = value; }
+
+    /// Clear (i.e. set to false) the flag associated with the given bit
+    void unsetFlag(ApertureFluxAlgorithm::FlagBits bit) { _flags[bit] = false; }
+
+private:
+    std::bitset<ApertureFluxAlgorithm::N_FLAGS> _flags;
 };
 
 

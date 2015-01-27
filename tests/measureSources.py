@@ -86,25 +86,6 @@ class MeasureSourcesTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testNaiveMeasure(self):
-        mi = afwImage.MaskedImageF(afwGeom.ExtentI(100, 200))
-        mi.set(10)
-        #
-        # Create our measuring engine
-        #
-        exp = afwImage.makeExposure(mi)
-        x0, y0 = 1234, 5678
-        exp.setXY0(afwGeom.Point2I(x0, y0))
-        control = measBase.NaiveFluxControl()
-        control.radius = 10.0
-        plugin, cat = makePluginAndCat(measBase.NaiveFluxAlgorithm, "test", control, centroid="centroid")
-        source = cat.makeRecord()
-        source.set("centroid_x", 30+x0)
-        source.set("centroid_y", 50+y0)
-        plugin.measure(source, exp)
-        flux = 3170.0
-        self.assertEqual(source.get("test_flux"), flux)
-
     def testCircularApertureMeasure(self):
         mi = afwImage.MaskedImageF(afwGeom.ExtentI(100, 200))
         mi.set(10)
@@ -128,7 +109,7 @@ class MeasureSourcesTestCase(unittest.TestCase):
         plugin.measure(source, exp)
 
         for i, r in enumerate(radii):
-            currentFlux = source.get("test_flux_%d" % i)
+            currentFlux = source.get("test_%d_flux" % i)
             self.assertAlmostEqual(10.0*math.pi*r*r/currentFlux, 1.0, places=4)
 
     def testPeakLikelihoodFlux(self):

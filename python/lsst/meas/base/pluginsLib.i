@@ -1,8 +1,7 @@
-
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2013 LSST Corporation.
+ * Copyright 2008-2015 LSST Corporation.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -28,12 +27,6 @@
 
 %feature("notabstract") lsst::meas::base::PsfFluxAlgorithm;
 %include "lsst/meas/base/PsfFlux.h"
-
-%feature("notabstract") lsst::meas::base::SincFluxAlgorithm;
-%include "lsst/meas/base/SincFlux.h"
-
-%feature("notabstract") lsst::meas::base::NaiveFluxAlgorithm;
-%include "lsst/meas/base/NaiveFlux.h"
 
 %feature("notabstract") lsst::meas::base::PeakLikelihoodFluxAlgorithm;
 %include "lsst/meas/base/PeakLikelihoodFlux.h"

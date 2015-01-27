@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008, 2009, 2010, 2014 LSST Corporation.
+# Copyright 2008-2015 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -78,9 +78,7 @@ class ForcedPlugin(BasePlugin):
                                       will be transferred before any plugins are run.
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
-        BasePlugin.__init__(self)
-        self.config = config
-        self.name = name
+        BasePlugin.__init__(self, config, name)
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
         """Measure the properties of a source on a single image, given data from a
@@ -144,9 +142,8 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         default=["base_TransformedCentroid",
                  "base_TransformedShape",
                  "base_GaussianFlux",
-                 "base_NaiveFlux",
+                 "base_CircularApertureFlux",
                  "base_PsfFlux",
-                 "base_SincFlux",
                  ],
         doc="Plugins to be run and their configuration"
         )
@@ -223,14 +220,9 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         for refName, targetName in self.config.copyColumns.items():
             refItem = refSchema.find(refName)
             self.mapper.addMapping(refItem.key, targetName)
-        # Make a place at the beginning for the centroid plugin to run first (because it's an OrderedDict,
-        # adding an empty element in advance means it will get run first when it's reassigned to the
-        # actual Plugin).
-        if self.config.slots.centroid != None:
-            self.plugins[self.config.slots.centroid] = None
-        # Init the plugins, sorted by execution order.  At the same time add to the schema
-        for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
-            self.plugins[name] = PluginClass(config, name, self.mapper, metadata=self.algMetadata)
+        self.initializePlugins(schemaMapper=self.mapper)
+        self.schema = self.mapper.getOutputSchema()
+        self.config.slots.setupSchema(self.schema)
 
     def run(self, exposure, refCat, refWcs, idFactory=None):
         """!
@@ -332,8 +324,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         """
         if idFactory == None:
             idFactory = lsst.afw.table.IdFactory.makeSimple()
-        schema = self.mapper.getOutputSchema()
-        table = lsst.afw.table.SourceTable.make(schema, idFactory)
+        table = lsst.afw.table.SourceTable.make(self.schema, idFactory)
         sources = lsst.afw.table.SourceCatalog(table)
         table = sources.table
         table.setMetadata(self.algMetadata)

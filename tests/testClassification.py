@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2013 LSST Corporation.
+# Copyright 2008-2015 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -50,12 +50,13 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         outschema = mapper.getOutputSchema()
 
         #  Basic test of Classification algorithm, no C++ slots
-        sfm_config.plugins = ["base_SdssCentroid", "base_PsfFlux", "base_SincFlux",
-                              "base_ClassificationExtendedness"]
+        sfm_config.plugins.names = ["base_SdssCentroid", "base_PsfFlux", "base_CircularApertureFlux",
+                                    "base_ClassificationExtendedness"]
+        sfm_config.plugins["base_CircularApertureFlux"].radii = [7.0]
         sfm_config.slots.centroid = "base_SdssCentroid"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = "base_PsfFlux"
-        sfm_config.slots.modelFlux = "base_SincFlux"
+        sfm_config.slots.modelFlux = "base_CircularApertureFlux_0"
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
         task = SingleFrameMeasurementTask(outschema, config=sfm_config)
@@ -89,12 +90,13 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
 
         sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        sfm_config.plugins = ["base_SdssCentroid", "base_PsfFlux", "base_SincFlux",
-                              "base_ClassificationExtendedness"]
+        sfm_config.plugins.names = ["base_SdssCentroid", "base_PsfFlux", "base_CircularApertureFlux",
+                                    "base_ClassificationExtendedness"]
+        sfm_config.plugins["base_CircularApertureFlux"].radii = [7.0]
         sfm_config.slots.centroid = "base_SdssCentroid"
         sfm_config.slots.shape = None
         sfm_config.slots.psfFlux = "base_PsfFlux"
-        sfm_config.slots.modelFlux = "base_SincFlux"
+        sfm_config.slots.modelFlux = "base_CircularApertureFlux_0"
         sfm_config.slots.apFlux = None
         sfm_config.slots.instFlux = None
         task = SingleFrameMeasurementTask(schema, config=sfm_config)
@@ -104,8 +106,8 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         source = measCat.addNew()
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
-        source.set("base_SincFlux_flux", 200)
-        source.set("base_SincFlux_fluxSigma", 2)
+        source.set("base_CircularApertureFlux_0_flux", 200)
+        source.set("base_CircularApertureFlux_0_fluxSigma", 2)
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertFalse(source.get("base_ClassificationExtendedness_flag"))
 
@@ -113,8 +115,8 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         source = measCat.addNew()
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
-        source.set("base_SincFlux_flux", 200)
-        source.set("base_SincFlux_fluxSigma", 2)
+        source.set("base_CircularApertureFlux_0_flux", 200)
+        source.set("base_CircularApertureFlux_0_fluxSigma", 2)
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         source.set("base_PsfFlux_flag", True)
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
@@ -124,10 +126,10 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         source = measCat.addNew()
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
-        source.set("base_SincFlux_flux", 200)
-        source.set("base_SincFlux_fluxSigma", 2)
+        source.set("base_CircularApertureFlux_0_flux", 200)
+        source.set("base_CircularApertureFlux_0_fluxSigma", 2)
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
-        source.set("base_SincFlux_flag", True)
+        source.set("base_CircularApertureFlux_0_flag", True)
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
@@ -135,19 +137,19 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         source = measCat.addNew()
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
-        source.set("base_SincFlux_fluxSigma", 2)
+        source.set("base_CircularApertureFlux_0_fluxSigma", 2)
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
-        source.set("base_SincFlux_flag", True)
+        source.set("base_CircularApertureFlux_0_flag", True)
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
         #  Test psfFlux NAN case
         source = measCat.addNew()
         source.set("base_PsfFlux_fluxSigma", 1)
-        source.set("base_SincFlux_flux", 200)
-        source.set("base_SincFlux_fluxSigma", 2)
+        source.set("base_CircularApertureFlux_0_flux", 200)
+        source.set("base_CircularApertureFlux_0_fluxSigma", 2)
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
-        source.set("base_SincFlux_flag", True)
+        source.set("base_CircularApertureFlux_0_flag", True)
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
@@ -156,7 +158,7 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         source = measCat.addNew()
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
-        source.set("base_SincFlux_flux", 200)
+        source.set("base_CircularApertureFlux_0_flux", 200)
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertFalse(source.get("base_ClassificationExtendedness_flag"))
 
@@ -164,7 +166,7 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         source = measCat.addNew()
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
-        source.set("base_SincFlux_flux", 200)
+        source.set("base_CircularApertureFlux_0_flux", 200)
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
@@ -172,16 +174,16 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         sfm_config.plugins["base_ClassificationExtendedness"].psfErrFactor = 0.
         source = measCat.addNew()
         source.set("base_PsfFlux_flux", 100)
-        source.set("base_SincFlux_fluxSigma", 1)
-        source.set("base_SincFlux_flux", 200)
+        source.set("base_CircularApertureFlux_0_fluxSigma", 1)
+        source.set("base_CircularApertureFlux_0_flux", 200)
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertFalse(source.get("base_ClassificationExtendedness_flag"))
 
         sfm_config.plugins["base_ClassificationExtendedness"].psfErrFactor = 1.
         source = measCat.addNew()
         source.set("base_PsfFlux_flux", 100)
-        source.set("base_SincFlux_fluxSigma", 1)
-        source.set("base_SincFlux_flux", 200)
+        source.set("base_CircularApertureFlux_0_fluxSigma", 1)
+        source.set("base_CircularApertureFlux_0_flux", 200)
         task.plugins["base_ClassificationExtendedness"].measure(source, exp)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 

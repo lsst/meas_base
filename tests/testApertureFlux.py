@@ -182,16 +182,17 @@ class CircularApertureFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             for n, radius in enumerate(radii):
                 # Test that the flags are what we expect
                 if radius <= ctrl.maxSincRadius:
-                    self.assertFalse(record.get("base_CircularApertureFlux_flag_%d" % n))
-                    self.assertFalse(record.get("base_CircularApertureFlux_flag_apertureTruncated_%d" % n))
+                    self.assertFalse(record.get("base_CircularApertureFlux_%d_flag" % n))
+                    self.assertFalse(record.get("base_CircularApertureFlux_%d_flag_apertureTruncated" % n))
                     self.assertEqual(
-                        record.get("base_CircularApertureFlux_flag_sincCoeffsTruncated_%d" % n),
+                        record.get("base_CircularApertureFlux_%d_flag_sincCoeffsTruncated" % n),
                         radius > 12
                     )
                 else:
-                    self.assertFalse(record.get("base_CircularApertureFlux_flag_sincCoeffsTruncated_%d" % n))
-                    self.assertEqual(record.get("base_CircularApertureFlux_flag_%d" % n), radius > 50)
-                    self.assertEqual(record.get("base_CircularApertureFlux_flag_apertureTruncated_%d" % n),
+                    self.assertTrue("base_CircularApertureFlux_%d_flag_sincCoeffsTruncated" % n
+                                    not in record.getSchema())
+                    self.assertEqual(record.get("base_CircularApertureFlux_%d_flag" % n), radius > 50)
+                    self.assertEqual(record.get("base_CircularApertureFlux_%d_flag_apertureTruncated" % n),
                                      radius > 50)
                 # Test that the fluxes and uncertainties increase as we increase the apertures, or that
                 # they match the true flux within 2 sigma.  This is just a test as to whether the values
@@ -199,9 +200,9 @@ class CircularApertureFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
                 # ApertureFluxAlgorithm's static methods, as the way the plugins code calls that is
                 # extremely simple, so if the results we get are reasonable, it's hard to imagine
                 # how they could be incorrect if ApertureFluxAlgorithm's tests are valid.
-                currentFlux = record.get("base_CircularApertureFlux_flux_%d" % n)
-                currentFluxSigma = record.get("base_CircularApertureFlux_fluxSigma_%d" % n)
-                if not record.get("base_CircularApertureFlux_flag_%d" % n):
+                currentFlux = record.get("base_CircularApertureFlux_%d_flux" % n)
+                currentFluxSigma = record.get("base_CircularApertureFlux_%d_fluxSigma" % n)
+                if not record.get("base_CircularApertureFlux_%d_flag" % n):
                     self.assertTrue(currentFlux > lastFlux
                                     or (record.get("truth_flux") - currentFlux) < 2*currentFluxSigma)
                     self.assertGreater(currentFluxSigma, lastFluxSigma)
@@ -210,6 +211,11 @@ class CircularApertureFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
                 else:
                     self.assertTrue(numpy.isnan(currentFlux))
                     self.assertTrue(numpy.isnan(currentFluxSigma))
+            # When measuring an isolated point source with a sufficiently large aperture, we should
+            # recover the known input flux.
+            if record.get("truth_isStar") and record.get("parent") == 0:
+                self.assertClose(record.get("base_CircularApertureFlux_6_flux"), record.get("truth_flux"),
+                                 rtol=0.02)
 
 def suite():
     """Returns a suite containing all the test cases in this module."""

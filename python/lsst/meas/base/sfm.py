@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008, 2009, 2010, 2014 LSST Corporation.
+# Copyright 2008-2015 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -68,9 +68,7 @@ class SingleFramePlugin(BasePlugin):
                                  hold measurements produced by this plugin.
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
-        BasePlugin.__init__(self)
-        self.config = config
-        self.name = name
+        BasePlugin.__init__(self, config, name)
 
     def measure(self, measRecord, exposure):
         """!
@@ -123,9 +121,8 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
                  "base_NaiveCentroid",
                  "base_SdssShape",
                  "base_GaussianFlux",
-                 "base_NaiveFlux",
                  "base_PsfFlux",
-                 "base_SincFlux",
+                 "base_CircularApertureFlux",
                  "base_ClassificationExtendedness",
                  "base_SkyCoord",
                  ],
@@ -252,17 +249,8 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         if schema.getVersion() == 0:
             raise lsst.pex.exceptions.LogicError("schema must have version=1")
         self.schema = schema
-        self.config.slots.setupSchema(schema)
-        # Make a place at the beginning for the centroid plugin to run first (because it's an OrderedDict,
-        # adding an empty element in advance means it will get run first when it's reassigned to the
-        # actual Plugin).
-        if self.config.slots.centroid != None:
-            self.plugins[self.config.slots.centroid] = None
-        # Init the plugins, sorted by execution order.  At the same time add to the schema
-        for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
-            self.plugins[name] = PluginClass(config, name, schema=schema, metadata=self.algMetadata)
-
-
+        self.initializePlugins(schema=self.schema)
+        self.config.slots.setupSchema(self.schema)
 
     def run(self, measCat, exposure, noiseImage=None):
         """!

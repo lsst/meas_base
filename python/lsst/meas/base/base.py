@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008, 2009, 2010, 2014 LSST Corporation.
+# Copyright 2008-2015 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -230,6 +230,17 @@ class BasePlugin(object):
         """
         raise NotImplementedError("All plugins must implement getExecutionOrder()")
 
+    def __init__(self, config, name):
+        """!
+        Initialize the measurement object.
+
+        @param[in]  config       An instance of this class's ConfigClass.
+        @param[in]  name         The string the plugin was registered with.
+        """
+        object.__init__(self)
+        self.config = config
+        self.name = name
+
     def fail(self, measRecord, error=None):
         """!
         Record a failure of the measure or measureN() method.
@@ -264,7 +275,7 @@ class SourceSlotConfig(lsst.pex.config.Config):
                                      doc="the name of the centroiding algorithm used to set source x,y")
     shape = lsst.pex.config.Field(dtype=str, default="base_SdssShape", optional=True,
                                   doc="the name of the algorithm used to set source moments parameters")
-    apFlux = lsst.pex.config.Field(dtype=str, default="base_SincFlux", optional=True,
+    apFlux = lsst.pex.config.Field(dtype=str, default="base_CircularApertureFlux_0", optional=True,
                                    doc="the name of the algorithm used to set the source aperture flux slot")
     modelFlux = lsst.pex.config.Field(dtype=str, default="base_GaussianFlux", optional=True,
                                       doc="the name of the algorithm used to set the source model flux slot")
@@ -359,6 +370,27 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         if algMetadata is None:
             algMetadata = lsst.daf.base.PropertyList()
         self.algMetadata = algMetadata
+
+    def initializePlugins(self, **kwds):
+        """Initialize the plugins (and slots) according to the configuration.
+
+        Derived class constructors should call this method to fill the self.plugins
+        attribute and add correspond output fields and slot aliases to the output schema.
+
+        In addition to the attributes added by BaseMeasurementTask.__init__, a self.schema
+        attribute holding the output schema must also be present before this method is called, .
+
+        Keyword arguments are forwarded directly to plugin constructors, allowing derived
+        classes to use plugins with different signatures.
+        """
+        # Make a place at the beginning for the centroid plugin to run first (because it's an OrderedDict,
+        # adding an empty element in advance means it will get run first when it's reassigned to the
+        # actual Plugin).
+        if self.config.slots.centroid != None:
+            self.plugins[self.config.slots.centroid] = None
+        # Init the plugins, sorted by execution order.  At the same time add to the schema
+        for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
+            self.plugins[name] = PluginClass(config, name, metadata=self.algMetadata, **kwds)
 
     def callMeasure(self, measRecord, *args, **kwds):
         """!
