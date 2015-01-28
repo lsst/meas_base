@@ -34,6 +34,7 @@ import lsst.pex.config
 
 from .baseLib import *
 from .noiseReplacer import *
+from .transform import NullTransform
 
 FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)  # Exceptions that the framework should always propagate up
 
@@ -262,6 +263,10 @@ class BasePlugin(object):
                    "please report this as a bug (the full traceback is above)."
                    % self.__class__.__name__)
         raise NotImplementedError(message)
+
+    @staticmethod
+    def getTransformClass():
+        return NullTransform
 
 class SourceSlotConfig(lsst.pex.config.Config):
     """!

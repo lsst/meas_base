@@ -1,13 +1,3 @@
-class TransformRegistry(object):
-    def __init__(self):
-        self._contents = {}
-
-    def register(self, name, obj):
-        self._contents[name] = obj
-
-    def get(self, name):
-        return self._contents[name] if name in self._contents else None
-
 class TransformPlugin(object):
     def __init__(self, name, mapper, cfg, wcs, calib):
         self.name = name
@@ -17,6 +7,10 @@ class TransformPlugin(object):
 
     def __call__(self, oldRecord, newRecord):
         raise NotImplementedError()
+
+class NullTransform(TransformPlugin):
+    def __call__(self, oldRecord, newRecord):
+        pass
 
 class PassThrough(TransformPlugin):
     def __init__(self, name, mapper, cfg, wcs, calib):
@@ -37,6 +31,3 @@ class ReverseCentroid(PassThrough):
     def __call__(self, oldRecord, newRecord):
         newRecord.set(self.keyRevX, -1.0 * oldRecord['base_PeakCentroid_x'])
         newRecord.set(self.keyRevY, -1.0 * oldRecord['base_PeakCentroid_y'])
-
-registry = TransformRegistry()
-registry.register("base_PeakCentroid", ReverseCentroid)

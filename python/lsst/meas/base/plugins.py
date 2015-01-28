@@ -35,6 +35,7 @@ from .baseLib import *
 from .sfm import *
 from .forcedMeasurement import *
 from .wrappers import *
+from .transform import ReverseCentroid
 
 # --- Wrapped C++ Plugins ---
 
@@ -77,6 +78,10 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
         peak = measRecord.getFootprint().getPeaks()[0]
         measRecord.set(self.keyX, peak.getFx())
         measRecord.set(self.keyY, peak.getFy())
+
+    @staticmethod
+    def getTransformClass():
+        return ReverseCentroid
 
 
 class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
