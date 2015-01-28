@@ -110,13 +110,6 @@ class SingleFramePlugin(BasePlugin):
         """
         raise NotImplementedError()
 
-    def genCalibrate(self, oldSchema, mapper):
-        # By default, map all fields from the old schema to the new schema
-        # directly.
-        for si in mapper.getInputSchema().extract(self.name + "*").itervalues():
-            mapper.addMapping(si.key)
-        return []
-        
 
 class SingleFrameMeasurementConfig(BaseMeasurementConfig):
     """!

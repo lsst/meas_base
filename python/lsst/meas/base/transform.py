@@ -1,0 +1,40 @@
+class TransformRegistry(object):
+    def __init__(self):
+        self._contents = {}
+
+    def register(self, name, obj):
+        self._contents[name] = obj
+
+    def get(self, name):
+        return self._contents[name] if name in self._contents else None
+
+class TransformPlugin(object):
+    def __init__(self, name, mapper, cfg):
+        self.name = name
+        self.cfg = cfg
+
+    def __call__(self, oldRecord, newRecord):
+        raise NotImplementedError()
+
+class PassThrough(TransformPlugin):
+    def __init__(self, name, mapper, cfg):
+        TransformPlugin.__init__(self, name, mapper, cfg)
+        for key, field in mapper.getInputSchema().extract(name + "*").itervalues():
+            mapper.addMapping(key)
+
+    def __call__(self, oldRecord, newRecord):
+        pass
+
+class ReverseCentroid(PassThrough):
+    def __init__(self, name, mapper, cfg):
+        PassThrough.__init__(self, name, mapper, cfg)
+        newSchema = mapper.editOutputSchema()
+        self.keyRevX = newSchema.addField(self.name + "_revX", type="D", doc="reversed centroid", units="pixels")
+        self.keyRevY = newSchema.addField(self.name + "_revY", type="D", doc="reversed centroid", units="pixels")
+
+    def __call__(self, oldRecord, newRecord):
+        newRecord.set(self.keyRevX, -1.0 * oldRecord['base_PeakCentroid_x'])
+        newRecord.set(self.keyRevY, -1.0 * oldRecord['base_PeakCentroid_y'])
+
+registry = TransformRegistry()
+registry.register("base_PeakCentroid", ReverseCentroid)
