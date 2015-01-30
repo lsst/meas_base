@@ -65,7 +65,7 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             truthFlux = record.get("truth_flux")
             # if a star, see if the flux measured is decent
             if record.get("truth_isStar"):
-                self.assertClose(truthFlux, flux, atol=None, rtol=.1)
+                self.assertClose(truthFlux, flux, atol=None, rtol=.02)
             if (not record.get("base_GaussianFlux_flag")):
                 self.assertEqual(record.getModelFlux(), flux)
                 self.assertEqual(record.getModelFluxErr(), fluxerr)
