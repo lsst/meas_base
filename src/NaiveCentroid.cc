@@ -109,6 +109,34 @@ void NaiveCentroidAlgorithm::fail(afw::table::SourceRecord & measRecord, Measure
     _flagHandler.handleFailure(measRecord, error);
 }
 
+NaiveCentroidTransform::NaiveCentroidTransform(
+    std::string const & name,
+    afw::table::SchemaMapper & mapper,
+    Control const & ctrl
+) : BaseTransform(name), _ctrl(ctrl) {
+    afw::table::Key<double> key = mapper.getInputSchema()["base_NaiveCentroid_x"];
+    mapper.addMapping(key);
+    _key_revX = mapper.editOutputSchema().addField<double>("base_NaiveCentroid_revX", "reversed X");
+    _key_revY = mapper.editOutputSchema().addField<double>("base_NaiveCentroid_revY", "reversed Y");
+}
+
+void NaiveCentroidTransform::operator()(
+    afw::table::SourceCatalog const & oldCatalog,
+    afw::table::BaseCatalog & newCatalog,
+    afw::image::Wcs const & wcs,
+    afw::image::Calib const & calib
+) const {
+    afw::table::Key<double> xkey = oldCatalog.getSchema()["base_NaiveCentroid_x"];
+    afw::table::Key<double> ykey = oldCatalog.getSchema()["base_NaiveCentroid_y"];
+    auto newSrc = std::begin(newCatalog);
+    auto oldSrc = std::begin(oldCatalog);
+    for (; newSrc < std::end(newCatalog); ++newSrc, ++oldSrc) {
+        std::cout << newSrc->get(xkey) <<std::endl;
+        newSrc->set(_key_revX, -1.0 * oldSrc->get(xkey));
+        newSrc->set(_key_revY, -1.0 * oldSrc->get(ykey));
+    }
+}
+
 }}} // namespace lsst::meas::base
 
 

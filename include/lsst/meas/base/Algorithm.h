@@ -200,6 +200,24 @@ public:
 
 };
 
+/**
+ *  Abstract base for transformation plugins.
+ *
+ *  Derived classes are required to implement operator().
+ */
+class BaseTransform {
+public:
+    BaseTransform(std::string const & name) : _name(name) {}
+    virtual void operator()(afw::table::SourceCatalog const & oldCatalog,
+                            afw::table::BaseCatalog & newCatalog,
+                            afw::image::Wcs const & wcs,
+                            afw::image::Calib const & calib) const = 0;
+    virtual ~BaseTransform() {}
+
+protected:
+    std::string _name;
+};
+
 }}} // namespace lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_Algorithm_h_INCLUDED

@@ -77,7 +77,7 @@ def wrapAlgorithmControl(Base, Control, hasMeasureN=False, executionOrder=None):
 
 
 def wrapAlgorithm(Base, AlgClass, factory, name=None, Control=None, ConfigClass=None, doRegister=True,
-                  **kwds):
+                  transform=None, **kwds):
     """!
     Wrap a C++ Algorithm class into a Python Plugin class.
 
@@ -100,6 +100,8 @@ def wrapAlgorithm(Base, AlgClass, factory, name=None, Control=None, ConfigClass=
                                Control argument.
     @param[in] doRegister      If True (the default), register the plugin with Base's registry, allowing it
                                to be used by measurement Tasks.
+    @param[in] transform       Transform plugin class which may be used to post-process the results of
+                               measurement. If None, the default is inherited from BasePlugin.
     @param[in] **kwds          Additional keyword arguments passed to generateAlgorithmControl, including:
                                - hasMeasureN:  Whether the plugin supports fitting multiple objects at once
                                  (if so, a config option to enable/disable this will be added).
@@ -115,8 +117,13 @@ def wrapAlgorithm(Base, AlgClass, factory, name=None, Control=None, ConfigClass=
         if Control is None:
             Control = AlgClass.Control
         ConfigClass = wrapAlgorithmControl(Base.ConfigClass, Control, **kwds)
-    PluginClass = type(AlgClass.__name__ + Base.__name__, (Base,),
-                       dict(AlgClass=AlgClass, ConfigClass=ConfigClass, factory=staticmethod(factory)))
+    if transform:
+        PluginClass = type(AlgClass.__name__ + Base.__name__, (Base,),
+                           dict(AlgClass=AlgClass, ConfigClass=ConfigClass, factory=staticmethod(factory),
+                                getTransformClass=staticmethod(lambda: transform)))
+    else:
+        PluginClass = type(AlgClass.__name__ + Base.__name__, (Base,),
+                           dict(AlgClass=AlgClass, ConfigClass=ConfigClass, factory=staticmethod(factory)))
     if doRegister:
         if name is None:
             name = generateAlgorithmName(AlgClass)

@@ -1,3 +1,5 @@
+from .baseLib import NaiveCentroidTransform
+
 class TransformPlugin(object):
     def __init__(self, name, mapper, cfg):
         self.name = name
@@ -31,3 +33,14 @@ class ReverseCentroid(PassThrough):
         newColumns = newCatalog.getColumnView()
         newColumns[self.keyRevX] = -1.0 * oldColumns['base_PeakCentroid_x']
         newColumns[self.keyRevY] = -1.0 * oldColumns['base_PeakCentroid_y']
+
+class TransformWrapper(object):
+    """
+    Contains a C++ transform plugin and converts the Python config into a C++
+    control object when called.
+    """
+    def __init__(self, transform):
+        self.transform = transform
+
+    def __call__(self, name, mapper, cfg):
+        return self.transform(name, mapper, cfg.makeControl())

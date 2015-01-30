@@ -35,7 +35,7 @@ from .baseLib import *
 from .sfm import *
 from .forcedMeasurement import *
 from .wrappers import *
-from .transform import ReverseCentroid
+from .transform import ReverseCentroid, TransformWrapper
 
 # --- Wrapped C++ Plugins ---
 
@@ -45,7 +45,7 @@ wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxContr
 wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl)
 wrapSimpleAlgorithm(SincFluxAlgorithm, Control=SincFluxControl)
 wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl, executionOrder=0.0)
-wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl, executionOrder=0.0)
+wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl, executionOrder=0.0, transform=TransformWrapper(NaiveCentroidTransform))
 wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl, executionOrder=0.0)
 wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl, executionOrder=2.0)
 wrapSimpleAlgorithm(SdssShapeAlgorithm, Control=SdssShapeControl, executionOrder=1.0)
