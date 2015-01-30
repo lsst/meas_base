@@ -130,8 +130,7 @@ void NaiveCentroidTransform::operator()(
     afw::table::Key<double> ykey = oldCatalog.getSchema()["base_NaiveCentroid_y"];
     auto newSrc = std::begin(newCatalog);
     auto oldSrc = std::begin(oldCatalog);
-    for (; newSrc < std::end(newCatalog); ++newSrc, ++oldSrc) {
-        std::cout << newSrc->get(xkey) <<std::endl;
+    for (; newSrc < std::end(newCatalog) && oldSrc < std::end(oldCatalog); ++newSrc, ++oldSrc) {
         newSrc->set(_key_revX, -1.0 * oldSrc->get(xkey));
         newSrc->set(_key_revY, -1.0 * oldSrc->get(ykey));
     }
