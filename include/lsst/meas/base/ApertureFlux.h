@@ -61,7 +61,7 @@ public:
 
 };
 
-class ApertureFluxResult;
+struct ApertureFluxResult;
 
 /**
  *  Base class for multiple-aperture photometry algorithms
@@ -234,6 +234,7 @@ protected:
     afw::table::ArrayKey<FluxErrElement> _fluxSigmaKey;
     std::vector<FlagKeys> _flagKeys;
 };
+
 struct ApertureFluxResult : public FluxResult {
 
     /// Return the flag value associated with the given bit
