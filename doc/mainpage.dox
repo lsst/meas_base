@@ -166,9 +166,9 @@ images.
 
 The "Plugin" interfaces used directly by the measurement tasks are defined completely in Python, and are
 rooted in the abstract base classes sfm.SingleFramePlugin and forcedImage.ForcedPlugin.  There are also
-analogous C++ base classes, SingleFrameAlgorithm and ForcedAlgorithm, for plugins implemented in C++, as
-well as SimpleAlgorithm, a C++ base class for simple algorithms in which the same implementation can be
-used for both single-frame and forced measurement.
+analogous C++ base classes, @ref SingleFrameAlgorithm and @ref ForcedAlgorithm, for plugins implemented
+in C++, as well as @ref SimpleAlgorithm, a C++ base class for simple algorithms in which the same
+implementation can be used for both single-frame and forced measurement.
 
 For a SingleFramePlugin/SingleFrameAlgorithm:
  - Subclass sfm.SingleFramePlugin or SingleFrameAlgorithm
@@ -199,28 +199,36 @@ For a ForcedPlugin/ForcedAlgorithm
    would any normal C++ class, and call wrappers.wrapSingleFrameAlgorithm to wrap and register the algorithm
    simultaneously.
 
-In C++, one can also implement both interfaces at the same time using SimpleAlgorithm (see that class for
+In C++, one can also implement both interfaces at the same time using @ref SimpleAlgorithm (see that class for
 more information).
+
+@warning In C++, adding a public method to a derived class that has the same name as one in the base class
+but a different signature (as is done with @ref SimpleAlgorithm::measure()) will shadow the base class method,
+unless you use a "using" declaration in the derived class (you can see this in action in @ref SimpleAlgorithm
+itself).  Unfortunately, Swig is inconsistent about recognizing "using" declarations, so even if you fix
+this problem in C++, you may still encounter it in Python.  A reliable workaround is to declare the derived
+class @c measure() methods as private or protected - this will prevent them from shadowing any base class
+methods in Python, and it won't have any real downsides because we always call these methods through the
+base class, where the public method is still accessible.
 
 @section measBaseErrorHandling Error Handling
 
 When a Plugin (or the Algorithm it delegates to) raises any exception, the Task calling it will catch the
 exception, and call the fail() method of the Plugin, which should cause the plugin to set one or more
-flags in the output record.  If the exception is MeasurementError, the Task will pass this
-exception back to the fail() method, as MeasurementError contains additional Plugin-specific information
+flags in the output record.  If the exception is @ref MeasurementError, the Task will pass this
+exception back to the fail() method, as @ref MeasurementError contains additional Plugin-specific information
 indicating the kind of failure.  For most other exceptions, the Task will log the exception message
 as a warning, and pass None as the exception to fail().  In this case, the Plugin should just set the
-primary failure flag.  This is handled automatically by the FlagsComponentMapoper in Algorithm-based
-Plugins.
+primary failure flag.  This is handled automatically by the @ref FlagHandler in Algorithm-based Plugins.
 Certain exceptions (in particular, out-of-memory errors) are considered fatal and will always be propagated
 up out of the Task.
 
-Plugin/Algorithm code should endeavor to only throw MeasurementError for known failure modes, unless the
+Plugin/Algorithm code should endeavor to only throw @ref MeasurementError for known failure modes, unless the
 problem is in the data and can always be fixed there before the measurement framework is invoked.  In other
 words, we want warnings to appear in the logs only when there's a bug, whether that's in the processing
 before the measurement framework or in a particular Plugin/Algorithm not knowing and documenting its own
 failure modes.  This means that Plugin/Algorithm implementations should generally have a global try/catch
-block that re-throwns lower-level exceptions corresponding to known failure modes as MeasurementErrors.
+block that re-throwns lower-level exceptions corresponding to known failure modes as @ref MeasurementErrors.
 
 */
 }}} // namespace lsst::meas::base
