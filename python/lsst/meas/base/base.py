@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2015 LSST Corporation.
+# Copyright 2008-2015 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -34,6 +34,7 @@ import lsst.pex.config
 
 from .baseLib import *
 from .noiseReplacer import *
+from .transforms import NullTransform
 
 # Exceptions that the measurement tasks should always propagate up to their callers
 FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)
@@ -261,6 +262,23 @@ class BasePlugin(object):
                    "please report this as a bug (the full traceback is above)."
                    % self.__class__.__name__)
         raise NotImplementedError(message)
+
+    @staticmethod
+    def getTransformClass():
+        """!
+        Get the measurement transformation appropriate to this plugin.
+
+        This returns a subclass of MeasurementTransform, which may be
+        instantiated with details of the algorithm configuration and then
+        called with information about calibration and WCS to convert from raw
+        measurement quantities to calibrated units. Calibrated data is then
+        provided in a separate output table.
+
+        By default, we assume that no transformation is appropriate, and
+        therefore return NullTransform.
+        """
+        return NullTransform
+
 
 class SourceSlotConfig(lsst.pex.config.Config):
     """!

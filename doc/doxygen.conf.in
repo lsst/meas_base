@@ -1,2 +1,2 @@
-EXAMPLE_PATH = examples
+EXAMPLE_PATH = examples tests
 IMAGE_PATH = doc

@@ -1,7 +1,7 @@
 // -*- LSST-C++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2014 AURA/LSST.
+ * Copyright 2008-2015 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -36,6 +36,7 @@
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"
+#include "lsst/meas/base/Transform.h"
 
 namespace test { namespace foo { namespace bar {
 /**
@@ -131,6 +132,52 @@ private:
     lsst::meas::base::CentroidResultKey _centroidKey;
     lsst::meas::base::FlagHandler _flagHandler;
     lsst::meas::base::SafeCentroidExtractor _centroidExtractor;
+};
+
+/**
+ *  @brief A trivial example of a transformation.
+ */
+class SillyTransform :
+    public lsst::meas::base::BaseTransform
+{
+public:
+    typedef SillyCentroidControl Control;
+
+    SillyTransform(Control const & ctrl, std::string const & name, lsst::afw::table::SchemaMapper & mapper)
+                   : BaseTransform(name), _ctrl(ctrl) {
+        // Map these fields from the input to the output
+        lsst::afw::table::Key<double> xkey = mapper.getInputSchema()[name + "_x"];
+        lsst::afw::table::Key<double> ykey = mapper.getInputSchema()[name + "_y"];
+        mapper.addMapping(xkey);
+        mapper.addMapping(ykey);
+
+        // Add these fields to the output schema to fill in later; the keys
+        // are stored as members of this class
+        _key_revX = mapper.editOutputSchema().addField<double>(name + "_reverse_x", "reversed X");
+        _key_revY = mapper.editOutputSchema().addField<double>(name + "_reverse_y", "reversed Y");
+    }
+
+    virtual void operator()(lsst::afw::table::SourceCatalog const & inputCatalog,
+                            lsst::afw::table::BaseCatalog & outputCatalog,
+                            lsst::afw::image::Wcs const & wcs,
+                            lsst::afw::image::Calib const & calib) const {
+        lsst::afw::table::Key<double> xkey = inputCatalog.getSchema()[_name + "_x"];
+        lsst::afw::table::Key<double> ykey = inputCatalog.getSchema()[_name + "_y"];
+        lsst::afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
+        lsst::afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();
+        for (; inSrc < inputCatalog.end() && outSrc < outputCatalog.end(); ++inSrc, ++outSrc) {
+            // Store the "reversed" versions of the x and y positions in the
+            // output catalog.
+            outSrc->set(_key_revX, -1.0 * inSrc->get(xkey));
+            outSrc->set(_key_revY, -1.0 * inSrc->get(ykey));
+        }
+    } // operator()
+
+private:
+    Control _ctrl;
+    lsst::afw::table::Key<double> _key_revX;
+    lsst::afw::table::Key<double> _key_revY;
+
 };
 
 }}}
