@@ -161,7 +161,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         config.slots.modelFlux = None
         config.slots.apFlux = None
         config.slots.instFlux = None
-        config.noiseReplacer.noiseSeedMultiplier = 11111
         task = SingleFrameMeasurementTask(schema, config=config)
         measCat = SourceCatalog(schema)
         measCat.extend(srccat, mapper=mapper)
@@ -186,7 +185,6 @@ class SFMTestCase(lsst.utils.tests.TestCase):
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
                       for measRecord in srccat}
         sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        sfm_config.noiseReplacer.noiseSeedMultiplier = 2
         path = os.path.join(DATA_DIR, 'calexp-0C.fits')
         replaced = lsst.afw.image.ExposureF(path)
         noiseReplacer = NoiseReplacer(sfm_config.noiseReplacer, replaced, footprints)
