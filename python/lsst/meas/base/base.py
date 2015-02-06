@@ -369,10 +369,6 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         self.plugins = PluginMap()
         if algMetadata is None:
             algMetadata = lsst.daf.base.PropertyList()
-        if self.config.doReplaceWithNoise:
-            algMetadata.addInt("NOISE_SEED_MULTIPLIER", self.config.noiseReplacer.noiseSeedMultiplier)
-            algMetadata.addString("NOISE_SOURCE", self.config.noiseReplacer.noiseSource)
-            algMetadata.addDouble("NOISE_OFFSET", self.config.noiseReplacer.noiseOffset)
         self.algMetadata = algMetadata
 
     def initializePlugins(self, **kwds):

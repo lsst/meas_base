@@ -42,8 +42,8 @@ class NoiseReplacerConfig(lsst.pex.config.Config):
         doc='Add ann offset to the generated noise.'
         )
     noiseSeedMultiplier = lsst.pex.config.Field(
-        dtype=int, default=0,
-        doc='The seed value to use for random number generation.'
+        dtype=int, default=1,
+        doc='The seed multiplier value to use for random number generation.  0 will not set seed.'
         )
 
 class NoiseReplacer(object):
@@ -68,7 +68,7 @@ class NoiseReplacer(object):
 
     ConfigClass = NoiseReplacerConfig
 
-    def __init__(self, config, exposure, footprints, noiseImage=None, log=None):
+    def __init__(self, config, exposure, footprints, noiseImage=None, exposureId=None, log=None):
         """!
         Initialize the NoiseReplacer.
 
@@ -153,7 +153,7 @@ class NoiseReplacer(object):
         # We now create a noise HeavyFootprint for each source with has a heavy footprint.
         # We'll put the noise footprints in a dict heavyNoise = {id:heavyNoiseFootprint}
         self.heavyNoise = {}
-        noisegen = self.getNoiseGenerator(exposure, noiseImage, noiseMeanVar)
+        noisegen = self.getNoiseGenerator(exposure, noiseImage, noiseMeanVar, exposureId=exposureId)
         #  The noiseGenMean and Std are used by the unit tests
         self.noiseGenMean = noisegen.mean
         self.noiseGenStd = noisegen.std
@@ -245,7 +245,7 @@ class NoiseReplacer(object):
         del self.heavies
         del self.heavyNoise
 
-    def getNoiseGenerator(self, exposure, noiseImage, noiseMeanVar):
+    def getNoiseGenerator(self, exposure, noiseImage, noiseMeanVar, exposureId=None):
         """!
         Generate noise image using parameters given
         """
@@ -254,7 +254,11 @@ class NoiseReplacer(object):
         rand = None
         if self.noiseSeedMultiplier:
             # default plugin, our seed
-            rand = afwMath.Random(afwMath.Random.MT19937, self.noiseSeedMultiplier * exposure.getId())
+            if not exposureId is None:
+                seed = exposureId * self.noiseSeedMultiplier
+            else:
+                seed = self.noiseSeedMultiplier
+            rand = afwMath.Random(afwMath.Random.MT19937, seed)
         if noiseMeanVar is not None:
             try:
                 # Assume noiseMeanVar is an iterable of floats
@@ -312,7 +316,7 @@ class NoiseReplacerList(list):
         # footprintsByExp --- nested dict of {exposureId: {objId: (parent, footprint)}}
         list.__init__(self)
         for expId, exposure in exposuresById.iteritems():
-            self.append(NoiseReplacer(exposure, footprintsByExp[expId]))
+            self.append(NoiseReplacer(exposure, footprintsByExp[expId]), expId)
 
     def insertSource(self, id):
         """Insert the original pixels for a given source (by id) into the original exposure.

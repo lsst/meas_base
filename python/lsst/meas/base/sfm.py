@@ -252,7 +252,8 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         self.initializePlugins(schema=self.schema)
         self.config.slots.setupSchema(self.schema)
 
-    def run(self, measCat, exposure, noiseImage=None):
+
+    def run(self, measCat, exposure, noiseImage=None, exposureId=None):
         """!
         Run single frame measurement over an exposure and source catalog
 
@@ -282,6 +283,13 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         if self.config.doReplaceWithNoise:
             noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints,
                                           noiseImage=noiseImage, log=self.log)
+            algMetadata = measCat.getMetadata()
+            if not algMetadata is None:
+                algMetadata.addInt("NOISE_SEED_MULTIPLIER", self.config.noiseReplacer.noiseSeedMultiplier)
+                algMetadata.addString("NOISE_SOURCE", self.config.noiseReplacer.noiseSource)
+                algMetadata.addDouble("NOISE_OFFSET", self.config.noiseReplacer.noiseOffset)
+                if not exposureId is None:
+                    algMetadata.addLong("NOISE_EXPOSURE_ID", exposureId)
         else:
             noiseReplacer = DummyNoiseReplacer()
 
