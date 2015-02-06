@@ -41,7 +41,7 @@ class NoiseReplacerConfig(lsst.pex.config.Config):
         dtype=float, optional=False, default=0.,
         doc='Add ann offset to the generated noise.'
         )
-    noiseSeed = lsst.pex.config.Field(
+    noiseSeedMultiplier = lsst.pex.config.Field(
         dtype=int, default=0,
         doc='The seed value to use for random number generation.'
         )
@@ -96,7 +96,7 @@ class NoiseReplacer(object):
         noiseMeanVar=None
         self.noiseSource = config.noiseSource
         self.noiseOffset = config.noiseOffset
-        self.noiseSeed = config.noiseSeed
+        self.noiseSeedMultiplier = config.noiseSeedMultiplier
         self.noiseGenMean = None
         self.noiseGenStd = None
         self.log = log
@@ -252,9 +252,9 @@ class NoiseReplacer(object):
         if noiseImage is not None:
             return ImageNoiseGenerator(noiseImage)
         rand = None
-        if self.noiseSeed:
+        if self.noiseSeedMultiplier:
             # default plugin, our seed
-            rand = afwMath.Random(afwMath.Random.MT19937, self.noiseSeed)
+            rand = afwMath.Random(afwMath.Random.MT19937, self.noiseSeedMultiplier * exposure.getId())
         if noiseMeanVar is not None:
             try:
                 # Assume noiseMeanVar is an iterable of floats
