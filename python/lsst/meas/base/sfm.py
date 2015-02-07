@@ -265,6 +265,8 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
                                  be measured and the associated Psf, Wcs, etc.
         @param[in] noiseImage    optional lsst.afw.image.ImageF for test which need to control
                                  noiseReplacement
+        @param[in] exposureId    optional unique exposureId used to calculate random number
+                                 generator seed in the NoiseReplacer.
         """
         # Temporary workaround for change in order of arguments; will be removed when transition
         # from meas_algorithms to meas_base is complete.
@@ -282,7 +284,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         # which belong to objects in measCat will be replaced with noise
         if self.config.doReplaceWithNoise:
             noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints,
-                                          noiseImage=noiseImage, log=self.log)
+                                          noiseImage=noiseImage, log=self.log, exposureId=exposureId)
             algMetadata = measCat.getMetadata()
             if not algMetadata is None:
                 algMetadata.addInt("NOISE_SEED_MULTIPLIER", self.config.noiseReplacer.noiseSeedMultiplier)
