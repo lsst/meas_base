@@ -224,7 +224,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.schema = self.mapper.getOutputSchema()
         self.config.slots.setupSchema(self.schema)
 
-    def run(self, exposure, refCat, refWcs, idFactory=None):
+    def run(self, exposure, refCat, refWcs, idFactory=None, exposureId=None):
         """!
         Perform forced measurement.
 
@@ -234,6 +234,8 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                                  to the output SourceRecord.
         @param[in]  refWcs       Wcs that defines the X,Y coordinate system of refCat
         @param[in]  idFactory    factory for creating IDs for sources
+        @param[in]  exposureId   optional unique exposureId used to calculate random number
+                                 generator seed in the NoiseReplacer.
 
         @return SourceCatalog containing measurement results.
 
@@ -275,7 +277,14 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
         # convert the footprints to the coordinate system of the exposure
         if self.config.doReplaceWithNoise:
-            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log)
+            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log, exposureId=exposureId)
+            algMetadata = sources.getTable().getMetadata()
+            if not algMetadata is None:
+                algMetadata.addInt("NOISE_SEED_MULTIPLIER", self.config.noiseReplacer.noiseSeedMultiplier)
+                algMetadata.addString("NOISE_SOURCE", self.config.noiseReplacer.noiseSource)
+                algMetadata.addDouble("NOISE_OFFSET", self.config.noiseReplacer.noiseOffset)
+                if not exposureId is None:
+                    algMetadata.addLong("NOISE_EXPOSURE_ID", exposureId)
         else:
             noiseReplacer = DummyNoiseReplacer()
 
