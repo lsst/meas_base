@@ -97,6 +97,19 @@ class SourceMeasurer():
         self.task.run(self.catalog, exposure)
         return self.catalog
 
+def addMoments(flux1, centroid1, shape1, flux2, centroid2, shape2):
+    flux = flux1 + flux2
+    x = (centroid1.getX()*flux1 + centroid2.getX()*flux2) / flux
+    y = (centroid1.getY()*flux1 + centroid2.getY()*flux2) / flux
+    xx = ((shape1.getIxx() + (x - centroid1.getX())**2)*flux1 +
+          (shape2.getIxx() + (x - centroid2.getX())**2)*flux2) / flux
+    yy = ((shape1.getIyy() + (y - centroid1.getY())**2)*flux1 +
+          (shape2.getIyy() + (y - centroid2.getY())**2)*flux2) / flux
+    xy = ((shape1.getIxy() + (x - centroid1.getX())*(y - centroid1.getY()))*flux1 +
+          (shape2.getIyy() + (x - centroid2.getX())*(y - centroid2.getY()))*flux2) / flux
+    return flux, lsst.afw.geom.Point2D(x, y), lsst.afw.geom.ellipses.Quadrupole(xx, yy, xy)
+
+
 class MakeTestData(object):
     @staticmethod
     def drawGaussian(image, flux, ellipse):
@@ -164,18 +177,14 @@ class MakeTestData(object):
         record2.set(fluxKey, 120000.0)
         record2.set(shapeKey, lsst.afw.geom.ellipses.Quadrupole(10.0, 7.0, -0.5))
         record2.set(starFlagKey, False)
-        parent.set(fluxKey, record1.get(fluxKey) + record2.get(fluxKey))
         parent.set(starFlagKey, False)
-        parent.set(
-            centroidKey,
-            lsst.afw.geom.Point2D(
-                (lsst.afw.geom.Extent2D(record1.get(centroidKey)) * record1.get(fluxKey)
-                 + lsst.afw.geom.Extent2D(record2.get(centroidKey)) * record2.get(fluxKey))
-                / parent.get(fluxKey)
-                )
-            )
-        # we don't bother setting the truth values for parent's shape, since we don't need them
-        # for sims and don't expect to be able to measure them well anyway.
+        parentFlux, parentCentroid, parentShape = addMoments(
+            record1.get(fluxKey), record1.get(centroidKey), record1.get(shapeKey),
+            record2.get(fluxKey), record2.get(centroidKey), record2.get(shapeKey)
+        )
+        parent.set(fluxKey, parentFlux)
+        parent.set(centroidKey, parentCentroid)
+        parent.set(shapeKey,parentShape)
         return catalog, bbox
 
     @staticmethod
