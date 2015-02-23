@@ -149,7 +149,6 @@ public:
     template <typename T>
     static Result apply(
         afw::image::MaskedImage<T> const & image,
-        afw::detection::Footprint const & footprint,
         afw::geom::Point2D const & position,
         Control const & ctrl=Control()
     );
@@ -157,7 +156,6 @@ public:
     template <typename T>
     static Result apply(
         afw::image::Image<T> const & exposure,
-        afw::detection::Footprint const & footprint,
         afw::geom::Point2D const & position,
         Control const & ctrl=Control()
     );
@@ -173,7 +171,6 @@ public:
     ) const;
 
 private:
-
     Control _ctrl;
     ResultKey _resultKey;
     SafeCentroidExtractor _centroidExtractor;

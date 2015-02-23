@@ -856,7 +856,6 @@ SdssShapeAlgorithm::SdssShapeAlgorithm(
 template <typename T>
 SdssShapeResult SdssShapeAlgorithm::apply(
     afw::image::Image<T> const & exposure,
-    afw::detection::Footprint const & footprint,
     afw::geom::Point2D const & center,
     Control const & control
 ) {
@@ -869,7 +868,6 @@ SdssShapeResult SdssShapeAlgorithm::apply(
 template <typename T>
 SdssShapeResult SdssShapeAlgorithm::apply(
     afw::image::MaskedImage<T> const & mimage,
-    afw::detection::Footprint const & footprint,
     afw::geom::Point2D const & center,
     Control const & control
 ) {
@@ -923,14 +921,8 @@ void SdssShapeAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
 ) const {
-    if (!measRecord.getFootprint()) {
-        throw LSST_EXCEPT(
-            pex::exceptions::RuntimeError,
-            "No Footprint attached to SourceRecord"
-        );
-    }
     SdssShapeResult result = apply(
-        exposure.getMaskedImage(), *measRecord.getFootprint(),
+        exposure.getMaskedImage(),
         _centroidExtractor(measRecord, _resultKey.getFlagHandler()),
         _ctrl
     );
@@ -963,13 +955,11 @@ INSTANTIATE_PIXEL(double);
 #define INSTANTIATE(T)                                                  \
     template SdssShapeResult SdssShapeAlgorithm::apply(                 \
         afw::image::MaskedImage<T> const & exposure,                    \
-        afw::detection::Footprint const & footprint,                    \
         afw::geom::Point2D const & position,                            \
         Control const & ctrl                                            \
     );                                                                  \
     template SdssShapeResult SdssShapeAlgorithm::apply(                 \
         afw::image::Image<T> const & exposure,                          \
-        afw::detection::Footprint const & footprint,                    \
         afw::geom::Point2D const & position,                            \
         Control const & ctrl                                            \
     )
