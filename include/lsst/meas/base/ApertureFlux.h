@@ -62,7 +62,7 @@ public:
 };
 
 
-class ApertureFluxResult;
+struct ApertureFluxResult;
 
 
 /**
