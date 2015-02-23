@@ -105,7 +105,7 @@ class MakeTestData(object):
                               numpy.arange(bbox.getBeginY(), bbox.getEndY()))
         t = ellipse.getGridTransform()
         xt = t[t.XX] * x + t[t.XY] * y + t[t.X]
-        yt = t[t.YX] * y + t[t.YY] * y + t[t.Y]
+        yt = t[t.YX] * x + t[t.YY] * y + t[t.Y]
         image.getArray()[:,:] = numpy.exp(-0.5*(xt**2 + yt**2))
         image.getArray()[:,:] *= flux / image.getArray().sum()
 
