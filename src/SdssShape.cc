@@ -725,7 +725,6 @@ getFixedMomentsFlux(ImageT const& image,               ///< the data to process
 
 SdssShapeResult::SdssShapeResult() :
     xy4(std::numeric_limits<ShapeElement>::quiet_NaN()),
-    xy4Sigma(std::numeric_limits<ShapeElement>::quiet_NaN()),
     flux_xx_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
     flux_yy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
     flux_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN())
@@ -747,15 +746,11 @@ SdssShapeResultKey SdssShapeResultKey::addFields(
     r._shapeResult = ShapeResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments",
                                                SIGMA_ONLY);
     r._centroidResult = CentroidResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments",
-                                                     SIGMA_ONLY);
+                                                     NO_UNCERTAINTY);
     r._fluxResult = FluxResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments");
     r._xy4 = schema.addField<ShapeElement>(
         // TODO: get more mathematically precise documentation on this from RHL
         schema.join(name, "xy4"), "4th moment used in certain shear-estimation algorithms", "pixels^4"
-    );
-    r._xy4Sigma = schema.addField<ErrElement>(
-        schema.join(name, "xy4Sigma"),
-        "uncertainty on %s" + schema.join(name, "xy4"), "pixels^4"
     );
     r._flux_xx_Cov = schema.addField<ErrElement>(
         schema.join(name, "flux", "xx", "Cov"),
@@ -784,7 +779,6 @@ SdssShapeResultKey::SdssShapeResultKey(afw::table::SubSchema const & s) :
     _centroidResult(s),
     _fluxResult(s),
     _xy4(s["xy4"]),
-    _xy4Sigma(s["xy4Sigma"]),
     _flux_xx_Cov(s["flux"]["xx"]["Cov"]),
     _flux_yy_Cov(s["flux"]["yy"]["Cov"]),
     _flux_xy_Cov(s["flux"]["xy"]["Cov"]),
@@ -797,7 +791,6 @@ SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const & record) c
     static_cast<CentroidResult&>(result) = record.get(_centroidResult);
     static_cast<FluxResult&>(result) = record.get(_fluxResult);
     result.xy4 = record.get(_xy4);
-    result.xy4Sigma = record.get(_xy4Sigma);
     result.flux_xx_Cov = record.get(_flux_xx_Cov);
     result.flux_yy_Cov = record.get(_flux_yy_Cov);
     result.flux_xy_Cov = record.get(_flux_xy_Cov);
@@ -812,7 +805,6 @@ void SdssShapeResultKey::set(afw::table::BaseRecord & record, SdssShapeResult co
     record.set(_centroidResult, value);
     record.set(_fluxResult, value);
     record.set(_xy4, value.xy4);
-    record.set(_xy4Sigma, value.xy4Sigma);
     record.set(_flux_xx_Cov, value.flux_xx_Cov);
     record.set(_flux_yy_Cov, value.flux_yy_Cov);
     record.set(_flux_xy_Cov, value.flux_xy_Cov);
@@ -826,7 +818,6 @@ bool SdssShapeResultKey::operator==(SdssShapeResultKey const & other) const {
         _centroidResult == other._centroidResult &&
         _fluxResult == other._fluxResult &&
         _xy4 == other._xy4 &&
-        _xy4Sigma == other._xy4Sigma &&
         _flux_xx_Cov == other._flux_xx_Cov &&
         _flux_yy_Cov == other._flux_yy_Cov &&
         _flux_xy_Cov == other._flux_xy_Cov;
@@ -838,7 +829,6 @@ bool SdssShapeResultKey::isValid() const {
         _centroidResult.isValid() &&
         _fluxResult.isValid() &&
         _xy4.isValid() &&
-        _xy4Sigma.isValid() &&
         _flux_xx_Cov.isValid() &&
         _flux_yy_Cov.isValid() &&
         _flux_xy_Cov.isValid();
@@ -896,18 +886,25 @@ SdssShapeResult SdssShapeAlgorithm::apply(
         result.flags[FAILURE] = true;
     }
 
+    result.flux = shapeImpl.getI0() * shapeImpl.getFluxScale();
+    result.fluxSigma = shapeImpl.getI0Err() * shapeImpl.getFluxScale();
     result.x = shapeImpl.getX() + mimage.getX0();
     result.y = shapeImpl.getY() + mimage.getY0();
-    // FIXME: should do off-diagonal covariance elements too
-    result.xSigma = shapeImpl.getXErr();
-    result.ySigma = shapeImpl.getYErr();
     result.xx = shapeImpl.getIxx();
     result.yy = shapeImpl.getIyy();
     result.xy = shapeImpl.getIxy();
-    // FIXME: should do off-diagonal covariance elements too
+    result.xy4 = shapeImpl.getIxy4();
     result.xxSigma = shapeImpl.getIxxErr();
     result.yySigma = shapeImpl.getIyyErr();
     result.xySigma = shapeImpl.getIxyErr();
+
+    detail::SdssShapeImpl::Matrix4 const & covar = shapeImpl.getCovar();
+    result.flux_xx_Cov = covar(0, 1);
+    result.flux_yy_Cov = covar(0, 3);
+    result.flux_xy_Cov = covar(0, 2);
+    result.xx_yy_Cov = covar(1, 3);
+    result.xx_xy_Cov = covar(1, 2);
+    result.yy_xy_Cov = covar(2, 3);
 
     // Now set the flags from SdssShapeImpl
     for (int n = 0; n < detail::SdssShapeImpl::N_FLAGS; ++n) {

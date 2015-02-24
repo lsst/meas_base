@@ -191,7 +191,6 @@ private:
 class SdssShapeResult : public ShapeResult, public CentroidResult, public FluxResult {
 public:
     ShapeElement xy4;       ///< A fourth moment used in lensing (RHL needs to clarify; not in the old docs)
-    ErrElement xy4Sigma;    ///< 1-Sigma uncertainty on xy4
     ErrElement flux_xx_Cov; ///< flux, xx term in the uncertainty covariance matrix
     ErrElement flux_yy_Cov; ///< flux, yy term in the uncertainty covariance matrix
     ErrElement flux_xy_Cov; ///< flux, xy term in the uncertainty covariance matrix

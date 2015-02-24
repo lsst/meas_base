@@ -23,6 +23,7 @@
 
 import numpy
 import unittest
+import numpy
 
 import lsst.utils.tests
 import lsst.meas.base.tests
@@ -54,6 +55,8 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
         for record in catalog:
             result = record.get(key)
+            self.assertClose(result.flux, record.get("truth_flux"), rtol=1E-2)
+            self.assertFinite(result.fluxSigma)
             self.assertClose(result.x, record.get("truth_x"), rtol=1E-2)
             self.assertClose(result.y, record.get("truth_y"), rtol=1E-2)
             self.assertClose(result.xx, record.get("truth_xx"), rtol=1E-2)
@@ -62,6 +65,13 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             self.assertFinite(result.xxSigma)
             self.assertFinite(result.yySigma)
             self.assertFinite(result.xySigma)
+            self.assertFinite(result.flux_xx_Cov)
+            self.assertFinite(result.flux_yy_Cov)
+            self.assertFinite(result.flux_xy_Cov)
+            self.assertFinite(result.xx_yy_Cov)
+            self.assertFinite(result.xx_xy_Cov)
+            self.assertFinite(result.yy_xy_Cov)
+
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
