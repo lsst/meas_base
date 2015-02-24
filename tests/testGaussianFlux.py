@@ -87,9 +87,7 @@ class GaussianFluxTestCase(AlgorithmTestCase):
             fluxMean = numpy.mean(fluxes)
             fluxSigmaMean = numpy.mean(fluxSigmas)
             fluxStandardDeviation = numpy.std(fluxes)
-            # GaussianFlux's uncertainties are apparently an overestimate; this needs to be fixed,
-            # but not on this commit (hence the factor of 1.5).
-            self.assertClose(fluxSigmaMean, 1.5*fluxStandardDeviation, rtol=0.10)   # rng dependent
+            self.assertClose(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)   # rng dependent
             self.assertLess(fluxMean - flux, 2.0*fluxSigmaMean / nSamples**0.5)   # rng dependent
 
     def testForcedPlugin(self):

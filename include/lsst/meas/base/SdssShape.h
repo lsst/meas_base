@@ -162,6 +162,22 @@ public:
         Control const & ctrl=Control()
     );
 
+    /**
+     *  Compute the flux within a fixed Gaussian aperture.
+     *
+     *  @param[in] image     An Image or MaskedImage instance with int, float, or double pixels.  This
+     *                       need not be a small postage stamp (the pixel region actually used in the
+     *                       fit will be a subset of this image determined automatically).
+     *  @param[in] shape     Ellipse object specifying the 1-sigma contour of the Gaussian.
+     *  @param[in] position  Center position of the object to be measured, in the image's PARENT coordinates.
+     */
+    template <typename ImageT>
+    static FluxResult computeFixedMomentsFlux(
+        ImageT const & image,
+        afw::geom::ellipses::Quadrupole const & shape,
+        afw::geom::Point2D const & position
+    );
+
     virtual void measure(
         afw::table::SourceRecord & measRecord,
         afw::image::Exposure<float> const & exposure

@@ -664,66 +664,6 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
     return true;
 }
 
-/**
- * \brief Return the flux of an object, using the aperture described by the SdssShape object
- *
- * The SdssShape algorithm calculates an elliptical Gaussian fit to an object, so the "aperture" is
- * an elliptical Gaussian
- *
- * \returns A std::pair of the flux and its error
- */
-template<typename ImageT>
-std::pair<double, double>
-getFixedMomentsFlux(ImageT const& image,               ///< the data to process
-                    double bkgd,                       ///< background level
-                    double xcen,                       ///< x-centre of object (PARENT coordinates)
-                    double ycen,                       ///< y-centre of object (PARENT coordinates)
-                    SdssShapeImpl const& shape_ ///< The SdssShape of the object
-    )
-{
-    SdssShapeImpl shape = shape_; // we need a mutable copy
-
-    afwGeom::BoxI const& bbox = set_amom_bbox(image.getWidth(), image.getHeight(),
-                                              xcen - image.getX0(),
-                                              ycen - image.getY0(),
-                                              shape.getIxx(), shape.getIxy(), shape.getIyy());
-
-    boost::tuple<std::pair<bool, double>, double, double, double> weights =
-        getWeights(shape.getIxx(), shape.getIxy(), shape.getIyy());
-    double const NaN = std::numeric_limits<double>::quiet_NaN();
-    if (!weights.get<0>().first) {
-        return std::make_pair(NaN, NaN);
-    }
-
-    double const w11 = weights.get<1>();
-    double const w12 = weights.get<2>();
-    double const w22 = weights.get<3>();
-    bool const interp = shouldInterp(shape.getIxx(), shape.getIyy(), weights.get<0>().second);
-
-    double I0 = 0;                      // amplitude of Gaussian
-    calcmom<true>(ImageAdaptor<ImageT>().getImage(image), xcen - image.getX0(), ycen - image.getY0(),
-                  bbox, bkgd, interp, w11, w12, w22,
-                  &I0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-    /*
-     * We have enerything we need, but it isn't quite packaged right; we need an initialised SdssShapeImpl
-     */
-    shape.setI0(I0);
-
-    {
-        int ix = static_cast<int>(xcen - image.getX0());
-        int iy = static_cast<int>(ycen - image.getY0());
-        float bkgd_var = 
-            ImageAdaptor<ImageT>().getVariance(image, ix, iy); // XXX Overestimate as it includes object
-
-        SdssShapeImpl::Matrix4 fisher = calc_fisher(shape, bkgd_var); // Fisher matrix 
-
-        shape.setCovar(fisher.inverse());
-    }
-    
-    double const scale = shape.getFluxScale();
-    return std::make_pair(shape.getI0()*scale, shape.getI0Err()*scale);
-}
-
 } // end detail namespace
 
 
@@ -910,6 +850,53 @@ SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(
     return result;
 }
 
+template <typename ImageT>
+FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(
+    ImageT const & image,
+    afw::geom::ellipses::Quadrupole const & shape,
+    afw::geom::Point2D const & center
+) {
+
+    afwGeom::BoxI const bbox = set_amom_bbox(image.getWidth(), image.getHeight(),
+                                             center.getX() - image.getX0(),
+                                             center.getY() - image.getY0(),
+                                             shape.getIxx(), shape.getIxy(), shape.getIyy());
+
+    boost::tuple<std::pair<bool, double>, double, double, double> weights =
+        getWeights(shape.getIxx(), shape.getIxy(), shape.getIyy());
+
+    FluxResult result;
+
+    if (!weights.get<0>().first) {
+        throw pex::exceptions::InvalidParameterError("Input shape is singular");
+    }
+
+    double const w11 = weights.get<1>();
+    double const w12 = weights.get<2>();
+    double const w22 = weights.get<3>();
+    bool const interp = shouldInterp(shape.getIxx(), shape.getIyy(), weights.get<0>().second);
+
+    double i0 = 0;                      // amplitude of Gaussian
+    calcmom<true>(ImageAdaptor<ImageT>().getImage(image),
+                  center.getX() - image.getX0(), center.getY() - image.getY0(),
+                  bbox, 0.0, interp, w11, w12, w22,
+                  &i0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
+    double const wArea = afw::geom::PI*std::sqrt(shape.getDeterminant());
+
+    result.flux = i0*2*wArea;
+
+    if (ImageAdaptor<ImageT>::hasVariance) {
+        int ix = static_cast<int>(center.getX() - image.getX0());
+        int iy = static_cast<int>(center.getY() - image.getY0());
+        double var = ImageAdaptor<ImageT>().getVariance(image, ix, iy);
+        double i0Err = std::sqrt(var/wArea);
+        result.fluxSigma = i0Err*2*wArea;
+    }
+
+    return result;
+}
+
 void SdssShapeAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
@@ -932,12 +919,15 @@ void SdssShapeAlgorithm::fail(
 #define INSTANTIATE_IMAGE(IMAGE) \
     template bool detail::getAdaptiveMoments<IMAGE>( \
         IMAGE const&, double, double, double, double, SdssShapeImpl*, int, float, float); \
-    template std::pair<double, double> detail::getFixedMomentsFlux<IMAGE>( \
-        IMAGE const&, double, double, double, detail::SdssShapeImpl const&); \
     template SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments( \
         IMAGE const &,                                                  \
         afw::geom::Point2D const &,                                     \
         Control const &                                                 \
+    );                                                                  \
+    template FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux( \
+        IMAGE const &,                                                  \
+        afw::geom::ellipses::Quadrupole const &,                        \
+        afw::geom::Point2D const &                                      \
     )
 
 #define INSTANTIATE_PIXEL(PIXEL) \

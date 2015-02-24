@@ -59,6 +59,10 @@
     lsst::meas::base::SdssShapeAlgorithm::computeAdaptiveMoments< lsst::afw::image::Image<PIXEL> >;
 %template (computeAdaptiveMoments)
     lsst::meas::base::SdssShapeAlgorithm::computeAdaptiveMoments< lsst::afw::image::MaskedImage<PIXEL> >;
+%template (computeFixedMomentsFlux)
+    lsst::meas::base::SdssShapeAlgorithm::computeFixedMomentsFlux< lsst::afw::image::Image<PIXEL> >;
+%template (computeFixedMomentsFlux)
+    lsst::meas::base::SdssShapeAlgorithm::computeFixedMomentsFlux< lsst::afw::image::MaskedImage<PIXEL> >;
 %enddef
 %instantiateSdssShape(float)
 %instantiateSdssShape(double)

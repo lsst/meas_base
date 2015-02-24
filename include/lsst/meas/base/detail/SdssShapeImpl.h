@@ -170,11 +170,6 @@ bool getAdaptiveMoments(
     float tol2=SDSS_SHAPE_TOL2            ///< Convergence tolerance for FWHM
     );
 
-template<typename ImageT>
-std::pair<double, double>
-getFixedMomentsFlux(ImageT const& mimage, double bkgd, double xcen, double ycen,
-                    SdssShapeImpl const& shape);
-
 }}}} //xyzzy
 
 #endif
