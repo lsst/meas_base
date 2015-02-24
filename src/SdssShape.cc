@@ -123,6 +123,8 @@ template<typename ImageT>               // general case
 struct ImageAdaptor {
     typedef ImageT Image;
 
+    static bool const hasVariance = false;
+
     Image const& getImage(ImageT const& image) const {
         return image;
     }
@@ -135,6 +137,8 @@ struct ImageAdaptor {
 template<typename T>                    // specialise to a MaskedImage
 struct ImageAdaptor<afwImage::MaskedImage<T> > {
     typedef typename afwImage::MaskedImage<T>::Image Image;
+
+    static bool const hasVariance = true;
 
     Image const& getImage(afwImage::MaskedImage<T> const& mimage) const {
         return *mimage.getImage();
@@ -845,30 +849,17 @@ SdssShapeAlgorithm::SdssShapeAlgorithm(
     _centroidExtractor(schema, name)
 {}
 
-template <typename T>
-SdssShapeResult SdssShapeAlgorithm::apply(
-    afw::image::Image<T> const & exposure,
+template <typename ImageT>
+SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(
+    ImageT const & image,
     afw::geom::Point2D const & center,
     Control const & control
 ) {
-    throw LSST_EXCEPT(
-        pex::exceptions::LogicError,
-        "Not implemented"
-    );
-}
-
-template <typename T>
-SdssShapeResult SdssShapeAlgorithm::apply(
-    afw::image::MaskedImage<T> const & mimage,
-    afw::geom::Point2D const & center,
-    Control const & control
-) {
-    typedef typename afw::image::MaskedImage<T> MaskedImageT;
     double xcen = center.getX();         // object's column position
     double ycen = center.getY();         // object's row position
 
-    xcen -= mimage.getX0();             // work in image Pixel coordinates
-    ycen -= mimage.getY0();
+    xcen -= image.getX0();             // work in image Pixel coordinates
+    ycen -= image.getY0();
 
     float shiftmax = control.maxShift;   // Max allowed centroid shift
     if (shiftmax < 2) {
@@ -880,7 +871,7 @@ SdssShapeResult SdssShapeAlgorithm::apply(
     SdssShapeResult result;
     detail::SdssShapeImpl shapeImpl;
     try {
-        detail::getAdaptiveMoments(mimage, control.background, xcen, ycen, shiftmax, &shapeImpl,
+        detail::getAdaptiveMoments(image, control.background, xcen, ycen, shiftmax, &shapeImpl,
                                    control.maxIter, control.tol1, control.tol2);
     } catch (pex::exceptions::Exception & err) {
         result.flags[FAILURE] = true;
@@ -888,23 +879,26 @@ SdssShapeResult SdssShapeAlgorithm::apply(
 
     result.flux = shapeImpl.getI0() * shapeImpl.getFluxScale();
     result.fluxSigma = shapeImpl.getI0Err() * shapeImpl.getFluxScale();
-    result.x = shapeImpl.getX() + mimage.getX0();
-    result.y = shapeImpl.getY() + mimage.getY0();
+    result.x = shapeImpl.getX() + image.getX0();
+    result.y = shapeImpl.getY() + image.getY0();
     result.xx = shapeImpl.getIxx();
     result.yy = shapeImpl.getIyy();
     result.xy = shapeImpl.getIxy();
     result.xy4 = shapeImpl.getIxy4();
-    result.xxSigma = shapeImpl.getIxxErr();
-    result.yySigma = shapeImpl.getIyyErr();
-    result.xySigma = shapeImpl.getIxyErr();
 
-    detail::SdssShapeImpl::Matrix4 const & covar = shapeImpl.getCovar();
-    result.flux_xx_Cov = covar(0, 1);
-    result.flux_yy_Cov = covar(0, 3);
-    result.flux_xy_Cov = covar(0, 2);
-    result.xx_yy_Cov = covar(1, 3);
-    result.xx_xy_Cov = covar(1, 2);
-    result.yy_xy_Cov = covar(2, 3);
+    if (ImageAdaptor<ImageT>::hasVariance) {
+        result.xxSigma = shapeImpl.getIxxErr();
+        result.yySigma = shapeImpl.getIyyErr();
+        result.xySigma = shapeImpl.getIxyErr();
+
+        detail::SdssShapeImpl::Matrix4 const & covar = shapeImpl.getCovar();
+        result.flux_xx_Cov = covar(0, 1);
+        result.flux_yy_Cov = covar(0, 3);
+        result.flux_xy_Cov = covar(0, 2);
+        result.xx_yy_Cov = covar(1, 3);
+        result.xx_xy_Cov = covar(1, 2);
+        result.yy_xy_Cov = covar(2, 3);
+    }
 
     // Now set the flags from SdssShapeImpl
     for (int n = 0; n < detail::SdssShapeImpl::N_FLAGS; ++n) {
@@ -920,7 +914,7 @@ void SdssShapeAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
 ) const {
-    SdssShapeResult result = apply(
+    SdssShapeResult result = computeAdaptiveMoments(
         exposure.getMaskedImage(),
         _centroidExtractor(measRecord, _resultKey.getFlagHandler()),
         _ctrl
@@ -935,13 +929,16 @@ void SdssShapeAlgorithm::fail(
     _resultKey.getFlagHandler().handleFailure(measRecord, error);
 }
 
-
-
 #define INSTANTIATE_IMAGE(IMAGE) \
     template bool detail::getAdaptiveMoments<IMAGE>( \
         IMAGE const&, double, double, double, double, SdssShapeImpl*, int, float, float); \
     template std::pair<double, double> detail::getFixedMomentsFlux<IMAGE>( \
         IMAGE const&, double, double, double, detail::SdssShapeImpl const&); \
+    template SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments( \
+        IMAGE const &,                                                  \
+        afw::geom::Point2D const &,                                     \
+        Control const &                                                 \
+    )
 
 #define INSTANTIATE_PIXEL(PIXEL) \
     INSTANTIATE_IMAGE(lsst::afw::image::Image<PIXEL>); \
@@ -950,21 +947,6 @@ void SdssShapeAlgorithm::fail(
 INSTANTIATE_PIXEL(int);
 INSTANTIATE_PIXEL(float);
 INSTANTIATE_PIXEL(double);
-
-#define INSTANTIATE(T)                                                  \
-    template SdssShapeResult SdssShapeAlgorithm::apply(                 \
-        afw::image::MaskedImage<T> const & exposure,                    \
-        afw::geom::Point2D const & position,                            \
-        Control const & ctrl                                            \
-    );                                                                  \
-    template SdssShapeResult SdssShapeAlgorithm::apply(                 \
-        afw::image::Image<T> const & exposure,                          \
-        afw::geom::Point2D const & position,                            \
-        Control const & ctrl                                            \
-    )
-
-INSTANTIATE(float);
-INSTANTIATE(double);
 
 }}} // end namespace lsst::meas::base
 

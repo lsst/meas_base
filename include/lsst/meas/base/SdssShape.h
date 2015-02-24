@@ -146,16 +146,18 @@ public:
 
     SdssShapeAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
 
-    template <typename T>
-    static Result apply(
-        afw::image::MaskedImage<T> const & image,
-        afw::geom::Point2D const & position,
-        Control const & ctrl=Control()
-    );
-
-    template <typename T>
-    static Result apply(
-        afw::image::Image<T> const & exposure,
+    /**
+     *  Compute the adaptive Gaussian-weighted moments of an image.
+     *
+     *  @param[in] image     An Image or MaskedImage instance with int, float, or double pixels.  This
+     *                       need not be a small postage stamp (the pixel region actually used in the
+     *                       fit will be a subset of this image determined automatically).
+     *  @param[in] position  Center position of the object to be measured, in the image's PARENT coordinates.
+     *  @param[in] ctrl      Control object specifying the details of how the object is to be measured.
+     */
+    template <typename ImageT>
+    static Result computeAdaptiveMoments(
+        ImageT const & image,
         afw::geom::Point2D const & position,
         Control const & ctrl=Control()
     );

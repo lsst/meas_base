@@ -53,8 +53,15 @@
 
 %feature("notabstract") lsst::meas::base::SdssShapeAlgorithm;
 %include "lsst/meas/base/SdssShape.h"
-%template (apply) lsst::meas::base::SdssShapeAlgorithm::apply<float>;
-%template (apply) lsst::meas::base::SdssShapeAlgorithm::apply<double>;
+
+%define %instantiateSdssShape(PIXEL)
+%template (computeAdaptiveMoments)
+    lsst::meas::base::SdssShapeAlgorithm::computeAdaptiveMoments< lsst::afw::image::Image<PIXEL> >;
+%template (computeAdaptiveMoments)
+    lsst::meas::base::SdssShapeAlgorithm::computeAdaptiveMoments< lsst::afw::image::MaskedImage<PIXEL> >;
+%enddef
+%instantiateSdssShape(float)
+%instantiateSdssShape(double)
 
 // miscellaneous algorithms
 
