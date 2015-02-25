@@ -136,7 +136,7 @@ class TransformTestCase(utilsTests.TestCase):
 class AlgorithmConfigurationTestCase(utilsTests.TestCase):
     def testDefaultTransform(self):
         """By default, we perform no transformations"""
-        self.assertEqual(measBase.BasePlugin.getTransformClass(), measBase.NullTransform)
+        self.assertEqual(measBase.BasePlugin.getTransformClass(), measBase.PassThroughTransform)
 
     def testWrapAlgorithm(self):
         """Test that the appropriate transform is provided for wrapped algorithms"""

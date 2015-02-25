@@ -34,7 +34,7 @@ import lsst.pex.config
 
 from .baseLib import *
 from .noiseReplacer import *
-from .transforms import NullTransform
+from .transforms import PassThroughTransform
 
 # Exceptions that the measurement tasks should always propagate up to their callers
 FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)
@@ -274,10 +274,10 @@ class BasePlugin(object):
         measurement quantities to calibrated units. Calibrated data is then
         provided in a separate output table.
 
-        By default, we assume that no transformation is appropriate, and
-        therefore return NullTransform.
+        By default, we copy everything from the input to the output without
+        transformation.
         """
-        return NullTransform
+        return PassThroughTransform
 
 
 class SourceSlotConfig(lsst.pex.config.Config):
