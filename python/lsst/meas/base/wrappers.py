@@ -74,7 +74,7 @@ def wrapAlgorithmControl(Base, Control, hasMeasureN=False):
 
 
 def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=None,
-                  ConfigClass=None, doRegister=True, **kwds):
+                  ConfigClass=None, TransformClass=None, doRegister=True, **kwds):
     """!
     Wrap a C++ Algorithm class into a Python Plugin class.
 
@@ -97,6 +97,8 @@ def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=No
     @param[in] ConfigClass     Python Config class that wraps the C++ Algorithm's swigged Control class.  If
                                None, wrapAlgorithmControl is called to generate a Config class using the
                                Control argument.
+    @param[in] TransformClass  Transformation which may be used to post-process the results of measurement.
+                               If None, the default (defined by BasePlugin) is used.
     @param[in] doRegister      If True (the default), register the plugin with Base's registry, allowing it
                                to be used by measurement Tasks.
     @param[in] **kwds          Additional keyword arguments passed to generateAlgorithmControl, including:
@@ -116,9 +118,11 @@ def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=No
         ConfigClass = wrapAlgorithmControl(Base.ConfigClass, Control, **kwds)
     def getExecutionOrder():
         return executionOrder
-    PluginClass = type(AlgClass.__name__ + Base.__name__, (Base,),
-                       dict(AlgClass=AlgClass, ConfigClass=ConfigClass, factory=staticmethod(factory),
-                            getExecutionOrder=staticmethod(getExecutionOrder)))
+    typeDict = dict(AlgClass=AlgClass, ConfigClass=ConfigClass, factory=staticmethod(factory),
+                    getExecutionOrder=staticmethod(getExecutionOrder))
+    if TransformClass:
+        typeDict['getTransformClass'] = staticmethod(lambda: TransformClass)
+    PluginClass = type(AlgClass.__name__ + Base.__name__, (Base,), typeDict)
     if doRegister:
         if name is None:
             name = generateAlgorithmName(AlgClass)
