@@ -36,7 +36,7 @@ void SingleFrameAlgorithm::measureN(
     );
 }
 
-void ForcedAlgorithm::measureN(
+void ForcedAlgorithm::measureNForced(
     afw::table::SourceCatalog const & measCat,
     afw::image::Exposure<float> const & exposure,
     afw::table::SourceCatalog const & refRecord,

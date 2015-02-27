@@ -30,10 +30,10 @@ class WrappedForcedPlugin(ForcedPlugin):
         self.cpp = self.factory(config, name, schemaMapper, metadata)
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
-        self.cpp.measure(measRecord, exposure, refRecord, refWcs)
+        self.cpp.measureForced(measRecord, exposure, refRecord, refWcs)
 
     def measureN(self, measCat, exposure, refCat, refWcs):
-        self.cpp.measureN(measRecord, exposure, refCat, refWcs)
+        self.cpp.measureNForced(measRecord, exposure, refCat, refWcs)
 
     def fail(self, measRecord, error=None):
         self.cpp.fail(measRecord, error.cpp if error is not None else None)

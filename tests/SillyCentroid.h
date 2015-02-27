@@ -99,14 +99,6 @@ public:
                        flagDefs.end());
     }
     
-
-private:
-
-    // measure and fail are private so they doesn't shadow the other overloads in base classes;
-    // we can still call it via the public method on the base class.  We could have
-    // used a using declaration instead, but Swig had trouble with that here.
-
-
     void measure(
         lsst::afw::table::SourceRecord & measRecord,
         lsst::afw::image::Exposure<float> const & exposure
@@ -121,12 +113,13 @@ private:
         measRecord.set(_centroidKey, result);
         _flagHandler.setValue(measRecord, FAILURE, false);  // if we had a suspect flag, we'd set that instead
     }
-    
-    
+
     void fail(lsst::afw::table::SourceRecord & measRecord, lsst::meas::base::MeasurementError * error) const {
         _flagHandler.handleFailure(measRecord, error);
     }
-    
+
+private:
+
     Control _ctrl;
     
     lsst::meas::base::CentroidResultKey _centroidKey;

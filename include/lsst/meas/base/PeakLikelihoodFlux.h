@@ -81,12 +81,6 @@ public:
 
     PeakLikelihoodFluxAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
 
-private:
-
-    // These are private so they doesn't shadow the other overloads in base classes;
-    // we can still call it via the public method on the base class.  We could have
-    // used a using declaration instead, but Swig had trouble with that here.
-
     virtual void measure(
         afw::table::SourceRecord & measRecord,
         afw::image::Exposure<float> const & exposure
@@ -96,6 +90,8 @@ private:
         afw::table::SourceRecord & measRecord,
         MeasurementError * error=NULL
     ) const;
+
+private:
 
     Control _ctrl;
     FluxResultKey _fluxResultKey;
