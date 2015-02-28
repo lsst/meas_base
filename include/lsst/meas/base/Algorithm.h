@@ -167,7 +167,7 @@ public:
  *  and ForcedAlgorithm.
  *
  *  SimpleAlgorithm allows a ForcedAlgorithm to be defined using the measure() and measureN() signatures
- *  of SingleFrameAlgorithm.  It should be used for any algorithm for whichi the forced version of the
+ *  of SingleFrameAlgorithm.  It should be used for any algorithm for which the forced version of the
  *  algorithm does not require anything to be transformed beyond the centroid and shape, and for which
  *  the the parameters being fit are the same for both single-frame and forced measurement.  This should
  *  be the case for all flux algorithms that don't involve fitting any additional model parameters.  It

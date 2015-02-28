@@ -190,10 +190,12 @@ For a ForcedPlugin/ForcedAlgorithm
    the Plugin should be added to the outputSchema of the schemaMapper passed to @c %__init__,
    with keys saved as instance attributes for future use.  In C++, implement a constructor with one of the
    signatures supported by by wrappers.wrapForcedAlgorithm.
- - Reimplement @c measure() to perform the actual measurement and save the result in the measRecord argument.
-   Note that the refRecord and refWcs are available during the measurement if needed.
+ - Reimplement @c measure() (in Python) or @c measureForced (C++) to perform the actual measurement and save
+   the result in the measRecord argument.  Note that the refRecord and refWcs are available during the
+   measurement if needed.
  - Reimplement @c fail() unless the Plugin cannot fail (except for environment errors).
- - Reimplement @c measureN() if the Plugin supports measuring multiple sources simultaneously.
+ - Reimplement @c measureN() (Python) or @c measureNForced() (C++) if the Plugin supports measuring multiple
+   sources simultaneously.
  - Register the Plugin with the config mechanism by calling e.g. @c ForcedPlugin.registry.register()
    at module scope (so the registration happens at import-time).  Or, in C++, Swig the algorithm as you
    would any normal C++ class, and call wrappers.wrapSingleFrameAlgorithm to wrap and register the algorithm
@@ -201,15 +203,6 @@ For a ForcedPlugin/ForcedAlgorithm
 
 In C++, one can also implement both interfaces at the same time using @ref SimpleAlgorithm (see that class for
 more information).
-
-@warning In C++, adding a public method to a derived class that has the same name as one in the base class
-but a different signature (as is done with @ref SimpleAlgorithm::measure()) will shadow the base class method,
-unless you use a "using" declaration in the derived class (you can see this in action in @ref SimpleAlgorithm
-itself).  Unfortunately, Swig is inconsistent about recognizing "using" declarations, so even if you fix
-this problem in C++, you may still encounter it in Python.  A reliable workaround is to declare the derived
-class @c measure() methods as private or protected - this will prevent them from shadowing any base class
-methods in Python, and it won't have any real downsides because we always call these methods through the
-base class, where the public method is still accessible.
 
 @section measBaseErrorHandling Error Handling
 
