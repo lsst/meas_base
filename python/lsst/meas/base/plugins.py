@@ -149,17 +149,19 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
 
     def measure(self, measRecord, exposure):
         modelFlux = measRecord.getModelFlux()
-        modelFluxErr = measRecord.getModelFluxErr()
-        modelFluxFlag = measRecord.getModelFluxFlag()
         psfFlux = measRecord.getPsfFlux()
-        psfFluxErr = measRecord.getPsfFluxErr()
-        psfFluxFlag = measRecord.getPsfFluxFlag()
+        modelFluxFlag = (measRecord.getModelFluxFlag()
+                         if measRecord.table.getModelFluxFlagKey().isValid()
+                         else False)
+        psfFluxFlag = (measRecord.getPsfFluxFlag()
+                       if measRecord.table.getPsfFluxFlagKey().isValid()
+                       else False)
         flux1 = self.config.fluxRatio*modelFlux
         if not self.config.modelErrFactor == 0:
-            flux1 += self.config.modelErrFactor*modelFluxErr
+            flux1 += self.config.modelErrFactor*measRecord.getModelFluxErr()
         flux2 = psfFlux
         if not self.config.psfErrFactor == 0:
-            flux2 += self.config.psfErrFactor*psfFluxErr
+            flux2 += self.config.psfErrFactor*measRecord.getPsfFluxErr()
 
         # A generic failure occurs when either FluxFlag is set to True
         # A generic failure also occurs if either calculated flux value is NAN:
