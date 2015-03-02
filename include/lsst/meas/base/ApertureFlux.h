@@ -62,7 +62,7 @@ public:
 };
 
 
-class ApertureFluxResult;
+struct ApertureFluxResult;
 
 
 /**
@@ -184,8 +184,6 @@ public:
 
     virtual ~ApertureFluxAlgorithm() {}
 
-protected:
-
     /**
      *  Measure the configured apertures on the given image.
      *
@@ -204,6 +202,8 @@ protected:
         afw::table::SourceRecord & measRecord,
         MeasurementError * error=NULL
     ) const;
+
+protected:
 
     void copyResultToRecord(Result const & result, afw::table::SourceRecord & record, int index) const;
 

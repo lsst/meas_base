@@ -136,7 +136,7 @@ public:
      *  which can also be used to obtain centroid (see SafeCentroidExtractor) and shape
      *  (see SafeShapeExtractor) information.
      */
-    virtual void measure(
+    virtual void measureForced(
         afw::table::SourceRecord & measRecord,
         afw::image::Exposure<float> const & exposure,
         afw::table::SourceRecord const & refRecord,
@@ -153,7 +153,7 @@ public:
      *  The default implementation simply throws an exception, indicating that simultaneous
      *  measurement is not supported.
      */
-    virtual void measureN(
+    virtual void measureNForced(
         afw::table::SourceCatalog const & measCat,
         afw::image::Exposure<float> const & exposure,
         afw::table::SourceCatalog const & refRecord,
@@ -167,7 +167,7 @@ public:
  *  and ForcedAlgorithm.
  *
  *  SimpleAlgorithm allows a ForcedAlgorithm to be defined using the measure() and measureN() signatures
- *  of SingleFrameAlgorithm.  It should be used for any algorithm for whichi the forced version of the
+ *  of SingleFrameAlgorithm.  It should be used for any algorithm for which the forced version of the
  *  algorithm does not require anything to be transformed beyond the centroid and shape, and for which
  *  the the parameters being fit are the same for both single-frame and forced measurement.  This should
  *  be the case for all flux algorithms that don't involve fitting any additional model parameters.  It
@@ -177,10 +177,7 @@ public:
 class SimpleAlgorithm : public SingleFrameAlgorithm, public ForcedAlgorithm {
 public:
 
-    using SingleFrameAlgorithm::measure;
-    using SingleFrameAlgorithm::measureN;
-
-    virtual void measure(
+    virtual void measureForced(
         afw::table::SourceRecord & measRecord,
         afw::image::Exposure<float> const & exposure,
         afw::table::SourceRecord const & refRecord,
@@ -189,7 +186,7 @@ public:
         measure(measRecord, exposure);
     }
 
-    virtual void measureN(
+    virtual void measureNForced(
         afw::table::SourceCatalog const & measCat,
         afw::image::Exposure<float> const & exposure,
         afw::table::SourceCatalog const & refRecord,
