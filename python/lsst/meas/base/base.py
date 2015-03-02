@@ -385,6 +385,11 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
             self.plugins[name] = PluginClass(config, name, metadata=self.algMetadata, **kwds)
+        # In rare circumstances (usually tests), the centroid slot not be coming from an algorithm,
+        # which means we'll have added something we don't want to the plugins map, and we should
+        # remove it.
+        if self.config.slots.centroid is not None and self.plugins[self.config.slots.centroid] is None:
+            del self.plugins[self.config.slots.centroid]
 
     def callMeasure(self, measRecord, *args, **kwds):
         """!
