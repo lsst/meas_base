@@ -65,7 +65,8 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(
 ) : _ctrl(ctrl),
     _centroidExtractor(schema, name)
 {
-    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
+    std::vector<FlagDefinition> flagDefs;
+    static boost::array<FlagDefinition,N_FLAGS> const flagDefsArray = {{
         {"flag", "general failure flag, set if anything went wrong"},
         {"flag_edge", "Source is outside usable exposure region (masked EDGE or NO_DATA)"},
         {"flag_interpolated", "Interpolated pixel in the source footprint"},
@@ -76,6 +77,16 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(
         {"flag_crCenter", "Cosmic ray in the source center"},
         {"flag_bad", "Bad pixel in the source footprint"}
     }};
+    // Copy the boost array to a vector. This will be unnessisary in c++11
+    // where a std::vector could be used and initialized in the same way the
+    // boost array currently is
+    flagDefs.insert(flagDefs.end(), flagDefsArray.begin(), flagDefsArry.size()); 
+    // Read the contents of configuration, explicitly check if the clipFlag is
+    // true, incase someonen set something silly. If it is extend the flagDefs
+    // array with the clip pixel flag
+    if (ctrl.clipFlag == true){
+        flagDefs.push_back(FlagDefinition("flag_clipped","source's footprint includes clipped pixels"));
+    }
     _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }
 
@@ -118,7 +129,9 @@ void PixelFlagsAlgorithm::measure(
     if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("CR")) {
         _flagHandler.setValue(measRecord, CR, true);
     }
-
+    if (_ctl.clipFlag == true & func.getBits() & MaskedImageT:Mask:getPlaneBitMask("CLIPPED")){
+        _flagHandler.setValue(measRecord, CLIPPED, true);
+    }
     // Check for bits set in the 3x3 box around the center
     afw::geom::Point2I llc(afw::image::positionToIndex(center.getX())-1, afw::image::positionToIndex(center.getY()) - 1);
 
@@ -133,6 +146,7 @@ void PixelFlagsAlgorithm::measure(
     if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("CR")) {
         _flagHandler.setValue(measRecord, CR_CENTER, true);
     }
+    if (
     _flagHandler.setValue(measRecord, FAILURE, false);
 }
 

@@ -42,13 +42,13 @@ namespace lsst { namespace meas { namespace base {
  */
 class PixelFlagsControl {
 public:
-
+    LSST_CONTROL_FIELD(clipFlag, bool, "Create a clipped field in the schema if clipFlag is set to true");
     /**
      *  @brief Default constructor
      *
      *  All control classes should define a default constructor that sets all fields to their default values.
      */
-    PixelFlagsControl() {}
+    PixelFlagsControl() : clipFlag(false) {}
 };
 
 
@@ -74,6 +74,7 @@ public:
         CR,
         CR_CENTER,
         BAD,
+        CLIPPED,
         N_FLAGS
     };
 
