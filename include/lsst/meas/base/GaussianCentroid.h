@@ -24,6 +24,7 @@
 #ifndef LSST_MEAS_BASE_GaussianCentroid_h_INCLUDED
 #define LSST_MEAS_BASE_GaussianCentroid_h_INCLUDED
 
+#include "lsst/afw/geom/Point.h"
 #include "lsst/pex/config.h"
 #include "lsst/meas/base/Algorithm.h"
 #include "lsst/meas/base/CentroidUtilities.h"
@@ -58,7 +59,6 @@ struct FittedModel {
     double flamd;
     double chnew;
 };
-
 
 /**
  *  @brief A C++ control class to handle GaussianCentroidAlgorithm's configuration
@@ -98,6 +98,16 @@ public:
     typedef GaussianCentroidControl Control;
 
     GaussianCentroidAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
+
+    /**
+     *  Compute centroids with 2-D Gaussian fitter
+     */
+    /// x0, y0 is an initial guess for position, column
+    template<typename PixelT>
+    static afw::geom::Point2D fitCentroid(afw::image::Image<PixelT> const& im,
+                  double x0,
+                  double y0
+    );
 
     virtual void measure(
         afw::table::SourceRecord & measRecord,

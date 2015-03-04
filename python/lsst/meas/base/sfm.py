@@ -184,10 +184,6 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
 
     @until detectionTask
 
-    (tableVersion is a temporary parameter that will be removed after the transition from the meas_algorithms
-    Tasks to the meas_base Tasks is complete; for now, setting tableVersion=1 is necessary when using
-    meas_base Tasks via pipe_tasks drivers).
-
     We then move on to configuring the measurement task:
 
     @until config
@@ -247,7 +243,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         """
         super(SingleFrameMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
         if schema.getVersion() == 0:
-            raise lsst.pex.exceptions.LogicError("schema must have version=1")
+            raise lsst.pex.exceptions.LogicError("schema must have version 1 or greater")
         self.schema = schema
         self.initializePlugins(schema=self.schema)
         self.config.slots.setupSchema(self.schema)

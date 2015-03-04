@@ -61,29 +61,6 @@ def generateAlgorithmName(AlgClass):
         terms = terms[:-1]
     return "%s_%s" % ("_".join(terms), name)
 
-# Translation map from new PixelFlags to old ones defined in meas_algorithms
-
-_flagMap = {
-    "base_PixelFlags_flag_bad":"flags.pixel.bad",
-    "base_PixelFlags_flag_edge":"flags.pixel.edge",
-    "base_PixelFlags_flag_interpolated":"flags.pixel.interpolated.any",
-    "base_PixelFlags_flag_saturated":"flags.pixel.saturated.any",
-    "base_PixelFlags_flag_cr":"flags.pixel.cr.any",
-    "base_PixelFlags_flag_interpolatedCenter":"flags.pixel.interpolated.center",
-    "base_PixelFlags_flag_saturatedCenter":"flags.pixel.saturated.center",
-    "base_PixelFlags_flag_crCenter":"flags.pixel.cr.center",
-    }
-
-def Version0FlagMapper(flags):
-    _flags = []
-    for name in flags:
-        if name in _flagMap.keys():
-            _flags.append(_flagMap[name])
-        else:
-            _flags.append(name)
-    return _flags
-
-
 class PluginRegistry(lsst.pex.config.Registry):
     """!
     Base class for plugin registries
@@ -366,7 +343,6 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
 
     ConfigClass = BaseMeasurementConfig
     _DefaultName = "measurement"
-    tableVersion = 1
 
     def __init__(self, algMetadata=None, **kwds):
         """!

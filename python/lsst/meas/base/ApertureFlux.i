@@ -22,6 +22,7 @@
  */
 
 %{
+#include "lsst/meas/base/SincCoeffs.h"
 #include "lsst/meas/base/ApertureFlux.h"
 #include "lsst/meas/base/CircularApertureFlux.h"
 %}
@@ -42,3 +43,7 @@ ApertureFluxAlgorithm.Control = ApertureFluxControl;
 
 %feature("notabstract") lsst::meas::base::CircularApertureFluxAlgorithm;
 %include "lsst/meas/base/CircularApertureFlux.h"
+
+%include "lsst/meas/base/SincCoeffs.h"
+%template(SincCoeffsF) lsst::meas::base::SincCoeffs<float>;
+%template(SincCoeffsD) lsst::meas::base::SincCoeffs<double>;

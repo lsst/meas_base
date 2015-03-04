@@ -519,6 +519,18 @@ GaussianCentroidAlgorithm::GaussianCentroidAlgorithm(
 }
 
 
+template<typename PixelT>
+afw::geom::Point2D GaussianCentroidAlgorithm::fitCentroid(afw::image::Image<PixelT> const& image,
+    double x,
+    double y
+) {
+    base::FittedModel fit = base::twodg(image, x, y);
+    double const xCen = fit.params[base::FittedModel::X0];
+    double const yCen = fit.params[base::FittedModel::Y0];
+    return afw::geom::Point2D(xCen, yCen);
+}
+
+
 void GaussianCentroidAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
@@ -556,6 +568,16 @@ void GaussianCentroidAlgorithm::measure(
 void GaussianCentroidAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
     _flagHandler.handleFailure(measRecord, error);
 }
+
+//
+// Explicit instantiations
+//
+#define MAKE_FIT_CENTROID(IMAGE_T) \
+    template afw::geom::Point2D GaussianCentroidAlgorithm::fitCentroid(IMAGE_T const &, double, double)
+
+MAKE_FIT_CENTROID(afw::image::Image<float>);
+MAKE_FIT_CENTROID(afw::image::Image<double>);
+
 }}} // namespace lsst::meas::base
 
 
