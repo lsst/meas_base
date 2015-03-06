@@ -29,6 +29,7 @@
 #include "lsst/meas/base/FluxUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"
+#include "lsst/meas/base/Transform.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -97,6 +98,13 @@ private:
     FlagHandler _flagHandler;
     SafeCentroidExtractor _centroidExtractor;
 };
+
+class PsfFluxTransform : public FluxTransform {
+public:
+    typedef PsfFluxControl Control;
+    PsfFluxTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper);
+};
+
 
 }}} // namespace lsst::meas::base
 

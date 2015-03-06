@@ -31,7 +31,7 @@ import lsst.afw.table as afwTable
 import lsst.meas.base as measBase
 import lsst.utils.tests as utilsTests
 
-from lsst.meas.base.tests import AlgorithmTestCase
+from lsst.meas.base.tests import AlgorithmTestCase, TransformTestCase
 
 class PsfFluxTestCase(AlgorithmTestCase):
     def prep(self, ctrl=None):
@@ -149,6 +149,35 @@ class PsfFluxTestCase(AlgorithmTestCase):
                 self.assertClose(record.get("truth_flux"), record.get("base_PsfFlux_flux"),
                                  atol=3*record.get("base_PsfFlux_fluxSigma"))
 
+
+class PsfFluxTransformTestCase(TransformTestCase):
+    controlClass = measBase.PsfFluxControl
+    algorithmClass = measBase.PsfFluxAlgorithm
+    transformClass = measBase.PsfFluxTransform
+
+    def testTransform(self):
+        flux, fluxSigma = 10, 1 # Arbitrary values for testing
+        flagNames = ('_flag', '_flag_noGoodPixels', '_flag_edge') # Used by this algorithm
+
+        for flag in (True, False):
+            record = self.inputCat.addNew()
+            record[self.name + '_flux'] = flux
+            record[self.name + '_fluxSigma'] = fluxSigma
+            for flagName in flagNames:
+                record.set(self.name + flagName, flag)
+
+        self._runTransform()
+
+        # We are not testing the Calib itself; we assume that it is correct
+        # when converting flux to magnitude, and merely check that the
+        # transform has used it properly
+        mag, magErr = self.calexp.getCalib().getMagnitude(flux, fluxSigma)
+        for inSrc, outSrc in zip(self.inputCat, self.outputCat):
+            self.assertEqual(outSrc[self.name + '_mag'], mag)
+            self.assertEqual(outSrc[self.name + '_magErr'], magErr)
+            for flagName in flagNames:
+                self.assertEqual(outSrc.get(self.name + flagName), inSrc.get(self.name + flagName))
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
@@ -156,6 +185,7 @@ def suite():
 
     suites = []
     suites += unittest.makeSuite(PsfFluxTestCase)
+    suites += unittest.makeSuite(PsfFluxTransformTestCase)
     suites += unittest.makeSuite(utilsTests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
