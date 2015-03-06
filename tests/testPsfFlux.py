@@ -31,7 +31,7 @@ import lsst.afw.table
 import lsst.meas.base
 import lsst.utils.tests
 
-from lsst.meas.base.tests import AlgorithmTestCase
+from lsst.meas.base.tests import AlgorithmTestCase, TransformTestCase
 
 class PsfFluxTestCase(AlgorithmTestCase):
     def prep(self, ctrl=None):
@@ -149,6 +149,16 @@ class PsfFluxTestCase(AlgorithmTestCase):
                 self.assertClose(record.get("truth_flux"), record.get("base_PsfFlux_flux"),
                                  atol=3*record.get("base_PsfFlux_fluxSigma"))
 
+
+class PsfFluxTransformTestCase(TransformTestCase):
+    controlClass = lsst.meas.base.PsfFluxControl
+    algorithmClass = lsst.meas.base.PsfFluxAlgorithm
+    transformClass = lsst.meas.base.PsfFluxTransform
+    flagNames = ('_flag', '_flag_noGoodPixels', '_flag_edge')
+    singleFramePlugins = ('base_PsfFlux',)
+    forcedPlugins = ('base_PsfFlux',)
+
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
@@ -156,6 +166,7 @@ def suite():
 
     suites = []
     suites += unittest.makeSuite(PsfFluxTestCase)
+    suites += unittest.makeSuite(PsfFluxTransformTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 

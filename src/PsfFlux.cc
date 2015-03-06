@@ -138,6 +138,16 @@ void PsfFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementEr
     _flagHandler.handleFailure(measRecord, error);
 }
 
+PsfFluxTransform::PsfFluxTransform(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::SchemaMapper & mapper
+) :
+    FluxTransform{name, mapper}
+{
+    for (auto flag = getFlagDefinitions().begin() + 1; flag < getFlagDefinitions().end(); flag++) {
+        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(name + "_" + flag->name).key);
+    }
+}
 
 }}} // namespace lsst::meas::base
-
