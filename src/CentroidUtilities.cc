@@ -54,6 +54,12 @@ void CentroidResult::setCentroidErr(CentroidCov const & matrix) {
     x_y_Cov = matrix(0, 1);
 }
 
+void CentroidResult::setCentroidErr(ErrElement _xSigma, ErrElement _ySigma) {
+    xSigma = _xSigma;
+    ySigma = _ySigma;
+    x_y_Cov = 0.0;
+}
+
 CentroidResultKey CentroidResultKey::addFields(
     afw::table::Schema & schema,
     std::string const & name,

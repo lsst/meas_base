@@ -42,17 +42,45 @@ struct CentroidResult {
     /// Constructor; initializes everything to NaN.
     CentroidResult();
 
+    /// Constructor; initializes everything from values.
+    explicit CentroidResult(CentroidElement _x, CentroidElement _y, CentroidCov const & matrix):
+        x(_x),
+        y(_y),
+        xSigma(std::sqrt(matrix(0, 0))),
+        ySigma(std::sqrt(matrix(1, 1))),
+        x_y_Cov(matrix(0,1))
+    {}
+
+    /// Constructor; initializes everything from values.
+    explicit CentroidResult(CentroidElement _x, CentroidElement _y,
+                            ErrElement _xSigma, ErrElement _ySigma) :
+        x(_x),
+        y(_y),
+        xSigma(_xSigma),
+        ySigma(_ySigma),
+        x_y_Cov(0.0)
+    {}
+
     /// Return a Point object containing the measured x and y
     Centroid const getCentroid() const;
 
     /// Set the struct fields from the given Point object.
     void setCentroid(Centroid const & centroid);
 
+    /// Return the 2D point type corresponding to this result
+    afw::geom::Point<CentroidElement> getPoint()
+    {
+        return afw::geom::Point<CentroidElement>(x, y);
+    }
+
     /// Return the 2x2 symmetric covariance matrix, with rows and columns ordered (x, y)
     CentroidCov const getCentroidErr() const;
 
     /// Set the struct uncertainty fields from the given matrix, with rows and columns ordered (x, y)
     void setCentroidErr(CentroidCov const & matrix);
+
+    /// Set the struct uncertainty fields from the sigma values
+    void setCentroidErr(ErrElement _xSigma, ErrElement _ySigma);
 
 };
 
