@@ -39,7 +39,8 @@ from .wrappers import *
 # --- Wrapped C++ Plugins ---
 
 wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl, executionOrder=2.0)
-wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxControl, executionOrder=2.0)
+wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxControl,
+                    TransformClass=PeakLikelihoodFluxTransform, executionOrder=2.0)
 wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl,
                     TransformClass=GaussianFluxTransform, executionOrder=2.0)
 wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl, executionOrder=0.0)
