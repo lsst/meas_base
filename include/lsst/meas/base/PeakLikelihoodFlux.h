@@ -31,6 +31,7 @@
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"
+#include "lsst/meas/base/Transform.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -97,6 +98,13 @@ private:
     FluxResultKey _fluxResultKey;
     FlagHandler _flagHandler;
     SafeCentroidExtractor _centroidExtractor;
+};
+
+class PeakLikelihoodFluxTransform : public FluxTransform {
+public:
+    typedef PeakLikelihoodFluxControl Control;
+    PeakLikelihoodFluxTransform(Control const & ctrl, std::string const & name,
+                                afw::table::SchemaMapper & mapper) : FluxTransform{name, mapper} { }
 };
 
 }}} // namespace lsst::meas::base
