@@ -104,9 +104,9 @@ public:
     FluxTransform(std::string const & name, afw::table::SchemaMapper & mapper);
 
     void operator()(afw::table::SourceCatalog const & inputCatalog,
-                            afw::table::BaseCatalog & outputCatalog,
-                            afw::image::Wcs const & wcs,
-                            afw::image::Calib const & calib) const;
+                    afw::table::BaseCatalog & outputCatalog,
+                    afw::image::Wcs const & wcs,
+                    afw::image::Calib const & calib) const;
 private:
     afw::table::Key<double> _magKey;
     afw::table::Key<double> _magErrKey;

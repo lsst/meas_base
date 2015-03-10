@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2014 LSST Corporation.
+ * Copyright 2008-2015 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -313,6 +313,54 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeFlux(
 
 INSTANTIATE(float);
 INSTANTIATE(double);
+
+ApertureFluxTransform::ApertureFluxTransform(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::SchemaMapper & mapper
+) :
+    BaseTransform(name),
+    _ctrl(ctrl)
+{
+    for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
+        for (auto flag = getFlagDefinitions().begin();
+             flag < getFlagDefinitions().begin() + (_ctrl.radii[i] <= _ctrl.maxSincRadius ? 3 : 2); flag++) {
+            mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(
+                              (boost::format("%s_%d_%s") % name % i % flag->name).str()).key);
+        }
+        _magKeys.push_back(mapper.editOutputSchema().addField<double>(
+                           (boost::format("%s_%d_%s") % name % i % "mag").str(), "Magnitude"));
+        _magErrKeys.push_back(mapper.editOutputSchema().addField<double>(
+                              (boost::format("%s_%d_%s") % name % i % "magErr").str(), "Magnitude Error"));
+    }
+}
+
+void ApertureFluxTransform::operator()(
+    afw::table::SourceCatalog const & inputCatalog,
+    afw::table::BaseCatalog & outputCatalog,
+    afw::image::Wcs const & wcs,
+    afw::image::Calib const & calib
+) const {
+    std::vector<afw::table::Key<double>> fluxKeys;
+    std::vector<afw::table::Key<double>> fluxSigmaKeys;
+    for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
+        fluxKeys.push_back(inputCatalog.getSchema().find<double>(
+                           (boost::format("%s_%d_%s") % _name % i % "flux").str()).key);
+        fluxSigmaKeys.push_back(inputCatalog.getSchema().find<double>(
+                                (boost::format("%s_%d_%s") % _name % i % "fluxSigma").str()).key);
+    }
+
+    afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
+    afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();
+    double mag, magErr;
+    for (; inSrc < inputCatalog.end() && outSrc < outputCatalog.end(); ++inSrc, ++outSrc) {
+        for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
+            boost::tie(mag, magErr) = calib.getMagnitude(inSrc->get(fluxKeys[i]), inSrc->get(fluxSigmaKeys[i]));
+            outSrc->set(_magKeys[i], mag);
+            outSrc->set(_magErrKeys[i], magErr);
+        }
+    }
+}
 
 }}} // namespace lsst::meas::base
 

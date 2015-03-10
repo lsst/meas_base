@@ -32,6 +32,7 @@
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"
+#include "lsst/meas/base/Transform.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -245,6 +246,19 @@ private:
     std::bitset<ApertureFluxAlgorithm::N_FLAGS> _flags;
 };
 
+class ApertureFluxTransform : public BaseTransform {
+public:
+    typedef ApertureFluxControl Control;
+    ApertureFluxTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper);
+    void operator()(afw::table::SourceCatalog const & inputCatalog,
+                    afw::table::BaseCatalog & outputCatalog,
+                    afw::image::Wcs const & wcs,
+                    afw::image::Calib const & calib) const;
+private:
+    std::vector<afw::table::Key<double>> _magKeys;
+    std::vector<afw::table::Key<double>> _magErrKeys;
+    Control _ctrl;
+};
 
 }}} // namespace lsst::meas::base
 

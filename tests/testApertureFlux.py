@@ -31,7 +31,7 @@ import lsst.daf.base as dafBase
 import lsst.meas.base as measBase
 import lsst.utils.tests as utilsTests
 
-from lsst.meas.base.tests import AlgorithmTestCase
+from lsst.meas.base.tests import AlgorithmTestCase, TransformTestCase
 
 class ApertureFluxTestCase(utilsTests.TestCase):
     """Test case for the ApertureFlux algorithm base class
@@ -201,6 +201,55 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
                 self.assertClose(record.get("base_CircularApertureFlux_6_flux"), record.get("truth_flux"),
                                  rtol=0.02)
 
+
+class ApertureFluxTransformTestCase(TransformTestCase):
+    class circApFluxAlgorithmFactory(object):
+        """
+        Helper class to sub in an empty PropertyList as the final argument to
+        CircularApertureFluxAlgorithm.
+        """
+        def __call__(self, control, name, inputSchema):
+            return measBase.CircularApertureFluxAlgorithm(control, name, inputSchema, dafBase.PropertyList())
+
+    controlClass = measBase.ApertureFluxAlgorithm.Control
+    algorithmClass = circApFluxAlgorithmFactory()
+    transformClass = measBase.ApertureFluxTransform
+
+    def testTransform(self):
+        flux, fluxSigma = 10, 1 # Arbitrary values for testing
+        flagNames = ('_flag', '_flag_apertureTruncated', '_flag_sincCoeffsTruncated') # Used by this algorithm
+
+        for flag in (True, False):
+            record = self.inputCat.addNew()
+            for i, radius in enumerate(self.control.radii):
+                record[self.name + "_" + str(i) + "_flux"] = flux * radius
+                record[self.name + "_" + str(i) + "_fluxSigma"] = fluxSigma * radius
+                for flagName in flagNames:
+                    keyName = self.name + "_" + str(i) + flagName
+                    if keyName in record.schema:
+                        record.set(keyName, flag)
+
+        self._runTransform()
+
+        # We are not testing the Calib itself; we assume that it is correct
+        # when converting flux to magnitude, and merely check that the
+        # transform has used it properly
+        for inSrc, outSrc in zip(self.inputCat, self.outputCat):
+            for i, radius in enumerate(self.control.radii):
+                fluxName = self.name + "_" + str(i) + "_flux"
+                fluxSigmaName = self.name + "_" + str(i) + "_fluxSigma"
+                magName = self.name + "_" + str(i) + "_mag"
+                magErrName = self.name + "_" + str(i) + "_magErr"
+                mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[fluxName], inSrc[fluxSigmaName])
+                self.assertEqual(outSrc[magName], mag)
+                self.assertEqual(outSrc[magErrName], magErr)
+                for flagName in flagNames:
+                    keyName = self.name + "_" + str(i) + flagName
+                    if keyName in inSrc.schema:
+                        self.assertEqual(outSrc.get(keyName), inSrc.get(keyName))
+                    else:
+                        self.assertFalse(keyName in outSrc.schema)
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
@@ -209,6 +258,7 @@ def suite():
     suites = []
     suites += unittest.makeSuite(ApertureFluxTestCase)
     suites += unittest.makeSuite(CircularApertureFluxTestCase)
+    suites += unittest.makeSuite(ApertureFluxTransformTestCase)
     suites += unittest.makeSuite(utilsTests.MemoryTestCase)
     return unittest.TestSuite(suites)
 

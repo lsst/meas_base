@@ -105,7 +105,6 @@ public:
     PsfFluxTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper);
 };
 
-
 }}} // namespace lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_PsfFlux_h_INCLUDED
