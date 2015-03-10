@@ -49,8 +49,8 @@ class NaiveCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         x = record.get("base_NaiveCentroid_x")
         y = record.get("base_NaiveCentroid_y")
         self.assertFalse(record.get("base_NaiveCentroid_flag"))
-        self.assertClose(x, self.center.getX(), atol=None, rtol=.1)
-        self.assertClose(y, self.center.getY(), atol=None, rtol=.1)
+        self.assertClose(x, self.center.getX(), atol=None, rtol=.02)
+        self.assertClose(y, self.center.getY(), atol=None, rtol=.02)
 
 
 def suite():

@@ -97,8 +97,9 @@ class GaussianFluxTestCase(AlgorithmTestCase):
         exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
         s = task.run(exposure, refCat=self.dataset.catalog, refWcs=self.dataset.exposure.getWcs())
         for measRecord, truthRecord in zip(s.sources, truthCatalog):
-            self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-4)
-            self.assertClose(measRecord.get("slot_Centroid_y"), truthRecord.get("truth_y"), rtol=1E-4)
+            # Centroid tolerances set to ~ single precision epsilon
+            self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-7)
+            self.assertClose(measRecord.get("slot_Centroid_y"), truthRecord.get("truth_y"), rtol=1E-7)
             self.assertFalse(measRecord.get("base_GaussianFlux_flag"))
             # GaussianFlux isn't designed to do a good job in forced mode, because it doesn't account
             # for changes in the PSF (and in fact confuses them with changes in the WCS).  Hence, this

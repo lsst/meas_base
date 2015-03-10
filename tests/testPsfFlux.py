@@ -151,13 +151,14 @@ class PsfFluxTestCase(AlgorithmTestCase):
         s = task.run(exposure, refCat=self.dataset.catalog, refWcs=self.dataset.exposure.getWcs())
         measRecord = s.sources[0]
         truthRecord = truthCatalog[0]
-        self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-4)
-        self.assertClose(measRecord.get("slot_Centroid_y"), truthRecord.get("truth_y"), rtol=1E-4)
+        # Centroid tolerances set to ~ single precision epsilon
+        self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-7)
+        self.assertClose(measRecord.get("slot_Centroid_y"), truthRecord.get("truth_y"), rtol=1E-7)
         self.assertFalse(measRecord.get("base_PsfFlux_flag"))
         self.assertFalse(measRecord.get("base_PsfFlux_flag_noGoodPixels"))
         self.assertFalse(measRecord.get("base_PsfFlux_flag_edge"))
         self.assertClose(measRecord.get("base_PsfFlux_flux"), truthCatalog.get("truth_flux"),
-                         rtol=1E-2)
+                         rtol=1E-3)
         self.assertLess(measRecord.get("base_PsfFlux_fluxSigma"), 500.0)
 
 

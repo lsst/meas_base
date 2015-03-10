@@ -193,7 +193,7 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
                     self.assertEqual(record.get("base_CircularApertureFlux_%d_flag_apertureTruncated" % n),
                                      radius > 50)
                 # Test that the fluxes and uncertainties increase as we increase the apertures, or that
-                # they match the true flux within 2 sigma.  This is just a test as to whether the values
+                # they match the true flux within 3 sigma.  This is just a test as to whether the values
                 # are reasonable.  As to whether the values are exactly correct, we rely on the tests on
                 # ApertureFluxAlgorithm's static methods, as the way the plugins code calls that is
                 # extremely simple, so if the results we get are reasonable, it's hard to imagine
@@ -202,7 +202,7 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
                 currentFluxSigma = record.get("base_CircularApertureFlux_%d_fluxSigma" % n)
                 if not record.get("base_CircularApertureFlux_%d_flag" % n):
                     self.assertTrue(currentFlux > lastFlux
-                                    or (record.get("truth_flux") - currentFlux) < 2*currentFluxSigma)
+                                    or (record.get("truth_flux") - currentFlux) < 3*currentFluxSigma)
                     self.assertGreater(currentFluxSigma, lastFluxSigma)
                     lastFlux = currentFlux
                     lastFluxSigma = currentFluxSigma
@@ -224,8 +224,9 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
         exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
         s = task.run(exposure, refCat=self.dataset.catalog, refWcs=self.dataset.exposure.getWcs())
         for measRecord, truthRecord in zip(s.sources, truthCatalog):
-            self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-4)
-            self.assertClose(measRecord.get("slot_Centroid_y"), truthRecord.get("truth_y"), rtol=1E-4)
+            # Centroid tolerances set to ~ single precision epsilon
+            self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-7)
+            self.assertClose(measRecord.get("slot_Centroid_y"), truthRecord.get("truth_y"), rtol=1E-7)
             for n, radius in enumerate(radii):
                 self.assertFalse(measRecord.get("base_CircularApertureFlux_%d_flag" % n))
                 # CircularApertureFlux isn't designed to do a good job in forced mode, because it doesn't
