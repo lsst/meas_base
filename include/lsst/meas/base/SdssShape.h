@@ -113,8 +113,6 @@ private:
     ShapeResultKey _shapeResult;
     CentroidResultKey _centroidResult;
     FluxResultKey _fluxResult;
-    afw::table::Key<ShapeElement> _xy4;
-    afw::table::Key<ErrElement> _xy4Sigma;
     afw::table::Key<ErrElement> _flux_xx_Cov;
     afw::table::Key<ErrElement> _flux_yy_Cov;
     afw::table::Key<ErrElement> _flux_xy_Cov;
@@ -208,7 +206,6 @@ private:
  */
 class SdssShapeResult : public ShapeResult, public CentroidResult, public FluxResult {
 public:
-    ShapeElement xy4;       ///< A fourth moment used in lensing (RHL needs to clarify; not in the old docs)
     ErrElement flux_xx_Cov; ///< flux, xx term in the uncertainty covariance matrix
     ErrElement flux_yy_Cov; ///< flux, yy term in the uncertainty covariance matrix
     ErrElement flux_xy_Cov; ///< flux, xy term in the uncertainty covariance matrix

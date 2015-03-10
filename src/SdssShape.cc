@@ -642,7 +642,6 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
     shape->setIxx(sigma11W);
     shape->setIxy(sigma12W);
     shape->setIyy(sigma22W);
-    shape->setIxy4(sums4/sum);
 
     if (shape->getIxx() + shape->getIyy() != 0.0) {
         int const ix = lsst::afw::image::positionToIndex(xcen);
@@ -668,7 +667,6 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
 
 
 SdssShapeResult::SdssShapeResult() :
-    xy4(std::numeric_limits<ShapeElement>::quiet_NaN()),
     flux_xx_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
     flux_yy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
     flux_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN())
@@ -692,10 +690,6 @@ SdssShapeResultKey SdssShapeResultKey::addFields(
     r._centroidResult = CentroidResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments",
                                                      NO_UNCERTAINTY);
     r._fluxResult = FluxResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments");
-    r._xy4 = schema.addField<ShapeElement>(
-        // TODO: get more mathematically precise documentation on this from RHL
-        schema.join(name, "xy4"), "4th moment used in certain shear-estimation algorithms", "pixels^4"
-    );
     r._flux_xx_Cov = schema.addField<ErrElement>(
         schema.join(name, "flux", "xx", "Cov"),
         (boost::format("uncertainty covariance between %s and %s")
@@ -722,7 +716,6 @@ SdssShapeResultKey::SdssShapeResultKey(afw::table::SubSchema const & s) :
     _shapeResult(s),
     _centroidResult(s),
     _fluxResult(s),
-    _xy4(s["xy4"]),
     _flux_xx_Cov(s["flux"]["xx"]["Cov"]),
     _flux_yy_Cov(s["flux"]["yy"]["Cov"]),
     _flux_xy_Cov(s["flux"]["xy"]["Cov"]),
@@ -734,7 +727,6 @@ SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const & record) c
     static_cast<ShapeResult&>(result) = record.get(_shapeResult);
     static_cast<CentroidResult&>(result) = record.get(_centroidResult);
     static_cast<FluxResult&>(result) = record.get(_fluxResult);
-    result.xy4 = record.get(_xy4);
     result.flux_xx_Cov = record.get(_flux_xx_Cov);
     result.flux_yy_Cov = record.get(_flux_yy_Cov);
     result.flux_xy_Cov = record.get(_flux_xy_Cov);
@@ -748,7 +740,6 @@ void SdssShapeResultKey::set(afw::table::BaseRecord & record, SdssShapeResult co
     record.set(_shapeResult, value);
     record.set(_centroidResult, value);
     record.set(_fluxResult, value);
-    record.set(_xy4, value.xy4);
     record.set(_flux_xx_Cov, value.flux_xx_Cov);
     record.set(_flux_yy_Cov, value.flux_yy_Cov);
     record.set(_flux_xy_Cov, value.flux_xy_Cov);
@@ -761,7 +752,6 @@ bool SdssShapeResultKey::operator==(SdssShapeResultKey const & other) const {
     return _shapeResult == other._shapeResult &&
         _centroidResult == other._centroidResult &&
         _fluxResult == other._fluxResult &&
-        _xy4 == other._xy4 &&
         _flux_xx_Cov == other._flux_xx_Cov &&
         _flux_yy_Cov == other._flux_yy_Cov &&
         _flux_xy_Cov == other._flux_xy_Cov;
@@ -772,7 +762,6 @@ bool SdssShapeResultKey::isValid() const {
     return _shapeResult.isValid() &&
         _centroidResult.isValid() &&
         _fluxResult.isValid() &&
-        _xy4.isValid() &&
         _flux_xx_Cov.isValid() &&
         _flux_yy_Cov.isValid() &&
         _flux_xy_Cov.isValid();
@@ -824,7 +813,6 @@ SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(
     result.xx = shapeImpl.getIxx();
     result.yy = shapeImpl.getIyy();
     result.xy = shapeImpl.getIxy();
-    result.xy4 = shapeImpl.getIxy4();
 
     if (ImageAdaptor<ImageT>::hasVariance) {
         result.xxSigma = shapeImpl.getIxxErr();
