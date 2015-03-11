@@ -24,7 +24,7 @@
 import numpy
 import lsst.utils.tests
 
-import lsst.afw.table
+import lsst.afw.table as afwTable
 import lsst.afw.image
 import lsst.afw.detection
 import lsst.afw.geom.ellipses
@@ -50,13 +50,13 @@ class MakeTestData(object):
 
         The simulated records will be in image coordinates, and no footprints will be attached.
         """
-        schema = lsst.afw.table.SourceTable.makeMinimalSchema()
+        schema = afwTable.SourceTable.makeMinimalSchema()
         nChildKey = schema.addField("deblend_nchild", type=int)
         xKey = schema.addField("truth_x", type=float,
                                doc="true simulated centroid x", units="pixels")
         yKey = schema.addField("truth_y", type=float,
                                doc="true simulated centroid y", units="pixels")
-        centroidKey = lsst.afw.table.Point2DKey(xKey, yKey)
+        centroidKey = afwTable.Point2DKey(xKey, yKey)
         fluxKey = schema.addField("truth_flux", type=float, doc="true flux", units="dn")
         xxKey = schema.addField("truth_xx", type=float,
                                 doc="true shape after PSF convolution", units="pixels^2")
@@ -64,10 +64,10 @@ class MakeTestData(object):
                                 doc="true shape after PSF convolution", units="pixels^2")
         xyKey = schema.addField("truth_xy", type=float,
                                 doc="true shape after PSF convolution", units="pixels^2")
-        shapeKey = lsst.afw.table.QuadrupoleKey(xxKey, yyKey, xyKey)
+        shapeKey = afwTable.QuadrupoleKey(xxKey, yyKey, xyKey)
         starFlagKey = schema.addField("truth_isStar", type="Flag", doc="set if the object is a star")
         schema.setVersion(1)
-        catalog = lsst.afw.table.SourceCatalog(schema)
+        catalog = afwTable.SourceCatalog(schema)
         bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0), lsst.afw.geom.Point2I(200, 200))
         # a bright, isolated star near (50, 50)
         record = catalog.addNew()
@@ -161,8 +161,8 @@ class MakeTestData(object):
         psf = lsst.afw.detection.GaussianPsf.cast(exposure.getPsf())
         schema = catalog.schema
         nChildKey = schema.find("deblend_nchild").key
-        centroidKey = lsst.afw.table.Point2DKey(schema.find("truth_x").key, schema.find("truth_y").key)
-        shapeKey = lsst.afw.table.QuadrupoleKey(schema.find("truth_xx").key, schema.find("truth_yy").key,
+        centroidKey = afwTable.Point2DKey(schema.find("truth_x").key, schema.find("truth_y").key)
+        shapeKey = afwTable.QuadrupoleKey(schema.find("truth_xx").key, schema.find("truth_yy").key,
                                                 schema.find("truth_xy").key)
         fluxKey = schema.find("truth_flux").key
 
@@ -224,8 +224,8 @@ class AlgorithmTestCase(lsst.utils.tests.TestCase):
         schema = catalog.schema
         self.truth = catalog
         self.calexp = exposure
-        self.centroidKey = lsst.afw.table.Point2DKey(schema.find("truth_x").key, schema.find("truth_y").key)
-        self.shapeKey = lsst.afw.table.QuadrupoleKey(schema.find("truth_xx").key, schema.find("truth_yy").key,
+        self.centroidKey = afwTable.Point2DKey(schema.find("truth_x").key, schema.find("truth_y").key)
+        self.shapeKey = afwTable.QuadrupoleKey(schema.find("truth_xx").key, schema.find("truth_yy").key,
                                                      schema.find("truth_xy").key)
         self.fluxKey = schema.find("truth_flux").key
 
@@ -246,12 +246,12 @@ class AlgorithmTestCase(lsst.utils.tests.TestCase):
         config.slots.psfFlux = None
         config.slots.instFlux = None
         config.plugins.names = (plugin,) + tuple(dependencies)
-        schemaMapper = lsst.afw.table.SchemaMapper(self.truth.schema)
+        schemaMapper = afwTable.SchemaMapper(self.truth.schema)
         schemaMapper.addMinimalSchema(self.truth.schema)
         algMetadata = lsst.daf.base.PropertyList()
         task = SingleFrameMeasurementTask(schema=schemaMapper.editOutputSchema(), algMetadata=algMetadata,
                                           config=config)
-        measCat = lsst.afw.table.SourceCatalog(task.schema)
+        measCat = afwTable.SourceCatalog(task.schema)
         measCat.table.setMetadata(algMetadata)
         measCat.extend(self.truth, schemaMapper)
         measCat.getTable().defineModelFlux("truth")
@@ -259,3 +259,46 @@ class AlgorithmTestCase(lsst.utils.tests.TestCase):
         measCat.getTable().defineShape("truth")
         task.run(measCat, self.calexp)
         return measCat
+
+class TransformTestCase(lsst.utils.tests.TestCase):
+    """!
+    Base class for testing measurement transformations.
+
+    An algorithm is automatically set up and ready for use in test methods
+    based on the controlClass/algorithmClass/transformClass specified in the
+    class definition. The programmer can then customize the input catalog as
+    they require, before calling _runTransform().
+    """
+    # The name used for the measurement algorithm; determines the names of the
+    # fields in the resulting catalog. This default should generally be fine,
+    # but subclasses can override if required.
+    name = "MeasurementTransformTest"
+
+    # These should be customized by subclassing.
+    controlClass = None
+    algorithmClass = None
+    transformClass = None
+
+    def setUp(self):
+        self.calexp = MakeTestData.makeEmptyExposure(MakeTestData.makeCatalog()[1])
+        self._setupTransform()
+
+    def tearDown(self):
+        del self.calexp
+        del self.inputCat
+        del self.mapper
+        del self.transform
+        del self.outputCat
+
+    def _setupTransform(self):
+        self.control = self.controlClass()
+        inputSchema = afwTable.SourceTable.makeMinimalSchema()
+        algo = self.algorithmClass(self.control, self.name, inputSchema)
+        self.inputCat = afwTable.SourceCatalog(inputSchema)
+        self.mapper = afwTable.SchemaMapper(inputSchema)
+        self.transform = self.transformClass(self.control, self.name, self.mapper)
+        self.outputCat = afwTable.BaseCatalog(self.mapper.getOutputSchema())
+
+    def _runTransform(self):
+        self.outputCat.extend(self.inputCat, mapper=self.mapper)
+        self.transform(self.inputCat, self.outputCat, self.calexp.getWcs(), self.calexp.getCalib())
