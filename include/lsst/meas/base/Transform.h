@@ -87,6 +87,31 @@ protected:
     std::string _name;
 };
 
+/**
+ *  Base for flux measurement transformations
+ *
+ *  Provides a basic transform from flux plus associated uncertainty to
+ *  magnitude with uncertainty. The basic "flag" attribute for the measurement
+ *  algorithm is propagated to the output
+ *
+ *  Subclasses should define a constructor which take a Control argument
+ *  corresponding to the measurement algorithm being transformed and ensure
+ *  that any other necessary flags are propagated.
+ */
+class FluxTransform : public BaseTransform {
+public:
+
+    FluxTransform(std::string const & name, afw::table::SchemaMapper & mapper);
+
+    void operator()(afw::table::SourceCatalog const & inputCatalog,
+                            afw::table::BaseCatalog & outputCatalog,
+                            afw::image::Wcs const & wcs,
+                            afw::image::Calib const & calib) const;
+private:
+    afw::table::Key<double> _magKey;
+    afw::table::Key<double> _magErrKey;
+};
+
 }}} // namespace lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_Transform_h_INCLUDED

@@ -21,6 +21,10 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+// measurement transformations
+
+%include "lsst/meas/base/Transform.h"
+
 // flux algorithms
 
 %include "lsst/meas/base/ApertureFlux.i"
@@ -56,4 +60,3 @@
 
 %feature("notabstract") lsst::meas::base::PixelFlagsAlgorithm;
 %include "lsst/meas/base/PixelFlags.h"
-
