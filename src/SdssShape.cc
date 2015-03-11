@@ -151,51 +151,15 @@ struct ImageAdaptor<afwImage::MaskedImage<T> > {
 
 /// Calculate weights from moments
 boost::tuple<std::pair<bool, double>, double, double, double>
-getWeights(double sigma11, double sigma12, double sigma22, ///< Moments
-           bool careful=true                               ///< Deal carefully with singular moments matrices?
-    ) {
+getWeights(double sigma11, double sigma12, double sigma22) {
     double const NaN = std::numeric_limits<double>::quiet_NaN();
     if (lsst::utils::isnan(sigma11) || lsst::utils::isnan(sigma12) || lsst::utils::isnan(sigma22)) {
         return boost::make_tuple(std::make_pair(false, NaN), NaN, NaN, NaN);
     }
     double const det = sigma11*sigma22 - sigma12*sigma12; // determinant of sigmaXX matrix
-    if (lsst::utils::isnan(det) || det < std::numeric_limits<float>::epsilon()) {
-        double const nan = std::numeric_limits<double>::quiet_NaN();
-        return boost::make_tuple(std::make_pair(false, nan), nan, nan, nan);
-    }
-    
     if (lsst::utils::isnan(det) || det < std::numeric_limits<float>::epsilon()) { // a suitably small number
-
-        /*
-         * We have to be a little careful here.  For some degenerate cases (e.g. an object that it zero
-         * except on a line) the moments matrix can be singular.  We deal with this by adding 1/12 in
-         * quadrature to the principal axes.
-         *
-         * Why bother?  Because we use the shape code for e.g. 2nd moment based star selection, and it
-         * needs to be robust.
-         */
-        double const iMin = 1/12.0;                                          // 2nd moment of single pixel
-
-        if (!careful) {
-            // Don't want to be careful --- report bad determinant
-            return boost::make_tuple(std::make_pair(false, det), NaN, NaN, NaN);
-        }
-
-        lsst::afw::geom::ellipses::Quadrupole const q(sigma11, sigma22, sigma12); // Ixx, Iyy, Ixy
-        lsst::afw::geom::ellipses::Axes axes(q);                                  // convert to (a, b, theta)
-        
-        axes.setA(::sqrt(::pow(axes.getA(), 2) + iMin));
-        axes.setB(::sqrt(::pow(axes.getB(), 2) + iMin));
-            
-        lsst::afw::geom::ellipses::Quadrupole const q2(axes); // back to Ixx etc.
-        
-        lsst::afw::geom::ellipses::Quadrupole::Matrix const mat = q2.getMatrix().inverse();
-        
-        return boost::make_tuple(std::make_pair(true, q2.getDeterminant()), mat(0, 0), mat(1, 0), mat(1, 1));
+        return boost::make_tuple(std::make_pair(false, det), NaN, NaN, NaN);
     }
-
-    assert(sigma11*sigma22 >= sigma12*sigma12 - std::numeric_limits<float>::epsilon());
-
     return boost::make_tuple(std::make_pair(true, det), sigma22/det, -sigma12/det, sigma11/det);
 }
 
@@ -588,7 +552,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
             n12 = ow12 - w12;
             n22 = ow22 - w22;
 
-            weights = getWeights(n11, n12, n22, false);
+            weights = getWeights(n11, n12, n22);
             if (!weights.get<0>().first) {
                 // product-of-Gaussians assumption failed
                 shape->setFlag(SdssShapeImpl::UNWEIGHTED);
