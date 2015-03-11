@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2014 LSST Corporation.
+ * Copyright 2008-2015 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -25,6 +25,7 @@
 #define LSST_MEAS_BASE_FluxUtilities_h_INCLUDED
 
 #include "lsst/meas/base/constants.h"
+#include "lsst/meas/base/Transform.h"
 #include "lsst/afw/table/FunctorKey.h"
 #include "lsst/afw/table/Schema.h"
 
@@ -119,6 +120,84 @@ public:
 private:
     afw::table::Key<Flux> _flux;
     afw::table::Key<FluxErrElement> _fluxSigma;
+};
+
+/**
+ *  @brief A reusable result struct for magnitudes
+ */
+struct MagResult {
+    Mag mag;
+    MagErrElement magErr;
+};
+
+/**
+ *  @brief A FunctorKey for MagResult
+ *
+ *  This class makes it easy to copy magnitudes and their uncertainties to and from records, and provides
+ *  a method to add the appropriate fields to a Schema.
+ */
+class MagResultKey : public afw::table::FunctorKey<MagResult> {
+public:
+    /**
+     *  Add a pair of _mag, _magErr fields to a Schema, and return a MagResultKey that points to them.
+     *
+     *  @param[in,out] schema  Schema to add fields to.
+     *  @param[in]     name    Name prefix for all fields; "_mag", "_magErr" will be appended to this
+     *                         to form the full field names.
+     */
+    static MagResultKey addFields(
+        afw::table::Schema & schema,
+        std::string const & name
+    );
+
+    /// Default constructor; instance will not be usuable unless subsequently assigned to.
+    MagResultKey() : _magKey(), _magErrKey() {}
+
+    /**
+     *  @brief Construct from a subschema, assuming mag and magErr subfields
+     *
+     *  If a schema has "a_mag" and "a_magErr" fields, this enables construction of a MagResultKey via:
+     *  @code
+     *  MagResultKey k(schema["a"]);
+     *  @endcode
+     */
+    MagResultKey(afw::table::SubSchema const & s) : _magKey(s["mag"]), _magErrKey(s["magErr"]) {}
+
+    /// Get a MagResult from the given record.
+    virtual MagResult get(afw::table::BaseRecord const & record) const;
+
+    /// Set a MagResult in the given record.
+    virtual void set(afw::table::BaseRecord & record, MagResult const & magResult) const;
+
+    /// Set a MagResult in the record given the result of `afw::image::Calib::getMagnitude(double, double)`.
+    virtual void set(afw::table::BaseRecord & record, std::pair<double,double> const & magPair) const;
+
+private:
+    afw::table::Key<Mag> _magKey;
+    afw::table::Key<MagErrElement> _magErrKey;
+};
+
+/**
+ *  Base for flux measurement transformations
+ *
+ *  Provides a basic transform from flux plus associated uncertainty to
+ *  magnitude with uncertainty. The basic "flag" attribute for the measurement
+ *  algorithm is propagated to the output
+ *
+ *  Subclasses should define a constructor which take a Control argument
+ *  corresponding to the measurement algorithm being transformed and ensure
+ *  that any other necessary flags are propagated.
+ */
+class FluxTransform : public BaseTransform {
+public:
+    FluxTransform(std::string const & name, afw::table::SchemaMapper & mapper);
+
+    virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
+                            afw::table::BaseCatalog & outputCatalog,
+                            afw::image::Wcs const & wcs,
+                            afw::image::Calib const & calib) const;
+private:
+    MagResultKey _magKey;
 };
 
 }}} // lsst::meas::base

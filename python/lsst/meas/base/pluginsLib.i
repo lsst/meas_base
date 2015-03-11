@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2015 LSST Corporation.
+ * Copyright 2008-2015 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -20,6 +20,10 @@
  * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
+
+// measurement transformations
+
+%include "lsst/meas/base/Transform.h"
 
 // flux algorithms
 
@@ -56,4 +60,3 @@
 
 %feature("notabstract") lsst::meas::base::PixelFlagsAlgorithm;
 %include "lsst/meas/base/PixelFlags.h"
-
