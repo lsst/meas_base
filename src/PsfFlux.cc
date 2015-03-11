@@ -33,6 +33,19 @@
 
 namespace lsst { namespace meas { namespace base {
 
+namespace {
+
+boost::array<FlagDefinition,PsfFluxAlgorithm::N_FLAGS> const & getFlagDefinitions() {
+    static boost::array<FlagDefinition,PsfFluxAlgorithm::N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag"},
+        {"flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit"},
+        {"flag_edge", "object was too close to the edge of the image to use the full PSF model"}
+    }};
+    return flagDefs;
+}
+
+} // anonymous
+
 PsfFluxAlgorithm::PsfFluxAlgorithm(
     Control const & ctrl,
     std::string const & name,
@@ -43,12 +56,8 @@ PsfFluxAlgorithm::PsfFluxAlgorithm(
     ),
     _centroidExtractor(schema, name)
 {
-    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag"},
-        {"flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit"},
-        {"flag_edge", "object was too close to the edge of the image to use the full PSF model"}
-    }};
-    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+    _flagHandler = FlagHandler::addFields(schema, name,
+                                          getFlagDefinitions().begin(), getFlagDefinitions().end());
 }
 
 void PsfFluxAlgorithm::measure(
