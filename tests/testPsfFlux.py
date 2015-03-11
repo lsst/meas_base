@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2013 LSST Corporation.
+# Copyright 2008-2015 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -24,53 +24,44 @@
 import unittest
 import numpy
 
-import lsst.afw.geom
-import lsst.afw.table
-import lsst.utils.tests
-import lsst.meas.base.tests
+import lsst.afw.detection as afwDetection
+import lsst.afw.geom as afwGeom
+import lsst.afw.image as afwImage
+import lsst.afw.table as afwTable
+import lsst.meas.base as measBase
+import lsst.utils.tests as utilsTests
 
-numpy.random.seed(1234567)
+from lsst.meas.base.tests import AlgorithmTestCase
 
-# n.b. Some tests here depend on the noise realization in the test data
-# or from the numpy random number generator.
-# For the current test data and seed value, they pass, but they may not
-# if the test data is regenerated or the seed value changes.  I've marked
-# these with an "rng dependent" comment.  In most cases, they test that
-# the measured flux lies within 2 sigma of the correct value, which we
-# should expect to fail sometimes.
-
-class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
-    """Test case for the PsfFlux algorithm/plugins
-    """
-
+class PsfFluxTestCase(AlgorithmTestCase):
     def prep(self, ctrl=None):
         """Construct an algorithm (finishing the schema in the process),
         create a record it can fill, and return both.
         """
         if ctrl is None:
-            ctrl = lsst.meas.base.PsfFluxControl()
+            ctrl = measBase.PsfFluxControl()
         schema = self.mapper.getOutputSchema()
         schema.getAliasMap().set("slot_Centroid", "truth")
-        algorithm = lsst.meas.base.PsfFluxAlgorithm(ctrl, "base_PsfFlux", schema)
-        measCat = lsst.afw.table.SourceCatalog(schema)
+        algorithm = measBase.PsfFluxAlgorithm(ctrl, "base_PsfFlux", schema)
+        measCat = afwTable.SourceCatalog(schema)
         measRecord = measCat.addNew()
         measRecord.assign(self.truth[0], self.mapper)
         return algorithm, measRecord
 
     def setUp(self):
-        lsst.meas.base.tests.AlgorithmTestCase.setUp(self)
-        self.mapper = lsst.afw.table.SchemaMapper(self.truth.schema)
-        self.mapper.addMinimalSchema(lsst.afw.table.SourceTable.makeMinimalSchema())
+        AlgorithmTestCase.setUp(self)
+        self.mapper = afwTable.SchemaMapper(self.truth.schema)
+        self.mapper.addMinimalSchema(afwTable.SourceTable.makeMinimalSchema())
         self.mapper.addMapping(self.truth.schema.find("truth_x").key)
         self.mapper.addMapping(self.truth.schema.find("truth_y").key)
         self.mapper.addMapping(self.truth.schema.find("truth_flux").key)
 
     def tearDown(self):
-        lsst.meas.base.tests.AlgorithmTestCase.tearDown(self)
+        AlgorithmTestCase.tearDown(self)
         del self.mapper
 
     def testMasking(self):
-        badPoint = lsst.afw.geom.Point2I(self.truth[0].get(self.centroidKey)) + lsst.afw.geom.Extent2I(3,4)
+        badPoint = afwGeom.Point2I(self.truth[0].get(self.centroidKey)) + afwGeom.Extent2I(3,4)
         imageArray = self.calexp.getMaskedImage().getImage().getArray()
         maskArray = self.calexp.getMaskedImage().getMask().getArray()
         badMask = self.calexp.getMaskedImage().getMask().getPlaneBitMask("BAD")
@@ -78,9 +69,9 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         maskArray[badPoint.getY() - self.calexp.getY0(), badPoint.getX() - self.calexp.getX0()] |= badMask
         # Should get an infinite value exception, because we didn't mask that one pixel
         algorithm, measRecord = self.prep()
-        self.assertRaises(lsst.meas.base.PixelValueError, algorithm.measure, measRecord, self.calexp)
+        self.assertRaises(measBase.PixelValueError, algorithm.measure, measRecord, self.calexp)
         # If we do mask it, we should get a reasonable result
-        ctrl = lsst.meas.base.PsfFluxControl()
+        ctrl = measBase.PsfFluxControl()
         ctrl.badMaskPlanes = ["BAD"]
         algorithm, measRecord = self.prep(ctrl)
         algorithm.measure(measRecord, self.calexp)
@@ -89,7 +80,7 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
                          atol=3*measRecord.get("base_PsfFlux_fluxSigma"))
         # If we mask the whole image, we should get a MeasurementError
         maskArray[:,:] |= badMask
-        self.assertRaises(lsst.meas.base.MeasurementError, algorithm.measure, measRecord, self.calexp)
+        self.assertRaises(measBase.MeasurementError, algorithm.measure, measRecord, self.calexp)
 
     def testSubImage(self):
         """Test that we don't get confused by images with nonzero xy0, and that the EDGE flag is set
@@ -98,7 +89,7 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         psfImage = self.calexp.getPsf().computeImage(self.truth[0].get(self.centroidKey))
         bbox = psfImage.getBBox()
         bbox.grow(-1)
-        subExposure = self.calexp.Factory(self.calexp, bbox, lsst.afw.image.LOCAL)
+        subExposure = self.calexp.Factory(self.calexp, bbox, afwImage.LOCAL)
         algorithm, measRecord = self.prep()
         algorithm.measure(measRecord, subExposure)
         self.assertClose(measRecord.get("base_PsfFlux_flux"), self.truth[0].get(self.fluxKey),
@@ -110,7 +101,7 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         """
         self.calexp.setPsf(None)
         algorithm, measRecord = self.prep()
-        self.assertRaises(lsst.meas.base.FatalAlgorithmError, algorithm.measure, measRecord, self.calexp)
+        self.assertRaises(measBase.FatalAlgorithmError, algorithm.measure, measRecord, self.calexp)
 
     def testMonteCarlo(self):
         """Test that we get exactly the right answer on an ideal sim with no noise, and that
@@ -121,9 +112,9 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         psf = self.calexp.getPsf()
         position = self.truth[0].get(self.centroidKey)
         image = psf.computeImage(position)
-        exposure1 = lsst.afw.image.ExposureF(lsst.afw.image.MaskedImageF(image.convertF()))
+        exposure1 = afwImage.ExposureF(afwImage.MaskedImageF(image.convertF()))
         exposure1.setPsf(psf)
-        footprint = lsst.afw.detection.Footprint(image.getBBox())
+        footprint = afwDetection.Footprint(image.getBBox())
         algorithm, measRecord = self.prep()
         algorithm.measure(measRecord, exposure1)
         self.assertClose(measRecord.get("base_PsfFlux_flux"), 1.0, rtol=1E-8)
@@ -146,7 +137,7 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             fluxSigmaMean = numpy.mean(fluxSigmas)
             fluxStandardDeviation = numpy.std(fluxes)
             self.assertClose(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)   # rng dependent
-            self.assertLess(fluxMean - 1.0, 2.0*fluxSigmaMean / nSamples**0.5)   # rng dependent
+            self.assertLess(fluxMean - 1.0, 2.0*fluxSigmaMean / nSamples**0.5)  # rng dependent
 
     def testSingleFramePlugin(self):
         measCat = self.runSingleFrameMeasurementTask("base_PsfFlux")
@@ -161,16 +152,16 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
-    lsst.utils.tests.init()
+    utilsTests.init()
 
     suites = []
     suites += unittest.makeSuite(PsfFluxTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
+    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
 def run(shouldExit=False):
     """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
+    utilsTests.run(suite(), shouldExit)
 
 if __name__ == "__main__":
     run(True)

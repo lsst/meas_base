@@ -208,6 +208,14 @@ class MakeTestData(object):
         return images
 
 class AlgorithmTestCase(lsst.utils.tests.TestCase):
+    # Some tests rely on getting reproducible output from the NumPy random
+    # number generator. We seed it with this value, which can be over-ridden
+    # as necessary in subclasses, when the test case is created.
+    randomSeed = 1234
+
+    @classmethod
+    def setUpClass(cls):
+        numpy.random.seed(cls.randomSeed)
 
     def setUp(self):
         catalog, bbox = MakeTestData.makeCatalog()
