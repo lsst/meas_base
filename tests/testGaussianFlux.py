@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2013 LSST Corporation.
+# Copyright 2008-2015 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -23,24 +23,17 @@
 
 import math
 import os
-from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
-from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
-from lsst.meas.base.base import *
-from lsst.meas.base.tests import *
 import unittest
-import lsst.utils.tests
-import numpy
+import lsst.afw.table as afwTable
+import lsst.meas.base as measBase
+import lsst.utils.tests as utilsTests
 
-numpy.random.seed(1234)
+from lsst.meas.base.tests import AlgorithmTestCase, TransformTestCase
 
-
-DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
-
-class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
-
+class GaussianFluxTestCase(measBase.tests.AlgorithmTestCase):
     def testAlgorithm(self):
-        sfmConfig = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        mapper = SchemaMapper(self.truth.getSchema())
+        sfmConfig = measBase.sfm.SingleFrameMeasurementConfig()
+        mapper = afwTable.SchemaMapper(self.truth.getSchema())
         mapper.addMinimalSchema(self.truth.getSchema())
         outSchema = mapper.getOutputSchema()
         #  Basic test of GaussianFlux algorithm, no C++ slots
@@ -51,8 +44,8 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         sfmConfig.slots.instFlux = None
         sfmConfig.slots.apFlux = None
         sfmConfig.slots.modelFlux = "base_GaussianFlux"
-        task = SingleFrameMeasurementTask(outSchema, config=sfmConfig)
-        measCat = SourceCatalog(outSchema)
+        task = measBase.sfm.SingleFrameMeasurementTask(outSchema, config=sfmConfig)
+        measCat = afwTable.SourceCatalog(outSchema)
         measCat.extend(self.truth, mapper=mapper)
         # now run the SFM task with the test plugin
         task.run(measCat, self.calexp)
@@ -78,19 +71,46 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             self.assertTrue(record.get("base_GaussianFlux_flag_badShape"))
             self.assertFalse(record.get("base_GaussianFlux_flag_badCentroid"))
 
+
+class GaussianFluxTransformTestCase(TransformTestCase):
+    controlClass = measBase.GaussianFluxControl
+    algorithmClass = measBase.GaussianFluxAlgorithm
+    transformClass = measBase.GaussianFluxTransform
+
+    def testTransform(self):
+        flux, fluxSigma = 10, 1 # Arbitrary values for testing
+        for flag in (True, False):
+            record = self.inputCat.addNew()
+            record[self.name + '_flux'] = flux
+            record[self.name + '_fluxSigma'] = fluxSigma
+            record.set(self.name + '_flag', flag)
+
+        self._runTransform()
+
+        # We are not testing the Calib itself; we assume that it is correct
+        # when converting flux to magnitude, and merely check that the
+        # transform has used it properly
+        mag, magErr = self.calexp.getCalib().getMagnitude(flux, fluxSigma)
+        for inSrc, outSrc in zip(self.inputCat, self.outputCat):
+            self.assertEqual(outSrc[self.name + '_mag'], mag)
+            self.assertEqual(outSrc[self.name + '_magErr'], magErr)
+            self.assertEqual(outSrc.get(self.name + '_flag'), inSrc.get(self.name + '_flag'))
+
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
-    lsst.utils.tests.init()
+    utilsTests.init()
 
     suites = []
-    suites += unittest.makeSuite(SFMTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
+    suites += unittest.makeSuite(GaussianFluxTestCase)
+    suites += unittest.makeSuite(GaussianFluxTransformTestCase)
+    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
 def run(shouldExit=False):
     """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
+    utilsTests.run(suite(), shouldExit)
 
 if __name__ == "__main__":
     run(True)

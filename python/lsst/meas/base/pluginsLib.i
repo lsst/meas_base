@@ -36,6 +36,7 @@
 %include "lsst/meas/base/PeakLikelihoodFlux.h"
 
 %feature("notabstract") lsst::meas::base::GaussianFluxAlgorithm;
+%feature("notabstract") lsst::meas::base::GaussianFluxTransform;
 %include "lsst/meas/base/GaussianFlux.h"
 
 // centroid algorithms

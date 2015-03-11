@@ -31,6 +31,7 @@
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"
+#include "lsst/meas/base/Transform.h"
 #include "lsst/meas/base/detail/SdssShapeImpl.h"
 
 namespace lsst { namespace meas { namespace base {
@@ -90,6 +91,13 @@ private:
     FlagHandler _flagHandler;
     SafeCentroidExtractor _centroidExtractor;
     SafeShapeExtractor _shapeExtractor;
+};
+
+class GaussianFluxTransform : public FluxTransform {
+public:
+    typedef GaussianFluxControl Control;
+    GaussianFluxTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper)
+                          : FluxTransform{name, mapper} { }
 };
 
 }}} // namespace lsst::meas::base
