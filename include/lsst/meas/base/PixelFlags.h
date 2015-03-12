@@ -35,7 +35,6 @@
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"
-#include "lsst/meas/base/detail/SdssShapeImpl.h"
 
 namespace lsst { namespace meas { namespace base {
 
