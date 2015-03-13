@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2013 LSST Corporation.
+# Copyright 2008-2015 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -24,25 +24,16 @@
 import unittest
 import numpy
 
+import lsst.afw.detection
 import lsst.afw.geom
+import lsst.afw.image
 import lsst.afw.table
+import lsst.meas.base
 import lsst.utils.tests
-import lsst.meas.base.tests
 
-numpy.random.seed(1234567)
+from lsst.meas.base.tests import AlgorithmTestCase, TransformTestCase
 
-# n.b. Some tests here depend on the noise realization in the test data
-# or from the numpy random number generator.
-# For the current test data and seed value, they pass, but they may not
-# if the test data is regenerated or the seed value changes.  I've marked
-# these with an "rng dependent" comment.  In most cases, they test that
-# the measured flux lies within 2 sigma of the correct value, which we
-# should expect to fail sometimes.
-
-class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
-    """Test case for the PsfFlux algorithm/plugins
-    """
-
+class PsfFluxTestCase(AlgorithmTestCase):
     def prep(self, ctrl=None):
         """Construct an algorithm (finishing the schema in the process),
         create a record it can fill, and return both.
@@ -58,7 +49,7 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         return algorithm, measRecord
 
     def setUp(self):
-        lsst.meas.base.tests.AlgorithmTestCase.setUp(self)
+        AlgorithmTestCase.setUp(self)
         self.mapper = lsst.afw.table.SchemaMapper(self.truth.schema)
         self.mapper.addMinimalSchema(lsst.afw.table.SourceTable.makeMinimalSchema())
         self.mapper.addMapping(self.truth.schema.find("truth_x").key)
@@ -66,7 +57,7 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         self.mapper.addMapping(self.truth.schema.find("truth_flux").key)
 
     def tearDown(self):
-        lsst.meas.base.tests.AlgorithmTestCase.tearDown(self)
+        AlgorithmTestCase.tearDown(self)
         del self.mapper
 
     def testMasking(self):
@@ -158,6 +149,16 @@ class PsfFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
                 self.assertClose(record.get("truth_flux"), record.get("base_PsfFlux_flux"),
                                  atol=3*record.get("base_PsfFlux_fluxSigma"))
 
+
+class PsfFluxTransformTestCase(TransformTestCase):
+    controlClass = lsst.meas.base.PsfFluxControl
+    algorithmClass = lsst.meas.base.PsfFluxAlgorithm
+    transformClass = lsst.meas.base.PsfFluxTransform
+    flagNames = ('_flag', '_flag_noGoodPixels', '_flag_edge')
+    singleFramePlugins = ('base_PsfFlux',)
+    forcedPlugins = ('base_PsfFlux',)
+
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
@@ -165,6 +166,7 @@ def suite():
 
     suites = []
     suites += unittest.makeSuite(PsfFluxTestCase)
+    suites += unittest.makeSuite(PsfFluxTransformTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 

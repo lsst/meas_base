@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2013 LSST Corporation.
+ * Copyright 2008-2015 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -33,6 +33,19 @@
 
 namespace lsst { namespace meas { namespace base {
 
+namespace {
+
+boost::array<FlagDefinition,PsfFluxAlgorithm::N_FLAGS> const & getFlagDefinitions() {
+    static boost::array<FlagDefinition,PsfFluxAlgorithm::N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag"},
+        {"flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit"},
+        {"flag_edge", "object was too close to the edge of the image to use the full PSF model"}
+    }};
+    return flagDefs;
+}
+
+} // anonymous
+
 PsfFluxAlgorithm::PsfFluxAlgorithm(
     Control const & ctrl,
     std::string const & name,
@@ -43,12 +56,8 @@ PsfFluxAlgorithm::PsfFluxAlgorithm(
     ),
     _centroidExtractor(schema, name)
 {
-    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag"},
-        {"flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit"},
-        {"flag_edge", "object was too close to the edge of the image to use the full PSF model"}
-    }};
-    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+    _flagHandler = FlagHandler::addFields(schema, name,
+                                          getFlagDefinitions().begin(), getFlagDefinitions().end());
 }
 
 void PsfFluxAlgorithm::measure(
@@ -129,6 +138,16 @@ void PsfFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementEr
     _flagHandler.handleFailure(measRecord, error);
 }
 
+PsfFluxTransform::PsfFluxTransform(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::SchemaMapper & mapper
+) :
+    FluxTransform{name, mapper}
+{
+    for (auto flag = getFlagDefinitions().begin() + 1; flag < getFlagDefinitions().end(); flag++) {
+        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(name + "_" + flag->name).key);
+    }
+}
 
 }}} // namespace lsst::meas::base
-

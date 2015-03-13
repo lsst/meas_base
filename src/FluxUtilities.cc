@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2014 LSST Corporation.
+ * Copyright 2008-2015 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -21,8 +21,9 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include "lsst/meas/base/FluxUtilities.h"
 #include "lsst/afw/table/BaseRecord.h"
+#include "lsst/meas/base/FluxUtilities.h"
+#include "lsst/meas/base/Transform.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -53,6 +54,60 @@ FluxResult FluxResultKey::get(afw::table::BaseRecord const & record) const {
 void FluxResultKey::set(afw::table::BaseRecord & record, FluxResult const & value) const {
     record.set(_flux, value.flux);
     record.set(_fluxSigma, value.fluxSigma);
+}
+
+MagResultKey MagResultKey::addFields(
+    afw::table::Schema & schema,
+    std::string const & name
+) {
+    MagResultKey result;
+    result._magKey = schema.addField<Mag>(schema.join(name, "mag"), "Magnitude");
+    result._magErrKey = schema.addField<MagErrElement>(schema.join(name, "magErr"), "Error on magnitude");
+    return result;
+}
+
+MagResult MagResultKey::get(afw::table::BaseRecord const & record) const {
+    MagResult result = {record.get(_magKey), record.get(_magErrKey)};
+    return result;
+}
+
+void MagResultKey::set(afw::table::BaseRecord & record, MagResult const & magResult) const {
+    record.set(_magKey, magResult.mag);
+    record.set(_magErrKey, magResult.magErr);
+}
+
+void MagResultKey::set(afw::table::BaseRecord & record, std::pair<double,double> const & magResult) const {
+    record.set(_magKey, magResult.first);
+    record.set(_magErrKey, magResult.second);
+}
+
+FluxTransform::FluxTransform(
+    std::string const & name,
+    afw::table::SchemaMapper & mapper
+) :
+    BaseTransform{name}
+{
+    // Map the flag through to the output
+    mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(name + "_flag").key);
+
+    // Add keys for the magnitude and associated error
+    _magKey = MagResultKey::addFields(mapper.editOutputSchema(), name);
+}
+
+void FluxTransform::operator()(
+    afw::table::SourceCatalog const & inputCatalog,
+    afw::table::BaseCatalog & outputCatalog,
+    afw::image::Wcs const & wcs,
+    afw::image::Calib const & calib
+) const {
+    assert(inputCatalog.size() == outputCatalog.size());
+    FluxResultKey fluxKey(inputCatalog.getSchema()[_name]);
+    afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
+    afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();
+    for (; inSrc < inputCatalog.end() && outSrc < outputCatalog.end(); ++inSrc, ++outSrc) {
+        FluxResult fluxResult = fluxKey.get(*inSrc);
+        _magKey.set(*outSrc, calib.getMagnitude(fluxResult.flux, fluxResult.fluxSigma));
+    }
 }
 
 }}} // namespace lsst::meas::base

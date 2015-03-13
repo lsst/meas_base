@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2015 LSST Corporation.
+ * Copyright 2008-2015 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -32,6 +32,7 @@
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"
+#include "lsst/meas/base/Transform.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -245,6 +246,24 @@ private:
     std::bitset<ApertureFluxAlgorithm::N_FLAGS> _flags;
 };
 
+/**
+ *  Measurement transformation for aperture fluxes
+ *
+ *  Transforms fluxes with associated errors to magnitudes. Correctly handles
+ *  multiple apertures. Flags are propagated from input to output.
+ */
+class ApertureFluxTransform : public BaseTransform {
+public:
+    typedef ApertureFluxControl Control;
+    ApertureFluxTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper);
+    virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
+                            afw::table::BaseCatalog & outputCatalog,
+                            afw::image::Wcs const & wcs,
+                            afw::image::Calib const & calib) const;
+private:
+    std::vector<MagResultKey> _magKeys;
+    Control _ctrl;
+};
 
 }}} // namespace lsst::meas::base
 

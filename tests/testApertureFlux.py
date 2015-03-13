@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2014 LSST Corporation.
+# Copyright 2008-2015 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -25,20 +25,11 @@ import unittest
 import numpy
 
 import lsst.afw.geom
-import lsst.afw.table
+import lsst.afw.image
 import lsst.utils.tests
+
 from lsst.meas.base import ApertureFluxAlgorithm
-import lsst.meas.base.tests
-
-numpy.random.seed(1234567)
-
-# n.b. Some tests here depend on the noise realization in the test data
-# or from the numpy random number generator.
-# For the current test data and seed value, they pass, but they may not
-# if the test data is regenerated or the seed value changes.  I've marked
-# these with an "rng dependent" comment.  In most cases, they test that
-# the measured flux lies within 2 sigma of the correct value, which we
-# should expect to fail sometimes.
+from lsst.meas.base.tests import AlgorithmTestCase, TransformTestCase
 
 class ApertureFluxTestCase(lsst.utils.tests.TestCase):
     """Test case for the ApertureFlux algorithm base class
@@ -158,16 +149,9 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         self.assertTrue(invalid2.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
         self.assertFalse(numpy.isnan(invalid2.flux))
 
-class CircularApertureFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
+class CircularApertureFluxTestCase(AlgorithmTestCase):
     """Test case for the CircularApertureFlux algorithm/plugin
     """
-
-    def setUp(self):
-        lsst.meas.base.tests.AlgorithmTestCase.setUp(self)
-
-    def tearDown(self):
-        lsst.meas.base.tests.AlgorithmTestCase.tearDown(self)
-
     def testSingleFramePlugin(self):
         config = lsst.meas.base.SingleFrameMeasurementConfig()
         config.plugins["base_CircularApertureFlux"].maxSincRadius = 20
@@ -217,6 +201,30 @@ class CircularApertureFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
                 self.assertClose(record.get("base_CircularApertureFlux_6_flux"), record.get("truth_flux"),
                                  rtol=0.02)
 
+
+class ApertureFluxTransformTestCase(TransformTestCase):
+    class circApFluxAlgorithmFactory(object):
+        """
+        Helper class to sub in an empty PropertyList as the final argument to
+        CircularApertureFluxAlgorithm.
+        """
+        def __call__(self, control, name, inputSchema):
+            return lsst.meas.base.CircularApertureFluxAlgorithm(control, name, inputSchema,
+                                                                lsst.daf.base.PropertyList())
+
+    controlClass = lsst.meas.base.ApertureFluxAlgorithm.Control
+    algorithmClass = circApFluxAlgorithmFactory()
+    transformClass = lsst.meas.base.ApertureFluxTransform
+    flagNames = ('flag', 'flag_apertureTruncated', 'flag_sincCoeffsTruncated')
+    singleFramePlugins = ('base_CircularApertureFlux',)
+    forcedPlugins = ('base_CircularApertureFlux',)
+
+    def testTransform(self):
+        """Demonstrate application of the ApertureFluxTransform to a synthetic SourceCatalog."""
+        TransformTestCase.testTransform(self,
+                                        [self.name + "_" + str(i) for i in range(len(self.control.radii))])
+
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
@@ -225,6 +233,7 @@ def suite():
     suites = []
     suites += unittest.makeSuite(ApertureFluxTestCase)
     suites += unittest.makeSuite(CircularApertureFluxTestCase)
+    suites += unittest.makeSuite(ApertureFluxTransformTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 

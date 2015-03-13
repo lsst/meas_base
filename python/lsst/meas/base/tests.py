@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008, 2009, 2010, 2014 LSST Corporation.
+# Copyright 2008-2015 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -22,13 +22,13 @@
 #
 
 import numpy
-import lsst.utils.tests
 
 import lsst.afw.table
 import lsst.afw.image
 import lsst.afw.detection
 import lsst.afw.geom.ellipses
 import lsst.afw.coord
+import lsst.utils.tests
 
 from .sfm import SingleFrameMeasurementTask
 
@@ -208,6 +208,20 @@ class MakeTestData(object):
         return images
 
 class AlgorithmTestCase(lsst.utils.tests.TestCase):
+    # Some tests depend on the noise realization in the test data or from the
+    # numpy random number generator. In most cases, they are testing that the
+    # measured flux lies within 2 sigma of the correct value, which we should
+    # expect to fail sometimes. Some -- but sadly not all -- of these cases
+    # have been marked with an "rng dependent" comment.
+    #
+    # We ensure these tests are provided with data which causes them to pass
+    # by seeding the numpy RNG with this value. It can be over-ridden as
+    # necessary in subclasses.
+    randomSeed = 1234
+
+    @classmethod
+    def setUpClass(cls):
+        numpy.random.seed(cls.randomSeed)
 
     def setUp(self):
         catalog, bbox = MakeTestData.makeCatalog()
@@ -251,3 +265,119 @@ class AlgorithmTestCase(lsst.utils.tests.TestCase):
         measCat.getTable().defineShape("truth")
         task.run(measCat, self.calexp)
         return measCat
+
+class TransformTestCase(lsst.utils.tests.TestCase):
+    """!
+    Base class for testing measurement transformations.
+
+    We test both that the transform itself operates successfully (fluxes are
+    converted to magnitudes, flags are propagated properly) and that the
+    transform is registered as the default for the appropriate measurement
+    algorithms.
+
+    In the simple case of one-measurement-per-transformation, the developer
+    need not directly write any tests themselves: simply customizing the class
+    variables is all that is required. More complex measurements (e.g.
+    multiple aperture fluxes) require extra effort.
+    """
+    # The name used for the measurement algorithm; determines the names of the
+    # fields in the resulting catalog. This default should generally be fine,
+    # but subclasses can override if required.
+    name = "MeasurementTransformTest"
+
+    # These should be customized by subclassing.
+    controlClass = None
+    algorithmClass = None
+    transformClass = None
+
+    # Flags which may be set by the algorithm being tested. Can be customized
+    # in subclasses.
+    flagNames = ("flag",)
+
+    # The plugin being tested should be registered under these names for
+    # single frame and forced measurement. Should be customized by
+    # subclassing.
+    singleFramePlugins = ()
+    forcedPlugins = ()
+
+    def setUp(self):
+        self.calexp = MakeTestData.makeEmptyExposure(MakeTestData.makeCatalog()[1])
+        self._setupTransform()
+
+    def tearDown(self):
+        del self.calexp
+        del self.inputCat
+        del self.mapper
+        del self.transform
+        del self.outputCat
+
+    def _setupTransform(self):
+        self.control = self.controlClass()
+        inputSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
+        algo = self.algorithmClass(self.control, self.name, inputSchema)
+        self.inputCat = lsst.afw.table.SourceCatalog(inputSchema)
+        self.mapper = lsst.afw.table.SchemaMapper(inputSchema)
+        self.transform = self.transformClass(self.control, self.name, self.mapper)
+        self.outputCat = lsst.afw.table.BaseCatalog(self.mapper.getOutputSchema())
+
+    def _populateCatalog(self, baseNames):
+        for flagValue in (True, False):
+            record = self.inputCat.addNew()
+            for baseName in baseNames:
+                record[baseName + '_flux'], record[baseName + '_fluxSigma'] = numpy.random.random(2)
+                for flagName in self.flagNames:
+                    if baseName + '_' + flagName in record.schema:
+                        record.set(baseName + '_' + flagName, flagValue)
+
+    def _checkOutput(self, baseNames):
+        for inSrc, outSrc in zip(self.inputCat, self.outputCat):
+            for baseName in baseNames:
+                fluxName = baseName + '_flux'
+                fluxSigmaName = baseName + '_fluxSigma'
+                mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[fluxName], inSrc[fluxSigmaName])
+                self.assertEqual(outSrc[baseName + '_mag'], mag)
+                self.assertEqual(outSrc[baseName + '_magErr'], magErr)
+                for flagName in self.flagNames:
+                    keyName = baseName + '_' + flagName
+                    if keyName in inSrc.schema:
+                        self.assertEqual(outSrc.get(keyName), inSrc.get(keyName))
+                    else:
+                        self.assertFalse(keyName in outSrc.schema)
+
+    def _runTransform(self):
+        self.outputCat.extend(self.inputCat, mapper=self.mapper)
+        self.transform(self.inputCat, self.outputCat, self.calexp.getWcs(), self.calexp.getCalib())
+
+    def testTransform(self, baseNames=None):
+        """
+        Test the operation of the transformation on a catalog containing random data.
+
+        We check that appropriate conversions have been properly applied and that flags have been propagated.
+
+        The `baseNames` argument requires some explanation. This should be an iterable of the leading parts of
+        the field names for each measurement; that is, everything that appears before `_flux`, `_flag`, etc.
+        In the simple case of a single measurement per plugin, this is simply equal to `self.name` (thus
+        measurements are stored as `self.name + "_flux"`, etc). More generally, the developer may specify
+        whatever iterable they require. For example, to handle multiple apertures, we could have
+        `(self.name + "_0", self.name + "_1", ...)`.
+
+        @param[in]  baseNames  Iterable of the initial parts of measurement field names.
+        """
+
+
+        baseNames = baseNames or [self.name]
+        self._populateCatalog(baseNames)
+        self._runTransform()
+        self._checkOutput(baseNames)
+
+    def _checkRegisteredTransform(self, registry, name):
+        self.assertEqual(registry[name].PluginClass.getTransformClass(), self.transformClass)
+
+    def testRegistration(self):
+        """
+        Test that the transformation is appropriately registered with the relevant measurement algorithms.
+        """
+        for pluginName in self.singleFramePlugins:
+            self._checkRegisteredTransform(lsst.meas.base.SingleFramePlugin.registry, pluginName)
+        for pluginName in self.forcedPlugins:
+            self._checkRegisteredTransform(lsst.meas.base.ForcedPlugin.registry, pluginName)
