@@ -208,6 +208,20 @@ class MakeTestData(object):
         return images
 
 class AlgorithmTestCase(lsst.utils.tests.TestCase):
+    # Some tests depend on the noise realization in the test data or from the
+    # numpy random number generator. In most cases, they are testing that the
+    # measured flux lies within 2 sigma of the correct value, which we should
+    # expect to fail sometimes. Some -- but sadly not all -- of these cases
+    # have been marked with an "rng dependent" comment.
+    #
+    # We ensure these tests are provided with data which causes them to pass
+    # by seeding the numpy RNG with this value. It can be over-ridden as
+    # necessary in subclasses.
+    randomSeed = 1234
+
+    @classmethod
+    def setUpClass(cls):
+        numpy.random.seed(cls.randomSeed)
 
     def setUp(self):
         catalog, bbox = MakeTestData.makeCatalog()

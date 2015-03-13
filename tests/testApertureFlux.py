@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2014 LSST Corporation.
+# Copyright 2008-2015 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -25,20 +25,11 @@ import unittest
 import numpy
 
 import lsst.afw.geom
-import lsst.afw.table
+import lsst.afw.image
 import lsst.utils.tests
+
 from lsst.meas.base import ApertureFluxAlgorithm
-import lsst.meas.base.tests
-
-numpy.random.seed(1234567)
-
-# n.b. Some tests here depend on the noise realization in the test data
-# or from the numpy random number generator.
-# For the current test data and seed value, they pass, but they may not
-# if the test data is regenerated or the seed value changes.  I've marked
-# these with an "rng dependent" comment.  In most cases, they test that
-# the measured flux lies within 2 sigma of the correct value, which we
-# should expect to fail sometimes.
+from lsst.meas.base.tests import AlgorithmTestCase
 
 class ApertureFluxTestCase(lsst.utils.tests.TestCase):
     """Test case for the ApertureFlux algorithm base class
@@ -158,16 +149,9 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         self.assertTrue(invalid2.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
         self.assertFalse(numpy.isnan(invalid2.flux))
 
-class CircularApertureFluxTestCase(lsst.meas.base.tests.AlgorithmTestCase):
+class CircularApertureFluxTestCase(AlgorithmTestCase):
     """Test case for the CircularApertureFlux algorithm/plugin
     """
-
-    def setUp(self):
-        lsst.meas.base.tests.AlgorithmTestCase.setUp(self)
-
-    def tearDown(self):
-        lsst.meas.base.tests.AlgorithmTestCase.tearDown(self)
-
     def testSingleFramePlugin(self):
         config = lsst.meas.base.SingleFrameMeasurementConfig()
         config.plugins["base_CircularApertureFlux"].maxSincRadius = 20
