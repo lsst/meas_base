@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2014 LSST Corporation.
+ * Copyright 2008-2015 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -313,6 +313,46 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeFlux(
 
 INSTANTIATE(float);
 INSTANTIATE(double);
+
+ApertureFluxTransform::ApertureFluxTransform(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::SchemaMapper & mapper
+) :
+    BaseTransform(name),
+    _ctrl(ctrl)
+{
+    for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
+        for (auto flag = getFlagDefinitions().begin();
+             flag < getFlagDefinitions().begin() + (_ctrl.radii[i] <= _ctrl.maxSincRadius ? 3 : 2); flag++) {
+            mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(
+                              (boost::format("%s_%d_%s") % name % i % flag->name).str()).key);
+        }
+        _magKeys.push_back(MagResultKey::addFields(mapper.editOutputSchema(),
+                                                   (boost::format("%s_%d") % name % i).str()));
+    }
+}
+
+void ApertureFluxTransform::operator()(
+    afw::table::SourceCatalog const & inputCatalog,
+    afw::table::BaseCatalog & outputCatalog,
+    afw::image::Wcs const & wcs,
+    afw::image::Calib const & calib
+) const {
+    assert(inputCatalog.size() == outputCatalog.size());
+    std::vector<FluxResultKey> fluxKeys;
+    for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
+        fluxKeys.push_back(FluxResultKey(inputCatalog.getSchema()[(boost::format("%s_%d") % _name % i).str()]));
+    }
+    afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
+    afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();
+    for (; inSrc < inputCatalog.end() && outSrc < outputCatalog.end(); ++inSrc, ++outSrc) {
+        for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
+            FluxResult fluxResult = fluxKeys[i].get(*inSrc);
+            _magKeys[i].set(*outSrc, calib.getMagnitude(fluxResult.flux, fluxResult.fluxSigma));
+        }
+    }
+}
 
 }}} // namespace lsst::meas::base
 

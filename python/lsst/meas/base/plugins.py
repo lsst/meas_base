@@ -51,7 +51,7 @@ wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl, executionOrd
 wrapSimpleAlgorithm(SdssShapeAlgorithm, Control=SdssShapeControl, executionOrder=1.0)
 
 wrapSimpleAlgorithm(CircularApertureFluxAlgorithm, needsMetadata=True, Control=ApertureFluxControl,
-                    executionOrder=2.0)
+                    TransformClass=ApertureFluxTransform, executionOrder=2.0)
 
 # --- Single-Frame Measurement Plugins ---
 

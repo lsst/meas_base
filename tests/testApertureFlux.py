@@ -29,7 +29,7 @@ import lsst.afw.image
 import lsst.utils.tests
 
 from lsst.meas.base import ApertureFluxAlgorithm
-from lsst.meas.base.tests import AlgorithmTestCase
+from lsst.meas.base.tests import AlgorithmTestCase, TransformTestCase
 
 class ApertureFluxTestCase(lsst.utils.tests.TestCase):
     """Test case for the ApertureFlux algorithm base class
@@ -201,6 +201,30 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
                 self.assertClose(record.get("base_CircularApertureFlux_6_flux"), record.get("truth_flux"),
                                  rtol=0.02)
 
+
+class ApertureFluxTransformTestCase(TransformTestCase):
+    class circApFluxAlgorithmFactory(object):
+        """
+        Helper class to sub in an empty PropertyList as the final argument to
+        CircularApertureFluxAlgorithm.
+        """
+        def __call__(self, control, name, inputSchema):
+            return lsst.meas.base.CircularApertureFluxAlgorithm(control, name, inputSchema,
+                                                                lsst.daf.base.PropertyList())
+
+    controlClass = lsst.meas.base.ApertureFluxAlgorithm.Control
+    algorithmClass = circApFluxAlgorithmFactory()
+    transformClass = lsst.meas.base.ApertureFluxTransform
+    flagNames = ('flag', 'flag_apertureTruncated', 'flag_sincCoeffsTruncated')
+    singleFramePlugins = ('base_CircularApertureFlux',)
+    forcedPlugins = ('base_CircularApertureFlux',)
+
+    def testTransform(self):
+        """Demonstrate application of the ApertureFluxTransform to a synthetic SourceCatalog."""
+        TransformTestCase.testTransform(self,
+                                        [self.name + "_" + str(i) for i in range(len(self.control.radii))])
+
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
@@ -209,6 +233,7 @@ def suite():
     suites = []
     suites += unittest.makeSuite(ApertureFluxTestCase)
     suites += unittest.makeSuite(CircularApertureFluxTestCase)
+    suites += unittest.makeSuite(ApertureFluxTransformTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
