@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2013 LSST Corporation.
+# Copyright 2008-2015 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -23,24 +23,18 @@
 
 import math
 import os
-from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
-from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
-from lsst.meas.base.base import *
-from lsst.meas.base.tests import *
 import unittest
+
+import lsst.afw.table
+import lsst.meas.base
 import lsst.utils.tests
-import numpy
 
-numpy.random.seed(1234)
+from lsst.meas.base.tests import AlgorithmTestCase, TransformTestCase
 
-
-DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
-
-class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
-
+class GaussianFluxTestCase(AlgorithmTestCase):
     def testAlgorithm(self):
         sfmConfig = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        mapper = SchemaMapper(self.truth.getSchema())
+        mapper = lsst.afw.table.SchemaMapper(self.truth.getSchema())
         mapper.addMinimalSchema(self.truth.getSchema())
         outSchema = mapper.getOutputSchema()
         #  Basic test of GaussianFlux algorithm, no C++ slots
@@ -51,8 +45,8 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         sfmConfig.slots.instFlux = None
         sfmConfig.slots.apFlux = None
         sfmConfig.slots.modelFlux = "base_GaussianFlux"
-        task = SingleFrameMeasurementTask(outSchema, config=sfmConfig)
-        measCat = SourceCatalog(outSchema)
+        task = lsst.meas.base.sfm.SingleFrameMeasurementTask(outSchema, config=sfmConfig)
+        measCat = lsst.afw.table.SourceCatalog(outSchema)
         measCat.extend(self.truth, mapper=mapper)
         # now run the SFM task with the test plugin
         task.run(measCat, self.calexp)
@@ -78,13 +72,23 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             self.assertTrue(record.get("base_GaussianFlux_flag_badShape"))
             self.assertFalse(record.get("base_GaussianFlux_flag_badCentroid"))
 
+
+class GaussianFluxTransformTestCase(TransformTestCase):
+    controlClass = lsst.meas.base.GaussianFluxControl
+    algorithmClass = lsst.meas.base.GaussianFluxAlgorithm
+    transformClass = lsst.meas.base.GaussianFluxTransform
+    singleFramePlugins = ('base_GaussianFlux',)
+    forcedPlugins = ('base_GaussianFlux',)
+
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
     lsst.utils.tests.init()
 
     suites = []
-    suites += unittest.makeSuite(SFMTestCase)
+    suites += unittest.makeSuite(GaussianFluxTestCase)
+    suites += unittest.makeSuite(GaussianFluxTransformTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
