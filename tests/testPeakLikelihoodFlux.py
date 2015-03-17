@@ -26,9 +26,9 @@ import unittest
 import lsst.meas.base
 import lsst.utils.tests
 
-from lsst.meas.base.tests import TransformTestCase
+from lsst.meas.base.tests import FluxTransformTestCase
 
-class PeakLikelihoodFluxTransformTestCase(TransformTestCase):
+class PeakLikelihoodFluxTransformTestCase(FluxTransformTestCase):
     controlClass = lsst.meas.base.PeakLikelihoodFluxControl
     algorithmClass = lsst.meas.base.PeakLikelihoodFluxAlgorithm
     transformClass = lsst.meas.base.PeakLikelihoodFluxTransform

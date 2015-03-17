@@ -30,7 +30,7 @@ import lsst.afw.table
 import lsst.utils.tests
 import lsst.meas.base.tests
 
-from lsst.meas.base.tests import AlgorithmTestCase, TransformTestCase
+from lsst.meas.base.tests import AlgorithmTestCase, FluxTransformTestCase
 
 class PsfFluxTestCase(AlgorithmTestCase):
 
@@ -162,7 +162,7 @@ class PsfFluxTestCase(AlgorithmTestCase):
         self.assertLess(measRecord.get("base_PsfFlux_fluxSigma"), 500.0)
 
 
-class PsfFluxTransformTestCase(TransformTestCase):
+class PsfFluxTransformTestCase(FluxTransformTestCase):
     controlClass = lsst.meas.base.PsfFluxControl
     algorithmClass = lsst.meas.base.PsfFluxAlgorithm
     transformClass = lsst.meas.base.PsfFluxTransform

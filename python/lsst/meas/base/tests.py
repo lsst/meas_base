@@ -593,7 +593,7 @@ class TransformTestCase(lsst.utils.tests.TestCase):
         for flagValue in (True, False):
             record = self.inputCat.addNew()
             for baseName in baseNames:
-                record[baseName + '_flux'], record[baseName + '_fluxSigma'] = numpy.random.random(2)
+                self._setFieldsInRecord(record, baseName)
                 for flagName in self.flagNames:
                     if baseName + '_' + flagName in record.schema:
                         record.set(baseName + '_' + flagName, flagValue)
@@ -601,11 +601,7 @@ class TransformTestCase(lsst.utils.tests.TestCase):
     def _checkOutput(self, baseNames):
         for inSrc, outSrc in zip(self.inputCat, self.outputCat):
             for baseName in baseNames:
-                fluxName = baseName + '_flux'
-                fluxSigmaName = baseName + '_fluxSigma'
-                mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[fluxName], inSrc[fluxSigmaName])
-                self.assertEqual(outSrc[baseName + '_mag'], mag)
-                self.assertEqual(outSrc[baseName + '_magErr'], magErr)
+                self._compareFieldsInRecords(inSrc, outSrc, baseName)
                 for flagName in self.flagNames:
                     keyName = baseName + '_' + flagName
                     if keyName in inSrc.schema:
@@ -632,8 +628,6 @@ class TransformTestCase(lsst.utils.tests.TestCase):
 
         @param[in]  baseNames  Iterable of the initial parts of measurement field names.
         """
-
-
         baseNames = baseNames or [self.name]
         self._populateCatalog(baseNames)
         self._runTransform()
@@ -650,3 +644,14 @@ class TransformTestCase(lsst.utils.tests.TestCase):
             self._checkRegisteredTransform(lsst.meas.base.SingleFramePlugin.registry, pluginName)
         for pluginName in self.forcedPlugins:
             self._checkRegisteredTransform(lsst.meas.base.ForcedPlugin.registry, pluginName)
+
+
+class FluxTransformTestCase(TransformTestCase):
+    def _setFieldsInRecord(self, record, name):
+        record[name + '_flux'], record[name + '_fluxSigma'] = numpy.random.random(2)
+
+    def _compareFieldsInRecords(self, inSrc, outSrc, name):
+        fluxName, fluxSigmaName = name + '_flux', name + '_fluxSigma'
+        mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[fluxName], inSrc[fluxSigmaName])
+        self.assertEqual(outSrc[name + '_mag'], mag)
+        self.assertEqual(outSrc[name + '_magErr'], magErr)
