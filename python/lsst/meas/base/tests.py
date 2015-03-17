@@ -30,7 +30,72 @@ import lsst.afw.geom.ellipses
 import lsst.afw.coord
 import lsst.utils.tests
 
-from .sfm import SingleFrameMeasurementTask
+from .sfm import SingleFrameMeasurementTask, SingleFrameMeasurementConfig
+
+class SingleAlgorithmMeasurer():
+    def __init__(alg, name, control, metadata=False, centroid=None):
+        schema = lsst.afw.table.SourceTable.makeMinimalSchema()
+        if centroid:
+            schema.addField(centroid + "_x", type=float)
+            schema.addField(centroid + "_y", type=float)
+            schema.addField(centroid + "_flag", type='Flag')
+        if metadata:
+            plugin = alg(control, name, schema, dafBase.PropertySet())
+        else:
+            plugin = alg(control, name, schema)
+        self.cat = lsst.afw.table.SourceCatalog(schema)
+        if centroid:
+            self.cat.defineCentroid(centroid)
+
+    def getCatalog():
+        return self.cat
+
+    def run(source, exposure, center):
+        centroid = self.cat.getCentroidDefinition()
+        if centroid != None and len(centroid) > 0:
+            source.set(centroid+"_x", center.getX())
+            source.set(centroid+"_y", center.getY())
+        self.alg.measure(source, exposure)
+        return
+
+class SourceMeasurer():
+    """Construct a MeasurementConfig with the requested parameters"""
+    def __init__(self, algorithms = []):
+        self.config = SingleFrameMeasurementConfig()
+        self.config.algorithms.names = algorithms
+        self.config.slots.centroid = None
+        self.config.slots.shape = None
+        self.config.slots.apFlux = None
+        self.config.slots.modelFlux = None
+        self.config.slots.psfFlux = None
+        self.config.slots.instFlux = None
+        self.schema = lsst.afw.table.SourceTable.makeMinimalSchema()
+        return
+
+    def setCentroid(self, centroidName):
+        return
+
+    def addAlgorithm(self, algorithm):
+        self.config.algorithms.names.add(algorithm)
+        return
+
+    def createTask(self, centroid=None):
+        if not (centroid in self.config.algorithms.names):
+            self.schema.addField(centroid + "_x", type=float)
+            self.schema.addField(centroid + "_y", type=float)
+            self.schema.addField(centroid + "_flag", type='Flag')
+        self.task = SingleFrameMeasurementTask(schema=self.schema, config=self.config)
+        self.catalog = lsst.afw.table.SourceCatalog(lsst.afw.table.SourceTable.make(self.schema))
+        if centroid:
+            self.catalog.defineCentroid(centroid)
+        return
+
+    def addSource(self):
+        return self.catalog.addNew()
+
+    def run(self, exposure):
+        self.task.run(self.catalog, exposure)
+        return self.catalog
 
 class MakeTestData(object):
     @staticmethod
@@ -66,7 +131,6 @@ class MakeTestData(object):
                                 doc="true shape after PSF convolution", units="pixels^2")
         shapeKey = lsst.afw.table.QuadrupoleKey(xxKey, yyKey, xyKey)
         starFlagKey = schema.addField("truth_isStar", type="Flag", doc="set if the object is a star")
-        schema.setVersion(1)
         catalog = lsst.afw.table.SourceCatalog(schema)
         bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0), lsst.afw.geom.Point2I(200, 200))
         # a bright, isolated star near (50, 50)
