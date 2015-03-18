@@ -27,7 +27,8 @@ import numpy
 import lsst.meas.base
 import lsst.utils.tests
 
-from lsst.meas.base.tests import AlgorithmTestCase, FluxTransformTestCase
+from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
+                                  SingleFramePluginTransformSetupHelper)
 
 class GaussianFluxTestCase(AlgorithmTestCase):
 
@@ -109,7 +110,7 @@ class GaussianFluxTestCase(AlgorithmTestCase):
                              rtol=0.3)
             self.assertLess(measRecord.get("base_GaussianFlux_fluxSigma"), 500.0)
 
-class GaussianFluxTransformTestCase(FluxTransformTestCase):
+class GaussianFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper):
     controlClass = lsst.meas.base.GaussianFluxControl
     algorithmClass = lsst.meas.base.GaussianFluxAlgorithm
     transformClass = lsst.meas.base.GaussianFluxTransform

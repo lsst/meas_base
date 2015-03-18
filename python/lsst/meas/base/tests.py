@@ -580,15 +580,6 @@ class TransformTestCase(lsst.utils.tests.TestCase):
         del self.transform
         del self.outputCat
 
-    def _setupTransform(self):
-        self.control = self.controlClass()
-        inputSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        algo = self.algorithmClass(self.control, self.name, inputSchema)
-        self.inputCat = lsst.afw.table.SourceCatalog(inputSchema)
-        self.mapper = lsst.afw.table.SchemaMapper(inputSchema)
-        self.transform = self.transformClass(self.control, self.name, self.mapper)
-        self.outputCat = lsst.afw.table.BaseCatalog(self.mapper.getOutputSchema())
-
     def _populateCatalog(self, baseNames):
         for flagValue in (True, False):
             record = self.inputCat.addNew()
@@ -644,6 +635,29 @@ class TransformTestCase(lsst.utils.tests.TestCase):
             self._checkRegisteredTransform(lsst.meas.base.SingleFramePlugin.registry, pluginName)
         for pluginName in self.forcedPlugins:
             self._checkRegisteredTransform(lsst.meas.base.ForcedPlugin.registry, pluginName)
+
+
+class SingleFramePluginTransformSetupHelper(object):
+    def _setupTransform(self):
+        self.control = self.controlClass()
+        inputSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
+        algo = self.algorithmClass(self.control, self.name, inputSchema)
+        self.inputCat = lsst.afw.table.SourceCatalog(inputSchema)
+        self.mapper = lsst.afw.table.SchemaMapper(inputSchema)
+        self.transform = self.transformClass(self.control, self.name, self.mapper)
+        self.outputCat = lsst.afw.table.BaseCatalog(self.mapper.getOutputSchema())
+
+
+class ForcedPluginTransformSetupHelper(object):
+    def _setupTransform(self):
+        self.control = self.controlClass()
+        inputMapper = lsst.afw.table.SchemaMapper(lsst.afw.table.SourceTable.makeMinimalSchema(),
+                                                  lsst.afw.table.SourceTable.makeMinimalSchema())
+        algo = self.algorithmClass(self.control, self.name, inputMapper, lsst.daf.base.PropertyList())
+        self.inputCat = lsst.afw.table.SourceCatalog(inputMapper.getOutputSchema())
+        self.mapper = lsst.afw.table.SchemaMapper(inputMapper.getOutputSchema())
+        self.transform = self.transformClass(self.control, self.name, self.mapper)
+        self.outputCat = lsst.afw.table.BaseCatalog(self.mapper.getOutputSchema())
 
 
 class FluxTransformTestCase(TransformTestCase):

@@ -29,7 +29,8 @@ import lsst.afw.image
 import lsst.utils.tests
 
 from lsst.meas.base import ApertureFluxAlgorithm
-from lsst.meas.base.tests import AlgorithmTestCase, FluxTransformTestCase
+from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
+                                  SingleFramePluginTransformSetupHelper)
 
 class ApertureFluxTestCase(lsst.utils.tests.TestCase):
     """Test case for the ApertureFlux algorithm base class
@@ -237,7 +238,7 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
                 self.assertLess(measRecord.get("base_CircularApertureFlux_%d_fluxSigma" % n), (n+1)*150.0)
 
 
-class ApertureFluxTransformTestCase(FluxTransformTestCase):
+class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper):
     class circApFluxAlgorithmFactory(object):
         """
         Helper class to sub in an empty PropertyList as the final argument to
