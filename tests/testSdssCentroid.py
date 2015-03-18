@@ -80,8 +80,11 @@ class SdssCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             yerr = record.get("base_SdssCentroid_ySigma")
 
             self.assertFalse(record.get("base_SdssCentroid_flag"))
-            self.assertFalse(record.get("base_SdssCentroid_flag_badData"))
             self.assertFalse(record.get("base_SdssCentroid_flag_edge"))
+            self.assertFalse(record.get("base_SdssCentroid_flag_no_2nd_derivative"))
+            self.assertFalse(record.get("base_SdssCentroid_flag_almost_no_2nd_derivative"))
+            self.assertFalse(record.get("base_SdssCentroid_flag_not_at_maximum"))
+
             self.assertClose(peakX, x, atol=None, rtol=.02)
             self.assertClose(peakY, y, atol=None, rtol=.02)
 
@@ -109,6 +112,56 @@ class SdssCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         self.task.measure(subCat, subImage)
         self.assertTrue(measRecord.get("base_SdssCentroid_flag"))
         self.assertTrue(measRecord.get("base_SdssCentroid_flag_edge"))
+
+    def testNo2ndDerivative(self):
+        self.truth.defineCentroid("truth")
+        centroid = self.truth[0].getCentroid()
+        # cutout a subimage around the first centroid in the test image
+        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(centroid), lsst.afw.geom.Extent2I(1,1))
+        bbox.grow(20)
+        subImage = lsst.afw.image.ExposureF(self.calexp, bbox)
+        # A completely flat image will trigger the no 2nd derivative error
+        subImage.getMaskedImage().getImage().getArray()[:] =  0
+        subCat = self.measCat[:1]
+        measRecord = subCat[0]
+        self.task.measure(subCat, subImage)
+        self.assertTrue(measRecord.get("base_SdssCentroid_flag"))
+        self.assertTrue(measRecord.get("base_SdssCentroid_flag_no_2nd_derivative"))
+
+    def testAlmostNo2ndDerivative(self):
+        self.truth.defineCentroid("truth")
+        centroid = self.truth[0].getCentroid()
+        psfImage = self.calexp.getPsf().computeImage(centroid)
+        # cutout a subimage around the first centroid in the test image
+        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(centroid), lsst.afw.geom.Extent2I(1,1))
+        bbox.grow(20)
+        subImage = lsst.afw.image.ExposureF(self.calexp, bbox)
+        # In the cetnral region, artificially put a peak with a very small 2nd derivative
+        baseline = subImage.getMaskedImage().getImage().getArray()[18,18]
+        subImage.getMaskedImage().getImage().getArray()[18:22,18:22] = baseline 
+        subImage.getMaskedImage().getImage().getArray()[10:26,10:26] = baseline + 2 
+        subImage.getMaskedImage().getImage().getArray()[16:20,16:20] = baseline + 5
+        subCat = self.measCat[:1]
+        measRecord = subCat[0]
+        self.task.measure(subCat, subImage)
+        self.assertTrue(measRecord.get("base_SdssCentroid_flag"))
+        #self.assertTrue(measRecord.get("base_SdssCentroid_flag_almost_no_2nd_derivative"))
+
+    def testNotAtMaximum(self):
+        self.truth.defineCentroid("truth")
+        centroid = self.truth[0].getCentroid()
+        psfImage = self.calexp.getPsf().computeImage(centroid)
+        # cutout a subimage around the first centroid in the test image
+        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(centroid), lsst.afw.geom.Extent2I(1,1))
+        bbox.grow(20)
+        subImage = lsst.afw.image.ExposureF(self.calexp, bbox)
+        # zero out the central region, which will destroy the maximum
+        subImage.getMaskedImage().getImage().getArray()[18:22,18:22] = 0
+        subCat = self.measCat[:1]
+        measRecord = subCat[0]
+        self.task.measure(subCat, subImage)
+        self.assertTrue(measRecord.get("base_SdssCentroid_flag"))
+        self.assertTrue(measRecord.get("base_SdssCentroid_flag_not_at_maximum"))
 
 def suite():
     """Returns a suite containing all the test cases in this module."""

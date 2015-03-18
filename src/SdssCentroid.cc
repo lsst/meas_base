@@ -121,7 +121,8 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
                        double *sizeX2, double *sizeY2, // output; object widths^2 in x and y directions
                        ImageXy_locatorT im, // Locator for the pixel values
                        VarImageXy_locatorT vim, // Locator for the image containing the variance
-                       double smoothingSigma // Gaussian sigma of already-applied smoothing filter
+                       double smoothingSigma, // Gaussian sigma of already-applied smoothing filter
+                       FlagHandler flagHandler
                       )
 {
     /*
@@ -133,22 +134,31 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     double const sy =  0.5*(im(0, 1) - im( 0, -1));
 
     if (d2x == 0.0 || d2y == 0.0) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Object has a vanishing 2nd derivative");
+        throw LSST_EXCEPT(
+            MeasurementError,
+            flagHandler.getDefinition(SdssCentroidAlgorithm::NO_2ND_DERIVATIVE).doc,
+            SdssCentroidAlgorithm::NO_2ND_DERIVATIVE
+        );
     }
     if (d2x < 0.0 || d2y < 0.0) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError,
-                          (boost::format("Object is not at a maximum: d2I/dx2, d2I/dy2 = %g %g")
-                           % d2x % d2y).str());
+        throw LSST_EXCEPT(
+            MeasurementError,
+            flagHandler.getDefinition(SdssCentroidAlgorithm::NOT_AT_MAXIMUM).doc +
+                (boost::format(": d2I/dx2, d2I/dy2 = %g %g") % d2x % d2y).str(),
+            SdssCentroidAlgorithm::NOT_AT_MAXIMUM
+        );
     }
 
     double const dx0 = sx/d2x;
     double const dy0 = sy/d2y;          // first guess
 
     if (fabs(dx0) > 10.0 || fabs(dy0) > 10.0) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError,
-                          (boost::format("Object has an almost vanishing 2nd derivative:"
-                                         " sx, d2x, sy, d2y = %f %f %f %f")
-                           % sx % d2x % sy % d2y).str());
+        throw LSST_EXCEPT(
+            MeasurementError,
+            flagHandler.getDefinition(SdssCentroidAlgorithm::ALMOST_NO_2ND_DERIVATIVE).doc +
+                (boost::format(": sx, d2x, sy, d2y = %f %f %f %f") % sx % d2x % sy % d2y).str(),
+            SdssCentroidAlgorithm::ALMOST_NO_2ND_DERIVATIVE
+        );
     }
 
     double vpk = im(0, 0) + 0.5*(sx*dx0 + sy*dy0); // height of peak in image
@@ -232,7 +242,8 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
                        double *sizeX2, double *sizeY2, // output; object widths^2 in x and y directions
                        double *peakVal,                // output; peak of object
                        MaskedImageXy_locatorT mim, // Locator for the pixel values
-                       double smoothingSigma // Gaussian sigma of already-applied smoothing filter
+                       double smoothingSigma, // Gaussian sigma of already-applied smoothing filter
+                       FlagHandler flagHandler
                       )
 {
     /*
@@ -244,22 +255,31 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     double const sy =  0.5*(mim.image(0, 1) - mim.image( 0, -1));
 
     if (d2x == 0.0 || d2y == 0.0) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError, "Object has a vanishing 2nd derivative");
+        throw LSST_EXCEPT(
+            MeasurementError,
+            flagHandler.getDefinition(SdssCentroidAlgorithm::NO_2ND_DERIVATIVE).doc,
+            SdssCentroidAlgorithm::NO_2ND_DERIVATIVE
+        );
     }
     if (d2x < 0.0 || d2y < 0.0) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError,
-                          (boost::format("Object is not at a maximum: d2I/dx2, d2I/dy2 = %g %g")
-                           % d2x % d2y).str());
+        throw LSST_EXCEPT(
+            MeasurementError,
+            flagHandler.getDefinition(SdssCentroidAlgorithm::NOT_AT_MAXIMUM).doc +
+                (boost::format(": d2I/dx2, d2I/dy2 = %g %g") % d2x % d2y).str(),
+            SdssCentroidAlgorithm::NOT_AT_MAXIMUM
+        );
     }
 
     double const dx0 = sx/d2x;
     double const dy0 = sy/d2y;          // first guess
 
     if (fabs(dx0) > 10.0 || fabs(dy0) > 10.0) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::RuntimeError,
-                          (boost::format("Object has an almost vanishing 2nd derivative:"
-                                         " sx, d2x, sy, d2y = %f %f %f %f")
-                           % sx % d2x % sy % d2y).str());
+        throw LSST_EXCEPT(
+            MeasurementError,
+            flagHandler.getDefinition(SdssCentroidAlgorithm::NO_2ND_DERIVATIVE).doc +
+                (boost::format(": sx, d2x, sy, d2y = %f %f %f %f") % sx % d2x % sy % d2y).str(),
+            SdssCentroidAlgorithm::ALMOST_NO_2ND_DERIVATIVE
+        );
     }
 
     double vpk = mim.image(0, 0) + 0.5*(sx*dx0 + sy*dy0); // height of peak in image
@@ -402,7 +422,9 @@ SdssCentroidAlgorithm::SdssCentroidAlgorithm(
     static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag, set if anything went wrong"},
         {"flag_edge", "Object too close to edge"},
-        {"flag_badData", "Algorithm could not measure this data"}
+        {"flag_no_2nd_derivative", "Vanishing second derivative"},
+        {"flag_almost_no_2nd_derivative", "Almost vanishing second derivative"},
+        {"flag_not_at_maximum", "Object is not at a maximum"}
     }};
     _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }
@@ -457,50 +479,42 @@ void SdssCentroidAlgorithm::measure(
         MaskedImageT::xy_locator mim = smoothedImage.xy_at(smoothedImage.getWidth()/2,
                                                                     smoothedImage.getHeight()/2);
 
-        try {
-            double sizeX2, sizeY2;      // object widths^2 in x and y directions
-            double peakVal;             // peak intensity in image
+        double sizeX2, sizeY2;      // object widths^2 in x and y directions
+        double peakVal;             // peak intensity in image
 
-            doMeasureCentroidImpl(&xc, &dxc, &yc, &dyc, &sizeX2, &sizeY2, &peakVal, mim, smoothingSigma);
+        doMeasureCentroidImpl(&xc, &dxc, &yc, &dyc, &sizeX2, &sizeY2, &peakVal, mim,
+            smoothingSigma, _flagHandler);
 
-            if(binsize > 1) {
-                // dilate from the lower left corner of central pixel
-                xc = (xc + 0.5)*binX - 0.5;
-                dxc *= binX;
-                sizeX2 *= binX*binX;
+        if(binsize > 1) {
+            // dilate from the lower left corner of central pixel
+            xc = (xc + 0.5)*binX - 0.5;
+            dxc *= binX;
+            sizeX2 *= binX*binX;
 
-                yc = (yc + 0.5)*binY - 0.5;
-                dyc *= binY;
-                sizeY2 *= binY*binY;
-            }
+            yc = (yc + 0.5)*binY - 0.5;
+            dyc *= binY;
+            sizeY2 *= binY*binY;
+        }
 
-            xc += x;                    // xc, yc are measured relative to pixel (x, y)
-            yc += y;
+        xc += x;                    // xc, yc are measured relative to pixel (x, y)
+        yc += y;
 
-            double const fac = _ctrl.wfac*(1 + smoothingSigma*smoothingSigma);
-            double const facX2 = fac*binX*binX;
-            double const facY2 = fac*binY*binY;
+        double const fac = _ctrl.wfac*(1 + smoothingSigma*smoothingSigma);
+        double const facX2 = fac*binX*binX;
+        double const facY2 = fac*binY*binY;
 
-            if (sizeX2 < facX2 && ::pow(xc - x, 2) < facX2 &&
-                sizeY2 < facY2 && ::pow(yc - y, 2) < facY2) {
-                if (binsize > 1 || _ctrl.peakMin < 0.0 || peakVal > _ctrl.peakMin) {
-                    break;
-                }
-            }
-
-            if (sizeX2 >= facX2 || ::pow(xc - x, 2) >= facX2) {
-                binX *= 2;
-            }
-            if (sizeY2 >= facY2 || ::pow(yc - y, 2) >= facY2) {
-                binY *= 2;
+        if (sizeX2 < facX2 && ::pow(xc - x, 2) < facX2 &&
+            sizeY2 < facY2 && ::pow(yc - y, 2) < facY2) {
+            if (binsize > 1 || _ctrl.peakMin < 0.0 || peakVal > _ctrl.peakMin) {
+                break;
             }
         }
-        catch(lsst::pex::exceptions::Exception &e) {
-            throw LSST_EXCEPT(
-                MeasurementError,
-                _flagHandler.getDefinition(BAD_DATA).doc,
-                BAD_DATA
-            );
+
+        if (sizeX2 >= facX2 || ::pow(xc - x, 2) >= facX2) {
+            binX *= 2;
+        }
+        if (sizeY2 >= facY2 || ::pow(yc - y, 2) >= facY2) {
+            binY *= 2;
         }
     }
     result.x = lsst::afw::image::indexToPosition(xc + image.getX0());
