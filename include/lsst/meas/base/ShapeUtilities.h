@@ -51,6 +51,33 @@ struct ShapeResult {
     /// Constructor; initializes everything to NaN.
     ShapeResult();
 
+    /// Constructor; initializes everything from values.
+    explicit ShapeResult(ShapeElement _xx, ShapeElement _yy, ShapeElement _xy, ShapeCov const & matrix):
+        xx(_xx),
+        yy(_yy),
+        xy(_xy),
+        xxSigma(std::sqrt(matrix(0, 0))),
+        yySigma(std::sqrt(matrix(1, 1))),
+        xySigma(std::sqrt(matrix(2, 2))),
+        xx_yy_Cov(matrix(0, 1)),
+        xx_xy_Cov(matrix(0, 2)),
+        yy_xy_Cov(matrix(1, 2))
+    {}
+
+    /// Constructor; initializes everything from values.
+    explicit ShapeResult(ShapeElement _xx, ShapeElement _yy, ShapeElement _xy,
+                            ErrElement _xxSigma, ErrElement _yySigma, ErrElement _xySigma) :
+        xx(_xx),
+        yy(_yy),
+        xy(_xy),
+        xxSigma(_xxSigma),
+        yySigma(_yySigma),
+        xySigma(_xySigma),
+        xx_yy_Cov(0.0),
+        xx_xy_Cov(0.0),
+        yy_xy_Cov(0.0)
+    {}
+
     /**
      *  @brief Return an afw::geom::ellipses object corresponding to xx, yy, xy.
      *
@@ -58,6 +85,12 @@ struct ShapeResult {
      *  @c getShape().getDeterminantRadius()
      */
     Shape const getShape() const;
+
+    // get the Quadrupole corresponding to this ShapeResult
+    afw::geom::ellipses::Quadrupole getQuadrupole()
+    {
+        return afw::geom::ellipses::Quadrupole(xx, yy, xy);
+    }
 
     /// Set struct elements from the given Quadrupole object
     void setShape(Shape const & shape);
@@ -67,6 +100,9 @@ struct ShapeResult {
 
     /// Set the struct uncertainty elements from the given matrix, with rows and columns ordered (xx, yy, xy)
     void setShapeErr(ShapeCov const & matrix);
+
+    /// Set the struct uncertainty elements from the given values
+    void setShapeErr(ErrElement _xxSigma, ErrElement _yySigma, ErrElement _xySigma);
 
 };
 

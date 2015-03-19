@@ -63,6 +63,15 @@ void ShapeResult::setShapeErr(ShapeCov const & matrix) {
     yy_xy_Cov = matrix(1, 2);
 }
 
+void ShapeResult::setShapeErr(ErrElement _xxSigma, ErrElement _yySigma, ErrElement _xySigma) {
+    xxSigma = _xxSigma;
+    yySigma = _yySigma;
+    xySigma = _xySigma;
+    xx_yy_Cov = 0.0;
+    xx_xy_Cov = 0.0;
+    yy_xy_Cov = 0.0;
+}
+
 ShapeResultKey ShapeResultKey::addFields(
     afw::table::Schema & schema,
     std::string const & name,
