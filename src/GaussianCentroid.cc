@@ -507,7 +507,7 @@ GaussianCentroidAlgorithm::GaussianCentroidAlgorithm(
     afw::table::Schema & schema
 ) : _ctrl(ctrl),
     _centroidKey(
-        CentroidResultKey::addFields(schema, name, "centroid from Gaussian Centroid algorithm", SIGMA_ONLY)
+        CentroidResultKey::addFields(schema, name, "centroid from Gaussian Centroid algorithm", NO_UNCERTAINTY)
     ),
     _centroidExtractor(schema, name, true)
 {

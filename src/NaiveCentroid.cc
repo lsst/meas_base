@@ -33,7 +33,7 @@ NaiveCentroidAlgorithm::NaiveCentroidAlgorithm(
     afw::table::Schema & schema
 ) : _ctrl(ctrl),
     _centroidKey(
-        CentroidResultKey::addFields(schema, name, "centroid from Naive Centroid algorithm", SIGMA_ONLY)
+        CentroidResultKey::addFields(schema, name, "centroid from Naive Centroid algorithm", NO_UNCERTAINTY)
     ),
     _centroidExtractor(schema, name, true)
 {
