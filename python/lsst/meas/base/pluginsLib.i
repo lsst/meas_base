@@ -41,6 +41,7 @@
 %convertConfig(lsst::meas::base, PsfFluxTransform)
 
 %convertConfig(lsst::meas::base, NaiveCentroidTransform)
+%convertConfig(lsst::meas::base, GaussianCentroidTransform)
 
 %include "lsst/meas/base/Transform.h"
 

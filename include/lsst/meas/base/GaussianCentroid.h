@@ -127,6 +127,13 @@ private:
     SafeCentroidExtractor _centroidExtractor;
 };
 
+class GaussianCentroidTransform : public CentroidTransform {
+public:
+    typedef GaussianCentroidControl Control;
+
+    GaussianCentroidTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper);
+};
+
 }}} // namespace lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_GaussianCentroid_h_INCLUDED
