@@ -42,6 +42,7 @@
 
 %convertConfig(lsst::meas::base, NaiveCentroidTransform)
 %convertConfig(lsst::meas::base, GaussianCentroidTransform)
+%convertConfig(lsst::meas::base, SdssCentroidTransform)
 
 %include "lsst/meas/base/Transform.h"
 

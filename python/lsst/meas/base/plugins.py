@@ -49,7 +49,8 @@ wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl,
                     TransformClass=GaussianCentroidTransform, executionOrder=0.0)
 wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl,
                     TransformClass=NaiveCentroidTransform, executionOrder=0.0)
-wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl, executionOrder=0.0)
+wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl,
+                    TransformClass=SdssCentroidTransform, executionOrder=0.0)
 wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl, executionOrder=2.0)
 wrapSimpleAlgorithm(SdssShapeAlgorithm, Control=SdssShapeControl, executionOrder=1.0)
 

@@ -27,6 +27,9 @@ import numpy
 import lsst.utils.tests
 import lsst.meas.base.tests
 
+from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
+                                  SingleFramePluginTransformSetupHelper)
+
 # n.b. Some tests here depend on the noise realization in the test data
 # or from the numpy random number generator.
 # For the current test data and seed value, they pass, but they may not
@@ -35,7 +38,7 @@ import lsst.meas.base.tests
 # the measured flux lies within 2 sigma of the correct value, which we
 # should expect to fail sometimes.
 
-class SdssCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
+class SdssCentroidTestCase(AlgorithmTestCase):
 
     def setUp(self):
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
@@ -153,6 +156,16 @@ class SdssCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         self.assertTrue(catalog[0].get("base_SdssCentroid_flag"))
         self.assertTrue(catalog[0].get("base_SdssCentroid_flag_notAtMaximum"))
 
+
+class SdssCentroidTransformTestCase(CentroidTransformTestCase, SingleFramePluginTransformSetupHelper):
+    controlClass = lsst.meas.base.SdssCentroidControl
+    algorithmClass = lsst.meas.base.SdssCentroidAlgorithm
+    transformClass = lsst.meas.base.SdssCentroidTransform
+    flagNames = ('flag', 'flag_edge', 'flag_badData')
+    singleFramePlugins = ('base_SdssCentroid',)
+    forcedPlugins = ('base_SdssCentroid',)
+
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
@@ -160,6 +173,7 @@ def suite():
 
     suites = []
     suites += unittest.makeSuite(SdssCentroidTestCase)
+    suites += unittest.makeSuite(SdssCentroidTransformTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 

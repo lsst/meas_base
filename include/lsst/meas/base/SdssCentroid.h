@@ -98,6 +98,13 @@ private:
     SafeCentroidExtractor _centroidExtractor;
 };
 
+class SdssCentroidTransform : public CentroidTransform {
+public:
+    typedef SdssCentroidControl Control;
+
+    SdssCentroidTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper);
+};
+
 }}} // namespace lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_SdssCentroid_h_INCLUDED
