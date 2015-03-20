@@ -679,7 +679,9 @@ getFixedMomentsFlux(ImageT const& image,               ///< the data to process
 {
     SdssShapeImpl shape = shape_; // we need a mutable copy
 
-    afwGeom::BoxI const& bbox = set_amom_bbox(image.getWidth(), image.getHeight(), xcen, ycen,
+    afwGeom::BoxI const& bbox = set_amom_bbox(image.getWidth(), image.getHeight(),
+                                              xcen - image.getX0(),
+                                              ycen - image.getY0(),
                                               shape.getIxx(), shape.getIxy(), shape.getIyy());
 
     boost::tuple<std::pair<bool, double>, double, double, double> weights =
