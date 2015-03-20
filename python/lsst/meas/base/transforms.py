@@ -45,8 +45,10 @@ Transformations can be defined in Python or in C++. Python code should inherit
 from `MeasurementTransform`, following its interface.
 """
 
-__all__ = ("NullTransform", "PassThroughTransform")
+__all__ = ("NullTransform", "PassThroughTransform", "SimpleCentroidTransform")
+from lsst.afw.table import CoordKey
 from lsst.pex.exceptions import LengthError
+from .baseLib import CentroidResultKey
 
 class MeasurementTransform(object):
     """!
@@ -90,3 +92,18 @@ class PassThroughTransform(MeasurementTransform):
 
     def __call__(self, inputCatalog, outputCatalog, wcs, calib):
         self._checkCatalogSize(inputCatalog, outputCatalog)
+
+
+class SimpleCentroidTransform(MeasurementTransform):
+    """!
+    Transform a pixel centroid, excluding uncertainties, to celestial coordinates.
+    """
+    def __init__(self, config, name, mapper):
+        MeasurementTransform.__init__(self, config, name, mapper)
+        self.coordKey = CoordKey.addFields(mapper.editOutputSchema(), name, "Position from " + name)
+
+    def __call__(self, inputCatalog, outputCatalog, wcs, calib):
+        self._checkCatalogSize(inputCatalog, outputCatalog)
+        centroidResultKey = CentroidResultKey(inputCatalog.schema[self.name])
+        for inSrc, outSrc in zip(inputCatalog, outputCatalog):
+            self.coordKey.set(outSrc, wcs.pixelToSky(centroidResultKey.get(inSrc).getCentroid()))

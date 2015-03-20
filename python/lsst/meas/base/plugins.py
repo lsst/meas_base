@@ -35,6 +35,7 @@ from .baseLib import *
 from .sfm import *
 from .forcedMeasurement import *
 from .wrappers import *
+from .transforms import *
 
 # --- Wrapped C++ Plugins ---
 
@@ -82,6 +83,9 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
         measRecord.set(self.keyX, peak.getFx())
         measRecord.set(self.keyY, peak.getFy())
 
+    @staticmethod
+    def getTransformClass():
+        return SimpleCentroidTransform
 
 class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
     pass
@@ -215,6 +219,9 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
         measRecord.set(self.keyX, result.getX())
         measRecord.set(self.keyY, result.getY())
 
+    @staticmethod
+    def getTransformClass():
+        return SimpleCentroidTransform
 
 class ForcedTransformedCentroidConfig(ForcedPluginConfig):
     pass
