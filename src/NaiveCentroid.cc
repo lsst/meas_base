@@ -27,6 +27,19 @@
 
 namespace lsst { namespace meas { namespace base {
 
+namespace {
+
+boost::array<FlagDefinition,NaiveCentroidAlgorithm::N_FLAGS> const & getFlagDefinitions() {
+    static boost::array<FlagDefinition,NaiveCentroidAlgorithm::N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag, set if anything went wrong"},
+        {"flag_noCounts", "Object to be centroided has no counts"},
+        {"flag_edge", "Object too close to edge"}
+    }};
+    return flagDefs;
+}
+
+} // anonymous
+
 NaiveCentroidAlgorithm::NaiveCentroidAlgorithm(
     Control const & ctrl,
     std::string const & name,
@@ -37,12 +50,8 @@ NaiveCentroidAlgorithm::NaiveCentroidAlgorithm(
     ),
     _centroidExtractor(schema, name, true)
 {
-    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag, set if anything went wrong"},
-        {"flag_noCounts", "Object to be centroided has no counts"},
-        {"flag_edge", "Object too close to edge"}
-    }};
-    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+    _flagHandler = FlagHandler::addFields(schema, name,
+                                          getFlagDefinitions().begin(), getFlagDefinitions().end());
 }
 
 void NaiveCentroidAlgorithm::measure(
@@ -107,6 +116,19 @@ void NaiveCentroidAlgorithm::measure(
 
 void NaiveCentroidAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
     _flagHandler.handleFailure(measRecord, error);
+}
+
+NaiveCentroidTransform::NaiveCentroidTransform(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::SchemaMapper & mapper
+) :
+    CentroidTransform{name, mapper}
+{
+    for (auto flag = getFlagDefinitions().begin() + 1; flag < getFlagDefinitions().end(); ++flag) {
+        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(
+                          mapper.getInputSchema().join(name, flag->name)).key);
+    }
 }
 
 }}} // namespace lsst::meas::base

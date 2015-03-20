@@ -46,7 +46,8 @@ wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxContr
 wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl,
                     TransformClass=GaussianFluxTransform, executionOrder=2.0)
 wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl, executionOrder=0.0)
-wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl, executionOrder=0.0)
+wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl,
+                    TransformClass=NaiveCentroidTransform, executionOrder=0.0)
 wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl, executionOrder=0.0)
 wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl, executionOrder=2.0)
 wrapSimpleAlgorithm(SdssShapeAlgorithm, Control=SdssShapeControl, executionOrder=1.0)

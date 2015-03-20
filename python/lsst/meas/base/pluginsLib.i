@@ -40,6 +40,8 @@
 %convertConfig(lsst::meas::base, PeakLikelihoodFluxTransform)
 %convertConfig(lsst::meas::base, PsfFluxTransform)
 
+%convertConfig(lsst::meas::base, NaiveCentroidTransform)
+
 %include "lsst/meas/base/Transform.h"
 
 // flux algorithms
