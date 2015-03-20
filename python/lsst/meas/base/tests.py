@@ -27,11 +27,14 @@ import lsst.utils.tests
 import lsst.afw.table
 import lsst.afw.image
 import lsst.afw.detection
+import lsst.afw.geom
 import lsst.afw.geom.ellipses
 import lsst.afw.coord
+import lsst.pex.exceptions
 
 from .sfm import SingleFrameMeasurementTask
 from .forcedMeasurement import ForcedMeasurementTask
+from .baseLib import CentroidResultKey
 
 
 class BlendContext(object):
@@ -631,6 +634,8 @@ class TransformTestCase(lsst.utils.tests.TestCase):
         self._checkOutput(baseNames)
 
     def _checkRegisteredTransform(self, registry, name):
+        # If this is a Python-based transform, we can compare directly; if
+        # it's wrapped C++, we need to compare the wrapped class.
         self.assertEqual(registry[name].PluginClass.getTransformClass(), self.transformClass)
 
     def testRegistration(self):
@@ -676,3 +681,36 @@ class FluxTransformTestCase(TransformTestCase):
         mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[fluxName], inSrc[fluxSigmaName])
         self.assertEqual(outSrc[outSrc.schema.join(name, 'mag')], mag)
         self.assertEqual(outSrc[outSrc.schema.join(name, 'magErr')], magErr)
+
+
+class CentroidTransformTestCase(TransformTestCase):
+    def _setFieldsInRecord(self, record, name):
+        record[record.schema.join(name, 'x')], record[record.schema.join(name, 'y')] = numpy.random.random(2)
+        # Some algorithms set no errors; some set only sigma on x & y; some provide
+        # a full covariance matrix. Set only those which exist in the schema.
+        for fieldSuffix in ('xSigma', 'ySigma', 'x_y_Cov'):
+            fieldName = record.schema.join(name, fieldSuffix)
+            if fieldName in record.schema:
+                record[fieldName] = numpy.random.random()
+
+    def _compareFieldsInRecords(self, inSrc, outSrc, name):
+        centroidResultKey = CentroidResultKey(inSrc.schema[self.name])
+        centroidResult = centroidResultKey.get(inSrc)
+
+        coord = lsst.afw.table.CoordKey(outSrc.schema[self.name]).get(outSrc)
+        coordTruth = self.calexp.getWcs().pixelToSky(centroidResult.getCentroid())
+        self.assertEqual(coordTruth, coord)
+
+        # If the centroid has an associated uncertainty matrix, the coordinate
+        # must have one too, and vice versa.
+        try:
+            coordErr = lsst.afw.table.CovarianceMatrix2fKey(outSrc.schema[self.name],
+                                                            ["ra", "dec"]).get(outSrc)
+        except lsst.pex.exceptions.NotFoundError:
+            self.assertFalse(centroidResultKey.getCentroidErr().isValid())
+        else:
+            transform = self.calexp.getWcs().linearizePixelToSky(coordTruth, lsst.afw.geom.radians)
+            coordErrTruth = numpy.dot(numpy.dot(transform.getLinear().getMatrix(),
+                                                centroidResult.getCentroidErr()),
+                                      transform.getLinear().getMatrix().transpose())
+            numpy.testing.assert_array_almost_equal(numpy.array(coordErrTruth), coordErr)
