@@ -166,7 +166,7 @@ class PsfFluxTransformTestCase(FluxTransformTestCase):
     controlClass = lsst.meas.base.PsfFluxControl
     algorithmClass = lsst.meas.base.PsfFluxAlgorithm
     transformClass = lsst.meas.base.PsfFluxTransform
-    flagNames = ('_flag', '_flag_noGoodPixels', '_flag_edge')
+    flagNames = ('flag', 'flag_noGoodPixels', 'flag_edge')
     singleFramePlugins = ('base_PsfFlux',)
     forcedPlugins = ('base_PsfFlux',)
 
