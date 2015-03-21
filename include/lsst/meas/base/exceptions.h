@@ -89,7 +89,6 @@ LSST_EXCEPTION_TYPE(FatalAlgorithmError, lsst::pex::exceptions::RuntimeError,
  */
 LSST_EXCEPTION_TYPE(PixelValueError, lsst::pex::exceptions::DomainError,
                     lsst::meas::base::PixelValueError);
-
 }}} // lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_exceptions_h_INCLUDED

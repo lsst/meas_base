@@ -27,6 +27,7 @@ import lsst.afw.table as afwTable
 import lsst.daf.base as dafBase
 import lsst.meas.base as measBase
 import lsst.pex.config as pexConfig
+import lsst.pex.exceptions as pexExcept
 import lsst.utils.tests as utilsTests
 import testLib
 
@@ -69,13 +70,14 @@ class TransformTestCase(utilsTests.TestCase):
         source.set(self.pluginName + "_y", self.centroidPosition[1])
         return cat
 
-    def _performTransform(self, transformClass, inCat):
+    def _performTransform(self, transformClass, inCat, doExtend=True):
         """Operate on inCat with a transform of class transformClass"""
         mapper = afwTable.SchemaMapper(inCat.schema)
         config = SillyCentroidConfig()
         transform = transformClass(config, self.pluginName, mapper)
         outCat = afwTable.BaseCatalog(mapper.getOutputSchema())
-        outCat.extend(inCat, mapper=mapper)
+        if doExtend:
+            outCat.extend(inCat, mapper=mapper)
         transform(inCat, outCat, makeWcs(), afwImage.Calib())
         return outCat
 
@@ -101,6 +103,8 @@ class TransformTestCase(utilsTests.TestCase):
     def testNullTransform(self):
         """The NullTransform passes through nothing"""
         inCat = self._generateCatalog()
+        self.assertRaises(pexExcept.LengthError, self._performTransform,
+                          measBase.NullTransform, inCat, False)
         outCat = self._performTransform(measBase.NullTransform, inCat)
         self.assertEqual(len(inCat), len(outCat))
         self.assertEqual(outCat.schema.getFieldCount(), 0)
@@ -108,6 +112,8 @@ class TransformTestCase(utilsTests.TestCase):
     def testPassThroughTransform(self):
         """The PassThroughTransform copies all fields starting with the plugin name"""
         inCat = self._generateCatalog()
+        self.assertRaises(pexExcept.LengthError, self._performTransform,
+                          measBase.PassThroughTransform, inCat, False)
         outCat = self._performTransform(measBase.PassThroughTransform, inCat)
         self.assertEqual(len(inCat), len(outCat))
         for inSrc, outSrc in zip(inCat, outCat):
@@ -117,6 +123,8 @@ class TransformTestCase(utilsTests.TestCase):
     def testPythonConfig(self):
         """The Python Config should be automatically converted to Control when calling a C++ transform."""
         inCat = self._generateCatalog()
+        self.assertRaises(pexExcept.LengthError, self._performTransform,
+                          testLib.SillyTransform, inCat, False)
         outCat = self._performTransform(testLib.SillyTransform, inCat)
         self._checkSillyOutputs(inCat, outCat)
 

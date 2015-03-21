@@ -600,15 +600,20 @@ class TransformTestCase(lsst.utils.tests.TestCase):
                     else:
                         self.assertFalse(keyName in outSrc.schema)
 
-    def _runTransform(self):
-        self.outputCat.extend(self.inputCat, mapper=self.mapper)
+    def _runTransform(self, doExtend=True):
+        if doExtend:
+            self.outputCat.extend(self.inputCat, mapper=self.mapper)
         self.transform(self.inputCat, self.outputCat, self.calexp.getWcs(), self.calexp.getCalib())
 
     def testTransform(self, baseNames=None):
         """
         Test the operation of the transformation on a catalog containing random data.
 
-        We check that appropriate conversions have been properly applied and that flags have been propagated.
+        We check that:
+
+        * An appropriate exception is raised on an attempt to transform between catalogs with different
+          numbers of rows;
+        * Otherwise, all appropriate conversions are properly appled and that flags have been propagated.
 
         The `baseNames` argument requires some explanation. This should be an iterable of the leading parts of
         the field names for each measurement; that is, everything that appears before `_flux`, `_flag`, etc.
@@ -621,6 +626,7 @@ class TransformTestCase(lsst.utils.tests.TestCase):
         """
         baseNames = baseNames or [self.name]
         self._populateCatalog(baseNames)
+        self.assertRaises(lsst.pex.exceptions.LengthError, self._runTransform, False)
         self._runTransform()
         self._checkOutput(baseNames)
 

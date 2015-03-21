@@ -37,13 +37,16 @@ When a transformer is called, it is handed a `SourceCatalog` containing the
 measurements to be transformed, a `BaseCatalog` in which to store results, and
 information about the WCS and calibration of the data. It may be safely
 assumed that both are contiguous in memory, thus a ColumnView may be used for
-efficient processing.
+efficient processing. If the transformation is not possible, it should be
+aborted by throwing an exception; if this happens, the caller should
+assume that the contents of the output catalog are inconsistent.
 
 Transformations can be defined in Python or in C++. Python code should inherit
 from `MeasurementTransform`, following its interface.
 """
 
 __all__ = ("NullTransform", "PassThroughTransform")
+from lsst.pex.exceptions import LengthError
 
 class MeasurementTransform(object):
     """!
@@ -59,6 +62,11 @@ class MeasurementTransform(object):
     def __call__(self, inputCatalog, outputCatalog, wcs, calib):
         raise NotImplementedError()
 
+    @staticmethod
+    def _checkCatalogSize(cat1, cat2):
+        if len(cat1) != len(cat2):
+            raise LengthError("Catalog size mismatch")
+
 
 class NullTransform(MeasurementTransform):
     """!
@@ -68,7 +76,7 @@ class NullTransform(MeasurementTransform):
     transformation is specified.
     """
     def __call__(self, inputCatalog, outputCatalog, wcs, calib):
-        pass
+        self._checkCatalogSize(inputCatalog, outputCatalog)
 
 
 class PassThroughTransform(MeasurementTransform):
@@ -81,4 +89,4 @@ class PassThroughTransform(MeasurementTransform):
             mapper.addMapping(key)
 
     def __call__(self, inputCatalog, outputCatalog, wcs, calib):
-        pass
+        self._checkCatalogSize(inputCatalog, outputCatalog)

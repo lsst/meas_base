@@ -154,6 +154,7 @@ public:
                             lsst::afw::table::BaseCatalog & outputCatalog,
                             lsst::afw::image::Wcs const & wcs,
                             lsst::afw::image::Calib const & calib) const {
+        checkCatalogSize(inputCatalog, outputCatalog);
         lsst::afw::table::Key<double> xkey = inputCatalog.getSchema()[_name + "_x"];
         lsst::afw::table::Key<double> ykey = inputCatalog.getSchema()[_name + "_y"];
         lsst::afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
