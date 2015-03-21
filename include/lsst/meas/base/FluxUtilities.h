@@ -199,7 +199,7 @@ public:
      * @param[in,out] outputCatalog  Container for transformed results
      * @param[in]     wcs            World coordinate system under which transformation will take place
      * @param[in]     calib          Photometric calibration under which transformation will take place
-     * @throws        LengthError    Transformation cannot be completed
+     * @throws        LengthError    Catalog sizes do not match
      */
     virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
                             afw::table::BaseCatalog & outputCatalog,
