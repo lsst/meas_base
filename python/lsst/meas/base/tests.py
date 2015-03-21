@@ -595,15 +595,15 @@ class TransformTestCase(lsst.utils.tests.TestCase):
             for baseName in baseNames:
                 self._setFieldsInRecord(record, baseName)
                 for flagName in self.flagNames:
-                    if baseName + '_' + flagName in record.schema:
-                        record.set(baseName + '_' + flagName, flagValue)
+                    if record.schema.join(baseName, flagName) in record.schema:
+                        record.set(record.schema.join(baseName, flagName), flagValue)
 
     def _checkOutput(self, baseNames):
         for inSrc, outSrc in zip(self.inputCat, self.outputCat):
             for baseName in baseNames:
                 self._compareFieldsInRecords(inSrc, outSrc, baseName)
                 for flagName in self.flagNames:
-                    keyName = baseName + '_' + flagName
+                    keyName = outSrc.schema.join(baseName, flagName)
                     if keyName in inSrc.schema:
                         self.assertEqual(outSrc.get(keyName), inSrc.get(keyName))
                     else:
@@ -648,10 +648,11 @@ class TransformTestCase(lsst.utils.tests.TestCase):
 
 class FluxTransformTestCase(TransformTestCase):
     def _setFieldsInRecord(self, record, name):
-        record[name + '_flux'], record[name + '_fluxSigma'] = numpy.random.random(2)
+        record[record.schema.join(name, 'flux')] = numpy.random.random()
+        record[record.schema.join(name, 'fluxSigma')] = numpy.random.random()
 
     def _compareFieldsInRecords(self, inSrc, outSrc, name):
-        fluxName, fluxSigmaName = name + '_flux', name + '_fluxSigma'
+        fluxName, fluxSigmaName = inSrc.schema.join(name, 'flux'), inSrc.schema.join(name, 'fluxSigma')
         mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[fluxName], inSrc[fluxSigmaName])
-        self.assertEqual(outSrc[name + '_mag'], mag)
-        self.assertEqual(outSrc[name + '_magErr'], magErr)
+        self.assertEqual(outSrc[outSrc.schema.join(name, 'mag')], mag)
+        self.assertEqual(outSrc[outSrc.schema.join(name, 'magErr')], magErr)
