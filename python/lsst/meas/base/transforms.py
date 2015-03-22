@@ -40,12 +40,10 @@ assumed that both are contiguous in memory, thus a ColumnView may be used for
 efficient processing.
 
 Transformations can be defined in Python or in C++. Python code should inherit
-from `MeasurementTransform`, following its interface. C++ code inherits from
-`BaseTransform`. `TransformWrapper` wraps the C++ implementation so that it
-provides a uniform interface with Python.
+from `MeasurementTransform`, following its interface.
 """
 
-__all__ = ("NullTransform", "PassThroughTransform", "TransformWrapper")
+__all__ = ("NullTransform", "PassThroughTransform")
 
 class MeasurementTransform(object):
     """!
@@ -84,20 +82,3 @@ class PassThroughTransform(MeasurementTransform):
 
     def __call__(self, inputCatalog, outputCatalog, wcs, calib):
         pass
-
-
-class TransformWrapper(object):
-    """!
-    Wrap a C++-style transformation.
-
-    C++ code requires a `Control`, rather than a `Config`, object. This class
-    converts the latter to the former: when the TransformWrapper is invoked
-    Note that this is only possible for measurement plugins which have control
-    objects defined in C++: pure Python measurement plugins must use Python
-    transformations.
-    """
-    def __init__(self, transform):
-        self.transform = transform
-
-    def __call__(self, config, name, mapper):
-        return self.transform(config.makeControl(), name, mapper)

@@ -23,6 +23,23 @@
 
 // measurement transformations
 
+// Augment C++ measurement transforms with a Python fragment which converts
+// the Python config class to a C++ control object. They can then be called
+// from Python in exactly the same way as transforms implemented in Python.
+%define %convertConfig(NS, CLS)
+%extend NS ## :: ## CLS {
+    %feature("pythonprepend") CLS %{
+        if args and hasattr(args[0], "makeControl"):
+            args = (args[0].makeControl(),) + args[1:]
+    %}
+}
+%enddef
+
+%convertConfig(lsst::meas::base, ApertureFluxTransform)
+%convertConfig(lsst::meas::base, GaussianFluxTransform)
+%convertConfig(lsst::meas::base, PeakLikelihoodFluxTransform)
+%convertConfig(lsst::meas::base, PsfFluxTransform)
+
 %include "lsst/meas/base/Transform.h"
 
 // flux algorithms

@@ -114,11 +114,10 @@ class TransformTestCase(utilsTests.TestCase):
             for fieldname in inCat.schema.extract(self.pluginName + "*").keys():
                 self.assertEqual(inSrc.get(fieldname), outSrc.get(fieldname))
 
-    def testTransformWrapper(self):
-        """The TransformWrapper lets us treat a C++ transform as if it were Python"""
+    def testPythonConfig(self):
+        """The Python Config should be automatically converted to Control when calling a C++ transform."""
         inCat = self._generateCatalog()
-        transform = measBase.TransformWrapper(testLib.SillyTransform)
-        outCat = self._performTransform(transform, inCat)
+        outCat = self._performTransform(testLib.SillyTransform, inCat)
         self._checkSillyOutputs(inCat, outCat)
 
     def testApplyCppTransform(self):
