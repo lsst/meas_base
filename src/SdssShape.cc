@@ -48,9 +48,6 @@ namespace base {
 
 namespace {  // anonymous
 
-lsst::afw::geom::BoxI set_amom_bbox(int width, int height, float xcen, float ycen, 
-                                    double sigma11_w, double , double sigma22_w, float maxRad);
-    
 typedef Eigen::Matrix<double,4,4,Eigen::DontAlign> Matrix4d;
 
 // Return multiplier that transforms I0 to a total flux
@@ -189,44 +186,23 @@ bool shouldInterp(double sigma11, double sigma22, double det) {
     return (sigma11 < xinterp || sigma22 < xinterp || det < xinterp*xinterp);
 }
 
-
-/************************************************************************************************************/
-/*
- * Decide on the bounding box for the region to examine while calculating
- * the adaptive moments
- */
-lsst::afw::geom::BoxI set_amom_bbox(int width, int height, // size of region
-                                     float xcen, float ycen,        // centre of object
-                                     double sigma11_w,              // quadratic moments of the
-                                     double ,                       //         weighting function
-                                     double sigma22_w,              //                    xx, xy, and yy
-                                     float maxRad = 1000              // Maximum radius of area to use
-                                    )
-{
-    float rad = 4*sqrt(((sigma11_w > sigma22_w) ? sigma11_w : sigma22_w));
-        
-    if (rad > maxRad) {
-        rad = maxRad;
-    }
-        
-    int ix0 = static_cast<int>(xcen - rad - 0.5);
-    ix0 = (ix0 < 0) ? 0 : ix0;
-    int iy0 = static_cast<int>(ycen - rad - 0.5);
-    iy0 = (iy0 < 0) ? 0 : iy0;
-    lsst::afw::geom::Point2I llc(ix0, iy0); // Desired lower left corner
-        
-    int ix1 = static_cast<int>(xcen + rad + 0.5);
-    if (ix1 >= width) {
-        ix1 = width - 1;
-    }
-    int iy1 = static_cast<int>(ycen + rad + 0.5);
-    if (iy1 >= height) {
-        iy1 = height - 1;
-    }
-    lsst::afw::geom::Point2I urc(ix1, iy1); // Desired upper right corner
-        
-    return lsst::afw::geom::BoxI(llc, urc);
-}   
+// Decide on the bounding box for the region to examine while calculating the adaptive moments
+// This routine will work in either LOCAL or PARENT coordinates (but of course which you pass
+// determine which you will get back).
+afw::geom::Box2I computeAdaptiveMomentsBBox(
+    afw::geom::Box2I const & bbox,  // full image bbox
+    afw::geom::Point2D const & center, // centre of object
+    double sigma11_w,              // quadratic moments of the
+    double ,                       //         weighting function
+    double sigma22_w,              //                    xx, xy, and yy
+    double maxRadius = 1000        // Maximum radius of area to use
+) {
+    double radius = std::min(4*std::sqrt(std::max(sigma11_w, sigma22_w)), maxRadius);
+    afw::geom::Extent2D offset(radius, radius);
+    afw::geom::Box2I result(afw::geom::Box2D(center - offset, center + offset));
+    result.clip(bbox);
+    return result;
+}
 
 /*****************************************************************************/
 /*
@@ -405,8 +381,10 @@ calcmom(ImageT const& image,            // the image data
     return (fluxOnly || (sum > 0 && sumxx > 0 && sumyy > 0)) ? 0 : -1;
 }
 
-/**
+/*
  * Workhorse for adaptive moments
+ *
+ * All inputs are expected to be in LOCAL image coordinates
  */
 template<typename ImageT>
 bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double ycen, double shiftmax,
@@ -440,7 +418,8 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
     lsst::afw::geom::BoxI bbox;
     int iter = 0;                       // iteration number
     for (; iter < maxIter; iter++) {
-        bbox = set_amom_bbox(image.getWidth(), image.getHeight(), xcen, ycen, sigma11W, sigma12W, sigma22W);
+        bbox = computeAdaptiveMomentsBBox(image.getBBox(afw::image::LOCAL), afw::geom::Point2D(xcen, ycen),
+                                          sigma11W, sigma12W, sigma22W);
         boost::tuple<std::pair<bool, double>, double, double, double> weights = 
             getWeights(sigma11W, sigma12W, sigma22W);
         if (!weights.get<0>().first) {
@@ -824,11 +803,12 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(
     afw::geom::ellipses::Quadrupole const & shape,
     afw::geom::Point2D const & center
 ) {
+    // while arguments to computeFixedMomentsFlux are in PARENT coordinates, the implementation is LOCAL.
+    afw::geom::Point2D localCenter = center - afw::geom::Extent2D(image.getXY0());
 
-    afwGeom::BoxI const bbox = set_amom_bbox(image.getWidth(), image.getHeight(),
-                                             center.getX() - image.getX0(),
-                                             center.getY() - image.getY0(),
-                                             shape.getIxx(), shape.getIxy(), shape.getIyy());
+    afwGeom::BoxI const bbox = computeAdaptiveMomentsBBox(image.getBBox(afw::image::LOCAL),
+                                                          localCenter,
+                                                          shape.getIxx(), shape.getIxy(), shape.getIyy());
 
     boost::tuple<std::pair<bool, double>, double, double, double> weights =
         getWeights(shape.getIxx(), shape.getIxy(), shape.getIyy());
@@ -845,10 +825,8 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(
     bool const interp = shouldInterp(shape.getIxx(), shape.getIyy(), weights.get<0>().second);
 
     double i0 = 0;                      // amplitude of Gaussian
-    calcmom<true>(ImageAdaptor<ImageT>().getImage(image),
-                  center.getX() - image.getX0(), center.getY() - image.getY0(),
-                  bbox, 0.0, interp, w11, w12, w22,
-                  &i0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    calcmom<true>(ImageAdaptor<ImageT>().getImage(image), localCenter.getX(), localCenter.getY(),
+                  bbox, 0.0, interp, w11, w12, w22, &i0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
     double const wArea = afw::geom::PI*std::sqrt(shape.getDeterminant());
 
