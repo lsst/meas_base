@@ -24,130 +24,141 @@
 import unittest
 import numpy
 
-import lsst.afw.detection
 import lsst.afw.geom
 import lsst.afw.image
 import lsst.afw.table
-import lsst.meas.base
 import lsst.utils.tests
+import lsst.meas.base.tests
 
 from lsst.meas.base.tests import AlgorithmTestCase, TransformTestCase
 
 class PsfFluxTestCase(AlgorithmTestCase):
-    def prep(self, ctrl=None):
-        """Construct an algorithm (finishing the schema in the process),
-        create a record it can fill, and return both.
+
+    def setUp(self):
+        self.center = lsst.afw.geom.Point2D(50.1, 49.8)
+        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0),
+                                        lsst.afw.geom.Extent2I(100, 100))
+        self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
+        self.dataset.addSource(100000.0, self.center)
+
+    def tearDown(self):
+        del self.center
+        del self.bbox
+        del self.dataset
+
+    def makeAlgorithm(self, ctrl=None):
+        """Construct an algorithm (finishing a schema in the process), and return both.
         """
         if ctrl is None:
             ctrl = lsst.meas.base.PsfFluxControl()
-        schema = self.mapper.getOutputSchema()
-        schema.getAliasMap().set("slot_Centroid", "truth")
+        schema = lsst.meas.base.tests.TestDataset.makeMinimalSchema()
         algorithm = lsst.meas.base.PsfFluxAlgorithm(ctrl, "base_PsfFlux", schema)
-        measCat = lsst.afw.table.SourceCatalog(schema)
-        measRecord = measCat.addNew()
-        measRecord.assign(self.truth[0], self.mapper)
-        return algorithm, measRecord
-
-    def setUp(self):
-        AlgorithmTestCase.setUp(self)
-        self.mapper = lsst.afw.table.SchemaMapper(self.truth.schema)
-        self.mapper.addMinimalSchema(lsst.afw.table.SourceTable.makeMinimalSchema())
-        self.mapper.addMapping(self.truth.schema.find("truth_x").key)
-        self.mapper.addMapping(self.truth.schema.find("truth_y").key)
-        self.mapper.addMapping(self.truth.schema.find("truth_flux").key)
-
-    def tearDown(self):
-        AlgorithmTestCase.tearDown(self)
-        del self.mapper
+        return algorithm, schema
 
     def testMasking(self):
-        badPoint = lsst.afw.geom.Point2I(self.truth[0].get(self.centroidKey)) + lsst.afw.geom.Extent2I(3,4)
-        imageArray = self.calexp.getMaskedImage().getImage().getArray()
-        maskArray = self.calexp.getMaskedImage().getMask().getArray()
-        badMask = self.calexp.getMaskedImage().getMask().getPlaneBitMask("BAD")
-        imageArray[badPoint.getY() - self.calexp.getY0(), badPoint.getX() - self.calexp.getX0()] = numpy.inf
-        maskArray[badPoint.getY() - self.calexp.getY0(), badPoint.getX() - self.calexp.getX0()] |= badMask
+        algorithm, schema = self.makeAlgorithm()
+        exposure, catalog = self.dataset.realize(10.0, schema)
+        record = catalog[0]
+        badPoint = lsst.afw.geom.Point2I(self.center) + lsst.afw.geom.Extent2I(3,4)
+        imageArray = exposure.getMaskedImage().getImage().getArray()
+        maskArray = exposure.getMaskedImage().getMask().getArray()
+        badMask = exposure.getMaskedImage().getMask().getPlaneBitMask("BAD")
+        imageArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] = numpy.inf
+        maskArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] |= badMask
         # Should get an infinite value exception, because we didn't mask that one pixel
-        algorithm, measRecord = self.prep()
-        self.assertRaises(lsst.meas.base.PixelValueError, algorithm.measure, measRecord, self.calexp)
+        self.assertRaises(lsst.meas.base.PixelValueError, algorithm.measure, record, exposure)
         # If we do mask it, we should get a reasonable result
         ctrl = lsst.meas.base.PsfFluxControl()
         ctrl.badMaskPlanes = ["BAD"]
-        algorithm, measRecord = self.prep(ctrl)
-        algorithm.measure(measRecord, self.calexp)
+        algorithm, schema = self.makeAlgorithm(ctrl)
+        algorithm.measure(record, exposure)
         # rng dependent
-        self.assertClose(measRecord.get("base_PsfFlux_flux"), self.truth[0].get(self.fluxKey),
-                         atol=3*measRecord.get("base_PsfFlux_fluxSigma"))
+        self.assertClose(record.get("base_PsfFlux_flux"), record.get("truth_flux"),
+                         atol=3*record.get("base_PsfFlux_fluxSigma"))
         # If we mask the whole image, we should get a MeasurementError
         maskArray[:,:] |= badMask
-        self.assertRaises(lsst.meas.base.MeasurementError, algorithm.measure, measRecord, self.calexp)
+        with self.assertRaises(lsst.meas.base.MeasurementError) as context:
+            algorithm.measure(record, exposure)
+        self.assertEqual(context.exception.getFlagBit(), lsst.meas.base.PsfFluxAlgorithm.NO_GOOD_PIXELS)
 
     def testSubImage(self):
         """Test that we don't get confused by images with nonzero xy0, and that the EDGE flag is set
         when it should be.
         """
-        psfImage = self.calexp.getPsf().computeImage(self.truth[0].get(self.centroidKey))
+        algorithm, schema = self.makeAlgorithm()
+        exposure, catalog = self.dataset.realize(10.0, schema)
+        record = catalog[0]
+        psfImage = exposure.getPsf().computeImage(record.getCentroid())
         bbox = psfImage.getBBox()
         bbox.grow(-1)
-        subExposure = self.calexp.Factory(self.calexp, bbox, lsst.afw.image.LOCAL)
-        algorithm, measRecord = self.prep()
-        algorithm.measure(measRecord, subExposure)
-        self.assertClose(measRecord.get("base_PsfFlux_flux"), self.truth[0].get(self.fluxKey),
-                         atol=3*measRecord.get("base_PsfFlux_fluxSigma"))
-        self.assertTrue(measRecord.get("base_PsfFlux_flag_edge"))
+        subExposure = exposure.Factory(exposure, bbox, lsst.afw.image.LOCAL)
+        algorithm.measure(record, subExposure)
+        self.assertClose(record.get("base_PsfFlux_flux"), record.get("truth_flux"),
+                         atol=3*record.get("base_PsfFlux_fluxSigma"))
+        self.assertTrue(record.get("base_PsfFlux_flag_edge"))
 
     def testNoPsf(self):
         """Test that we raise FatalAlgorithmError when there's no PSF.
         """
-        self.calexp.setPsf(None)
-        algorithm, measRecord = self.prep()
-        self.assertRaises(lsst.meas.base.FatalAlgorithmError, algorithm.measure, measRecord, self.calexp)
+        algorithm, schema = self.makeAlgorithm()
+        exposure, catalog = self.dataset.realize(10.0, schema)
+        exposure.setPsf(None)
+        self.assertRaises(lsst.meas.base.FatalAlgorithmError, algorithm.measure, catalog[0], exposure)
 
     def testMonteCarlo(self):
         """Test that we get exactly the right answer on an ideal sim with no noise, and that
         the reported uncertainty agrees with a Monte Carlo test of the noise.
-
-        We'll do this test in double precision, just to make sure that template also works.
         """
-        psf = self.calexp.getPsf()
-        position = self.truth[0].get(self.centroidKey)
-        image = psf.computeImage(position)
-        exposure1 = lsst.afw.image.ExposureF(lsst.afw.image.MaskedImageF(image.convertF()))
-        exposure1.setPsf(psf)
-        footprint = lsst.afw.detection.Footprint(image.getBBox())
-        algorithm, measRecord = self.prep()
-        algorithm.measure(measRecord, exposure1)
-        self.assertClose(measRecord.get("base_PsfFlux_flux"), 1.0, rtol=1E-8)
-        self.assertClose(measRecord.get("base_PsfFlux_fluxSigma"), 0.0, rtol=1E-8)
-        width = image.getWidth()
-        height = image.getHeight();
-        for pixelNoiseSigma in (0.001, 0.01, 0.1):
+        algorithm, schema = self.makeAlgorithm()
+        exposure, catalog = self.dataset.realize(0.0, schema)
+        record = catalog[0]
+        flux = record.get("truth_flux")
+        algorithm.measure(record, exposure)
+        self.assertClose(record.get("base_PsfFlux_flux"), flux, rtol=1E-3)
+        self.assertClose(record.get("base_PsfFlux_fluxSigma"), 0.0, rtol=1E-3)
+        for noise in (0.001, 0.01, 0.1):
             fluxes = []
             fluxSigmas = []
             nSamples = 1000
             for repeat in xrange(nSamples):
-                exposure2 = exposure1.clone()
-                exposure2.getMaskedImage().getVariance().set(pixelNoiseSigma**2)
-                noise = numpy.random.randn(height, width)* pixelNoiseSigma
-                exposure2.getMaskedImage().getImage().getArray()[:,:] += noise
-                algorithm.measure(measRecord, exposure2)
-                fluxes.append(measRecord.get("base_PsfFlux_flux"))
-                fluxSigmas.append(measRecord.get("base_PsfFlux_fluxSigma"))
+                exposure, catalog = self.dataset.realize(noise*flux, schema)
+                record = catalog[0]
+                algorithm.measure(record, exposure)
+                fluxes.append(record.get("base_PsfFlux_flux"))
+                fluxSigmas.append(record.get("base_PsfFlux_fluxSigma"))
             fluxMean = numpy.mean(fluxes)
             fluxSigmaMean = numpy.mean(fluxSigmas)
             fluxStandardDeviation = numpy.std(fluxes)
             self.assertClose(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)   # rng dependent
-            self.assertLess(fluxMean - 1.0, 2.0*fluxSigmaMean / nSamples**0.5)   # rng dependent
+            self.assertLess(fluxMean - flux, 2.0*fluxSigmaMean / nSamples**0.5)   # rng dependent
 
     def testSingleFramePlugin(self):
-        measCat = self.runSingleFrameMeasurementTask("base_PsfFlux")
-        for record in measCat:
-            self.assertFalse(record.get("base_PsfFlux_flag"))
-            self.assertFalse(record.get("base_PsfFlux_flag_noGoodPixels"))
-            self.assertFalse(record.get("base_PsfFlux_flag_edge"))
-            if record.get("truth_isStar"):
-                self.assertClose(record.get("truth_flux"), record.get("base_PsfFlux_flux"),
-                                 atol=3*record.get("base_PsfFlux_fluxSigma"))
+        task = self.makeSingleFrameMeasurementTask("base_PsfFlux")
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        task.run(exposure, catalog)
+        record = catalog[0]
+        self.assertFalse(record.get("base_PsfFlux_flag"))
+        self.assertFalse(record.get("base_PsfFlux_flag_noGoodPixels"))
+        self.assertFalse(record.get("base_PsfFlux_flag_edge"))
+        self.assertClose(record.get("base_PsfFlux_flux"), record.get("truth_flux"),
+                         atol=3*record.get("base_PsfFlux_fluxSigma"))
+
+    def testForcedPlugin(self):
+        task = self.makeForcedMeasurementTask("base_PsfFlux")
+        measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs())
+        measDataset = self.dataset.transform(measWcs)
+        exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
+        s = task.run(exposure, refCat=self.dataset.catalog, refWcs=self.dataset.exposure.getWcs())
+        measRecord = s.sources[0]
+        truthRecord = truthCatalog[0]
+        self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-4)
+        self.assertClose(measRecord.get("slot_Centroid_y"), truthRecord.get("truth_y"), rtol=1E-4)
+        self.assertFalse(measRecord.get("base_PsfFlux_flag"))
+        self.assertFalse(measRecord.get("base_PsfFlux_flag_noGoodPixels"))
+        self.assertFalse(measRecord.get("base_PsfFlux_flag_edge"))
+        self.assertClose(measRecord.get("base_PsfFlux_flux"), truthCatalog.get("truth_flux"),
+                         rtol=1E-2)
+        self.assertLess(measRecord.get("base_PsfFlux_fluxSigma"), 500.0)
 
 
 class PsfFluxTransformTestCase(TransformTestCase):

@@ -21,147 +21,137 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import math
-import os
-import lsst.afw.image
-from lsst.afw.table import Schema, SchemaMapper, SourceCatalog, SourceTable
-from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
-from lsst.meas.base.base import *
-from lsst.meas.base.tests import *
 import unittest
-import lsst.utils.tests
 import numpy
 
-numpy.random.seed(1234)
+import lsst.utils.tests
+import lsst.meas.base.tests
 
-DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
+# n.b. Some tests here depend on the noise realization in the test data
+# or from the numpy random number generator.
+# For the current test data and seed value, they pass, but they may not
+# if the test data is regenerated or the seed value changes.  I've marked
+# these with an "rng dependent" comment.  In most cases, they test that
+# the measured flux lies within 2 sigma of the correct value, which we
+# should expect to fail sometimes.
 
 class SdssCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
     def setUp(self):
-        lsst.meas.base.tests.AlgorithmTestCase.setUp(self)
-        sfmConfig = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        # add the measurement fields to the outputSchema and make a catalog with it
-        # then extend with the mapper to copy the extant data
-        mapper = SchemaMapper(self.truth.getSchema())
-        mapper.addMinimalSchema(self.truth.getSchema())
-        outSchema = mapper.getOutputSchema()
-        sfmConfig.plugins = ["base_PeakCentroid", "base_SdssCentroid"]
-        sfmConfig.slots.centroid = "base_SdssCentroid"
-        sfmConfig.slots.shape = None
-        sfmConfig.slots.psfFlux = None
-        sfmConfig.slots.modelFlux = None
-        sfmConfig.slots.apFlux = None
-        sfmConfig.slots.instFlux = None
-        self.task = SingleFrameMeasurementTask(outSchema, config=sfmConfig)
-        self.measCat = SourceCatalog(outSchema)
-        self.measCat.defineCentroid("base_SdssCentroid")
-        self.measCat.extend(self.truth, mapper=mapper)
+        self.center = lsst.afw.geom.Point2D(50.1, 49.8)
+        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
+                                        lsst.afw.geom.Extent2I(140, 160))
+        self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
+        self.dataset.addSource(100000.0, self.center)
 
     def tearDown(self):
-        lsst.meas.base.tests.AlgorithmTestCase.tearDown(self)
-        del self.task
-        del self.measCat
 
-    def testAlgorithm(self):
-        # now run the SFM task with the test plugin
-        self.task.run(self.measCat, self.calexp)
+        del self.center
+        del self.bbox
+        del self.dataset
 
-        truthFluxkey = self.truth.getSchema().find("truth_flux").key
-        for i in range(len(self.measCat)):
-            record = self.measCat[i]
-            centroid = record.getCentroid()
-            cov = record.getCentroidErr()
-            peakX = record.get("base_PeakCentroid_x")
-            peakY = record.get("base_PeakCentroid_y")
-            x = record.get("base_SdssCentroid_x")
-            y = record.get("base_SdssCentroid_y")
-            xerr = record.get("base_SdssCentroid_xSigma")
-            yerr = record.get("base_SdssCentroid_ySigma")
+    def makeAlgorithm(self, ctrl=None):
+        """Construct an algorithm (finishing a schema in the process), and return both.
+        """
+        if ctrl is None:
+            ctrl = lsst.meas.base.SdssCentroidControl()
+        schema = lsst.meas.base.tests.TestDataset.makeMinimalSchema()
+        algorithm = lsst.meas.base.SdssCentroidAlgorithm(ctrl, "base_SdssCentroid", schema)
+        return algorithm, schema
 
-            self.assertFalse(record.get("base_SdssCentroid_flag"))
-            self.assertFalse(record.get("base_SdssCentroid_flag_edge"))
-            self.assertFalse(record.get("base_SdssCentroid_flag_noSecondDerivative"))
-            self.assertFalse(record.get("base_SdssCentroid_flag_almostNoSecondDerivative"))
-            self.assertFalse(record.get("base_SdssCentroid_flag_notAtMaximum"))
+    def testSingleFramePlugin(self):
+        """Test that we can call the algorithm through the SFM plugin interface."""
+        task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        task.run(exposure, catalog)
+        record = catalog[0]
+        self.assertFalse(record.get("base_SdssCentroid_flag"))
+        self.assertFalse(record.get("base_SdssCentroid_flag_edge"))
+        self.assertClose(record.get("base_SdssCentroid_x"), record.get("truth_x"), rtol=0.005)
+        self.assertClose(record.get("base_SdssCentroid_y"), record.get("truth_y"), rtol=0.005)
 
-            self.assertClose(peakX, x, atol=None, rtol=.02)
-            self.assertClose(peakY, y, atol=None, rtol=.02)
-
-            self.assertEqual(x, record.getCentroid().getX())
-            self.assertEqual(y, record.getCentroid().getY())
-            self.assertClose(xerr*xerr, cov[0,0], rtol=.01)
-            self.assertClose(yerr*yerr, cov[1,1], rtol=.01)
+    def testMonteCarlo(self):
+        """Test that we get exactly the right answer on an ideal sim with no noise, and that
+        the reported uncertainty agrees with a Monte Carlo test of the noise.
+        """
+        algorithm, schema = self.makeAlgorithm()
+        exposure, catalog = self.dataset.realize(0.0, schema)
+        record = catalog[0]
+        x = record.get("truth_x")
+        y = record.get("truth_y")
+        flux = record.get("truth_flux")
+        algorithm.measure(record, exposure)
+        self.assertClose(record.get("base_SdssCentroid_x"), x, rtol=1E-4)
+        self.assertClose(record.get("base_SdssCentroid_y"), y, rtol=1E-4)
+        for noise in (0.001, 0.01):
+            xList = []
+            yList = []
+            xSigmaList = []
+            ySigmaList = []
+            nSamples = 1000
+            for repeat in xrange(nSamples):
+                exposure, catalog = self.dataset.realize(noise*flux, schema)
+                record = catalog[0]
+                algorithm.measure(record, exposure)
+                xList.append(record.get("base_SdssCentroid_x"))
+                yList.append(record.get("base_SdssCentroid_y"))
+                xSigmaList.append(record.get("base_SdssCentroid_xSigma"))
+                ySigmaList.append(record.get("base_SdssCentroid_ySigma"))
+            xMean = numpy.mean(xList)
+            yMean = numpy.mean(yList)
+            xSigmaMean = numpy.mean(xSigmaList)
+            ySigmaMean = numpy.mean(ySigmaList)
+            xStandardDeviation = numpy.std(xList)
+            yStandardDeviation = numpy.std(yList)
+            self.assertClose(xSigmaMean, xStandardDeviation, rtol=0.2)   # rng dependent
+            self.assertClose(ySigmaMean, yStandardDeviation, rtol=0.2)   # rng dependent
+            self.assertLess(xMean - x, 3.0*xSigmaMean / nSamples**0.5)   # rng dependent
+            self.assertLess(yMean - y, 3.0*ySigmaMean / nSamples**0.5)   # rng dependent
 
     def testEdge(self):
-        self.truth.defineCentroid("truth")
-        centroid = self.truth[0].getCentroid()
-        psfImage = self.calexp.getPsf().computeImage(centroid)
+        task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        psfImage = exposure.getPsf().computeImage(self.center)
         # construct a box that won't fit the full PSF model
         bbox = psfImage.getBBox()
         bbox.grow(-5)
-        subImage = lsst.afw.image.ExposureF(self.calexp, bbox)
-        subCat = self.measCat[:1]
+        subImage = lsst.afw.image.ExposureF(exposure, bbox)
         # we also need to install a smaller footprint, or NoiseReplacer complains before we even get to
         # measuring the centriod
-        measRecord = subCat[0]
+        record = catalog[0]
         newFootprint = lsst.afw.detection.Footprint(bbox)
-        newFootprint.getPeaks().push_back(measRecord.getFootprint().getPeaks()[0])
-        measRecord.setFootprint(newFootprint)
+        newFootprint.getPeaks().push_back(record.getFootprint().getPeaks()[0])
+        record.setFootprint(newFootprint)
         # just measure the one object we've prepared for
-        self.task.measure(subCat, subImage)
-        self.assertTrue(measRecord.get("base_SdssCentroid_flag"))
-        self.assertTrue(measRecord.get("base_SdssCentroid_flag_edge"))
+        task.measure(catalog, subImage)
+        self.assertTrue(record.get("base_SdssCentroid_flag"))
+        self.assertTrue(record.get("base_SdssCentroid_flag_edge"))
 
     def testNo2ndDerivative(self):
-        self.truth.defineCentroid("truth")
-        centroid = self.truth[0].getCentroid()
-        # cutout a subimage around the first centroid in the test image
-        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(centroid), lsst.afw.geom.Extent2I(1,1))
+        task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        # cutout a subimage around object in the test image
+        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(self.center), lsst.afw.geom.Extent2I(1,1))
         bbox.grow(20)
-        subImage = lsst.afw.image.ExposureF(self.calexp, bbox)
+        subImage = lsst.afw.image.ExposureF(exposure, bbox)
         # A completely flat image will trigger the no 2nd derivative error
         subImage.getMaskedImage().getImage().getArray()[:] =  0
-        subCat = self.measCat[:1]
-        measRecord = subCat[0]
-        self.task.measure(subCat, subImage)
-        self.assertTrue(measRecord.get("base_SdssCentroid_flag"))
-        self.assertTrue(measRecord.get("base_SdssCentroid_flag_noSecondDerivative"))
-
-    def testAlmostNo2ndDerivative(self):
-        self.truth.defineCentroid("truth")
-        centroid = self.truth[0].getCentroid()
-        psfImage = self.calexp.getPsf().computeImage(centroid)
-        # cutout a subimage around the first centroid in the test image
-        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(centroid), lsst.afw.geom.Extent2I(1,1))
-        bbox.grow(20)
-        subImage = lsst.afw.image.ExposureF(self.calexp, bbox)
-        # In the cetnral region, artificially put a peak with a very small 2nd derivative
-        baseline = subImage.getMaskedImage().getImage().getArray()[18,18]
-        subImage.getMaskedImage().getImage().getArray()[18:22,18:22] = baseline 
-        subImage.getMaskedImage().getImage().getArray()[10:26,10:26] = baseline + 2 
-        subImage.getMaskedImage().getImage().getArray()[16:20,16:20] = baseline + 5
-        subCat = self.measCat[:1]
-        measRecord = subCat[0]
-        self.task.measure(subCat, subImage)
-        self.assertTrue(measRecord.get("base_SdssCentroid_flag"))
-        #self.assertTrue(measRecord.get("base_SdssCentroid_flag_almostNo	SecondDerivative"))
+        task.measure(catalog, subImage)
+        self.assertTrue(catalog[0].get("base_SdssCentroid_flag"))
+        self.assertTrue(catalog[0].get("base_SdssCentroid_flag_noSecondDerivative"))
 
     def testNotAtMaximum(self):
-        self.truth.defineCentroid("truth")
-        centroid = self.truth[0].getCentroid()
-        psfImage = self.calexp.getPsf().computeImage(centroid)
-        # cutout a subimage around the first centroid in the test image
-        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(centroid), lsst.afw.geom.Extent2I(1,1))
+        task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        # cutout a subimage around the object in the test image
+        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(self.center), lsst.afw.geom.Extent2I(1,1))
         bbox.grow(20)
-        subImage = lsst.afw.image.ExposureF(self.calexp, bbox)
+        subImage = lsst.afw.image.ExposureF(exposure, bbox)
         # zero out the central region, which will destroy the maximum
         subImage.getMaskedImage().getImage().getArray()[18:22,18:22] = 0
-        subCat = self.measCat[:1]
-        measRecord = subCat[0]
-        self.task.measure(subCat, subImage)
-        self.assertTrue(measRecord.get("base_SdssCentroid_flag"))
-        self.assertTrue(measRecord.get("base_SdssCentroid_flag_notAtMaximum"))
+        task.measure(catalog, subImage)
+        self.assertTrue(catalog[0].get("base_SdssCentroid_flag"))
+        self.assertTrue(catalog[0].get("base_SdssCentroid_flag_notAtMaximum"))
 
 def suite():
     """Returns a suite containing all the test cases in this module."""

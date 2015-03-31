@@ -21,60 +21,37 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import math
-import os
-from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
-from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
-from lsst.meas.base.base import *
-from lsst.meas.base.tests import *
 import unittest
+
 import lsst.utils.tests
-import numpy
+import lsst.meas.base.tests
 
-numpy.random.seed(1234)
+class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
+    def setUp(self):
+        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -20),
+                                        lsst.afw.geom.Extent2I(250, 150))
+        self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
+        # first source is a point
+        self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(50.1, 49.8))
+        # second source is extended
+        self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(149.9, 50.3),
+                               lsst.afw.geom.ellipses.Quadrupole(8, 9, 3))
 
-DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
+    def tearDown(self):
+        del self.bbox
+        del self.dataset
 
-class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
-
-    def testAlgorithm(self):
-
-        srccat, bbox = MakeTestData.makeCatalog()
-        exposure = MakeTestData.makeEmptyExposure(bbox)
-        MakeTestData.fillImages(srccat, exposure)
-
-        sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        mapper = SchemaMapper(srccat.getSchema())
-        mapper.addMinimalSchema(srccat.getSchema())
-        outschema = mapper.getOutputSchema()
-
-        #  Basic test of Classification algorithm, no C++ slots
-        sfm_config.plugins.names = ["base_SdssCentroid", "base_PsfFlux", "base_CircularApertureFlux",
-                                    "base_ClassificationExtendedness"]
-        sfm_config.plugins["base_CircularApertureFlux"].radii = [7.0]
-        sfm_config.slots.centroid = "base_SdssCentroid"
-        sfm_config.slots.shape = None
-        sfm_config.slots.psfFlux = "base_PsfFlux"
-        sfm_config.slots.modelFlux = "base_CircularApertureFlux_0"
-        sfm_config.slots.apFlux = None
-        sfm_config.slots.instFlux = None
-        task = SingleFrameMeasurementTask(outschema, config=sfm_config)
-        measCat = SourceCatalog(outschema)
-        measCat.extend(srccat, mapper=mapper)
-        # now run the SFM task with the test plugin
-        task.run(measCat, exposure)
-        for i in range(len(measCat)):
-            record = measCat[i]
-            srcRec = srccat[i]
-            # check all the flags
-            # check the slots
-            # if a star, see if the flux measured is decent
-            probability = record.get("base_ClassificationExtendedness_value")
-            if srcRec.get("truth_isStar"):
-                self.assertEqual(probability, 0.0)
-            else:
-                self.assertEqual(probability, 1.0)
+    def testSingleFramePlugin(self):
+        config = self.makeSingleFrameMeasurementConfig("base_ClassificationExtendedness",
+                                                       dependencies=["base_PsfFlux"])
+        # n.b. we use the truth value as ModelFlux
+        config.slots.psfFlux = "base_PsfFlux"
+        task = self.makeSingleFrameMeasurementTask(config=config)
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        task.run(exposure, catalog)
+        self.assertLess(catalog[0].get("base_ClassificationExtendedness_value"), 0.5)
+        self.assertGreater(catalog[1].get("base_ClassificationExtendedness_value"), 0.5)
 
     def testFlags(self):
         """Test all the failure modes of this algorithm, as well as checking that it succeeds when it should.
@@ -86,105 +63,112 @@ class SFMTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
         When modelFluxFactor != 0, the ModelFluxErr cannot be NAN, but otherwise is ignored
         """
-        exp = afwImage.ExposureF()
-        schema = lsst.afw.table.SourceTable.makeMinimalSchema()
-
-        sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        sfm_config.plugins.names = ["base_SdssCentroid", "base_PsfFlux", "base_CircularApertureFlux",
-                                    "base_ClassificationExtendedness"]
-        sfm_config.plugins["base_CircularApertureFlux"].radii = [7.0]
-        sfm_config.slots.centroid = "base_SdssCentroid"
-        sfm_config.slots.shape = None
-        sfm_config.slots.psfFlux = "base_PsfFlux"
-        sfm_config.slots.modelFlux = "base_CircularApertureFlux_0"
-        sfm_config.slots.apFlux = None
-        sfm_config.slots.instFlux = None
-        task = SingleFrameMeasurementTask(schema, config=sfm_config)
-        measCat = SourceCatalog(schema)
+        config = self.makeSingleFrameMeasurementConfig("base_ClassificationExtendedness",
+                                                       dependencies=["base_PsfFlux", "base_GaussianFlux"])
+        config.slots.psfFlux = "base_PsfFlux"
+        config.slots.modelFlux = "base_GaussianFlux"
 
         #  Test no error case - all necessary values are set
-        source = measCat.addNew()
+        task = self.makeSingleFrameMeasurementTask(config=config)
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        source = catalog[0]
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
-        source.set("base_CircularApertureFlux_0_flux", 200)
-        source.set("base_CircularApertureFlux_0_fluxSigma", 2)
-        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        source.set("base_GaussianFlux_flux", 200)
+        source.set("base_GaussianFlux_fluxSigma", 2)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exposure)
         self.assertFalse(source.get("base_ClassificationExtendedness_flag"))
 
         #  Test psfFlux flag case - failure in PsfFlux
-        source = measCat.addNew()
+        task = self.makeSingleFrameMeasurementTask(config=config)
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        source = catalog[0]
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
-        source.set("base_CircularApertureFlux_0_flux", 200)
-        source.set("base_CircularApertureFlux_0_fluxSigma", 2)
-        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        source.set("base_GaussianFlux_flux", 200)
+        source.set("base_GaussianFlux_fluxSigma", 2)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exposure)
         source.set("base_PsfFlux_flag", True)
-        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exposure)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
         #  Test modelFlux flag case - falure in ModelFlux
-        source = measCat.addNew()
+        task = self.makeSingleFrameMeasurementTask(config=config)
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        source = catalog[0]
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
-        source.set("base_CircularApertureFlux_0_flux", 200)
-        source.set("base_CircularApertureFlux_0_fluxSigma", 2)
-        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
-        source.set("base_CircularApertureFlux_0_flag", True)
-        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        source.set("base_GaussianFlux_flux", 200)
+        source.set("base_GaussianFlux_fluxSigma", 2)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exposure)
+        source.set("base_GaussianFlux_flag", True)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exposure)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
         #  Test modelFlux NAN case
-        source = measCat.addNew()
+        task = self.makeSingleFrameMeasurementTask(config=config)
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        source = catalog[0]
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
-        source.set("base_CircularApertureFlux_0_fluxSigma", 2)
-        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
-        source.set("base_CircularApertureFlux_0_flag", True)
-        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        source.set("base_GaussianFlux_fluxSigma", 2)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exposure)
+        source.set("base_GaussianFlux_flag", True)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exposure)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
         #  Test psfFlux NAN case
-        source = measCat.addNew()
+        task = self.makeSingleFrameMeasurementTask(config=config)
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        source = catalog[0]
         source.set("base_PsfFlux_fluxSigma", 1)
-        source.set("base_CircularApertureFlux_0_flux", 200)
-        source.set("base_CircularApertureFlux_0_fluxSigma", 2)
-        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
-        source.set("base_CircularApertureFlux_0_flag", True)
-        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        source.set("base_GaussianFlux_flux", 200)
+        source.set("base_GaussianFlux_fluxSigma", 2)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exposure)
+        source.set("base_GaussianFlux_flag", True)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exposure)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
         #  Test modelFluxErr NAN case when modelErrFactor is zero and non-zero
-        sfm_config.plugins["base_ClassificationExtendedness"].modelErrFactor = 0.
-        source = measCat.addNew()
+        config.plugins["base_ClassificationExtendedness"].modelErrFactor = 0.
+        task = self.makeSingleFrameMeasurementTask(config=config)
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        source = catalog[0]
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
-        source.set("base_CircularApertureFlux_0_flux", 200)
-        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        source.set("base_GaussianFlux_flux", 200)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exposure)
         self.assertFalse(source.get("base_ClassificationExtendedness_flag"))
 
-        sfm_config.plugins["base_ClassificationExtendedness"].modelErrFactor = 1.
-        source = measCat.addNew()
+        config.plugins["base_ClassificationExtendedness"].modelErrFactor = 1.
+        task = self.makeSingleFrameMeasurementTask(config=config)
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        source = catalog[0]
         source.set("base_PsfFlux_flux", 100)
         source.set("base_PsfFlux_fluxSigma", 1)
-        source.set("base_CircularApertureFlux_0_flux", 200)
-        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        source.set("base_GaussianFlux_flux", 200)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exposure)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
         #  Test psfFluxErr NAN case when psfErrFactor is zero and non-zero
-        sfm_config.plugins["base_ClassificationExtendedness"].psfErrFactor = 0.
-        source = measCat.addNew()
+        config.plugins["base_ClassificationExtendedness"].psfErrFactor = 0.
+        task = self.makeSingleFrameMeasurementTask(config=config)
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        source = catalog[0]
         source.set("base_PsfFlux_flux", 100)
-        source.set("base_CircularApertureFlux_0_fluxSigma", 1)
-        source.set("base_CircularApertureFlux_0_flux", 200)
-        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        source.set("base_GaussianFlux_fluxSigma", 1)
+        source.set("base_GaussianFlux_flux", 200)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exposure)
         self.assertFalse(source.get("base_ClassificationExtendedness_flag"))
 
-        sfm_config.plugins["base_ClassificationExtendedness"].psfErrFactor = 1.
-        source = measCat.addNew()
+        config.plugins["base_ClassificationExtendedness"].psfErrFactor = 1.
+        task = self.makeSingleFrameMeasurementTask(config=config)
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        source = catalog[0]
         source.set("base_PsfFlux_flux", 100)
-        source.set("base_CircularApertureFlux_0_fluxSigma", 1)
-        source.set("base_CircularApertureFlux_0_flux", 200)
-        task.plugins["base_ClassificationExtendedness"].measure(source, exp)
+        source.set("base_GaussianFlux_fluxSigma", 1)
+        source.set("base_GaussianFlux_flux", 200)
+        task.plugins["base_ClassificationExtendedness"].measure(source, exposure)
         self.assertTrue(source.get("base_ClassificationExtendedness_flag"))
 
 def suite():
@@ -193,7 +177,7 @@ def suite():
     lsst.utils.tests.init()
 
     suites = []
-    suites += unittest.makeSuite(SFMTestCase)
+    suites += unittest.makeSuite(ClassificationTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 

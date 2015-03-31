@@ -21,64 +21,42 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import math
-import os
-from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
-from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
-from lsst.meas.base.base import *
-from lsst.meas.base.tests import *
 import unittest
-import lsst.utils.tests
 import numpy
+
+import lsst.utils.tests
+import lsst.meas.base.tests
 
 numpy.random.seed(1234)
 
+class PixelFlagsTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
-DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
+    def setUp(self):
+        self.center = lsst.afw.geom.Point2D(50.1, 49.8)
+        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
+                                        lsst.afw.geom.Extent2I(140, 160))
+        self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
+        self.dataset.addSource(100000.0, self.center)
 
-class SFMTestCase(lsst.utils.tests.TestCase):
+    def tearDown(self):
+        del self.center
+        del self.bbox
+        del self.dataset
 
-    #  This test really tests both that a plugin can measure things correctly,
-    #  and that the noise replacement mechanism works in situ.
-    #  The test uses the same replacement image as the test above, with the
-    #  default NoiseReplacer seed.  This test just checks to be sure that the
-    #  base.py replacement mechanism is still working
-    def testFluxPlugin(self):
-
-        srccat, bbox = MakeTestData.makeCatalog()
-        exposure = MakeTestData.makeEmptyExposure(bbox)
-        MakeTestData.fillImages(srccat, exposure)
-
-        sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        mapper = SchemaMapper(srccat.getSchema())
-        mapper.addMinimalSchema(srccat.getSchema())
-        outschema = mapper.getOutputSchema()
-
-        #  Basic test of PixelFlags algorithm, no C++ slots
-        sfm_config.plugins = ["base_PeakCentroid", "base_PixelFlags"]
-        sfm_config.slots.centroid = "base_PeakCentroid"
-        sfm_config.slots.shape = None
-        sfm_config.slots.psfFlux = None
-        sfm_config.slots.modelFlux = None
-        sfm_config.slots.apFlux = None
-        sfm_config.slots.instFlux = None
-        task = SingleFrameMeasurementTask(outschema, config=sfm_config)
-        measCat = SourceCatalog(outschema)
-        measCat.extend(srccat, mapper=mapper)
-        # now run the SFM task with the test plugin
-        task.run(measCat, exposure)
-        for i in range(len(measCat)):
-            record = measCat[i]
-            srcRec = srccat[i]
-            print record.get("base_PixelFlags_flag")
-            print record.get("base_PixelFlags_flag_edge")
-            print record.get("base_PixelFlags_flag_interpolated")
-            print record.get("base_PixelFlags_flag_interpolatedCenter")
-            print record.get("base_PixelFlags_flag_saturated")
-            print record.get("base_PixelFlags_flag_saturatedCenter")
-            print record.get("base_PixelFlags_flag_cr")
-            print record.get("base_PixelFlags_flag_crCenter")
-            print record.get("base_PixelFlags_flag_bad")
+    def testNoFlags(self):
+        task = self.makeSingleFrameMeasurementTask("base_PixelFlags")
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        task.run(exposure, catalog)
+        record = catalog[0]
+        self.assertFalse(record.get("base_PixelFlags_flag"))
+        self.assertFalse(record.get("base_PixelFlags_flag_edge"))
+        self.assertFalse(record.get("base_PixelFlags_flag_interpolated"))
+        self.assertFalse(record.get("base_PixelFlags_flag_interpolatedCenter"))
+        self.assertFalse(record.get("base_PixelFlags_flag_saturated"))
+        self.assertFalse(record.get("base_PixelFlags_flag_saturatedCenter"))
+        self.assertFalse(record.get("base_PixelFlags_flag_cr"))
+        self.assertFalse(record.get("base_PixelFlags_flag_crCenter"))
+        self.assertFalse(record.get("base_PixelFlags_flag_bad"))
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
@@ -86,7 +64,7 @@ def suite():
     lsst.utils.tests.init()
 
     suites = []
-    suites += unittest.makeSuite(SFMTestCase)
+    suites += unittest.makeSuite(PixelFlagsTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
