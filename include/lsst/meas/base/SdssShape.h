@@ -125,6 +125,10 @@ private:
  *  This algorithm measures the weighted second moments of an image using a Gaussian weight function, which
  *  is iteratively updated to match the current weights.  If this iteration does not converge, it can fall
  *  back to using unweighted moments, which can be significantly noisier.
+ *
+ *  See Bernstein & Jarvis, 2002, for more information on this type of algorithm.   Note that the
+ *  code here makes no attempt to correct for the PSF; for PSF corrected ellipticities using
+ *  weighted moments please use the shapeHSM package.
  */
 class SdssShapeAlgorithm : public SimpleAlgorithm {
 public:
