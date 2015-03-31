@@ -21,75 +21,36 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import math
-import os
-from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
-from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
-from lsst.meas.base.base import *
-from lsst.meas.base.tests import *
 import unittest
-import lsst.utils.tests
 import numpy
 
-numpy.random.seed(1234)
+import lsst.utils.tests
+import lsst.meas.base.tests
 
-#  Test SFM plugin, which is used to test that the plugin mechanism works correctly,
-#  and that the noise replacement mechanism is working.  This plugin measures the total
-#  flux for each measRecord within its footprint, as well as the total flux in a box which
-#  completely surrounds the object (providing an indication of any bad replacement nearby
+class NaiveCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
-DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
+    def setUp(self):
+        self.center = lsst.afw.geom.Point2D(50.1, 49.8)
+        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
+                                        lsst.afw.geom.Extent2I(140, 160))
+        self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
+        self.dataset.addSource(100000.0, self.center)
 
-class SFMTestCase(lsst.utils.tests.TestCase):
+    def tearDown(self):
+        del self.center
+        del self.bbox
+        del self.dataset
 
-    def testAlgorithm(self):
-
-        srccat, bbox = MakeTestData.makeCatalog()
-        exposure = MakeTestData.makeEmptyExposure(bbox)
-        MakeTestData.fillImages(srccat, exposure)
-       
-        #  catalog with footprints, but no measurement fields added
-        footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
-                      for measRecord in srccat}
-        sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        
-        # add the measurement fields to the outputSchema and make a catalog with it
-        # then extend with the mapper to copy the extant data
-        mapper = SchemaMapper(srccat.getSchema())
-        mapper.addMinimalSchema(srccat.getSchema())
-        outschema = mapper.getOutputSchema()
-        sfm_config.plugins = ["base_PeakCentroid", "base_NaiveCentroid"]
-        sfm_config.slots.centroid = "base_NaiveCentroid"
-        sfm_config.slots.shape = None
-        sfm_config.slots.psfFlux = None
-        sfm_config.slots.modelFlux = None
-        sfm_config.slots.apFlux = None
-        sfm_config.slots.instFlux = None
-        sfm_config.plugins["base_NaiveCentroid"].background = 0
-        task = SingleFrameMeasurementTask(outschema, config=sfm_config)
-        measCat = SourceCatalog(outschema)
-        measCat.extend(srccat, mapper=mapper)
-        # now run the SFM task with the test plugin
-        task.run(measCat, exposure)
-
-        # The test plugin adds the footprint flux and the background (surrounding) flux
-        # to the schema.  This test then loops through the sources and tries to produce
-        # the same results
-        mi = exposure.getMaskedImage()
-        truthFluxkey = srccat.getSchema().find("truth_flux").key
-        schema = measCat.getSchema()
-        for i in range(len(measCat)):
-            record = measCat[i]
-            x = record.get("base_NaiveCentroid_x")
-            y = record.get("base_NaiveCentroid_y")
-            print x,y
-            self.assertFalse(record.get("base_NaiveCentroid_flag"))
-            self.assertFalse(record.get("base_NaiveCentroid_flag_noCounts"))
-            self.assertFalse(record.get("base_NaiveCentroid_flag_edge"))
-            centroid = record.getCentroid() 
-            self.assertClose(x, centroid.getX(), atol=None, rtol=.01)
-            self.assertClose(y, centroid.getY(), atol=None, rtol=.01)
-    
+    def testSingleFramePlugin(self):
+        task = self.makeSingleFrameMeasurementTask("base_NaiveCentroid")
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        task.run(exposure, catalog)
+        record = catalog[0]
+        x = record.get("base_NaiveCentroid_x")
+        y = record.get("base_NaiveCentroid_y")
+        self.assertFalse(record.get("base_NaiveCentroid_flag"))
+        self.assertClose(x, self.center.getX(), atol=None, rtol=.02)
+        self.assertClose(y, self.center.getY(), atol=None, rtol=.02)
 
 
 def suite():
@@ -98,7 +59,7 @@ def suite():
     lsst.utils.tests.init()
 
     suites = []
-    suites += unittest.makeSuite(SFMTestCase)
+    suites += unittest.makeSuite(NaiveCentroidTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 

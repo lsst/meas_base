@@ -63,9 +63,6 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(
     std::string const & name,
     afw::table::Schema & schema
 ) : _ctrl(ctrl),
-    _centroidKey(
-        CentroidResultKey::addFields(schema, name, "centroid from Naive Centroid algorithm", SIGMA_ONLY)
-    ),
     _centroidExtractor(schema, name)
 {
     static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{

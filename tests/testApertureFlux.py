@@ -152,15 +152,29 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
 class CircularApertureFluxTestCase(AlgorithmTestCase):
     """Test case for the CircularApertureFlux algorithm/plugin
     """
+
+    def setUp(self):
+        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0),
+                                        lsst.afw.geom.Extent2I(100, 100))
+        self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
+        # first source is a point
+        self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(49.5, 49.5))
+
+    def tearDown(self):
+        del self.bbox
+        del self.dataset
+
     def testSingleFramePlugin(self):
-        config = lsst.meas.base.SingleFrameMeasurementConfig()
+        config = self.makeSingleFrameMeasurementConfig("base_CircularApertureFlux")
         config.plugins["base_CircularApertureFlux"].maxSincRadius = 20
         ctrl = config.plugins["base_CircularApertureFlux"].makeControl()
-        measCat = self.runSingleFrameMeasurementTask("base_CircularApertureFlux", config=config)
-        metadata = measCat.getMetadata()
-        radii = metadata.get("base_CircularApertureFlux_radii")
+        algMetadata = lsst.daf.base.PropertyList()
+        task = self.makeSingleFrameMeasurementTask(config=config, algMetadata=algMetadata)
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        task.run(exposure, catalog)
+        radii = algMetadata.get("base_CircularApertureFlux_radii")
         self.assertEqual(list(radii), list(ctrl.radii))
-        for record in measCat:
+        for record in catalog:
             lastFlux = 0.0
             lastFluxSigma = 0.0
             for n, radius in enumerate(radii):
@@ -179,7 +193,7 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
                     self.assertEqual(record.get("base_CircularApertureFlux_%d_flag_apertureTruncated" % n),
                                      radius > 50)
                 # Test that the fluxes and uncertainties increase as we increase the apertures, or that
-                # they match the true flux within 2 sigma.  This is just a test as to whether the values
+                # they match the true flux within 3 sigma.  This is just a test as to whether the values
                 # are reasonable.  As to whether the values are exactly correct, we rely on the tests on
                 # ApertureFluxAlgorithm's static methods, as the way the plugins code calls that is
                 # extremely simple, so if the results we get are reasonable, it's hard to imagine
@@ -188,7 +202,7 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
                 currentFluxSigma = record.get("base_CircularApertureFlux_%d_fluxSigma" % n)
                 if not record.get("base_CircularApertureFlux_%d_flag" % n):
                     self.assertTrue(currentFlux > lastFlux
-                                    or (record.get("truth_flux") - currentFlux) < 2*currentFluxSigma)
+                                    or (record.get("truth_flux") - currentFlux) < 3*currentFluxSigma)
                     self.assertGreater(currentFluxSigma, lastFluxSigma)
                     lastFlux = currentFlux
                     lastFluxSigma = currentFluxSigma
@@ -200,6 +214,27 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
             if record.get("truth_isStar") and record.get("parent") == 0:
                 self.assertClose(record.get("base_CircularApertureFlux_6_flux"), record.get("truth_flux"),
                                  rtol=0.02)
+
+    def testForcedPlugin(self):
+        algMetadata = lsst.daf.base.PropertyList()
+        task = self.makeForcedMeasurementTask("base_CircularApertureFlux", algMetadata=algMetadata)
+        radii = algMetadata.get("base_CircularApertureFlux_radii")
+        measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs())
+        measDataset = self.dataset.transform(measWcs)
+        exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
+        s = task.run(exposure, refCat=self.dataset.catalog, refWcs=self.dataset.exposure.getWcs())
+        for measRecord, truthRecord in zip(s.sources, truthCatalog):
+            # Centroid tolerances set to ~ single precision epsilon
+            self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-7)
+            self.assertClose(measRecord.get("slot_Centroid_y"), truthRecord.get("truth_y"), rtol=1E-7)
+            for n, radius in enumerate(radii):
+                self.assertFalse(measRecord.get("base_CircularApertureFlux_%d_flag" % n))
+                # CircularApertureFlux isn't designed to do a good job in forced mode, because it doesn't
+                # account for changes in the PSF or changes in the WCS.  Hence, this is really just a
+                # test to make sure the values are reasonable and that it runs with no unexpected errors.
+                self.assertClose(measRecord.get("base_CircularApertureFlux_%d_flux" % n),
+                                 truthCatalog.get("truth_flux"), rtol=1.0)
+                self.assertLess(measRecord.get("base_CircularApertureFlux_%d_fluxSigma" % n), (n+1)*150.0)
 
 
 class ApertureFluxTransformTestCase(TransformTestCase):

@@ -136,8 +136,8 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     if (d2x == 0.0 || d2y == 0.0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            flagHandler.getDefinition(SdssCentroidAlgorithm::NO_2ND_DERIVATIVE).doc,
-            SdssCentroidAlgorithm::NO_2ND_DERIVATIVE
+            flagHandler.getDefinition(SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE).doc,
+            SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE
         );
     }
     if (d2x < 0.0 || d2y < 0.0) {
@@ -155,9 +155,9 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     if (fabs(dx0) > 10.0 || fabs(dy0) > 10.0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            flagHandler.getDefinition(SdssCentroidAlgorithm::ALMOST_NO_2ND_DERIVATIVE).doc +
+            flagHandler.getDefinition(SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE).doc +
                 (boost::format(": sx, d2x, sy, d2y = %f %f %f %f") % sx % d2x % sy % d2y).str(),
-            SdssCentroidAlgorithm::ALMOST_NO_2ND_DERIVATIVE
+            SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE
         );
     }
 
@@ -257,8 +257,8 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     if (d2x == 0.0 || d2y == 0.0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            flagHandler.getDefinition(SdssCentroidAlgorithm::NO_2ND_DERIVATIVE).doc,
-            SdssCentroidAlgorithm::NO_2ND_DERIVATIVE
+            flagHandler.getDefinition(SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE).doc,
+            SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE
         );
     }
     if (d2x < 0.0 || d2y < 0.0) {
@@ -276,9 +276,9 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     if (fabs(dx0) > 10.0 || fabs(dy0) > 10.0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            flagHandler.getDefinition(SdssCentroidAlgorithm::NO_2ND_DERIVATIVE).doc +
+            flagHandler.getDefinition(SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE).doc +
                 (boost::format(": sx, d2x, sy, d2y = %f %f %f %f") % sx % d2x % sy % d2y).str(),
-            SdssCentroidAlgorithm::ALMOST_NO_2ND_DERIVATIVE
+            SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE
         );
     }
 
@@ -422,9 +422,9 @@ SdssCentroidAlgorithm::SdssCentroidAlgorithm(
     static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag, set if anything went wrong"},
         {"flag_edge", "Object too close to edge"},
-        {"flag_no_2nd_derivative", "Vanishing second derivative"},
-        {"flag_almost_no_2nd_derivative", "Almost vanishing second derivative"},
-        {"flag_not_at_maximum", "Object is not at a maximum"}
+        {"flag_noSecondDerivative", "Vanishing second derivative"},
+        {"flag_almostNoSecondDerivative", "Almost vanishing second derivative"},
+        {"flag_notAtMaximum", "Object is not at a maximum"}
     }};
     _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
 }

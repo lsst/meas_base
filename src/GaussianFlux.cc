@@ -30,7 +30,7 @@
 #include "lsst/afw/detection/FootprintArray.cc"
 #include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/GaussianFlux.h"
-#include "lsst/meas/base/detail/SdssShapeImpl.h"
+#include "lsst/meas/base/SdssShape.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -55,19 +55,13 @@ void GaussianFluxAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
 ) const {
-    // get the value from the centroid slot only
     afw::geom::Point2D centroid = _centroidExtractor(measRecord, _flagHandler);
     afw::geom::ellipses::Quadrupole shape = _shapeExtractor(measRecord, _flagHandler);
-    FluxResult result;
 
-    //  This code came straight out of the GaussianFlux.apply() in meas_algorithms with few changes
-    afw::image::Exposure<float>::MaskedImageT const& mimage = exposure.getMaskedImage();
+    FluxResult result = SdssShapeAlgorithm::computeFixedMomentsFlux(
+        exposure.getMaskedImage(), shape, centroid
+    );
 
-    detail::SdssShapeImpl sdss(centroid, shape);
-    std::pair<double, double> fluxResult
-        = detail::getFixedMomentsFlux(mimage, _ctrl.background, centroid.getX(), centroid.getY(), sdss);
-    result.flux =  fluxResult.first;
-    result.fluxSigma = fluxResult.second;
     measRecord.set(_fluxResultKey, result);
     _flagHandler.setValue(measRecord, FAILURE, false);
 }

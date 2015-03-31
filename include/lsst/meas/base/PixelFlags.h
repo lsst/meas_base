@@ -32,10 +32,8 @@
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Algorithm.h"
-#include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"
-#include "lsst/meas/base/detail/SdssShapeImpl.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -98,7 +96,6 @@ public:
 private:
 
     Control _ctrl;
-    CentroidResultKey _centroidKey;
     FlagHandler _flagHandler;
     SafeCentroidExtractor _centroidExtractor;
 };

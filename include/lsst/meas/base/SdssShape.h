@@ -113,8 +113,6 @@ private:
     ShapeResultKey _shapeResult;
     CentroidResultKey _centroidResult;
     FluxResultKey _fluxResult;
-    afw::table::Key<ShapeElement> _xy4;
-    afw::table::Key<ErrElement> _xy4Sigma;
     afw::table::Key<ErrElement> _flux_xx_Cov;
     afw::table::Key<ErrElement> _flux_yy_Cov;
     afw::table::Key<ErrElement> _flux_xy_Cov;
@@ -127,6 +125,10 @@ private:
  *  This algorithm measures the weighted second moments of an image using a Gaussian weight function, which
  *  is iteratively updated to match the current weights.  If this iteration does not converge, it can fall
  *  back to using unweighted moments, which can be significantly noisier.
+ *
+ *  See Bernstein & Jarvis, 2002, for more information on this type of algorithm.   Note that the
+ *  code here makes no attempt to correct for the PSF; for PSF corrected ellipticities using
+ *  weighted moments please use the shapeHSM package.
  */
 class SdssShapeAlgorithm : public SimpleAlgorithm {
 public:
@@ -146,20 +148,36 @@ public:
 
     SdssShapeAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
 
-    template <typename T>
-    static Result apply(
-        afw::image::MaskedImage<T> const & image,
-        afw::detection::Footprint const & footprint,
+    /**
+     *  Compute the adaptive Gaussian-weighted moments of an image.
+     *
+     *  @param[in] image     An Image or MaskedImage instance with int, float, or double pixels.  This
+     *                       need not be a small postage stamp (the pixel region actually used in the
+     *                       fit will be a subset of this image determined automatically).
+     *  @param[in] position  Center position of the object to be measured, in the image's PARENT coordinates.
+     *  @param[in] ctrl      Control object specifying the details of how the object is to be measured.
+     */
+    template <typename ImageT>
+    static Result computeAdaptiveMoments(
+        ImageT const & image,
         afw::geom::Point2D const & position,
         Control const & ctrl=Control()
     );
 
-    template <typename T>
-    static Result apply(
-        afw::image::Image<T> const & exposure,
-        afw::detection::Footprint const & footprint,
-        afw::geom::Point2D const & position,
-        Control const & ctrl=Control()
+    /**
+     *  Compute the flux within a fixed Gaussian aperture.
+     *
+     *  @param[in] image     An Image or MaskedImage instance with int, float, or double pixels.  This
+     *                       need not be a small postage stamp (the pixel region actually used in the
+     *                       fit will be a subset of this image determined automatically).
+     *  @param[in] shape     Ellipse object specifying the 1-sigma contour of the Gaussian.
+     *  @param[in] position  Center position of the object to be measured, in the image's PARENT coordinates.
+     */
+    template <typename ImageT>
+    static FluxResult computeFixedMomentsFlux(
+        ImageT const & image,
+        afw::geom::ellipses::Quadrupole const & shape,
+        afw::geom::Point2D const & position
     );
 
     virtual void measure(
@@ -173,7 +191,6 @@ public:
     ) const;
 
 private:
-
     Control _ctrl;
     ResultKey _resultKey;
     SafeCentroidExtractor _centroidExtractor;
@@ -193,8 +210,6 @@ private:
  */
 class SdssShapeResult : public ShapeResult, public CentroidResult, public FluxResult {
 public:
-    ShapeElement xy4;       ///< A fourth moment used in lensing (RHL needs to clarify; not in the old docs)
-    ErrElement xy4Sigma;    ///< 1-Sigma uncertainty on xy4
     ErrElement flux_xx_Cov; ///< flux, xx term in the uncertainty covariance matrix
     ErrElement flux_yy_Cov; ///< flux, yy term in the uncertainty covariance matrix
     ErrElement flux_xy_Cov; ///< flux, xy term in the uncertainty covariance matrix

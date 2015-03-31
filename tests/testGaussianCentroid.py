@@ -21,73 +21,36 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import math
-import os
-from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
-from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
-from lsst.meas.base.base import *
-from lsst.meas.base.tests import *
 import unittest
+
 import lsst.utils.tests
-import numpy
+import lsst.meas.base.tests
 
-numpy.random.seed(1234)
+class GaussianCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
-#  Test SFM plugin, which is used to test that the plugin mechanism works correctly,
-#  and that the noise replacement mechanism is working.  This plugin measures the total
-#  flux for each measRecord within its footprint, as well as the total flux in a box which
-#  completely surrounds the object (providing an indication of any bad replacement nearby
+    def setUp(self):
+        self.center = lsst.afw.geom.Point2D(50.1, 49.8)
+        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
+                                        lsst.afw.geom.Extent2I(140, 160))
+        self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
+        self.dataset.addSource(100000.0, self.center)
 
-DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
+    def tearDown(self):
+        del self.center
+        del self.bbox
+        del self.dataset
 
-class SFMTestCase(lsst.utils.tests.TestCase):
-
-    def testAlgorithm(self):
-
-        srccat, bbox = MakeTestData.makeCatalog()
-        exposure = MakeTestData.makeEmptyExposure(bbox)
-        MakeTestData.fillImages(srccat, exposure)
-       
-        #  catalog with footprints, but no measurement fields added
-        footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
-                      for measRecord in srccat}
-        sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
-        path = os.path.join(DATA_DIR, 'calexp-0A.fits')
-        
-        # add the measurement fields to the outputSchema and make a catalog with it
-        # then extend with the mapper to copy the extant data
-        mapper = SchemaMapper(srccat.getSchema())
-        mapper.addMinimalSchema(srccat.getSchema())
-        outschema = mapper.getOutputSchema()
-        sfm_config.plugins = ["base_PeakCentroid", "base_GaussianCentroid"]
-        sfm_config.slots.centroid = "base_GaussianCentroid"
-        sfm_config.slots.shape = None
-        sfm_config.slots.psfFlux = None
-        sfm_config.slots.modelFlux = None
-        sfm_config.slots.apFlux = None
-        sfm_config.slots.instFlux = None
-        task = SingleFrameMeasurementTask(outschema, config=sfm_config)
-        measCat = SourceCatalog(outschema)
-        measCat.extend(srccat, mapper=mapper)
-        # now run the SFM task with the test plugin
-        task.run(measCat, exposure)
-
-        # The test plugin adds the footprint flux and the background (surrounding) flux
-        # to the schema.  This test then loops through the sources and tries to produce
-        # the same results
-        mi = exposure.getMaskedImage()
-        truthFluxkey = srccat.getSchema().find("truth_flux").key
-        schema = measCat.getSchema()
-        for i in range(len(measCat)):
-            record = measCat[i]
-            x = record.get("base_GaussianCentroid_x")
-            y = record.get("base_GaussianCentroid_y")
-            self.assertFalse(record.get("base_GaussianCentroid_flag"))
-            self.assertFalse(record.get("base_GaussianCentroid_flag_noPeak"))
-            centroid = record.getCentroid() 
-            self.assertClose(x, centroid.getX(), atol=None, rtol=.01)
-            self.assertClose(y, centroid.getY(), atol=None, rtol=.01)
-    
+    def testSingleFramePlugin(self):
+        task = self.makeSingleFrameMeasurementTask("base_GaussianCentroid")
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        task.run(exposure, catalog)
+        record = catalog[0]
+        x = record.get("base_GaussianCentroid_x")
+        y = record.get("base_GaussianCentroid_y")
+        self.assertFalse(record.get("base_GaussianCentroid_flag"))
+        self.assertFalse(record.get("base_GaussianCentroid_flag_noPeak"))
+        self.assertClose(x, self.center.getX(), atol=None, rtol=.01)
+        self.assertClose(y, self.center.getY(), atol=None, rtol=.01)
 
 
 def suite():
@@ -96,7 +59,7 @@ def suite():
     lsst.utils.tests.init()
 
     suites = []
-    suites += unittest.makeSuite(SFMTestCase)
+    suites += unittest.makeSuite(GaussianCentroidTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 

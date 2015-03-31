@@ -34,7 +34,6 @@
 
 #include "lsst/meas/base/exceptions.h"
 #include "lsst/meas/base/SdssShape.h"
-#include "lsst/meas/base/detail/SdssShapeImpl.h"
 
 namespace pexPolicy = lsst::pex::policy;
 namespace pexExceptions = lsst::pex::exceptions;
@@ -49,9 +48,28 @@ namespace base {
 
 namespace {  // anonymous
 
-lsst::afw::geom::BoxI set_amom_bbox(int width, int height, float xcen, float ycen, 
-                                    double sigma11_w, double , double sigma22_w, float maxRad);
-    
+typedef Eigen::Matrix<double,4,4,Eigen::DontAlign> Matrix4d;
+
+// Return multiplier that transforms I0 to a total flux
+double computeFluxScale(SdssShapeResult const & result) {
+    /*
+     * The shape is an ellipse that's axis-aligned in (u, v) [<uv> = 0] after rotation by theta:
+     * <x^2> + <y^2> = <u^2> + <v^2>
+     * <x^2> - <y^2> = cos(2 theta)*(<u^2> - <v^2>)
+     * 2*<xy>        = sin(2 theta)*(<u^2> - <v^2>)
+     */
+    double const Mxx = result.xx; // <x^2>
+    double const Mxy = result.xy; // <xy>
+    double const Myy = result.yy; // <y^2>
+
+    double const Muu_p_Mvv = Mxx + Myy;                             // <u^2> + <v^2>
+    double const Muu_m_Mvv = ::sqrt(::pow(Mxx - Myy, 2) + 4*::pow(Mxy, 2)); // <u^2> - <v^2>
+    double const Muu = 0.5*(Muu_p_Mvv + Muu_m_Mvv);
+    double const Mvv = 0.5*(Muu_p_Mvv - Muu_m_Mvv);
+
+    return lsst::afw::geom::TWOPI * ::sqrt(Muu*Mvv);
+}
+
 /*****************************************************************************/
 /*
  * Error analysis, courtesy of David Johnston, University of Chicago
@@ -64,15 +82,14 @@ lsst::afw::geom::BoxI set_amom_bbox(int width, int height, float xcen, float yce
  * derivative parts and so the fisher matrix is just a function of these
  * best fit model parameters. The components are calculated analytically.
  */
-detail::SdssShapeImpl::Matrix4
-calc_fisher(detail::SdssShapeImpl const& shape, // the Shape that we want the the Fisher matrix for
+Matrix4d
+calc_fisher(SdssShapeResult const& shape, // the Shape that we want the the Fisher matrix for
             float bkgd_var              // background variance level for object
-           )
-{
-    float const A = shape.getI0();     // amplitude
-    float const sigma11W = shape.getIxx();
-    float const sigma12W = shape.getIxy();
-    float const sigma22W = shape.getIyy();
+) {
+    float const A = shape.flux;     // amplitude; will be converted to flux later
+    float const sigma11W = shape.xx;
+    float const sigma12W = shape.xy;
+    float const sigma22W = shape.yy;
     
     double const D = sigma11W*sigma22W - sigma12W*sigma12W;
    
@@ -91,7 +108,7 @@ calc_fisher(detail::SdssShapeImpl const& shape, // the Shape that we want the th
 /*
  * Calculate the 10 independent elements of the 4x4 Fisher matrix 
  */
-    detail::SdssShapeImpl::Matrix4 fisher;
+    Matrix4d fisher;
 
     double fac = F*A/(4.0*D);
     fisher(0, 0) =  F;
@@ -123,6 +140,8 @@ template<typename ImageT>               // general case
 struct ImageAdaptor {
     typedef ImageT Image;
 
+    static bool const hasVariance = false;
+
     Image const& getImage(ImageT const& image) const {
         return image;
     }
@@ -136,6 +155,8 @@ template<typename T>                    // specialise to a MaskedImage
 struct ImageAdaptor<afwImage::MaskedImage<T> > {
     typedef typename afwImage::MaskedImage<T>::Image Image;
 
+    static bool const hasVariance = true;
+
     Image const& getImage(afwImage::MaskedImage<T> const& mimage) const {
         return *mimage.getImage();
     }
@@ -147,51 +168,15 @@ struct ImageAdaptor<afwImage::MaskedImage<T> > {
 
 /// Calculate weights from moments
 boost::tuple<std::pair<bool, double>, double, double, double>
-getWeights(double sigma11, double sigma12, double sigma22, ///< Moments
-           bool careful=true                               ///< Deal carefully with singular moments matrices?
-    ) {
+getWeights(double sigma11, double sigma12, double sigma22) {
     double const NaN = std::numeric_limits<double>::quiet_NaN();
     if (lsst::utils::isnan(sigma11) || lsst::utils::isnan(sigma12) || lsst::utils::isnan(sigma22)) {
         return boost::make_tuple(std::make_pair(false, NaN), NaN, NaN, NaN);
     }
     double const det = sigma11*sigma22 - sigma12*sigma12; // determinant of sigmaXX matrix
-    if (lsst::utils::isnan(det) || det < std::numeric_limits<float>::epsilon()) {
-        double const nan = std::numeric_limits<double>::quiet_NaN();
-        return boost::make_tuple(std::make_pair(false, nan), nan, nan, nan);
-    }
-    
     if (lsst::utils::isnan(det) || det < std::numeric_limits<float>::epsilon()) { // a suitably small number
-
-        /*
-         * We have to be a little careful here.  For some degenerate cases (e.g. an object that it zero
-         * except on a line) the moments matrix can be singular.  We deal with this by adding 1/12 in
-         * quadrature to the principal axes.
-         *
-         * Why bother?  Because we use the shape code for e.g. 2nd moment based star selection, and it
-         * needs to be robust.
-         */
-        double const iMin = 1/12.0;                                          // 2nd moment of single pixel
-
-        if (!careful) {
-            // Don't want to be careful --- report bad determinant
-            return boost::make_tuple(std::make_pair(false, det), NaN, NaN, NaN);
-        }
-
-        lsst::afw::geom::ellipses::Quadrupole const q(sigma11, sigma22, sigma12); // Ixx, Iyy, Ixy
-        lsst::afw::geom::ellipses::Axes axes(q);                                  // convert to (a, b, theta)
-        
-        axes.setA(::sqrt(::pow(axes.getA(), 2) + iMin));
-        axes.setB(::sqrt(::pow(axes.getB(), 2) + iMin));
-            
-        lsst::afw::geom::ellipses::Quadrupole const q2(axes); // back to Ixx etc.
-        
-        lsst::afw::geom::ellipses::Quadrupole::Matrix const mat = q2.getMatrix().inverse();
-        
-        return boost::make_tuple(std::make_pair(true, q2.getDeterminant()), mat(0, 0), mat(1, 0), mat(1, 1));
+        return boost::make_tuple(std::make_pair(false, det), NaN, NaN, NaN);
     }
-
-    assert(sigma11*sigma22 >= sigma12*sigma12 - std::numeric_limits<float>::epsilon());
-
     return boost::make_tuple(std::make_pair(true, det), sigma22/det, -sigma12/det, sigma11/det);
 }
 
@@ -201,44 +186,23 @@ bool shouldInterp(double sigma11, double sigma22, double det) {
     return (sigma11 < xinterp || sigma22 < xinterp || det < xinterp*xinterp);
 }
 
-
-/************************************************************************************************************/
-/*
- * Decide on the bounding box for the region to examine while calculating
- * the adaptive moments
- */
-lsst::afw::geom::BoxI set_amom_bbox(int width, int height, // size of region
-                                     float xcen, float ycen,        // centre of object
-                                     double sigma11_w,              // quadratic moments of the
-                                     double ,                       //         weighting function
-                                     double sigma22_w,              //                    xx, xy, and yy
-                                     float maxRad = 1000              // Maximum radius of area to use
-                                    )
-{
-    float rad = 4*sqrt(((sigma11_w > sigma22_w) ? sigma11_w : sigma22_w));
-        
-    if (rad > maxRad) {
-        rad = maxRad;
-    }
-        
-    int ix0 = static_cast<int>(xcen - rad - 0.5);
-    ix0 = (ix0 < 0) ? 0 : ix0;
-    int iy0 = static_cast<int>(ycen - rad - 0.5);
-    iy0 = (iy0 < 0) ? 0 : iy0;
-    lsst::afw::geom::Point2I llc(ix0, iy0); // Desired lower left corner
-        
-    int ix1 = static_cast<int>(xcen + rad + 0.5);
-    if (ix1 >= width) {
-        ix1 = width - 1;
-    }
-    int iy1 = static_cast<int>(ycen + rad + 0.5);
-    if (iy1 >= height) {
-        iy1 = height - 1;
-    }
-    lsst::afw::geom::Point2I urc(ix1, iy1); // Desired upper right corner
-        
-    return lsst::afw::geom::BoxI(llc, urc);
-}   
+// Decide on the bounding box for the region to examine while calculating the adaptive moments
+// This routine will work in either LOCAL or PARENT coordinates (but of course which you pass
+// determine which you will get back).
+afw::geom::Box2I computeAdaptiveMomentsBBox(
+    afw::geom::Box2I const & bbox,  // full image bbox
+    afw::geom::Point2D const & center, // centre of object
+    double sigma11_w,              // quadratic moments of the
+    double ,                       //         weighting function
+    double sigma22_w,              //                    xx, xy, and yy
+    double maxRadius = 1000        // Maximum radius of area to use
+) {
+    double radius = std::min(4*std::sqrt(std::max(sigma11_w, sigma22_w)), maxRadius);
+    afw::geom::Extent2D offset(radius, radius);
+    afw::geom::Box2I result(afw::geom::Box2D(center - offset, center + offset));
+    result.clip(bbox);
+    return result;
+}
 
 /*****************************************************************************/
 /*
@@ -417,17 +381,14 @@ calcmom(ImageT const& image,            // the image data
     return (fluxOnly || (sum > 0 && sumxx > 0 && sumyy > 0)) ? 0 : -1;
 }
 
-} // anonymous namespace
-
-/************************************************************************************************************/
-
-namespace detail {
-/**
+/*
  * Workhorse for adaptive moments
+ *
+ * All inputs are expected to be in LOCAL image coordinates
  */
 template<typename ImageT>
 bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double ycen, double shiftmax,
-                        SdssShapeImpl *shape, int maxIter, float tol1, float tol2)
+                        SdssShapeResult *shape, int maxIter, float tol1, float tol2)
 {
     double I0 = 0;                      // amplitude of best-fit Gaussian
     double sum;                         // sum of intensity*weight
@@ -449,7 +410,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
 
     if (lsst::utils::isnan(xcen) || lsst::utils::isnan(ycen)) {
         // Can't do anything
-        shape->setFlag(SdssShapeImpl::UNWEIGHTED_BAD);
+        shape->flags[SdssShapeAlgorithm::UNWEIGHTED_BAD] = true;
         return false;
     }
 
@@ -457,11 +418,12 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
     lsst::afw::geom::BoxI bbox;
     int iter = 0;                       // iteration number
     for (; iter < maxIter; iter++) {
-        bbox = set_amom_bbox(image.getWidth(), image.getHeight(), xcen, ycen, sigma11W, sigma12W, sigma22W);
+        bbox = computeAdaptiveMomentsBBox(image.getBBox(afw::image::LOCAL), afw::geom::Point2D(xcen, ycen),
+                                          sigma11W, sigma12W, sigma22W);
         boost::tuple<std::pair<bool, double>, double, double, double> weights = 
             getWeights(sigma11W, sigma12W, sigma22W);
         if (!weights.get<0>().first) {
-            shape->setFlag(SdssShapeImpl::UNWEIGHTED);
+            shape->flags[SdssShapeAlgorithm::UNWEIGHTED] = true;
             break;
         }
 
@@ -498,7 +460,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
 
         if (calcmom<false>(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22,
                            &I0, &sum, &sumx, &sumy, &sumxx, &sumxy, &sumyy, &sums4) < 0) {
-            shape->setFlag(SdssShapeImpl::UNWEIGHTED);
+            shape->flags[SdssShapeAlgorithm::UNWEIGHTED] = true;
             break;
         }
 #if 0
@@ -510,11 +472,11 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
         xcen = sumx/sum;
         ycen = sumy/sum;
 #endif
-        shape->setX(sumx/sum); // update centroid.  N.b. we're not setting errors here
-        shape->setY(sumy/sum);
+        shape->x = sumx/sum; // update centroid.  N.b. we're not setting errors here
+        shape->y = sumy/sum;
 
-        if (fabs(shape->getX() - xcen0) > shiftmax || fabs(shape->getY() - ycen0) > shiftmax) {
-            shape->setFlag(SdssShapeImpl::SHIFT);
+        if (fabs(shape->x - xcen0) > shiftmax || fabs(shape->x - ycen0) > shiftmax) {
+            shape->flags[SdssShapeAlgorithm::SHIFT] = true;
         }
 /*
  * OK, we have the centre. Proceed to find the second moments.
@@ -524,7 +486,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
         float const sigma12_ow = sumxy/sum; //                 xx, xy, and yy 
 
         if (sigma11_ow <= 0 || sigma22_ow <= 0) {
-            shape->setFlag(SdssShapeImpl::UNWEIGHTED);
+            shape->flags[SdssShapeAlgorithm::UNWEIGHTED] = true;
             break;
         }
 
@@ -572,7 +534,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
             boost::tuple<std::pair<bool, double>, double, double, double> weights = 
                 getWeights(sigma11_ow, sigma12_ow, sigma22_ow);
             if (!weights.get<0>().first) {
-                shape->setFlag(SdssShapeImpl::UNWEIGHTED);
+                shape->flags[SdssShapeAlgorithm::UNWEIGHTED] = true;
                 break;
             }
          
@@ -584,10 +546,10 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
             n12 = ow12 - w12;
             n22 = ow22 - w22;
 
-            weights = getWeights(n11, n12, n22, false);
+            weights = getWeights(n11, n12, n22);
             if (!weights.get<0>().first) {
                 // product-of-Gaussians assumption failed
-                shape->setFlag(SdssShapeImpl::UNWEIGHTED);
+                shape->flags[SdssShapeAlgorithm::UNWEIGHTED] = true;
                 break;
             }
       
@@ -597,33 +559,33 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
         }
 
         if (sigma11W <= 0 || sigma22W <= 0) {
-            shape->setFlag(SdssShapeImpl::UNWEIGHTED);
+            shape->flags[SdssShapeAlgorithm::UNWEIGHTED] = true;
             break;
         }
     }
 
     if (iter == maxIter) {
-        shape->setFlag(SdssShapeImpl::UNWEIGHTED);
-        shape->setFlag(SdssShapeImpl::MAXITER);
+        shape->flags[SdssShapeAlgorithm::UNWEIGHTED] = true;
+        shape->flags[SdssShapeAlgorithm::MAXITER] = true;
     }
 
     if (sumxx + sumyy == 0.0) {
-        shape->setFlag(SdssShapeImpl::UNWEIGHTED);
+        shape->flags[SdssShapeAlgorithm::UNWEIGHTED] = true;
     }
 /*
  * Problems; try calculating the un-weighted moments
  */
-    if (shape->getFlag(SdssShapeImpl::UNWEIGHTED)) {
+    if (shape->flags[SdssShapeAlgorithm::UNWEIGHTED]) {
         w11 = w22 = w12 = 0;
         if (calcmom<false>(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22,
                            &I0, &sum, &sumx, &sumy, &sumxx, &sumxy, &sumyy, NULL) < 0 || sum <= 0) {
-            shape->resetFlag(SdssShapeImpl::UNWEIGHTED);
-            shape->setFlag(SdssShapeImpl::UNWEIGHTED_BAD);
+            shape->flags[SdssShapeAlgorithm::UNWEIGHTED] = false;
+            shape->flags[SdssShapeAlgorithm::UNWEIGHTED_BAD] = true;
 
             if (sum > 0) {
-                shape->setIxx(1/12.0);      // a single pixel
-                shape->setIxy(0.0);
-                shape->setIyy(1/12.0);
+                shape->xx = 1/12.0;      // a single pixel
+                shape->xy = 0.0;
+                shape->yy = 1/12.0;
             }
             
             return false;
@@ -634,13 +596,12 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
         sigma22W = sumyy/sum;          //      at this point
     }
 
-    shape->setI0(I0);
-    shape->setIxx(sigma11W);
-    shape->setIxy(sigma12W);
-    shape->setIyy(sigma22W);
-    shape->setIxy4(sums4/sum);
+    shape->flux = I0;
+    shape->xx = sigma11W;
+    shape->xy = sigma12W;
+    shape->yy = sigma22W;
 
-    if (shape->getIxx() + shape->getIyy() != 0.0) {
+    if (shape->xx + shape->yy != 0.0) {
         int const ix = lsst::afw::image::positionToIndex(xcen);
         int const iy = lsst::afw::image::positionToIndex(ycen);
         
@@ -649,9 +610,22 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
                 ImageAdaptor<ImageT>().getVariance(mimage, ix, iy); // XXX Overestimate as it includes object
 
             if (bkgd_var > 0.0) {                                   // NaN is not > 0.0
-                if (!(shape->getFlag(SdssShapeImpl::UNWEIGHTED))) {
-                    SdssShapeImpl::Matrix4 fisher = calc_fisher(*shape, bkgd_var); // Fisher matrix 
-                    shape->setCovar(fisher.inverse());
+                if (!(shape->flags[SdssShapeAlgorithm::UNWEIGHTED])) {
+                    Matrix4d fisher = calc_fisher(*shape, bkgd_var); // Fisher matrix 
+                    Matrix4d cov = fisher.inverse();
+                    // convention in afw::geom::ellipses is to order moments (xx, yy, xy),
+                    // but the older algorithmic code uses (xx, xy, yy) - the order of
+                    // indices here is not a bug.
+                    shape->fluxSigma = std::sqrt(cov(0, 0));
+                    shape->xxSigma = std::sqrt(cov(1, 1));
+                    shape->xySigma = std::sqrt(cov(2, 2));
+                    shape->yySigma = std::sqrt(cov(3, 3));
+                    shape->flux_xx_Cov = cov(0, 1);
+                    shape->flux_xy_Cov = cov(0, 2);
+                    shape->flux_yy_Cov = cov(0, 3);
+                    shape->xx_yy_Cov = cov(1, 3);
+                    shape->xx_xy_Cov = cov(1, 2);
+                    shape->yy_xy_Cov = cov(2, 3);
                 }
             }
         }
@@ -660,70 +634,10 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
     return true;
 }
 
-/**
- * \brief Return the flux of an object, using the aperture described by the SdssShape object
- *
- * The SdssShape algorithm calculates an elliptical Gaussian fit to an object, so the "aperture" is
- * an elliptical Gaussian
- *
- * \returns A std::pair of the flux and its error
- */
-template<typename ImageT>
-std::pair<double, double>
-getFixedMomentsFlux(ImageT const& image,               ///< the data to process
-                    double bkgd,                       ///< background level
-                    double xcen,                       ///< x-centre of object (PARENT coordinates)
-                    double ycen,                       ///< y-centre of object (PARENT coordinates)
-                    SdssShapeImpl const& shape_ ///< The SdssShape of the object
-    )
-{
-    SdssShapeImpl shape = shape_; // we need a mutable copy
-
-    afwGeom::BoxI const& bbox = set_amom_bbox(image.getWidth(), image.getHeight(), xcen, ycen,
-                                              shape.getIxx(), shape.getIxy(), shape.getIyy());
-
-    boost::tuple<std::pair<bool, double>, double, double, double> weights =
-        getWeights(shape.getIxx(), shape.getIxy(), shape.getIyy());
-    double const NaN = std::numeric_limits<double>::quiet_NaN();
-    if (!weights.get<0>().first) {
-        return std::make_pair(NaN, NaN);
-    }
-
-    double const w11 = weights.get<1>();
-    double const w12 = weights.get<2>();
-    double const w22 = weights.get<3>();
-    bool const interp = shouldInterp(shape.getIxx(), shape.getIyy(), weights.get<0>().second);
-
-    double I0 = 0;                      // amplitude of Gaussian
-    calcmom<true>(ImageAdaptor<ImageT>().getImage(image), xcen - image.getX0(), ycen - image.getY0(),
-                  bbox, bkgd, interp, w11, w12, w22,
-                  &I0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-    /*
-     * We have enerything we need, but it isn't quite packaged right; we need an initialised SdssShapeImpl
-     */
-    shape.setI0(I0);
-
-    {
-        int ix = static_cast<int>(xcen - image.getX0());
-        int iy = static_cast<int>(ycen - image.getY0());
-        float bkgd_var = 
-            ImageAdaptor<ImageT>().getVariance(image, ix, iy); // XXX Overestimate as it includes object
-
-        SdssShapeImpl::Matrix4 fisher = calc_fisher(shape, bkgd_var); // Fisher matrix 
-
-        shape.setCovar(fisher.inverse());
-    }
-    
-    double const scale = shape.getFluxScale();
-    return std::make_pair(shape.getI0()*scale, shape.getI0Err()*scale);
-}
-
-} // end detail namespace
+} // anonymous
 
 
 SdssShapeResult::SdssShapeResult() :
-    xy4(std::numeric_limits<ShapeElement>::quiet_NaN()),
-    xy4Sigma(std::numeric_limits<ShapeElement>::quiet_NaN()),
     flux_xx_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
     flux_yy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
     flux_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN())
@@ -745,16 +659,8 @@ SdssShapeResultKey SdssShapeResultKey::addFields(
     r._shapeResult = ShapeResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments",
                                                SIGMA_ONLY);
     r._centroidResult = CentroidResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments",
-                                                     SIGMA_ONLY);
+                                                     NO_UNCERTAINTY);
     r._fluxResult = FluxResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments");
-    r._xy4 = schema.addField<ShapeElement>(
-        // TODO: get more mathematically precise documentation on this from RHL
-        schema.join(name, "xy4"), "4th moment used in certain shear-estimation algorithms", "pixels^4"
-    );
-    r._xy4Sigma = schema.addField<ErrElement>(
-        schema.join(name, "xy4Sigma"),
-        "uncertainty on %s" + schema.join(name, "xy4"), "pixels^4"
-    );
     r._flux_xx_Cov = schema.addField<ErrElement>(
         schema.join(name, "flux", "xx", "Cov"),
         (boost::format("uncertainty covariance between %s and %s")
@@ -781,8 +687,6 @@ SdssShapeResultKey::SdssShapeResultKey(afw::table::SubSchema const & s) :
     _shapeResult(s),
     _centroidResult(s),
     _fluxResult(s),
-    _xy4(s["xy4"]),
-    _xy4Sigma(s["xy4Sigma"]),
     _flux_xx_Cov(s["flux"]["xx"]["Cov"]),
     _flux_yy_Cov(s["flux"]["yy"]["Cov"]),
     _flux_xy_Cov(s["flux"]["xy"]["Cov"]),
@@ -794,8 +698,6 @@ SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const & record) c
     static_cast<ShapeResult&>(result) = record.get(_shapeResult);
     static_cast<CentroidResult&>(result) = record.get(_centroidResult);
     static_cast<FluxResult&>(result) = record.get(_fluxResult);
-    result.xy4 = record.get(_xy4);
-    result.xy4Sigma = record.get(_xy4Sigma);
     result.flux_xx_Cov = record.get(_flux_xx_Cov);
     result.flux_yy_Cov = record.get(_flux_yy_Cov);
     result.flux_xy_Cov = record.get(_flux_xy_Cov);
@@ -809,8 +711,6 @@ void SdssShapeResultKey::set(afw::table::BaseRecord & record, SdssShapeResult co
     record.set(_shapeResult, value);
     record.set(_centroidResult, value);
     record.set(_fluxResult, value);
-    record.set(_xy4, value.xy4);
-    record.set(_xy4Sigma, value.xy4Sigma);
     record.set(_flux_xx_Cov, value.flux_xx_Cov);
     record.set(_flux_yy_Cov, value.flux_yy_Cov);
     record.set(_flux_xy_Cov, value.flux_xy_Cov);
@@ -823,8 +723,6 @@ bool SdssShapeResultKey::operator==(SdssShapeResultKey const & other) const {
     return _shapeResult == other._shapeResult &&
         _centroidResult == other._centroidResult &&
         _fluxResult == other._fluxResult &&
-        _xy4 == other._xy4 &&
-        _xy4Sigma == other._xy4Sigma &&
         _flux_xx_Cov == other._flux_xx_Cov &&
         _flux_yy_Cov == other._flux_yy_Cov &&
         _flux_xy_Cov == other._flux_xy_Cov;
@@ -835,8 +733,6 @@ bool SdssShapeResultKey::isValid() const {
     return _shapeResult.isValid() &&
         _centroidResult.isValid() &&
         _fluxResult.isValid() &&
-        _xy4.isValid() &&
-        _xy4Sigma.isValid() &&
         _flux_xx_Cov.isValid() &&
         _flux_yy_Cov.isValid() &&
         _flux_xy_Cov.isValid();
@@ -853,32 +749,17 @@ SdssShapeAlgorithm::SdssShapeAlgorithm(
     _centroidExtractor(schema, name)
 {}
 
-template <typename T>
-SdssShapeResult SdssShapeAlgorithm::apply(
-    afw::image::Image<T> const & exposure,
-    afw::detection::Footprint const & footprint,
+template <typename ImageT>
+SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(
+    ImageT const & image,
     afw::geom::Point2D const & center,
     Control const & control
 ) {
-    throw LSST_EXCEPT(
-        pex::exceptions::LogicError,
-        "Not implemented"
-    );
-}
-
-template <typename T>
-SdssShapeResult SdssShapeAlgorithm::apply(
-    afw::image::MaskedImage<T> const & mimage,
-    afw::detection::Footprint const & footprint,
-    afw::geom::Point2D const & center,
-    Control const & control
-) {
-    typedef typename afw::image::MaskedImage<T> MaskedImageT;
     double xcen = center.getX();         // object's column position
     double ycen = center.getY();         // object's row position
 
-    xcen -= mimage.getX0();             // work in image Pixel coordinates
-    ycen -= mimage.getY0();
+    xcen -= image.getX0();             // work in image Pixel coordinates
+    ycen -= image.getY0();
 
     float shiftmax = control.maxShift;   // Max allowed centroid shift
     if (shiftmax < 2) {
@@ -888,34 +769,77 @@ SdssShapeResult SdssShapeAlgorithm::apply(
     }
 
     SdssShapeResult result;
-    detail::SdssShapeImpl shapeImpl;
     try {
-        detail::getAdaptiveMoments(mimage, control.background, xcen, ycen, shiftmax, &shapeImpl,
-                                   control.maxIter, control.tol1, control.tol2);
+        result.flags[FAILURE] = !getAdaptiveMoments(
+            image, control.background, xcen, ycen, shiftmax, &result,
+            control.maxIter, control.tol1, control.tol2
+        );
     } catch (pex::exceptions::Exception & err) {
         result.flags[FAILURE] = true;
     }
 
-    result.x = shapeImpl.getX() + mimage.getX0();
-    result.y = shapeImpl.getY() + mimage.getY0();
-    // FIXME: should do off-diagonal covariance elements too
-    result.xSigma = shapeImpl.getXErr();
-    result.ySigma = shapeImpl.getYErr();
-    result.xx = shapeImpl.getIxx();
-    result.yy = shapeImpl.getIyy();
-    result.xy = shapeImpl.getIxy();
-    // FIXME: should do off-diagonal covariance elements too
-    result.xxSigma = shapeImpl.getIxxErr();
-    result.yySigma = shapeImpl.getIyyErr();
-    result.xySigma = shapeImpl.getIxyErr();
+    // getAdaptiveMoments() just computes the zeroth moment in result.flux (and its error in
+    // result.fluxSigma, result.flux_xx_Cov, etc.)  That's related to the flux by some geometric
+    // factors, which we apply here.
+    double fluxScale = computeFluxScale(result);
 
-    // Now set the flags from SdssShapeImpl
-    for (int n = 0; n < detail::SdssShapeImpl::N_FLAGS; ++n) {
-        if (shapeImpl.getFlag(detail::SdssShapeImpl::Flag(n))) {
-            result.flags[n + 1] = true;
-            result.flags[FAILURE] = true;
-        }
+    result.flux *= fluxScale;
+    result.fluxSigma *= fluxScale;
+    result.x += image.getX0();
+    result.y += image.getY0();
+
+    if (ImageAdaptor<ImageT>::hasVariance) {
+        result.flux_xx_Cov *= fluxScale;
+        result.flux_yy_Cov *= fluxScale;
+        result.flux_xy_Cov *= fluxScale;
     }
+
+    return result;
+}
+
+template <typename ImageT>
+FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(
+    ImageT const & image,
+    afw::geom::ellipses::Quadrupole const & shape,
+    afw::geom::Point2D const & center
+) {
+    // while arguments to computeFixedMomentsFlux are in PARENT coordinates, the implementation is LOCAL.
+    afw::geom::Point2D localCenter = center - afw::geom::Extent2D(image.getXY0());
+
+    afwGeom::BoxI const bbox = computeAdaptiveMomentsBBox(image.getBBox(afw::image::LOCAL),
+                                                          localCenter,
+                                                          shape.getIxx(), shape.getIxy(), shape.getIyy());
+
+    boost::tuple<std::pair<bool, double>, double, double, double> weights =
+        getWeights(shape.getIxx(), shape.getIxy(), shape.getIyy());
+
+    FluxResult result;
+
+    if (!weights.get<0>().first) {
+        throw pex::exceptions::InvalidParameterError("Input shape is singular");
+    }
+
+    double const w11 = weights.get<1>();
+    double const w12 = weights.get<2>();
+    double const w22 = weights.get<3>();
+    bool const interp = shouldInterp(shape.getIxx(), shape.getIyy(), weights.get<0>().second);
+
+    double i0 = 0;                      // amplitude of Gaussian
+    calcmom<true>(ImageAdaptor<ImageT>().getImage(image), localCenter.getX(), localCenter.getY(),
+                  bbox, 0.0, interp, w11, w12, w22, &i0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
+    double const wArea = afw::geom::PI*std::sqrt(shape.getDeterminant());
+
+    result.flux = i0*2*wArea;
+
+    if (ImageAdaptor<ImageT>::hasVariance) {
+        int ix = static_cast<int>(center.getX() - image.getX0());
+        int iy = static_cast<int>(center.getY() - image.getY0());
+        double var = ImageAdaptor<ImageT>().getVariance(image, ix, iy);
+        double i0Err = std::sqrt(var/wArea);
+        result.fluxSigma = i0Err*2*wArea;
+    }
+
     return result;
 }
 
@@ -923,14 +847,8 @@ void SdssShapeAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
 ) const {
-    if (!measRecord.getFootprint()) {
-        throw LSST_EXCEPT(
-            pex::exceptions::RuntimeError,
-            "No Footprint attached to SourceRecord"
-        );
-    }
-    SdssShapeResult result = apply(
-        exposure.getMaskedImage(), *measRecord.getFootprint(),
+    SdssShapeResult result = computeAdaptiveMoments(
+        exposure.getMaskedImage(),
         _centroidExtractor(measRecord, _resultKey.getFlagHandler()),
         _ctrl
     );
@@ -944,13 +862,17 @@ void SdssShapeAlgorithm::fail(
     _resultKey.getFlagHandler().handleFailure(measRecord, error);
 }
 
-
-
 #define INSTANTIATE_IMAGE(IMAGE) \
-    template bool detail::getAdaptiveMoments<IMAGE>( \
-        IMAGE const&, double, double, double, double, SdssShapeImpl*, int, float, float); \
-    template std::pair<double, double> detail::getFixedMomentsFlux<IMAGE>( \
-        IMAGE const&, double, double, double, detail::SdssShapeImpl const&); \
+    template SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments( \
+        IMAGE const &,                                                  \
+        afw::geom::Point2D const &,                                     \
+        Control const &                                                 \
+    );                                                                  \
+    template FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux( \
+        IMAGE const &,                                                  \
+        afw::geom::ellipses::Quadrupole const &,                        \
+        afw::geom::Point2D const &                                      \
+    )
 
 #define INSTANTIATE_PIXEL(PIXEL) \
     INSTANTIATE_IMAGE(lsst::afw::image::Image<PIXEL>); \
@@ -959,23 +881,6 @@ void SdssShapeAlgorithm::fail(
 INSTANTIATE_PIXEL(int);
 INSTANTIATE_PIXEL(float);
 INSTANTIATE_PIXEL(double);
-
-#define INSTANTIATE(T)                                                  \
-    template SdssShapeResult SdssShapeAlgorithm::apply(                 \
-        afw::image::MaskedImage<T> const & exposure,                    \
-        afw::detection::Footprint const & footprint,                    \
-        afw::geom::Point2D const & position,                            \
-        Control const & ctrl                                            \
-    );                                                                  \
-    template SdssShapeResult SdssShapeAlgorithm::apply(                 \
-        afw::image::Image<T> const & exposure,                          \
-        afw::detection::Footprint const & footprint,                    \
-        afw::geom::Point2D const & position,                            \
-        Control const & ctrl                                            \
-    )
-
-INSTANTIATE(float);
-INSTANTIATE(double);
 
 }}} // end namespace lsst::meas::base
 

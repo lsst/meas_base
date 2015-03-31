@@ -21,91 +21,65 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import math
-import os
-from lsst.afw.table import Schema,SchemaMapper,SourceCatalog,SourceTable
-from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin, SingleFrameMeasurementTask
-from lsst.meas.base.base import *
-from lsst.meas.base.tests import *
+import numpy
 import unittest
-import lsst.utils.tests
 import numpy
 
-numpy.random.seed(500)
+import lsst.utils.tests
+import lsst.meas.base.tests
 
-DATA_DIR = os.path.join(os.environ["MEAS_BASE_DIR"], "tests")
+class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
-class SFMTestCase(lsst.utils.tests.TestCase):
+    def setUp(self):
+        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
+                                        lsst.afw.geom.Extent2I(240, 160))
+        self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
+        # first source is a point
+        self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(50.1, 49.8))
+        # second source is extended
+        self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(149.9, 50.3),
+                               lsst.afw.geom.ellipses.Quadrupole(8, 9, 3))
 
-    def testAlgorithm(self):
+    def tearDown(self):
+        del self.bbox
+        del self.dataset
 
-        srccat, bbox = MakeTestData.makeCatalog()
-        exposure = MakeTestData.makeEmptyExposure(bbox)
-        MakeTestData.fillImages(srccat, exposure)
+    def assertFinite(self, value):
+        self.assertTrue(numpy.isfinite(value), msg="%s is not finite" % value)
 
-        sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()        
-        # add the measurement fields to the outputSchema and make a catalog with it
-        # then extend with the mapper to copy the extant data
-        mapper = SchemaMapper(srccat.getSchema())
-        mapper.addMinimalSchema(srccat.getSchema())
-        outschema = mapper.getOutputSchema()
-        sfm_config.plugins = ["base_PeakCentroid", "base_SdssShape"]
-        sfm_config.slots.centroid = "base_PeakCentroid"
-        sfm_config.slots.shape = "base_SdssShape"
-        sfm_config.slots.psfFlux = None
-        sfm_config.slots.modelFlux = None
-        sfm_config.slots.apFlux = None
-        sfm_config.slots.instFlux = None
-        task = SingleFrameMeasurementTask(outschema, config=sfm_config)
-        measCat = SourceCatalog(outschema)
-        measCat.extend(srccat, mapper=mapper)
-        # now run the SFM task with the test plugin
-        task.run(measCat, exposure)
+    def testGaussians(self):
+        """Test that we get correct shape when measuring Gaussians with known position."""
+        task = self.makeSingleFrameMeasurementTask("base_SdssShape")
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        task.run(exposure, catalog)
+        key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
+        for record in catalog:
+            result = record.get(key)
+            self.assertClose(result.flux, record.get("truth_flux"), rtol=1E-2)
+            self.assertFinite(result.fluxSigma)
+            self.assertClose(result.x, record.get("truth_x"), rtol=1E-2)
+            self.assertClose(result.y, record.get("truth_y"), rtol=1E-2)
+            self.assertClose(result.xx, record.get("truth_xx"), rtol=1E-2)
+            self.assertClose(result.yy, record.get("truth_yy"), rtol=1E-2)
+            self.assertClose(result.xy, record.get("truth_xy"), rtol=1E-2, atol=2E-2)
+            self.assertFinite(result.xxSigma)
+            self.assertFinite(result.yySigma)
+            self.assertFinite(result.xySigma)
+            self.assertFinite(result.flux_xx_Cov)
+            self.assertFinite(result.flux_yy_Cov)
+            self.assertFinite(result.flux_xy_Cov)
+            self.assertFinite(result.xx_yy_Cov)
+            self.assertFinite(result.xx_xy_Cov)
+            self.assertFinite(result.yy_xy_Cov)
 
-        truthShapeKey = lsst.afw.table.QuadrupoleKey(srccat.schema.find("truth_xx").key,
-                                                     srccat.schema.find("truth_yy").key,
-                                                     srccat.schema.find("truth_xy").key)
 
-        for i in range(len(measCat)):
-            record = measCat[i]
-            srcRec = srccat[i]
-            xx = record.get("base_SdssShape_xx")
-            yy = record.get("base_SdssShape_yy")
-            xy = record.get("base_SdssShape_xy")
-            xxSigma = record.get("base_SdssShape_xxSigma")
-            yySigma = record.get("base_SdssShape_yySigma")
-            xySigma = record.get("base_SdssShape_xySigma")
-            trueShape = srcRec.get(truthShapeKey)
-            shape = record.getShape()
-            cov = record.getShapeErr()
-            self.assertClose(xxSigma*xxSigma, cov[0,0], rtol = .01)
-            self.assertClose(yySigma*yySigma, cov[1,1], rtol = .01)
-            self.assertClose(xySigma*xySigma, cov[2,2], rtol = .01)
-            if not numpy.isnan(trueShape.getIxx()):
-                self.assertFalse(record.get("base_SdssShape_flag"))
-                self.assertFalse(record.get("base_SdssShape_flag_unweightedBad"))
-                self.assertFalse(record.get("base_SdssShape_flag_unweighted"))
-                self.assertFalse(record.get("base_SdssShape_flag_shift"))
-                self.assertFalse(record.get("base_SdssShape_flag_maxIter"))
-                x = record.get("base_SdssShape_x")
-                y = record.get("base_SdssShape_y")
-                xSigma = record.get("base_SdssShape_xSigma")
-                ySigma = record.get("base_SdssShape_ySigma")
-                flux = record.get("base_SdssShape_flux")
-                fluxSigma = record.get("base_SdssShape_fluxSigma")
-                xy4 = record.get("base_SdssShape_xy4")
-                xy4Sigma = record.get("base_SdssShape_xy4Sigma")
-                self.assertClose(xx, trueShape.getIxx(), atol=None, rtol=.12)
-                self.assertClose(yy, trueShape.getIyy(), atol=None, rtol=.12)
-                # commented out because of a bug
-                #self.assertClose(xy, trueShape.getIxy(), atol=None, rtol=.12)
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
     lsst.utils.tests.init()
 
     suites = []
-    suites += unittest.makeSuite(SFMTestCase)
+    suites += unittest.makeSuite(SdssShapeTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
