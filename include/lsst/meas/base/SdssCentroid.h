@@ -68,8 +68,8 @@ public:
     enum {
         FAILURE=FlagHandler::FAILURE,
         EDGE,
-        NO_2ND_DERIVATIVE,
-        ALMOST_NO_2ND_DERIVATIVE,
+        NO_SECOND_DERIVATIVE,
+        ALMOST_NO_SECOND_DERIVATIVE,
         NOT_AT_MAXIMUM,
         N_FLAGS
     };

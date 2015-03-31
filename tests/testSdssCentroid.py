@@ -81,9 +81,9 @@ class SdssCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
             self.assertFalse(record.get("base_SdssCentroid_flag"))
             self.assertFalse(record.get("base_SdssCentroid_flag_edge"))
-            self.assertFalse(record.get("base_SdssCentroid_flag_no_2nd_derivative"))
-            self.assertFalse(record.get("base_SdssCentroid_flag_almost_no_2nd_derivative"))
-            self.assertFalse(record.get("base_SdssCentroid_flag_not_at_maximum"))
+            self.assertFalse(record.get("base_SdssCentroid_flag_noSecondDerivative"))
+            self.assertFalse(record.get("base_SdssCentroid_flag_almostNoSecondDerivative"))
+            self.assertFalse(record.get("base_SdssCentroid_flag_notAtMaximum"))
 
             self.assertClose(peakX, x, atol=None, rtol=.02)
             self.assertClose(peakY, y, atol=None, rtol=.02)
@@ -126,7 +126,7 @@ class SdssCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         measRecord = subCat[0]
         self.task.measure(subCat, subImage)
         self.assertTrue(measRecord.get("base_SdssCentroid_flag"))
-        self.assertTrue(measRecord.get("base_SdssCentroid_flag_no_2nd_derivative"))
+        self.assertTrue(measRecord.get("base_SdssCentroid_flag_noSecondDerivative"))
 
     def testAlmostNo2ndDerivative(self):
         self.truth.defineCentroid("truth")
@@ -145,7 +145,7 @@ class SdssCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         measRecord = subCat[0]
         self.task.measure(subCat, subImage)
         self.assertTrue(measRecord.get("base_SdssCentroid_flag"))
-        #self.assertTrue(measRecord.get("base_SdssCentroid_flag_almost_no_2nd_derivative"))
+        #self.assertTrue(measRecord.get("base_SdssCentroid_flag_almostNo	SecondDerivative"))
 
     def testNotAtMaximum(self):
         self.truth.defineCentroid("truth")
@@ -161,7 +161,7 @@ class SdssCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         measRecord = subCat[0]
         self.task.measure(subCat, subImage)
         self.assertTrue(measRecord.get("base_SdssCentroid_flag"))
-        self.assertTrue(measRecord.get("base_SdssCentroid_flag_not_at_maximum"))
+        self.assertTrue(measRecord.get("base_SdssCentroid_flag_notAtMaximum"))
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
