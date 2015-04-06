@@ -57,6 +57,7 @@ typedef afw::geom::Point<CentroidElement,2> Centroid;
 typedef Eigen::Matrix<ErrElement,2,2,Eigen::DontAlign> CentroidCov;
 typedef afw::geom::ellipses::Quadrupole Shape;
 typedef Eigen::Matrix<ErrElement,3,3,Eigen::DontAlign> ShapeCov;
+typedef Eigen::Matrix<ShapeElement,3,3,Eigen::DontAlign> ShapeTrMatrix;
 //@}
 
 }}} // lsst::meas::base

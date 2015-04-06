@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2014 LSST Corporation.
+ * Copyright 2008-2015 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -191,6 +191,28 @@ private:
     afw::table::QuadrupoleKey _shape;
     afw::table::CovarianceMatrixKey<ErrElement,3> _shapeErr;
 };
+
+/**
+ *  @brief Construct a matrix suitable for transforming second moments.
+ *
+ *  Given an LinearTransform which maps from positions (x, y) to (a, d),
+ *  returns a 3-by-3 matrix which transforms (xx, yy, xy) to (aa, dd, ad).
+ *
+ *  That is, given an input transform described by the matrix
+ *
+ *  | A11 | A12 |
+ *  | A21 | A22 |
+ *
+ *  we return the matrix
+ *
+ *  | A11*A11 | A12*A12 |         2*A11*A12 |
+ *  | A21*A21 | A22*A22 |         2*A21*A22 |
+ *  | A11*A21 | A12*A22 | A11*A22 + A12*A21 |
+ *
+ *  @param[in]  xform  LinearTransform describing the coordinate mapping
+ *  @returns    A 3-by-3 transformation matrix for the second order moments
+ */
+ShapeTrMatrix makeShapeTransformMatrix(afw::geom::LinearTransform const & xform);
 
 }}} // lsst::meas::base
 

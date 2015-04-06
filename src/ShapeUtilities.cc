@@ -1,6 +1,6 @@
 /*
  * LSST Data Management System
- * Copyright 2008-2014 LSST Corporation.
+ * Copyright 2008-2015 LSST Corporation.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -154,6 +154,16 @@ void ShapeResultKey::set(afw::table::BaseRecord & record, ShapeResult const & va
     if (_shapeErr.isValid()) {
         record.set(_shapeErr, value.getShapeErr());
     }
+}
+
+ShapeTrMatrix makeShapeTransformMatrix(afw::geom::LinearTransform const & xform) {
+    typedef afw::geom::LinearTransform LT;
+    Eigen::Matrix<ShapeElement,3,3,Eigen::DontAlign> m;
+    m << xform[LT::XX]*xform[LT::XX], xform[LT::XY]*xform[LT::XY], 2*xform[LT::XX]*xform[LT::XY],
+         xform[LT::YX]*xform[LT::YX], xform[LT::YY]*xform[LT::YY], 2*xform[LT::YX]*xform[LT::YY],
+         xform[LT::XX]*xform[LT::YX], xform[LT::XY]*xform[LT::YY],
+         xform[LT::XX]*xform[LT::YY] + xform[LT::XY]*xform[LT::YX];
+    return m;
 }
 
 }}} // lsst::meas::base

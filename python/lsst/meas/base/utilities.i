@@ -37,6 +37,7 @@
 
 %declareNumPyConverters(lsst::meas::base::CentroidCov);
 %declareNumPyConverters(lsst::meas::base::ShapeCov);
+%declareNumPyConverters(lsst::meas::base::ShapeTrMatrix);
 
 %declareFunctorKey(FluxResult, lsst::meas::base::FluxResult)
 %shared_ptr(lsst::meas::base::FluxResultKey)
