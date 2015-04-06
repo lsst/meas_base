@@ -27,8 +27,10 @@ import numpy
 
 import lsst.utils.tests
 import lsst.meas.base.tests
+from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
+                                  CentroidTransformTestCase, SingleFramePluginTransformSetupHelper)
 
-class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase):
+class SdssShapeTestCase(AlgorithmTestCase):
 
     def setUp(self):
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
@@ -73,6 +75,43 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             self.assertFinite(result.yy_xy_Cov)
 
 
+class SdssShapeTransformTestCase(FluxTransformTestCase, CentroidTransformTestCase,
+                                 SingleFramePluginTransformSetupHelper):
+    name = "sdssShape"
+    controlClass = lsst.meas.base.SdssShapeControl
+    algorithmClass = lsst.meas.base.SdssShapeAlgorithm
+    transformClass = lsst.meas.base.SdssShapeTransform
+    flagNames = ("flag", "flag_unweighted", "flag_unweightedBad", "flag_shift", "flag_maxIter")
+    singleFramePlugins = ('base_SdssShape',)
+    forcedPlugins = ('base_SdssShape',)
+
+    def _setFieldsInRecord(self, record, name):
+        FluxTransformTestCase._setFieldsInRecord(self, record, name)
+        CentroidTransformTestCase._setFieldsInRecord(self, record, name)
+        for field in ('xx', 'yy', 'xy', 'xxSigma', 'yySigma', 'xySigma'):
+            record[record.schema.join(name, field)] = numpy.random.random()
+
+    def _compareFieldsInRecords(self, inSrc, outSrc, name):
+        FluxTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
+        CentroidTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
+
+        inShape = lsst.meas.base.ShapeResultKey(inSrc.schema[name]).get(inSrc)
+        outShape = lsst.meas.base.ShapeResultKey(outSrc.schema[name]).get(outSrc)
+
+        centroid = lsst.meas.base.CentroidResultKey(inSrc.schema[name]).get(inSrc).getCentroid()
+        xform = self.calexp.getWcs().linearizePixelToSky(centroid, lsst.afw.geom.radians)
+
+        trInShape = inShape.getShape().transform(xform.getLinear())
+        self.assertEqual(trInShape.getIxx(), outShape.getShape().getIxx())
+        self.assertEqual(trInShape.getIyy(), outShape.getShape().getIyy())
+        self.assertEqual(trInShape.getIxy(), outShape.getShape().getIxy())
+
+        m = lsst.meas.base.makeShapeTransformMatrix(xform.getLinear())
+        numpy.testing.assert_array_almost_equal(
+            numpy.dot(numpy.dot(m, inShape.getShapeErr()), m.transpose()), outShape.getShapeErr()
+        )
+
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
@@ -80,6 +119,7 @@ def suite():
 
     suites = []
     suites += unittest.makeSuite(SdssShapeTestCase)
+    suites += unittest.makeSuite(SdssShapeTransformTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 

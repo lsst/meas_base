@@ -882,5 +882,55 @@ INSTANTIATE_PIXEL(int);
 INSTANTIATE_PIXEL(float);
 INSTANTIATE_PIXEL(double);
 
-}}} // end namespace lsst::meas::base
+SdssShapeTransform::SdssShapeTransform(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::SchemaMapper & mapper
+) :
+    BaseTransform{name},
+    _fluxTransform{name, mapper},
+    _centroidTransform{name, mapper}
+{
+    for (auto flag = flagDefs.begin() + 1; flag < flagDefs.end(); flag++) {
+        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(
+                          mapper.getInputSchema().join(name, flag->name)).key);
+    }
 
+    _outShapeKey = ShapeResultKey::addFields(mapper.editOutputSchema(), name, "Shape in celestial moments",
+                                             FULL_COVARIANCE, afw::table::CoordinateType::CELESTIAL);
+}
+
+void SdssShapeTransform::operator()(
+    afw::table::SourceCatalog const & inputCatalog,
+    afw::table::BaseCatalog & outputCatalog,
+    afw::image::Wcs const & wcs,
+    afw::image::Calib const & calib
+) const {
+    // The flux and cetroid transforms will check that the catalog lengths
+    // match and throw if not, so we don't repeat the test here.
+    _fluxTransform(inputCatalog, outputCatalog, wcs, calib);
+    _centroidTransform(inputCatalog, outputCatalog, wcs, calib);
+
+    CentroidResultKey centroidKey(inputCatalog.getSchema()[_name]);
+    ShapeResultKey inShapeKey(inputCatalog.getSchema()[_name]);
+
+    afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
+    afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();
+    for (; inSrc < inputCatalog.end(); ++inSrc, ++outSrc) {
+        ShapeResult inShape = inShapeKey.get(*inSrc);
+        ShapeResult outShape;
+
+        // The transformation from the (x, y) to the (Ra, Dec) basis.
+        afw::geom::AffineTransform crdTr = wcs.linearizePixelToSky(centroidKey.get(*inSrc).getCentroid(),
+                                                                   afw::geom::radians);
+        outShape.setShape(inShape.getShape().transform(crdTr.getLinear()));
+
+        // Transformation matrix from pixel to celestial basis.
+        ShapeTrMatrix m = makeShapeTransformMatrix(crdTr.getLinear());
+        outShape.setShapeErr((m*inShape.getShapeErr().cast<double>()*m.transpose()).cast<ErrElement>());
+
+        _outShapeKey.set(*outSrc, outShape);
+    }
+}
+
+}}} // end namespace lsst::meas::base

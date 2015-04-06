@@ -44,6 +44,8 @@
 %convertConfig(lsst::meas::base, GaussianCentroidTransform)
 %convertConfig(lsst::meas::base, SdssCentroidTransform)
 
+%convertConfig(lsst::meas::base, SdssShapeTransform)
+
 %include "lsst/meas/base/Transform.h"
 
 // flux algorithms
