@@ -37,15 +37,18 @@ When a transformer is called, it is handed a `SourceCatalog` containing the
 measurements to be transformed, a `BaseCatalog` in which to store results, and
 information about the WCS and calibration of the data. It may be safely
 assumed that both are contiguous in memory, thus a ColumnView may be used for
-efficient processing.
+efficient processing. If the transformation is not possible, it should be
+aborted by throwing an exception; if this happens, the caller should
+assume that the contents of the output catalog are inconsistent.
 
 Transformations can be defined in Python or in C++. Python code should inherit
-from `MeasurementTransform`, following its interface. C++ code inherits from
-`BaseTransform`. `TransformWrapper` wraps the C++ implementation so that it
-provides a uniform interface with Python.
+from `MeasurementTransform`, following its interface.
 """
 
-__all__ = ("NullTransform", "PassThroughTransform", "TransformWrapper")
+__all__ = ("NullTransform", "PassThroughTransform", "SimpleCentroidTransform")
+from lsst.afw.table import CoordKey
+from lsst.pex.exceptions import LengthError
+from .baseLib import CentroidResultKey
 
 class MeasurementTransform(object):
     """!
@@ -61,6 +64,11 @@ class MeasurementTransform(object):
     def __call__(self, inputCatalog, outputCatalog, wcs, calib):
         raise NotImplementedError()
 
+    @staticmethod
+    def _checkCatalogSize(cat1, cat2):
+        if len(cat1) != len(cat2):
+            raise LengthError("Catalog size mismatch")
+
 
 class NullTransform(MeasurementTransform):
     """!
@@ -70,7 +78,7 @@ class NullTransform(MeasurementTransform):
     transformation is specified.
     """
     def __call__(self, inputCatalog, outputCatalog, wcs, calib):
-        pass
+        self._checkCatalogSize(inputCatalog, outputCatalog)
 
 
 class PassThroughTransform(MeasurementTransform):
@@ -83,21 +91,19 @@ class PassThroughTransform(MeasurementTransform):
             mapper.addMapping(key)
 
     def __call__(self, inputCatalog, outputCatalog, wcs, calib):
-        pass
+        self._checkCatalogSize(inputCatalog, outputCatalog)
 
 
-class TransformWrapper(object):
+class SimpleCentroidTransform(MeasurementTransform):
     """!
-    Wrap a C++-style transformation.
-
-    C++ code requires a `Control`, rather than a `Config`, object. This class
-    converts the latter to the former: when the TransformWrapper is invoked
-    Note that this is only possible for measurement plugins which have control
-    objects defined in C++: pure Python measurement plugins must use Python
-    transformations.
+    Transform a pixel centroid, excluding uncertainties, to celestial coordinates.
     """
-    def __init__(self, transform):
-        self.transform = transform
+    def __init__(self, config, name, mapper):
+        MeasurementTransform.__init__(self, config, name, mapper)
+        self.coordKey = CoordKey.addFields(mapper.editOutputSchema(), name, "Position from " + name)
 
-    def __call__(self, config, name, mapper):
-        return self.transform(config.makeControl(), name, mapper)
+    def __call__(self, inputCatalog, outputCatalog, wcs, calib):
+        self._checkCatalogSize(inputCatalog, outputCatalog)
+        centroidResultKey = CentroidResultKey(inputCatalog.schema[self.name])
+        for inSrc, outSrc in zip(inputCatalog, outputCatalog):
+            self.coordKey.set(outSrc, wcs.pixelToSky(centroidResultKey.get(inSrc).getCentroid()))

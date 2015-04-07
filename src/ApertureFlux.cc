@@ -339,7 +339,7 @@ void ApertureFluxTransform::operator()(
     afw::image::Wcs const & wcs,
     afw::image::Calib const & calib
 ) const {
-    assert(inputCatalog.size() == outputCatalog.size());
+    checkCatalogSize(inputCatalog, outputCatalog);
     std::vector<FluxResultKey> fluxKeys;
     for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
         fluxKeys.push_back(FluxResultKey(inputCatalog.getSchema()[(boost::format("%s_%d") % _name % i).str()]));

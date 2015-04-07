@@ -26,8 +26,10 @@ import unittest
 import lsst.utils.tests
 import lsst.meas.base.tests
 
-class GaussianCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
+from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
+                                  SingleFramePluginTransformSetupHelper)
 
+class GaussianCentroidTestCase(AlgorithmTestCase):
     def setUp(self):
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
@@ -53,6 +55,15 @@ class GaussianCentroidTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         self.assertClose(y, self.center.getY(), atol=None, rtol=.01)
 
 
+class GaussianCentroidTransformTestCase(CentroidTransformTestCase, SingleFramePluginTransformSetupHelper):
+    controlClass = lsst.meas.base.GaussianCentroidControl
+    algorithmClass = lsst.meas.base.GaussianCentroidAlgorithm
+    transformClass = lsst.meas.base.GaussianCentroidTransform
+    flagNames = ('flag', 'flag_noPeak')
+    singleFramePlugins = ('base_GaussianCentroid',)
+    forcedPlugins = ('base_GaussianCentroid',)
+
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
@@ -60,6 +71,7 @@ def suite():
 
     suites = []
     suites += unittest.makeSuite(GaussianCentroidTestCase)
+    suites += unittest.makeSuite(GaussianCentroidTransformTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
 

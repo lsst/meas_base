@@ -499,6 +499,14 @@ MAKE_TWODG(afw::image::Image<float>);
 MAKE_TWODG(afw::image::Image<double>);
 MAKE_TWODG(afw::image::Image<int>);
 
+boost::array<FlagDefinition,GaussianCentroidAlgorithm::N_FLAGS> const & getFlagDefinitions() {
+    static boost::array<FlagDefinition,GaussianCentroidAlgorithm::N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag, set if anything went wrong"},
+        {"flag_noPeak", "Fitted Centroid has a negative peak"}
+    }};
+    return flagDefs;
+}
+
 } // end anonymous namespace
 
 GaussianCentroidAlgorithm::GaussianCentroidAlgorithm(
@@ -507,15 +515,12 @@ GaussianCentroidAlgorithm::GaussianCentroidAlgorithm(
     afw::table::Schema & schema
 ) : _ctrl(ctrl),
     _centroidKey(
-        CentroidResultKey::addFields(schema, name, "centroid from Gaussian Centroid algorithm", SIGMA_ONLY)
+        CentroidResultKey::addFields(schema, name, "centroid from Gaussian Centroid algorithm", NO_UNCERTAINTY)
     ),
     _centroidExtractor(schema, name, true)
 {
-    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag, set if anything went wrong"},
-        {"flag_noPeak", "Fitted Centroid has a negative peak"}
-    }};
-    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+    _flagHandler = FlagHandler::addFields(schema, name,
+                                          getFlagDefinitions().begin(), getFlagDefinitions().end());
 }
 
 
@@ -577,6 +582,19 @@ void GaussianCentroidAlgorithm::fail(afw::table::SourceRecord & measRecord, Meas
 
 MAKE_FIT_CENTROID(afw::image::Image<float>);
 MAKE_FIT_CENTROID(afw::image::Image<double>);
+
+GaussianCentroidTransform::GaussianCentroidTransform(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::SchemaMapper & mapper
+) :
+    CentroidTransform{name, mapper}
+{
+    for (auto flag = getFlagDefinitions().begin() + 1; flag < getFlagDefinitions().end(); ++flag) {
+        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(
+                          mapper.getInputSchema().join(name, flag->name)).key);
+    }
+}
 
 }}} // namespace lsst::meas::base
 

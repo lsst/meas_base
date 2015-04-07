@@ -407,6 +407,17 @@ smoothAndBinImage(CONST_PTR(lsst::afw::detection::Psf) psf,
     return std::make_pair(smoothedImage, smoothingSigma);
 }
 
+boost::array<FlagDefinition,SdssCentroidAlgorithm::N_FLAGS> const & getFlagDefinitions() {
+    static boost::array<FlagDefinition,SdssCentroidAlgorithm::N_FLAGS> const flagDefs = {{
+        {"flag", "general failure flag, set if anything went wrong"},
+        {"flag_edge", "Object too close to edge"},
+        {"flag_noSecondDerivative", "Vanishing second derivative"},
+        {"flag_almostNoSecondDerivative", "Almost vanishing second derivative"},
+        {"flag_notAtMaximum", "Object is not at a maximum"}
+    }};
+    return flagDefs;
+}
+
 }  // end anonymous namespace
 
 SdssCentroidAlgorithm::SdssCentroidAlgorithm(
@@ -419,14 +430,8 @@ SdssCentroidAlgorithm::SdssCentroidAlgorithm(
     ),
     _centroidExtractor(schema, name, true)
 {   
-    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag, set if anything went wrong"},
-        {"flag_edge", "Object too close to edge"},
-        {"flag_noSecondDerivative", "Vanishing second derivative"},
-        {"flag_almostNoSecondDerivative", "Almost vanishing second derivative"},
-        {"flag_notAtMaximum", "Object is not at a maximum"}
-    }};
-    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+    _flagHandler = FlagHandler::addFields(schema, name,
+                                          getFlagDefinitions().begin(), getFlagDefinitions().end());
 }
 void SdssCentroidAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
@@ -530,6 +535,19 @@ void SdssCentroidAlgorithm::measure(
 
 void SdssCentroidAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
     _flagHandler.handleFailure(measRecord, error);
+}
+
+SdssCentroidTransform::SdssCentroidTransform(
+    Control const & ctrl,
+    std::string const & name,
+    afw::table::SchemaMapper & mapper
+) :
+    CentroidTransform{name, mapper}
+{
+    for (auto flag = getFlagDefinitions().begin() + 1; flag < getFlagDefinitions().end(); ++flag) {
+        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(
+                          mapper.getInputSchema().join(name, flag->name)).key);
+    }
 }
 
 }}} // end namespace lsst::meas::base

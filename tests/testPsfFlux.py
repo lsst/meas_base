@@ -30,7 +30,8 @@ import lsst.afw.table
 import lsst.utils.tests
 import lsst.meas.base.tests
 
-from lsst.meas.base.tests import AlgorithmTestCase, TransformTestCase
+from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
+                                  SingleFramePluginTransformSetupHelper)
 
 class PsfFluxTestCase(AlgorithmTestCase):
 
@@ -162,11 +163,11 @@ class PsfFluxTestCase(AlgorithmTestCase):
         self.assertLess(measRecord.get("base_PsfFlux_fluxSigma"), 500.0)
 
 
-class PsfFluxTransformTestCase(TransformTestCase):
+class PsfFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper):
     controlClass = lsst.meas.base.PsfFluxControl
     algorithmClass = lsst.meas.base.PsfFluxAlgorithm
     transformClass = lsst.meas.base.PsfFluxTransform
-    flagNames = ('_flag', '_flag_noGoodPixels', '_flag_edge')
+    flagNames = ('flag', 'flag_noGoodPixels', 'flag_edge')
     singleFramePlugins = ('base_PsfFlux',)
     forcedPlugins = ('base_PsfFlux',)
 

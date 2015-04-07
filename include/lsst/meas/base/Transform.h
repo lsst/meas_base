@@ -32,6 +32,7 @@
 #include <string>
 #include "lsst/afw/image.h"
 #include "lsst/afw/table.h"
+#include "lsst/pex/exceptions.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -70,8 +71,13 @@ namespace lsst { namespace meas { namespace base {
  *  @until // operator()
  *
  *  Note that it is safe to assume that both catalogs passed to `operator()`
- *  are contiguous in memory.
+ *  are contiguous in memory. It is good practice to ensure that they are
+ *  equal in size: this may be conveniently achieved by calling
+ *  `BaseTransform::checkCatalogSize()`.
  *
+ *  `operator()` may throw `LengthError` if the transformation is impossible
+ *  to complete. In this case, the contents of `outputCatalog` is not
+ *  guaranteed.
  */
 class BaseTransform {
 public:
@@ -84,6 +90,20 @@ public:
                             afw::image::Calib const & calib) const = 0;
 
 protected:
+
+    /**
+      *  @brief Ensure that catalogs have the same size.
+      *
+      *  @param[in]  cat1         Catalog for comparison
+      *  @param[in]  cat2         Catalog for comparison
+      *  @throws     LengthError  Catalog sizes do not match
+      */
+    void checkCatalogSize(afw::table::BaseCatalog const & cat1,
+                          afw::table::BaseCatalog const & cat2) const {
+        if (cat1.size() != cat2.size()) {
+            throw LSST_EXCEPT(pex::exceptions::LengthError, "Catalog size mismatch");
+        }
+    }
     std::string _name;
 };
 

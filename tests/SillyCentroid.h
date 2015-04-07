@@ -24,19 +24,9 @@
 #ifndef LSST_MEAS_BASE_SillyCentroid_h_INCLUDED
 #define LSST_MEAS_BASE_SillyCentroid_h_INCLUDED
 
-#include <execinfo.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include "lsst/afw/table.h"
+#include "lsst/meas/base.h"
 #include "lsst/pex/config.h"
-#include "ndarray/eigen.h"
-#include "lsst/afw/table/Source.h"
-#include "lsst/meas/base/Algorithm.h"
-#include "lsst/meas/base/CentroidUtilities.h"
-#include "lsst/meas/base/FlagHandler.h"
-#include "lsst/meas/base/InputUtilities.h"
-#include "lsst/meas/base/Transform.h"
 
 namespace test { namespace foo { namespace bar {
 /**
@@ -154,6 +144,7 @@ public:
                             lsst::afw::table::BaseCatalog & outputCatalog,
                             lsst::afw::image::Wcs const & wcs,
                             lsst::afw::image::Calib const & calib) const {
+        checkCatalogSize(inputCatalog, outputCatalog);
         lsst::afw::table::Key<double> xkey = inputCatalog.getSchema()[_name + "_x"];
         lsst::afw::table::Key<double> ykey = inputCatalog.getSchema()[_name + "_y"];
         lsst::afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();

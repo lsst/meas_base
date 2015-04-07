@@ -35,6 +35,7 @@ from .baseLib import *
 from .sfm import *
 from .forcedMeasurement import *
 from .wrappers import *
+from .transforms import *
 
 # --- Wrapped C++ Plugins ---
 
@@ -44,9 +45,12 @@ wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxContr
                     TransformClass=PeakLikelihoodFluxTransform, executionOrder=2.0)
 wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl,
                     TransformClass=GaussianFluxTransform, executionOrder=2.0)
-wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl, executionOrder=0.0)
-wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl, executionOrder=0.0)
-wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl, executionOrder=0.0)
+wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl,
+                    TransformClass=GaussianCentroidTransform, executionOrder=0.0)
+wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl,
+                    TransformClass=NaiveCentroidTransform, executionOrder=0.0)
+wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl,
+                    TransformClass=SdssCentroidTransform, executionOrder=0.0)
 wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl, executionOrder=2.0)
 wrapSimpleAlgorithm(SdssShapeAlgorithm, Control=SdssShapeControl, executionOrder=1.0)
 
@@ -82,6 +86,9 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
         measRecord.set(self.keyX, peak.getFx())
         measRecord.set(self.keyY, peak.getFy())
 
+    @staticmethod
+    def getTransformClass():
+        return SimpleCentroidTransform
 
 class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
     pass
@@ -215,6 +222,9 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
         measRecord.set(self.keyX, result.getX())
         measRecord.set(self.keyY, result.getY())
 
+    @staticmethod
+    def getTransformClass():
+        return SimpleCentroidTransform
 
 class ForcedTransformedCentroidConfig(ForcedPluginConfig):
     pass

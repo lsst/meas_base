@@ -192,6 +192,15 @@ class FluxTransform : public BaseTransform {
 public:
     FluxTransform(std::string const & name, afw::table::SchemaMapper & mapper);
 
+    /*
+     * @brief Perform transformation from inputCatalog to outputCatalog.
+     *
+     * @param[in]     inputCatalog   Source of data to be transformed
+     * @param[in,out] outputCatalog  Container for transformed results
+     * @param[in]     wcs            World coordinate system under which transformation will take place
+     * @param[in]     calib          Photometric calibration under which transformation will take place
+     * @throws        LengthError    Catalog sizes do not match
+     */
     virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
                             afw::table::BaseCatalog & outputCatalog,
                             afw::image::Wcs const & wcs,

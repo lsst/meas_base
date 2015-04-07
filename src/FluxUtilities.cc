@@ -100,7 +100,7 @@ void FluxTransform::operator()(
     afw::image::Wcs const & wcs,
     afw::image::Calib const & calib
 ) const {
-    assert(inputCatalog.size() == outputCatalog.size());
+    checkCatalogSize(inputCatalog, outputCatalog);
     FluxResultKey fluxKey(inputCatalog.getSchema()[_name]);
     afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
     afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();

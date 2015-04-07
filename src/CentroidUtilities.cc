@@ -130,4 +130,61 @@ void CentroidResultKey::set(afw::table::BaseRecord & record, CentroidResult cons
     }
 }
 
+CentroidTransform::CentroidTransform(
+    std::string const & name,
+    afw::table::SchemaMapper & mapper
+) :
+    BaseTransform{name}
+{
+    // Map the flag through to the output
+    mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(name + "_flag").key);
+
+    // Add keys for the coordinates
+    auto & s = mapper.editOutputSchema();
+    _coordKey = afw::table::CoordKey::addFields(s, name, "ICRS coordinates");
+
+    // If the centroid has an error key we also include one on the celestial
+    // coordinates; otherwise, it isn't necessary. Note that if we provide for
+    // errors in celestial coordinates, we always need the full covariance.
+    if (CentroidResultKey(mapper.getInputSchema()[name]).getCentroidErr().isValid()) {
+        std::vector< afw::table::Key<ErrElement> > sigma(2);
+        std::vector< afw::table::Key<ErrElement> > cov(1);
+        sigma[0] = s.addField<ErrElement>(s.join(name, "raSigma"), "Uncertainty on RA", "radians");
+        sigma[1] = s.addField<ErrElement>(s.join(name, "decSigma"), "Uncertainty on dec", "radians");
+        cov[0] = s.addField<ErrElement>(s.join(name, "ra_dec_Cov"),
+                                             "Uncertainty covariance in RA and dec", "radians^2");
+        _coordErrKey = afw::table::CovarianceMatrixKey<ErrElement,2>(sigma, cov);
+    }
+
+}
+
+void CentroidTransform::operator()(
+    afw::table::SourceCatalog const & inputCatalog,
+    afw::table::BaseCatalog & outputCatalog,
+    afw::image::Wcs const & wcs,
+    afw::image::Calib const & calib
+) const {
+    checkCatalogSize(inputCatalog, outputCatalog);
+    CentroidResultKey centroidResultKey(inputCatalog.getSchema()[_name]);
+
+    afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
+    afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();
+
+    for (; inSrc < inputCatalog.end() && outSrc < outputCatalog.end(); ++inSrc, ++outSrc) {
+        CentroidResult centroidResult = centroidResultKey.get(*inSrc);
+
+        _coordKey.set(*outSrc, *wcs.pixelToSky(centroidResult.getCentroid()));
+
+        if (centroidResultKey.getCentroidErr().isValid()) {
+            CentroidCov centroidCov = centroidResult.getCentroidErr();
+            if (!(utils::isnan(centroidCov(0,0)) || utils::isnan(centroidCov(1,1)))) {
+                auto transform = wcs.linearizePixelToSky(centroidResult.getCentroid(),
+                                                         afw::geom::radians).getLinear().getMatrix();
+                _coordErrKey.set(*outSrc, (transform * centroidResult.getCentroidErr().cast<double>() *
+                                           transform.transpose()).cast<ErrElement>());
+            }
+        }
+    }
+}
+
 }}} // lsst::meas::base

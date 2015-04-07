@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2014 AURA/LSST.
+ * Copyright 2008-2015 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -21,51 +21,24 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-%feature("autodoc", "1");
 %module testLib
 
 %{
-#include "lsst/pex/logging.h"
-#include "lsst/afw/geom.h"
-#include "lsst/afw/math.h"
-#include "lsst/afw/table.h"
-#include "lsst/afw/cameraGeom.h"
-#include "lsst/afw/image.h"
-#include "lsst/afw/detection.h"
-#include "lsst/meas/base.h"
 #include "SillyCentroid.h"
-#define PY_ARRAY_UNIQUE_SYMBOL LSST_MEAS_BASE_NUMPY_ARRAY_API
+#include "lsst/afw/math.h"
+#include "lsst/afw/detection.h"
+#include "lsst/pex/logging.h"
+#define PY_ARRAY_UNIQUE_SYMBOL LSST_MEAS_BASE_TEST_NUMPY_ARRAY_API
 #include "numpy/arrayobject.h"
-#include "ndarray/swig.h"
-#include "ndarray/swig/eigen.h"
-%}
-
-%init %{
-    import_array();
 %}
 
 %include "lsst/p_lsstSwig.i"
-%include "lsst/base.h"
-%include "std_complex.i"
 
-%include "ndarray.i"
-
-%declareNumPyConverters(lsst::meas::base::CentroidCov);
-
-%lsst_exceptions();
-
-%include "std_vector.i"
-%import "lsst/afw/geom/geomLib.i"
 %import "lsst/afw/table/tableLib.i"
 %import "lsst/afw/image/imageLib.i"
-%import "lsst/afw/detection/detectionLib.i"
+%import "lsst/meas/base/baseLib.i"
 %import "lsst/pex/config.h"
-%import "lsst/afw/image/Exposure.h"
 
-%include "lsst/meas/base/constants.h"
-%include "lsst/meas/base/exceptions.i"
-%include "lsst/meas/base/utilities.i"
-%include "lsst/meas/base/Algorithm.h"
-
+%convertConfig(test::foo::bar, SillyTransform)
 %feature("notabstract") test::foo::bar::SillyCentroidAlgorithm;
 %include "SillyCentroid.h"

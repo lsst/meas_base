@@ -27,11 +27,14 @@ import lsst.utils.tests
 import lsst.afw.table
 import lsst.afw.image
 import lsst.afw.detection
+import lsst.afw.geom
 import lsst.afw.geom.ellipses
 import lsst.afw.coord
+import lsst.pex.exceptions
 
 from .sfm import SingleFrameMeasurementTask
 from .forcedMeasurement import ForcedMeasurementTask
+from .baseLib import CentroidResultKey
 
 
 class BlendContext(object):
@@ -580,48 +583,40 @@ class TransformTestCase(lsst.utils.tests.TestCase):
         del self.transform
         del self.outputCat
 
-    def _setupTransform(self):
-        self.control = self.controlClass()
-        inputSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        algo = self.algorithmClass(self.control, self.name, inputSchema)
-        self.inputCat = lsst.afw.table.SourceCatalog(inputSchema)
-        self.mapper = lsst.afw.table.SchemaMapper(inputSchema)
-        self.transform = self.transformClass(self.control, self.name, self.mapper)
-        self.outputCat = lsst.afw.table.BaseCatalog(self.mapper.getOutputSchema())
-
     def _populateCatalog(self, baseNames):
         for flagValue in (True, False):
             record = self.inputCat.addNew()
             for baseName in baseNames:
-                record[baseName + '_flux'], record[baseName + '_fluxSigma'] = numpy.random.random(2)
+                self._setFieldsInRecord(record, baseName)
                 for flagName in self.flagNames:
-                    if baseName + '_' + flagName in record.schema:
-                        record.set(baseName + '_' + flagName, flagValue)
+                    if record.schema.join(baseName, flagName) in record.schema:
+                        record.set(record.schema.join(baseName, flagName), flagValue)
 
     def _checkOutput(self, baseNames):
         for inSrc, outSrc in zip(self.inputCat, self.outputCat):
             for baseName in baseNames:
-                fluxName = baseName + '_flux'
-                fluxSigmaName = baseName + '_fluxSigma'
-                mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[fluxName], inSrc[fluxSigmaName])
-                self.assertEqual(outSrc[baseName + '_mag'], mag)
-                self.assertEqual(outSrc[baseName + '_magErr'], magErr)
+                self._compareFieldsInRecords(inSrc, outSrc, baseName)
                 for flagName in self.flagNames:
-                    keyName = baseName + '_' + flagName
+                    keyName = outSrc.schema.join(baseName, flagName)
                     if keyName in inSrc.schema:
                         self.assertEqual(outSrc.get(keyName), inSrc.get(keyName))
                     else:
                         self.assertFalse(keyName in outSrc.schema)
 
-    def _runTransform(self):
-        self.outputCat.extend(self.inputCat, mapper=self.mapper)
+    def _runTransform(self, doExtend=True):
+        if doExtend:
+            self.outputCat.extend(self.inputCat, mapper=self.mapper)
         self.transform(self.inputCat, self.outputCat, self.calexp.getWcs(), self.calexp.getCalib())
 
     def testTransform(self, baseNames=None):
         """
         Test the operation of the transformation on a catalog containing random data.
 
-        We check that appropriate conversions have been properly applied and that flags have been propagated.
+        We check that:
+
+        * An appropriate exception is raised on an attempt to transform between catalogs with different
+          numbers of rows;
+        * Otherwise, all appropriate conversions are properly appled and that flags have been propagated.
 
         The `baseNames` argument requires some explanation. This should be an iterable of the leading parts of
         the field names for each measurement; that is, everything that appears before `_flux`, `_flag`, etc.
@@ -632,14 +627,15 @@ class TransformTestCase(lsst.utils.tests.TestCase):
 
         @param[in]  baseNames  Iterable of the initial parts of measurement field names.
         """
-
-
         baseNames = baseNames or [self.name]
         self._populateCatalog(baseNames)
+        self.assertRaises(lsst.pex.exceptions.LengthError, self._runTransform, False)
         self._runTransform()
         self._checkOutput(baseNames)
 
     def _checkRegisteredTransform(self, registry, name):
+        # If this is a Python-based transform, we can compare directly; if
+        # it's wrapped C++, we need to compare the wrapped class.
         self.assertEqual(registry[name].PluginClass.getTransformClass(), self.transformClass)
 
     def testRegistration(self):
@@ -650,3 +646,71 @@ class TransformTestCase(lsst.utils.tests.TestCase):
             self._checkRegisteredTransform(lsst.meas.base.SingleFramePlugin.registry, pluginName)
         for pluginName in self.forcedPlugins:
             self._checkRegisteredTransform(lsst.meas.base.ForcedPlugin.registry, pluginName)
+
+
+class SingleFramePluginTransformSetupHelper(object):
+    def _setupTransform(self):
+        self.control = self.controlClass()
+        inputSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
+        algo = self.algorithmClass(self.control, self.name, inputSchema)
+        self.inputCat = lsst.afw.table.SourceCatalog(inputSchema)
+        self.mapper = lsst.afw.table.SchemaMapper(inputSchema)
+        self.transform = self.transformClass(self.control, self.name, self.mapper)
+        self.outputCat = lsst.afw.table.BaseCatalog(self.mapper.getOutputSchema())
+
+
+class ForcedPluginTransformSetupHelper(object):
+    def _setupTransform(self):
+        self.control = self.controlClass()
+        inputMapper = lsst.afw.table.SchemaMapper(lsst.afw.table.SourceTable.makeMinimalSchema(),
+                                                  lsst.afw.table.SourceTable.makeMinimalSchema())
+        algo = self.algorithmClass(self.control, self.name, inputMapper, lsst.daf.base.PropertyList())
+        self.inputCat = lsst.afw.table.SourceCatalog(inputMapper.getOutputSchema())
+        self.mapper = lsst.afw.table.SchemaMapper(inputMapper.getOutputSchema())
+        self.transform = self.transformClass(self.control, self.name, self.mapper)
+        self.outputCat = lsst.afw.table.BaseCatalog(self.mapper.getOutputSchema())
+
+
+class FluxTransformTestCase(TransformTestCase):
+    def _setFieldsInRecord(self, record, name):
+        record[record.schema.join(name, 'flux')] = numpy.random.random()
+        record[record.schema.join(name, 'fluxSigma')] = numpy.random.random()
+
+    def _compareFieldsInRecords(self, inSrc, outSrc, name):
+        fluxName, fluxSigmaName = inSrc.schema.join(name, 'flux'), inSrc.schema.join(name, 'fluxSigma')
+        mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[fluxName], inSrc[fluxSigmaName])
+        self.assertEqual(outSrc[outSrc.schema.join(name, 'mag')], mag)
+        self.assertEqual(outSrc[outSrc.schema.join(name, 'magErr')], magErr)
+
+
+class CentroidTransformTestCase(TransformTestCase):
+    def _setFieldsInRecord(self, record, name):
+        record[record.schema.join(name, 'x')], record[record.schema.join(name, 'y')] = numpy.random.random(2)
+        # Some algorithms set no errors; some set only sigma on x & y; some provide
+        # a full covariance matrix. Set only those which exist in the schema.
+        for fieldSuffix in ('xSigma', 'ySigma', 'x_y_Cov'):
+            fieldName = record.schema.join(name, fieldSuffix)
+            if fieldName in record.schema:
+                record[fieldName] = numpy.random.random()
+
+    def _compareFieldsInRecords(self, inSrc, outSrc, name):
+        centroidResultKey = CentroidResultKey(inSrc.schema[self.name])
+        centroidResult = centroidResultKey.get(inSrc)
+
+        coord = lsst.afw.table.CoordKey(outSrc.schema[self.name]).get(outSrc)
+        coordTruth = self.calexp.getWcs().pixelToSky(centroidResult.getCentroid())
+        self.assertEqual(coordTruth, coord)
+
+        # If the centroid has an associated uncertainty matrix, the coordinate
+        # must have one too, and vice versa.
+        try:
+            coordErr = lsst.afw.table.CovarianceMatrix2fKey(outSrc.schema[self.name],
+                                                            ["ra", "dec"]).get(outSrc)
+        except lsst.pex.exceptions.NotFoundError:
+            self.assertFalse(centroidResultKey.getCentroidErr().isValid())
+        else:
+            transform = self.calexp.getWcs().linearizePixelToSky(coordTruth, lsst.afw.geom.radians)
+            coordErrTruth = numpy.dot(numpy.dot(transform.getLinear().getMatrix(),
+                                                centroidResult.getCentroidErr()),
+                                      transform.getLinear().getMatrix().transpose())
+            numpy.testing.assert_array_almost_equal(numpy.array(coordErrTruth), coordErr)

@@ -38,6 +38,18 @@
 %declareNumPyConverters(lsst::meas::base::CentroidCov);
 %declareNumPyConverters(lsst::meas::base::ShapeCov);
 
+%declareFunctorKey(FluxResult, lsst::meas::base::FluxResult)
+%shared_ptr(lsst::meas::base::FluxResultKey)
+
+%declareFunctorKey(MagResult, lsst::meas::base::MagResult)
+%shared_ptr(lsst::meas::base::MagResultKey)
+
+%declareFunctorKey(CentroidResult, lsst::meas::base::CentroidResult)
+%shared_ptr(lsst::meas::base::CentroidResultKey)
+
+%declareFunctorKey(ShapeResult, lsst::meas::base::ShapeResult)
+%shared_ptr(lsst::meas::base::ShapeResultKey)
+
 %include "lsst/meas/base/FluxUtilities.h"
 %include "lsst/meas/base/CentroidUtilities.h"
 %include "lsst/meas/base/ShapeUtilities.h"

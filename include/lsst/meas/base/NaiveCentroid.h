@@ -96,6 +96,13 @@ private:
     SafeCentroidExtractor _centroidExtractor;
 };
 
+class NaiveCentroidTransform : public CentroidTransform {
+public:
+    typedef NaiveCentroidControl Control;
+
+    NaiveCentroidTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper);
+};
+
 }}} // namespace lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_NaiveCentroid_h_INCLUDED

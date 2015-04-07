@@ -26,6 +26,7 @@
 
 #include "lsst/meas/base/constants.h"
 #include "lsst/afw/table/aggregates.h"
+#include "lsst/meas/base/Transform.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -165,6 +166,39 @@ public:
 private:
     afw::table::PointKey<CentroidElement> _centroid;
     afw::table::CovarianceMatrixKey<ErrElement,2> _centroidErr;
+};
+
+/**
+ *  Base for centroid measurement transformations.
+ *
+ *  Provides a basic transform from centroid plus associated uncertainty to
+ *  celestial position with uncertainty. The basic "flag" attribute for the
+ *  measurement algorithm is propagated to the output.
+ *
+ *  Subclasses should define a constructor which take a Control argument
+ *  corresponding to the measurement algorithm being transformed and ensure
+ *  that any other necessary flags are propagated.
+ */
+class CentroidTransform : public BaseTransform {
+public:
+    CentroidTransform(std::string const & name, afw::table::SchemaMapper & mapper);
+
+    /*
+     * @brief Perform transformation from inputCatalog to outputCatalog.
+     *
+     * @param[in]     inputCatalog   Source of data to be transformed
+     * @param[in,out] outputCatalog  Container for transformed results
+     * @param[in]     wcs            World coordinate system under which transformation will take place
+     * @param[in]     calib          Photometric calibration under which transformation will take place
+     * @throws        LengthError    Catalog sizes do not match
+     */
+    virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
+                            afw::table::BaseCatalog & outputCatalog,
+                            afw::image::Wcs const & wcs,
+                            afw::image::Calib const & calib) const;
+private:
+    afw::table::CoordKey _coordKey;
+    afw::table::CovarianceMatrixKey<ErrElement,2> _coordErrKey;
 };
 
 }}} // lsst::meas::base
