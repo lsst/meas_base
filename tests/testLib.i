@@ -28,8 +28,6 @@
 #include "lsst/afw/math.h"
 #include "lsst/afw/detection.h"
 #include "lsst/pex/logging.h"
-#define PY_ARRAY_UNIQUE_SYMBOL LSST_MEAS_BASE_TEST_NUMPY_ARRAY_API
-#include "numpy/arrayobject.h"
 %}
 
 %include "lsst/p_lsstSwig.i"
