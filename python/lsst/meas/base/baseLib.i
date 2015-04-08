@@ -39,21 +39,18 @@ Basic routines to talk to lsst::meas::base classes
 #include "lsst/afw/image.h"
 #include "lsst/afw/detection.h"
 #include "lsst/meas/base.h"
-#define PY_ARRAY_UNIQUE_SYMBOL LSST_MEAS_BASE_NUMPY_ARRAY_API
-#include "numpy/arrayobject.h"
-#include "ndarray/swig.h"
-#include "ndarray/swig/eigen.h"
-%}
-
-%init %{
-    import_array();
 %}
 
 %include "lsst/p_lsstSwig.i"
+%initializeNumPy(meas_base)
+%{
+#include "ndarray/swig.h"
+#include "ndarray/swig/eigen.h"
+%}
+%include "ndarray.i"
+
 %include "lsst/base.h"
 %include "std_complex.i"
-
-%include "ndarray.i"
 
 %declareNumPyConverters(lsst::meas::base::CentroidCov);
 
