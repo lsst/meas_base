@@ -71,8 +71,8 @@ afw::geom::Point2D extractPeak(afw::table::SourceRecord const & record, std::str
              % name).str()
         );
     }
-    result.setX(footprint->getPeaks().front()->getFx());
-    result.setY(footprint->getPeaks().front()->getFy());
+    result.setX(footprint->getPeaks().front().getFx());
+    result.setY(footprint->getPeaks().front().getFy());
     return result;
 }
 
