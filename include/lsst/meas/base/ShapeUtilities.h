@@ -130,7 +130,8 @@ public:
         afw::table::Schema & schema,
         std::string const & name,
         std::string const & doc,
-        UncertaintyEnum uncertainty
+        UncertaintyEnum uncertainty,
+        afw::table::CoordinateType coordType=afw::table::CoordinateType::PIXEL
     );
 
     /// Default constructor; instance will not be usuable unless subsequently assigned to.
