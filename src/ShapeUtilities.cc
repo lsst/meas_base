@@ -1,6 +1,6 @@
 /*
  * LSST Data Management System
- * Copyright 2008-2014 LSST Corporation.
+ * Copyright 2008-2015 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -76,41 +76,48 @@ ShapeResultKey ShapeResultKey::addFields(
     afw::table::Schema & schema,
     std::string const & name,
     std::string const & doc,
-    UncertaintyEnum uncertainty
+    UncertaintyEnum uncertainty,
+    afw::table::CoordinateType coordType
 ) {
     ShapeResultKey r;
     r._shape = afw::table::QuadrupoleKey::addFields(
         schema,
         name,
         doc,
-        "pixels^2"
+        coordType
     );
     if (uncertainty != NO_UNCERTAINTY) {
         std::vector< afw::table::Key<ErrElement> > sigma(3);
         std::vector< afw::table::Key<ErrElement> > cov;
         sigma[0] = schema.addField<ErrElement>(
-            schema.join(name, "xxSigma"), "1-sigma uncertainty on xx moment", "pixels^2"
+            schema.join(name, "xxSigma"), "1-sigma uncertainty on xx moment",
+            coordType == afw::table::CoordinateType::PIXEL ? "pixels^2" : "radians^2"
         );
         sigma[1] = schema.addField<ErrElement>(
-            schema.join(name, "yySigma"), "1-sigma uncertainty on yy moment", "pixels^2"
+            schema.join(name, "yySigma"), "1-sigma uncertainty on yy moment",
+            coordType == afw::table::CoordinateType::PIXEL ? "pixels^2" : "radians^2"
         );
         sigma[2] = schema.addField<ErrElement>(
-            schema.join(name, "xySigma"), "1-sigma uncertainty on xy moment", "pixels^2"
+            schema.join(name, "xySigma"), "1-sigma uncertainty on xy moment",
+            coordType == afw::table::CoordinateType::PIXEL ? "pixels^2" : "radians^2"
         );
         if (uncertainty == FULL_COVARIANCE) {
             cov.push_back(
                 schema.addField<ErrElement>(
-                    schema.join(name, "xx_yy_Cov"), "uncertainty covariance in xx and yy", "pixels^4"
+                    schema.join(name, "xx_yy_Cov"), "uncertainty covariance in xx and yy",
+                    coordType == afw::table::CoordinateType::PIXEL ? "pixels^4" : "radians^4"
                 )
             );
             cov.push_back(
                 schema.addField<ErrElement>(
-                    schema.join(name, "xx_xy_Cov"), "uncertainty covariance in xx and xy", "pixels^4"
+                    schema.join(name, "xx_xy_Cov"), "uncertainty covariance in xx and xy",
+                    coordType == afw::table::CoordinateType::PIXEL ? "pixels^4" : "radians^4"
                 )
             );
             cov.push_back(
                 schema.addField<ErrElement>(
-                    schema.join(name, "yy_xy_Cov"), "uncertainty covariance in yy and xy", "pixels^4"
+                    schema.join(name, "yy_xy_Cov"), "uncertainty covariance in yy and xy",
+                    coordType == afw::table::CoordinateType::PIXEL ? "pixels^4" : "radians^4"
                 )
             );
         }
@@ -154,6 +161,16 @@ void ShapeResultKey::set(afw::table::BaseRecord & record, ShapeResult const & va
     if (_shapeErr.isValid()) {
         record.set(_shapeErr, value.getShapeErr());
     }
+}
+
+ShapeTrMatrix makeShapeTransformMatrix(afw::geom::LinearTransform const & xform) {
+    typedef afw::geom::LinearTransform LT;
+    Eigen::Matrix<ShapeElement,3,3,Eigen::DontAlign> m;
+    m << xform[LT::XX]*xform[LT::XX], xform[LT::XY]*xform[LT::XY], 2*xform[LT::XX]*xform[LT::XY],
+         xform[LT::YX]*xform[LT::YX], xform[LT::YY]*xform[LT::YY], 2*xform[LT::YX]*xform[LT::YY],
+         xform[LT::XX]*xform[LT::YX], xform[LT::XY]*xform[LT::YY],
+         xform[LT::XX]*xform[LT::YY] + xform[LT::XY]*xform[LT::YX];
+    return m;
 }
 
 }}} // lsst::meas::base

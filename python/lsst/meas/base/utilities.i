@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2014 LSST Corporation.
+ * Copyright 2008-2015 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -37,6 +37,7 @@
 
 %declareNumPyConverters(lsst::meas::base::CentroidCov);
 %declareNumPyConverters(lsst::meas::base::ShapeCov);
+%declareNumPyConverters(lsst::meas::base::ShapeTrMatrix);
 
 %declareFunctorKey(FluxResult, lsst::meas::base::FluxResult)
 %shared_ptr(lsst::meas::base::FluxResultKey)

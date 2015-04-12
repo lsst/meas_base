@@ -225,6 +225,38 @@ public:
 
 };
 
+/**
+ *  Transformation for SdssShape measurements.
+ *
+ *  SdssShape measures not just shape but also flux and centroid. This
+ *  transform operates on the first directly, and delegates to the Flux and
+ *  Centroid transforms for the other two.
+ */
+class SdssShapeTransform : public BaseTransform {
+public:
+    typedef SdssShapeControl Control;
+
+    SdssShapeTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper);
+
+    /*
+     * @brief Perform transformation from inputCatalog to outputCatalog.
+     *
+     * @param[in]     inputCatalog   Source of data to be transformed
+     * @param[in,out] outputCatalog  Container for transformed results
+     * @param[in]     wcs            World coordinate system under which transformation will take place
+     * @param[in]     calib          Photometric calibration under which transformation will take place
+     * @throws        LengthError    Catalog sizes do not match
+     */
+    virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
+                            afw::table::BaseCatalog & outputCatalog,
+                            afw::image::Wcs const & wcs,
+                            afw::image::Calib const & calib) const;
+private:
+    FluxTransform _fluxTransform;
+    CentroidTransform _centroidTransform;
+    ShapeResultKey _outShapeKey;
+};
+
 }}} // namespace lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_SdssShape_h_INCLUDED

@@ -52,7 +52,8 @@ wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl,
 wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl,
                     TransformClass=SdssCentroidTransform, executionOrder=0.0)
 wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl, executionOrder=2.0)
-wrapSimpleAlgorithm(SdssShapeAlgorithm, Control=SdssShapeControl, executionOrder=1.0)
+wrapSimpleAlgorithm(SdssShapeAlgorithm, Control=SdssShapeControl,
+                    TransformClass=SdssShapeTransform, executionOrder=1.0)
 
 wrapSimpleAlgorithm(CircularApertureFluxAlgorithm, needsMetadata=True, Control=ApertureFluxControl,
                     TransformClass=ApertureFluxTransform, executionOrder=2.0)
