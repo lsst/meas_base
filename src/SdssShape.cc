@@ -777,6 +777,18 @@ SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(
     } catch (pex::exceptions::Exception & err) {
         result.flags[FAILURE] = true;
     }
+    if (result.flags[UNWEIGHTED] || result.flags[SHIFT]) {
+        // These are also considered fatal errors in terms of the quality of the results,
+        // even though they do produce some results.
+        result.flags[FAILURE] = true;
+    }
+    if (result.getQuadrupole().getDeterminant() < 0) {
+        if (!result.flags[FAILURE]) {
+            throw LSST_EXCEPT(
+                pex::exceptions::LogicError,
+                "Should not get singular moments unless a flag is set");
+        }
+    }
 
     // getAdaptiveMoments() just computes the zeroth moment in result.flux (and its error in
     // result.fluxSigma, result.flux_xx_Cov, etc.)  That's related to the flux by some geometric
