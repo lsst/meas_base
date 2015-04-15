@@ -150,7 +150,9 @@ afw::geom::ellipses::Quadrupole SafeShapeExtractor::operator()(
         );
     }
     afw::geom::ellipses::Quadrupole result = record.getShape();
-    if (utils::isnan(result.getIxx()) || utils::isnan(result.getIyy()) || utils::isnan(result.getIxy())) {
+    if (utils::isnan(result.getIxx()) || utils::isnan(result.getIyy()) || utils::isnan(result.getIxy())
+        || result.getDeterminant() < 0
+    ) {
         if (!record.getTable()->getShapeFlagKey().isValid()) {
             throw LSST_EXCEPT(
                 pex::exceptions::RuntimeError,
