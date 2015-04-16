@@ -117,7 +117,8 @@ public:
      *
      *  If the Shape slot is flagged and we nevertheless obtain a usable ellipse, we set the current
      *  algorithm's general failure flag, but return the ellipse as well, allowing it to continue while
-     *  indicating that the result may not be reliable.
+     *  indicating that the result may not be reliable.  A singular ellipse (i.e. one with a non-positive
+     *  quadrupole matrix determinant) is treated the same as a NaN ellipse; it is not considered usable.
      */
     afw::geom::ellipses::Quadrupole operator()(
         afw::table::SourceRecord & record,
