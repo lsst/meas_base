@@ -123,7 +123,8 @@ class SdssCentroidTestCase(AlgorithmTestCase):
         # measuring the centriod
         record = catalog[0]
         newFootprint = lsst.afw.detection.Footprint(bbox)
-        newFootprint.getPeaks().push_back(record.getFootprint().getPeaks()[0])
+        peak = record.getFootprint().getPeaks()[0]
+        newFootprint.addPeak(peak.getFx(), peak.getFy(), peak.getPeakValue())
         record.setFootprint(newFootprint)
         # just measure the one object we've prepared for
         task.measure(catalog, subImage)
