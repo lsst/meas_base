@@ -21,6 +21,9 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+#include <cctype> // ::tolower
+#include <algorithm> // std::transform
+
 #include "ndarray/eigen.h"
 
 #include "lsst/afw/detection/Psf.h"
@@ -30,7 +33,6 @@
 
 namespace lsst { namespace meas { namespace base {
 namespace {
-
 template <typename MaskedImageT>
 class FootprintBits : public afw::detection::FootprintFunctor<MaskedImageT> {
 public:
@@ -57,37 +59,65 @@ public:
 private:
     typename MaskedImageT::Mask::Pixel _bits;
 };
-}  // end anonymous namespace
+
+typedef afw::image::MaskedImage<float> MaskedImageF;
+
+void updateFlags(PixelFlagsAlgorithm::KeyMap const & maskFlagToPixelFlag, const FootprintBits<MaskedImageF> & func,
+                 afw::table::SourceRecord & measRecord) {
+        for (auto const & i: maskFlagToPixelFlag) {
+            try {
+                if (func.getBits() & MaskedImageF::Mask::getPlaneBitMask(i.first)) {
+                    measRecord.set(i.second, true);
+                }
+            }
+            catch (pex::exceptions::InvalidParameterError & err) {
+                throw LSST_EXCEPT(FatalAlgorithmError, err.what());
+            }
+        }
+    }
+} // end anonymous namespace
+
 PixelFlagsAlgorithm::PixelFlagsAlgorithm(
     Control const & ctrl,
     std::string const & name,
     afw::table::Schema & schema
-) : _ctrl(ctrl),
-    _centroidExtractor(schema, name)
-{
-    std::vector<FlagDefinition> flagDefs;
-    static boost::array<FlagDefinition,N_FLAGS> const flagDefsArray = {{
-        {"flag", "general failure flag, set if anything went wrong"},
-        {"flag_edge", "Source is outside usable exposure region (masked EDGE or NO_DATA)"},
-        {"flag_interpolated", "Interpolated pixel in the source footprint"},
-        {"flag_interpolatedCenter", "Interpolated pixel in the source center"},
-        {"flag_saturated", "Saturated pixel in the source footprint"},
-        {"flag_saturatedCenter", "Saturated pixel in the source center"},
-        {"flag_cr", "Cosmic ray in the source footprint"},
-        {"flag_crCenter", "Cosmic ray in the source center"},
-        {"flag_bad", "Bad pixel in the source footprint"}
-    }};
-    // Copy the boost array to a vector. This will be unnessisary in c++11
-    // where a std::vector could be used and initialized in the same way the
-    // boost array currently is
-    flagDefs.insert(flagDefs.end(), flagDefsArray.begin(), flagDefsArry.size()); 
-    // Read the contents of configuration, explicitly check if the clipFlag is
-    // true, incase someonen set something silly. If it is extend the flagDefs
-    // array with the clip pixel flag
-    if (ctrl.clipFlag == true){
-        flagDefs.push_back(FlagDefinition("flag_clipped","source's footprint includes clipped pixels"));
+) : _ctrl(ctrl) {
+    // Add generic keys first, which don't correspond to specific mask planes
+    _generalFailureKey = schema.addField<afw::table::Flag>(name + "_flag",
+                                        "general failure flag, set if anything went wring");
+    // Set all the flags that correspond to mask planes anywhere in the footprint
+    _anyKeys["EDGE"] = schema.addField<afw::table::Flag>(name + "_flag_edge",
+                                        "Source is outside usable exposure region (masked EDGE or NO_DATA)");
+    _anyKeys["INTRP"] = schema.addField<afw::table::Flag>(name + "_flag_interpolated",
+                                        "Interpolated pixel in the Source footprint");
+    _anyKeys["SAT"] = schema.addField<afw::table::Flag>(name + "_flag_saturated",
+                                        "Saturated pixel in the Source footprint");
+    _anyKeys["CR"] = schema.addField<afw::table::Flag>(name + "_flag_cr",
+                                        "Cosmic ray in the Source footprint");
+    _anyKeys["BAD"] = schema.addField<afw::table::Flag>(name + "_flag_bad",
+                                        "Bad pixel in the Source footprint");
+    // Flags that correspond to mask bits which occur in the center of the object
+    _centerKeys["INTRP"] = schema.addField<afw::table::Flag>(name + "_flag_interpolatedCenter",
+                                        "Interpolated pixel in the Source center");
+    _centerKeys["SAT"] = schema.addField<afw::table::Flag>(name + "_flag_saturatedCenter",
+                                        "Saturated pixel in the Source center");
+    _centerKeys["CR"] = schema.addField<afw::table::Flag>(name + "_flag_crCenter",
+                                        "Cosmic ray in the Source center");
+
+    // Read in the flags passed from the configuration, and add them to the schema
+    for (auto const & i: _ctrl.masksFpCenter) {
+        std::string maskName(i);
+        std::transform(maskName.begin(), maskName.end(), maskName.begin(), ::tolower);
+        _centerKeys[i] = schema.addField<afw::table::Flag>(name + "_flag_" + maskName + "Center",
+                                        "Source center is close to "+ i + " pixels");
     }
-    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+    
+    for (auto const & i: _ctrl.masksFpAnywhere) {
+        std::string maskName(i);
+        std::transform(maskName.begin(), maskName.end(), maskName.begin(), ::tolower);
+        _anyKeys[i] = schema.addField<afw::table::Flag>(name + "_flag_" + maskName,
+                                        "Source footprint includes " + i + " pixels");
+    }
 }
 
 void PixelFlagsAlgorithm::measure(
@@ -95,63 +125,74 @@ void PixelFlagsAlgorithm::measure(
     afw::image::Exposure<float> const & exposure
 ) const {
 
-    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
-    typedef afw::image::MaskedImage<float> MaskedImageT;
-    MaskedImageT mimage = exposure.getMaskedImage();
+    MaskedImageF mimage = exposure.getMaskedImage();
+    FootprintBits<MaskedImageF> func(mimage);
 
-    FootprintBits<MaskedImageT> func(mimage);
-
-//  Catch NAN in centroid estimate
-    if (lsst::utils::isnan(center.getX()) || lsst::utils::isnan(center.getY())) {
-        throw LSST_EXCEPT(pex::exceptions::InvalidParameterError,
-                          "Center point passed to PixelFlagsALgorithm is NaN");
+    // Check if the measRecord has a valid centroid key, i.e. it was centroided
+    afw::geom::Point2D center;
+    if (measRecord.getTable()->getCentroidKey().isValid()) {
+        center = measRecord.getCentroid();
+        //  Catch NAN in centroid estimate
+        if (lsst::utils::isnan(center.getX()) || lsst::utils::isnan(center.getY())) {
+            throw LSST_EXCEPT(pex::exceptions::RuntimeError,
+                              "Center point passed to PixelFlagsAlgorithm is NaN");
+        }
     }
-//  Catch centroids off the image
+    else {
+        // Set the general failure flag because using the Peak might affect
+        // the current measurement
+        measRecord.set(_generalFailureKey, true);
+        // Attempting to set pixel flags with no centroider, the center will
+        // be determined though the peak pixel. The first peak in the
+        // footprint (supplied by the measurement framework) should be the
+        // highest peak so that one will be used as a proxy for the central
+        // tendency of the distribution of flux for the record.
+        PTR(afw::detection::Footprint) footprint = measRecord.getFootprint();
+        // If there is no footprint or the footprint contains no peaks, throw
+        // a runtime error.
+        if (!footprint || footprint->getPeaks().empty()) {
+            throw LSST_EXCEPT(pex::exceptions::RuntimeError, "No footprint, or no footprint peaks detected");
+        }
+        else {
+            center.setX(footprint->getPeaks().front().getFx());
+            center.setY(footprint->getPeaks().front().getFy());
+        }
+    }
+
+    //  Catch centroids off the image
     if (!mimage.getBBox().contains(afw::geom::Point2I(center))) {
-       _flagHandler.setValue(measRecord, EDGE, true);
+        measRecord.set(_anyKeys.at("EDGE"), true);
     }
+
     // Check for bits set in the source's Footprint
     afw::detection::Footprint const & footprint(*measRecord.getFootprint());
     func.apply(footprint);
-    if (func.getBits() & (MaskedImageT::Mask::getPlaneBitMask("EDGE") |
-                          MaskedImageT::Mask::getPlaneBitMask("NO_DATA"))) {
-        _flagHandler.setValue(measRecord, EDGE, true);
+
+    // Set the EDGE flag if the bitmask has NO_DATA set
+    try {
+        if (func.getBits() & MaskedImageF::Mask::getPlaneBitMask("NO_DATA")) {
+            measRecord.set(_anyKeys.at("EDGE"), true);
+        }
+    } catch (pex::exceptions::InvalidParameterError & err) {
+        throw LSST_EXCEPT(FatalAlgorithmError, err.what());
     }
-    if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("BAD")) {
-        _flagHandler.setValue(measRecord, BAD, true);
-    }
-    if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("INTRP")) {
-        _flagHandler.setValue(measRecord, INTERPOLATED, true);
-    }
-    if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("SAT")) {
-        _flagHandler.setValue(measRecord, SATURATED, true);
-    }
-    if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("CR")) {
-        _flagHandler.setValue(measRecord, CR, true);
-    }
-    if (_ctl.clipFlag == true & func.getBits() & MaskedImageT:Mask:getPlaneBitMask("CLIPPED")){
-        _flagHandler.setValue(measRecord, CLIPPED, true);
-    }
+
+    // update the source record for the any keys
+    updateFlags(_anyKeys, func, measRecord);
+
     // Check for bits set in the 3x3 box around the center
-    afw::geom::Point2I llc(afw::image::positionToIndex(center.getX())-1, afw::image::positionToIndex(center.getY()) - 1);
+    afw::geom::Point2I llc(afw::image::positionToIndex(center.getX()) - 1,
+                           afw::image::positionToIndex(center.getY()) - 1);
 
     afw::detection::Footprint const middle(afw::geom::BoxI(llc, afw::geom::ExtentI(3))); // central 3x3
     func.apply(middle);
-    if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("INTRP")) {
-        _flagHandler.setValue(measRecord, INTERPOLATED_CENTER, true);
-    }
-    if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("SAT")) {
-        _flagHandler.setValue(measRecord, SATURATED_CENTER, true);
-    }
-    if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("CR")) {
-        _flagHandler.setValue(measRecord, CR_CENTER, true);
-    }
-    if (
-    _flagHandler.setValue(measRecord, FAILURE, false);
+
+    // Update the flags which have to do with the center of the footprint
+    updateFlags(_centerKeys, func, measRecord);
 }
 
 void PixelFlagsAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
-    _flagHandler.handleFailure(measRecord, error);
+    measRecord.set(_generalFailureKey, true);
 }
 
 }}} // namespace lsst::meas::base
