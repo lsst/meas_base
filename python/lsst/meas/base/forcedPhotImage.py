@@ -77,9 +77,18 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
     _DefaultName = "processImageForcedTask"
 
     def __init__(self, butler=None, refSchema=None, **kwds):
+        """Initialize the task.
+
+        ForcedPhotImageTask takes two keyword arguments beyond the usual CmdLineTask arguments:
+         - refSchema: the Schema of the reference catalog, passed to the constructor of the references
+           subtask
+         - butler: a butler that will be passed to the references subtask to allow it to load its Schema
+           from disk
+        At least one of these arguments must be present; if both are, schema takes precedence.
+        """
         super(lsst.pipe.base.CmdLineTask, self).__init__(**kwds)
         self.makeSubtask("references", butler=butler, schema=refSchema)
-        if not refSchema:
+        if refSchema is None:
             refSchema = self.references.schema
         self.makeSubtask("measurement", refSchema=refSchema)
 
