@@ -58,6 +58,16 @@ class BaseReferencesTask(lsst.pipe.base.Task):
 
     ConfigClass = BaseReferencesConfig
 
+    def __init__(self, butler=None, schema=None, **kwargs):
+        """!Initialize the task.
+
+        BaseReferencesTask and its subclasses take two keyword arguments beyond the usual Task arguments:
+         - schema: the Schema of the reference catalog
+         - butler: a butler that will allow the task to load its Schema from disk.
+        At least one of these arguments must be present; if both are, schema takes precedence.
+        """
+        lsst.pipe.base.Task.__init__(self, **kwargs)
+
     def getSchema(self, butler):
         """!
         Return the schema for the reference sources.
@@ -151,9 +161,18 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
 
     ConfigClass = CoaddSrcReferencesConfig
 
-    def getSchema(self, butler):
-        """Return the schema of the reference catalog"""
-        return butler.get(self.config.coaddName + "Coadd_src_schema", immediate=True).getSchema()
+    def __init__(self, butler=None, schema=None, **kwargs):
+        """! Initialize the task.
+        Additional keyword arguments (forwarded to BaseReferncesTask.__init__):
+         - schema: the schema of the detection catalogs used as input to this one
+         - butler: a butler used to read the input schema from disk, if schema is None
+        The task will set its own self.schema attribute to the schema of the output merged catalog.
+        """
+        BaseReferencesTask.__init__(self, butler=butler, schema=schema, **kwargs)
+        if schema is None:
+            assert butler is not None, "No butler nor schema provided"
+            schema = butler.get(self.config.coaddName + "Coadd_src_schema", immediate=True).getSchema()
+        self.schema = schema
 
     def getWcs(self, dataRef):
         """Return the WCS for reference sources.  The given dataRef must include the tract in its dataId.

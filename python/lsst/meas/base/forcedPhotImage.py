@@ -74,9 +74,9 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
 
     def __init__(self, butler=None, refSchema=None, **kwds):
         super(lsst.pipe.base.CmdLineTask, self).__init__(**kwds)
-        self.makeSubtask("references")
+        self.makeSubtask("references", butler=butler, schema=refSchema)
         if not refSchema:
-            refSchema = self.references.getSchema(butler)
+            refSchema = self.references.schema
         self.makeSubtask("measurement", refSchema=refSchema)
 
     def run(self, dataRef):
