@@ -30,7 +30,11 @@ from .forcedPhotImage import ProcessImageForcedConfig, ProcessImageForcedTask
 __all__ = ("ForcedPhotCoaddConfig", "ForcedPhotCoaddTask")
 
 class ForcedPhotCoaddConfig(ProcessImageForcedConfig):
-    pass
+    def setDefaults(self):
+        ProcessImageForcedTask.ConfigClass.setDefaults(self)
+        # Because the IDs used in coadd forced photometry *are* the object IDs, we drop the 'object' prefix
+        # that is used in the copied columns in CCD forced photometry.
+        self.copyColumns = dict((k, k) for k in ("id", "parent", "deblend_nchild"))
 
 ## @addtogroup LSST_task_documentation
 ## @{
@@ -79,6 +83,11 @@ class ForcedPhotCoaddTask(ProcessImageForcedTask):
         @param dataRef       Data reference from butler.  The "CoaddId_bits" and "CoaddId"
                              datasets are accessed.  The data ID must have tract and patch keys.
         """
+        # With the default configuration, this IdFactory doesn't do anything, because
+        # the IDs it generates are immediately overwritten by the ID from the reference
+        # catalog (since that's in config.copyColumns).  But we create one here anyway, to
+        # allow us to revert back to the old behavior of generating new forced source IDs,
+        # just by renaming the ID in config.copyColumns to "object_id".
         expBits = dataRef.get(self.config.coaddName + "CoaddId_bits")
         expId = long(dataRef.get(self.config.coaddName + "CoaddId"))
         return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
