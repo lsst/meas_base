@@ -475,7 +475,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
         shape->x = sumx/sum; // update centroid.  N.b. we're not setting errors here
         shape->y = sumy/sum;
 
-        if (fabs(shape->x - xcen0) > shiftmax || fabs(shape->x - ycen0) > shiftmax) {
+        if (fabs(shape->x - xcen0) > shiftmax || fabs(shape->y - ycen0) > shiftmax) {
             shape->flags[SdssShapeAlgorithm::SHIFT] = true;
         }
 /*
