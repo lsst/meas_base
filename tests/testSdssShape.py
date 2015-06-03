@@ -74,6 +74,12 @@ class SdssShapeTestCase(AlgorithmTestCase):
             self.assertFinite(result.xx_xy_Cov)
             self.assertFinite(result.yy_xy_Cov)
 
+            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.FAILURE))
+            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.UNWEIGHTED_BAD))
+            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.UNWEIGHTED))
+            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.SHIFT))
+            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.MAXITER))
+
 
 class SdssShapeTransformTestCase(FluxTransformTestCase, CentroidTransformTestCase,
                                  SingleFramePluginTransformSetupHelper):
