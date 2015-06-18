@@ -1,6 +1,6 @@
 import lsst.pex.config
 
-from .base import generateAlgorithmName
+from .base import generateAlgorithmName, addApCorrName
 from .sfm import SingleFramePlugin, SingleFramePluginConfig
 from .forcedMeasurement import ForcedPlugin, ForcedPluginConfig
 
@@ -74,7 +74,7 @@ def wrapAlgorithmControl(Base, Control, hasMeasureN=False):
 
 
 def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=None,
-                  ConfigClass=None, TransformClass=None, doRegister=True, **kwds):
+                  ConfigClass=None, TransformClass=None, doRegister=True, canApCorr=False, **kwds):
     """!
     Wrap a C++ Algorithm class into a Python Plugin class.
 
@@ -101,6 +101,10 @@ def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=No
                                If None, the default (defined by BasePlugin) is used.
     @param[in] doRegister      If True (the default), register the plugin with Base's registry, allowing it
                                to be used by measurement Tasks.
+    @param[in] canApCorr       Does this algorithm measure a flux that can be aperture corrected?
+                               if True and doRegister is True then add this algorithm's name to the set
+                               retrieved by getApCorrNameSet
+                               names of algorithms that measure fluxes that can be aperture corrected.
     @param[in] **kwds          Additional keyword arguments passed to generateAlgorithmControl, including:
                                - hasMeasureN:  Whether the plugin supports fitting multiple objects at once
                                  (if so, a config option to enable/disable this will be added).
@@ -127,6 +131,8 @@ def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=No
         if name is None:
             name = generateAlgorithmName(AlgClass)
         Base.registry.register(name, PluginClass)
+        if canApCorr:
+          addApCorrName(name)
     return PluginClass
 
 
@@ -158,6 +164,9 @@ def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=
                                - doRegister: If True (the default), register the plugin with
                                  SingleFramePlugin.registry, allowing it to be used by
                                  SingleFrameMeasurementTask.
+                               - canApCorr: does this algorithm measure a flux that can be aperture corrected?
+                                 if True and doRegister is True then add this algorithm's name to the set
+                                 retrieved by getApCorrNameSet
                                - executionOrder: If not None, an override for the default executionOrder for
                                  this plugin (the default is 2.0, which is usually appropriate for fluxes).
 
@@ -226,6 +235,9 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
                                  Config class using the Control argument.
                                - doRegister: If True (the default), register the plugin with
                                  ForcedPlugin.registry, allowing it to be used by ForcedMeasurementTask.
+                               - canApCorr: does this algorithm measure a flux that can be aperture corrected?
+                                 if True and doRegister is True then add this algorithm's name to the set
+                                 retrieved by getApCorrNameSet
                                - executionOrder: If not None, an override for the default executionOrder for
                                  this plugin (the default is 2.0, which is usually appropriate for fluxes).
 
@@ -305,6 +317,9 @@ def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
                                  Config class using the Control argument.
                                - doRegister: If True (the default), register the plugins with Base's
                                  registry, allowing it to be used by measurement Tasks.
+                               - canApCorr: does this algorithm measure a flux that can be aperture corrected?
+                                 if True and doRegister is True then add this algorithm's name to the set
+                                 retrieved by getApCorrNameSet
                                - executionOrder: If not None, an override for the default executionOrder for
                                  this plugin (the default is 2.0, which is usually appropriate for fluxes).
 

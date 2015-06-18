@@ -39,6 +39,28 @@ from .transforms import PassThroughTransform
 # Exceptions that the measurement tasks should always propagate up to their callers
 FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)
 
+# Set of names of algorithms that measure fluxes that can be aperture corrected
+_ApCorrNameSet = set()
+
+def addApCorrName(name):
+    """!Add to the set of field name prefixes for fluxes that should be aperture corrected
+
+    @param[in] name  field name prefix for a flux that should be aperture corrected.
+        The corresponding field names are {name}_flux, {name}_fluxSigma and {name}_flag.
+        For example name "base_PsfFlux" corresponds to fields base_PsfFlux_flux,
+        base_PsfFlux_fluxSigma and base_PsfFlux_flag.
+    """
+    global _ApCorrNameSet
+    _ApCorrNameSet.add(str(name))
+
+def getApCorrNameSet():
+    """!Return a copy of the set of field name prefixes for fluxes that should be aperture corrected
+
+    For example the returned set will likely include "base_PsfFlux" and "base_GaussianFlux".
+    """
+    global _ApCorrNameSet
+    return _ApCorrNameSet.copy()
+
 def generateAlgorithmName(AlgClass):
     """Generate a string name for an algorithm class that strips away terms that are generally redundant
     while (hopefully) remaining easy to trace to the code.
@@ -95,7 +117,7 @@ class PluginRegistry(lsst.pex.config.Registry):
         def __call__(self, config):
             return (self.PluginClass.getExecutionOrder(), self.name, config, self.PluginClass)
 
-    def register(self, name, PluginClass):
+    def register(self, name, PluginClass, canApCorr=False):
         """!
         Register a Plugin class with the given name.
 
@@ -105,14 +127,19 @@ class PluginRegistry(lsst.pex.config.Registry):
         The name will be used as a prefix for all fields produced by the Plugin, and it
         should generally contain the name of the Plugin or Algorithm class itself
         as well as enough of the namespace to make it clear where to find the code.
+
+        Set canApCorr True if this algorithm measure a flux that can be aperture corrected;
+        the name will be added to the set retrieved by getApCorrNameSet.
         """
         lsst.pex.config.Registry.register(self, name, self.Configurable(name, PluginClass))
+        if canApCorr:
+            addApCorrName(name)
 
     def makeField(self, doc, default=None, optional=False, multi=False):
         return lsst.pex.config.RegistryField(doc, self, default, optional, multi)
 
 
-def register(name):
+def register(name, canApCorr=False):
     """!
     A Python decorator that registers a class, using the given name, in its base class's PluginRegistry.
     For example,
@@ -129,7 +156,7 @@ def register(name):
     @endcode
     """
     def decorate(PluginClass):
-        PluginClass.registry.register(name, PluginClass)
+        PluginClass.registry.register(name, PluginClass, canApCorr=canApCorr)
         return PluginClass
     return decorate
 

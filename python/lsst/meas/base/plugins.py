@@ -40,11 +40,11 @@ from .transforms import *
 # --- Wrapped C++ Plugins ---
 
 wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl,
-                    TransformClass=PsfFluxTransform, executionOrder=2.0)
+                    TransformClass=PsfFluxTransform, executionOrder=2.0, canApCorr=True)
 wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxControl,
                     TransformClass=PeakLikelihoodFluxTransform, executionOrder=2.0)
 wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl,
-                    TransformClass=GaussianFluxTransform, executionOrder=2.0)
+                    TransformClass=GaussianFluxTransform, executionOrder=2.0, canApCorr=True)
 wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl,
                     TransformClass=GaussianCentroidTransform, executionOrder=0.0)
 wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl,
