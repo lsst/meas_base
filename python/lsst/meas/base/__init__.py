@@ -9,3 +9,4 @@ from .forcedPhotCcd import *
 from .forcedPhotCoadd import *
 from .transforms import *
 from .measureApCorr import *
+from .applyApCorr import *
