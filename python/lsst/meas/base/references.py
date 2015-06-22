@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2014 LSST Corporation.
+# Copyright 2008-2015 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -18,7 +18,7 @@
 #
 # You should have received a copy of the LSST License Statement and
 # the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
+# see <https://www.lsstcorp.org/LegalNotices/>.
 #
 """
 Subtasks for creating the reference catalogs used in forced measurement.
@@ -164,7 +164,7 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
 
     def __init__(self, butler=None, schema=None, **kwargs):
         """! Initialize the task.
-        Additional keyword arguments (forwarded to BaseReferncesTask.__init__):
+        Additional keyword arguments (forwarded to BaseReferencesTask.__init__):
          - schema: the schema of the detection catalogs used as input to this one
          - butler: a butler used to read the input schema from disk, if schema is None
         The task will set its own self.schema attribute to the schema of the output merged catalog.
