@@ -96,7 +96,7 @@ class TransformTestCase(utilsTests.TestCase):
             self.assertEqual(outSrc[self.pluginName + "_reverse_y"], -1.0 * inSrc[self.pluginName + "_y"])
 
         # Other entries from the source table have not been copied
-        for name in ("id", "coord", "parent"):
+        for name in ("id", "coord_ra", "coord_dec", "parent"):
             self.assertTrue(name in inCat.schema)
             self.assertFalse(name in outCat.schema)
 

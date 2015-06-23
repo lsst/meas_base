@@ -242,8 +242,6 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         @param[in]     **kwds      Keyword arguments forwarded to lsst.pipe.base.Task.__init__
         """
         super(SingleFrameMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
-        if schema.getVersion() == 0:
-            raise lsst.pex.exceptions.LogicError("schema must have version 1 or greater")
         self.schema = schema
         self.initializePlugins(schema=self.schema)
         self.config.slots.setupSchema(self.schema)
