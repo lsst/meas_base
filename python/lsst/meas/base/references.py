@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2014 LSST Corporation.
+# Copyright 2008-2015 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -18,7 +18,7 @@
 #
 # You should have received a copy of the LSST License Statement and
 # the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
+# see <https://www.lsstcorp.org/LegalNotices/>.
 #
 """
 Subtasks for creating the reference catalogs used in forced measurement.
@@ -57,6 +57,16 @@ class BaseReferencesTask(lsst.pipe.base.Task):
     """
 
     ConfigClass = BaseReferencesConfig
+
+    def __init__(self, butler=None, schema=None, **kwargs):
+        """!Initialize the task.
+
+        BaseReferencesTask and its subclasses take two keyword arguments beyond the usual Task arguments:
+         - schema: the Schema of the reference catalog
+         - butler: a butler that will allow the task to load its Schema from disk.
+        At least one of these arguments must be present; if both are, schema takes precedence.
+        """
+        lsst.pipe.base.Task.__init__(self, **kwargs)
 
     def getSchema(self, butler):
         """!
@@ -150,10 +160,20 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
     """
 
     ConfigClass = CoaddSrcReferencesConfig
+    datasetSuffix = "src" # Suffix to add to "Coadd_" for dataset name
 
-    def getSchema(self, butler):
-        """Return the schema of the reference catalog"""
-        return butler.get(self.config.coaddName + "Coadd_src_schema", immediate=True).getSchema()
+    def __init__(self, butler=None, schema=None, **kwargs):
+        """! Initialize the task.
+        Additional keyword arguments (forwarded to BaseReferencesTask.__init__):
+         - schema: the schema of the detection catalogs used as input to this one
+         - butler: a butler used to read the input schema from disk, if schema is None
+        The task will set its own self.schema attribute to the schema of the output merged catalog.
+        """
+        BaseReferencesTask.__init__(self, butler=butler, schema=schema, **kwargs)
+        if schema is None:
+            assert butler is not None, "No butler nor schema provided"
+            schema = butler.get(self.config.coaddName + "Coadd_src_schema", immediate=True).getSchema()
+        self.schema = schema
 
     def getWcs(self, dataRef):
         """Return the WCS for reference sources.  The given dataRef must include the tract in its dataId.
@@ -168,7 +188,7 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
 
         The given dataRef must include the tract in its dataId.
         """
-        dataset = self.config.coaddName + "Coadd_src"
+        dataset = "{}Coadd_{}".format(self.config.coaddName, self.datasetSuffix)
         tract = dataRef.dataId["tract"]
         butler = dataRef.butlerSubset.butler
         for patch in patchList:
@@ -213,3 +233,18 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
         if pad:
             bbox.grow(pad)
         return self.subset(self.fetchInPatches(dataRef, patchList), bbox, wcs)
+
+
+class MultiBandReferencesConfig(CoaddSrcReferencesTask.ConfigClass):
+
+    def validate(self):
+        if self.filter is not None:
+            raise FieldValidationError(field=MultiBandReferencesConfig.filter, config=self,
+                                       msg="Filter should not be set for the multiband processing scheme")
+        CoaddSrcReferencesTask.validate(self)
+
+
+class MultiBandReferencesTask(CoaddSrcReferencesTask):
+    """Loads references from the multiband processing scheme"""
+    ConfigClass = MultiBandReferencesConfig
+    datasetSuffix = "ref"
