@@ -17,7 +17,7 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
         self.cpp.measure(measRecord, exposure)
 
     def measureN(self, measCat, exposure):
-        self.cpp.measureN(measRecord, exposure)
+        self.cpp.measureN(measCat, exposure)
 
     def fail(self, measRecord, error=None):
         self.cpp.fail(measRecord, error.cpp if error is not None else None)
@@ -33,7 +33,7 @@ class WrappedForcedPlugin(ForcedPlugin):
         self.cpp.measureForced(measRecord, exposure, refRecord, refWcs)
 
     def measureN(self, measCat, exposure, refCat, refWcs):
-        self.cpp.measureNForced(measRecord, exposure, refCat, refWcs)
+        self.cpp.measureNForced(measCat, exposure, refCat, refWcs)
 
     def fail(self, measRecord, error=None):
         self.cpp.fail(measRecord, error.cpp if error is not None else None)
