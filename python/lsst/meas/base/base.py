@@ -163,22 +163,26 @@ def register(name, canApCorr=False):
 
 class PluginMap(collections.OrderedDict):
     """!
-    Map of plugins to be run for a task
+    Map of plugins (instances of subclasses of BasePlugin) to be run for a task
 
-    We assume Plugins are added to the PluginMap according to their "Execution Order", so this
+    We assume plugins are added to the PluginMap according to their "Execution Order", so this
     class doesn't actually do any of the sorting (though it does have to maintain that order,
     which it does by inheriting from OrderedDict).
     """
 
     def iter(self):
-        """Call each plugin in the map which has a measure() method
+        """!Return an iterator over plugins for which plugin.config.doMeasure is true
+
+        @note plugin.config.doMeasure is usually a simple boolean class attribute, not a normal Config field.
         """
         for plugin in self.itervalues():
             if plugin.config.doMeasure:
                 yield plugin
 
     def iterN(self):
-        """Call each plugin in the map which has a measureN() method
+        """!Return an iterator over plugins for which plugin.config.doMeasureN is true
+
+        @note plugin.config.doMeasureN is usually a simple boolean class attribute, not a normal Config field.
         """
         for plugin in self.itervalues():
             if plugin.config.doMeasureN:
