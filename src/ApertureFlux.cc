@@ -24,6 +24,7 @@
 #include <numeric>
 
 #include "boost/array.hpp"
+#include "boost/algorithm/string/replace.hpp"
 
 #include "ndarray/eigen.h"
 
@@ -58,6 +59,11 @@ boost::array<FlagDefinition,ApertureFluxAlgorithm::N_FLAGS> const & getFlagDefin
 
 } // anonymous
 
+std::string ApertureFluxAlgorithm::makeFieldPrefix(std::string const & name, double radius) {
+    std::string prefix = (boost::format("%s_%.1f") % name % radius).str();
+    return boost::replace_all_copy(prefix, ".", "_");
+}
+
 ApertureFluxAlgorithm::Keys::Keys(
     afw::table::Schema & schema, std::string const & prefix, std::string const & doc, bool isSinc
 ) :
@@ -83,7 +89,7 @@ ApertureFluxAlgorithm::ApertureFluxAlgorithm(
     _keys.reserve(ctrl.radii.size());
     for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
         metadata.add(name + "_radii", ctrl.radii[i]);
-        std::string prefix = (boost::format("%s_%d") % name % i).str();
+        std::string prefix = ApertureFluxAlgorithm::makeFieldPrefix(name, ctrl.radii[i]);
         std::string doc = (boost::format("flux within %f-pixel aperture") % ctrl.radii[i]).str();
         _keys.push_back(Keys(schema, prefix, doc, ctrl.radii[i] <= ctrl.maxSincRadius));
     }
@@ -324,12 +330,13 @@ ApertureFluxTransform::ApertureFluxTransform(
 {
     for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
         for (auto flag = getFlagDefinitions().begin();
-             flag < getFlagDefinitions().begin() + (_ctrl.radii[i] <= _ctrl.maxSincRadius ? 3 : 2); flag++) {
-            mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(
-                              (boost::format("%s_%d_%s") % name % i % flag->name).str()).key);
+            flag < getFlagDefinitions().begin() + (_ctrl.radii[i] <= _ctrl.maxSincRadius ? 3 : 2); flag++) {
+            mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>((boost::format("%s_%s") %
+                              ApertureFluxAlgorithm::makeFieldPrefix(name, _ctrl.radii[i]) %
+                              flag->name).str()).key);
         }
         _magKeys.push_back(MagResultKey::addFields(mapper.editOutputSchema(),
-                                                   (boost::format("%s_%d") % name % i).str()));
+                           ApertureFluxAlgorithm::makeFieldPrefix(name, _ctrl.radii[i])));
     }
 }
 
@@ -342,7 +349,8 @@ void ApertureFluxTransform::operator()(
     checkCatalogSize(inputCatalog, outputCatalog);
     std::vector<FluxResultKey> fluxKeys;
     for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
-        fluxKeys.push_back(FluxResultKey(inputCatalog.getSchema()[(boost::format("%s_%d") % _name % i).str()]));
+        fluxKeys.push_back(FluxResultKey(inputCatalog.getSchema()[
+                           ApertureFluxAlgorithm::makeFieldPrefix(_name, _ctrl.radii[i])]));
     }
     afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
     afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();

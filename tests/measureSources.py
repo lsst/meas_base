@@ -107,8 +107,9 @@ class MeasureSourcesTestCase(unittest.TestCase):
         source.set("centroid_y", 50+y0)
         plugin.measure(source, exp)
 
-        for i, r in enumerate(radii):
-            currentFlux = source.get("test_%d_flux" % i)
+        for r in radii:
+            currentFlux = source.get("%s_flux" %
+                                     measBase.CircularApertureFluxAlgorithm.makeFieldPrefix("test", r))
             self.assertAlmostEqual(10.0*math.pi*r*r/currentFlux, 1.0, places=4)
 
     def testPeakLikelihoodFlux(self):

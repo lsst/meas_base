@@ -64,7 +64,7 @@ class MeasureApCorrConfig(lsst.pex.config.Config):
     refFluxName = lsst.pex.config.Field(
         doc = "Field name prefix for the flux other measurements should be aperture corrected to match",
         dtype = str,
-        default = "base_CircularApertureFlux_5",
+        default = "base_CircularApertureFlux_17_0",
     )
     inputFilterFlag = lsst.pex.config.Field(
         doc = "Name of a flag field that indicates that a source should be used to constrain the" +
