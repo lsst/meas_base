@@ -74,7 +74,8 @@ def wrapAlgorithmControl(Base, Control, hasMeasureN=False):
 
 
 def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=None,
-                  ConfigClass=None, TransformClass=None, doRegister=True, canApCorr=False, **kwds):
+                  ConfigClass=None, TransformClass=None, doRegister=True, shouldApCorr=False,
+                  apCorrList=(), **kwds):
     """!
     Wrap a C++ Algorithm class into a Python Plugin class.
 
@@ -101,10 +102,19 @@ def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=No
                                If None, the default (defined by BasePlugin) is used.
     @param[in] doRegister      If True (the default), register the plugin with Base's registry, allowing it
                                to be used by measurement Tasks.
-    @param[in] canApCorr       Does this algorithm measure a flux that can be aperture corrected?
-                               if True and doRegister is True then add this algorithm's name to the set
+    @param[in] shouldApCorr    Does this algorithm measure a flux that can be aperture corrected? This is
+                               shorthand for apCorrList=[name] and is ignored if apCorrList is specified.
+    @param[in] apCorrList      List of field name prefixes for flux fields that should be aperture corrected.
+                               If an algorithm produces a single flux that should be
+                               aperture corrected then it is simpler to set shouldApCorr=True. But if an
+                               algorithm produces multiple such fields then it must specify apCorrList,
+                               instead. For example modelfit_CModel produces 3 such fields: apCorrList=
+                                   ("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
+                               If apCorrList is non-empty then shouldApCorr is ignored.                               
+                               If non-empty and doRegister is True then the names are added to the set
                                retrieved by getApCorrNameSet
-                               names of algorithms that measure fluxes that can be aperture corrected.
+
+
     @param[in] **kwds          Additional keyword arguments passed to generateAlgorithmControl, including:
                                - hasMeasureN:  Whether the plugin supports fitting multiple objects at once
                                  (if so, a config option to enable/disable this will be added).
@@ -131,8 +141,8 @@ def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=No
         if name is None:
             name = generateAlgorithmName(AlgClass)
         Base.registry.register(name, PluginClass)
-        if canApCorr:
-          addApCorrName(name)
+        if shouldApCorr:
+            addApCorrName(name)
     return PluginClass
 
 
@@ -164,8 +174,17 @@ def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=
                                - doRegister: If True (the default), register the plugin with
                                  SingleFramePlugin.registry, allowing it to be used by
                                  SingleFrameMeasurementTask.
-                               - canApCorr: does this algorithm measure a flux that can be aperture corrected?
-                                 if True and doRegister is True then add this algorithm's name to the set
+                               - shouldApCorr: does this algorithm measure a flux that can be aperture
+                                 corrected? This is shorthand for apCorrList=[name] and is ignored if
+                                 apCorrList is specified.
+                               - apCorrList: list of field name prefixes for flux fields that should be
+                                 aperture corrected. If an algorithm produces a single flux that should be
+                                 aperture corrected then it is simpler to set shouldApCorr=True. But if an
+                                 algorithm produces multiple such fields then it must specify apCorrList,
+                                 instead. For example modelfit_CModel produces 3 such fields: apCorrList=
+                                   ("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
+                                 If apCorrList is non-empty then shouldApCorr is ignored.                               
+                                 If non-empty and doRegister is True then the names are added to the set
                                  retrieved by getApCorrNameSet
                                - executionOrder: If not None, an override for the default executionOrder for
                                  this plugin (the default is 2.0, which is usually appropriate for fluxes).
@@ -235,8 +254,17 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
                                  Config class using the Control argument.
                                - doRegister: If True (the default), register the plugin with
                                  ForcedPlugin.registry, allowing it to be used by ForcedMeasurementTask.
-                               - canApCorr: does this algorithm measure a flux that can be aperture corrected?
-                                 if True and doRegister is True then add this algorithm's name to the set
+                               - shouldApCorr: does this algorithm measure a flux that can be aperture
+                                 corrected? This is shorthand for apCorrList=[name] and is ignored if
+                                 apCorrList is specified.
+                               - apCorrList: list of field name prefixes for flux fields that should be
+                                 aperture corrected. If an algorithm produces a single flux that should be
+                                 aperture corrected then it is simpler to set shouldApCorr=True. But if an
+                                 algorithm produces multiple such fields then it must specify apCorrList,
+                                 instead. For example modelfit_CModel produces 3 such fields: apCorrList=
+                                   ("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
+                                 If apCorrList is non-empty then shouldApCorr is ignored.                               
+                                 If non-empty and doRegister is True then the names are added to the set
                                  retrieved by getApCorrNameSet
                                - executionOrder: If not None, an override for the default executionOrder for
                                  this plugin (the default is 2.0, which is usually appropriate for fluxes).
@@ -317,8 +345,17 @@ def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
                                  Config class using the Control argument.
                                - doRegister: If True (the default), register the plugins with Base's
                                  registry, allowing it to be used by measurement Tasks.
-                               - canApCorr: does this algorithm measure a flux that can be aperture corrected?
-                                 if True and doRegister is True then add this algorithm's name to the set
+                               - shouldApCorr: does this algorithm measure a flux that can be aperture
+                                 corrected? This is shorthand for apCorrList=[name] and is ignored if
+                                 apCorrList is specified.
+                               - apCorrList: list of field name prefixes for flux fields that should be
+                                 aperture corrected. If an algorithm produces a single flux that should be
+                                 aperture corrected then it is simpler to set shouldApCorr=True. But if an
+                                 algorithm produces multiple such fields then it must specify apCorrList,
+                                 instead. For example modelfit_CModel produces 3 such fields: apCorrList=
+                                   ("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
+                                 If apCorrList is non-empty then shouldApCorr is ignored.                               
+                                 If non-empty and doRegister is True then the names are added to the set
                                  retrieved by getApCorrNameSet
                                - executionOrder: If not None, an override for the default executionOrder for
                                  this plugin (the default is 2.0, which is usually appropriate for fluxes).

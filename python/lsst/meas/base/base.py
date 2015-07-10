@@ -117,29 +117,39 @@ class PluginRegistry(lsst.pex.config.Registry):
         def __call__(self, config):
             return (self.PluginClass.getExecutionOrder(), self.name, config, self.PluginClass)
 
-    def register(self, name, PluginClass, canApCorr=False):
+    def register(self, name, PluginClass, shouldApCorr=False, apCorrList=()):
         """!
         Register a Plugin class with the given name.
 
         The same Plugin may be registered multiple times with different names; this can
         be useful if we often want to run it multiple times with different configuration.
 
-        The name will be used as a prefix for all fields produced by the Plugin, and it
-        should generally contain the name of the Plugin or Algorithm class itself
-        as well as enough of the namespace to make it clear where to find the code.
-
-        Set canApCorr True if this algorithm measure a flux that can be aperture corrected;
-        the name will be added to the set retrieved by getApCorrNameSet.
+        @param[in] name  name of plugin class. This is used as a prefix for all fields produced by the Plugin,
+            and it should generally contain the name of the Plugin or Algorithm class itself
+            as well as enough of the namespace to make it clear where to find the code.
+            For example "base_GaussianFlux" indicates an algorithm in meas_base
+            that measures Gaussian Flux and produces fields such as "base_GaussianFlux_flux",
+            "base_GaussianFlux_fluxSigma" and "base_GaussianFlux_flag".
+        @param[in] shouldApCorr  if True then this algorithm measures a flux that should be aperture
+            corrected. This is shorthand for apCorrList=[name] and is ignored if apCorrList is specified.
+        @param[in] apCorrList  list of field name prefixes for flux fields that should be aperture corrected.
+            If an algorithm produces a single flux that should be aperture corrected then it is simpler
+            to set shouldApCorr=True. But if an algorithm produces multiple such fields then it must
+            specify apCorrList, instead. For example modelfit_CModel produces 3 such fields:
+                apCorrList=("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
+            If apCorrList is non-empty then shouldApCorr is ignored.
         """
         lsst.pex.config.Registry.register(self, name, self.Configurable(name, PluginClass))
-        if canApCorr:
-            addApCorrName(name)
+        if shouldApCorr and not apCorrList:
+            apCorrList = [name]
+        for prefix in apCorrList:
+            addApCorrName(prefix)
 
     def makeField(self, doc, default=None, optional=False, multi=False):
         return lsst.pex.config.RegistryField(doc, self, default, optional, multi)
 
 
-def register(name, canApCorr=False):
+def register(name, shouldApCorr=False):
     """!
     A Python decorator that registers a class, using the given name, in its base class's PluginRegistry.
     For example,
@@ -156,7 +166,7 @@ def register(name, canApCorr=False):
     @endcode
     """
     def decorate(PluginClass):
-        PluginClass.registry.register(name, PluginClass, canApCorr=canApCorr)
+        PluginClass.registry.register(name, PluginClass, shouldApCorr=shouldApCorr)
         return PluginClass
     return decorate
 

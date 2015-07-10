@@ -57,9 +57,9 @@ class ApCorrNameTestCase(unittest.TestCase):
         self.assertEqual(len(nameSet0 - nameSet1), 1)
 
     def testRegisterDecorator(self):
-        """Test the canApCorr argument of the register decorator for measurement plugins
+        """Test the shouldApCorr argument of the register decorator for measurement plugins
         """
-        @lsst.meas.base.register("test_ApCorrPlugin", canApCorr=True)
+        @lsst.meas.base.register("test_ApCorrPlugin", shouldApCorr=True)
         class ApCorrPlugin(lsst.meas.base.SingleFramePlugin):
             pass
 
