@@ -151,12 +151,14 @@ class AlgorithmConfigurationTestCase(utilsTests.TestCase):
         # NB the choice of algorithm and executionOrder is arbitrary
         singleFrame, forced = measBase.wrapSimpleAlgorithm(measBase.PsfFluxAlgorithm,
                                                            Control=measBase.PsfFluxControl,
-                                                           executionOrder=0.0, doRegister=False)
+                                                           executionOrder=measBase.BasePlugin.FLUX_ORDER,
+                                                           doRegister=False)
         self.assertEqual(singleFrame.getTransformClass(), measBase.BasePlugin.getTransformClass())
         # Unless we override
         singleFrame, forced = measBase.wrapSimpleAlgorithm(measBase.PsfFluxAlgorithm,
                                                            Control=measBase.PsfFluxControl,
-                                                           executionOrder=0.0, doRegister=False,
+                                                           executionOrder=measBase.BasePlugin.FLUX_ORDER,
+                                                           doRegister=False,
                                                            TransformClass=measBase.PassThroughTransform)
         self.assertEqual(singleFrame.getTransformClass(), measBase.PassThroughTransform)
 

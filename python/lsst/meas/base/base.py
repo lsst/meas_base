@@ -212,24 +212,28 @@ class BasePlugin(object):
     This is the base class for SingleFramePlugin and ForcedPlugin; derived classes should inherit
     from one of those.
     """
+    # named class constants for execution order
+    CENTROID_ORDER = 0.0
+    SHAPE_ORDER = 1.0
+    FLUX_ORDER = 2.0
+    APCORR_ORDER = 4.0
+    CLASSIFY_ORDER = 5.0
 
-    @staticmethod
-    def getExecutionOrder():
+    @classmethod
+    def getExecutionOrder(cls):
         """Sets the relative order of plugins (smaller numbers run first).
 
-        In general, the following values should be used (intermediate values
+        In general, the following class constants should be used (other values
         are also allowed, but should be avoided unless they are needed):
-        0.0 ------ centroids and other algorithms that require only a Footprint and
-                   its Peaks as input
-        1.0 ------ shape measurements and other algorithms that require
-                   getCentroid() to return a good centroid in addition to a
-                   Footprint and its Peaks.
-        2.0 ------ flux algorithms that require both getShape() and getCentroid()
-                   in addition to the Footprint and its Peaks
-        3.0 ------ algorithms that operate on fluxes (e.g. classification,
-                   aperture correction).
+        CENTROID_ORDER  centroids and other algorithms that require only a Footprint and its Peaks as input
+        SHAPE_ORDER     shape measurements and other algorithms that require getCentroid() to return
+                        a good centroid (in addition to a Footprint and its Peaks).
+        FLUX_ORDER      flux algorithms that require both getShape() and getCentroid(),
+                        in addition to a Footprint and its Peaks
+        APCORR_ORDER    aperture correction
+        CLASSIFY_ORDER  algorithms that operate on aperture-corrected fluxes
 
-        Must be reimplemented (as a static or class method) by concrete derived classes.
+        Must be reimplemented as a class method by concrete derived classes.
 
         This approach was chosen instead of a full graph-based analysis of dependencies
         because algorithm dependencies are usually both quite simple and entirely substitutable:
@@ -422,18 +426,19 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         if self.config.slots.centroid is not None and self.plugins[self.config.slots.centroid] is None:
             del self.plugins[self.config.slots.centroid]
 
-    def callMeasure(self, measRecord, beginOrder=None, endOrder=None, *args, **kwds):
+    def callMeasure(self, measRecord, *args, **kwds):
         """!
         Call the measure() method on all plugins, handling exceptions in a consistent way.
 
         @param[in,out]  measRecord     lsst.afw.table.SourceRecord that corresponds to the object being
                                        measured, and where outputs should be written.
-        @param[in]      beginOrder     beginning execution order (inclusive): measurements with
-                                       executionOrder < beginOrder are not executed. None for no limit.
-        @param[in]      endOrder       ending execution order (exclusive): measurements with
-                                       executionOrder >= endOrder are not executed. None for no limit.
         @param[in]      *args          Positional arguments forwarded to Plugin.measure()
-        @param[in]      **kwds         Keyword arguments forwarded to Plugin.measure()
+        @param[in]      **kwds         Keyword arguments. Two are handled locally:
+                                       - beginOrder: beginning execution order (inclusive): measurements with
+                                         executionOrder < beginOrder are not executed. None for no limit.
+                                       - endOrder: ending execution order (exclusive): measurements with
+                                         executionOrder >= endOrder are not executed. None for no limit.
+                                       the rest are forwarded to Plugin.measure()
 
         This method can be used with plugins that have different signatures; the only requirement is that
         'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are
@@ -441,6 +446,8 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
 
         This method should be considered "protected"; it is intended for use by derived classes, not users.
         """
+        beginOrder = kwds.pop("beginOrder", None)
+        endOrder = kwds.pop("endOrder", None)
         for plugin in self.plugins.iter():
             if beginOrder is not None and plugin.getExecutionOrder() < beginOrder:
                 continue
@@ -457,7 +464,7 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
                               % (plugin.name, measRecord.getId(), error))
                 plugin.fail(measRecord)
 
-    def callMeasureN(self, measCat, beginOrder=None, endOrder=None, *args, **kwds):
+    def callMeasureN(self, measCat, *args, **kwds):
         """!
         Call the measureN() method on all plugins, handling exceptions in a consistent way.
 
@@ -469,7 +476,12 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         @param[in]      endOrder       ending execution order (exclusive): measurements with
                                        executionOrder >= endOrder are not executed. None for no limit.
         @param[in]      *args          Positional arguments forwarded to Plugin.measure()
-        @param[in]      **kwds         Keyword arguments forwarded to Plugin.measure()
+        @param[in]      **kwds         Keyword arguments. Two are handled locally:
+                                       - beginOrder: beginning execution order (inclusive): measurements with
+                                         executionOrder < beginOrder are not executed. None for no limit.
+                                       - endOrder: ending execution order (exclusive): measurements with
+                                         executionOrder >= endOrder are not executed. None for no limit.
+                                       the rest are forwarded to Plugin.measure()
 
         This method can be used with plugins that have different signatures; the only requirement is that
         'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are
@@ -477,6 +489,8 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
 
         This method should be considered "protected"; it is intended for use by derived classes, not users.
         """
+        beginOrder = kwds.pop("beginOrder", None)
+        endOrder = kwds.pop("endOrder", None)
         for plugin in self.plugins.iterN():
             if beginOrder is not None and plugin.getExecutionOrder() < beginOrder:
                 continue
