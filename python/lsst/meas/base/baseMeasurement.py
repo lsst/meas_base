@@ -163,7 +163,7 @@ class SourceSlotConfig(lsst.pex.config.Config):
                                     doc="the name of the algorithm used to set the source psf flux slot")
     instFlux = lsst.pex.config.Field(dtype=str, default="base_GaussianFlux", optional=True,
                                      doc="the name of the algorithm used to set the source inst flux slot")
-    calibFlux = lsst.pex.config.Field(dtype=str, default="base_PsfFlux", optional=True,
+    calibFlux = lsst.pex.config.Field(dtype=str, default="base_CircularApertureFlux_12_0", optional=True,
                                       doc="the name of the flux measurement algorithm used for calibration")
 
     def setupSchema(self, schema):
