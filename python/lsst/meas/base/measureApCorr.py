@@ -1,6 +1,7 @@
+from __future__ import absolute_import, division
 #
 # LSST Data Management System
-# Copyright 2008-2014 LSST Corporation.
+# Copyright 2008-2015 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -23,81 +24,143 @@
 import numpy
 
 import lsst.pex.config
-import lsst.pex.exceptions
-import lsst.afw.image
-import lsst.pipe.base
-
-import math
-
+from lsst.afw.image import ApCorrMap
+from lsst.afw.math import ChebyshevBoundedField, ChebyshevBoundedFieldConfig
+from lsst.pipe.base import Task, Struct
 from .base import getApCorrNameSet
 
 __all__ = ("MeasureApCorrConfig", "MeasureApCorrTask")
 
-class KeyTuple(object):
-
-    __slots__ = ("flux", "err", "flag", "used",)
+class FluxKeys(object):
+    """A collection of keys for a given flux measurement algorithm
+    """
+    __slots__ = ("flux", "err", "flag", "used") # prevent accidentally adding fields
 
     def __init__(self, name, schema):
-        self.flux = schema.find(name).key
-        self.err = schema.find(name + ".err").key
-        self.flag = schema.find(name + ".flags").key
-        self.used = schema.addField("apcorr." + name + ".used", type="Flag",
+        """Construct a FluxKeys
+
+        @parma[in] name  name of flux measurement algorithm, e.g. "base_PsfFlux"
+        @param[in,out] schema  catalog schema containing the flux field
+            read: {name}_flux, {name}_fluxSigma, {name}_flag
+            added: apcorr_{name}_used
+        """
+        self.flux = schema.find(name + "_flux").key
+        self.err = schema.find(name + "_fluxSigma").key
+        self.flag = schema.find(name + "_flag").key
+        self.used = schema.addField("apcorr_" + name + "_used", type="Flag",
                                     doc="set if source was used in measuring aperture correction")
 
+# The following block adds links to these tasks from the Task Documentation page.
+## \addtogroup LSST_task_documentation
+## \{
+## \page measBase_measureApCorrTask
+## \ref MeasureApCorrTask "MeasureApCorrTask"
+##      Task to measure aperture correction
+## \}
+
 class MeasureApCorrConfig(lsst.pex.config.Config):
-    reference = lsst.pex.config.Field(
-        dtype=str, default="flux.naive",
-        doc="Name of the flux field other measurements should be corrected to match"
+    """!Configuration for MeasureApCorrTask
+    """
+    refFluxAlg = lsst.pex.config.Field(
+        doc = "Name of the measurement algorithm for the flux other measurements should be" +
+            " aperture corrected to match",
+        dtype = str,
+        default = "base_CircularApertureFlux_0",
     )
     inputFilterFlag = lsst.pex.config.Field(
-        dtype=str, default="calib.psf.used",
-        doc=("Name of a flag field that indicates that a source should be used to constrain the"
-             " aperture corrections")
+        doc = "Name of a flag field that indicates that a source should be used to constrain the" +
+             " aperture corrections",
+        dtype = str,
+        default = "calib_psfUsed",
     )
-    minDegreesOfFreedom = lsst.pex.config.Field(
-        dtype=int, default=1, check=lambda x: x > 0,
-        doc=("Minimum number of degrees of freedom (# of valid data points - # of parameters);"
-             " if this is exceeded, the order of the fit is decreased (in both dimensions), and"
-             " if we can't decrease it enough, we'll raise ValueError.")
-        )
-    fit = lsst.pex.config.ConfigField(
-        dtype=lsst.afw.math.ChebyshevBoundedFieldConfig,
-        doc="Configuration used in fitting the aperture correction fields"
+    minDegreesOfFreedom = lsst.pex.config.RangeField(
+        doc = "Minimum number of degrees of freedom (# of valid data points - # of parameters);" +
+             " if this is exceeded, the order of the fit is decreased (in both dimensions), and" +
+             " if we can't decrease it enough, we'll raise ValueError.",
+        dtype = int,
+        default = 1,
+        min = 1,
+    )
+    fitConfig = lsst.pex.config.ConfigField(
+        doc = "Configuration used in fitting the aperture correction fields",
+        dtype = ChebyshevBoundedFieldConfig,
     )
     numIter = lsst.pex.config.Field(
-        dtype=int, default=4,
-        doc="Number of iterations for sigma clipping"
+        doc = "Number of iterations for sigma clipping",
+        dtype = int,
+        default = 4,
     )
     numSigmaClip = lsst.pex.config.Field(
-        dtype=float, default=3.0,
-        doc="Number of standard devisations to clip at"
+        doc = "Number of standard devisations to clip at",
+        dtype = float,
+        default = 3.0,
     )
 
-class MeasureApCorrTask(lsst.pipe.base.Task):
+class MeasureApCorrTask(Task):
+    """!Task to measure aperture correction
 
+    \section measBase_MeasureApCorrTask_Contents Contents
+
+     - \ref measBase_MeasureApCorrTask_Purpose 
+     - \ref measBase_MeasureApCorrTask_Config
+     - \ref measBase_MeasureApCorrTask_Debug
+
+    \section measBase_MeasureApCorrTask_Purpose Description
+
+    \copybrief MeasureApCorrTask
+
+    This task measures aperture correction for the flux fields returned by
+    lsst.meas.base.getApCorrNameSet()
+
+    The main method is \ref MeasureApCorrTask.run "run".
+
+    \section measBase_MeasureApCorrTask_Config  Configuration parameters
+
+    See \ref MeasureApCorrConfig
+
+    \section measBase_MeasureApCorrTask_Debug   Debug variables
+
+    This task has no debug variables.
+    """
     ConfigClass = MeasureApCorrConfig
     _DefaultName = "measureApCorr"
 
     def __init__(self, schema, **kwds):
-        lsst.pipe.base.Task.__init__(self, **kwds)
-        self.reference = KeyTuple(self.config.reference, schema)
-        self.toCorrect = {}
+        """!Construct a MeasureApCorrTask
+
+        For every name in lsst.meas.base.getApCorrNameSet():
+        - If the corresponding flux fields exist in the schema:
+            - Add a new field apcorr_{name}_used
+            - Add an entry to the self.toCorrect dict
+        - Otherwise silently skip the name
+        """
+        Task.__init__(self, **kwds)
+        self.refFluxKeys = FluxKeys(self.config.refFluxAlg, schema)
+        self.toCorrect = {} # dict of flux field name prefix: FluxKeys instance
         for name in getApCorrNameSet():
             try:
-                self.toCorrect[name] = KeyTuple(name, schema)
+                self.toCorrect[name] = FluxKeys(name, schema)
             except KeyError:
                 # if a field in the registry is missing, just ignore it.
                 pass
         self.inputFilterFlag = schema.find(self.config.inputFilterFlag).key
 
     def run(self, bbox, catalog):
+        """!Measure aperture correction
 
+        @return an lsst.pipe.base.Struct containing:
+        - apCorrMap: an aperture correction map (lsst.afw.image.ApCorrMap) that contains two entries
+            for each flux field:
+            - flux field (e.g. base_PsfFlux_flux): 2d model
+            - flux sigma field (e.g. base_PsfFlux_fluxSigma): 2d model of error
+        """
+        self.log.info("Measuring aperture corrections for %d flux fields" % (len(self.toCorrect),))
         # First, create a subset of the catalog that contains only objects with inputFilterFlag set
         # and non-flagged reference fluxes.
         subset1 = [record for record in catalog
-                   if record.get(self.inputFilterFlag) and not record.get(self.reference.flag)]
+                   if record.get(self.inputFilterFlag) and not record.get(self.refFluxKeys.flag)]
 
-        apCorrMap = lsst.afw.image.ApCorrMap()
+        apCorrMap = ApCorrMap()
 
         # Outer loop over the fields we want to correct
         for name, keys in self.toCorrect.iteritems():
@@ -113,13 +176,12 @@ class MeasureApCorrTask(lsst.pipe.base.Task):
             if len(subset2) - 1 < self.config.minDegreesOfFreedom:
                 self.log.warn("Only %d sources for calculation of aperture correction for '%s'; "
                               "setting to 1.0" % (len(subset2), name,))
-                apCorrMap[fluxName] = lsst.afw.math.ChebyshevBoundedField(bbox, numpy.ones((1,1), dtype=float))
-                apCorrMap[fluxSigmaName] = \
-                    lsst.afw.math.ChebyshevBoundedField(bbox, numpy.zeros((1,1), dtype=float))
+                apCorrMap[fluxName] = ChebyshevBoundedField(bbox, numpy.ones((1,1), dtype=float))
+                apCorrMap[fluxSigmaName] = ChebyshevBoundedField(bbox, numpy.zeros((1,1), dtype=float))
                 continue
 
             # If we don't have enough data points to constrain the fit, reduce the order until we do
-            ctrl = self.config.fit.makeControl()
+            ctrl = self.config.fitConfig.makeControl()
             while len(subset2) - ctrl.computeSize() < self.config.minDegreesOfFreedom:
                 if ctrl.orderX > 0:
                     ctrl.orderX -= 1
@@ -134,12 +196,12 @@ class MeasureApCorrTask(lsst.pipe.base.Task):
             for n, record in enumerate(subset2):
                 x[n] = record.getX()
                 y[n] = record.getY()
-                apCorrData[n] = record.get(self.reference.flux)/record.get(keys.flux)
+                apCorrData[n] = record.get(self.refFluxKeys.flux)/record.get(keys.flux)
 
             for _i in range(self.config.numIter):
 
                 # Do the fit, save it in the output map
-                apCorrField = lsst.afw.math.ChebyshevBoundedField.fit(bbox, x, y, apCorrData, ctrl)
+                apCorrField = ChebyshevBoundedField.fit(bbox, x, y, apCorrData, ctrl)
 
                 # Compute errors empirically, using the RMS difference between the true reference flux and the
                 # corrected to-be-corrected flux.
@@ -156,7 +218,7 @@ class MeasureApCorrTask(lsst.pipe.base.Task):
                 indices = indices[keep]
 
             # Final fit after clipping
-            apCorrField = lsst.afw.math.ChebyshevBoundedField.fit(bbox, x, y, apCorrData, ctrl)
+            apCorrField = ChebyshevBoundedField.fit(bbox, x, y, apCorrData, ctrl)
 
             self.log.info("Aperture correction for %s: RMS %f from %d" %
                           (name, numpy.mean((apCorrField.evaluate(x, y) - apCorrData)**2)**0.5, len(indices)))
@@ -165,14 +227,14 @@ class MeasureApCorrTask(lsst.pipe.base.Task):
             # The error is constant spatially (we could imagine being
             # more clever, but we're not yet sure if it's worth the effort).
             # We save the errors as a 0th-order ChebyshevBoundedField
-            apCorrMap[name] = apCorrField
+            apCorrMap[fluxName] = apCorrField
             apCorrErrCoefficients = numpy.array([[apCorrErr]], dtype=float)
-            apCorrMap[fluxSigmaName] = lsst.afw.math.ChebyshevBoundedField(bbox, apCorrErrCoefficients)
+            apCorrMap[fluxSigmaName] = ChebyshevBoundedField(bbox, apCorrErrCoefficients)
 
             # Record which sources were used
             for i in indices:
                 subset2[i].set(keys.used, True)
 
-        return lsst.pipe.base.Struct(
+        return Struct(
             apCorrMap = apCorrMap,
         )
