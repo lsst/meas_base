@@ -418,12 +418,16 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         if self.config.slots.centroid is not None and self.plugins[self.config.slots.centroid] is None:
             del self.plugins[self.config.slots.centroid]
 
-    def callMeasure(self, measRecord, *args, **kwds):
+    def callMeasure(self, measRecord, beginOrder=None, endOrder=None, *args, **kwds):
         """!
         Call the measure() method on all plugins, handling exceptions in a consistent way.
 
         @param[in,out]  measRecord     lsst.afw.table.SourceRecord that corresponds to the object being
                                        measured, and where outputs should be written.
+        @param[in]      beginOrder     beginning execution order (inclusive): measurements with
+                                       executionOrder < beginOrder are not executed. None for no limit.
+        @param[in]      endOrder       ending execution order (exclusive): measurements with
+                                       executionOrder >= endOrder are not executed. None for no limit.
         @param[in]      *args          Positional arguments forwarded to Plugin.measure()
         @param[in]      **kwds         Keyword arguments forwarded to Plugin.measure()
 
@@ -434,6 +438,10 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         This method should be considered "protected"; it is intended for use by derived classes, not users.
         """
         for plugin in self.plugins.iter():
+            if beginOrder is not None and plugin.getExecutionOrder() < beginOrder:
+                continue
+            if endOrder is not None and plugin.getExecutionOrder() >= endOrder:
+                break
             try:
                 plugin.measure(measRecord, *args, **kwds)
             except FATAL_EXCEPTIONS:
@@ -445,13 +453,17 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
                               % (plugin.name, measRecord.getId(), error))
                 plugin.fail(measRecord)
 
-    def callMeasureN(self, measCat, *args, **kwds):
+    def callMeasureN(self, measCat, beginOrder=None, endOrder=None, *args, **kwds):
         """!
         Call the measureN() method on all plugins, handling exceptions in a consistent way.
 
         @param[in,out]  measCat        lsst.afw.table.SourceCatalog containing records for just
                                        the source family to be measured, and where outputs should
                                        be written.
+        @param[in]      beginOrder     beginning execution order (inclusive): measurements with
+                                       executionOrder < beginOrder are not executed. None for no limit.
+        @param[in]      endOrder       ending execution order (exclusive): measurements with
+                                       executionOrder >= endOrder are not executed. None for no limit.
         @param[in]      *args          Positional arguments forwarded to Plugin.measure()
         @param[in]      **kwds         Keyword arguments forwarded to Plugin.measure()
 
@@ -462,6 +474,10 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         This method should be considered "protected"; it is intended for use by derived classes, not users.
         """
         for plugin in self.plugins.iterN():
+            if beginOrder is not None and plugin.getExecutionOrder() < beginOrder:
+                continue
+            if endOrder is not None and plugin.getExecutionOrder() >= endOrder:
+                break
             try:
                 plugin.measureN(measCat, *args, **kwds)
             except FATAL_EXCEPTIONS:
