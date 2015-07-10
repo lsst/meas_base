@@ -29,7 +29,7 @@ import lsst.pipe.base
 
 import math
 
-from . import algorithmsLib
+from .base import getApCorrNameSet
 
 __all__ = ("MeasureApCorrConfig", "MeasureApCorrTask")
 
@@ -82,7 +82,7 @@ class MeasureApCorrTask(lsst.pipe.base.Task):
         lsst.pipe.base.Task.__init__(self, **kwds)
         self.reference = KeyTuple(self.config.reference, schema)
         self.toCorrect = {}
-        for name in algorithmsLib.getApCorrRegistry():
+        for name in getApCorrNameSet():
             try:
                 self.toCorrect[name] = KeyTuple(name, schema)
             except KeyError:
@@ -101,6 +101,8 @@ class MeasureApCorrTask(lsst.pipe.base.Task):
 
         # Outer loop over the fields we want to correct
         for name, keys in self.toCorrect.iteritems():
+            fluxName = name + "_flux"
+            fluxSigmaName = name + "_fluxSigma"
 
             # Create a more restricted subset with only the objects where the to-be-correct flux
             # is not flagged.
@@ -111,8 +113,8 @@ class MeasureApCorrTask(lsst.pipe.base.Task):
             if len(subset2) - 1 < self.config.minDegreesOfFreedom:
                 self.log.warn("Only %d sources for calculation of aperture correction for '%s'; "
                               "setting to 1.0" % (len(subset2), name,))
-                apCorrMap[name] = lsst.afw.math.ChebyshevBoundedField(bbox, numpy.ones((1,1), dtype=float))
-                apCorrMap[name + ".err"] = \
+                apCorrMap[fluxName] = lsst.afw.math.ChebyshevBoundedField(bbox, numpy.ones((1,1), dtype=float))
+                apCorrMap[fluxSigmaName] = \
                     lsst.afw.math.ChebyshevBoundedField(bbox, numpy.zeros((1,1), dtype=float))
                 continue
 
@@ -165,10 +167,12 @@ class MeasureApCorrTask(lsst.pipe.base.Task):
             # We save the errors as a 0th-order ChebyshevBoundedField
             apCorrMap[name] = apCorrField
             apCorrErrCoefficients = numpy.array([[apCorrErr]], dtype=float)
-            apCorrMap[name + ".err"] = lsst.afw.math.ChebyshevBoundedField(bbox, apCorrErrCoefficients)
+            apCorrMap[fluxSigmaName] = lsst.afw.math.ChebyshevBoundedField(bbox, apCorrErrCoefficients)
 
             # Record which sources were used
             for i in indices:
                 subset2[i].set(keys.used, True)
 
-        return apCorrMap
+        return lsst.pipe.base.Struct(
+            apCorrMap = apCorrMap,
+        )
