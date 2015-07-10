@@ -40,20 +40,20 @@ from .transforms import *
 # --- Wrapped C++ Plugins ---
 
 wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl,
-                    TransformClass=PsfFluxTransform, executionOrder=BasePlugin.FLUX_ORDER, canApCorr=True)
+                TransformClass=PsfFluxTransform, executionOrder=BasePlugin.FLUX_ORDER, shouldApCorr=True)
 wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxControl,
-                    TransformClass=PeakLikelihoodFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
+                TransformClass=PeakLikelihoodFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl,
-                    TransformClass=GaussianFluxTransform, executionOrder=BasePlugin.FLUX_ORDER, canApCorr=True)
+                TransformClass=GaussianFluxTransform, executionOrder=BasePlugin.FLUX_ORDER, shouldApCorr=True)
 wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl,
-                    TransformClass=GaussianCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
+                TransformClass=GaussianCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
 wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl,
-                    TransformClass=NaiveCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
+                TransformClass=NaiveCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
 wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl,
-                    TransformClass=SdssCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
+                TransformClass=SdssCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
 wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl, executionOrder=BasePlugin.FLUX_ORDER)
 wrapSimpleAlgorithm(SdssShapeAlgorithm, Control=SdssShapeControl,
-                    TransformClass=SdssShapeTransform, executionOrder=BasePlugin.SHAPE_ORDER)
+                TransformClass=SdssShapeTransform, executionOrder=BasePlugin.SHAPE_ORDER)
 
 wrapSimpleAlgorithm(CircularApertureFluxAlgorithm, needsMetadata=True, Control=ApertureFluxControl,
                     TransformClass=ApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
