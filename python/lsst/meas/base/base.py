@@ -323,6 +323,8 @@ class SourceSlotConfig(lsst.pex.config.Config):
                                     doc="the name of the algorithm used to set the source psf flux slot")
     instFlux = lsst.pex.config.Field(dtype=str, default="base_GaussianFlux", optional=True,
                                      doc="the name of the algorithm used to set the source inst flux slot")
+    calibFlux = lsst.pex.config.Field(dtype=str, default="base_PsfFlux", optional=True,
+                                      doc="the name of the flux measurement algorithm used for calibration")
 
     def setupSchema(self, schema):
         """Convenience method to setup a Schema's slots according to the config definition.
@@ -337,6 +339,7 @@ class SourceSlotConfig(lsst.pex.config.Config):
         if self.modelFlux is not None: aliases.set("slot_ModelFlux", self.modelFlux)
         if self.psfFlux is not None: aliases.set("slot_PsfFlux", self.psfFlux)
         if self.instFlux is not None: aliases.set("slot_InstFlux", self.instFlux)
+        if self.calibFlux is not None: aliases.set("slot_CalibFlux", self.calibFlux)
 
 
 class BaseMeasurementConfig(lsst.pex.config.Config):
@@ -363,7 +366,8 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
             raise ValueError("source centroid slot algorithm is not being run.")
         if self.slots.shape is not None and self.slots.shape not in self.plugins.names:
             raise ValueError("source shape slot algorithm '%s' is not being run." % self.slots.shape)
-        for slot in (self.slots.psfFlux, self.slots.apFlux, self.slots.modelFlux, self.slots.instFlux):
+        for slot in (self.slots.psfFlux, self.slots.apFlux, self.slots.modelFlux,
+                     self.slots.instFlux, self.slots.calibFlux):
             if slot is not None:
                 for name in self.plugins.names:
                     if len(name) <= len(slot) and name == slot[:len(name)]:

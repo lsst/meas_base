@@ -485,6 +485,7 @@ class AlgorithmTestCase(lsst.utils.tests.TestCase):
         config.slots.apFlux = None
         config.slots.psfFlux = None
         config.slots.instFlux = None
+        config.slots.calibFlux = None
         config.plugins.names = (plugin,) + tuple(dependencies)
         return config
 
