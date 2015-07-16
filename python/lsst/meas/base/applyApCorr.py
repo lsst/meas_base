@@ -22,6 +22,8 @@ from __future__ import absolute_import, division
 #
 import math
 
+import numpy
+
 import lsst.pex.config
 import lsst.pex.exceptions
 import lsst.afw.image
@@ -131,6 +133,9 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
 
         @param[in,out] catalog  catalog of sources
         @param[in] apCorrMap  aperture correction map (an lsst.afw.image.ApCorrMap)
+
+        If you show debug-level log messages then you will see statistics for the effects of
+        aperture correction.
         """
         self.log.info("Applying aperture corrections to %d flux fields" % (len(self.apCorrInfoDict),))
         if UseNaiveFluxSigma:
@@ -183,3 +188,14 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                 source.set(apCorrInfo.apCorrFlagKey, False)
                 if self.config.doFlagApCorrFailures:
                     source.set(apCorrInfo.fluxFlagKey, oldFluxFlagState)
+
+            if self.log.getThreshold() <= self.log.DEBUG:
+                # log statistics on the effects of aperture correction
+                apCorrArr = numpy.array([s.get(apCorrInfo.apCorrKey) for s in catalog])
+                apCorrSigmaArr = numpy.array([s.get(apCorrInfo.apCorrSigmaKey) for s in catalog])
+                self.log.logdebug("For flux field %r: mean apCorr=%s, stdDev apCorr=%s,"
+                    " mean apCorrSigma=%s, stdDev apCorrSigma=%s for %s sources" %
+                    (apCorrInfo.name, apCorrArr.mean(), apCorrArr.std(),
+                    apCorrSigmaArr.mean(), apCorrSigmaArr.std(), len(catalog)))
+
+
