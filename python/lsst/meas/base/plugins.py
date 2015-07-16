@@ -40,23 +40,23 @@ from .transforms import *
 # --- Wrapped C++ Plugins ---
 
 wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl,
-                    TransformClass=PsfFluxTransform, executionOrder=2.0)
+                TransformClass=PsfFluxTransform, executionOrder=BasePlugin.FLUX_ORDER, shouldApCorr=True)
 wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxControl,
-                    TransformClass=PeakLikelihoodFluxTransform, executionOrder=2.0)
+                TransformClass=PeakLikelihoodFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl,
-                    TransformClass=GaussianFluxTransform, executionOrder=2.0)
+                TransformClass=GaussianFluxTransform, executionOrder=BasePlugin.FLUX_ORDER, shouldApCorr=True)
 wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl,
-                    TransformClass=GaussianCentroidTransform, executionOrder=0.0)
+                TransformClass=GaussianCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
 wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl,
-                    TransformClass=NaiveCentroidTransform, executionOrder=0.0)
+                TransformClass=NaiveCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
 wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl,
-                    TransformClass=SdssCentroidTransform, executionOrder=0.0)
-wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl, executionOrder=2.0)
+                TransformClass=SdssCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
+wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl, executionOrder=BasePlugin.FLUX_ORDER)
 wrapSimpleAlgorithm(SdssShapeAlgorithm, Control=SdssShapeControl,
-                    TransformClass=SdssShapeTransform, executionOrder=1.0)
+                TransformClass=SdssShapeTransform, executionOrder=BasePlugin.SHAPE_ORDER)
 
 wrapSimpleAlgorithm(CircularApertureFluxAlgorithm, needsMetadata=True, Control=ApertureFluxControl,
-                    TransformClass=ApertureFluxTransform, executionOrder=2.0)
+                    TransformClass=ApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 
 # --- Single-Frame Measurement Plugins ---
 
@@ -73,9 +73,9 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
 
     ConfigClass = SingleFramePeakCentroidConfig
 
-    @staticmethod
-    def getExecutionOrder():
-        return 0.0
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.CENTROID_ORDER
 
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
@@ -103,9 +103,9 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
 
     ConfigClass = SingleFrameSkyCoordConfig
 
-    @staticmethod
-    def getExecutionOrder():
-        return 1.0
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.SHAPE_ORDER
 
     def measure(self, measRecord, exposure):
         # there should be a base class method for handling this exception. Put this on a later ticket
@@ -145,9 +145,9 @@ class SingleFrameClassificationPlugin(SingleFramePlugin):
 
     ConfigClass = SingleFrameClassificationConfig
 
-    @staticmethod
-    def getExecutionOrder():
-        return 5.0
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.CLASSIFY_ORDER
 
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
@@ -204,9 +204,9 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
 
     ConfigClass = ForcedPeakCentroidConfig
 
-    @staticmethod
-    def getExecutionOrder():
-        return 0.0
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.CENTROID_ORDER
 
     def __init__(self, config, name, schemaMapper, metadata):
         ForcedPlugin.__init__(self, config, name, schemaMapper, metadata)
@@ -240,9 +240,9 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
 
     ConfigClass = ForcedTransformedCentroidConfig
 
-    @staticmethod
-    def getExecutionOrder():
-        return 0.0
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.CENTROID_ORDER
 
     def __init__(self, config, name, schemaMapper, metadata):
         ForcedPlugin.__init__(self, config, name, schemaMapper, metadata)
@@ -286,9 +286,9 @@ class ForcedTransformedShapePlugin(ForcedPlugin):
 
     ConfigClass = ForcedTransformedShapeConfig
 
-    @staticmethod
-    def getExecutionOrder():
-        return 1.0
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.SHAPE_ORDER
 
     def __init__(self, config, name, schemaMapper, metadata):
         ForcedPlugin.__init__(self, config, name, schemaMapper, metadata)

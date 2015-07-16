@@ -48,7 +48,7 @@ lsst.meas.base.wrapSimpleAlgorithm(
     # normally this is unnecessary
     name="testLib_SillyCentroid",
     Control=testLib.SillyCentroidControl,
-    executionOrder=0.0
+    executionOrder=lsst.meas.base.BasePlugin.CENTROID_ORDER,
 )
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

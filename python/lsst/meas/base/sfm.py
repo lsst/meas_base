@@ -247,7 +247,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         self.config.slots.setupSchema(self.schema)
 
 
-    def run(self, measCat, exposure, noiseImage=None, exposureId=None):
+    def run(self, measCat, exposure, noiseImage=None, exposureId=None, beginOrder=None, endOrder=None):
         """!
         Run single frame measurement over an exposure and source catalog
 
@@ -261,6 +261,10 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
                                  noiseReplacement
         @param[in] exposureId    optional unique exposureId used to calculate random number
                                  generator seed in the NoiseReplacer.
+        @param[in] beginOrder    beginning execution order (inclusive): measurements with
+                                 executionOrder < beginOrder are not executed. None for no limit.
+        @param[in] endOrder      ending execution order (exclusive): measurements with
+                                 executionOrder >= endOrder are not executed. None for no limit.
         """
         # Temporary workaround for change in order of arguments; will be removed when transition
         # from meas_algorithms to meas_base is complete.
@@ -302,14 +306,15 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
             # TODO: skip this loop if there are no plugins configured for single-object mode
             for measChildRecord in measChildCat:
                 noiseReplacer.insertSource(measChildRecord.getId())
-                self.callMeasure(measChildRecord, exposure)
+                self.callMeasure(measChildRecord, exposure, beginOrder=beginOrder, endOrder=endOrder)
                 noiseReplacer.removeSource(measChildRecord.getId())
             # Then insert the parent footprint, and measure that
             noiseReplacer.insertSource(measParentRecord.getId())
-            self.callMeasure(measParentRecord, exposure)
+            self.callMeasure(measParentRecord, exposure, beginOrder=beginOrder, endOrder=endOrder)
             # Finally, process both the parent and the child set through measureN
-            self.callMeasureN(measParentCat[parentIdx:parentIdx+1], exposure)
-            self.callMeasureN(measChildCat, exposure)
+            self.callMeasureN(measParentCat[parentIdx:parentIdx+1], exposure,
+                    beginOrder=beginOrder, endOrder=endOrder)
+            self.callMeasureN(measChildCat, exposure, beginOrder=beginOrder, endOrder=endOrder)
             noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
         noiseReplacer.end()
