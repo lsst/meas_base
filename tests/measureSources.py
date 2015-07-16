@@ -240,10 +240,12 @@ class MeasureSourcesTestCase(unittest.TestCase):
         interp = mask.getPlaneBitMask('INTRP')
         edge = mask.getPlaneBitMask('EDGE')
         bad = mask.getPlaneBitMask('BAD')
+        nodata = mask.getPlaneBitMask('NO_DATA')
         mask.set(0)
         mask.set(20, 20, sat)
         mask.set(60, 60, interp)
         mask.set(40, 20, bad)
+        mask.set(20, 80, nodata)
         mask.Factory(mask, afwGeom.Box2I(afwGeom.Point2I(0,0), afwGeom.Extent2I(3, height))).set(edge)
         x0, y0 = 1234, 5678
         exp.setXY0(afwGeom.Point2I(x0, y0))
@@ -268,6 +270,7 @@ class MeasureSourcesTestCase(unittest.TestCase):
                                (60, 60, [measBase.PixelFlagsAlgorithm.INTERPOLATED_CENTER, 
                                          measBase.PixelFlagsAlgorithm.INTERPOLATED]),
                                (60, 62, [measBase.PixelFlagsAlgorithm.INTERPOLATED]),
+                               (20, 80, [measBase.PixelFlagsAlgorithm.EDGE]),
             ]:
             foot = afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5)
             source = cat.makeRecord()

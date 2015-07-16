@@ -67,7 +67,7 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(
 {
     static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag, set if anything went wrong"},
-        {"flag_edge", "Could not use full PSF model image in fit because of proximity to exposure border"},
+        {"flag_edge", "Source is outside usable exposure region (masked EDGE or NO_DATA)"},
         {"flag_interpolated", "Interpolated pixel in the source footprint"},
         {"flag_interpolatedCenter", "Interpolated pixel in the source center"},
         {"flag_saturated", "Saturated pixel in the source footprint"},
@@ -102,7 +102,8 @@ void PixelFlagsAlgorithm::measure(
     // Check for bits set in the source's Footprint
     afw::detection::Footprint const & footprint(*measRecord.getFootprint());
     func.apply(footprint);
-    if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("EDGE")) {
+    if (func.getBits() & (MaskedImageT::Mask::getPlaneBitMask("EDGE") |
+                          MaskedImageT::Mask::getPlaneBitMask("NO_DATA"))) {
         _flagHandler.setValue(measRecord, EDGE, true);
     }
     if (func.getBits() & MaskedImageT::Mask::getPlaneBitMask("BAD")) {
