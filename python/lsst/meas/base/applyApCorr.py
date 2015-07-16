@@ -28,6 +28,12 @@ import lsst.afw.image
 import lsst.pipe.base
 from .base import getApCorrNameSet
 
+# If True then scale flux sigma by apCorr; if False then use a more complex computation
+# that over-estimates flux error (often grossly so) because it double-counts photon noise.
+# This flag is intended to be temporary until we figure out a better way to compute
+# the effects of aperture correction on flux uncertainty
+UseNaiveFluxSigma = True
+
 __all__ = ("ApplyApCorrConfig", "ApplyApCorrTask")
 
 class ApCorrInfo(object):
@@ -127,6 +133,11 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
         @param[in] apCorrMap  aperture correction map (an lsst.afw.image.ApCorrMap)
         """
         self.log.info("Applying aperture corrections to %d flux fields" % (len(self.apCorrInfoDict),))
+        if UseNaiveFluxSigma:
+            self.log.info("Use naive flux sigma computation")
+        else:
+            self.log.info("Use complex flux sigma computation that double-counts photon noise "
+                " and thus over-estimates flux uncertainty")
         for apCorrInfo in self.apCorrInfoDict.itervalues():
             try:
                 apCorrModel = apCorrMap.get(apCorrInfo.fluxName)
@@ -150,7 +161,8 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                 apCorrSigma = 0.0
                 try:
                     apCorr = apCorrModel.evaluate(center)
-                    apCorrSigma = apCorrSigmaModel.evaluate(center)
+                    if not UseNaiveFluxSigma:
+                        apCorrSigma = apCorrSigmaModel.evaluate(center)
                 except lsst.pex.exceptions.DomainError:
                     continue
 
@@ -162,9 +174,12 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                 flux = source.get(apCorrInfo.fluxKey)
                 fluxSigma = source.get(apCorrInfo.fluxSigmaKey)
                 source.set(apCorrInfo.fluxKey, flux*apCorr)
-                a = fluxSigma/flux
-                b = apCorrSigma/apCorr
-                source.set(apCorrInfo.fluxSigmaKey, abs(flux*apCorr)*math.sqrt(a*a + b*b))
+                if UseNaiveFluxSigma:
+                    source.set(apCorrInfo.fluxSigmaKey, fluxSigma*apCorr)
+                else:
+                    a = fluxSigma/flux
+                    b = apCorrSigma/apCorr
+                    source.set(apCorrInfo.fluxSigmaKey, abs(flux*apCorr)*math.sqrt(a*a + b*b))
                 source.set(apCorrInfo.apCorrFlagKey, False)
                 if self.config.doFlagApCorrFailures:
                     source.set(apCorrInfo.fluxFlagKey, oldFluxFlagState)
