@@ -39,6 +39,28 @@ from .transforms import PassThroughTransform
 # Exceptions that the measurement tasks should always propagate up to their callers
 FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)
 
+# Set of names of algorithms that measure fluxes that can be aperture corrected
+_ApCorrNameSet = set()
+
+def addApCorrName(name):
+    """!Add to the set of field name prefixes for fluxes that should be aperture corrected
+
+    @param[in] name  field name prefix for a flux that should be aperture corrected.
+        The corresponding field names are {name}_flux, {name}_fluxSigma and {name}_flag.
+        For example name "base_PsfFlux" corresponds to fields base_PsfFlux_flux,
+        base_PsfFlux_fluxSigma and base_PsfFlux_flag.
+    """
+    global _ApCorrNameSet
+    _ApCorrNameSet.add(str(name))
+
+def getApCorrNameSet():
+    """!Return a copy of the set of field name prefixes for fluxes that should be aperture corrected
+
+    For example the returned set will likely include "base_PsfFlux" and "base_GaussianFlux".
+    """
+    global _ApCorrNameSet
+    return _ApCorrNameSet.copy()
+
 def generateAlgorithmName(AlgClass):
     """Generate a string name for an algorithm class that strips away terms that are generally redundant
     while (hopefully) remaining easy to trace to the code.
@@ -95,24 +117,39 @@ class PluginRegistry(lsst.pex.config.Registry):
         def __call__(self, config):
             return (self.PluginClass.getExecutionOrder(), self.name, config, self.PluginClass)
 
-    def register(self, name, PluginClass):
+    def register(self, name, PluginClass, shouldApCorr=False, apCorrList=()):
         """!
         Register a Plugin class with the given name.
 
         The same Plugin may be registered multiple times with different names; this can
         be useful if we often want to run it multiple times with different configuration.
 
-        The name will be used as a prefix for all fields produced by the Plugin, and it
-        should generally contain the name of the Plugin or Algorithm class itself
-        as well as enough of the namespace to make it clear where to find the code.
+        @param[in] name  name of plugin class. This is used as a prefix for all fields produced by the Plugin,
+            and it should generally contain the name of the Plugin or Algorithm class itself
+            as well as enough of the namespace to make it clear where to find the code.
+            For example "base_GaussianFlux" indicates an algorithm in meas_base
+            that measures Gaussian Flux and produces fields such as "base_GaussianFlux_flux",
+            "base_GaussianFlux_fluxSigma" and "base_GaussianFlux_flag".
+        @param[in] shouldApCorr  if True then this algorithm measures a flux that should be aperture
+            corrected. This is shorthand for apCorrList=[name] and is ignored if apCorrList is specified.
+        @param[in] apCorrList  list of field name prefixes for flux fields that should be aperture corrected.
+            If an algorithm produces a single flux that should be aperture corrected then it is simpler
+            to set shouldApCorr=True. But if an algorithm produces multiple such fields then it must
+            specify apCorrList, instead. For example modelfit_CModel produces 3 such fields:
+                apCorrList=("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
+            If apCorrList is non-empty then shouldApCorr is ignored.
         """
         lsst.pex.config.Registry.register(self, name, self.Configurable(name, PluginClass))
+        if shouldApCorr and not apCorrList:
+            apCorrList = [name]
+        for prefix in apCorrList:
+            addApCorrName(prefix)
 
     def makeField(self, doc, default=None, optional=False, multi=False):
         return lsst.pex.config.RegistryField(doc, self, default, optional, multi)
 
 
-def register(name):
+def register(name, shouldApCorr=False):
     """!
     A Python decorator that registers a class, using the given name, in its base class's PluginRegistry.
     For example,
@@ -129,29 +166,33 @@ def register(name):
     @endcode
     """
     def decorate(PluginClass):
-        PluginClass.registry.register(name, PluginClass)
+        PluginClass.registry.register(name, PluginClass, shouldApCorr=shouldApCorr)
         return PluginClass
     return decorate
 
 
 class PluginMap(collections.OrderedDict):
     """!
-    Map of plugins to be run for a task
+    Map of plugins (instances of subclasses of BasePlugin) to be run for a task
 
-    We assume Plugins are added to the PluginMap according to their "Execution Order", so this
+    We assume plugins are added to the PluginMap according to their "Execution Order", so this
     class doesn't actually do any of the sorting (though it does have to maintain that order,
     which it does by inheriting from OrderedDict).
     """
 
     def iter(self):
-        """Call each plugin in the map which has a measure() method
+        """!Return an iterator over plugins for which plugin.config.doMeasure is true
+
+        @note plugin.config.doMeasure is usually a simple boolean class attribute, not a normal Config field.
         """
         for plugin in self.itervalues():
             if plugin.config.doMeasure:
                 yield plugin
 
     def iterN(self):
-        """Call each plugin in the map which has a measureN() method
+        """!Return an iterator over plugins for which plugin.config.doMeasureN is true
+
+        @note plugin.config.doMeasureN is usually a simple boolean class attribute, not a normal Config field.
         """
         for plugin in self.itervalues():
             if plugin.config.doMeasureN:
@@ -181,24 +222,28 @@ class BasePlugin(object):
     This is the base class for SingleFramePlugin and ForcedPlugin; derived classes should inherit
     from one of those.
     """
+    # named class constants for execution order
+    CENTROID_ORDER = 0.0
+    SHAPE_ORDER = 1.0
+    FLUX_ORDER = 2.0
+    APCORR_ORDER = 4.0
+    CLASSIFY_ORDER = 5.0
 
-    @staticmethod
-    def getExecutionOrder():
+    @classmethod
+    def getExecutionOrder(cls):
         """Sets the relative order of plugins (smaller numbers run first).
 
-        In general, the following values should be used (intermediate values
+        In general, the following class constants should be used (other values
         are also allowed, but should be avoided unless they are needed):
-        0.0 ------ centroids and other algorithms that require only a Footprint and
-                   its Peaks as input
-        1.0 ------ shape measurements and other algorithms that require
-                   getCentroid() to return a good centroid in addition to a
-                   Footprint and its Peaks.
-        2.0 ------ flux algorithms that require both getShape() and getCentroid()
-                   in addition to the Footprint and its Peaks
-        3.0 ------ algorithms that operate on fluxes (e.g. classification,
-                   aperture correction).
+        CENTROID_ORDER  centroids and other algorithms that require only a Footprint and its Peaks as input
+        SHAPE_ORDER     shape measurements and other algorithms that require getCentroid() to return
+                        a good centroid (in addition to a Footprint and its Peaks).
+        FLUX_ORDER      flux algorithms that require both getShape() and getCentroid(),
+                        in addition to a Footprint and its Peaks
+        APCORR_ORDER    aperture correction
+        CLASSIFY_ORDER  algorithms that operate on aperture-corrected fluxes
 
-        Must be reimplemented (as a static or class method) by concrete derived classes.
+        Must be reimplemented as a class method by concrete derived classes.
 
         This approach was chosen instead of a full graph-based analysis of dependencies
         because algorithm dependencies are usually both quite simple and entirely substitutable:
@@ -398,7 +443,12 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         @param[in,out]  measRecord     lsst.afw.table.SourceRecord that corresponds to the object being
                                        measured, and where outputs should be written.
         @param[in]      *args          Positional arguments forwarded to Plugin.measure()
-        @param[in]      **kwds         Keyword arguments forwarded to Plugin.measure()
+        @param[in]      **kwds         Keyword arguments. Two are handled locally:
+                                       - beginOrder: beginning execution order (inclusive): measurements with
+                                         executionOrder < beginOrder are not executed. None for no limit.
+                                       - endOrder: ending execution order (exclusive): measurements with
+                                         executionOrder >= endOrder are not executed. None for no limit.
+                                       the rest are forwarded to Plugin.measure()
 
         This method can be used with plugins that have different signatures; the only requirement is that
         'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are
@@ -406,7 +456,13 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
 
         This method should be considered "protected"; it is intended for use by derived classes, not users.
         """
+        beginOrder = kwds.pop("beginOrder", None)
+        endOrder = kwds.pop("endOrder", None)
         for plugin in self.plugins.iter():
+            if beginOrder is not None and plugin.getExecutionOrder() < beginOrder:
+                continue
+            if endOrder is not None and plugin.getExecutionOrder() >= endOrder:
+                break
             try:
                 plugin.measure(measRecord, *args, **kwds)
             except FATAL_EXCEPTIONS:
@@ -425,8 +481,17 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         @param[in,out]  measCat        lsst.afw.table.SourceCatalog containing records for just
                                        the source family to be measured, and where outputs should
                                        be written.
+        @param[in]      beginOrder     beginning execution order (inclusive): measurements with
+                                       executionOrder < beginOrder are not executed. None for no limit.
+        @param[in]      endOrder       ending execution order (exclusive): measurements with
+                                       executionOrder >= endOrder are not executed. None for no limit.
         @param[in]      *args          Positional arguments forwarded to Plugin.measure()
-        @param[in]      **kwds         Keyword arguments forwarded to Plugin.measure()
+        @param[in]      **kwds         Keyword arguments. Two are handled locally:
+                                       - beginOrder: beginning execution order (inclusive): measurements with
+                                         executionOrder < beginOrder are not executed. None for no limit.
+                                       - endOrder: ending execution order (exclusive): measurements with
+                                         executionOrder >= endOrder are not executed. None for no limit.
+                                       the rest are forwarded to Plugin.measure()
 
         This method can be used with plugins that have different signatures; the only requirement is that
         'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are
@@ -434,7 +499,13 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
 
         This method should be considered "protected"; it is intended for use by derived classes, not users.
         """
+        beginOrder = kwds.pop("beginOrder", None)
+        endOrder = kwds.pop("endOrder", None)
         for plugin in self.plugins.iterN():
+            if beginOrder is not None and plugin.getExecutionOrder() < beginOrder:
+                continue
+            if endOrder is not None and plugin.getExecutionOrder() >= endOrder:
+                break
             try:
                 plugin.measureN(measCat, *args, **kwds)
             except FATAL_EXCEPTIONS:

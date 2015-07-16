@@ -224,7 +224,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.schema = self.mapper.getOutputSchema()
         self.config.slots.setupSchema(self.schema)
 
-    def run(self, exposure, refCat, refWcs, idFactory=None, exposureId=None):
+    def run(self, exposure, refCat, refWcs, idFactory=None, exposureId=None, beginOrder=None, endOrder=None):
         """!
         Perform forced measurement.
 
@@ -236,6 +236,10 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         @param[in]  idFactory    factory for creating IDs for sources
         @param[in]  exposureId   optional unique exposureId used to calculate random number
                                  generator seed in the NoiseReplacer.
+        @param[in]  beginOrder   beginning execution order (inclusive): measurements with
+                                 executionOrder < beginOrder are not executed. None for no limit.
+        @param[in]  endOrder     ending execution order (exclusive): measurements with
+                                 executionOrder >= endOrder are not executed. None for no limit.
 
         @return SourceCatalog containing measurement results.
 
@@ -298,16 +302,20 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             # TODO: skip this loop if there are no plugins configured for single-object mode
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
                 noiseReplacer.insertSource(refChildRecord.getId())
-                self.callMeasure(measChildRecord, exposure, refChildRecord, refWcs)
+                self.callMeasure(measChildRecord, exposure, refChildRecord, refWcs,
+                        beginOrder=beginOrder, endOrder=endOrder)
                 noiseReplacer.removeSource(refChildRecord.getId())
 
             # then process the parent record
             noiseReplacer.insertSource(refParentRecord.getId())
-            self.callMeasure(measParentRecord, exposure, refParentRecord, refWcs)
+            self.callMeasure(measParentRecord, exposure, refParentRecord, refWcs,
+                    beginOrder=beginOrder, endOrder=endOrder)
             self.callMeasureN(measParentCat[parentIdx:parentIdx+1], exposure,
-                              refParentCat[parentIdx:parentIdx+1])
+                    refParentCat[parentIdx:parentIdx+1],
+                    beginOrder=beginOrder, endOrder=endOrder)
             # measure all the children simultaneously
-            self.callMeasureN(measChildCat, exposure, refChildCat)
+            self.callMeasureN(measChildCat, exposure, refChildCat,
+                    beginOrder=beginOrder, endOrder=endOrder)
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()
         return lsst.pipe.base.Struct(sources=sources)
