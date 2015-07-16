@@ -26,7 +26,6 @@ import re
 import math
 import unittest
 
-import eups
 import lsst.pex.exceptions as pexExceptions
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
@@ -43,11 +42,6 @@ try:
 except NameError:
     display = False
     verbose = 0
-
-if False:
-    dataDir = eups.productDir("afwdata")
-    if not dataDir:
-        raise RuntimeError("Must set up afwdata to run these tests")
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -252,7 +246,7 @@ class MonetTestCase(unittest.TestCase):
 
     def monetFile(self, file):
         """Return a Monet file used for regression testing"""
-        return os.path.join(eups.productDir("meas_base"), "tests", "Monet", file)
+        return os.path.join(os.path.dirname(__file__), "Monet", file)
 
     def readTruth(self, filename):
         """Read Dave Monet's truth table"""
