@@ -61,11 +61,10 @@ class FluxKeys(object):
 class MeasureApCorrConfig(lsst.pex.config.Config):
     """!Configuration for MeasureApCorrTask
     """
-    refFluxAlg = lsst.pex.config.Field(
-        doc = "Name of the measurement algorithm for the flux other measurements should be" +
-            " aperture corrected to match",
+    refFluxName = lsst.pex.config.Field(
+        doc = "Field name prefix for the flux other measurements should be aperture corrected to match",
         dtype = str,
-        default = "base_CircularApertureFlux_0",
+        default = "base_CircularApertureFlux_5",
     )
     inputFilterFlag = lsst.pex.config.Field(
         doc = "Name of a flag field that indicates that a source should be used to constrain the" +
@@ -135,7 +134,7 @@ class MeasureApCorrTask(Task):
         - Otherwise silently skip the name
         """
         Task.__init__(self, **kwds)
-        self.refFluxKeys = FluxKeys(self.config.refFluxAlg, schema)
+        self.refFluxKeys = FluxKeys(self.config.refFluxName, schema)
         self.toCorrect = {} # dict of flux field name prefix: FluxKeys instance
         for name in getApCorrNameSet():
             try:
