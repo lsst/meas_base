@@ -162,17 +162,20 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         self.slots.psfFlux = None
         self.slots.instFlux = None
 
-## @addtogroup LSST_task_documentation
-## @{
-## @page pageForcedMeasurementTask ForcedMeasurementTask
-## ForcedMeasurementTask
+## \addtogroup LSST_task_documentation
+## \{
+## \page ForcedMeasurementTask
+## \ref ForcedMeasurementTask_ "ForcedMeasurementTask"
 ## @copybrief ForcedMeasurementTask
-## @}
+## \}
 
 class ForcedMeasurementTask(BaseMeasurementTask):
     """!
-	A subtask for measuring the properties of sources on a single exposure, using an existing
-    "reference" catalog to constrain some aspects of the measurement.
+    \anchor ForcedMeasurementTask_
+
+    \brief A subtask for measuring the properties of sources on a single
+    exposure, using an existing "reference" catalog to constrain some aspects
+    of the measurement.
 
     The task is configured with a list of "plugins": each plugin defines the values it
     measures (i.e. the columns in a table it will fill) and conducts that measurement

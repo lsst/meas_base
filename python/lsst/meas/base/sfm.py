@@ -130,16 +130,18 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
         )
     algorithms = property(lambda self: self.plugins, doc="backwards-compatibility alias for plugins")
 
-## @addtogroup LSST_task_documentation
-## @{
-## @page pageSingleFrameMeasurementTask SingleFrameMeasurementTask
-## SingleFrameMeasurementTask
-## @copybrief SingleFrameMeasurementTask
-## @}
+## \addtogroup LSST_task_documentation
+## \{
+## \page SingleFrameMeasurementTask
+## \ref SingleFrameMeasurementTask_ "SingleFrameMeasurementTask"
+## \copybrief SingleFrameMeasurementTask
+## \}
 
 class SingleFrameMeasurementTask(BaseMeasurementTask):
     """!
-    A subtask for measuring the properties of sources on a single exposure.
+    @anchor SingleFrameMeasurementTask_
+
+    @brief A subtask for measuring the properties of sources on a single exposure.
 
     The task is configured with a list of "plugins": each plugin defines the values it
     measures (i.e. the columns in a table it will fill) and conducts that measurement
