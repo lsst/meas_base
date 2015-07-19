@@ -3,6 +3,7 @@ from .sfm import *
 from .plugins import *
 from .baseLib import *
 from .noiseReplacer import *
+from .baseMeasurement import *
 from .forcedMeasurement import *
 from .forcedPhotImage import *
 from .forcedPhotCcd import *

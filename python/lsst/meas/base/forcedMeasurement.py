@@ -50,7 +50,9 @@ ForcedPhotImageTask, ForcedPhotCcdTask, and ForcedPhotCoaddTask.
 import lsst.pex.config
 import lsst.pipe.base
 
-from .base import *
+from .base import PluginRegistry
+from .baseMeasurement import BasePluginConfig, BasePlugin, BaseMeasurementConfig, BaseMeasurementTask
+from .noiseReplacer import NoiseReplacer, DummyNoiseReplacer
 
 __all__ = ("ForcedPluginConfig", "ForcedPlugin",
            "ForcedMeasurementConfig", "ForcedMeasurementTask")
@@ -227,6 +229,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.initializePlugins(schemaMapper=self.mapper)
         self.schema = self.mapper.getOutputSchema()
         self.config.slots.setupSchema(self.schema)
+        self.makeSubtask("applyApCorr", schema=self.schema)
 
     def run(self, exposure, refCat, refWcs, idFactory=None, exposureId=None, beginOrder=None, endOrder=None):
         """!

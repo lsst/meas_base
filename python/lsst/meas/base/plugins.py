@@ -32,6 +32,7 @@ import lsst.afw.detection
 
 from .base import *
 from .baseLib import *
+from .baseMeasurement import BasePlugin
 from .sfm import *
 from .forcedMeasurement import *
 from .wrappers import *
