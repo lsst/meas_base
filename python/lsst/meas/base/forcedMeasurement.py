@@ -325,6 +325,13 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                     beginOrder=beginOrder, endOrder=endOrder)
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()
+
+        self._applyApCorrIfWanted(
+            sources = sources,
+            apCorrMap = exposure.getInfo().getApCorrMap(),
+            endOrder = endOrder,
+        )
+
         return lsst.pipe.base.Struct(sources=sources)
 
     def generateSources(self, exposure, refCat, refWcs, idFactory=None):

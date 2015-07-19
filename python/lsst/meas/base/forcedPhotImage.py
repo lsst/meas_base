@@ -53,6 +53,11 @@ class ProcessImageForcedConfig(lsst.pex.config.Config):
         default = "deep",
     )
 
+    def setDefaults(self):
+        # coadds do not yet include include aperture correction data,
+        # but that is planned, so might as well warn when it occurs
+        self.measurement.doApplyApCorr = "noButWarn"
+
 ## @addtogroup LSST_task_documentation
 ## @{
 ## @page ProcessImageForcedTask

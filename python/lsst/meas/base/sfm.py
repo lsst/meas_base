@@ -319,6 +319,12 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         # when done, restore the exposure to its original state
         noiseReplacer.end()
 
+        self._applyApCorrIfWanted(
+            sources = measCat,
+            apCorrMap = exposure.getInfo().getApCorrMap(),
+            endOrder = endOrder,
+        )
+
     def measure(self, measCat, exposure):
         """!
         Backwards-compatibility alias for run()
