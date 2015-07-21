@@ -72,6 +72,12 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
     and ForcedPhotCoaddTask.  It provides the run() method that does most of the
     work, while delegating a few customization tasks to other methods that are
     overridden by subclasses.
+
+    This task is not directly usable as a CmdLineTask; subclasses must:
+     - Set the _DefaultName class attribute
+     - Implement makeIdFactory
+     - Implement fetchReferences
+     - (optional) Implement attachFootprints
     """
     ConfigClass = ProcessImageForcedConfig
     _DefaultName = "processImageForcedTask"
@@ -110,6 +116,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
         refCat = list(self.fetchReferences(dataRef, exposure))
+        self.attachFootprints(dataRef, sources, references=references, exposure=exposure, refWcs=refWcs)
         retStruct = self.measurement.run(exposure, refCat, refWcs,
                                          idFactory=self.makeIdFactory(dataRef))
         self.writeOutput(dataRef, retStruct.sources)
@@ -131,6 +138,24 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         coadd), or is just an arbitrary box (as it would be for CCD forced measurements).
         """
         raise NotImplementedError()
+
+    def attachFootprints(self, dataRef, sources, references, exposure, refWcs):
+        """Hook for derived classes to define how to attach Footprints to blank sources prior to measurement
+
+        Footprints for forced photometry must be in the pixel coordinate system of the image being
+        measured, while the actual detections may start out in a different coordinate system.
+
+        Subclasses for ForcedPhotImageTask must implement this method to define how those Footprints
+        should be generated.
+
+        The default implementation transforms the Footprints from the reference catalog from the refWcs
+        to the exposure's Wcs, which downgrades HeavyFootprints into regular Footprints, destroying
+        deblend information.
+        """
+        exposureWcs = exposure.getWcs()
+        region = exposure.getBBox(lsst.afw.image.PARENT)
+        for srcRecord, refRecord in zip(sources, references):
+            srcRecord.setFootprint(refRecord.getFootprint().transform(refWcs, exposureWcs, region))
 
     def getExposure(self, dataRef):
         """Read input exposure on which to perform the measurements
