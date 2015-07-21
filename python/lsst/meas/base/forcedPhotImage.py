@@ -30,7 +30,7 @@ import lsst.daf.base
 import lsst.pipe.base
 import lsst.pex.config
 
-from .references import CoaddSrcReferencesTask
+from .references import MultiBandReferencesTask
 from .forcedMeasurement import ForcedMeasurementTask
 
 __all__ = ("ProcessImageForcedConfig", "ProcessImageForcedTask")
@@ -39,7 +39,7 @@ class ProcessImageForcedConfig(lsst.pex.config.Config):
     """Config class for forced measurement driver task."""
 
     references = lsst.pex.config.ConfigurableField(
-        target=CoaddSrcReferencesTask,
+        target=MultiBandReferencesTask,
         doc="subtask to retrieve reference source catalog"
         )
     measurement = lsst.pex.config.ConfigurableField(
