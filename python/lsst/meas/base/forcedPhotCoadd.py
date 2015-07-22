@@ -125,7 +125,7 @@ class ForcedPhotCoaddTask(ProcessImageForcedTask):
         patchInfo = tractInfo.getPatchInfo(patch)
         return self.references.fetchInPatches(dataRef, patchList=[patchInfo])
 
-    def attachFootprints(self, dataRef, sources, references, exposure, refWcs):
+    def attachFootprints(self, dataRef, sources, refCat, exposure, refWcs):
         """For coadd forced photometry, we use the deblended HeavyFootprints from the single-band
         measurements of the same band - because we've guaranteed that the peaks (and hence child sources)
         will be consistent across all bands before we get to measurement, this should yield reasonable
@@ -134,12 +134,12 @@ class ForcedPhotCoaddTask(ProcessImageForcedTask):
         were.
         """
         if self.config.footprintDatasetName is None:
-            return ForcedPhotImageTask.attachFootprints(dataRef, sources, references, exposure, refWcs)
+            return ForcedPhotImageTask.attachFootprints(dataRef, sources, refCat, exposure, refWcs)
         self.log.info("Loading deblended footprints for sources from %s, %s" %
                       (self.config.footprintDatasetName, dataRef.dataId))
         fpCat = dataRef.get("%sCoadd_%s" % (self.config.coaddName, self.config.footprintDatasetName),
                             immediate=True)
-        for refRecord, srcRecord in zip(references, sources):
+        for refRecord, srcRecord in zip(refCat, sources):
             fpRecord = fpCat.find(refRecord.getId())
             if fpRecord is None:
                 raise LookupError("Cannot find Footprint for source %s; please check that %sCoadd_%s"

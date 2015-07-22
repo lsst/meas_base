@@ -117,7 +117,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         exposure = self.getExposure(dataRef)
         refCat = list(self.fetchReferences(dataRef, exposure))
         self.log.info("Performing forced measurement on %s" % dataRef.dataId)
-        self.attachFootprints(dataRef, sources, references=references, exposure=exposure, refWcs=refWcs)
+        self.attachFootprints(dataRef, sources, refCat=refCat, exposure=exposure, refWcs=refWcs)
         retStruct = self.measurement.run(exposure, refCat, refWcs,
                                          idFactory=self.makeIdFactory(dataRef))
         self.writeOutput(dataRef, retStruct.sources)
@@ -140,7 +140,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         """
         raise NotImplementedError()
 
-    def attachFootprints(self, dataRef, sources, references, exposure, refWcs):
+    def attachFootprints(self, dataRef, sources, refCat, exposure, refWcs):
         """Hook for derived classes to define how to attach Footprints to blank sources prior to measurement
 
         Footprints for forced photometry must be in the pixel coordinate system of the image being
@@ -155,7 +155,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         """
         exposureWcs = exposure.getWcs()
         region = exposure.getBBox(lsst.afw.image.PARENT)
-        for srcRecord, refRecord in zip(sources, references):
+        for srcRecord, refRecord in zip(sources, refCat):
             srcRecord.setFootprint(refRecord.getFootprint().transform(refWcs, exposureWcs, region))
 
     def getExposure(self, dataRef):
