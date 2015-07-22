@@ -147,6 +147,7 @@ class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
         msConfig.slots.modelFlux = None
         msConfig.slots.psfFlux = None
         msConfig.slots.instFlux = None
+        msConfig.slots.calibFlux = None
         schema = afwTable.SourceTable.makeMinimalSchema()
         task = measBase.SingleFrameMeasurementTask(schema, config=msConfig)
         measCat = afwTable.SourceCatalog(schema)
@@ -228,6 +229,7 @@ class MonetTestCase(unittest.TestCase):
         msConfig.slots.modelFlux = None
         msConfig.slots.psfFlux = None
         msConfig.slots.instFlux = None
+        msConfig.slots.calibFlux = None
         schema = afwTable.SourceTable.makeMinimalSchema()
         self.task = measBase.SingleFrameMeasurementTask(schema, config=msConfig)
         self.ssMeasured = afwTable.SourceCatalog(schema)
