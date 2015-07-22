@@ -288,7 +288,6 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         referenceCat = lsst.afw.table.SourceCatalog(self.mapper.getInputSchema())
         referenceCat.extend(refList)
 
-        # convert the footprints to the coordinate system of the exposure
         if self.config.doReplaceWithNoise:
             noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log, exposureId=exposureId)
             algMetadata = sources.getTable().getMetadata()
