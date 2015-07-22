@@ -116,6 +116,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
         refCat = list(self.fetchReferences(dataRef, exposure))
+        self.log.info("Performing forced measurement on %s" % dataRef.dataId)
         self.attachFootprints(dataRef, sources, references=references, exposure=exposure, refWcs=refWcs)
         retStruct = self.measurement.run(exposure, refCat, refWcs,
                                          idFactory=self.makeIdFactory(dataRef))
