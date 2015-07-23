@@ -28,7 +28,7 @@ import lsst.pex.config
 import lsst.pex.exceptions
 import lsst.afw.image
 import lsst.pipe.base
-from .base import getApCorrNameSet
+from .apCorrRegistry import getApCorrNameSet
 
 # If True then scale flux sigma by apCorr; if False then use a more complex computation
 # that over-estimates flux error (often grossly so) because it double-counts photon noise.

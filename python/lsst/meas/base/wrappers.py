@@ -1,6 +1,7 @@
 import lsst.pex.config
 
-from .base import generateAlgorithmName, addApCorrName
+from .pluginRegistry import generateAlgorithmName
+from .apCorrRegistry import addApCorrName
 from .sfm import SingleFramePlugin
 from .forcedMeasurement import ForcedPlugin
 

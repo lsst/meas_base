@@ -20,41 +20,16 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-"""Base and utility classes for measurement frameworks
-
-This includes base classes for plugins and tasks and utility classes such as PluginMap
-that are shared by the single-frame measurement framework and the forced measurement framework.
+"""Registry for measurement plugins and associated utilities generateAlgorithmName and PluginMap
 """
 
 import collections
 
 import lsst.pipe.base
 import lsst.pex.config
+from .apCorrRegistry import addApCorrName
 
-__all__ = ("addApCorrName", "getApCorrNameSet", "generateAlgorithmName", "PluginRegistry", "register", 
-            "PluginMap")
-
-# Set of names of algorithms that measure fluxes that can be aperture corrected
-_ApCorrNameSet = set()
-
-def addApCorrName(name):
-    """!Add to the set of field name prefixes for fluxes that should be aperture corrected
-
-    @param[in] name  field name prefix for a flux that should be aperture corrected.
-        The corresponding field names are {name}_flux, {name}_fluxSigma and {name}_flag.
-        For example name "base_PsfFlux" corresponds to fields base_PsfFlux_flux,
-        base_PsfFlux_fluxSigma and base_PsfFlux_flag.
-    """
-    global _ApCorrNameSet
-    _ApCorrNameSet.add(str(name))
-
-def getApCorrNameSet():
-    """!Return a copy of the set of field name prefixes for fluxes that should be aperture corrected
-
-    For example the returned set will likely include "base_PsfFlux" and "base_GaussianFlux".
-    """
-    global _ApCorrNameSet
-    return _ApCorrNameSet.copy()
+__all__ = ("generateAlgorithmName", "PluginRegistry", "register",  "PluginMap")
 
 def generateAlgorithmName(AlgClass):
     """Generate a string name for an algorithm class that strips away terms that are generally redundant

@@ -28,7 +28,7 @@ import lsst.pipe.base
 import lsst.pex.config
 
 from .applyApCorr import ApplyApCorrTask
-from .base import PluginMap
+from .pluginRegistry import PluginMap
 from .baseLib import FatalAlgorithmError, MeasurementError
 from .noiseReplacer import NoiseReplacerConfig
 from .transforms import PassThroughTransform

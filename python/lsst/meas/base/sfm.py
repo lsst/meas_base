@@ -29,7 +29,7 @@ slot-eligible fields must be), but non-slot fields may be recorded in other coor
 to avoid information loss (this should, of course, be indicated in the field documentation).
 """
 
-from .base import PluginRegistry
+from .pluginRegistry import PluginRegistry
 from .baseMeasurement import BasePluginConfig, BasePlugin, BaseMeasurementConfig, BaseMeasurementTask
 from .noiseReplacer import NoiseReplacer, DummyNoiseReplacer
 

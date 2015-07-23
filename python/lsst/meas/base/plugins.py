@@ -29,7 +29,7 @@ import numpy
 import lsst.pex.exceptions
 import lsst.afw.detection
 
-from .base import register
+from .pluginRegistry import register
 from . import baseLib as bl
 from .baseMeasurement import BasePlugin
 from .sfm import SingleFramePluginConfig, SingleFramePlugin

@@ -1,4 +1,5 @@
-from .base import *
+from .apCorrRegistry import *
+from .pluginRegistry import *
 from .baseMeasurement import *
 from .sfm import *
 from .plugins import *
