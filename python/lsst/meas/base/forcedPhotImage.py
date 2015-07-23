@@ -30,9 +30,8 @@ import lsst.daf.base
 import lsst.pipe.base
 import lsst.pex.config
 
-from .base import *
 from .references import CoaddSrcReferencesTask
-from .forcedMeasurement import *
+from .forcedMeasurement import ForcedMeasurementTask
 
 __all__ = ("ProcessImageForcedConfig", "ProcessImageForcedTask")
 

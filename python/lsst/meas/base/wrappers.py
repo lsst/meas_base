@@ -1,8 +1,8 @@
 import lsst.pex.config
 
 from .base import generateAlgorithmName, addApCorrName
-from .sfm import SingleFramePlugin, SingleFramePluginConfig
-from .forcedMeasurement import ForcedPlugin, ForcedPluginConfig
+from .sfm import SingleFramePlugin
+from .forcedMeasurement import ForcedPlugin
 
 __all__ = ("wrapSingleFrameAlgorithm", "wrapForcedAlgorithm", "wrapSimpleAlgorithm")
 

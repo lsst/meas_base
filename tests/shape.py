@@ -21,17 +21,13 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import re, os, sys
-import glob
 import math
 import unittest
 
-import lsst.pex.policy as pexPolicy
-import lsst.pex.exceptions as pexExceptions
 import lsst.afw.image as afwImage
-import lsst.afw.math as afwMath
 import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
+import lsst.daf.base as dafBase
 import lsst.meas.base as measBase
 import lsst.utils.tests as utilsTests
 import lsst.afw.detection as afwDetection

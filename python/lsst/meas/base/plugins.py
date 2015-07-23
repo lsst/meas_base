@@ -27,37 +27,45 @@ and automatic plugin-from-algorithm calls for those implemented in C++.
 import numpy
 
 import lsst.pex.exceptions
-from lsst.afw.table import tableLib
 import lsst.afw.detection
 
-from .base import *
-from .baseLib import *
+from .base import register
+from . import baseLib as bl
 from .baseMeasurement import BasePlugin
-from .sfm import *
-from .forcedMeasurement import *
-from .wrappers import *
-from .transforms import *
+from .sfm import SingleFramePluginConfig, SingleFramePlugin
+from .forcedMeasurement import ForcedPluginConfig, ForcedPlugin
+from .wrappers import wrapSimpleAlgorithm
+from .transforms import SimpleCentroidTransform
+
+__all__ = (
+    "SingleFramePeakCentroidConfig", "SingleFramePeakCentroidPlugin", 
+    "SingleFrameSkyCoordConfig", "SingleFrameSkyCoordPlugin",
+    "SingleFrameClassificationConfig", "SingleFrameClassificationPlugin",
+    "ForcedPeakCentroidConfig", "ForcedPeakCentroidPlugin",
+    "ForcedTransformedCentroidConfig", "ForcedTransformedCentroidPlugin",
+    "ForcedTransformedShapeConfig", "ForcedTransformedShapePlugin",
+)
 
 # --- Wrapped C++ Plugins ---
 
-wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl,
-                TransformClass=PsfFluxTransform, executionOrder=BasePlugin.FLUX_ORDER, shouldApCorr=True)
-wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxControl,
-                TransformClass=PeakLikelihoodFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
-wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl,
-                TransformClass=GaussianFluxTransform, executionOrder=BasePlugin.FLUX_ORDER, shouldApCorr=True)
-wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl,
-                TransformClass=GaussianCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
-wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl,
-                TransformClass=NaiveCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
-wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl,
-                TransformClass=SdssCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
-wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl, executionOrder=BasePlugin.FLUX_ORDER)
-wrapSimpleAlgorithm(SdssShapeAlgorithm, Control=SdssShapeControl,
-                TransformClass=SdssShapeTransform, executionOrder=BasePlugin.SHAPE_ORDER)
+wrapSimpleAlgorithm(bl.PsfFluxAlgorithm, Control=bl.PsfFluxControl,
+                TransformClass=bl.PsfFluxTransform, executionOrder=BasePlugin.FLUX_ORDER, shouldApCorr=True)
+wrapSimpleAlgorithm(bl.PeakLikelihoodFluxAlgorithm, Control=bl.PeakLikelihoodFluxControl,
+                TransformClass=bl.PeakLikelihoodFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
+wrapSimpleAlgorithm(bl.GaussianFluxAlgorithm, Control=bl.GaussianFluxControl,
+                TransformClass=bl.GaussianFluxTransform, executionOrder=BasePlugin.FLUX_ORDER, shouldApCorr=True)
+wrapSimpleAlgorithm(bl.GaussianCentroidAlgorithm, Control=bl.GaussianCentroidControl,
+                TransformClass=bl.GaussianCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
+wrapSimpleAlgorithm(bl.NaiveCentroidAlgorithm, Control=bl.NaiveCentroidControl,
+                TransformClass=bl.NaiveCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
+wrapSimpleAlgorithm(bl.SdssCentroidAlgorithm, Control=bl.SdssCentroidControl,
+                TransformClass=bl.SdssCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
+wrapSimpleAlgorithm(bl.PixelFlagsAlgorithm, Control=bl.PixelFlagsControl, executionOrder=BasePlugin.FLUX_ORDER)
+wrapSimpleAlgorithm(bl.SdssShapeAlgorithm, Control=bl.SdssShapeControl,
+                TransformClass=bl.SdssShapeTransform, executionOrder=BasePlugin.SHAPE_ORDER)
 
-wrapSimpleAlgorithm(CircularApertureFluxAlgorithm, needsMetadata=True, Control=ApertureFluxControl,
-                    TransformClass=ApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
+wrapSimpleAlgorithm(bl.CircularApertureFluxAlgorithm, needsMetadata=True, Control=bl.ApertureFluxControl,
+                    TransformClass=bl.ApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 
 # --- Single-Frame Measurement Plugins ---
 

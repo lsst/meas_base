@@ -24,18 +24,19 @@
 
 # -*- lsst-python -*-
 
+import math
+import unittest
+
+import numpy
+
+import lsst.utils.tests as utilsTests
 import lsst.meas.base as measBase
 import lsst.afw.image as afwImage
 import lsst.afw.detection as afwDetection
 import lsst.afw.math as afwMath
 import lsst.afw.geom as afwGeom
 import lsst.afw.geom.ellipses as afwEll
-import lsst.afw.table as afwTable
 import lsst.afw.display.ds9 as ds9
-import math
-import unittest
-import lsst.utils.tests as utilsTests
-import numpy
 
 try:
     display

@@ -21,18 +21,11 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import re
-import os
-import glob
-import math
-import pdb                          # we may want to say pdb.set_trace()
 import unittest
 
-import lsst.pex.exceptions as pexExceptions
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
-import lsst.afw.detection as afwDetection
 import lsst.meas.base
 import lsst.utils.tests as utilsTests
 import testLib
@@ -90,7 +83,7 @@ class CentroidTestCase(unittest.TestCase):
 
     def testMeasureCentroid(self):
         """Test that we can use our silly centroid through the usual Tasks"""
-        control = testLib.SillyCentroidControl()
+        testLib.SillyCentroidControl()
         x, y = 10, 20
 
         im = afwImage.MaskedImageF(afwGeom.ExtentI(512, 512))

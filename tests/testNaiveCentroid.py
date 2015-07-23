@@ -22,7 +22,6 @@
 #
 
 import unittest
-import numpy
 
 import lsst.utils.tests
 import lsst.meas.base.tests

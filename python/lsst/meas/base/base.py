@@ -31,6 +31,9 @@ import collections
 import lsst.pipe.base
 import lsst.pex.config
 
+__all__ = ("addApCorrName", "getApCorrNameSet", "generateAlgorithmName", "PluginRegistry", "register", 
+            "PluginMap")
+
 # Set of names of algorithms that measure fluxes that can be aperture corrected
 _ApCorrNameSet = set()
 

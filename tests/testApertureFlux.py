@@ -27,7 +27,6 @@ import numpy
 import lsst.afw.geom
 import lsst.afw.image
 import lsst.utils.tests
-
 from lsst.meas.base import ApertureFluxAlgorithm
 from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)

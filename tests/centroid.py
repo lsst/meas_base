@@ -119,7 +119,7 @@ class CentroidTestCase(utilsTests.TestCase):
     def testNaiveMeasureCentroid(self):
         """Test that we can instantiate and play with NAIVE centroids"""
         bkgd = 10.0
-        schema = afwTable.SourceTable.makeMinimalSchema()
+        afwTable.SourceTable.makeMinimalSchema()
         control = measBase.NaiveCentroidControl()
         control.background = bkgd
         self.do_testAstrometry(measBase.NaiveCentroidAlgorithm, bkgd, control)

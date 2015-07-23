@@ -22,6 +22,7 @@
 #
 
 import unittest
+
 import numpy
 
 import lsst.utils.tests

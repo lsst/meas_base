@@ -45,10 +45,11 @@ Transformations can be defined in Python or in C++. Python code should inherit
 from `MeasurementTransform`, following its interface.
 """
 
-__all__ = ("NullTransform", "PassThroughTransform", "SimpleCentroidTransform")
 from lsst.afw.table import CoordKey
 from lsst.pex.exceptions import LengthError
 from .baseLib import CentroidResultKey
+
+__all__ = ("NullTransform", "PassThroughTransform", "SimpleCentroidTransform")
 
 class MeasurementTransform(object):
     """!

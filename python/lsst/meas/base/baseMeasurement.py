@@ -33,7 +33,7 @@ from .baseLib import FatalAlgorithmError, MeasurementError
 from .noiseReplacer import NoiseReplacerConfig
 from .transforms import PassThroughTransform
 
-__all__ = ["BaseMeasurementConfig", "BaseMeasurementTask"]
+__all__ = ("BasePluginConfig", "BasePlugin", "BaseMeasurementConfig", "BaseMeasurementTask")
 
 # Exceptions that the measurement tasks should always propagate up to their callers
 FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)

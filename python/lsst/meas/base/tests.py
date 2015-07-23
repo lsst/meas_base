@@ -36,6 +36,9 @@ from .sfm import SingleFrameMeasurementTask
 from .forcedMeasurement import ForcedMeasurementTask
 from .baseLib import CentroidResultKey
 
+__all__ = ("BlendContext", "TestDataset", "AlgorithmTestCase", "TransformTestCase",
+            "SingleFramePluginTransformSetupHelper", "ForcedPluginTransformSetupHelper",
+            "FluxTransformTestCase", "CentroidTransformTestCase")
 
 class BlendContext(object):
     """!
@@ -653,7 +656,7 @@ class SingleFramePluginTransformSetupHelper(object):
     def _setupTransform(self):
         self.control = self.controlClass()
         inputSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        algo = self.algorithmClass(self.control, self.name, inputSchema)
+        self.algorithmClass(self.control, self.name, inputSchema)
         self.inputCat = lsst.afw.table.SourceCatalog(inputSchema)
         self.mapper = lsst.afw.table.SchemaMapper(inputSchema)
         self.transform = self.transformClass(self.control, self.name, self.mapper)
@@ -665,7 +668,7 @@ class ForcedPluginTransformSetupHelper(object):
         self.control = self.controlClass()
         inputMapper = lsst.afw.table.SchemaMapper(lsst.afw.table.SourceTable.makeMinimalSchema(),
                                                   lsst.afw.table.SourceTable.makeMinimalSchema())
-        algo = self.algorithmClass(self.control, self.name, inputMapper, lsst.daf.base.PropertyList())
+        self.algorithmClass(self.control, self.name, inputMapper, lsst.daf.base.PropertyList())
         self.inputCat = lsst.afw.table.SourceCatalog(inputMapper.getOutputSchema())
         self.mapper = lsst.afw.table.SchemaMapper(inputMapper.getOutputSchema())
         self.transform = self.transformClass(self.control, self.name, self.mapper)
