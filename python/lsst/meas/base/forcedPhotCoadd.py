@@ -120,7 +120,9 @@ class ForcedPhotCoaddTask(ProcessImageForcedTask):
         tractInfo = skyMap[dataRef.dataId["tract"]]
         patch = tuple(int(v) for v in dataRef.dataId["patch"].split(","))
         patchInfo = tractInfo.getPatchInfo(patch)
-        return self.references.fetchInPatches(dataRef, patchList=[patchInfo])
+        references = lsst.afw.table.SourceCatalog(self.references.schema)
+        references.extend(self.references.fetchInPatches(dataRef, patchList=[patchInfo]))
+        return references
 
     def attachFootprints(self, dataRef, sources, refCat, exposure, refWcs):
         """For coadd forced photometry, we use the deblended HeavyFootprints from the single-band
