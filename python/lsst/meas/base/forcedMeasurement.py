@@ -254,39 +254,35 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
         Delegates creating the initial empty SourceCatalog to generateSources(), then fills it.
         """
-        # First create a refList from the original which excludes children when a member
-        # of the parent chain is not within the list.  This can occur at boundaries when
-        # the parent is outside and one of the children is within.  Currently, the parent
-        # chain is always only one deep, but just in case, this code removes any reference
-        # when the parent chain to its topmost parent is broken
-
-        # Construct a footprints dict which does not contain the footprint, just the parentID
-        # We will add the footprint from the transformed sources from generateSources later.
-        footprints = {ref.getId(): ref.getParent() for ref in refCat}
-        refList = list()
+        # First check that the reference catalog does not contain any children for which
+        # any member of their parent chain is not within the list.  This can occur at
+        # boundaries when the parent is outside and one of the children is within.
+        # Currently, the parent chain is always only one deep, but just in case, this
+        # code checks for any case where when the parent chain to a child's topmost
+        # parent is broken and raises an exception if it occurs.
+        #
+        # I.e. this code checks that this precondition is satisfied by whatever reference
+        # catalog provider is being paired with it.
+        refCatIdDict = {ref.getId(): ref.getParent() for ref in refCat}
         for ref in refCat:
             refId = ref.getId()
             topId = refId
             while(topId > 0):
-                if not topId in footprints.keys():
-                    footprints.pop(refId)
-                    break
-                topId = footprints[topId]
-            if topId == 0:
-                refList.append(ref)
+                if not topId in refCatIdDict.keys():
+                    raise RuntimeError("Reference catalog contains a child for which at least "
+                                       "one parent in its parent chain is not in the catalog.")
+                topId = refCatIdDict[topId]
+
         # now generate transformed source corresponding to the cleanup up refLst
         sources = self.generateSources(exposure, refList, refWcs, idFactory)
 
-        # Steal the transformed source footprint and use it to complete the footprints dict,
-        # which then looks like {ref.getId(): (ref.getParent(), source.getFootprint())}
-        for (reference, source) in zip(refList, sources):
-            footprints[reference.getId()] = (reference.getParent(), source.getFootprint())
+        # Construct a footprints dict which looks like
+        # {ref.getId(): (ref.getParent(), source.getFootprint())}
+        # (i.e. getting the footprint from the transformed source footprint)
+        footprints = {ref.getId(): (ref.getParent(), source.getFootprint())
+                      for (ref, source) in zip(refCat, sources)}
 
-        self.log.info("Performing forced measurement on %d sources" % len(refList))
-
-        # Build a catalog of just the references we intend to measure
-        referenceCat = lsst.afw.table.SourceCatalog(self.mapper.getInputSchema())
-        referenceCat.extend(refList)
+        self.log.info("Performing forced measurement on %d sources" % len(refCat))
 
         if self.config.doReplaceWithNoise:
             noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log, exposureId=exposureId)
@@ -300,13 +296,13 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         else:
             noiseReplacer = DummyNoiseReplacer()
 
-        # Create parent cat which slices both the referenceCat and measCat (sources)
+        # Create parent cat which slices both the refCat and measCat (sources)
         # first, get the reference and source records which have no parent
-        refParentCat, measParentCat = referenceCat.getChildren(0, sources)
+        refParentCat, measParentCat = refCat.getChildren(0, sources)
         for parentIdx, (refParentRecord, measParentRecord) in enumerate(zip(refParentCat,measParentCat)):
 
             # first process the records which have the current parent as children
-            refChildCat, measChildCat = referenceCat.getChildren(refParentRecord.getId(), sources)
+            refChildCat, measChildCat = refCat.getChildren(refParentRecord.getId(), sources)
             # TODO: skip this loop if there are no plugins configured for single-object mode
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
                 noiseReplacer.insertSource(refChildRecord.getId())
