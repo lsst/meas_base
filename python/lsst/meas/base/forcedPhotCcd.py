@@ -120,18 +120,35 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
         return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
 
     def fetchReferences(self, dataRef, exposure):
-        """Return an iterable of reference sources which overlap the exposure
+        """Return a SourceCatalog of sources which overlap the exposure.
+
+        The returned catalog is sorted by ID and guarantees that all included children have their
+        parent included and that all Footprints are valid.
 
         @param dataRef       Data reference from butler corresponding to the image to be measured;
                              should have tract, patch, and filter keys.
-        @param exposure      lsst.afw.image.Exposure to be measured (used only to obtain a Wcs and bounding
-                             box).
+        @param exposure      lsst.afw.image.Exposure to be measured (used only to obtain a Wcs and
+                             bounding box).
 
         All work is delegated to the references subtask; see CoaddSrcReferencesTask for information
         about the default behavior.
         """
         bbox = exposure.getBBox()
-        return self.references.fetchInBox(dataRef, bbox, exposure.getWcs())
+        references = lsst.afw.table.SourceCatalog(self.references.schema)
+        badParents = set()
+        unfiltered = self.references.fetchInBox(dataRef, exposure.getBBox(bbox), exposure.getWcs())
+        for record in unfiltered:
+            if record.getFootprint() is None or record.getFootprint().getArea() == 0:
+                if record.getParent() != 0:
+                    self.log.warn("Skipping reference %s (child of %s) with bad Footprint" %
+                    (record.getId(), record.getParent()))
+                else:
+                    self.log.warn("Skipping reference parent %s with bad Footprint" % (record.getId(),))
+                    badParents.add(record.getId())
+            elif record.getParent() not in badParents:
+                references.append(record)
+        references.sort()   # need to ensure catalog is in ID order so find methods work
+        return references
 
     def getExposure(self, dataRef):
         """Read input exposure to measure
