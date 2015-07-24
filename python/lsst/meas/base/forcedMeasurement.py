@@ -231,17 +231,17 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.schema = self.mapper.getOutputSchema()
         self.makeSubtask("applyApCorr", schema=self.schema)
 
-    def run(self, exposure, refCat, refWcs, idFactory=None, exposureId=None, beginOrder=None, endOrder=None,
-        allowApCorr=True):
+    def run(self, exposure, sources, refCat, refWcs, exposureId=None, beginOrder=None, endOrder=None,
+            allowApCorr=True):
         """!
         Perform forced measurement.
 
         @param[in]  exposure     lsst.afw.image.ExposureF to be measured; must have at least a Wcs attached.
+        @param[in]  sources      Source catalog for measurement
         @param[in]  refCat       A sequence of SourceRecord objects that provide reference information
                                  for the measurement.  These will be passed to each Plugin in addition
                                  to the output SourceRecord.
         @param[in]  refWcs       Wcs that defines the X,Y coordinate system of refCat
-        @param[in]  idFactory    factory for creating IDs for sources
         @param[in]  exposureId   optional unique exposureId used to calculate random number
                                  generator seed in the NoiseReplacer.
         @param[in]  beginOrder   beginning execution order (inclusive): measurements with
@@ -250,9 +250,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                                  executionOrder >= endOrder are not executed. None for no limit.
         @param[in] allowApCorr  allow application of aperture correction?
 
-        @return SourceCatalog containing measurement results.
-
-        Delegates creating the initial empty SourceCatalog to generateSources(), then fills it.
+        Fills the initial empty SourceCatalog with forced measurement results.
         """
         # First check that the reference catalog does not contain any children for which
         # any member of their parent chain is not within the list.  This can occur at
@@ -272,9 +270,6 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                     raise RuntimeError("Reference catalog contains a child for which at least "
                                        "one parent in its parent chain is not in the catalog.")
                 topId = refCatIdDict[topId]
-
-        # now generate transformed source corresponding to the cleanup up refLst
-        sources = self.generateSources(exposure, refList, refWcs, idFactory)
 
         # Construct a footprints dict which looks like
         # {ref.getId(): (ref.getParent(), source.getFootprint())}
@@ -330,8 +325,6 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                 endOrder = endOrder,
             )
 
-        return lsst.pipe.base.Struct(sources=sources)
-
     def generateSources(self, exposure, refCat, refWcs, idFactory=None):
         """!Initialize an output SourceCatalog using information from the reference catalog.
 
@@ -344,7 +337,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         @param[in] refWcs      Wcs that defines the X,Y coordinate system of refCat
         @param[in] idFactory   factory for creating IDs for sources
 
-        @return Source catalog ready for measurement
+        @return    Source catalog ready for measurement
         """
         if idFactory == None:
             idFactory = lsst.afw.table.IdFactory.makeSimple()

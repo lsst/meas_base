@@ -105,25 +105,27 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         """!Measure a single exposure using forced detection for a reference catalog.
 
         @param[in]  dataRef   An lsst.daf.persistence.ButlerDataRef. It is passed to the
-                              references subtask to load the reference catalog (see the
-                              CoaddSrcReferencesTask for more information), and the
-                              getExposure() method (implemented by derived classes) to read
-                              the measurement image. These are passed to measurement's run
-                              method which returns an lsst.pipe.base.Struct containing the
-                              source catalog resulting from the forced measurement on the
-                              exposure.  The sources are then passed to the writeOutputs()
-                              method (implemented by derived classes) which writes the
-                              outputs.  See derived class documentation for which datasets
-                              and data ID keys are used.
+                              references subtask to obtain the reference WCS, the getExposure()
+                              method (implemented by derived classes) to read the measurement
+                              image, and the fetchReferences() method (implemented by derived
+                              classes) to get the exposure and load the reference catalog (see
+                              the CoaddSrcReferencesTask for more information).  Sources are
+                              generated with generateSources() in the measurement subtask.  These
+                              are passed to measurement's run method which fills the source
+                              catalog with the forced measurement results.  The sources are then
+                              passed to the writeOutputs() method (implemented by derived classes)
+                              which writes the outputs.  See derived class documentation for which
+                              datasets and data ID keys are used.
         """
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
         refCat = list(self.fetchReferences(dataRef, exposure))
+        sources = self.measurement.generateSources(exposure, refCat, refWcs,
+                                                   idFactory=self.makeIdFactory(dataRef))
         self.log.info("Performing forced measurement on %s" % dataRef.dataId)
         self.attachFootprints(dataRef, sources, refCat, exposure, refWcs)
-        retStruct = self.measurement.run(exposure, refCat, refWcs,
-                                         idFactory=self.makeIdFactory(dataRef))
-        self.writeOutput(dataRef, retStruct.sources)
+        self.measurement.run(exposure, sources, refCat, refWcs)
+        self.writeOutput(dataRef, sources)
 
     def makeIdFactory(self, dataRef):
         """!Hook for derived classes to define how to make an IdFactory for forced sources.
