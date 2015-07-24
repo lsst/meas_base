@@ -333,16 +333,11 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         return lsst.pipe.base.Struct(sources=sources)
 
     def generateSources(self, exposure, refCat, refWcs, idFactory=None):
-        """!
-        Initialize an output SourceCatalog using information from the reference catalog.
+        """!Initialize an output SourceCatalog using information from the reference catalog.
 
-        This generate a new blank SourceRecord for each record in refCat, copying any
-        fields in ForcedMeasurementConfig.copyColumns.  This also transforms the Footprints
-        in refCat to the measurement coordinate system if it differs from refWcs, and attaches
-        these to the new SourceRecords.  Note that we do not currently have the ability to
-        transform heavy footprints, so when the reference and measure WCSs are different,
-        HeavyFootprints will be converted to regular Footprints, which makes it impossible
-        to properly measure blended objects.
+        This generates a new blank SourceRecord for each record in refCat.  Note that this
+        method does not attach any Footprints.  Doing so is up to the caller (who may
+        call attachedTransformedFootprints or define their own method).
 
         @param[in] exposure    Exposure to be measured
         @param[in] refCat      Sequence (not necessarily a SourceCatalog) of reference SourceRecords.
@@ -363,12 +358,4 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         for ref in refCat:
             newSource = sources.addNew()
             newSource.assign(ref, self.mapper)
-            footprint = newSource.getFootprint()
-            if footprint is not None:
-                # if heavy, just transform the "light footprint" and leave the rest behind
-                if footprint.isHeavy():
-                    footprint = lsst.afw.detection.Footprint(footprint)
-                if not refWcs == targetWcs:
-                    footprint = footprint.transform(refWcs, targetWcs, expRegion, True)
-                newSource.setFootprint(footprint)
         return sources
