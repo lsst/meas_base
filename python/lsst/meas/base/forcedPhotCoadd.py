@@ -41,9 +41,6 @@ class ForcedPhotCoaddConfig(ProcessImageForcedConfig):
 
     def setDefaults(self):
         ProcessImageForcedTask.ConfigClass.setDefaults(self)
-        # Because the IDs used in coadd forced photometry *are* the object IDs, we drop the 'object' prefix
-        # that is used in the copied columns in CCD forced photometry.
-        self.copyColumns = dict((k, k) for k in ("id", "parent", "deblend_nchild"))
         self.references.removePatchOverlaps = False  # see validate() for why
 
     def validate(self):

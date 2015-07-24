@@ -50,7 +50,11 @@ class ProcessImageForcedConfig(lsst.pex.config.Config):
         doc = "coadd name: typically one of deep or goodSeeing",
         dtype = str,
         default = "deep",
-    )
+        )
+    copyColumns = lsst.pex.config.DictField(
+        keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
+        default={"id": "objectId", "parent": "parentObjectId", "deblend_nChild": "deblend_nChild"}
+        )
 
     def setDefaults(self):
         # coadds do not yet include include aperture correction data,
