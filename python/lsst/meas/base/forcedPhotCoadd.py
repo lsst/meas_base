@@ -84,7 +84,7 @@ class ForcedPhotCoaddTask(ProcessImageForcedTask):
 
     ConfigClass = ForcedPhotCoaddConfig
     RunnerClass = lsst.pipe.base.ButlerInitializedTaskRunner
-    _DefaultName = "forcedPhotCoaddTask"
+    _DefaultName = "forcedPhotCoadd"
     dataPrefix = "deepCoadd_"
 
     def getExposure(self, dataRef):

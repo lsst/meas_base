@@ -104,7 +104,7 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
 
     ConfigClass = ForcedPhotCcdConfig
     RunnerClass = lsst.pipe.base.ButlerInitializedTaskRunner
-    _DefaultName = "forcedPhotCcdTask"
+    _DefaultName = "forcedPhotCcd"
     dataPrefix = ""
 
     def makeIdFactory(self, dataRef):
