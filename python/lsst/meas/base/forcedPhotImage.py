@@ -119,7 +119,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         """
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
-        refCat = list(self.fetchReferences(dataRef, exposure))
+        refCat = self.fetchReferences(dataRef, exposure)
         sources = self.measurement.generateSources(exposure, refCat, refWcs,
                                                    idFactory=self.makeIdFactory(dataRef))
         self.log.info("Performing forced measurement on %s" % dataRef.dataId)
