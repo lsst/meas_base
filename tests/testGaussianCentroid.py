@@ -25,7 +25,6 @@ import unittest
 
 import lsst.utils.tests
 import lsst.meas.base.tests
-
 from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 

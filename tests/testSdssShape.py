@@ -21,8 +21,8 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import numpy
 import unittest
+
 import numpy
 
 import lsst.utils.tests

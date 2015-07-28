@@ -27,7 +27,7 @@ import lsst.pex.config
 from lsst.afw.image import ApCorrMap
 from lsst.afw.math import ChebyshevBoundedField, ChebyshevBoundedFieldConfig
 from lsst.pipe.base import Task, Struct
-from .base import getApCorrNameSet
+from .apCorrRegistry import getApCorrNameSet
 
 __all__ = ("MeasureApCorrConfig", "MeasureApCorrTask")
 

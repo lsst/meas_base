@@ -21,8 +21,9 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import numpy
 import unittest
+
+import numpy
 
 import lsst.afw.geom
 import lsst.meas.base

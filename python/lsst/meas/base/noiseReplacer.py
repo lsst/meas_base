@@ -20,11 +20,14 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+import math
 
 import lsst.afw.detection as afwDet
 import lsst.afw.math as afwMath
 import lsst.afw.image as afwImage
 import lsst.pex.config
+
+__all__ = ("NoiseReplacerConfig", "NoiseReplacer", "DummyNoiseReplacer")
 
 class NoiseReplacerConfig(lsst.pex.config.Config):
     noiseSource = lsst.pex.config.ChoiceField(
@@ -232,7 +235,6 @@ class NoiseReplacer(object):
         im = mi.getImage()
         mask = mi.getMask()
         for id in self.footprints.keys():
-            fp = self.footprints[id][1]
             if self.footprints[id][0] != 0:
                 continue
             self.heavies[id].insert(im)

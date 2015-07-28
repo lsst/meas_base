@@ -25,9 +25,7 @@ import lsst.pipe.base
 import lsst.coadd.utils
 import lsst.afw.table
 
-from .forcedPhotImage import *
-from .base import *
-from .references import CoaddSrcReferencesTask
+from .forcedPhotImage import ProcessImageForcedConfig, ProcessImageForcedTask
 
 __all__ = ("ForcedPhotCoaddConfig", "ForcedPhotCoaddTask")
 

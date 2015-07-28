@@ -30,9 +30,8 @@ import lsst.daf.base
 import lsst.pipe.base
 import lsst.pex.config
 
-from .base import *
 from .references import CoaddSrcReferencesTask
-from .forcedMeasurement import *
+from .forcedMeasurement import ForcedMeasurementTask
 
 __all__ = ("ProcessImageForcedConfig", "ProcessImageForcedTask")
 
@@ -52,6 +51,11 @@ class ProcessImageForcedConfig(lsst.pex.config.Config):
         dtype = str,
         default = "deep",
     )
+
+    def setDefaults(self):
+        # coadds do not yet include include aperture correction data,
+        # but that is planned, so might as well warn when it occurs
+        self.measurement.doApplyApCorr = "noButWarn"
 
 ## @addtogroup LSST_task_documentation
 ## @{

@@ -32,7 +32,9 @@ or
 import itertools
 import math
 import unittest
+
 import numpy
+
 import lsst.utils.tests as tests
 import lsst.pex.logging as pexLogging
 import lsst.pex.exceptions
@@ -42,7 +44,6 @@ import lsst.afw.math as afwMath
 import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
 import lsst.afw.image as afwImage
-import lsst.afw.coord as afwCoord
 import lsst.meas.base as measBase
 
 try:
@@ -55,8 +56,6 @@ try:
     type(display)
 except NameError:
     display = False
-
-import lsst.afw.display.ds9 as ds9
 
 FwhmPerSigma = 2*math.sqrt(2*math.log(2)) # FWHM for an N(0, 1) Gaussian
 
@@ -115,9 +114,6 @@ class MeasureSourcesTestCase(unittest.TestCase):
     def testPeakLikelihoodFlux(self):
         """Test measurement with PeakLikelihoodFlux
         """
-        # make mp: a flux measurer
-        alg = measBase.PeakLikelihoodFluxAlgorithm
-
         # make and measure a series of exposures containing just one star, approximately centered
         bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.Extent2I(100, 101))
         kernelWidth = 35

@@ -29,11 +29,9 @@ slot-eligible fields must be), but non-slot fields may be recorded in other coor
 to avoid information loss (this should, of course, be indicated in the field documentation).
 """
 
-import lsst.pex.config
-import lsst.pipe.base
-import lsst.daf.base
-
-from .base import *
+from .pluginRegistry import PluginRegistry
+from .baseMeasurement import BasePluginConfig, BasePlugin, BaseMeasurementConfig, BaseMeasurementTask
+from .noiseReplacer import NoiseReplacer, DummyNoiseReplacer
 
 __all__ = ("SingleFramePluginConfig", "SingleFramePlugin",
            "SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
@@ -247,7 +245,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         self.schema = schema
         self.initializePlugins(schema=self.schema)
         self.config.slots.setupSchema(self.schema)
-
+        self.makeSubtask("applyApCorr", schema=self.schema)
 
     def run(self, measCat, exposure, noiseImage=None, exposureId=None, beginOrder=None, endOrder=None):
         """!
@@ -320,6 +318,12 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
             noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
         noiseReplacer.end()
+
+        self._applyApCorrIfWanted(
+            sources = measCat,
+            apCorrMap = exposure.getInfo().getApCorrMap(),
+            endOrder = endOrder,
+        )
 
     def measure(self, measCat, exposure):
         """!

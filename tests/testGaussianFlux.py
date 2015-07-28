@@ -22,11 +22,11 @@
 #
 
 import unittest
+
 import numpy
 
 import lsst.meas.base
 import lsst.utils.tests
-
 from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 

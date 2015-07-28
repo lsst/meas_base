@@ -21,7 +21,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import numpy
 import unittest
 
 import lsst.daf.base
