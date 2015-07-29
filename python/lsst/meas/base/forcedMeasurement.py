@@ -352,3 +352,21 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             newSource = sources.addNew()
             newSource.assign(ref, self.mapper)
         return sources
+
+    def attachTransformedFootprints(self, sources, refCat, exposure, refWcs):
+        """!Default implementation for attaching Footprints to blank sources prior to measurement
+
+        Footprints for forced photometry must be in the pixel coordinate system of the image being
+        measured, while the actual detections may start out in a different coordinate system.
+        This default implementation transforms the Footprints from the reference catalog from the
+        refWcs to the exposure's Wcs, which downgrades HeavyFootprints into regular Footprints,
+        destroying deblend information.
+
+        Note that ForcedPhotImageTask delegates to this method in its own attachFootprints method.
+        attachFootprints can then be overridden by its subclasses to define how their Footprints
+        should be generated.
+        """
+        exposureWcs = exposure.getWcs()
+        region = exposure.getBBox(lsst.afw.image.PARENT)
+        for srcRecord, refRecord in zip(sources, refCat):
+            srcRecord.setFootprint(refRecord.getFootprint().transform(refWcs, exposureWcs, region))

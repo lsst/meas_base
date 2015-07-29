@@ -123,7 +123,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         sources = self.measurement.generateSources(exposure, refCat, refWcs,
                                                    idFactory=self.makeIdFactory(dataRef))
         self.log.info("Performing forced measurement on %s" % dataRef.dataId)
-        self.attachFootprints(dataRef, sources, refCat, exposure, refWcs)
+        self.attachFootprints(sources, refCat, exposure, refWcs, dataRef)
         self.measurement.run(exposure, sources, refCat, refWcs)
         self.writeOutput(dataRef, sources)
 
@@ -145,7 +145,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         """
         raise NotImplementedError()
 
-    def attachFootprints(self, dataRef, sources, refCat, exposure, refWcs):
+    def attachFootprints(self, sources, refCat, exposure, refWcs, dataRef):
         """!Hook for derived classes to define how to attach Footprints to blank sources prior to measurement
 
         Footprints for forced photometry must be in the pixel coordinate system of the image being
@@ -154,14 +154,11 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         Subclasses for ForcedPhotImageTask must implement this method to define how those Footprints
         should be generated.
 
-        The default implementation transforms the Footprints from the reference catalog from the refWcs
-        to the exposure's Wcs, which downgrades HeavyFootprints into regular Footprints, destroying
-        deblend information.
+        The default implementation (defined in forcedMeasurement.py) transforms the Footprints from
+        the reference catalog from the refWcs to the exposure's Wcs, which downgrades HeavyFootprints
+        into regular Footprints, destroying deblend information.
         """
-        exposureWcs = exposure.getWcs()
-        region = exposure.getBBox(lsst.afw.image.PARENT)
-        for srcRecord, refRecord in zip(sources, refCat):
-            srcRecord.setFootprint(refRecord.getFootprint().transform(refWcs, exposureWcs, region))
+        return self.measurement.attachTransformedFootprints(sources, refCat, exposure, refWcs)
 
     def getExposure(self, dataRef):
         """!Read input exposure on which to perform the measurements
