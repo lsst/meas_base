@@ -225,8 +225,12 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
         measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs())
         measDataset = self.dataset.transform(measWcs)
         exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
-        s = task.run(exposure, refCat=self.dataset.catalog, refWcs=self.dataset.exposure.getWcs())
-        for measRecord, truthRecord in zip(s.sources, truthCatalog):
+        refCat = self.dataset.catalog
+        refWcs = self.dataset.exposure.getWcs()
+        sources = task.generateSources(exposure, refCat, refWcs)
+        task.attachTransformedFootprints(sources, refCat, exposure, refWcs)
+        s = task.run(exposure, sources, refCat, refWcs)
+        for measRecord, truthRecord in zip(sources, truthCatalog):
             # Centroid tolerances set to ~ single precision epsilon
             self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-7)
             self.assertClose(measRecord.get("slot_Centroid_y"), truthRecord.get("truth_y"), rtol=1E-7)
