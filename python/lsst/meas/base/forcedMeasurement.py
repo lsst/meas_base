@@ -231,7 +231,8 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.config.slots.setupSchema(self.schema)
         self.makeSubtask("applyApCorr", schema=self.schema)
 
-    def run(self, exposure, refCat, refWcs, idFactory=None, exposureId=None, beginOrder=None, endOrder=None):
+    def run(self, exposure, refCat, refWcs, idFactory=None, exposureId=None, beginOrder=None, endOrder=None,
+        allowApCorr=True):
         """!
         Perform forced measurement.
 
@@ -247,6 +248,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                                  executionOrder < beginOrder are not executed. None for no limit.
         @param[in]  endOrder     ending execution order (exclusive): measurements with
                                  executionOrder >= endOrder are not executed. None for no limit.
+        @param[in] allowApCorr  allow application of aperture correction?
 
         @return SourceCatalog containing measurement results.
 
@@ -326,11 +328,12 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()
 
-        self._applyApCorrIfWanted(
-            sources = sources,
-            apCorrMap = exposure.getInfo().getApCorrMap(),
-            endOrder = endOrder,
-        )
+        if allowApCorr:
+            self._applyApCorrIfWanted(
+                sources = sources,
+                apCorrMap = exposure.getInfo().getApCorrMap(),
+                endOrder = endOrder,
+            )
 
         return lsst.pipe.base.Struct(sources=sources)
 
