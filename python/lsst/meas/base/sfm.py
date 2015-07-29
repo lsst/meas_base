@@ -247,7 +247,8 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         self.config.slots.setupSchema(self.schema)
         self.makeSubtask("applyApCorr", schema=self.schema)
 
-    def run(self, measCat, exposure, noiseImage=None, exposureId=None, beginOrder=None, endOrder=None):
+    def run(self, measCat, exposure, noiseImage=None, exposureId=None, beginOrder=None, endOrder=None,
+        allowApCorr=True):
         """!
         Run single frame measurement over an exposure and source catalog
 
@@ -265,6 +266,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
                                  executionOrder < beginOrder are not executed. None for no limit.
         @param[in] endOrder      ending execution order (exclusive): measurements with
                                  executionOrder >= endOrder are not executed. None for no limit.
+        @param[in] allowApCorr  allow application of aperture correction?
         """
         # Temporary workaround for change in order of arguments; will be removed when transition
         # from meas_algorithms to meas_base is complete.
@@ -319,11 +321,12 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         # when done, restore the exposure to its original state
         noiseReplacer.end()
 
-        self._applyApCorrIfWanted(
-            sources = measCat,
-            apCorrMap = exposure.getInfo().getApCorrMap(),
-            endOrder = endOrder,
-        )
+        if allowApCorr:
+            self._applyApCorrIfWanted(
+                sources = measCat,
+                apCorrMap = exposure.getInfo().getApCorrMap(),
+                endOrder = endOrder,
+            )
 
     def measure(self, measCat, exposure):
         """!
