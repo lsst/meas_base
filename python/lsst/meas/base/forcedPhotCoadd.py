@@ -88,7 +88,7 @@ class ForcedPhotCoaddTask(ProcessImageForcedTask):
     dataPrefix = "deepCoadd_"
 
     def getExposure(self, dataRef):
-        name = self.config.coaddName + "Coadd"
+        name = self.config.coaddName + "Coadd_calexp_det"
         return dataRef.get(name) if dataRef.datasetExists(name) else None
 
     def makeIdFactory(self, dataRef):
