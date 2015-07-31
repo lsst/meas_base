@@ -165,32 +165,34 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
         del self.dataset
 
     def testSingleFramePlugin(self):
-        config = self.makeSingleFrameMeasurementConfig("base_CircularApertureFlux")
-        config.plugins["base_CircularApertureFlux"].maxSincRadius = 20
-        ctrl = config.plugins["base_CircularApertureFlux"].makeControl()
+        baseName = "base_CircularApertureFlux"
+        config = self.makeSingleFrameMeasurementConfig(baseName)
+        config.plugins[baseName].maxSincRadius = 20
+        ctrl = config.plugins[baseName].makeControl()
         algMetadata = lsst.daf.base.PropertyList()
         task = self.makeSingleFrameMeasurementTask(config=config, algMetadata=algMetadata)
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         task.run(exposure, catalog)
-        radii = algMetadata.get("base_CircularApertureFlux_radii")
+        radii = algMetadata.get("%s_radii" % baseName)
         self.assertEqual(list(radii), list(ctrl.radii))
         for record in catalog:
             lastFlux = 0.0
             lastFluxSigma = 0.0
             for n, radius in enumerate(radii):
                 # Test that the flags are what we expect
+                prefix = ApertureFluxAlgorithm.makeFieldPrefix(baseName, radius)
                 if radius <= ctrl.maxSincRadius:
-                    self.assertFalse(record.get("base_CircularApertureFlux_%d_flag" % n))
-                    self.assertFalse(record.get("base_CircularApertureFlux_%d_flag_apertureTruncated" % n))
+                    self.assertFalse(record.get(record.schema.join(prefix, "flag")))
+                    self.assertFalse(record.get(record.schema.join(prefix, "flag_apertureTruncated")))
                     self.assertEqual(
-                        record.get("base_CircularApertureFlux_%d_flag_sincCoeffsTruncated" % n),
+                        record.get(record.schema.join(prefix, "flag_sincCoeffsTruncated")),
                         radius > 12
                     )
                 else:
-                    self.assertTrue("base_CircularApertureFlux_%d_flag_sincCoeffsTruncated" % n
+                    self.assertTrue(record.schema.join(prefix, "flag_sincCoeffsTruncated")
                                     not in record.getSchema())
-                    self.assertEqual(record.get("base_CircularApertureFlux_%d_flag" % n), radius > 50)
-                    self.assertEqual(record.get("base_CircularApertureFlux_%d_flag_apertureTruncated" % n),
+                    self.assertEqual(record.get(record.schema.join(prefix, "flag")), radius > 50)
+                    self.assertEqual(record.get(record.schema.join(prefix, "flag_apertureTruncated")),
                                      radius > 50)
                 # Test that the fluxes and uncertainties increase as we increase the apertures, or that
                 # they match the true flux within 3 sigma.  This is just a test as to whether the values
@@ -198,9 +200,9 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
                 # ApertureFluxAlgorithm's static methods, as the way the plugins code calls that is
                 # extremely simple, so if the results we get are reasonable, it's hard to imagine
                 # how they could be incorrect if ApertureFluxAlgorithm's tests are valid.
-                currentFlux = record.get("base_CircularApertureFlux_%d_flux" % n)
-                currentFluxSigma = record.get("base_CircularApertureFlux_%d_fluxSigma" % n)
-                if not record.get("base_CircularApertureFlux_%d_flag" % n):
+                currentFlux = record.get(record.schema.join(prefix, "flux"))
+                currentFluxSigma = record.get(record.schema.join(prefix, "fluxSigma"))
+                if not record.get(record.schema.join(prefix, "flag")):
                     self.assertTrue(currentFlux > lastFlux
                                     or (record.get("truth_flux") - currentFlux) < 3*currentFluxSigma)
                     self.assertGreater(currentFluxSigma, lastFluxSigma)
@@ -212,13 +214,14 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
             # When measuring an isolated point source with a sufficiently large aperture, we should
             # recover the known input flux.
             if record.get("truth_isStar") and record.get("parent") == 0:
-                self.assertClose(record.get("base_CircularApertureFlux_6_flux"), record.get("truth_flux"),
+                self.assertClose(record.get("base_CircularApertureFlux_25_0_flux"), record.get("truth_flux"),
                                  rtol=0.02)
 
     def testForcedPlugin(self):
+        baseName = "base_CircularApertureFlux"
         algMetadata = lsst.daf.base.PropertyList()
-        task = self.makeForcedMeasurementTask("base_CircularApertureFlux", algMetadata=algMetadata)
-        radii = algMetadata.get("base_CircularApertureFlux_radii")
+        task = self.makeForcedMeasurementTask(baseName, algMetadata=algMetadata)
+        radii = algMetadata.get("%s_radii" % baseName)
         measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs())
         measDataset = self.dataset.transform(measWcs)
         exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
@@ -228,13 +231,14 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
             self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-7)
             self.assertClose(measRecord.get("slot_Centroid_y"), truthRecord.get("truth_y"), rtol=1E-7)
             for n, radius in enumerate(radii):
-                self.assertFalse(measRecord.get("base_CircularApertureFlux_%d_flag" % n))
+                prefix = ApertureFluxAlgorithm.makeFieldPrefix(baseName, radius)
+                self.assertFalse(measRecord.get(measRecord.schema.join(prefix, "flag")))
                 # CircularApertureFlux isn't designed to do a good job in forced mode, because it doesn't
                 # account for changes in the PSF or changes in the WCS.  Hence, this is really just a
                 # test to make sure the values are reasonable and that it runs with no unexpected errors.
-                self.assertClose(measRecord.get("base_CircularApertureFlux_%d_flux" % n),
+                self.assertClose(measRecord.get(measRecord.schema.join(prefix, "flux")),
                                  truthCatalog.get("truth_flux"), rtol=1.0)
-                self.assertLess(measRecord.get("base_CircularApertureFlux_%d_fluxSigma" % n), (n+1)*150.0)
+                self.assertLess(measRecord.get(measRecord.schema.join(prefix, "fluxSigma")), (n+1)*150.0)
 
 
 class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper):
@@ -257,7 +261,7 @@ class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTran
     def testTransform(self):
         """Demonstrate application of the ApertureFluxTransform to a synthetic SourceCatalog."""
         FluxTransformTestCase.testTransform(self,
-            [self.name + "_" + str(i) for i in range(len(self.control.radii))])
+            [ApertureFluxAlgorithm.makeFieldPrefix(self.name, r) for r in self.control.radii])
 
 
 def suite():

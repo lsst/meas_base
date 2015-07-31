@@ -204,6 +204,20 @@ public:
         MeasurementError * error=NULL
     ) const;
 
+    /**
+     *  Construct an appropriate prefix for table fields.
+     *
+     *  Given a plugin name (e.g. base_CircularApertureFlux) and an aperture radius (e.g. 12 pixels)
+     *  return an appropriate prefix for table fields to contain the measurement results (e.g.
+     *  base_CircularApertureFlux_12_0). Table fields can then be created named <prefix>_flux,
+     *  <prefix>_fluxErr, etc.
+     *
+     * @param[in] pluginName      Name of measurement plugin.
+     * @param[in] radius          Aperture radius (pixels).
+     * @returns   Table field name prefix.
+     */
+    static std::string makeFieldPrefix(std::string const & name, double radius);
+
 protected:
 
     void copyResultToRecord(Result const & result, afw::table::SourceRecord & record, int index) const;

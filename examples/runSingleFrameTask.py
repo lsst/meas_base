@@ -75,7 +75,7 @@ def run(display=False):
     for plugin in ["base_SdssCentroid", "base_SdssShape", "base_CircularApertureFlux", "base_GaussianFlux"]:
         config.plugins.names.add(plugin)
     config.slots.psfFlux = None
-    config.slots.apFlux = "base_CircularApertureFlux_0"
+    config.slots.apFlux = "base_CircularApertureFlux_3_0"
 
     measureTask = SingleFrameMeasurementTask(schema, config=config)
 
