@@ -62,9 +62,9 @@ class CentroidTestCase(utilsTests.TestCase):
         """Test that we can instantiate and play with a centroiding algorithms"""
 
         schema = afwTable.SourceTable.makeMinimalSchema()
+        schema.getAliasMap().set("slot_Centroid", "test")
         centroider = alg(control, "test", schema)
         table = afwTable.SourceCatalog(schema)
-        table.defineCentroid("test")
 
         x0, y0 = 12345, 54321
         for imageFactory in (afwImage.MaskedImageF,):
@@ -134,14 +134,10 @@ class CentroidTestCase(utilsTests.TestCase):
 class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
     """A test case for the SingleFrameMeasurementTask"""
 
-    def mySetup(self, runCentroider=True):
+    def mySetup(self):
         msConfig = measBase.SingleFrameMeasurementConfig()
         msConfig.algorithms.names = ["base_SdssCentroid"]
-        if not runCentroider:
-            msConfig.slots.centroid = None
-        else:
-            msConfig.slots.centroid = "base_SdssCentroid"
-
+        msConfig.slots.centroid = "base_SdssCentroid"
         msConfig.slots.shape = None
         msConfig.slots.apFlux = None
         msConfig.slots.modelFlux = None
@@ -183,12 +179,6 @@ class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
         # this does not match exactly, and it used to
         print s.getCentroid(), self.xcen, self.ycen
         self.assertClose(s.getCentroid(), afwGeom.PointD(self.xcen, self.ycen), rtol=.01)
-
-    def testNoCentroider(self):
-        """Check that we can disable running a centroid algorithm"""
-        s = self.mySetup(False)
-
-        self.assertRaises(pexExceptions.LogicError, s.getCentroid)
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 

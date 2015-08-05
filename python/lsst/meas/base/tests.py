@@ -656,7 +656,14 @@ class SingleFramePluginTransformSetupHelper(object):
     def _setupTransform(self):
         self.control = self.controlClass()
         inputSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
+        # Trick algorithms that depend on the slot centroid or alias into thinking they've been defined;
+        # it doesn't matter for this test since we won't actually use the plugins for anything besides
+        # defining the schema.
+        inputSchema.getAliasMap().set("slot_Centroid", "dummy")
+        inputSchema.getAliasMap().set("slot_Shape", "dummy")
         self.algorithmClass(self.control, self.name, inputSchema)
+        inputSchema.getAliasMap().erase("slot_Centroid")
+        inputSchema.getAliasMap().erase("slot_Shape")
         self.inputCat = lsst.afw.table.SourceCatalog(inputSchema)
         self.mapper = lsst.afw.table.SchemaMapper(inputSchema)
         self.transform = self.transformClass(self.control, self.name, self.mapper)
@@ -668,7 +675,14 @@ class ForcedPluginTransformSetupHelper(object):
         self.control = self.controlClass()
         inputMapper = lsst.afw.table.SchemaMapper(lsst.afw.table.SourceTable.makeMinimalSchema(),
                                                   lsst.afw.table.SourceTable.makeMinimalSchema())
+        # Trick algorithms that depend on the slot centroid or alias into thinking they've been defined;
+        # it doesn't matter for this test since we won't actually use the plugins for anything besides
+        # defining the schema.
+        inputMapper.editOutputSchema().getAliasMap().set("slot_Centroid", "dummy")
+        inputMapper.editOutputSchema().getAliasMap().set("slot_Shape", "dummy")
         self.algorithmClass(self.control, self.name, inputMapper, lsst.daf.base.PropertyList())
+        inputMapper.editOutputSchema().getAliasMap().erase("slot_Centroid")
+        inputMapper.editOutputSchema().getAliasMap().erase("slot_Shape")
         self.inputCat = lsst.afw.table.SourceCatalog(inputMapper.getOutputSchema())
         self.mapper = lsst.afw.table.SchemaMapper(inputMapper.getOutputSchema())
         self.transform = self.transformClass(self.control, self.name, self.mapper)
