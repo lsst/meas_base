@@ -41,13 +41,21 @@ SafeCentroidExtractor::SafeCentroidExtractor(
     // look up the target of slot_Centroid_flag, and alias that to MyAlgorithm_flag_badCentroid.
     // That way, if someone changes the slots later, after we've already done the measurement,
     // this alias still points to the right thing.
-    std::string slotFlagName = schema.getAliasMap()->apply(schema.join("slot", "Centroid", "flag"));
+    std::string aliasedFlagName = schema.join("slot", "Centroid", "flag");
+    std::string slotFlagName = schema.getAliasMap()->apply(aliasedFlagName);
     if (_isCentroider) {
         if (slotFlagName != schema.join(name, "flag")) {
             // only setup the alias if this isn't the slot algorithm itself (otherwise it'd be circular)
             schema.getAliasMap()->set(schema.join(name, "flag", "badInitialCentroid"), slotFlagName);
         }
     } else {
+        if (aliasedFlagName == slotFlagName) {
+            throw LSST_EXCEPT(
+                pex::exceptions::LogicError,
+                (boost::format("Alias for '%s' must be defined before initializing '%s' plugin.")
+                % aliasedFlagName % name).str()
+            );
+        }
         schema.getAliasMap()->set(schema.join(name, "flag", "badCentroid"), slotFlagName);
     }
 }
@@ -135,7 +143,15 @@ SafeShapeExtractor::SafeShapeExtractor(afw::table::Schema & schema, std::string 
     // look up the target of slot_Shape_flag, and alias that to MyAlgorithm_flag_badCentroid.
     // That way, if someone changes the slots later, after we've already done the measurement,
     // this alias still points to the right thing.
-    std::string slotFlagName = schema.getAliasMap()->apply(schema.join("slot", "Shape", "flag"));
+    std::string aliasedFlagName = schema.join("slot", "Shape", "flag");
+    std::string slotFlagName = schema.getAliasMap()->apply(aliasedFlagName);
+    if (aliasedFlagName == slotFlagName) {
+        throw LSST_EXCEPT(
+            pex::exceptions::LogicError,
+            (boost::format("Alias for '%s' must be defined before initializing '%s' plugin.")
+            % aliasedFlagName % name).str()
+        );
+    }
     schema.getAliasMap()->set(schema.join(name, "flag", "badShape"), slotFlagName);
 }
 
