@@ -226,9 +226,9 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         for refName, targetName in self.config.copyColumns.items():
             refItem = refSchema.find(refName)
             self.mapper.addMapping(refItem.key, targetName)
+        self.config.slots.setupSchema(self.mapper.editOutputSchema())
         self.initializePlugins(schemaMapper=self.mapper)
         self.schema = self.mapper.getOutputSchema()
-        self.config.slots.setupSchema(self.schema)
         self.makeSubtask("applyApCorr", schema=self.schema)
 
     def run(self, exposure, refCat, refWcs, idFactory=None, exposureId=None, beginOrder=None, endOrder=None,

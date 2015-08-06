@@ -65,13 +65,12 @@ def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
         schema.addField(centroid + "_x", type=float)
         schema.addField(centroid + "_y", type=float)
         schema.addField(centroid + "_flag", type='Flag')
+        schema.getAliasMap().set("slot_Centroid", centroid)
     if metadata:
         plugin = alg(control, name, schema, dafBase.PropertySet())
     else:
         plugin = alg(control, name, schema)
     cat = afwTable.SourceCatalog(schema)
-    if centroid:
-        cat.defineCentroid(centroid)
     return plugin, cat
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

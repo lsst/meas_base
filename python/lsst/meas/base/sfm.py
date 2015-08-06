@@ -243,8 +243,8 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         """
         super(SingleFrameMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
         self.schema = schema
-        self.initializePlugins(schema=self.schema)
         self.config.slots.setupSchema(self.schema)
+        self.initializePlugins(schema=self.schema)
         self.makeSubtask("applyApCorr", schema=self.schema)
 
     def run(self, measCat, exposure, noiseImage=None, exposureId=None, beginOrder=None, endOrder=None,

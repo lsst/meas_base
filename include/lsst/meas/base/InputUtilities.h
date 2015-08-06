@@ -44,7 +44,8 @@ public:
      *  @param[out] schema   Schema to which the alias should be added.  The "slot_Centroid" alias
      *                       must already be present in the Schema's AliasMap.
      *  @param[in]  name     The name of the algorithm; the flag alias added will be
-     *                       "<name>_flag_badCentroid".
+     *                       "<name>_flag_badCentroid", or "<name>_flag_badInitialCentroid"
+     *                       if isCentroider=true.
      *  @param[in]  isCentroider    Indicates whether the calling algorithm is itself a centroid
      *                              measurement algorithm.  If true,, falling back to the Peak
      *                              because there was no previous centroider or a previous centroider
