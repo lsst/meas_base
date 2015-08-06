@@ -502,6 +502,8 @@ class AlgorithmTestCase(lsst.utils.tests.TestCase):
             config = self.makeSingleFrameMeasurementConfig(plugin=plugin, dependencies=dependencies)
         if schema is None:
             schema = TestDataset.makeMinimalSchema()
+            # Clear all aliases so only those defined by config are set.
+            schema.setAliasMap(None)
         if algMetadata is None:
             algMetadata = lsst.daf.base.PropertyList()
         return SingleFrameMeasurementTask(schema=schema, algMetadata=algMetadata, config=config)

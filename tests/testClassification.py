@@ -47,6 +47,7 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase):
                                                        dependencies=["base_PsfFlux"])
         # n.b. we use the truth value as ModelFlux
         config.slots.psfFlux = "base_PsfFlux"
+        config.slots.modelFlux = "truth"
         task = self.makeSingleFrameMeasurementTask(config=config)
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         task.run(exposure, catalog)
