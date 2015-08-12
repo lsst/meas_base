@@ -133,10 +133,9 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
         All work is delegated to the references subtask; see CoaddSrcReferencesTask for information
         about the default behavior.
         """
-        bbox = exposure.getBBox()
         references = lsst.afw.table.SourceCatalog(self.references.schema)
         badParents = set()
-        unfiltered = self.references.fetchInBox(dataRef, exposure.getBBox(bbox), exposure.getWcs())
+        unfiltered = self.references.fetchInBox(dataRef, exposure.getBBox(), exposure.getWcs())
         for record in unfiltered:
             if record.getFootprint() is None or record.getFootprint().getArea() == 0:
                 if record.getParent() != 0:
