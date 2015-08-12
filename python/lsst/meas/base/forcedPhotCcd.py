@@ -169,6 +169,16 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
             applyMosaicResults(dataRef, calexp=exposure)
         return exposure
 
+    def _getConfigName(self):
+        """!Return the name of the config dataset.  Forces config comparison from run-to-run
+        """
+        return self.dataPrefix + "forcedPhotCcd_config"
+
+    def _getMetadataName(self):
+        """!Return the name of the metadata dataset.  Forced metadata to be saved
+        """
+        return self.dataPrefix + "forcedPhotCcd_metadata"
+
     @classmethod
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
