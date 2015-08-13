@@ -127,16 +127,29 @@ class BaseReferencesTask(lsst.pipe.base.Task):
         @param[in] bbox        bounding box with which to filter reference sources (Box2I or Box2D)
         @param[in] wcs         afw.image.Wcs that defines the coordinate system of bbox
 
+        Instead of filtering sources directly via their positions, we filter based on the positions
+        of parent objects, then include or discard all children based on their parent's status.  This
+        is necessary to support ReplaceWithNoise in measurement, which requires all child sources have
+        their parent present.
+
         @return an iterable of filtered reference sources
 
         This is not a part of the required BaseReferencesTask interface; it's a convenience function
         used in implementing fetchInBox that may be of use to subclasses.
         """
         boxD = lsst.afw.geom.Box2D(bbox)
-        for source in sources:
-            pixel = wcs.skyToPixel(source.getCoord())
+        # We're passed an arbitrary iterable, but we need a catalog so we can iterate
+        # over parents and then children.
+        catalog = lsst.afw.table.SourceCatalog(self.schema)
+        catalog.extend(sources)
+        # Iterate over objects that have no parent.
+        for parent in catalog.getChildren(0):
+            pixel = wcs.skyToPixel(parent.getCoord())
             if boxD.contains(pixel):
-                yield source
+                yield parent
+                for child in catalog.getChildren(parent.getId()):
+                    yield child
+
 
 class CoaddSrcReferencesConfig(BaseReferencesTask.ConfigClass):
     coaddName = lsst.pex.config.Field(
@@ -155,8 +168,8 @@ class CoaddSrcReferencesConfig(BaseReferencesTask.ConfigClass):
 
 class CoaddSrcReferencesTask(BaseReferencesTask):
     """!
-    A references task implementation that loads the coadd_src dataset directly from disk using
-    the butler.
+    A references task implementation that loads the coadd_datasetSuffix dataset directly from
+    disk using the butler.
     """
 
     ConfigClass = CoaddSrcReferencesConfig
@@ -172,7 +185,8 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
         BaseReferencesTask.__init__(self, butler=butler, schema=schema, **kwargs)
         if schema is None:
             assert butler is not None, "No butler nor schema provided"
-            schema = butler.get(self.config.coaddName + "Coadd_src_schema", immediate=True).getSchema()
+            schema = butler.get("{}Coadd_{}_schema".format(self.config.coaddName, self.datasetSuffix),
+                                immediate=True).getSchema()
         self.schema = schema
 
     def getWcs(self, dataRef):
@@ -183,8 +197,8 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
 
     def fetchInPatches(self, dataRef, patchList):
         """!
-        An implementation of BaseReferencesTask.fetchInPatches that loads 'coadd_src' catalogs
-        using the butler.
+        An implementation of BaseReferencesTask.fetchInPatches that loads 'coadd_' + datasetSuffix
+        catalogs using the butler.
 
         The given dataRef must include the tract in its dataId.
         """
@@ -241,7 +255,8 @@ class MultiBandReferencesConfig(CoaddSrcReferencesTask.ConfigClass):
         if self.filter is not None:
             raise lsst.pex.config.FieldValidationError(field=MultiBandReferencesConfig.filter, config=self,
                                        msg="Filter should not be set for the multiband processing scheme")
-        CoaddSrcReferencesTask.validate(self)
+        # Delegate to ultimate base class, because the direct one has a check we don't want.
+        BaseReferencesTask.ConfigClass.validate(self)
 
 
 class MultiBandReferencesTask(CoaddSrcReferencesTask):

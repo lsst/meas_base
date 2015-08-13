@@ -231,17 +231,17 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.schema = self.mapper.getOutputSchema()
         self.makeSubtask("applyApCorr", schema=self.schema)
 
-    def run(self, exposure, refCat, refWcs, idFactory=None, exposureId=None, beginOrder=None, endOrder=None,
-        allowApCorr=True):
+    def run(self, exposure, sources, refCat, refWcs, exposureId=None, beginOrder=None, endOrder=None,
+            allowApCorr=True):
         """!
         Perform forced measurement.
 
         @param[in]  exposure     lsst.afw.image.ExposureF to be measured; must have at least a Wcs attached.
+        @param[in]  sources      Source catalog for measurement
         @param[in]  refCat       A sequence of SourceRecord objects that provide reference information
                                  for the measurement.  These will be passed to each Plugin in addition
                                  to the output SourceRecord.
         @param[in]  refWcs       Wcs that defines the X,Y coordinate system of refCat
-        @param[in]  idFactory    factory for creating IDs for sources
         @param[in]  exposureId   optional unique exposureId used to calculate random number
                                  generator seed in the NoiseReplacer.
         @param[in]  beginOrder   beginning execution order (inclusive): measurements with
@@ -250,45 +250,35 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                                  executionOrder >= endOrder are not executed. None for no limit.
         @param[in] allowApCorr  allow application of aperture correction?
 
-        @return SourceCatalog containing measurement results.
-
-        Delegates creating the initial empty SourceCatalog to generateSources(), then fills it.
+        Fills the initial empty SourceCatalog with forced measurement results.
         """
-        # First create a refList from the original which excludes children when a member
-        # of the parent chain is not within the list.  This can occur at boundaries when
-        # the parent is outside and one of the children is within.  Currently, the parent
-        # chain is always only one deep, but just in case, this code removes any reference
-        # when the parent chain to its topmost parent is broken
-
-        # Construct a footprints dict which does not contain the footprint, just the parentID
-        # We will add the footprint from the transformed sources from generateSources later.
-        footprints = {ref.getId(): ref.getParent() for ref in refCat}
-        refList = list()
+        # First check that the reference catalog does not contain any children for which
+        # any member of their parent chain is not within the list.  This can occur at
+        # boundaries when the parent is outside and one of the children is within.
+        # Currently, the parent chain is always only one deep, but just in case, this
+        # code checks for any case where when the parent chain to a child's topmost
+        # parent is broken and raises an exception if it occurs.
+        #
+        # I.e. this code checks that this precondition is satisfied by whatever reference
+        # catalog provider is being paired with it.
+        refCatIdDict = {ref.getId(): ref.getParent() for ref in refCat}
         for ref in refCat:
             refId = ref.getId()
             topId = refId
             while(topId > 0):
-                if not topId in footprints.keys():
-                    footprints.pop(refId)
-                    break
-                topId = footprints[topId]
-            if topId == 0:
-                refList.append(ref)
-        # now generate transformed source corresponding to the cleanup up refLst
-        sources = self.generateSources(exposure, refList, refWcs, idFactory)
+                if not topId in refCatIdDict.keys():
+                    raise RuntimeError("Reference catalog contains a child for which at least "
+                                       "one parent in its parent chain is not in the catalog.")
+                topId = refCatIdDict[topId]
 
-        # Steal the transformed source footprint and use it to complete the footprints dict,
-        # which then looks like {ref.getId(): (ref.getParent(), source.getFootprint())}
-        for (reference, source) in zip(refList, sources):
-            footprints[reference.getId()] = (reference.getParent(), source.getFootprint())
+        # Construct a footprints dict which looks like
+        # {ref.getId(): (ref.getParent(), source.getFootprint())}
+        # (i.e. getting the footprint from the transformed source footprint)
+        footprints = {ref.getId(): (ref.getParent(), source.getFootprint())
+                      for (ref, source) in zip(refCat, sources)}
 
-        self.log.info("Performing forced measurement on %d sources" % len(refList))
+        self.log.info("Performing forced measurement on %d sources" % len(refCat))
 
-        # Build a catalog of just the references we intend to measure
-        referenceCat = lsst.afw.table.SourceCatalog(self.mapper.getInputSchema())
-        referenceCat.extend(refList)
-
-        # convert the footprints to the coordinate system of the exposure
         if self.config.doReplaceWithNoise:
             noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log, exposureId=exposureId)
             algMetadata = sources.getTable().getMetadata()
@@ -301,13 +291,13 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         else:
             noiseReplacer = DummyNoiseReplacer()
 
-        # Create parent cat which slices both the referenceCat and measCat (sources)
+        # Create parent cat which slices both the refCat and measCat (sources)
         # first, get the reference and source records which have no parent
-        refParentCat, measParentCat = referenceCat.getChildren(0, sources)
+        refParentCat, measParentCat = refCat.getChildren(0, sources)
         for parentIdx, (refParentRecord, measParentRecord) in enumerate(zip(refParentCat,measParentCat)):
 
             # first process the records which have the current parent as children
-            refChildCat, measChildCat = referenceCat.getChildren(refParentRecord.getId(), sources)
+            refChildCat, measChildCat = refCat.getChildren(refParentRecord.getId(), sources)
             # TODO: skip this loop if there are no plugins configured for single-object mode
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
                 noiseReplacer.insertSource(refChildRecord.getId())
@@ -335,26 +325,19 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                 endOrder = endOrder,
             )
 
-        return lsst.pipe.base.Struct(sources=sources)
-
     def generateSources(self, exposure, refCat, refWcs, idFactory=None):
-        """!
-        Initialize an output SourceCatalog using information from the reference catalog.
+        """!Initialize an output SourceCatalog using information from the reference catalog.
 
-        This generate a new blank SourceRecord for each record in refCat, copying any
-        fields in ForcedMeasurementConfig.copyColumns.  This also transforms the Footprints
-        in refCat to the measurement coordinate system if it differs from refWcs, and attaches
-        these to the new SourceRecords.  Note that we do not currently have the ability to
-        transform heavy footprints, so when the reference and measure WCSs are different,
-        HeavyFootprints will be converted to regular Footprints, which makes it impossible
-        to properly measure blended objects.
+        This generates a new blank SourceRecord for each record in refCat.  Note that this
+        method does not attach any Footprints.  Doing so is up to the caller (who may
+        call attachedTransformedFootprints or define their own method).
 
         @param[in] exposure    Exposure to be measured
         @param[in] refCat      Sequence (not necessarily a SourceCatalog) of reference SourceRecords.
         @param[in] refWcs      Wcs that defines the X,Y coordinate system of refCat
         @param[in] idFactory   factory for creating IDs for sources
 
-        @return Source catalog ready for measurement
+        @return    Source catalog ready for measurement
         """
         if idFactory == None:
             idFactory = lsst.afw.table.IdFactory.makeSimple()
@@ -368,12 +351,22 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         for ref in refCat:
             newSource = sources.addNew()
             newSource.assign(ref, self.mapper)
-            footprint = newSource.getFootprint()
-            if footprint is not None:
-                # if heavy, just transform the "light footprint" and leave the rest behind
-                if footprint.isHeavy():
-                    footprint = lsst.afw.detection.Footprint(footprint)
-                if not refWcs == targetWcs:
-                    footprint = footprint.transform(refWcs, targetWcs, expRegion, True)
-                newSource.setFootprint(footprint)
         return sources
+
+    def attachTransformedFootprints(self, sources, refCat, exposure, refWcs):
+        """!Default implementation for attaching Footprints to blank sources prior to measurement
+
+        Footprints for forced photometry must be in the pixel coordinate system of the image being
+        measured, while the actual detections may start out in a different coordinate system.
+        This default implementation transforms the Footprints from the reference catalog from the
+        refWcs to the exposure's Wcs, which downgrades HeavyFootprints into regular Footprints,
+        destroying deblend information.
+
+        Note that ForcedPhotImageTask delegates to this method in its own attachFootprints method.
+        attachFootprints can then be overridden by its subclasses to define how their Footprints
+        should be generated.
+        """
+        exposureWcs = exposure.getWcs()
+        region = exposure.getBBox(lsst.afw.image.PARENT)
+        for srcRecord, refRecord in zip(sources, refCat):
+            srcRecord.setFootprint(refRecord.getFootprint().transform(refWcs, exposureWcs, region))
