@@ -347,8 +347,6 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         table = measCat.table
         table.setMetadata(self.algMetadata)
         table.preallocate(len(refCat))
-        expRegion = exposure.getBBox()
-        targetWcs = exposure.getWcs()
         for ref in refCat:
             newSource = measCat.addNew()
             newSource.assign(ref, self.mapper)
