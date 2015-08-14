@@ -98,7 +98,7 @@ class GaussianFluxTestCase(AlgorithmTestCase):
         exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
         refWcs=self.dataset.exposure.getWcs()
         refCat=self.dataset.catalog
-        measCat = task.generateSources(exposure, refCat, refWcs)
+        measCat = task.generateMeasCat(exposure, refCat, refWcs)
         task.attachTransformedFootprints(measCat, refCat, exposure, refWcs)
         task.run(measCat, exposure, refCat, refWcs)
         for measRecord, truthRecord in zip(measCat, truthCatalog):

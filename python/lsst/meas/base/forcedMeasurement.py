@@ -195,7 +195,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
     ForcedMeasurementTask outside of one of these drivers, unless it is necessary to avoid
     using the Butler for I/O.
 
-    ForcedMeasurementTask has only three methods: __init__(), run(), and generateSources().
+    ForcedMeasurementTask has only three methods: __init__(), run(), and generateMeasCat().
     For configuration options, see SingleFrameMeasurementConfig.
     """
 
@@ -214,7 +214,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         reference Schema are added before Plugin fields are added.
 
         @param[in]  refSchema      Schema of the reference catalog.  Must match the catalog
-                                   later passed to generateSources() and/or run().
+                                   later passed to generateMeasCat() and/or run().
         @param[in,out] algMetadata lsst.daf.base.PropertyList used to record information about
                                    each algorithm.  An empty PropertyList will be created if None.
         @param[in]     **kwds      Keyword arguments passed from lsst.pipe.base.Task.__init__
@@ -238,7 +238,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
         @param[in]  exposure     lsst.afw.image.ExposureF to be measured; must have at least a Wcs attached.
         @param[in]  measCat      Source catalog for measurement results; must be initialized with empty
-                                 records already corresponding to those in refCat (via e.g. generateSources).
+                                 records already corresponding to those in refCat (via e.g. generateMeasCat).
         @param[in]  refCat       A sequence of SourceRecord objects that provide reference information
                                  for the measurement.  These will be passed to each Plugin in addition
                                  to the output SourceRecord.
@@ -326,7 +326,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                 endOrder = endOrder,
             )
 
-    def generateSources(self, exposure, refCat, refWcs, idFactory=None):
+    def generateMeasCat(self, exposure, refCat, refWcs, idFactory=None):
         """!Initialize an output SourceCatalog using information from the reference catalog.
 
         This generates a new blank SourceRecord for each record in refCat.  Note that this
