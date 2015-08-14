@@ -120,12 +120,12 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
         refCat = self.fetchReferences(dataRef, exposure)
-        sources = self.measurement.generateSources(exposure, refCat, refWcs,
+        measCat = self.measurement.generateSources(exposure, refCat, refWcs,
                                                    idFactory=self.makeIdFactory(dataRef))
         self.log.info("Performing forced measurement on %s" % dataRef.dataId)
-        self.attachFootprints(sources, refCat, exposure, refWcs, dataRef)
-        self.measurement.run(exposure, sources, refCat, refWcs)
-        self.writeOutput(dataRef, sources)
+        self.attachFootprints(measCat, refCat, exposure, refWcs, dataRef)
+        self.measurement.run(measCat, exposure, refCat, refWcs)
+        self.writeOutput(dataRef, measCat)
 
     def makeIdFactory(self, dataRef):
         """!Hook for derived classes to define how to make an IdFactory for forced sources.

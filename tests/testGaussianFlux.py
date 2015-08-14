@@ -98,10 +98,10 @@ class GaussianFluxTestCase(AlgorithmTestCase):
         exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
         refWcs=self.dataset.exposure.getWcs()
         refCat=self.dataset.catalog
-        sources = task.generateSources(exposure, refCat, refWcs)
-        task.attachTransformedFootprints(sources, refCat, exposure, refWcs)
-        task.run(exposure, sources, refCat, refWcs)
-        for measRecord, truthRecord in zip(sources, truthCatalog):
+        measCat = task.generateSources(exposure, refCat, refWcs)
+        task.attachTransformedFootprints(measCat, refCat, exposure, refWcs)
+        task.run(measCat, exposure, refCat, refWcs)
+        for measRecord, truthRecord in zip(measCat, truthCatalog):
             # Centroid tolerances set to ~ single precision epsilon
             self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-7)
             self.assertClose(measRecord.get("slot_Centroid_y"), truthRecord.get("truth_y"), rtol=1E-7)

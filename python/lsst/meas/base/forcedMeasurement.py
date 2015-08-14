@@ -231,13 +231,14 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.schema = self.mapper.getOutputSchema()
         self.makeSubtask("applyApCorr", schema=self.schema)
 
-    def run(self, exposure, sources, refCat, refWcs, exposureId=None, beginOrder=None, endOrder=None,
+    def run(self, measCat, exposure, refCat, refWcs, exposureId=None, beginOrder=None, endOrder=None,
             allowApCorr=True):
         """!
         Perform forced measurement.
 
         @param[in]  exposure     lsst.afw.image.ExposureF to be measured; must have at least a Wcs attached.
-        @param[in]  sources      Source catalog for measurement
+        @param[in]  measCat      Source catalog for measurement results; must be initialized with empty
+                                 records already corresponding to those in refCat (via e.g. generateSources).
         @param[in]  refCat       A sequence of SourceRecord objects that provide reference information
                                  for the measurement.  These will be passed to each Plugin in addition
                                  to the output SourceRecord.
@@ -274,14 +275,14 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         # Construct a footprints dict which looks like
         # {ref.getId(): (ref.getParent(), source.getFootprint())}
         # (i.e. getting the footprint from the transformed source footprint)
-        footprints = {ref.getId(): (ref.getParent(), source.getFootprint())
-                      for (ref, source) in zip(refCat, sources)}
+        footprints = {ref.getId(): (ref.getParent(), measRecord.getFootprint())
+                      for (ref, measRecord) in zip(refCat, measCat)}
 
         self.log.info("Performing forced measurement on %d sources" % len(refCat))
 
         if self.config.doReplaceWithNoise:
             noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log, exposureId=exposureId)
-            algMetadata = sources.getTable().getMetadata()
+            algMetadata = measCat.getTable().getMetadata()
             if not algMetadata is None:
                 algMetadata.addInt("NOISE_SEED_MULTIPLIER", self.config.noiseReplacer.noiseSeedMultiplier)
                 algMetadata.addString("NOISE_SOURCE", self.config.noiseReplacer.noiseSource)
@@ -293,11 +294,11 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
         # Create parent cat which slices both the refCat and measCat (sources)
         # first, get the reference and source records which have no parent
-        refParentCat, measParentCat = refCat.getChildren(0, sources)
+        refParentCat, measParentCat = refCat.getChildren(0, measCat)
         for parentIdx, (refParentRecord, measParentRecord) in enumerate(zip(refParentCat,measParentCat)):
 
             # first process the records which have the current parent as children
-            refChildCat, measChildCat = refCat.getChildren(refParentRecord.getId(), sources)
+            refChildCat, measChildCat = refCat.getChildren(refParentRecord.getId(), measCat)
             # TODO: skip this loop if there are no plugins configured for single-object mode
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
                 noiseReplacer.insertSource(refChildRecord.getId())
@@ -320,7 +321,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
         if allowApCorr:
             self._applyApCorrIfWanted(
-                sources = sources,
+                sources = measCat,
                 apCorrMap = exposure.getInfo().getApCorrMap(),
                 endOrder = endOrder,
             )
@@ -342,16 +343,16 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         if idFactory == None:
             idFactory = lsst.afw.table.IdFactory.makeSimple()
         table = lsst.afw.table.SourceTable.make(self.schema, idFactory)
-        sources = lsst.afw.table.SourceCatalog(table)
-        table = sources.table
+        measCat = lsst.afw.table.SourceCatalog(table)
+        table = measCat.table
         table.setMetadata(self.algMetadata)
         table.preallocate(len(refCat))
         expRegion = exposure.getBBox()
         targetWcs = exposure.getWcs()
         for ref in refCat:
-            newSource = sources.addNew()
+            newSource = measCat.addNew()
             newSource.assign(ref, self.mapper)
-        return sources
+        return measCat
 
     def attachTransformedFootprints(self, sources, refCat, exposure, refWcs):
         """!Default implementation for attaching Footprints to blank sources prior to measurement
