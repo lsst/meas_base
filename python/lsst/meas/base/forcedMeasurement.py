@@ -30,9 +30,9 @@ the measurement frame.  At the very least, this means that Footprints from the r
 be transformed and installed as Footprints in the output measurement catalog.  If we have a procedure that
 can transform HeavyFootprints, we can then proceed with measurement as usual, but using the reference
 catalog's id and parent fields to define deblend families.  If this transformation does not preserve
-HeavyFootprints (this is currently the case), then we will only be able to replace objects with noise
-one deblend family at a time, and hence measurements run in single-object mode may be contaminated by
-neighbors when run on objects with parent != 0.
+HeavyFootprints (this is currently the case, at least for CCD forced photometry), then we will only
+be able to replace objects with noise one deblend family at a time, and hence measurements run in
+single-object mode may be contaminated by neighbors when run on objects with parent != 0.
 
 Measurements are generally recorded in the coordinate system of the image being measured (and all
 slot-eligible fields must be), but non-slot fields may be recorded in other coordinate systems if necessary
@@ -251,7 +251,15 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                                  executionOrder >= endOrder are not executed. None for no limit.
         @param[in] allowApCorr  allow application of aperture correction?
 
-        Fills the initial empty SourceCatalog with forced measurement results.
+        Fills the initial empty SourceCatalog with forced measurement results.  Two steps must occur
+        before run() can be called:
+         - generateMeasCat() must be called to create the output measCat argument.
+         - Footprints appropriate for the forced sources must be attached to the measCat records.  The
+           attachTransformedFootprints() method can be used to do this, but this degrades HeavyFootprints
+           to regular Footprints, leading to non-deblended measurement, so most callers should provide
+           Footprints some other way.  Typically, calling code will have access to information that will
+           allow them to provide HeavyFootprints - for instance, ForcedPhotCoaddTask uses the HeavyFootprints
+           from deblending run in the same band just before non-forced is run measurement in that band.
         """
         # First check that the reference catalog does not contain any children for which
         # any member of their parent chain is not within the list.  This can occur at
@@ -331,7 +339,8 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
         This generates a new blank SourceRecord for each record in refCat.  Note that this
         method does not attach any Footprints.  Doing so is up to the caller (who may
-        call attachedTransformedFootprints or define their own method).
+        call attachedTransformedFootprints or define their own method - see run() for more
+        information).
 
         @param[in] exposure    Exposure to be measured
         @param[in] refCat      Sequence (not necessarily a SourceCatalog) of reference SourceRecords.
@@ -364,6 +373,9 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         Note that ForcedPhotImageTask delegates to this method in its own attachFootprints method.
         attachFootprints can then be overridden by its subclasses to define how their Footprints
         should be generated.
+
+        See the documentation for run() for information about the relationships between run(),
+        generateMeasCat(), and attachTransformedFootprints().
         """
         exposureWcs = exposure.getWcs()
         region = exposure.getBBox(lsst.afw.image.PARENT)
