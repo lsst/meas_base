@@ -110,7 +110,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
                               image, and the fetchReferences() method (implemented by derived
                               classes) to get the exposure and load the reference catalog (see
                               the CoaddSrcReferencesTask for more information).  Sources are
-                              generated with generateSources() in the measurement subtask.  These
+                              generated with generateMeasCat() in the measurement subtask.  These
                               are passed to measurement's run method which fills the source
                               catalog with the forced measurement results.  The sources are then
                               passed to the writeOutputs() method (implemented by derived classes)
@@ -120,12 +120,12 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
         refCat = self.fetchReferences(dataRef, exposure)
-        sources = self.measurement.generateSources(exposure, refCat, refWcs,
+        measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
                                                    idFactory=self.makeIdFactory(dataRef))
         self.log.info("Performing forced measurement on %s" % dataRef.dataId)
-        self.attachFootprints(sources, refCat, exposure, refWcs, dataRef)
-        self.measurement.run(exposure, sources, refCat, refWcs)
-        self.writeOutput(dataRef, sources)
+        self.attachFootprints(measCat, refCat, exposure, refWcs, dataRef)
+        self.measurement.run(measCat, exposure, refCat, refWcs)
+        self.writeOutput(dataRef, measCat)
 
     def makeIdFactory(self, dataRef):
         """!Hook for derived classes to define how to make an IdFactory for forced sources.

@@ -30,9 +30,9 @@ the measurement frame.  At the very least, this means that Footprints from the r
 be transformed and installed as Footprints in the output measurement catalog.  If we have a procedure that
 can transform HeavyFootprints, we can then proceed with measurement as usual, but using the reference
 catalog's id and parent fields to define deblend families.  If this transformation does not preserve
-HeavyFootprints (this is currently the case), then we will only be able to replace objects with noise
-one deblend family at a time, and hence measurements run in single-object mode may be contaminated by
-neighbors when run on objects with parent != 0.
+HeavyFootprints (this is currently the case, at least for CCD forced photometry), then we will only
+be able to replace objects with noise one deblend family at a time, and hence measurements run in
+single-object mode may be contaminated by neighbors when run on objects with parent != 0.
 
 Measurements are generally recorded in the coordinate system of the image being measured (and all
 slot-eligible fields must be), but non-slot fields may be recorded in other coordinate systems if necessary
@@ -195,7 +195,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
     ForcedMeasurementTask outside of one of these drivers, unless it is necessary to avoid
     using the Butler for I/O.
 
-    ForcedMeasurementTask has only three methods: __init__(), run(), and generateSources().
+    ForcedMeasurementTask has only three methods: __init__(), run(), and generateMeasCat().
     For configuration options, see SingleFrameMeasurementConfig.
     """
 
@@ -214,7 +214,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         reference Schema are added before Plugin fields are added.
 
         @param[in]  refSchema      Schema of the reference catalog.  Must match the catalog
-                                   later passed to generateSources() and/or run().
+                                   later passed to generateMeasCat() and/or run().
         @param[in,out] algMetadata lsst.daf.base.PropertyList used to record information about
                                    each algorithm.  An empty PropertyList will be created if None.
         @param[in]     **kwds      Keyword arguments passed from lsst.pipe.base.Task.__init__
@@ -231,13 +231,14 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.schema = self.mapper.getOutputSchema()
         self.makeSubtask("applyApCorr", schema=self.schema)
 
-    def run(self, exposure, sources, refCat, refWcs, exposureId=None, beginOrder=None, endOrder=None,
+    def run(self, measCat, exposure, refCat, refWcs, exposureId=None, beginOrder=None, endOrder=None,
             allowApCorr=True):
         """!
         Perform forced measurement.
 
         @param[in]  exposure     lsst.afw.image.ExposureF to be measured; must have at least a Wcs attached.
-        @param[in]  sources      Source catalog for measurement
+        @param[in]  measCat      Source catalog for measurement results; must be initialized with empty
+                                 records already corresponding to those in refCat (via e.g. generateMeasCat).
         @param[in]  refCat       A sequence of SourceRecord objects that provide reference information
                                  for the measurement.  These will be passed to each Plugin in addition
                                  to the output SourceRecord.
@@ -250,7 +251,15 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                                  executionOrder >= endOrder are not executed. None for no limit.
         @param[in] allowApCorr  allow application of aperture correction?
 
-        Fills the initial empty SourceCatalog with forced measurement results.
+        Fills the initial empty SourceCatalog with forced measurement results.  Two steps must occur
+        before run() can be called:
+         - generateMeasCat() must be called to create the output measCat argument.
+         - Footprints appropriate for the forced sources must be attached to the measCat records.  The
+           attachTransformedFootprints() method can be used to do this, but this degrades HeavyFootprints
+           to regular Footprints, leading to non-deblended measurement, so most callers should provide
+           Footprints some other way.  Typically, calling code will have access to information that will
+           allow them to provide HeavyFootprints - for instance, ForcedPhotCoaddTask uses the HeavyFootprints
+           from deblending run in the same band just before non-forced is run measurement in that band.
         """
         # First check that the reference catalog does not contain any children for which
         # any member of their parent chain is not within the list.  This can occur at
@@ -274,14 +283,14 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         # Construct a footprints dict which looks like
         # {ref.getId(): (ref.getParent(), source.getFootprint())}
         # (i.e. getting the footprint from the transformed source footprint)
-        footprints = {ref.getId(): (ref.getParent(), source.getFootprint())
-                      for (ref, source) in zip(refCat, sources)}
+        footprints = {ref.getId(): (ref.getParent(), measRecord.getFootprint())
+                      for (ref, measRecord) in zip(refCat, measCat)}
 
         self.log.info("Performing forced measurement on %d sources" % len(refCat))
 
         if self.config.doReplaceWithNoise:
             noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log, exposureId=exposureId)
-            algMetadata = sources.getTable().getMetadata()
+            algMetadata = measCat.getTable().getMetadata()
             if not algMetadata is None:
                 algMetadata.addInt("NOISE_SEED_MULTIPLIER", self.config.noiseReplacer.noiseSeedMultiplier)
                 algMetadata.addString("NOISE_SOURCE", self.config.noiseReplacer.noiseSource)
@@ -293,11 +302,11 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
         # Create parent cat which slices both the refCat and measCat (sources)
         # first, get the reference and source records which have no parent
-        refParentCat, measParentCat = refCat.getChildren(0, sources)
+        refParentCat, measParentCat = refCat.getChildren(0, measCat)
         for parentIdx, (refParentRecord, measParentRecord) in enumerate(zip(refParentCat,measParentCat)):
 
             # first process the records which have the current parent as children
-            refChildCat, measChildCat = refCat.getChildren(refParentRecord.getId(), sources)
+            refChildCat, measChildCat = refCat.getChildren(refParentRecord.getId(), measCat)
             # TODO: skip this loop if there are no plugins configured for single-object mode
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
                 noiseReplacer.insertSource(refChildRecord.getId())
@@ -320,17 +329,18 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
         if allowApCorr:
             self._applyApCorrIfWanted(
-                sources = sources,
+                sources = measCat,
                 apCorrMap = exposure.getInfo().getApCorrMap(),
                 endOrder = endOrder,
             )
 
-    def generateSources(self, exposure, refCat, refWcs, idFactory=None):
+    def generateMeasCat(self, exposure, refCat, refWcs, idFactory=None):
         """!Initialize an output SourceCatalog using information from the reference catalog.
 
         This generates a new blank SourceRecord for each record in refCat.  Note that this
         method does not attach any Footprints.  Doing so is up to the caller (who may
-        call attachedTransformedFootprints or define their own method).
+        call attachedTransformedFootprints or define their own method - see run() for more
+        information).
 
         @param[in] exposure    Exposure to be measured
         @param[in] refCat      Sequence (not necessarily a SourceCatalog) of reference SourceRecords.
@@ -342,16 +352,14 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         if idFactory == None:
             idFactory = lsst.afw.table.IdFactory.makeSimple()
         table = lsst.afw.table.SourceTable.make(self.schema, idFactory)
-        sources = lsst.afw.table.SourceCatalog(table)
-        table = sources.table
+        measCat = lsst.afw.table.SourceCatalog(table)
+        table = measCat.table
         table.setMetadata(self.algMetadata)
         table.preallocate(len(refCat))
-        expRegion = exposure.getBBox()
-        targetWcs = exposure.getWcs()
         for ref in refCat:
-            newSource = sources.addNew()
+            newSource = measCat.addNew()
             newSource.assign(ref, self.mapper)
-        return sources
+        return measCat
 
     def attachTransformedFootprints(self, sources, refCat, exposure, refWcs):
         """!Default implementation for attaching Footprints to blank sources prior to measurement
@@ -365,6 +373,9 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         Note that ForcedPhotImageTask delegates to this method in its own attachFootprints method.
         attachFootprints can then be overridden by its subclasses to define how their Footprints
         should be generated.
+
+        See the documentation for run() for information about the relationships between run(),
+        generateMeasCat(), and attachTransformedFootprints().
         """
         exposureWcs = exposure.getWcs()
         region = exposure.getBBox(lsst.afw.image.PARENT)

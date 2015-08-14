@@ -152,10 +152,10 @@ class PsfFluxTestCase(AlgorithmTestCase):
         exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
         refCat = self.dataset.catalog
         refWcs = self.dataset.exposure.getWcs()
-        sources = task.generateSources(exposure, refCat, refWcs)
-        task.attachTransformedFootprints(sources, refCat, exposure, refWcs)
-        task.run(exposure, sources, refCat, refWcs)
-        measRecord = sources[0]
+        measCat = task.generateMeasCat(exposure, refCat, refWcs)
+        task.attachTransformedFootprints(measCat, refCat, exposure, refWcs)
+        task.run(measCat, exposure, refCat, refWcs)
+        measRecord = measCat[0]
         truthRecord = truthCatalog[0]
         # Centroid tolerances set to ~ single precision epsilon
         self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-7)
