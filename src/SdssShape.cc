@@ -837,8 +837,10 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(
     bool const interp = shouldInterp(shape.getIxx(), shape.getIyy(), weights.get<0>().second);
 
     double i0 = 0;                      // amplitude of Gaussian
-    calcmom<true>(ImageAdaptor<ImageT>().getImage(image), localCenter.getX(), localCenter.getY(),
-                  bbox, 0.0, interp, w11, w12, w22, &i0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (calcmom<true>(ImageAdaptor<ImageT>().getImage(image), localCenter.getX(), localCenter.getY(),
+                      bbox, 0.0, interp, w11, w12, w22, &i0, NULL, NULL, NULL, NULL, NULL, NULL, NULL)< 0) {
+        throw LSST_EXCEPT(pex::exceptions::RuntimeError, "Error from calcmom");
+    }
 
     double const wArea = afw::geom::PI*std::sqrt(shape.getDeterminant());
 
@@ -847,6 +849,11 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(
     if (ImageAdaptor<ImageT>::hasVariance) {
         int ix = static_cast<int>(center.getX() - image.getX0());
         int iy = static_cast<int>(center.getY() - image.getY0());
+        if (!image.getBBox(afw::image::LOCAL).contains(afw::geom::Point2I(ix, iy))) {
+            throw LSST_EXCEPT(pex::exceptions::RuntimeError,
+                              (boost::format("Center (%d,%d) not in image (%dx%d)") %
+                               ix % iy % image.getWidth() % image.getHeight()).str());
+        }
         double var = ImageAdaptor<ImageT>().getVariance(image, ix, iy);
         double i0Err = std::sqrt(var/wArea);
         result.fluxSigma = i0Err*2*wArea;
