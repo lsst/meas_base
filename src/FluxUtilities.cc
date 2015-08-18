@@ -104,10 +104,24 @@ void FluxTransform::operator()(
     FluxResultKey fluxKey(inputCatalog.getSchema()[_name]);
     afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
     afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();
-    for (; inSrc < inputCatalog.end() && outSrc < outputCatalog.end(); ++inSrc, ++outSrc) {
-        FluxResult fluxResult = fluxKey.get(*inSrc);
-        _magKey.set(*outSrc, calib.getMagnitude(fluxResult.flux, fluxResult.fluxSigma));
+    {
+        // While noThrow is in scope, converting a negative flux to a magnitude
+        // returns NaN rather than throwing.
+        NoThrowOnNegativeFluxContext noThrow;
+        for (; inSrc < inputCatalog.end() && outSrc < outputCatalog.end(); ++inSrc, ++outSrc) {
+            FluxResult fluxResult = fluxKey.get(*inSrc);
+            _magKey.set(*outSrc, calib.getMagnitude(fluxResult.flux, fluxResult.fluxSigma));
+        }
     }
+}
+
+NoThrowOnNegativeFluxContext::NoThrowOnNegativeFluxContext() {
+    _throwOnNegative = afw::image::Calib::getThrowOnNegativeFlux();
+    afw::image::Calib::setThrowOnNegativeFlux(false);
+}
+
+NoThrowOnNegativeFluxContext::~NoThrowOnNegativeFluxContext() {
+    afw::image::Calib::setThrowOnNegativeFlux(_throwOnNegative);
 }
 
 }}} // namespace lsst::meas::base

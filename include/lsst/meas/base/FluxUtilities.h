@@ -209,6 +209,21 @@ private:
     MagResultKey _magKey;
 };
 
+/**
+ *  Temporarily replace negative fluxes with NaNs
+ *
+ *  Instantiating a NoThrowOnNegativeFluxContext object will cause afw::image::Calib
+ *  objects to return NaN, rather than throwing, when asked to convert a negative flux to
+ *  a magnitude for the lifetime of the NoThrowOnNegativeFluxContext.
+ */
+class NoThrowOnNegativeFluxContext {
+public:
+    NoThrowOnNegativeFluxContext();
+    ~NoThrowOnNegativeFluxContext();
+private:
+    bool _throwOnNegative;
+};
+
 }}} // lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_FluxUtilities_h_INCLUDED
