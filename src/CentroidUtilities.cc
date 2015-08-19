@@ -170,7 +170,7 @@ void CentroidTransform::operator()(
     afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
     afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();
 
-    for (; inSrc < inputCatalog.end() && outSrc < outputCatalog.end(); ++inSrc, ++outSrc) {
+    for (; inSrc != inputCatalog.end() && outSrc != outputCatalog.end(); ++inSrc, ++outSrc) {
         CentroidResult centroidResult = centroidResultKey.get(*inSrc);
 
         _coordKey.set(*outSrc, *wcs.pixelToSky(centroidResult.getCentroid()));

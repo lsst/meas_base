@@ -358,7 +358,7 @@ void ApertureFluxTransform::operator()(
         // While noThrow is in scope, converting a negative flux to a magnitude
         // returns NaN rather than throwing.
         NoThrowOnNegativeFluxContext noThrow;
-        for (; inSrc < inputCatalog.end() && outSrc < outputCatalog.end(); ++inSrc, ++outSrc) {
+        for (; inSrc != inputCatalog.end() && outSrc != outputCatalog.end(); ++inSrc, ++outSrc) {
             for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
                 FluxResult fluxResult = fluxKeys[i].get(*inSrc);
                 _magKeys[i].set(*outSrc, calib.getMagnitude(fluxResult.flux, fluxResult.fluxSigma));

@@ -108,7 +108,7 @@ void FluxTransform::operator()(
         // While noThrow is in scope, converting a negative flux to a magnitude
         // returns NaN rather than throwing.
         NoThrowOnNegativeFluxContext noThrow;
-        for (; inSrc < inputCatalog.end() && outSrc < outputCatalog.end(); ++inSrc, ++outSrc) {
+        for (; inSrc != inputCatalog.end() && outSrc != outputCatalog.end(); ++inSrc, ++outSrc) {
             FluxResult fluxResult = fluxKey.get(*inSrc);
             _magKey.set(*outSrc, calib.getMagnitude(fluxResult.flux, fluxResult.fluxSigma));
         }
