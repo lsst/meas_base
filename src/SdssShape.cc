@@ -935,7 +935,7 @@ void SdssShapeTransform::operator()(
 
     afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
     afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();
-    for (; inSrc < inputCatalog.end(); ++inSrc, ++outSrc) {
+    for (; inSrc != inputCatalog.end(); ++inSrc, ++outSrc) {
         ShapeResult inShape = inShapeKey.get(*inSrc);
         ShapeResult outShape;
 

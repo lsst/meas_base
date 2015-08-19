@@ -91,11 +91,12 @@ class SdssShapeTransformTestCase(FluxTransformTestCase, CentroidTransformTestCas
     singleFramePlugins = ('base_SdssShape',)
     forcedPlugins = ('base_SdssShape',)
 
-    def _setFieldsInRecord(self, record, name):
-        FluxTransformTestCase._setFieldsInRecord(self, record, name)
-        CentroidTransformTestCase._setFieldsInRecord(self, record, name)
-        for field in ('xx', 'yy', 'xy', 'xxSigma', 'yySigma', 'xySigma'):
-            record[record.schema.join(name, field)] = numpy.random.random()
+    def _setFieldsInRecords(self, records, name):
+        FluxTransformTestCase._setFieldsInRecords(self, records, name)
+        CentroidTransformTestCase._setFieldsInRecords(self, records, name)
+        for record in records:
+            for field in ('xx', 'yy', 'xy', 'xxSigma', 'yySigma', 'xySigma'):
+                record[record.schema.join(name, field)] = numpy.random.random()
 
     def _compareFieldsInRecords(self, inSrc, outSrc, name):
         FluxTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)

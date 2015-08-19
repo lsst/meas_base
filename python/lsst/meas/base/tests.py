@@ -590,13 +590,14 @@ class TransformTestCase(lsst.utils.tests.TestCase):
         del self.outputCat
 
     def _populateCatalog(self, baseNames):
+        records = []
         for flagValue in (True, False):
-            record = self.inputCat.addNew()
+            records.append(self.inputCat.addNew())
             for baseName in baseNames:
-                self._setFieldsInRecord(record, baseName)
                 for flagName in self.flagNames:
-                    if record.schema.join(baseName, flagName) in record.schema:
-                        record.set(record.schema.join(baseName, flagName), flagValue)
+                    if records[-1].schema.join(baseName, flagName) in records[-1].schema:
+                        records[-1].set(records[-1].schema.join(baseName, flagName), flagValue)
+        self._setFieldsInRecords(records, baseName)
 
     def _checkOutput(self, baseNames):
         for inSrc, outSrc in zip(self.inputCat, self.outputCat):
@@ -692,26 +693,37 @@ class ForcedPluginTransformSetupHelper(object):
 
 
 class FluxTransformTestCase(TransformTestCase):
-    def _setFieldsInRecord(self, record, name):
-        record[record.schema.join(name, 'flux')] = numpy.random.random()
-        record[record.schema.join(name, 'fluxSigma')] = numpy.random.random()
+    def _setFieldsInRecords(self, records, name):
+        for record in records:
+            record[record.schema.join(name, 'flux')] = numpy.random.random()
+            record[record.schema.join(name, 'fluxSigma')] = numpy.random.random()
+
+        # Negative fluxes should be converted to NaNs.
+        assert len(records) > 1
+        records[0][record.schema.join(name, 'flux')] = -1
 
     def _compareFieldsInRecords(self, inSrc, outSrc, name):
         fluxName, fluxSigmaName = inSrc.schema.join(name, 'flux'), inSrc.schema.join(name, 'fluxSigma')
-        mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[fluxName], inSrc[fluxSigmaName])
-        self.assertEqual(outSrc[outSrc.schema.join(name, 'mag')], mag)
-        self.assertEqual(outSrc[outSrc.schema.join(name, 'magErr')], magErr)
+        if inSrc[fluxName] > 0:
+            mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[fluxName], inSrc[fluxSigmaName])
+            self.assertEqual(outSrc[outSrc.schema.join(name, 'mag')], mag)
+            self.assertEqual(outSrc[outSrc.schema.join(name, 'magErr')], magErr)
+        else:
+            self.assertTrue(numpy.isnan(outSrc[outSrc.schema.join(name, 'mag')]))
+            self.assertTrue(numpy.isnan(outSrc[outSrc.schema.join(name, 'magErr')]))
 
 
 class CentroidTransformTestCase(TransformTestCase):
-    def _setFieldsInRecord(self, record, name):
-        record[record.schema.join(name, 'x')], record[record.schema.join(name, 'y')] = numpy.random.random(2)
-        # Some algorithms set no errors; some set only sigma on x & y; some provide
-        # a full covariance matrix. Set only those which exist in the schema.
-        for fieldSuffix in ('xSigma', 'ySigma', 'x_y_Cov'):
-            fieldName = record.schema.join(name, fieldSuffix)
-            if fieldName in record.schema:
-                record[fieldName] = numpy.random.random()
+    def _setFieldsInRecords(self, records, name):
+        for record in records:
+            record[record.schema.join(name, 'x')] = numpy.random.random()
+            record[record.schema.join(name, 'y')] = numpy.random.random()
+            # Some algorithms set no errors; some set only sigma on x & y; some provide
+            # a full covariance matrix. Set only those which exist in the schema.
+            for fieldSuffix in ('xSigma', 'ySigma', 'x_y_Cov'):
+                fieldName = record.schema.join(name, fieldSuffix)
+                if fieldName in record.schema:
+                    record[fieldName] = numpy.random.random()
 
     def _compareFieldsInRecords(self, inSrc, outSrc, name):
         centroidResultKey = CentroidResultKey(inSrc.schema[self.name])
