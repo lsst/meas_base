@@ -144,11 +144,12 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
             self.log.info("Use complex flux sigma computation that double-counts photon noise "
                 " and thus over-estimates flux uncertainty")
         for apCorrInfo in self.apCorrInfoDict.itervalues():
-            try:
-                apCorrModel = apCorrMap.get(apCorrInfo.fluxName)
-                apCorrSigmaModel = apCorrMap.get(apCorrInfo.fluxSigmaName)
-            except Exception:
-                self.log.warn("Could not find %s in apCorrMap" % (apCorrInfo.name,))
+            apCorrModel = apCorrMap.get(apCorrInfo.fluxName)
+            apCorrSigmaModel = apCorrMap.get(apCorrInfo.fluxSigmaName)
+            if None in (apCorrModel, apCorrSigmaModel):
+                missingNames = [(apCorrInfo.fluxName, apCorrInfo.fluxSigmaName)[i]
+                    for i, model in enumerate((apCorrModel, apCorrSigmaModel)) if model is None]
+                self.log.warn("Could not find %s in apCorrMap" % (" or ".join(missingNames),))
                 for source in catalog:
                     source.set(apCorrInfo.apCorrFlagKey, True)
                 continue
