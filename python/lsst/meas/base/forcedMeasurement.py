@@ -169,7 +169,7 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
 ## \{
 ## \page ForcedMeasurementTask
 ## \ref ForcedMeasurementTask_ "ForcedMeasurementTask"
-## @copybrief ForcedMeasurementTask
+## \copybrief ForcedMeasurementTask
 ## \}
 
 class ForcedMeasurementTask(BaseMeasurementTask):
