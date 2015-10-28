@@ -258,15 +258,15 @@ class MeasureSourcesTestCase(unittest.TestCase):
             "crCenter",
             "bad",
             ]
-        for x, y, setFlags in [(1, 50, [measBase.PixelFlagsAlgorithm.EDGE]),
-                               (40, 20, [measBase.PixelFlagsAlgorithm.BAD]),
-                               (20, 20, [measBase.PixelFlagsAlgorithm.SATURATED_CENTER, 
-                                         measBase.PixelFlagsAlgorithm.SATURATED]),
-                               (20, 22, [measBase.PixelFlagsAlgorithm.SATURATED]),
-                               (60, 60, [measBase.PixelFlagsAlgorithm.INTERPOLATED_CENTER, 
-                                         measBase.PixelFlagsAlgorithm.INTERPOLATED]),
-                               (60, 62, [measBase.PixelFlagsAlgorithm.INTERPOLATED]),
-                               (20, 80, [measBase.PixelFlagsAlgorithm.EDGE]),
+        for x, y, setFlags in [(1, 50, ['edge']),
+                               (40, 20, ['bad']),
+                               (20, 20, ['saturatedCenter', 
+                                         'saturated']),
+                               (20, 22, ['saturated']),
+                               (60, 60, ['interpolatedCenter', 
+                                         'interpolated']),
+                               (60, 62, ['interpolated']),
+                               (20, 80, ['edge']),
             ]:
             foot = afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5)
             source = cat.makeRecord()
@@ -274,14 +274,14 @@ class MeasureSourcesTestCase(unittest.TestCase):
             source.set("centroid_x", x+x0)
             source.set("centroid_y", y+y0)
             plugin.measure(source, exp)
-            for flag in range(1,len(allFlags)):
-                value = source.get("test_flag_" + allFlags[flag])
+            for flag in allFlags[1:]:
+                value = source.get("test_flag_" + flag)
                 if flag in setFlags:
                     self.assertTrue(value, "Flag %s should be set for %f,%f" % (flag, x, y))
                 else:
                     self.assertFalse(value, "Flag %s should not be set for %f,%f" % (flag, x, y))
 
-        # the new code in meas_base InputUtilities.py now throws when a Nan is set in the
+        # the new code which grabs the center of a record throws when a Nan is set in the
         # centroid slot and the algorithm attempts to get the default center position
         source = cat.makeRecord()
         source.set("centroid_x", float("NAN"))
