@@ -237,15 +237,20 @@ class MeasureSourcesTestCase(unittest.TestCase):
         edge = mask.getPlaneBitMask('EDGE')
         bad = mask.getPlaneBitMask('BAD')
         nodata = mask.getPlaneBitMask('NO_DATA')
+        mask.addMaskPlane('CLIPPED')
+        clipped = mask.getPlaneBitMask('CLIPPED')
         mask.set(0)
         mask.set(20, 20, sat)
         mask.set(60, 60, interp)
         mask.set(40, 20, bad)
         mask.set(20, 80, nodata)
+        mask.set(30, 30, clipped)
         mask.Factory(mask, afwGeom.Box2I(afwGeom.Point2I(0,0), afwGeom.Extent2I(3, height))).set(edge)
         x0, y0 = 1234, 5678
         exp.setXY0(afwGeom.Point2I(x0, y0))
         control = measBase.PixelFlagsControl()
+        # Change the configuration of control to test for clipped mask
+        control.masksFpAnywhere = ['CLIPPED']
         plugin, cat = makePluginAndCat(measBase.PixelFlagsAlgorithm, "test", control,centroid="centroid")
         allFlags = [
             "",
@@ -257,6 +262,7 @@ class MeasureSourcesTestCase(unittest.TestCase):
             "cr",
             "crCenter",
             "bad",
+            "clipped",
             ]
         for x, y, setFlags in [(1, 50, ['edge']),
                                (40, 20, ['bad']),
@@ -267,6 +273,7 @@ class MeasureSourcesTestCase(unittest.TestCase):
                                          'interpolated']),
                                (60, 62, ['interpolated']),
                                (20, 80, ['edge']),
+                               (30, 30, ['clipped']),
             ]:
             foot = afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5)
             source = cat.makeRecord()
@@ -294,6 +301,31 @@ class MeasureSourcesTestCase(unittest.TestCase):
             source,
             exp,
         )
+        # Test that if there is no center and centroider that the object should look at the footprint
+        plugin, cat = makePluginAndCat(measBase.PixelFlagsAlgorithm, "test", control)
+        # The first test should raise exception because there is no footprint
+        source = cat.makeRecord()
+        self.assertRaises(
+                lsst.pex.exceptions.RuntimeError,
+                plugin.measure,
+                source,
+                exp,
+        )
+        # The second test will raise an error because no peaks are present
+        source.setFootprint(afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)),5))
+        self.assertRaises(
+                lsst.pex.exceptions.RuntimeError,
+                plugin.measure,
+                source,
+                exp,
+        )
+        # The final test should pass because it detects a peak, we are reusing the location of the
+        # clipped bit in the mask plane, so we will check first that it is false, then true
+        source.getFootprint().addPeak(x+x0,y+y0, 100)
+        self.assertFalse(source.get("test_flag_clipped"), "The clipped flag should be set False")
+        plugin.measure(source,exp)
+        self.assertTrue(source.get("test_flag_clipped"), "The clipped flag should be set True")
+
 
 def addStar(image, center, flux, fwhm):
     """Add a perfect single Gaussian star to an image
