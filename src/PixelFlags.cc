@@ -85,6 +85,8 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(
     // Add generic keys first, which don't correspond to specific mask planes
     _generalFailureKey = schema.addField<afw::table::Flag>(name + "_flag",
                                         "general failure flag, set if anything went wring");
+    _offImageKey = schema.addField<afw::table::Flag>(name+"_flag" + "_offimage",
+                                        "Source center is off image");
     // Set all the flags that correspond to mask planes anywhere in the footprint
     _anyKeys["EDGE"] = schema.addField<afw::table::Flag>(name + "_flag_edge",
                                         "Source is outside usable exposure region (masked EDGE or NO_DATA)");
@@ -165,6 +167,7 @@ void PixelFlagsAlgorithm::measure(
 
     //  Catch centroids off the image
     if (!mimage.getBBox().contains(afw::geom::Point2I(center))) {
+        measRecord.set(_offImageKey, true);
         measRecord.set(_anyKeys.at("EDGE"), true);
     }
 

@@ -85,6 +85,7 @@ private:
     KeyMap _centerKeys;
     KeyMap _anyKeys;
     afw::table::Key<afw::table::Flag> _generalFailureKey;
+    afw::table::Key<afw::table::Flag> _offImageKey;
 };
 
 }}} // namespace lsst::meas::base
