@@ -28,12 +28,11 @@
  *  @file lsst/meas/base/PixelFlags.h
  *  This is the algorithm for PixelFlags
  */
+#include <vector>
 
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Algorithm.h"
-#include "lsst/meas/base/FlagHandler.h"
-#include "lsst/meas/base/InputUtilities.h"
 
 namespace lsst { namespace meas { namespace base {
 
@@ -42,13 +41,18 @@ namespace lsst { namespace meas { namespace base {
  */
 class PixelFlagsControl {
 public:
-
+    LSST_CONTROL_FIELD(masksFpCenter, std::vector<std::string>,
+                       "List of mask planes to be searched for which occur in the center of a footprint. "
+                       "If any of the planes are found they will have a corresponding pixel flag set.");
+    LSST_CONTROL_FIELD(masksFpAnywhere, std::vector<std::string>,
+                       "List of mask planes to be searched for which occur anywhere within a footprint. "
+                       "If any of the planes are found they will have a corresponding pixel flag set.");
     /**
      *  @brief Default constructor
      *
      *  All control classes should define a default constructor that sets all fields to their default values.
      */
-    PixelFlagsControl() {}
+    PixelFlagsControl() : masksFpCenter(), masksFpAnywhere() {}
 };
 
 
@@ -58,25 +62,6 @@ public:
  */
 class PixelFlagsAlgorithm : public SimpleAlgorithm {
 public:
-
-    /**
-     *  @brief Flag bits to be used with the 'flags' data member of the Result object.
-     *
-     *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
-     */
-    enum {
-        FAILURE=FlagHandler::FAILURE,
-        EDGE,
-        INTERPOLATED,
-        INTERPOLATED_CENTER,
-        SATURATED,
-        SATURATED_CENTER,
-        CR,
-        CR_CENTER,
-        BAD,
-        N_FLAGS
-    };
-
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.
     typedef PixelFlagsControl Control;
@@ -90,14 +75,17 @@ public:
 
     virtual void fail(
         afw::table::SourceRecord & measRecord,
-        MeasurementError * error=NULL
+        MeasurementError * error = NULL
     ) const;
 
-private:
+    typedef std::map<std::string, afw::table::Key<afw::table::Flag>> KeyMap;
 
+private:
     Control _ctrl;
-    FlagHandler _flagHandler;
-    SafeCentroidExtractor _centroidExtractor;
+    KeyMap _centerKeys;
+    KeyMap _anyKeys;
+    afw::table::Key<afw::table::Flag> _generalFailureKey;
+    afw::table::Key<afw::table::Flag> _offImageKey;
 };
 
 }}} // namespace lsst::meas::base
