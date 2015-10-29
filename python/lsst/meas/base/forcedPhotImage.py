@@ -25,6 +25,7 @@
 a specific dataset to be used (see ForcedPhotCcdTask, ForcedPhotCoaddTask).
 """
 
+import lsst.afw.table
 import lsst.pex.config
 import lsst.daf.base
 import lsst.pipe.base
@@ -186,7 +187,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
                         is all that will be modified.
         @param sources  SourceCatalog to save
         """
-        dataRef.put(sources, self.dataPrefix + "forced_src")
+        dataRef.put(sources, self.dataPrefix + "forced_src", flags=lsst.afw.table.SOURCE_IO_NO_FOOTPRINTS)
 
     def getSchemaCatalogs(self):
         """!Get a dict of Schema catalogs that will be used by this Task.
