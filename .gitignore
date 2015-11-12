@@ -19,3 +19,5 @@ python/lsst/meas/base/*.pyc
 python/lsst/meas/base/baseLib.py
 tests/.tests
 ups/*.cfgc
+bin/forcedPhotCcd.py
+bin/forcedPhotCoadd.py
