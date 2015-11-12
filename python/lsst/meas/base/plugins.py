@@ -41,6 +41,7 @@ from .transforms import SimpleCentroidTransform
 
 __all__ = (
     "SingleFrameVarianceConfig", "SingleFrameVariancePlugin",
+    "SingleFrameInputCountConfig", "SingleFrameInputCountPlugin",
     "SingleFramePeakCentroidConfig", "SingleFramePeakCentroidPlugin", 
     "SingleFrameSkyCoordConfig", "SingleFrameSkyCoordPlugin",
     "SingleFrameClassificationConfig", "SingleFrameClassificationPlugin",
@@ -127,6 +128,54 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
 
     def fail(self, measRecord, error=None):
         measRecord.set(self.varFlag, True)
+
+class SingleFrameInputCountConfig(SingleFramePluginConfig):
+    pass
+
+@register("base_InputCount")
+class SingleFrameInputCountPlugin(SingleFramePlugin):
+    """
+    Plugin to count how many input images contributed to each source. This information
+    is in the exposure's coaddInputs. Some limitations:
+    * This is only for the pixel containing the center, not for all the pixels in the
+      Footprint
+    * This does not account for any clipping in the coadd
+    """
+
+    ConfigClass = SingleFrameInputCountConfig
+
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.SHAPE_ORDER
+
+    def __init__(self, config, name, schema, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
+        self.numberKey = schema.addField(name + '_value', type="I",
+                                         doc="Number of images contributing at center, not including any"
+                                             "clipping")
+        self.numberFlag = schema.addField(name + '_flag', type="Flag", doc="Set to True for fatal Failure")
+
+    def measure(self, measRecord, exposure):
+        if not exposure.getInfo().getCoaddInputs():
+            raise lsst.pex.exceptions.RuntimeError("No coadd inputs defined")
+
+        center = measRecord.getCentroid()
+        # Promote bounding box of the Footprint to type D to ensure
+        # the ability to compare the Footprint and center (they may be of mixed types I and D)
+        fpBbox = lsst.afw.geom.Box2D(measRecord.getFootprint().getBBox())
+
+        # Check to ensure that the center exists and that it is contained within the Footprint
+        # to catch bad centroiding
+        if not center:
+            raise Exception("The source record has no center")
+        elif not fpBbox.contains(center):
+            raise Exception("The center is outside the Footprint of the source record")
+
+        ccds = exposure.getInfo().getCoaddInputs().ccds
+        measRecord.set(self.numberKey, len(ccds.subsetContaining(center, exposure.getWcs())))
+
+    def fail(self, measRecord, error=None):
+        measRecord.set(self.numberFlag, True)
 
 class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
     pass
