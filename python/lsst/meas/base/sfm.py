@@ -123,6 +123,7 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
                  "base_CircularApertureFlux",
                  "base_ClassificationExtendedness",
                  "base_SkyCoord",
+                 "base_Variance",
                  ],
         doc="Plugins to be run and their configuration"
         )
