@@ -40,6 +40,7 @@ from .wrappers import wrapSimpleAlgorithm
 from .transforms import SimpleCentroidTransform
 
 __all__ = (
+    "SingleFrameJacobianConfig", "SingleFrameJacobianPlugin",
     "SingleFrameVarianceConfig", "SingleFrameVariancePlugin",
     "SingleFrameInputCountConfig", "SingleFrameInputCountPlugin",
     "SingleFramePeakCentroidConfig", "SingleFramePeakCentroidPlugin", 
@@ -72,6 +73,41 @@ wrapSimpleAlgorithm(bl.CircularApertureFluxAlgorithm, needsMetadata=True, Contro
                     TransformClass=bl.ApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 
 # --- Single-Frame Measurement Plugins ---
+class SingleFrameJacobianConfig(SingleFramePluginConfig):
+    pixelScale = lsst.pex.config.Field(dtype=float, default=0.5, doc="Nominal pixel size (arcsec)")
+
+@register("base_Jacobian")
+class SingleFrameJacobianPlugin(SingleFramePlugin):
+    '''
+    Algorithm which computes the Jacobian about a source and computes its ratio with a nominal pixel area.
+    This allows one to compare relative instead of absolute areas of pixels.
+    '''
+
+    ConfigClass = SingleFrameJacobianConfig
+
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.SHAPE_ORDER
+
+    def __init__(self, config, name, schema, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
+        self.jacValue = schema.addField(name + '_value', type="D", doc='Jacobian correction')
+        self.jacFlag = schema.addField(name + '_flag', type='Flag', doc="Set to 1 for any fatal Failure")
+        # Calculate one over the area of a nominal reference pixel
+        self.scale = pow(self.config.pixelScale, -2)
+
+    def measure(self, measRecord, exposure):
+        center = measRecord.getCentroid()
+        # Compute the area of a pixel at the center of a source records centroid, and take the
+        # ratio of that with the defined reference pixel area.
+        result = numpy.abs(self.scale*exposure.getWcs().linearizePixelToSky(center,
+                           lsst.afw.geom.arcseconds).getLinear().computeDeterminant())
+        measRecord.set(self.jacValue, result)
+
+    def fail(self, measRecord, error=None):
+        measRecord.set(self.jacFlag, True)
+
+
 class SingleFrameVarianceConfig(SingleFramePluginConfig):
         scale = lsst.pex.config.Field(dtype=float, default=5.0, optional=True,
                                       doc="Scale factor to apply to shape for aperture")
