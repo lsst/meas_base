@@ -40,6 +40,7 @@ from .wrappers import wrapSimpleAlgorithm
 from .transforms import SimpleCentroidTransform
 
 __all__ = (
+    "SingleFrameFPPositionConfig", "SingleFrameFPPositionPlugin",
     "SingleFrameJacobianConfig", "SingleFrameJacobianPlugin",
     "SingleFrameVarianceConfig", "SingleFrameVariancePlugin",
     "SingleFrameInputCountConfig", "SingleFrameInputCountPlugin",
@@ -73,6 +74,43 @@ wrapSimpleAlgorithm(bl.CircularApertureFluxAlgorithm, needsMetadata=True, Contro
                     TransformClass=bl.ApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 
 # --- Single-Frame Measurement Plugins ---
+class SingleFrameFPPositionConfig(SingleFramePluginConfig):
+    pass
+
+@register("base_FPPosition")
+class SingleFrameFPPositionPlugin(SingleFramePlugin):
+    '''
+    Algorithm to calculate the position of a centroid on the focal plane
+    '''
+
+    ConfigClass = SingleFrameFPPositionConfig
+
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.SHAPE_ORDER
+
+    def __init__(self, config, name, schema, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
+        self.focalValue = lsst.afw.table.Point2DKey.addFields(schema, name, "Position on the focal plane",
+                "mm")
+        self.focalFlag = schema.addField(name + "_flag", type="Flag", doc="Set to True for any fatal failure")
+        self.detectorFlag = schema.addField(name + "_missingDetector_flag", type="Flag",
+                                            doc="Set to True if detector object is missing")
+
+    def measure(self, measRecord, exposure):
+        det = exposure.getDetector()
+        if not det:
+            measRecord.set(self.detectorFlag, True)
+            fp = lsst.afw.geom.Point2D(numpy.nan, numpy.nan)
+        else:
+            center = measRecord.getCentroid()
+            posInPix = det.makeCameraPoint(center, lsst.afw.cameraGeom.PIXELS)
+            fp = det.transform(posInPix, lsst.afw.cameraGeom.FOCAL_PLANE).getPoint()
+        measRecord.set(self.focalValue, fp)
+
+    def fail(self, measRecord, error=None):
+        measRecord.set(self.focalFlag, True)
+
 class SingleFrameJacobianConfig(SingleFramePluginConfig):
     pixelScale = lsst.pex.config.Field(dtype=float, default=0.5, doc="Nominal pixel size (arcsec)")
 
