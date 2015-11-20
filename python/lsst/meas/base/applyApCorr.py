@@ -48,7 +48,7 @@ class ApCorrInfo(object):
             three fields are used to generate keys:
             - {name}_flux
             - {name}_fluxSigma
-            - {name}_fluxFlag
+            - {name}_flag
             three fields are added:
             - {name}_apCorr
             - {name}_apCorrSigma
