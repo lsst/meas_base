@@ -146,7 +146,8 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
                     badParents.add(record.getId())
             elif record.getParent() not in badParents:
                 references.append(record)
-        references.sort()   # need to ensure catalog is in ID order so find methods work
+        # catalog must be sorted by parent ID for lsst.afw.table.getChildren to work
+        references.sort(lsst.afw.table.SourceTable.getParentKey())
         return references
 
     def getExposure(self, dataRef):
