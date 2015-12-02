@@ -142,6 +142,8 @@ class BaseReferencesTask(lsst.pipe.base.Task):
         # over parents and then children.
         catalog = lsst.afw.table.SourceCatalog(self.schema)
         catalog.extend(sources)
+        # catalog must be sorted by parent ID for lsst.afw.table.getChildren to work
+        catalog.sort(lsst.afw.table.SourceTable.getParentKey())
         # Iterate over objects that have no parent.
         for parent in catalog.getChildren(0):
             pixel = wcs.skyToPixel(parent.getCoord())
