@@ -43,33 +43,6 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
     what set of coadds to use.  The references from the tract whose patches intersect with
     the calexp are used.
     """
-    def castDataIds(self, butler):
-        """Validate data IDs and cast them to the correct type (modify idList in place).
-
-        @param butler: data butler
-        """
-        try:
-            idKeyTypeDict = butler.getKeys(datasetType="src", level=self.level)
-        except KeyError as e:
-            raise KeyError("Cannot get keys for datasetType %s at level %s: %s" % ("src", self.level, e))
-
-        idKeyTypeDict = idKeyTypeDict.copy()
-        idKeyTypeDict["tract"] = int
-
-        for dataDict in self.idList:
-            for key, strVal in dataDict.iteritems():
-                try:
-                    keyType = idKeyTypeDict[key]
-                except KeyError:
-                    validKeys = sorted(idKeyTypeDict.keys())
-                    raise KeyError("Unrecognized ID key %r; valid keys are: %s" % (key, validKeys))
-                if keyType != str:
-                    try:
-                        castVal = keyType(strVal)
-                    except Exception:
-                        raise TypeError("Cannot cast value %r to %s for ID key %r" % (strVal, keyType, key,))
-                    dataDict[key] = castVal
-
     def _addDataRef(self, namespace, dataId, tract):
         """Construct a dataRef based on dataId, but with an added tract key"""
         forcedDataId = dataId.copy()
