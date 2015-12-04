@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2013 LSST Corporation.
+# Copyright 2008-2015 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -18,9 +18,8 @@
 #
 # You should have received a copy of the LSST License Statement and
 # the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
+# see <https://www.lsstcorp.org/LegalNotices/>.
 #
-
 import collections
 
 import lsst.pex.logging
@@ -55,15 +54,13 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
         """
         if self.datasetType is None:
             raise RuntimeError("Must call setDatasetType first")
+        log = lsst.pex.logging.Log.getDefaultLog()
         skymap = None
-        log = None
-        visitTract = {}  # Set of tracts for each visit
-        visitRefs = {}   # List of data references for each visit
+        visitTract = collections.defaultdict(set)   # Set of tracts for each visit
+        visitRefs = collections.defaultdict(list)   # List of data references for each visit
         for dataId in self.idList:
             if "tract" not in dataId:
                 # Discover which tracts the data overlaps
-                if log is None:
-                    log = lsst.pex.logging.Log.getDefaultLog()
                 log.info("Reading WCS for components of dataId=%s to determine tracts" % (dict(dataId),))
                 if skymap is None:
                     skymap = namespace.butler.get(namespace.config.coaddName + "Coadd_skyMap")
@@ -72,10 +69,7 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
                     if not ref.datasetExists("calexp"):
                         continue
 
-                    # XXX fancier mechanism to select an individual exposure than just pulling out "visit"?
                     visit = ref.dataId["visit"]
-                    if visit not in visitRefs:
-                        visitRefs[visit] = list()
                     visitRefs[visit].append(ref)
 
                     md = ref.get("calexp_md", immediate=True)
@@ -86,8 +80,6 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
                     # together, this shouldn't be a problem unless the tracts are much smaller than a CCD.
                     tract = skymap.findTract(wcs.pixelToSky(box.getCenter()))
                     if overlapsTract(tract, wcs, box):
-                        if visit not in visitTract:
-                            visitTract[visit] = set()
                         visitTract[visit].add(tract.getId())
             else:
                 tract = dataId.pop("tract")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008, 2009, 2010, 2014 LSST Corporation.
+# Copyright 2008-2015 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -13,12 +13,12 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the LSST License Statement and
 # the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
+# see <https://www.lsstcorp.org/LegalNotices/>.
 #
 
 import lsst.pex.config
@@ -51,8 +51,7 @@ class ForcedPhotCcdConfig(ProcessImageForcedConfig):
 ## @}
 
 class ForcedPhotCcdTask(ProcessImageForcedTask):
-    """!
-    A command-line driver for performing forced measurement on CCD images
+    """!A command-line driver for performing forced measurement on CCD images
 
     This task is a subclass of ForcedPhotImageTask which is specifically for doing forced
     measurement on a single CCD exposure, using as a reference catalog the detections which
@@ -154,8 +153,7 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
     @classmethod
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
-        parser.add_id_argument("--id", "forced_src", help="data ID, with raw CCD keys + tract",
+        parser.add_id_argument("--id", "forced_src", help="data ID with raw CCD keys [+ tract optionally], "
+                               "e.g. --id visit=12345 ccd=1,2 [tract=0]",
                                ContainerClass=PerTractCcdDataIdContainer)
         return parser
-
-
