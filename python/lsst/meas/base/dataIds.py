@@ -27,16 +27,22 @@ import lsst.pex.logging
 import lsst.pex.exceptions
 import lsst.afw.table
 import lsst.afw.image
+import lsst.pipe.base
 from lsst.geom import convexHull
 
-from .coaddBase import CoaddDataIdContainer
+class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
+    """A version of lsst.pipe.base.DataIdContainer that combines raw data IDs with a tract.
 
+    Required because we need to add "tract" to the raw data ID keys (defined as whatever we
+    use for 'src') when no tract is provided (so that the user is not required to know
+    which tracts are spanned by the raw data ID).
 
-class PerTractCcdDataIdContainer(CoaddDataIdContainer):
-    """A version of lsst.pipe.base.DataIdContainer that combines raw data IDs (defined as whatever we use
-    for 'src') with a tract.
+    This IdContainer assumes that a calexp is being measured using the detection information,
+    a set of reference catalogs, from the set of coadds which intersect with the calexp.
+    It needs the calexp id (e.g. visit, raft, sensor), but is also uses the tract to decide
+    what set of coadds to use.  The references from the tract whose patches intersect with
+    the calexp are used.
     """
-
     def castDataIds(self, butler):
         """Validate data IDs and cast them to the correct type (modify idList in place).
 
@@ -87,7 +93,7 @@ class PerTractCcdDataIdContainer(CoaddDataIdContainer):
                     log = lsst.pex.logging.Log.getDefaultLog()
                 log.info("Reading WCS for components of dataId=%s to determine tracts" % (dict(dataId),))
                 if skymap is None:
-                    skymap = self.getSkymap(namespace, "deepCoadd")
+                    skymap = namespace.butler.get(namespace.config.coaddName + "Coadd_skyMap")
 
                 for ref in namespace.butler.subset("calexp", dataId=dataId):
                     if not ref.datasetExists("calexp"):
