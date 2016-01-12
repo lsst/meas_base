@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2015 AURA/LSST.
+ * Copyright 2008-2016 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -24,6 +24,7 @@
 #ifndef LSST_MEAS_BASE_ApertureFlux_h_INCLUDED
 #define LSST_MEAS_BASE_ApertureFlux_h_INCLUDED
 
+#include "boost/array.hpp"
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/afw/table/arrays.h"
@@ -217,6 +218,11 @@ public:
      * @returns   Table field name prefix.
      */
     static std::string makeFieldPrefix(std::string const & name, double radius);
+
+    /**
+     *  Return the flag definitions which apply to aperture flux measurements.
+     */
+    static boost::array<FlagDefinition,ApertureFluxAlgorithm::N_FLAGS> const & getFlagDefinitions();
 
 protected:
 

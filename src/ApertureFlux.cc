@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2015 AURA/LSST.
+ * Copyright 2008-2016 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -23,7 +23,6 @@
 
 #include <numeric>
 
-#include "boost/array.hpp"
 #include "boost/algorithm/string/replace.hpp"
 
 #include "ndarray/eigen.h"
@@ -44,20 +43,14 @@ ApertureFluxControl::ApertureFluxControl() : radii(10), maxSincRadius(10.0), shi
     std::copy(defaultRadii.begin(), defaultRadii.end(), radii.begin());
 }
 
-namespace {
-
-boost::array<FlagDefinition,ApertureFluxAlgorithm::N_FLAGS> const & getFlagDefinitions() {
+boost::array<FlagDefinition,ApertureFluxAlgorithm::N_FLAGS> const & ApertureFluxAlgorithm::getFlagDefinitions() {
     static boost::array<FlagDefinition,ApertureFluxAlgorithm::N_FLAGS> flagDefs = {{
-        {"flag", "flag set if aperture failed for any reason"},
-        {"flag_apertureTruncated", "flag set if aperture did not fit within the measurement image"},
-        {"flag_sincCoeffsTruncated",
-         "flag set if the full sinc coefficient image for aperture %d did not "
-         "fit within the measurement image"}
+        {"flag", "general failure flag"},
+        {"flag_apertureTruncated", "aperture did not fit within measurement image"},
+        {"flag_sincCoeffsTruncated", "full sinc coefficient image did not fit within measurement image"}
     }};
     return flagDefs;
 }
-
-} // anonymous
 
 std::string ApertureFluxAlgorithm::makeFieldPrefix(std::string const & name, double radius) {
     std::string prefix = (boost::format("%s_%.1f") % name % radius).str();
@@ -71,8 +64,8 @@ ApertureFluxAlgorithm::Keys::Keys(
     flags(
         FlagHandler::addFields(
             schema, prefix,
-            getFlagDefinitions().begin(),
-            getFlagDefinitions().begin() + (isSinc ? 3 : 2)
+            ApertureFluxAlgorithm::getFlagDefinitions().begin(),
+            ApertureFluxAlgorithm::getFlagDefinitions().begin() + (isSinc ? 3 : 2)
         )
     )
 {}
@@ -329,8 +322,9 @@ ApertureFluxTransform::ApertureFluxTransform(
     _ctrl(ctrl)
 {
     for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
-        for (auto flag = getFlagDefinitions().begin();
-            flag < getFlagDefinitions().begin() + (_ctrl.radii[i] <= _ctrl.maxSincRadius ? 3 : 2); flag++) {
+        for (auto flag = ApertureFluxAlgorithm::getFlagDefinitions().begin();
+            flag < ApertureFluxAlgorithm::getFlagDefinitions().begin() +
+                   (_ctrl.radii[i] <= _ctrl.maxSincRadius ? 3 : 2); flag++) {
             mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>((boost::format("%s_%s") %
                               ApertureFluxAlgorithm::makeFieldPrefix(name, _ctrl.radii[i]) %
                               flag->name).str()).key);
