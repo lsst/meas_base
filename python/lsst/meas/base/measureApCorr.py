@@ -210,7 +210,7 @@ class MeasureApCorrTask(Task):
 
                 # Clip bad data points
                 apCorrDiffLim = self.config.numSigmaClip * apCorrErr
-                keep = numpy.fabs(apCorrDiffs) < apCorrDiffLim
+                keep = numpy.fabs(apCorrDiffs) <= apCorrDiffLim
                 x = x[keep]
                 y = y[keep]
                 apCorrData = apCorrData[keep]
