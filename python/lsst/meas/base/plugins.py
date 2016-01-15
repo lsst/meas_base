@@ -28,6 +28,8 @@ import numpy
 
 import lsst.pex.exceptions
 import lsst.afw.detection
+import lsst.afw.geom
+import lsst.afw.math as afwMath
 
 from .pluginRegistry import register
 from . import baseLib as bl
@@ -38,6 +40,8 @@ from .wrappers import wrapSimpleAlgorithm
 from .transforms import SimpleCentroidTransform
 
 __all__ = (
+    "SingleFrameVarianceConfig", "SingleFrameVariancePlugin",
+    "SingleFrameInputCountConfig", "SingleFrameInputCountPlugin",
     "SingleFramePeakCentroidConfig", "SingleFramePeakCentroidPlugin", 
     "SingleFrameSkyCoordConfig", "SingleFrameSkyCoordPlugin",
     "SingleFrameClassificationConfig", "SingleFrameClassificationPlugin",
@@ -68,6 +72,110 @@ wrapSimpleAlgorithm(bl.CircularApertureFluxAlgorithm, needsMetadata=True, Contro
                     TransformClass=bl.ApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 
 # --- Single-Frame Measurement Plugins ---
+class SingleFrameVarianceConfig(SingleFramePluginConfig):
+        scale = lsst.pex.config.Field(dtype=float, default=5.0, optional=True,
+                                      doc="Scale factor to apply to shape for aperture")
+        mask = lsst.pex.config.ListField(doc="Mask planes to ignore", dtype=str,
+                                         default=["DETECTED", "DETECTED_NEGATIVE", "BAD", "SAT"])
+
+@register("base_Variance")
+class SingleFrameVariancePlugin(SingleFramePlugin):
+    '''
+    Calculate the median variance within a Footprint scaled from the object shape so
+    the value is not terribly influenced by the object and instead represents the
+    variance in the background near the object.
+    '''
+
+    ConfigClass = SingleFrameVarianceConfig
+
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.FLUX_ORDER
+
+    def __init__(self, config, name, schema, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
+        self.varValue = schema.addField(name + '_value', type="D", doc="Variance at object position")
+        self.varFlag = schema.addField(name + '_flag', type="Flag", doc="Set to True for any fatal failure")
+
+    def measure(self, measRecord, exposure):
+        center = measRecord.getCentroid()
+        # Promote the bounding box of the Footprint to type D to ensure
+        # the ability to compare the Footprint to the Center (they may be of mixed types I and D)
+        fpBbox = lsst.afw.geom.Box2D(measRecord.getFootprint().getBBox())
+        # check to insure that the center exists and that it is contained within the Footprint
+        # catch bad centroiding
+        if not center:
+            raise Exception("The source record has no center")
+        elif not fpBbox.contains(center):
+            raise Exception("The center is outside the Footprint of the source record")
+
+        # Create an aperture and grow it by scale value defined in config to ensure there are enough
+        # pixles around the object to get decent statistics
+        aperture = lsst.afw.geom.ellipses.Ellipse(measRecord.getShape(), measRecord.getCentroid())
+        aperture.scale(self.config.scale)
+        foot = lsst.afw.detection.Footprint(aperture)
+        foot.clipTo(exposure.getBBox(lsst.afw.image.PARENT))
+        # Filter out any pixels which have mask bits set corresponding to the planes to be excluded
+        # (defined in config.mask)
+        maskedImage = exposure.getMaskedImage()
+        maskBits = maskedImage.getMask().getPlaneBitMask(self.config.mask)
+        logicalMask = numpy.logical_not(maskedImage.getMask().getArray() & maskBits)
+        # Compute the median variance value for each pixel not excluded by the mask and write the record
+        # Numpy median is used here instead of afw.math makeStatistics because of a bug with data types
+        # being passed into the c++ layer. (DM-4804)
+        medVar = numpy.median(maskedImage.getVariance().getArray()[logicalMask])
+        measRecord.set(self.varValue, medVar)
+
+    def fail(self, measRecord, error=None):
+        measRecord.set(self.varFlag, True)
+
+class SingleFrameInputCountConfig(SingleFramePluginConfig):
+    pass
+
+@register("base_InputCount")
+class SingleFrameInputCountPlugin(SingleFramePlugin):
+    """
+    Plugin to count how many input images contributed to each source. This information
+    is in the exposure's coaddInputs. Some limitations:
+    * This is only for the pixel containing the center, not for all the pixels in the
+      Footprint
+    * This does not account for any clipping in the coadd
+    """
+
+    ConfigClass = SingleFrameInputCountConfig
+
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.SHAPE_ORDER
+
+    def __init__(self, config, name, schema, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
+        self.numberKey = schema.addField(name + '_value', type="I",
+                                         doc="Number of images contributing at center, not including any"
+                                             "clipping")
+        self.numberFlag = schema.addField(name + '_flag', type="Flag", doc="Set to True for fatal Failure")
+
+    def measure(self, measRecord, exposure):
+        if not exposure.getInfo().getCoaddInputs():
+            raise lsst.pex.exceptions.RuntimeError("No coadd inputs defined")
+
+        center = measRecord.getCentroid()
+        # Promote bounding box of the Footprint to type D to ensure
+        # the ability to compare the Footprint and center (they may be of mixed types I and D)
+        fpBbox = lsst.afw.geom.Box2D(measRecord.getFootprint().getBBox())
+
+        # Check to ensure that the center exists and that it is contained within the Footprint
+        # to catch bad centroiding
+        if not center:
+            raise Exception("The source record has no center")
+        elif not fpBbox.contains(center):
+            raise Exception("The center is outside the Footprint of the source record")
+
+        ccds = exposure.getInfo().getCoaddInputs().ccds
+        measRecord.set(self.numberKey, len(ccds.subsetContaining(center, exposure.getWcs())))
+
+    def fail(self, measRecord, error=None):
+        measRecord.set(self.numberFlag, True)
 
 class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
     pass
