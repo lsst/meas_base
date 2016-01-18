@@ -40,6 +40,8 @@ from .wrappers import wrapSimpleAlgorithm
 from .transforms import SimpleCentroidTransform
 
 __all__ = (
+    "SingleFrameFPPositionConfig", "SingleFrameFPPositionPlugin",
+    "SingleFrameJacobianConfig", "SingleFrameJacobianPlugin",
     "SingleFrameVarianceConfig", "SingleFrameVariancePlugin",
     "SingleFrameInputCountConfig", "SingleFrameInputCountPlugin",
     "SingleFramePeakCentroidConfig", "SingleFramePeakCentroidPlugin", 
@@ -72,6 +74,78 @@ wrapSimpleAlgorithm(bl.CircularApertureFluxAlgorithm, needsMetadata=True, Contro
                     TransformClass=bl.ApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 
 # --- Single-Frame Measurement Plugins ---
+class SingleFrameFPPositionConfig(SingleFramePluginConfig):
+    pass
+
+@register("base_FPPosition")
+class SingleFrameFPPositionPlugin(SingleFramePlugin):
+    '''
+    Algorithm to calculate the position of a centroid on the focal plane
+    '''
+
+    ConfigClass = SingleFrameFPPositionConfig
+
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.SHAPE_ORDER
+
+    def __init__(self, config, name, schema, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
+        self.focalValue = lsst.afw.table.Point2DKey.addFields(schema, name, "Position on the focal plane",
+                "mm")
+        self.focalFlag = schema.addField(name + "_flag", type="Flag", doc="Set to True for any fatal failure")
+        self.detectorFlag = schema.addField(name + "_missingDetector_flag", type="Flag",
+                                            doc="Set to True if detector object is missing")
+
+    def measure(self, measRecord, exposure):
+        det = exposure.getDetector()
+        if not det:
+            measRecord.set(self.detectorFlag, True)
+            fp = lsst.afw.geom.Point2D(numpy.nan, numpy.nan)
+        else:
+            center = measRecord.getCentroid()
+            posInPix = det.makeCameraPoint(center, lsst.afw.cameraGeom.PIXELS)
+            fp = det.transform(posInPix, lsst.afw.cameraGeom.FOCAL_PLANE).getPoint()
+        measRecord.set(self.focalValue, fp)
+
+    def fail(self, measRecord, error=None):
+        measRecord.set(self.focalFlag, True)
+
+class SingleFrameJacobianConfig(SingleFramePluginConfig):
+    pixelScale = lsst.pex.config.Field(dtype=float, default=0.5, doc="Nominal pixel size (arcsec)")
+
+@register("base_Jacobian")
+class SingleFrameJacobianPlugin(SingleFramePlugin):
+    '''
+    Algorithm which computes the Jacobian about a source and computes its ratio with a nominal pixel area.
+    This allows one to compare relative instead of absolute areas of pixels.
+    '''
+
+    ConfigClass = SingleFrameJacobianConfig
+
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.SHAPE_ORDER
+
+    def __init__(self, config, name, schema, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
+        self.jacValue = schema.addField(name + '_value', type="D", doc='Jacobian correction')
+        self.jacFlag = schema.addField(name + '_flag', type='Flag', doc="Set to 1 for any fatal Failure")
+        # Calculate one over the area of a nominal reference pixel
+        self.scale = pow(self.config.pixelScale, -2)
+
+    def measure(self, measRecord, exposure):
+        center = measRecord.getCentroid()
+        # Compute the area of a pixel at the center of a source records centroid, and take the
+        # ratio of that with the defined reference pixel area.
+        result = numpy.abs(self.scale*exposure.getWcs().linearizePixelToSky(center,
+                           lsst.afw.geom.arcseconds).getLinear().computeDeterminant())
+        measRecord.set(self.jacValue, result)
+
+    def fail(self, measRecord, error=None):
+        measRecord.set(self.jacFlag, True)
+
+
 class SingleFrameVarianceConfig(SingleFramePluginConfig):
         scale = lsst.pex.config.Field(dtype=float, default=5.0, optional=True,
                                       doc="Scale factor to apply to shape for aperture")
