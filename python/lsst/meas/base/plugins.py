@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2015 AURA/LSST.
+# Copyright 2008-2016 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -69,6 +69,8 @@ wrapSimpleAlgorithm(bl.SdssCentroidAlgorithm, Control=bl.SdssCentroidControl,
 wrapSimpleAlgorithm(bl.PixelFlagsAlgorithm, Control=bl.PixelFlagsControl, executionOrder=BasePlugin.FLUX_ORDER)
 wrapSimpleAlgorithm(bl.SdssShapeAlgorithm, Control=bl.SdssShapeControl,
                 TransformClass=bl.SdssShapeTransform, executionOrder=BasePlugin.SHAPE_ORDER)
+wrapSimpleAlgorithm(bl.ScaledApertureFluxAlgorithm, Control=bl.ScaledApertureFluxControl,
+                TransformClass=bl.ScaledApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 
 wrapSimpleAlgorithm(bl.CircularApertureFluxAlgorithm, needsMetadata=True, Control=bl.ApertureFluxControl,
                     TransformClass=bl.ApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
