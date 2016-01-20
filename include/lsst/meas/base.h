@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2015 LSST Corporation.
+ * Copyright 2008-2016 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -40,6 +40,7 @@
 #include "lsst/meas/base/NaiveCentroid.h"
 #include "lsst/meas/base/PeakLikelihoodFlux.h"
 #include "lsst/meas/base/ApertureFlux.h"
+#include "lsst/meas/base/ScaledApertureFlux.h"
 #include "lsst/meas/base/CircularApertureFlux.h"
 
 #endif // !LSST_MEAS_base_h_INCLUDED

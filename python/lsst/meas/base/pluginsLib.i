@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2015 AURA/LSST.
+ * Copyright 2008-2016 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -39,6 +39,7 @@
 %convertConfig(lsst::meas::base, GaussianFluxTransform)
 %convertConfig(lsst::meas::base, PeakLikelihoodFluxTransform)
 %convertConfig(lsst::meas::base, PsfFluxTransform)
+%convertConfig(lsst::meas::base, ScaledApertureFluxTransform)
 
 %convertConfig(lsst::meas::base, NaiveCentroidTransform)
 %convertConfig(lsst::meas::base, GaussianCentroidTransform)
@@ -60,6 +61,9 @@
 
 %feature("notabstract") lsst::meas::base::GaussianFluxAlgorithm;
 %include "lsst/meas/base/GaussianFlux.h"
+
+%feature("notabstract") lsst::meas::base::ScaledApertureFluxAlgorithm;
+%include "lsst/meas/base/ScaledApertureFlux.h"
 
 // centroid algorithms
 
