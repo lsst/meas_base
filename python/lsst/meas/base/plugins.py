@@ -178,8 +178,7 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
         # Promote the bounding box of the Footprint to type D to ensure
         # the ability to compare the Footprint to the Center (they may be of mixed types I and D)
         fpBbox = lsst.afw.geom.Box2D(measRecord.getFootprint().getBBox())
-        # check to insure that the center exists and that it is contained within the Footprint
-        # catch bad centroiding
+        # check to ensure that the center exists and that it is contained within the Footprint
         if not center:
             raise Exception("The source record has no center")
         elif not fpBbox.contains(center):
@@ -196,9 +195,9 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
         maskedImage = exposure.getMaskedImage()
         maskBits = maskedImage.getMask().getPlaneBitMask(self.config.mask)
         logicalMask = numpy.logical_not(maskedImage.getMask().getArray() & maskBits)
-        # Compute the median variance value for each pixel not excluded by the mask and write the record
-        # Numpy median is used here instead of afw.math makeStatistics because of a bug with data types
-        # being passed into the c++ layer. (DM-4804)
+        # Compute the median variance value for each pixel not excluded by the mask and write the record.
+        # Numpy median is used here instead of afw.math makeStatistics because of an issue with data types
+        # being passed into the C++ layer (DM-2379).
         medVar = numpy.median(maskedImage.getVariance().getArray()[logicalMask])
         measRecord.set(self.varValue, medVar)
 
