@@ -94,7 +94,7 @@ class SingleFrameFPPositionPlugin(SingleFramePlugin):
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.focalValue = lsst.afw.table.Point2DKey.addFields(schema, name, "Position on the focal plane",
-                "mm")
+                                                              "mm")
         self.focalFlag = schema.addField(name + "_flag", type="Flag", doc="Set to True for any fatal failure")
         self.detectorFlag = schema.addField(name + "_missingDetector_flag", type="Flag",
                                             doc="Set to True if detector object is missing")
@@ -131,8 +131,8 @@ class SingleFrameJacobianPlugin(SingleFramePlugin):
 
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
-        self.jacValue = schema.addField(name + '_value', type="D", doc='Jacobian correction')
-        self.jacFlag = schema.addField(name + '_flag', type='Flag', doc="Set to 1 for any fatal Failure")
+        self.jacValue = schema.addField(name + '_value', type="D", doc="Jacobian correction")
+        self.jacFlag = schema.addField(name + '_flag', type="Flag", doc="Set to 1 for any fatal failure")
         # Calculate one over the area of a nominal reference pixel
         self.scale = pow(self.config.pixelScale, -2)
 
@@ -161,7 +161,6 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
     the value is not terribly influenced by the object and instead represents the
     variance in the background near the object.
     '''
-
     ConfigClass = SingleFrameVarianceConfig
     FAILURE_BAD_CENTROID = 1
 
@@ -183,7 +182,7 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
             raise bl.MeasurementError("Source record has a bad centroid.", self.FAILURE_BAD_CENTROID)
         center = measRecord.getCentroid()
         # Create an aperture and grow it by scale value defined in config to ensure there are enough
-        # pixles around the object to get decent statistics
+        # pixels around the object to get decent statistics
         aperture = lsst.afw.geom.ellipses.Ellipse(measRecord.getShape(), measRecord.getCentroid())
         aperture.scale(self.config.scale)
         foot = lsst.afw.detection.Footprint(aperture)
@@ -226,7 +225,7 @@ class SingleFrameInputCountPlugin(SingleFramePlugin):
         self.numberKey = schema.addField(name + '_value', type="I",
                                          doc="Number of images contributing at center, not including any"
                                              "clipping")
-        self.numberFlag = schema.addField(name + '_flag', type="Flag", doc="Set to True for fatal Failure")
+        self.numberFlag = schema.addField(name + '_flag', type="Flag", doc="Set to True for fatal failure")
 
     def measure(self, measRecord, exposure):
         if not exposure.getInfo().getCoaddInputs():
