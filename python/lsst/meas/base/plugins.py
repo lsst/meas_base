@@ -163,6 +163,7 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
     '''
 
     ConfigClass = SingleFrameVarianceConfig
+    FAILURE_BAD_CENTROID = 1
 
     @classmethod
     def getExecutionOrder(cls):
@@ -173,17 +174,14 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
         self.varValue = schema.addField(name + '_value', type="D", doc="Variance at object position")
         self.varFlag = schema.addField(name + '_flag', type="Flag", doc="Set to True for any fatal failure")
 
-    def measure(self, measRecord, exposure):
-        center = measRecord.getCentroid()
-        # Promote the bounding box of the Footprint to type D to ensure
-        # the ability to compare the Footprint to the Center (they may be of mixed types I and D)
-        fpBbox = lsst.afw.geom.Box2D(measRecord.getFootprint().getBBox())
-        # check to ensure that the center exists and that it is contained within the Footprint
-        if not center:
-            raise Exception("The source record has no center")
-        elif not fpBbox.contains(center):
-            raise Exception("The center is outside the Footprint of the source record")
+        # Alias the badCentroid flag to that which is defined for the target of the centroid slot.
+        # We do not simply rely on the alias because that could be changed post-measurement.
+        schema.getAliasMap().set(name + '_flag_badCentroid', schema.getAliasMap().apply("slot_Centroid_flag"))
 
+    def measure(self, measRecord, exposure):
+        if measRecord.getCentroidFlag():
+            raise bl.MeasurementError("Source record has a bad centroid.", self.FAILURE_BAD_CENTROID)
+        center = measRecord.getCentroid()
         # Create an aperture and grow it by scale value defined in config to ensure there are enough
         # pixles around the object to get decent statistics
         aperture = lsst.afw.geom.ellipses.Ellipse(measRecord.getShape(), measRecord.getCentroid())
