@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2015 LSST/AURA
+# Copyright 2008-2016 LSST/AURA
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -29,12 +29,13 @@ import numpy as np
 import unittest
 import lsst.utils.tests as utilsTests
 
-import lsst.pex.config as pexConfig
 import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
 import lsst.afw.image as afwImage
 import lsst.afw.detection as afwDetection
 import lsst.meas.base as measBase
+import lsst.pex.config as pexConfig
+import lsst.pex.exceptions as pexExcept
 
 try:
     display
@@ -119,6 +120,38 @@ class VarianceTest(unittest.TestCase):
 
         self.assertTrue(np.abs(source.get("base_Variance_value") - variance) < varianceStd)
 
+    def testBadCentroid(self):
+        """
+        The flag from the centroid slot should propagate to the badCentroid
+        flag on the variance plugin.
+        """
+        schema = afwTable.SourceTable.makeMinimalSchema()
+        measBase.SingleFramePeakCentroidPlugin(measBase.SingleFramePeakCentroidConfig(),
+                                               "centroid", schema, None)
+        schema.getAliasMap().set("slot_Centroid", "centroid")
+        variance = measBase.SingleFrameVariancePlugin(measBase.SingleFrameVarianceConfig(),
+                                                      "variance", schema, None)
+        catalog = afwTable.SourceCatalog(schema)
+
+        # The centroid is not flagged as bad, but there's no way the algorithm can run without
+        # valid data in the SourceRecord and Exposure: this should throw a logic error.
+        record = catalog.addNew()
+        record.set("centroid_flag", False)
+        with self.assertRaises(pexExcept.LogicError) as measErr:
+            variance.measure(record, None)
+        variance.fail(record, measErr.exception)
+        self.assertTrue(record.get("variance_flag"))
+        self.assertFalse(record.get("variance_flag_badCentroid"))
+
+        # The centroid is flagged as bad, so we should get a MeasurementError
+        # indicating an expected valure.
+        record = catalog.addNew()
+        record.set("centroid_flag", True)
+        with self.assertRaises(measBase.MeasurementError) as measErr:
+            variance.measure(record, None)
+        variance.fail(record, measErr.exception)
+        self.assertTrue(record.get("variance_flag"))
+        self.assertTrue(record.get("variance_flag_badCentroid"))
 
 ##############################################################################################################
 
