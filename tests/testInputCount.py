@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2015 LSST/AURA
+# Copyright 2008-2016 LSST/AURA
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -37,6 +37,7 @@ import lsst.afw.image as afwImage
 import lsst.afw.coord as afwCoord
 import lsst.afw.detection as afwDetection
 import lsst.meas.base as measBase
+import lsst.pex.exceptions as pexExcept
 
 from lsst.afw.geom.polygon import Polygon
 
@@ -150,8 +151,8 @@ class InputCountTest(unittest.TestCase):
 
         # Configure a SingleFrameMeasurementTask to run InputCounts.
         measureSourcesConfig = measBase.SingleFrameMeasurementConfig()
-        measureSourcesConfig.plugins.names = ["base_NaiveCentroid", "base_InputCount"]
-        measureSourcesConfig.slots.centroid = "base_NaiveCentroid"
+        measureSourcesConfig.plugins.names = ["base_PeakCentroid", "base_InputCount"]
+        measureSourcesConfig.slots.centroid = "base_PeakCentroid"
         measureSourcesConfig.slots.psfFlux = None
         measureSourcesConfig.slots.apFlux = None
         measureSourcesConfig.slots.modelFlux = None
@@ -179,6 +180,74 @@ class InputCountTest(unittest.TestCase):
 
         if display:
             ccdVennDiagram(exp)
+
+    def _preparePlugin(self, numCoaddInputs):
+        """
+        Prepare a SingleFrameInputCountPlugin for running.
+
+        Sets up an InputCount plugin to run on an empty catalog together with a synthetic, content-free
+        Exposure.
+
+        @param[in] numCoaddInputs  Number of coadd inputs for use in synthetic exposure.
+        @returns   tuple of (initialized plugin, empty catalog, synthetic exposure)
+        """
+        exp = afwImage.ExposureF()
+        if numCoaddInputs > 0:
+            exp.getInfo().setCoaddInputs(afwImage.CoaddInputs(*[afwTable.ExposureTable.makeMinimalSchema()
+                                                                for _ in range(numCoaddInputs)]))
+        schema = afwTable.SourceTable.makeMinimalSchema()
+        measBase.SingleFramePeakCentroidPlugin(measBase.SingleFramePeakCentroidConfig(),
+                                               "centroid", schema, None)
+        schema.getAliasMap().set("slot_Centroid", "centroid")
+        inputCount = measBase.SingleFrameInputCountPlugin(measBase.SingleFrameInputCountConfig(),
+                                                          "inputCount", schema, None)
+        catalog = afwTable.SourceCatalog(schema)
+        return inputCount, catalog, exp
+
+    def testBadCentroid(self):
+        """
+        The flag from the centroid slot should propagate to the badCentroid
+        flag on InputCount and the algorithm should throw a MeasurementError.
+        """
+        inputCount, catalog, exp = self._preparePlugin(numCoaddInputs=2)
+        record = catalog.addNew()
+
+        # The inputCount's badCentroid flag is an alias to the centroid's global flag,
+        # so it should be set immediately.
+        record.set("centroid_flag", True)
+        self.assertTrue(record.get("inputCount_flag_badCentroid"))
+
+        # The centroid is flagged as bad, so we should get a MeasurementError indicating
+        # an expected failure.
+        with self.assertRaises(measBase.MeasurementError) as measErr:
+            inputCount.measure(record, exp)
+
+        # Calling the fail() method should set the global flag.
+        inputCount.fail(record, measErr.exception)
+        self.assertTrue(record.get("inputCount_flag"))
+
+    def testBadCoaddInputs(self):
+        """
+        When there are no coadd inputs on the input exposure we should throw a MeasurementError
+        and set both the global flag and flag_noInputs.
+        """
+        inputCount, catalog, exp = self._preparePlugin(numCoaddInputs=0)
+        record = catalog.addNew()
+
+        # Initially, the record is not flagged.
+        self.assertFalse(record.get("inputCount_flag"))
+        self.assertFalse(record.get("inputCount_flag_noInputs"))
+
+        # There are no coadd inputs, so we should get a MeasurementError indicating
+        # an expected failure.
+        with self.assertRaises(measBase.MeasurementError) as measErr:
+            inputCount.measure(record, exp)
+
+        # Calling the fail() method should set the noInputs and global flags.
+        inputCount.fail(record, measErr.exception)
+        self.assertTrue(record.get("inputCount_flag"))
+        self.assertTrue(record.get("inputCount_flag_noInputs"))
+
 ##############################################################################################################
 
 def suite():
