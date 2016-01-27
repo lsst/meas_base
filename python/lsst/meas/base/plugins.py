@@ -94,7 +94,7 @@ class SingleFrameFPPositionPlugin(SingleFramePlugin):
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.focalValue = lsst.afw.table.Point2DKey.addFields(schema, name, "Position on the focal plane",
-                "mm")
+                                                              "mm")
         self.focalFlag = schema.addField(name + "_flag", type="Flag", doc="Set to True for any fatal failure")
         self.detectorFlag = schema.addField(name + "_missingDetector_flag", type="Flag",
                                             doc="Set to True if detector object is missing")
@@ -131,8 +131,8 @@ class SingleFrameJacobianPlugin(SingleFramePlugin):
 
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
-        self.jacValue = schema.addField(name + '_value', type="D", doc='Jacobian correction')
-        self.jacFlag = schema.addField(name + '_flag', type='Flag', doc="Set to 1 for any fatal Failure")
+        self.jacValue = schema.addField(name + '_value', type="D", doc="Jacobian correction")
+        self.jacFlag = schema.addField(name + '_flag', type="Flag", doc="Set to 1 for any fatal failure")
         # Calculate one over the area of a nominal reference pixel
         self.scale = pow(self.config.pixelScale, -2)
 
@@ -161,8 +161,8 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
     the value is not terribly influenced by the object and instead represents the
     variance in the background near the object.
     '''
-
     ConfigClass = SingleFrameVarianceConfig
+    FAILURE_BAD_CENTROID = 1
 
     @classmethod
     def getExecutionOrder(cls):
@@ -173,19 +173,16 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
         self.varValue = schema.addField(name + '_value', type="D", doc="Variance at object position")
         self.varFlag = schema.addField(name + '_flag', type="Flag", doc="Set to True for any fatal failure")
 
-    def measure(self, measRecord, exposure):
-        center = measRecord.getCentroid()
-        # Promote the bounding box of the Footprint to type D to ensure
-        # the ability to compare the Footprint to the Center (they may be of mixed types I and D)
-        fpBbox = lsst.afw.geom.Box2D(measRecord.getFootprint().getBBox())
-        # check to ensure that the center exists and that it is contained within the Footprint
-        if not center:
-            raise Exception("The source record has no center")
-        elif not fpBbox.contains(center):
-            raise Exception("The center is outside the Footprint of the source record")
+        # Alias the badCentroid flag to that which is defined for the target of the centroid slot.
+        # We do not simply rely on the alias because that could be changed post-measurement.
+        schema.getAliasMap().set(name + '_flag_badCentroid', schema.getAliasMap().apply("slot_Centroid_flag"))
 
+    def measure(self, measRecord, exposure):
+        if measRecord.getCentroidFlag():
+            raise bl.MeasurementError("Source record has a bad centroid.", self.FAILURE_BAD_CENTROID)
+        center = measRecord.getCentroid()
         # Create an aperture and grow it by scale value defined in config to ensure there are enough
-        # pixles around the object to get decent statistics
+        # pixels around the object to get decent statistics
         aperture = lsst.afw.geom.ellipses.Ellipse(measRecord.getShape(), measRecord.getCentroid())
         aperture.scale(self.config.scale)
         foot = lsst.afw.detection.Footprint(aperture)
@@ -218,6 +215,8 @@ class SingleFrameInputCountPlugin(SingleFramePlugin):
     """
 
     ConfigClass = SingleFrameInputCountConfig
+    FAILURE_BAD_CENTROID = 1
+    FAILURE_NO_INPUTS = 2
 
     @classmethod
     def getExecutionOrder(cls):
@@ -228,29 +227,33 @@ class SingleFrameInputCountPlugin(SingleFramePlugin):
         self.numberKey = schema.addField(name + '_value', type="I",
                                          doc="Number of images contributing at center, not including any"
                                              "clipping")
-        self.numberFlag = schema.addField(name + '_flag', type="Flag", doc="Set to True for fatal Failure")
+        self.numberFlag = schema.addField(name + '_flag', type="Flag", doc="Set to True for fatal failure")
+        self.noInputsFlag = schema.addField(name + '_flag_noInputs', type="Flag",
+                                            doc="No coadd inputs available")
+        # Alias the badCentroid flag to that which is defined for the target of the centroid slot.
+        # We do not simply rely on the alias because that could be changed post-measurement.
+        schema.getAliasMap().set(name + '_flag_badCentroid', schema.getAliasMap().apply("slot_Centroid_flag"))
 
     def measure(self, measRecord, exposure):
         if not exposure.getInfo().getCoaddInputs():
-            raise lsst.pex.exceptions.RuntimeError("No coadd inputs defined")
+            raise bl.MeasurementError("No coadd inputs defined.", self.FAILURE_NO_INPUTS)
+        if measRecord.getCentroidFlag():
+            raise bl.MeasurementError("Source has a bad centroid.", self.FAILURE_BAD_CENTROID)
 
         center = measRecord.getCentroid()
         # Promote bounding box of the Footprint to type D to ensure
         # the ability to compare the Footprint and center (they may be of mixed types I and D)
         fpBbox = lsst.afw.geom.Box2D(measRecord.getFootprint().getBBox())
-
-        # Check to ensure that the center exists and that it is contained within the Footprint
-        # to catch bad centroiding
-        if not center:
-            raise Exception("The source record has no center")
-        elif not fpBbox.contains(center):
-            raise Exception("The center is outside the Footprint of the source record")
-
         ccds = exposure.getInfo().getCoaddInputs().ccds
         measRecord.set(self.numberKey, len(ccds.subsetContaining(center, exposure.getWcs())))
 
     def fail(self, measRecord, error=None):
         measRecord.set(self.numberFlag, True)
+        if error is not None:
+            assert error.getFlagBit() in (self.FAILURE_BAD_CENTROID, self.FAILURE_NO_INPUTS)
+            # FAILURE_BAD_CENTROID handled by alias to centroid record.
+            if error.getFlagBit() == self.FAILURE_NO_INPUTS:
+                measRecord.set(self.noInputsFlag, True)
 
 class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
     pass
@@ -273,11 +276,15 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixels")
         self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixels")
+        self.flag = schema.addField(name + "_flag", type="Flag", doc="Centroiding failed")
 
     def measure(self, measRecord, exposure):
         peak = measRecord.getFootprint().getPeaks()[0]
         measRecord.set(self.keyX, peak.getFx())
         measRecord.set(self.keyY, peak.getFy())
+
+    def fail(self, measRecord, error=None):
+        measRecord.set(self.flag, True)
 
     @staticmethod
     def getTransformClass():
