@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2015 LSST/AURA
+# Copyright 2008-2016 LSST/AURA
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -150,8 +150,8 @@ class InputCountTest(unittest.TestCase):
 
         # Configure a SingleFrameMeasurementTask to run InputCounts.
         measureSourcesConfig = measBase.SingleFrameMeasurementConfig()
-        measureSourcesConfig.plugins.names = ["base_NaiveCentroid", "base_InputCount"]
-        measureSourcesConfig.slots.centroid = "base_NaiveCentroid"
+        measureSourcesConfig.plugins.names = ["base_PeakCentroid", "base_InputCount"]
+        measureSourcesConfig.slots.centroid = "base_PeakCentroid"
         measureSourcesConfig.slots.psfFlux = None
         measureSourcesConfig.slots.apFlux = None
         measureSourcesConfig.slots.modelFlux = None
