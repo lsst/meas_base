@@ -270,11 +270,15 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixels")
         self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixels")
+        self.flag = schema.addField(name + "_flag", type="Flag", doc="Centroiding failed")
 
     def measure(self, measRecord, exposure):
         peak = measRecord.getFootprint().getPeaks()[0]
         measRecord.set(self.keyX, peak.getFx())
         measRecord.set(self.keyY, peak.getFy())
+
+    def fail(self, measRecord, error=None):
+        measRecord.set(self.flag, True)
 
     @staticmethod
     def getTransformClass():
