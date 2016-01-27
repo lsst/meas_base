@@ -215,6 +215,8 @@ class SingleFrameInputCountPlugin(SingleFramePlugin):
     """
 
     ConfigClass = SingleFrameInputCountConfig
+    FAILURE_BAD_CENTROID = 1
+    FAILURE_NO_INPUTS = 2
 
     @classmethod
     def getExecutionOrder(cls):
@@ -226,28 +228,32 @@ class SingleFrameInputCountPlugin(SingleFramePlugin):
                                          doc="Number of images contributing at center, not including any"
                                              "clipping")
         self.numberFlag = schema.addField(name + '_flag', type="Flag", doc="Set to True for fatal failure")
+        self.noInputsFlag = schema.addField(name + '_flag_noInputs', type="Flag",
+                                            doc="No coadd inputs available")
+        # Alias the badCentroid flag to that which is defined for the target of the centroid slot.
+        # We do not simply rely on the alias because that could be changed post-measurement.
+        schema.getAliasMap().set(name + '_flag_badCentroid', schema.getAliasMap().apply("slot_Centroid_flag"))
 
     def measure(self, measRecord, exposure):
         if not exposure.getInfo().getCoaddInputs():
-            raise lsst.pex.exceptions.RuntimeError("No coadd inputs defined")
+            raise bl.MeasurementError("No coadd inputs defined.", self.FAILURE_NO_INPUTS)
+        if measRecord.getCentroidFlag():
+            raise bl.MeasurementError("Source has a bad centroid.", self.FAILURE_BAD_CENTROID)
 
         center = measRecord.getCentroid()
         # Promote bounding box of the Footprint to type D to ensure
         # the ability to compare the Footprint and center (they may be of mixed types I and D)
         fpBbox = lsst.afw.geom.Box2D(measRecord.getFootprint().getBBox())
-
-        # Check to ensure that the center exists and that it is contained within the Footprint
-        # to catch bad centroiding
-        if not center:
-            raise Exception("The source record has no center")
-        elif not fpBbox.contains(center):
-            raise Exception("The center is outside the Footprint of the source record")
-
         ccds = exposure.getInfo().getCoaddInputs().ccds
         measRecord.set(self.numberKey, len(ccds.subsetContaining(center, exposure.getWcs())))
 
     def fail(self, measRecord, error=None):
         measRecord.set(self.numberFlag, True)
+        if error is not None:
+            assert error.getFlagBit() in (self.FAILURE_BAD_CENTROID, self.FAILURE_NO_INPUTS)
+            # FAILURE_BAD_CENTROID handled by alias to centroid record.
+            if error.getFlagBit() == self.FAILURE_NO_INPUTS:
+                measRecord.set(self.noInputsFlag, True)
 
 class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
     pass
