@@ -190,12 +190,13 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
         # Filter out any pixels which have mask bits set corresponding to the planes to be excluded
         # (defined in config.mask)
         maskedImage = exposure.getMaskedImage()
+        pixels = lsst.afw.detection.makeHeavyFootprint(foot, maskedImage)
         maskBits = maskedImage.getMask().getPlaneBitMask(self.config.mask)
-        logicalMask = numpy.logical_not(maskedImage.getMask().getArray() & maskBits)
+        logicalMask = numpy.logical_not(pixels.getMaskArray() & maskBits)
         # Compute the median variance value for each pixel not excluded by the mask and write the record.
         # Numpy median is used here instead of afw.math makeStatistics because of an issue with data types
         # being passed into the C++ layer (DM-2379).
-        medVar = numpy.median(maskedImage.getVariance().getArray()[logicalMask])
+        medVar = numpy.median(pixels.getVarianceArray()[logicalMask])
         measRecord.set(self.varValue, medVar)
 
     def fail(self, measRecord, error=None):

@@ -47,7 +47,7 @@ class VarianceTest(unittest.TestCase):
     def testVariance(self):
         size = 128 # size of image (pixels)
         center = afwGeom.Point2D(size//2, size//2) # object center
-        width = 1.0 # PSF width
+        width = 2.0 # PSF width
         flux = 10.0 # Flux of object
         variance = 1.0 # Mean variance value
         varianceStd = 0.1 # Standard deviation of the variance value
@@ -68,7 +68,8 @@ class VarianceTest(unittest.TestCase):
         var.getArray()[:,:] = variancePlane
 
         # Put down a PSF
-        psf = afwDetection.GaussianPsf(int(5*width), int(5*width), width)
+        psfSize = int(6*width + 1)  # Size of PSF image; must be odd
+        psf = afwDetection.GaussianPsf(psfSize, psfSize, width)
         exp.setPsf(psf)
         psfImage = psf.computeImage(center).convertF()
         psfImage *= flux
@@ -82,6 +83,12 @@ class VarianceTest(unittest.TestCase):
             mask.getArray()[bad, :] = mask.getPlaneBitMask("BAD")
             var.getArray()[:, bad] = float("nan")
             mask.getArray()[:, bad] = mask.getPlaneBitMask("BAD")
+
+        # Put in some unmasked bad pixels outside the expected aperture, to ensure the aperture is working
+        var.getArray()[0, 0] = float("nan")
+        var.getArray()[0, -1] = float("nan")
+        var.getArray()[-1, 0] = float("nan")
+        var.getArray()[-1, -1] = float("nan")
 
         if display:
             import lsst.afw.display as afwDisplay
