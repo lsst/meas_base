@@ -30,6 +30,7 @@ import lsst.daf.base
 import lsst.pipe.base
 import lsst.pex.config
 
+from .baseMeasurement import BasePlugin
 from .references import MultiBandReferencesTask
 from .forcedMeasurement import ForcedMeasurementTask
 
@@ -122,7 +123,17 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
                                                    idFactory=self.makeIdFactory(dataRef))
         self.log.info("Performing forced measurement on %s" % dataRef.dataId)
         self.attachFootprints(measCat, refCat, exposure, refWcs, dataRef)
-        self.measurement.run(measCat, exposure, refCat, refWcs)
+
+        # First run plugins with order up to and including APCORR_ORDER to measure all fluxes
+        # and apply the aperture correction (using the apCorrMap measured in the calibration
+        # task) to the measured fluxes whose plugins were registered with shouldApCorr=True
+        self.measurement.run(measCat, exposure, refCat, refWcs,
+                             endOrder=BasePlugin.APCORR_ORDER+1)
+        # Now run the remaining APCORR_ORDER+1 plugins (whose measurements should be performed on
+        # aperture corrected fluxes) disallowing apCorr (to avoid applying it more than once)
+        self.measurement.run(measCat, exposure, refCat, refWcs,
+                             beginOrder=BasePlugin.APCORR_ORDER+1, allowApCorr=False)
+
         self.writeOutput(dataRef, measCat)
 
     def makeIdFactory(self, dataRef):
