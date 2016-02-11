@@ -106,6 +106,9 @@ class ForcedPhotCoaddTask(ProcessImageForcedTask):
         expId = long(dataRef.get(self.config.coaddName + "CoaddId"))
         return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
 
+    def getExposureId(self, dataRef):
+        return long(dataRef.get(self.config.coaddName + "CoaddId"))
+
     def fetchReferences(self, dataRef, exposure):
         """Return an iterable of reference sources which overlap the exposure
 
