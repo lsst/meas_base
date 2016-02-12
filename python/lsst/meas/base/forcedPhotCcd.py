@@ -191,6 +191,9 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
         expId = long(dataRef.get("ccdExposureId"))
         return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
 
+    def getExposureId(self, dataRef):
+        return long(dataRef.get("ccdExposureId", immediate=True))
+
     def fetchReferences(self, dataRef, exposure):
         """Return a SourceCatalog of sources which overlap the exposure.
 
