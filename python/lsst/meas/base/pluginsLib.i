@@ -94,6 +94,9 @@
 %instantiateSdssShape(float)
 %instantiateSdssShape(double)
 
+%feature("notabstract") lsst::meas::base::BlendednessAlgorithm;
+%include "lsst/meas/base/Blendedness.h"
+
 // miscellaneous algorithms
 
 %feature("notabstract") lsst::meas::base::PixelFlagsAlgorithm;

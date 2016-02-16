@@ -42,5 +42,6 @@
 #include "lsst/meas/base/ApertureFlux.h"
 #include "lsst/meas/base/ScaledApertureFlux.h"
 #include "lsst/meas/base/CircularApertureFlux.h"
+#include "lsst/meas/base/Blendedness.h"
 
 #endif // !LSST_MEAS_base_h_INCLUDED

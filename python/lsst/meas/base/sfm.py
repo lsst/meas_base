@@ -248,6 +248,13 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         self.initializePlugins(schema=self.schema)
         self.makeSubtask("applyApCorr", schema=self.schema)
 
+        # Check to see if blendedness is one of the plugins
+        if 'base_Blendedness' in self.plugins:
+            self.doBlendedness = True
+            self.blendPlugin = self.plugins['base_Blendedness']
+        else:
+            self.doBlendedness = False
+
     def run(self, measCat, exposure, noiseImage=None, exposureId=None, beginOrder=None, endOrder=None,
         allowApCorr=True):
         """!
@@ -310,17 +317,33 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
             for measChildRecord in measChildCat:
                 noiseReplacer.insertSource(measChildRecord.getId())
                 self.callMeasure(measChildRecord, exposure, beginOrder=beginOrder, endOrder=endOrder)
+
+                if self.doBlendedness:
+                     self.blendPlugin.cpp.measureChildPixels(exposure.getMaskedImage(), measChildRecord)
+
                 noiseReplacer.removeSource(measChildRecord.getId())
+
             # Then insert the parent footprint, and measure that
             noiseReplacer.insertSource(measParentRecord.getId())
             self.callMeasure(measParentRecord, exposure, beginOrder=beginOrder, endOrder=endOrder)
-            # Finally, process both the parent and the child set through measureN
+
+            if self.doBlendedness:
+                self.blendPlugin.cpp.measureChildPixels(exposure.getMaskedImage(), measParentRecord)
+
+                # Finally, process both the parent and the child set through measureN
             self.callMeasureN(measParentCat[parentIdx:parentIdx+1], exposure,
                     beginOrder=beginOrder, endOrder=endOrder)
             self.callMeasureN(measChildCat, exposure, beginOrder=beginOrder, endOrder=endOrder)
             noiseReplacer.removeSource(measParentRecord.getId())
         # when done, restore the exposure to its original state
         noiseReplacer.end()
+
+        # Now we loop over all of the sources one more time to compute the blendedness metrics
+        # on the original image (i.e. with no noise replacement).
+        for source in measCat:
+            if self.doBlendedness:
+                self.blendPlugin.cpp.measureParentPixels(exposure.getMaskedImage(), source)
+
 
         if allowApCorr:
             self._applyApCorrIfWanted(

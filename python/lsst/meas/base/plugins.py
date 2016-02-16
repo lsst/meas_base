@@ -74,6 +74,8 @@ wrapSimpleAlgorithm(bl.ScaledApertureFluxAlgorithm, Control=bl.ScaledApertureFlu
 
 wrapSimpleAlgorithm(bl.CircularApertureFluxAlgorithm, needsMetadata=True, Control=bl.ApertureFluxControl,
                     TransformClass=bl.ApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
+wrapSimpleAlgorithm(bl.BlendednessAlgorithm, Control=bl.BlendednessControl,
+                TransformClass=bl.BaseTransform, executionOrder=BasePlugin.SHAPE_ORDER)
 
 # --- Single-Frame Measurement Plugins ---
 class SingleFrameFPPositionConfig(SingleFramePluginConfig):
