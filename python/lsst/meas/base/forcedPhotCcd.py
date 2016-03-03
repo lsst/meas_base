@@ -258,6 +258,6 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "forced_src", help="data ID with raw CCD keys [+ tract optionally], "
-                               "e.g. --id visit=12345 ccd=1,2 [tract=0]",
+                               "e.g. --id visit=12345 ccd=1,2^0,3 [tract=0]",
                                ContainerClass=PerTractCcdDataIdContainer)
         return parser
