@@ -63,13 +63,18 @@ public:
         FlagDefinition const * end
     );
 
-    FlagDefinition getDefinition(int i) const { return _vector[i].first; }
+    FlagDefinition getDefinition(std::size_t i) const {
+        assert(_vector.size() > i);  // Flag 'i' needs to be available
+        return _vector[i].first;
+    }
 
-    bool getValue(afw::table::BaseRecord const & record, int i) const {
+    bool getValue(afw::table::BaseRecord const & record, std::size_t i) const {
+        assert(_vector.size() > i);  // Flag 'i' needs to be available
         return record.get(_vector[i].second);
     }
 
-    void setValue(afw::table::BaseRecord & record, int i, bool value) const {
+    void setValue(afw::table::BaseRecord & record, std::size_t i, bool value) const {
+        assert(_vector.size() > i);  // Flag 'i' needs to be available
         record.set(_vector[i].second, value);
     }
 
