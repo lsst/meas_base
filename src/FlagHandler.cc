@@ -57,8 +57,11 @@ FlagHandler::FlagHandler(
 }
 
 void FlagHandler::handleFailure(afw::table::BaseRecord & record, MeasurementError const * error) const {
+    std::size_t const numFlags = _vector.size();
+    assert(numFlags > 0);  // We need a general failure flag
     record.set(_vector[0].second, true);
     if (error) {
+        assert(numFlags > error->getFlagBit());  // We need the particular flag
         record.set(_vector[error->getFlagBit()].second, true);
     }
 }
