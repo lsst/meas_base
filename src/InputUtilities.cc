@@ -167,7 +167,11 @@ afw::geom::ellipses::Quadrupole SafeShapeExtractor::operator()(
     }
     afw::geom::ellipses::Quadrupole result = record.getShape();
     if (utils::isnan(result.getIxx()) || utils::isnan(result.getIyy()) || utils::isnan(result.getIxy())
-        || result.getDeterminant() < 0
+        || result.getIxx()*result.getIyy() <
+                  (1.0 + 1.0e-6)*result.getIxy()*result.getIxy()
+                  // We are checking that Ixx*Iyy > (1 + epsilon)*Ixy*Ixy where epsilon is suitably small. The
+                  // value of epsilon used here is a magic number. DM-5801 is supposed to figure out if we are
+                  // to keep this value.
     ) {
         if (!record.getTable()->getShapeFlagKey().isValid()) {
             throw LSST_EXCEPT(
