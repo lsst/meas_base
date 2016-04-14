@@ -30,19 +30,20 @@ to avoid information loss (this should, of course, be indicated in the field doc
 """
 
 from .pluginRegistry import PluginRegistry
-from .baseMeasurement import BasePluginConfig, BasePlugin, BaseMeasurementConfig, BaseMeasurementTask
+from .baseMeasurement import (BaseMeasurementPluginConfig, BaseMeasurementPlugin,
+                              BaseMeasurementConfig, BaseMeasurementTask)
 from .noiseReplacer import NoiseReplacer, DummyNoiseReplacer
 
 __all__ = ("SingleFramePluginConfig", "SingleFramePlugin",
            "SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
 
-class SingleFramePluginConfig(BasePluginConfig):
+class SingleFramePluginConfig(BaseMeasurementPluginConfig):
     """!
     Base class for configs of single-frame plugin algorithms.
     """
     pass
 
-class SingleFramePlugin(BasePlugin):
+class SingleFramePlugin(BaseMeasurementPlugin):
     """!
     Base class for single-frame plugin algorithms.
 
@@ -66,7 +67,7 @@ class SingleFramePlugin(BasePlugin):
                                  hold measurements produced by this plugin.
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
-        BasePlugin.__init__(self, config, name)
+        BaseMeasurementPlugin.__init__(self, config, name)
 
     def measure(self, measRecord, exposure):
         """!

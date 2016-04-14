@@ -51,17 +51,18 @@ import lsst.pex.config
 import lsst.pipe.base
 
 from .pluginRegistry import PluginRegistry
-from .baseMeasurement import BasePluginConfig, BasePlugin, BaseMeasurementConfig, BaseMeasurementTask
+from .baseMeasurement import (BaseMeasurementPluginConfig, BaseMeasurementPlugin,
+                              BaseMeasurementConfig, BaseMeasurementTask)
 from .noiseReplacer import NoiseReplacer, DummyNoiseReplacer
 
 __all__ = ("ForcedPluginConfig", "ForcedPlugin",
            "ForcedMeasurementConfig", "ForcedMeasurementTask")
 
-class ForcedPluginConfig(BasePluginConfig):
+class ForcedPluginConfig(BaseMeasurementPluginConfig):
     """Base class for configs of forced measurement plugins."""
     pass
 
-class ForcedPlugin(BasePlugin):
+class ForcedPlugin(BaseMeasurementPlugin):
 
     # All subclasses of ForcedPlugin should be registered here
     registry = PluginRegistry(ForcedPluginConfig)
@@ -80,7 +81,7 @@ class ForcedPlugin(BasePlugin):
                                       will be transferred before any plugins are run.
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
-        BasePlugin.__init__(self, config, name)
+        BaseMeasurementPlugin.__init__(self, config, name)
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
         """Measure the properties of a source on a single image, given data from a

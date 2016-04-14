@@ -1,6 +1,7 @@
 from .apCorrRegistry import *
 from .pluginRegistry import *
 from .baseMeasurement import *
+from .pluginsBase import *
 from .sfm import *
 from .plugins import *
 from .baseLib import *
