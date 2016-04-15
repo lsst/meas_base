@@ -44,4 +44,12 @@
 #include "lsst/meas/base/CircularApertureFlux.h"
 #include "lsst/meas/base/Blendedness.h"
 
+// These are necessary to build Swig modules that %import meas/base/baseLib.i,
+// so it's neighborly to include them here so downstream code can just
+// #include "lsst/meas/base.h" in their Swig wrappers, instead of guessing
+// what else they might need.
+#include "lsst/afw/detection.h"
+#include "lsst/afw/math.h"
+
+
 #endif // !LSST_MEAS_base_h_INCLUDED
