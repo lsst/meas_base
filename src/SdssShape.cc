@@ -790,7 +790,12 @@ SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(
         // even though they do produce some results.
         result.flags[FAILURE] = true;
     }
-    if (result.getQuadrupole().getDeterminant() < 0) {
+    if (result.getQuadrupole().getIxx()*result.getQuadrupole().getIyy() < 
+            (1.0 + 1.0e-6)*result.getQuadrupole().getIxy()*result.getQuadrupole().getIxy()) 
+                  // We are checking that Ixx*Iyy > (1 + epsilon)*Ixy*Ixy where epsilon is suitably small. The
+                  // value of epsilon used here is a magic number. DM-5801 is supposed to figure out if we are
+                  // to keep this value.
+        {
         if (!result.flags[FAILURE]) {
             throw LSST_EXCEPT(
                 pex::exceptions::LogicError,
