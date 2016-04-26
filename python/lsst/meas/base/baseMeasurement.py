@@ -30,17 +30,17 @@ import lsst.pex.config
 from .applyApCorr import ApplyApCorrTask
 from .pluginRegistry import PluginMap
 from .baseLib import FatalAlgorithmError, MeasurementError
+from .pluginsBase import BasePluginConfig, BasePlugin
 from .noiseReplacer import NoiseReplacerConfig
-from .transforms import PassThroughTransform
 
-__all__ = ("BasePluginConfig", "BasePlugin", "BaseMeasurementConfig", "BaseMeasurementTask")
+__all__ = ("BaseMeasurementPluginConfig", "BaseMeasurementPlugin", "BaseMeasurementConfig", "BaseMeasurementTask")
 
 # Exceptions that the measurement tasks should always propagate up to their callers
 FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)
 
-class BasePluginConfig(lsst.pex.config.Config):
+class BaseMeasurementPluginConfig(BasePluginConfig):
     """!
-    Base class measurement Plugin config classes.
+    Base config class for all measurement plugins
 
     Most derived classes will want to override setDefaults() in order to customize
     the default exceutionOrder.
@@ -55,92 +55,15 @@ class BasePluginConfig(lsst.pex.config.Config):
 
     doMeasureN = False  # replace this class attribute with a Field if measureN-capable
 
-class BasePlugin(object):
-    """!
-    Base class for measurement plugins.
+class BaseMeasurementPlugin(BasePlugin):
+    '''
+    Base class for all measurement plugins
 
-    This is the base class for SingleFramePlugin and ForcedPlugin; derived classes should inherit
-    from one of those.
-    """
-    # named class constants for execution order
-    CENTROID_ORDER = 0.0
-    SHAPE_ORDER = 1.0
-    FLUX_ORDER = 2.0
-    APCORR_ORDER = 4.0
-    CLASSIFY_ORDER = 5.0
-
-    @classmethod
-    def getExecutionOrder(cls):
-        """Sets the relative order of plugins (smaller numbers run first).
-
-        In general, the following class constants should be used (other values
-        are also allowed, but should be avoided unless they are needed):
-        CENTROID_ORDER  centroids and other algorithms that require only a Footprint and its Peaks as input
-        SHAPE_ORDER     shape measurements and other algorithms that require getCentroid() to return
-                        a good centroid (in addition to a Footprint and its Peaks).
-        FLUX_ORDER      flux algorithms that require both getShape() and getCentroid(),
-                        in addition to a Footprint and its Peaks
-        APCORR_ORDER    aperture corrections
-        CLASSIFY_ORDER  algorithms that operate on aperture-corrected fluxes
-
-        Must be reimplemented as a class method by concrete derived classes.
-
-        This approach was chosen instead of a full graph-based analysis of dependencies
-        because algorithm dependencies are usually both quite simple and entirely substitutable:
-        an algorithm that requires a centroid can typically make use of any centroid algorithms
-        outputs.  That makes it relatively easy to figure out the correct value to use for any
-        particular algorithm.
-        """
-        raise NotImplementedError("All plugins must implement getExecutionOrder()")
-
-    def __init__(self, config, name):
-        """!
-        Initialize the measurement object.
-
-        @param[in]  config       An instance of this class's ConfigClass.
-        @param[in]  name         The string the plugin was registered with.
-        """
-        object.__init__(self)
-        self.config = config
-        self.name = name
-
-    def fail(self, measRecord, error=None):
-        """!
-        Record a failure of the measure or measureN() method.
-
-        When measure() raises an exception, the measurement framework
-        will call fail() to allow the plugin to set its failure flag
-        field(s).  When measureN() raises an exception, fail() will be
-        called repeatedly with all the records that were being
-        measured.
-
-        If the exception is a MeasurementError, it will be passed as
-        the error argument; in all other cases the error argument will
-        be None, and the failure will be logged by the measurement
-        framework as a warning.
-        """
-        traceback.print_exc()
-        message = ("The algorithm '%s' thinks it cannot fail, but it did; "
-                   "please report this as a bug (the full traceback is above)."
-                   % self.__class__.__name__)
-        raise NotImplementedError(message)
-
-    @staticmethod
-    def getTransformClass():
-        """!
-        Get the measurement transformation appropriate to this plugin.
-
-        This returns a subclass of MeasurementTransform, which may be
-        instantiated with details of the algorithm configuration and then
-        called with information about calibration and WCS to convert from raw
-        measurement quantities to calibrated units. Calibrated data is then
-        provided in a separate output table.
-
-        By default, we copy everything from the input to the output without
-        transformation.
-        """
-        return PassThroughTransform
-
+    This is class is a placeholder for future behavior which will be shared only between
+    measurement plugins and is implemented for symmetry with the measurement base plugin
+    configuration class
+    '''
+    pass
 
 class SourceSlotConfig(lsst.pex.config.Config):
     """!

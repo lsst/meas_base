@@ -1,6 +1,7 @@
 from .apCorrRegistry import *
 from .pluginRegistry import *
 from .baseMeasurement import *
+from .pluginsBase import *
 from .sfm import *
 from .plugins import *
 from .baseLib import *
@@ -14,3 +15,4 @@ from .transforms import *
 from .measureApCorr import *
 from .applyApCorr import *
 from .wrappers import *
+from .afterburner import *

@@ -33,7 +33,7 @@ import lsst.afw.math as afwMath
 
 from .pluginRegistry import register
 from . import baseLib as bl
-from .baseMeasurement import BasePlugin
+from .pluginsBase import BasePlugin
 from .sfm import SingleFramePluginConfig, SingleFramePlugin
 from .forcedMeasurement import ForcedPluginConfig, ForcedPlugin
 from .wrappers import wrapSimpleAlgorithm
