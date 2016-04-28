@@ -40,9 +40,6 @@ from .forcedMeasurement import ForcedPluginConfig, ForcedPlugin
 from .wrappers import wrapSimpleAlgorithm
 from .transforms import SimpleCentroidTransform
 
-singleFrameVarianceDebugLevel = 1 # Debug level for SingleFrameVariancePlugin. Increase to 1 or greater to see
-                                                               # debug messages from singleFrameVariancePlugin
-
 __all__ = (
     "SingleFrameFPPositionConfig", "SingleFrameFPPositionPlugin",
     "SingleFrameJacobianConfig", "SingleFrameJacobianPlugin",
@@ -182,8 +179,6 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
         # Alias the badCentroid flag to that which is defined for the target of the centroid slot.
         # We do not simply rely on the alias because that could be changed post-measurement.
         schema.getAliasMap().set(name + '_flag_badCentroid', schema.getAliasMap().apply("slot_Centroid_flag"))
-        if pluginLog is None:
-            self.dbl = log.Debug(name, singleFrameVarianceDebugLevel)
 
     def measure(self, measRecord, exposure):
         if measRecord.getCentroidFlag():
@@ -204,17 +199,17 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
         # Compute the median variance value for each pixel not excluded by the mask and write the record.
         # Numpy median is used here instead of afw.math makeStatistics because of an issue with data types
         # being passed into the C++ layer (DM-2379).
-        if pixels.getVarianceArray()[logicalMask].shape[0] != 0:
+        if numpy.sum(logicalMask) > 0:
             medVar = numpy.median(pixels.getVarianceArray()[logicalMask])
         else:
-            medVar = numpy.NaN
-            self.fail(measRecord)
-            self.dbl.debug(1, "Warning in %s on record %s: Mean of empty slice."%(self.name, 
-                                                                                     str(measRecord.getId())))
+            raise bl.MeasurementError("Footprint empty, or all pixels are masked, can't compute median",
+                                      bl.FlagHandler.FAILURE)
+
         measRecord.set(self.varValue, medVar)
 
     def fail(self, measRecord, error=None):
         print "Failing on record %s"%(measRecord.getId())
+        measRecord.set(self.varFlag, numpy.NaN)
         measRecord.set(self.varFlag, True)
 
 class SingleFrameInputCountConfig(SingleFramePluginConfig):
