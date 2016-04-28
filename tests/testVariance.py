@@ -44,7 +44,8 @@ except NameError:
 
 
 class VarianceTest(unittest.TestCase):
-    def testVariance(self):
+
+    def setUp(self):
         size = 128 # size of image (pixels)
         center = afwGeom.Point2D(size//2, size//2) # object center
         width = 2.0 # PSF width
@@ -123,9 +124,42 @@ class VarianceTest(unittest.TestCase):
 
         source = catalog.addNew()
         source.setFootprint(foot)
-        task.run(catalog, exp)
 
-        self.assertTrue(np.abs(source.get("base_Variance_value") - variance) < varianceStd)
+        self.variance = variance
+        self.varianceStd = varianceStd
+        self.mask = mask
+        self.catalog = catalog
+        self.exp = exp
+        self.task = task
+        self.source = source
+
+    def tearDown(self):
+        del self.mask
+        del self.catalog
+        del self.exp
+        del self.task
+        del self.source
+
+    def testVariance(self):
+        self.task.run(self.catalog, self.exp)
+
+        self.assertTrue(np.abs(self.source.get("base_Variance_value") - self.variance) < self.varianceStd)
+
+        # flag_emptyFootprint should not have been set since the footprint has non-masked pixels at this
+        # point.
+        self.assertFalse(self.source.get("base_Variance_flag_emptyFootprint"))
+
+    def testEmptyFootprint(self):
+        # Set the pixel mask for all pixels to 'BAD' and remeasure.
+        self.mask.getArray()[:,:] = self.mask.getPlaneBitMask("BAD")
+        self.task.run(self.catalog, self.exp)
+
+        # The computed variance should be nan and flag_emptyFootprint should have been set since the footprint
+        #has all masked pixels at this point.
+        self.assertTrue(np.isnan(self.source.get("base_Variance_value")))
+        self.assertTrue(self.source.get("base_Variance_flag_emptyFootprint"))
+
+class BadCentroidTest(unittest.TestCase):
 
     def testBadCentroid(self):
         """
@@ -168,6 +202,7 @@ def suite():
 
     suites = []
     suites += unittest.makeSuite(VarianceTest)
+    suites += unittest.makeSuite(BadCentroidTest)
     suites += unittest.makeSuite(utilsTests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
