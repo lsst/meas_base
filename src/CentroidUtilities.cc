@@ -71,21 +71,21 @@ CentroidResultKey CentroidResultKey::addFields(
         schema,
         name,
         doc,
-        "pixels"
+        "pixel"
     );
     if (uncertainty != NO_UNCERTAINTY) {
         std::vector< afw::table::Key<ErrElement> > sigma(2);
         std::vector< afw::table::Key<ErrElement> > cov;
         sigma[0] = schema.addField<ErrElement>(
-            schema.join(name, "xSigma"), "1-sigma uncertainty on x position", "pixels"
+            schema.join(name, "xSigma"), "1-sigma uncertainty on x position", "pixel"
         );
         sigma[1] = schema.addField<ErrElement>(
-            schema.join(name, "ySigma"), "1-sigma uncertainty on y position", "pixels"
+            schema.join(name, "ySigma"), "1-sigma uncertainty on y position", "pixel"
         );
         if (uncertainty == FULL_COVARIANCE) {
             cov.push_back(
                 schema.addField<ErrElement>(
-                    schema.join(name, "x_y_Cov"), "uncertainty covariance in x and y", "pixels^2"
+                    schema.join(name, "x_y_Cov"), "uncertainty covariance in x and y", "pixel^2"
                 )
             );
         }
@@ -149,10 +149,10 @@ CentroidTransform::CentroidTransform(
     if (CentroidResultKey(mapper.getInputSchema()[name]).getCentroidErr().isValid()) {
         std::vector< afw::table::Key<ErrElement> > sigma(2);
         std::vector< afw::table::Key<ErrElement> > cov(1);
-        sigma[0] = s.addField<ErrElement>(s.join(name, "raSigma"), "Uncertainty on RA", "radians");
-        sigma[1] = s.addField<ErrElement>(s.join(name, "decSigma"), "Uncertainty on dec", "radians");
+        sigma[0] = s.addField<ErrElement>(s.join(name, "raSigma"), "Uncertainty on RA", "rad");
+        sigma[1] = s.addField<ErrElement>(s.join(name, "decSigma"), "Uncertainty on dec", "rad");
         cov[0] = s.addField<ErrElement>(s.join(name, "ra_dec_Cov"),
-                                             "Uncertainty covariance in RA and dec", "radians^2");
+                                             "Uncertainty covariance in RA and dec", "rad^2");
         _coordErrKey = afw::table::CovarianceMatrixKey<ErrElement,2>(sigma, cov);
     }
 

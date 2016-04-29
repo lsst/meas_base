@@ -672,19 +672,19 @@ SdssShapeResultKey SdssShapeResultKey::addFields(
         schema.join(name, "flux", "xx", "Cov"),
         (boost::format("uncertainty covariance between %s and %s")
          % schema.join(name, "flux") % schema.join(name, "xx")).str(),
-        "dn*pixels^2"
+        "count*pixel^2"
     );
     r._flux_yy_Cov = schema.addField<ErrElement>(
         schema.join(name, "flux", "yy", "Cov"),
         (boost::format("uncertainty covariance between %s and %s")
          % schema.join(name, "flux") % schema.join(name, "yy")).str(),
-        "dn*pixels^2"
+        "count*pixel^2"
     );
     r._flux_xy_Cov = schema.addField<ErrElement>(
         schema.join(name, "flux", "xy", "Cov"),
         (boost::format("uncertainty covariance between %s and %s")
          % schema.join(name, "flux") % schema.join(name, "xy")).str(),
-        "dn*pixels^2"
+        "count*pixel^2"
     );
     r._flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
     return r;

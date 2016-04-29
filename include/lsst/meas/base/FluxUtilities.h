@@ -64,7 +64,7 @@ public:
      *                         to form the full field names.
      *  @param[in]     doc     String used as the documentation for the fields.
      *
-     *  The unit for both fields will be "dn".
+     *  The unit for both fields will be "count".
      */
     static FluxResultKey addFields(
         afw::table::Schema & schema,
