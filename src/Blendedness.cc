@@ -49,7 +49,7 @@ double computeOldBlendedness(
     }
 
     PTR(afw::detection::HeavyFootprint<float> const) childHeavy =
-        boost::dynamic_pointer_cast<afw::detection::HeavyFootprint<float> const>(childFootprint);
+        std::dynamic_pointer_cast<afw::detection::HeavyFootprint<float> const>(childFootprint);
 
     if (!childHeavy) {
         return 0.0;  // if it's not a HeavyFootprint, it's not blended.

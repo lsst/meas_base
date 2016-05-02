@@ -146,7 +146,7 @@ CONST_PTR(afw::image::Image<T>) getSincCoeffs(
             result.setFlag(ApertureFluxAlgorithm::APERTURE_TRUNCATED);
             result.setFlag(ApertureFluxAlgorithm::FAILURE);
         }
-        cImage = boost::make_shared< afw::image::Image<T> >(*cImage, overlap);
+        cImage = std::make_shared< afw::image::Image<T> >(*cImage, overlap);
     }
     return cImage;
 }
