@@ -280,7 +280,7 @@ class NoiseReplacer(object):
         if noiseSource == 'meta':
             # check the exposure metadata
             meta = exposure.getMetadata()
-            # this key name correspond to estimateBackground() in detection.py
+            # this key name correspond to SubtractBackgroundTask() in meas_algorithms
             try:
                 bgMean = meta.getAsDouble('BGMEAN')
                 # We would have to adjust for GAIN if ip_isr didn't make it 1.0
