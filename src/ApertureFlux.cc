@@ -37,14 +37,14 @@ namespace lsst { namespace meas { namespace base {
 
 ApertureFluxControl::ApertureFluxControl() : radii(10), maxSincRadius(10.0), shiftKernel("lanczos5") {
     // defaults here stolen from HSC pipeline defaults
-    static boost::array<double,10> defaultRadii = {{
+    static std::array<double,10> defaultRadii = {{
         3.0, 4.5, 6.0, 9.0, 12.0, 17.0, 25.0, 35.0, 50.0, 70.0
     }};
     std::copy(defaultRadii.begin(), defaultRadii.end(), radii.begin());
 }
 
-boost::array<FlagDefinition,ApertureFluxAlgorithm::N_FLAGS> const & ApertureFluxAlgorithm::getFlagDefinitions() {
-    static boost::array<FlagDefinition,ApertureFluxAlgorithm::N_FLAGS> flagDefs = {{
+std::array<FlagDefinition,ApertureFluxAlgorithm::N_FLAGS> const & ApertureFluxAlgorithm::getFlagDefinitions() {
+    static std::array<FlagDefinition,ApertureFluxAlgorithm::N_FLAGS> flagDefs = {{
         {"flag", "general failure flag"},
         {"flag_apertureTruncated", "aperture did not fit within measurement image"},
         {"flag_sincCoeffsTruncated", "full sinc coefficient image did not fit within measurement image"}
