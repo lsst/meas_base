@@ -237,7 +237,7 @@ calcImageRealSpace(double const rad1, double const rad2, double const taperwidth
 
     // create an image to hold the coefficient image
     typename afw::image::Image<PixelT>::Ptr coeffImage =
-        boost::make_shared<afw::image::Image<PixelT> >(afw::geom::ExtentI(xwidth, ywidth), initweight);
+        std::make_shared<afw::image::Image<PixelT> >(afw::geom::ExtentI(xwidth, ywidth), initweight);
     coeffImage->setXY0(x0, y0);
 
     // create the aperture function object
@@ -400,7 +400,7 @@ typename afw::image::Image<PixelT>::Ptr calcImageKSpaceCplx(double const rad1, d
 
     // put the coefficients into an image
     typename afw::image::Image<PixelT>::Ptr coeffImage =
-        boost::make_shared<afw::image::Image<PixelT> >(afw::geom::ExtentI(wid, wid), 0.0);
+        std::make_shared<afw::image::Image<PixelT> >(afw::geom::ExtentI(wid, wid), 0.0);
 
     for (int iY = 0; iY != coeffImage->getHeight(); ++iY) {
         int iX = 0;
@@ -478,7 +478,7 @@ typename afw::image::Image<PixelT>::Ptr calcImageKSpaceReal(double const rad1, d
 
     // put the coefficients into an image
     typename afw::image::Image<PixelT>::Ptr coeffImage =
-        boost::make_shared<afw::image::Image<PixelT> >(afw::geom::ExtentI(wid, wid), 0.0);
+        std::make_shared<afw::image::Image<PixelT> >(afw::geom::ExtentI(wid, wid), 0.0);
 
     for (int iY = 0; iY != coeffImage->getHeight(); ++iY) {
         int iX = 0;

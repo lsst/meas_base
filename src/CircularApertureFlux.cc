@@ -47,7 +47,7 @@ void CircularApertureFluxAlgorithm::measure(
 ) const {
     afw::geom::ellipses::Ellipse ellipse(afw::geom::ellipses::Axes(1.0, 1.0, 0.0));
     PTR(afw::geom::ellipses::Axes) axes
-        = boost::static_pointer_cast<afw::geom::ellipses::Axes>(ellipse.getCorePtr());
+        = std::static_pointer_cast<afw::geom::ellipses::Axes>(ellipse.getCorePtr());
     for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
         // Each call to _centroidExtractor within this loop goes through exactly the same error-checking
         // logic and returns the same result, but it's not expensive logic, so we just call it repeatedly
