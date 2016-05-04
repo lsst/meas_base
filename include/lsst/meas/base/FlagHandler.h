@@ -108,7 +108,7 @@ public:
      *  @param[in]   end       Iterator to one past the end of an array of FlagDefinition.
      *
      *  We use pointers rather than an iterator type for the FlagDefinition array to allow the user
-     *  maximum flexibility in the array type - C arrays, std::array, boost::array, and std::vector
+     *  maximum flexibility in the array type - C arrays, std::array, std::array, and std::vector
      *  (as well as any other container with contiguous memory) may be used.  The pointers must remain
      *  valid only for the duration of the call to this function.
      */

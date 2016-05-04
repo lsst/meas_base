@@ -650,7 +650,7 @@ SdssShapeResult::SdssShapeResult() :
     flux_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN())
 {}
 
-static boost::array<FlagDefinition,SdssShapeAlgorithm::N_FLAGS> const flagDefs = {{
+static std::array<FlagDefinition,SdssShapeAlgorithm::N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag, set if anything went wrong"},
         {"flag_unweightedBad", "Both weighted and unweighted moments were invalid"},
         {"flag_unweighted", "Weighted moments converged to an invalid value; using unweighted moments"},

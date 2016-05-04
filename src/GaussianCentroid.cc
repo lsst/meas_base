@@ -499,8 +499,8 @@ MAKE_TWODG(afw::image::Image<float>);
 MAKE_TWODG(afw::image::Image<double>);
 MAKE_TWODG(afw::image::Image<int>);
 
-boost::array<FlagDefinition,GaussianCentroidAlgorithm::N_FLAGS> const & getFlagDefinitions() {
-    static boost::array<FlagDefinition,GaussianCentroidAlgorithm::N_FLAGS> const flagDefs = {{
+std::array<FlagDefinition,GaussianCentroidAlgorithm::N_FLAGS> const & getFlagDefinitions() {
+    static std::array<FlagDefinition,GaussianCentroidAlgorithm::N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag, set if anything went wrong"},
         {"flag_noPeak", "Fitted Centroid has a negative peak"}
     }};

@@ -29,8 +29,8 @@ namespace lsst { namespace meas { namespace base {
 
 namespace {
 
-boost::array<FlagDefinition,NaiveCentroidAlgorithm::N_FLAGS> const & getFlagDefinitions() {
-    static boost::array<FlagDefinition,NaiveCentroidAlgorithm::N_FLAGS> const flagDefs = {{
+std::array<FlagDefinition,NaiveCentroidAlgorithm::N_FLAGS> const & getFlagDefinitions() {
+    static std::array<FlagDefinition,NaiveCentroidAlgorithm::N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag, set if anything went wrong"},
         {"flag_noCounts", "Object to be centroided has no counts"},
         {"flag_edge", "Object too close to edge"}

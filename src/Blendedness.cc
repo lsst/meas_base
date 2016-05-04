@@ -211,8 +211,8 @@ void computeMoments(
 
 } // anonymous
 
-boost::array<FlagDefinition,BlendednessAlgorithm::N_FLAGS> const & getFlagDefinitions() {
-    static boost::array<FlagDefinition,BlendednessAlgorithm::N_FLAGS> const flagDefs = {{
+std::array<FlagDefinition,BlendednessAlgorithm::N_FLAGS> const & getFlagDefinitions() {
+    static std::array<FlagDefinition,BlendednessAlgorithm::N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag"},
         {"flag_noCentroid", "Object has no centroid"},
         {"flag_noShape", "Object has no shape"}

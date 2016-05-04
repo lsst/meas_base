@@ -21,7 +21,7 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include "boost/array.hpp"
+#include <array>
 
 #include "ndarray/eigen.h"
 
@@ -35,8 +35,8 @@ namespace lsst { namespace meas { namespace base {
 
 namespace {
 
-boost::array<FlagDefinition,PsfFluxAlgorithm::N_FLAGS> const & getFlagDefinitions() {
-    static boost::array<FlagDefinition,PsfFluxAlgorithm::N_FLAGS> const flagDefs = {{
+std::array<FlagDefinition,PsfFluxAlgorithm::N_FLAGS> const & getFlagDefinitions() {
+    static std::array<FlagDefinition,PsfFluxAlgorithm::N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag"},
         {"flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit"},
         {"flag_edge", "object was too close to the edge of the image to use the full PSF model"}

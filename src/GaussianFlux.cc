@@ -45,7 +45,7 @@ GaussianFluxAlgorithm::GaussianFluxAlgorithm(
     _centroidExtractor(schema, name),
     _shapeExtractor(schema, name)
 {
-    static boost::array<FlagDefinition,N_FLAGS> const flagDefs = {{
+    static std::array<FlagDefinition,N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag, set if anything went wrong"}
     }};
     _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());

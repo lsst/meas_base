@@ -80,7 +80,7 @@ public:
         ),
         _centroidExtractor(schema, name, true)
     {
-        static boost::array<lsst::meas::base::FlagDefinition,N_FLAGS> const flagDefs = {{
+        static std::array<lsst::meas::base::FlagDefinition,N_FLAGS> const flagDefs = {{
             {"flag", "general failure flag, set if anything went wrong"},
             {"flag_noCounts", "Object to be centroided has no counts"},
             {"flag_edge", "Object too close to edge"}

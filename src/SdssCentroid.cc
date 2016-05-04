@@ -410,8 +410,8 @@ smoothAndBinImage(CONST_PTR(lsst::afw::detection::Psf) psf,
     return std::make_pair(smoothedImage, smoothingSigma);
 }
 
-boost::array<FlagDefinition,SdssCentroidAlgorithm::N_FLAGS> const & getFlagDefinitions() {
-    static boost::array<FlagDefinition,SdssCentroidAlgorithm::N_FLAGS> const flagDefs = {{
+std::array<FlagDefinition,SdssCentroidAlgorithm::N_FLAGS> const & getFlagDefinitions() {
+    static std::array<FlagDefinition,SdssCentroidAlgorithm::N_FLAGS> const flagDefs = {{
         {"flag", "general failure flag, set if anything went wrong"},
         {"flag_edge", "Object too close to edge"},
         {"flag_noSecondDerivative", "Vanishing second derivative"},

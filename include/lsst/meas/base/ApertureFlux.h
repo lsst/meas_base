@@ -24,7 +24,7 @@
 #ifndef LSST_MEAS_BASE_ApertureFlux_h_INCLUDED
 #define LSST_MEAS_BASE_ApertureFlux_h_INCLUDED
 
-#include "boost/array.hpp"
+#include <array>
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/afw/table/arrays.h"
@@ -222,7 +222,7 @@ public:
     /**
      *  Return the flag definitions which apply to aperture flux measurements.
      */
-    static boost::array<FlagDefinition,ApertureFluxAlgorithm::N_FLAGS> const & getFlagDefinitions();
+    static std::array<FlagDefinition,ApertureFluxAlgorithm::N_FLAGS> const & getFlagDefinitions();
 
 protected:
 
