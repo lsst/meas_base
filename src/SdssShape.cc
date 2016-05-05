@@ -22,6 +22,7 @@
  */
 
 #include <cmath>
+#include <tuple>
 
 #include "boost/tuple/tuple.hpp"
 #include "Eigen/LU"
@@ -167,17 +168,17 @@ struct ImageAdaptor<afwImage::MaskedImage<T> > {
 };
 
 /// Calculate weights from moments
-boost::tuple<std::pair<bool, double>, double, double, double>
+std::tuple<std::pair<bool, double>, double, double, double>
 getWeights(double sigma11, double sigma12, double sigma22) {
     double const NaN = std::numeric_limits<double>::quiet_NaN();
     if (std::isnan(sigma11) || std::isnan(sigma12) || std::isnan(sigma22)) {
-        return boost::make_tuple(std::make_pair(false, NaN), NaN, NaN, NaN);
+        return std::make_tuple(std::make_pair(false, NaN), NaN, NaN, NaN);
     }
     double const det = sigma11*sigma22 - sigma12*sigma12; // determinant of sigmaXX matrix
     if (std::isnan(det) || det < std::numeric_limits<float>::epsilon()) { // a suitably small number
-        return boost::make_tuple(std::make_pair(false, det), NaN, NaN, NaN);
+        return std::make_tuple(std::make_pair(false, det), NaN, NaN, NaN);
     }
-    return boost::make_tuple(std::make_pair(true, det), sigma22/det, -sigma12/det, sigma11/det);
+    return std::make_tuple(std::make_pair(true, det), sigma22/det, -sigma12/det, sigma11/det);
 }
 
 /// Should we be interpolating?
@@ -352,8 +353,8 @@ calcmom(ImageT const& image,            // the image data
     }
    
 
-    boost::tuple<std::pair<bool, double>, double, double, double> const weights = getWeights(w11, w12, w22);
-    double const detW = weights.get<1>()*weights.get<3>() - std::pow(weights.get<2>(), 2);
+    std::tuple<std::pair<bool, double>, double, double, double> const weights = getWeights(w11, w12, w22);
+    double const detW = std::get<1>(weights)*std::get<3>(weights) - std::pow(std::get<2>(weights), 2);
     *pI0 = sum/(afwGeom::PI*sqrt(detW));
     if (psum) {
         *psum = sum;
@@ -425,14 +426,14 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
     for (; iter < maxIter; iter++) {
         bbox = computeAdaptiveMomentsBBox(image.getBBox(afw::image::LOCAL), afw::geom::Point2D(xcen, ycen),
                                           sigma11W, sigma12W, sigma22W);
-        boost::tuple<std::pair<bool, double>, double, double, double> weights = 
+        std::tuple<std::pair<bool, double>, double, double, double> weights = 
             getWeights(sigma11W, sigma12W, sigma22W);
-        if (!weights.get<0>().first) {
+        if (!std::get<0>(weights).first) {
             shape->flags[SdssShapeAlgorithm::UNWEIGHTED] = true;
             break;
         }
 
-        double const detW = weights.get<0>().second;
+        double const detW = std::get<0>(weights).second;
         
 #if 0                                   // this form was numerically unstable on my G4 powerbook
         assert(detW >= 0.0);
@@ -445,9 +446,9 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
             const double ow12 = w12;    //     values
             const double ow22 = w22;    //            of w11, w12, w22
 
-            w11 = weights.get<1>();
-            w12 = weights.get<2>();
-            w22 = weights.get<3>();
+            w11 = std::get<1>(weights);
+            w12 = std::get<2>(weights);
+            w22 = std::get<3>(weights);
 
             if (shouldInterp(sigma11W, sigma22W, detW)) {
                 if (!interpflag) {
@@ -537,31 +538,31 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
             float n11, n12, n22;                // elements of inverse of next guess at weighting function
             float ow11, ow12, ow22;             // elements of inverse of sigmaXX_ow
 
-            boost::tuple<std::pair<bool, double>, double, double, double> weights = 
+            std::tuple<std::pair<bool, double>, double, double, double> weights = 
                 getWeights(sigma11_ow, sigma12_ow, sigma22_ow);
-            if (!weights.get<0>().first) {
+            if (!std::get<0>(weights).first) {
                 shape->flags[SdssShapeAlgorithm::UNWEIGHTED] = true;
                 break;
             }
          
-            ow11 = weights.get<1>();
-            ow12 = weights.get<2>();
-            ow22 = weights.get<3>();
+            ow11 = std::get<1>(weights);
+            ow12 = std::get<2>(weights);
+            ow22 = std::get<3>(weights);
 
             n11 = ow11 - w11;
             n12 = ow12 - w12;
             n22 = ow22 - w22;
 
             weights = getWeights(n11, n12, n22);
-            if (!weights.get<0>().first) {
+            if (!std::get<0>(weights).first) {
                 // product-of-Gaussians assumption failed
                 shape->flags[SdssShapeAlgorithm::UNWEIGHTED] = true;
                 break;
             }
       
-            sigma11W = weights.get<1>();
-            sigma12W = weights.get<2>();
-            sigma22W = weights.get<3>();
+            sigma11W = std::get<1>(weights);
+            sigma12W = std::get<2>(weights);
+            sigma22W = std::get<3>(weights);
         }
 
         if (sigma11W <= 0 || sigma22W <= 0) {
@@ -835,19 +836,19 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(
                                                           localCenter,
                                                           shape.getIxx(), shape.getIxy(), shape.getIyy());
 
-    boost::tuple<std::pair<bool, double>, double, double, double> weights =
+    std::tuple<std::pair<bool, double>, double, double, double> weights =
         getWeights(shape.getIxx(), shape.getIxy(), shape.getIyy());
 
     FluxResult result;
 
-    if (!weights.get<0>().first) {
+    if (!std::get<0>(weights).first) {
         throw pex::exceptions::InvalidParameterError("Input shape is singular");
     }
 
-    double const w11 = weights.get<1>();
-    double const w12 = weights.get<2>();
-    double const w22 = weights.get<3>();
-    bool const interp = shouldInterp(shape.getIxx(), shape.getIyy(), weights.get<0>().second);
+    double const w11 = std::get<1>(weights);
+    double const w12 = std::get<2>(weights);
+    double const w22 = std::get<3>(weights);
+    bool const interp = shouldInterp(shape.getIxx(), shape.getIyy(), std::get<0>(weights).second);
 
     double i0 = 0;                      // amplitude of Gaussian
     if (calcmom<true>(ImageAdaptor<ImageT>().getImage(image), localCenter.getX(), localCenter.getY(),
