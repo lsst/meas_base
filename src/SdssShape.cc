@@ -21,7 +21,7 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include "lsst/utils/ieee.h"
+#include <cmath>
 
 #include "boost/tuple/tuple.hpp"
 #include "Eigen/LU"
@@ -170,11 +170,11 @@ struct ImageAdaptor<afwImage::MaskedImage<T> > {
 boost::tuple<std::pair<bool, double>, double, double, double>
 getWeights(double sigma11, double sigma12, double sigma22) {
     double const NaN = std::numeric_limits<double>::quiet_NaN();
-    if (lsst::utils::isnan(sigma11) || lsst::utils::isnan(sigma12) || lsst::utils::isnan(sigma22)) {
+    if (std::isnan(sigma11) || std::isnan(sigma12) || std::isnan(sigma22)) {
         return boost::make_tuple(std::make_pair(false, NaN), NaN, NaN, NaN);
     }
     double const det = sigma11*sigma22 - sigma12*sigma12; // determinant of sigmaXX matrix
-    if (lsst::utils::isnan(det) || det < std::numeric_limits<float>::epsilon()) { // a suitably small number
+    if (std::isnan(det) || det < std::numeric_limits<float>::epsilon()) { // a suitably small number
         return boost::make_tuple(std::make_pair(false, det), NaN, NaN, NaN);
     }
     return boost::make_tuple(std::make_pair(true, det), sigma22/det, -sigma12/det, sigma11/det);
@@ -413,7 +413,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
     
     typename ImageAdaptor<ImageT>::Image const &image = ImageAdaptor<ImageT>().getImage(mimage);
 
-    if (lsst::utils::isnan(xcen) || lsst::utils::isnan(ycen)) {
+    if (std::isnan(xcen) || std::isnan(ycen)) {
         // Can't do anything
         shape->flags[SdssShapeAlgorithm::UNWEIGHTED_BAD] = true;
         return false;

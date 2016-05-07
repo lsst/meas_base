@@ -22,6 +22,7 @@
  */
 
 #include <array>
+#include <cmath>
 
 #include "ndarray/eigen.h"
 
@@ -128,7 +129,7 @@ void PsfFluxAlgorithm::measure(
     // variance as if we had, so we'll apply the weights to the model vector now, and update alpha.
     result.fluxSigma = std::sqrt(model.square().matrix().dot(variance.matrix().cast<PsfPixel>()))
         / alpha;
-    if (!utils::isfinite(result.flux) || !utils::isfinite(result.fluxSigma)) {
+    if (!std::isfinite(result.flux) || !std::isfinite(result.fluxSigma)) {
         throw LSST_EXCEPT(PixelValueError, "Invalid pixel value detected in image.");
     }
     measRecord.set(_fluxResultKey, result);

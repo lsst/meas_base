@@ -23,6 +23,7 @@
 
 #include <cctype> // ::tolower
 #include <algorithm> // std::transform
+#include <cmath>
 
 #include "ndarray/eigen.h"
 
@@ -139,7 +140,7 @@ void PixelFlagsAlgorithm::measure(
     if (measRecord.getTable()->getCentroidKey().isValid()) {
         center = measRecord.getCentroid();
         //  Catch NAN in centroid estimate
-        if (lsst::utils::isnan(center.getX()) || lsst::utils::isnan(center.getY())) {
+        if (std::isnan(center.getX()) || std::isnan(center.getY())) {
             throw LSST_EXCEPT(pex::exceptions::RuntimeError,
                               "Center point passed to PixelFlagsAlgorithm is NaN");
         }

@@ -21,10 +21,11 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+#include <cmath>
+
 #include "boost/math/special_functions/erf.hpp"
 #include <boost/math/constants/constants.hpp>
 
-#include "lsst/utils/ieee.h"
 #include "lsst/meas/base/Blendedness.h"
 #include "lsst/afw/detection/HeavyFootprint.h"
 #include "lsst/meas/base/exceptions.h"
@@ -322,7 +323,7 @@ void BlendednessAlgorithm::_measureMoments(
             _flagHandler.setValue(child, FAILURE, true);
             fatal = true;
         }
-        if (!(utils::isfinite(child.getX()) && utils::isfinite(child.getY()))) {
+        if (!(std::isfinite(child.getX()) && std::isfinite(child.getY()))) {
             // shape flag should have been set already, but we're paranoid
             _flagHandler.setValue(child, NO_CENTROID, true);
             _flagHandler.setValue(child, FAILURE, true);
