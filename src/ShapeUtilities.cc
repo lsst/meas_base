@@ -91,33 +91,33 @@ ShapeResultKey ShapeResultKey::addFields(
         std::vector< afw::table::Key<ErrElement> > cov;
         sigma[0] = schema.addField<ErrElement>(
             schema.join(name, "xxSigma"), "1-sigma uncertainty on xx moment",
-            coordType == afw::table::CoordinateType::PIXEL ? "pixels^2" : "radians^2"
+            coordType == afw::table::CoordinateType::PIXEL ? "pixel^2" : "rad^2"
         );
         sigma[1] = schema.addField<ErrElement>(
             schema.join(name, "yySigma"), "1-sigma uncertainty on yy moment",
-            coordType == afw::table::CoordinateType::PIXEL ? "pixels^2" : "radians^2"
+            coordType == afw::table::CoordinateType::PIXEL ? "pixel^2" : "rad^2"
         );
         sigma[2] = schema.addField<ErrElement>(
             schema.join(name, "xySigma"), "1-sigma uncertainty on xy moment",
-            coordType == afw::table::CoordinateType::PIXEL ? "pixels^2" : "radians^2"
+            coordType == afw::table::CoordinateType::PIXEL ? "pixel^2" : "rad^2"
         );
         if (uncertainty == FULL_COVARIANCE) {
             cov.push_back(
                 schema.addField<ErrElement>(
                     schema.join(name, "xx_yy_Cov"), "uncertainty covariance in xx and yy",
-                    coordType == afw::table::CoordinateType::PIXEL ? "pixels^4" : "radians^4"
+                    coordType == afw::table::CoordinateType::PIXEL ? "pixel^4" : "rad^4"
                 )
             );
             cov.push_back(
                 schema.addField<ErrElement>(
                     schema.join(name, "xx_xy_Cov"), "uncertainty covariance in xx and xy",
-                    coordType == afw::table::CoordinateType::PIXEL ? "pixels^4" : "radians^4"
+                    coordType == afw::table::CoordinateType::PIXEL ? "pixel^4" : "rad^4"
                 )
             );
             cov.push_back(
                 schema.addField<ErrElement>(
                     schema.join(name, "yy_xy_Cov"), "uncertainty covariance in yy and xy",
-                    coordType == afw::table::CoordinateType::PIXEL ? "pixels^4" : "radians^4"
+                    coordType == afw::table::CoordinateType::PIXEL ? "pixel^4" : "rad^4"
                 )
             );
         }

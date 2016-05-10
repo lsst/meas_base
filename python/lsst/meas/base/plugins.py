@@ -277,8 +277,8 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
 
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
-        self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixels")
-        self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixels")
+        self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixel")
+        self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixel")
         self.flag = schema.addField(name + "_flag", type="Flag", doc="Centroiding failed")
 
     def measure(self, measRecord, exposure):
@@ -413,8 +413,8 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
     def __init__(self, config, name, schemaMapper, metadata):
         ForcedPlugin.__init__(self, config, name, schemaMapper, metadata)
         schema = schemaMapper.editOutputSchema()
-        self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixels")
-        self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixels")
+        self.keyX = schema.addField(name + "_x", type="D", doc="peak centroid", units="pixel")
+        self.keyY = schema.addField(name + "_y", type="D", doc="peak centroid", units="pixel")
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
         targetWcs = exposure.getWcs()
@@ -451,9 +451,9 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
         schema = schemaMapper.editOutputSchema()
         # Allocate x and y fields, join these into a single FunctorKey for ease-of-use.
         xKey = schema.addField(name + "_x", type="D", doc="transformed reference centroid column",
-                               units="pixels")
+                               units="pixel")
         yKey = schema.addField(name + "_y", type="D", doc="transformed reference centroid row",
-                               units="pixels")
+                               units="pixel")
         self.centroidKey = lsst.afw.table.Point2DKey(xKey, yKey)
         # Because we're taking the reference position as given, we don't bother transforming its
         # uncertainty and reporting that here, so there are no sigma or cov fields.  We do propagate
@@ -497,11 +497,11 @@ class ForcedTransformedShapePlugin(ForcedPlugin):
         schema = schemaMapper.editOutputSchema()
         # Allocate xx, yy, xy fields, join these into a single FunctorKey for ease-of-use.
         xxKey = schema.addField(name + "_xx", type="D", doc="transformed reference shape x^2 moment",
-                                units="pixels^2")
+                                units="pixel^2")
         yyKey = schema.addField(name + "_yy", type="D", doc="transformed reference shape y^2 moment",
-                                units="pixels^2")
+                                units="pixel^2")
         xyKey = schema.addField(name + "_xy", type="D", doc="transformed reference shape xy moment",
-                                units="pixels^2")
+                                units="pixel^2")
         self.shapeKey = lsst.afw.table.QuadrupoleKey(xxKey, yyKey, xyKey)
         # Because we're taking the reference position as given, we don't bother transforming its
         # uncertainty and reporting that here, so there are no sigma or cov fields.  We do propagate

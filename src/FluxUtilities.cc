@@ -38,9 +38,9 @@ FluxResultKey FluxResultKey::addFields(
     std::string const & doc
 ) {
     FluxResultKey result;
-    result._flux = schema.addField<Flux>(schema.join(name, "flux"), doc, "dn");
+    result._flux = schema.addField<Flux>(schema.join(name, "flux"), doc, "count");
     result._fluxSigma = schema.addField<FluxErrElement>(schema.join(name, "fluxSigma"),
-                                                        "1-sigma flux uncertainty", "dn");
+                                                        "1-sigma flux uncertainty", "count");
     return result;
 }
 

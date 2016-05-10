@@ -157,6 +157,12 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         default={"id": "objectId", "parent":"parentObjectId"}
         )
 
+    checkUnitsParseStrict = lsst.pex.config.Field(
+        doc = "Strictness of Astropy unit compatibility check, can be 'raise', 'warn' or 'silent'",
+        dtype = str,
+        default = "raise",
+        )
+
     def setDefaults(self):
         self.slots.centroid = "base_TransformedCentroid"
         self.slots.shape = "base_TransformedShape"
@@ -231,6 +237,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.initializePlugins(schemaMapper=self.mapper)
         self.schema = self.mapper.getOutputSchema()
         self.makeSubtask("applyApCorr", schema=self.schema)
+        self.schema.checkUnits(parse_strict=self.config.checkUnitsParseStrict)
 
     def run(self, measCat, exposure, refCat, refWcs, exposureId=None, beginOrder=None, endOrder=None,
             allowApCorr=True):

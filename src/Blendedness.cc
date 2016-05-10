@@ -237,12 +237,12 @@ BlendednessAlgorithm::BlendednessAlgorithm(Control const & ctrl,  std::string co
         _fluxChildRaw = schema.addField<double>(
             schema.join(name, "raw_flux_child"),
             "flux of the child, measured with a Gaussian weight matched to the child",
-            "dn"
+            "count"
             );
         _fluxParentRaw = schema.addField<double>(
             schema.join(name, "raw_flux_parent"),
             "flux of the parent, measured with a Gaussian weight matched to the child",
-            "dn"
+            "count"
             );
         _fluxAbs = schema.addField<double>(
             schema.join(name, "abs_flux"),
@@ -251,12 +251,12 @@ BlendednessAlgorithm::BlendednessAlgorithm(Control const & ctrl,  std::string co
         _fluxChildAbs = schema.addField<double>(
             schema.join(name, "abs_flux_child"),
             "flux of the child, measured with a Gaussian weight matched to the child",
-            "dn"
+            "count"
             );
         _fluxParentAbs = schema.addField<double>(
             schema.join(name, "abs_flux_parent"),
             "flux of the parent, measured with a Gaussian weight matched to the child",
-            "dn"
+            "count"
             );
     }
     if (_ctrl.doShape) {
