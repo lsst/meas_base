@@ -21,7 +21,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include "lsst/utils/ieee.h"
+#include <cmath>
+
 #include "lsst/afw/table/Source.h"
 #include "lsst/afw/detection/Footprint.h"
 #include "lsst/meas/base/exceptions.h"
@@ -101,7 +102,7 @@ afw::geom::Point2D SafeCentroidExtractor::operator()(
         }
     }
     afw::geom::Point2D result = record.getCentroid();
-    if (utils::isnan(result.getX()) || utils::isnan(result.getY())) {
+    if (std::isnan(result.getX()) || std::isnan(result.getY())) {
         if (!record.getTable()->getCentroidFlagKey().isValid()) {
             if (_isCentroider) {
                 return extractPeak(record, _name);
@@ -166,7 +167,7 @@ afw::geom::ellipses::Quadrupole SafeShapeExtractor::operator()(
         );
     }
     afw::geom::ellipses::Quadrupole result = record.getShape();
-    if (utils::isnan(result.getIxx()) || utils::isnan(result.getIyy()) || utils::isnan(result.getIxy())
+    if (std::isnan(result.getIxx()) || std::isnan(result.getIyy()) || std::isnan(result.getIxy())
         || result.getIxx()*result.getIyy() <
                   (1.0 + 1.0e-6)*result.getIxy()*result.getIxy()
                   // We are checking that Ixx*Iyy > (1 + epsilon)*Ixy*Ixy where epsilon is suitably small. The

@@ -20,6 +20,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+#include <cmath>
+
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/afw/table/BaseRecord.h"
 
@@ -177,7 +179,7 @@ void CentroidTransform::operator()(
 
         if (centroidResultKey.getCentroidErr().isValid()) {
             CentroidCov centroidCov = centroidResult.getCentroidErr();
-            if (!(utils::isnan(centroidCov(0,0)) || utils::isnan(centroidCov(1,1)))) {
+            if (!(std::isnan(centroidCov(0,0)) || std::isnan(centroidCov(1,1)))) {
                 auto transform = wcs.linearizePixelToSky(centroidResult.getCentroid(),
                                                          afw::geom::radians).getLinear().getMatrix();
                 _coordErrKey.set(*outSrc, (transform * centroidResult.getCentroidErr().cast<double>() *
