@@ -119,7 +119,7 @@ class PluginRegistry(lsst.pex.config.Registry):
         return lsst.pex.config.RegistryField(doc, self, default, optional, multi)
 
 
-def register(name, shouldApCorr=False):
+def register(name, shouldApCorr=False, apCorrList=()):
     """!
     A Python decorator that registers a class, using the given name, in its base class's PluginRegistry.
     For example,
@@ -136,7 +136,7 @@ def register(name, shouldApCorr=False):
     @endcode
     """
     def decorate(PluginClass):
-        PluginClass.registry.register(name, PluginClass, shouldApCorr=shouldApCorr)
+        PluginClass.registry.register(name, PluginClass, shouldApCorr=shouldApCorr, apCorrList=apCorrList)
         return PluginClass
     return decorate
 

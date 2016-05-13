@@ -40,13 +40,19 @@ class WrappedForcedPlugin(ForcedPlugin):
         self.cpp.fail(measRecord, error.cpp if error is not None else None)
 
 
-def wrapAlgorithmControl(Base, Control, hasMeasureN=False):
+def wrapAlgorithmControl(Base, Control, module=2, hasMeasureN=False):
     """!
     Wrap a C++ algorithm's control class into a Python Config class.
 
     @param[in] Base              Base class for the returned ConfigClass; one of SingleFramePluginConfig or
                                  ForcedPluginConfig
     @param[in] Control           Control class to be wrapped (a Swigged C++ class)
+    @param[in] module            Either a module object, a string specifying the name of the module, or an
+                                 integer specifying how far back in the stack to look for the module to use:
+                                 0 is pex.config.wrap, 1 is lsst.meas.base.wrappers, 2 is the immediate
+                                 caller, etc.  This will be used to set __module__ for the new config class,
+                                 and the class will also be added to the module.  The default is to use the
+                                 callers' module.
     @param[in] hasMeasureN       Whether the plugin supports fitting multiple objects at once (if so, a
                                  config option to enable/disable this will be added).
 
@@ -66,11 +72,11 @@ def wrapAlgorithmControl(Base, Control, hasMeasureN=False):
             {"doMeasureN": lsst.pex.config.Field(dtype=bool, default=True,
                                                  doc="whether to run this plugin in multi-object mode")}
             )
-        ConfigClass = lsst.pex.config.makeConfigClass(Control, module=Control.__module__, cls=cls)
+        ConfigClass = lsst.pex.config.makeConfigClass(Control, module=module, cls=cls)
     else:
         # If we don't have to add that Config field, we can delegate all of the work to
         # pex_config's makeControlClass
-        ConfigClass = lsst.pex.config.makeConfigClass(Control, module=Control.__module__, base=Base)
+        ConfigClass = lsst.pex.config.makeConfigClass(Control, module=module, base=Base)
     return ConfigClass
 
 
