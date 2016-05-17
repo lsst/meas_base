@@ -165,6 +165,7 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
     '''
     ConfigClass = SingleFrameVarianceConfig
     FAILURE_BAD_CENTROID = 1
+    FAILURE_EMPTY_FOOTPRINT = 2
 
     @classmethod
     def getExecutionOrder(cls):
@@ -174,6 +175,8 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.varValue = schema.addField(name + '_value', type="D", doc="Variance at object position")
         self.varFlag = schema.addField(name + '_flag', type="Flag", doc="Set to True for any fatal failure")
+        self.emptyFootprintFlag = schema.addField(name + '_flag_emptyFootprint', type="Flag", 
+                                                  doc="Set to True when the footprint has no usable pixels")
 
         # Alias the badCentroid flag to that which is defined for the target of the centroid slot.
         # We do not simply rely on the alias because that could be changed post-measurement.
@@ -198,10 +201,21 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
         # Compute the median variance value for each pixel not excluded by the mask and write the record.
         # Numpy median is used here instead of afw.math makeStatistics because of an issue with data types
         # being passed into the C++ layer (DM-2379).
-        medVar = numpy.median(pixels.getVarianceArray()[logicalMask])
-        measRecord.set(self.varValue, medVar)
+        if numpy.any(logicalMask):
+            medVar = numpy.median(pixels.getVarianceArray()[logicalMask])
+            measRecord.set(self.varValue, medVar)
+        else:
+            raise bl.MeasurementError("Footprint empty, or all pixels are masked, can't compute median",
+                                      self.FAILURE_EMPTY_FOOTPRINT)
 
     def fail(self, measRecord, error=None):
+        # Check that we have a error object and that it is of type MeasurementError
+        if isinstance(error, bl.MeasurementError):
+            assert error.getFlagBit() in (self.FAILURE_BAD_CENTROID, self.FAILURE_EMPTY_FOOTPRINT)
+            # FAILURE_BAD_CENTROID handled by alias to centroid record.
+            if error.getFlagBit() == self.FAILURE_EMPTY_FOOTPRINT:
+                measRecord.set(self.emptyFootprintFlag, True)
+        measRecord.set(self.varValue, numpy.nan)
         measRecord.set(self.varFlag, True)
 
 class SingleFrameInputCountConfig(SingleFramePluginConfig):
