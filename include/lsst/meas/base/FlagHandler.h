@@ -43,13 +43,13 @@ struct FlagDefinition {
     FlagDefinition() {
     }
 
-    FlagDefinition(char const * _name, char const * _doc) {
+    FlagDefinition(std::string _name, std::string _doc) {
         name = _name;
         doc = _doc;
     }
 
-    char const * name;
-    char const * doc;
+    std::string name;
+    std::string doc;
 };
 
 /**
