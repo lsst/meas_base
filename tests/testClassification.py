@@ -70,8 +70,8 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         config.slots.modelFlux = "base_GaussianFlux"
 
         def runFlagTest(psfFlux=100.0, modelFlux=200.0,
-                       psfFluxSigma=1.0, modelFluxSigma=2.0,
-                       psfFluxFlag=False, modelFluxFlag=False):
+                        psfFluxSigma=1.0, modelFluxSigma=2.0,
+                        psfFluxFlag=False, modelFluxFlag=False):
             task = self.makeSingleFrameMeasurementTask(config=config)
             exposure, catalog = self.dataset.realize(10.0, task.schema)
             source = catalog[0]
