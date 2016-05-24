@@ -122,7 +122,6 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
                  "base_GaussianFlux",
                  "base_PsfFlux",
                  "base_CircularApertureFlux",
-                 "base_ClassificationExtendedness",
                  "base_SkyCoord",
                  "base_Variance",
                  ],
@@ -247,7 +246,6 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         self.schema = schema
         self.config.slots.setupSchema(self.schema)
         self.initializePlugins(schema=self.schema)
-        self.makeSubtask("applyApCorr", schema=self.schema)
 
         # Check to see if blendedness is one of the plugins
         if 'base_Blendedness' in self.plugins:
@@ -256,8 +254,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         else:
             self.doBlendedness = False
 
-    def run(self, measCat, exposure, noiseImage=None, exposureId=None, beginOrder=None, endOrder=None,
-        allowApCorr=True):
+    def run(self, measCat, exposure, noiseImage=None, exposureId=None, beginOrder=None, endOrder=None):
         """!
         Run single frame measurement over an exposure and source catalog
 
@@ -275,7 +272,6 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
                                  executionOrder < beginOrder are not executed. None for no limit.
         @param[in] endOrder      ending execution order (exclusive): measurements with
                                  executionOrder >= endOrder are not executed. None for no limit.
-        @param[in] allowApCorr  allow application of aperture correction?
         """
         # Temporary workaround for change in order of arguments; will be removed when transition
         # from meas_algorithms to meas_base is complete.
@@ -344,14 +340,6 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         for source in measCat:
             if self.doBlendedness:
                 self.blendPlugin.cpp.measureParentPixels(exposure.getMaskedImage(), source)
-
-
-        if allowApCorr:
-            self._applyApCorrIfWanted(
-                sources = measCat,
-                apCorrMap = exposure.getInfo().getApCorrMap(),
-                endOrder = endOrder,
-            )
 
     def measure(self, measCat, exposure):
         """!

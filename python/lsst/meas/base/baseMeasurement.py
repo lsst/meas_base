@@ -27,7 +27,6 @@ import traceback
 import lsst.pipe.base
 import lsst.pex.config
 
-from .applyApCorr import ApplyApCorrTask
 from .pluginRegistry import PluginMap
 from .baseLib import FatalAlgorithmError, MeasurementError
 from .pluginsBase import BasePluginConfig, BasePlugin
@@ -122,25 +121,6 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
         doc="configuration that sets how to replace neighboring sources with noise"
         )
 
-    doApplyApCorr = lsst.pex.config.ChoiceField(
-        dtype = str,
-        doc = "Apply aperture corrections? Silently ignored if endOrder <= lsst.meas.base.APCORR_ORDER"
-            " when calling run",
-        default = "noButWarn",
-        allowed = {
-            "yes": "apply aperture corrections; fail if data not available",
-            "yesOrWarn": "apply aperture corrections if data available, else warn",
-            "noButWarn": "do not apply aperture corrections, but warn if data available"
-                " (since aperture corrections could have been applied)",
-            "no": "do not apply aperture corrections",
-        },
-    )
-
-    applyApCorr = lsst.pex.config.ConfigurableField(
-        target = ApplyApCorrTask,
-        doc = "subtask to apply aperture corrections",
-        )
-
     def validate(self):
         lsst.pex.config.Config.validate(self)
         if self.slots.centroid is not None and self.slots.centroid not in self.plugins.names:
@@ -168,11 +148,6 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
 
     This base class for SingleFrameMeasurementTask and ForcedMeasurementTask mostly exists to share
     code between the two, and generally should not be used directly.
-
-    @note Tasks that use this task should usually set the default value of config parameter doApplyApCorr
-    to "yes" or "no", depending if aperture corrections are wanted. The default value of "noButWarn"
-    is intended to alert users who forget, and is appropriate for unit tests and temporary scripts
-    that do not need aperture corrections.
     """
 
     ConfigClass = BaseMeasurementConfig
@@ -307,42 +282,3 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
                     plugin.fail(measRecord)
                 self.log.warn("Error in %s.measureN on records %s-%s: %s"
                               % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
-
-    def _applyApCorrIfWanted(self, sources, apCorrMap, endOrder):
-        """!Apply aperture corrections to a catalog, if wanted
-
-        This method is intended to be called at the end of every subclass's run method or other
-        measurement sequence. This is a thin wrapper around self.applyApCorr.run.
-
-        @param[in,out] sources      catalog of sources to which to apply aperture corrections
-        @param[in]     apCorrMap    aperture correction map (lsst.afw.image.ApCorrMap) or None;
-                                    typically found in an lsst.afw.image.ExposureInfo
-                                    if provided then it must contain two entries for each flux field:
-                                    - flux field (e.g. base_PsfFlux_flux): 2d model
-                                    - flux sigma field (e.g. base_PsfFlux_fluxSigma): 2d model of error
-        @param[in]     endOrder     ending execution order, or None; if provided then aperture corrections
-                                    are only wanted if endOrder > lsst.meas.base.BasePlugin.APCORR_ORDER
-        @return the results from applyApCorr if run, else None
-
-        @throw lsst.pipe.base.TaskError if aperture corrections are wanted and the exposure does not contain
-        an aperture correction map.
-        """
-        if endOrder is not None and endOrder <= BasePlugin.APCORR_ORDER:
-            # it is not appropriate to apply aperture corrections
-            return
-
-        if self.config.doApplyApCorr.startswith("yes"):
-            if apCorrMap is not None:
-                self.applyApCorr.run(catalog=sources, apCorrMap=apCorrMap)
-            else:
-                errMsg = "Cannot apply aperture corrections; apCorrMap is None"
-                if self.config.doApplyApCorr == "yesOrWarn":
-                    self.log.warn(errMsg)
-                else:
-                    raise lsst.pipe.base.TaskError(errMsg)
-        elif self.config.doApplyApCorr == "noButWarn":
-            if apCorrMap is not None:
-                self.log.warn("Aperture corrections are disabled but the data to apply them is available;"
-                    " change doApplyApCorr to suppress this warning")
-
-
