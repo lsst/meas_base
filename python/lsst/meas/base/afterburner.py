@@ -5,7 +5,7 @@ import lsst.pex.config
 import lsst.daf.base
 
 from .pluginsBase import BasePlugin, BasePluginConfig
-from .pluginRegistry import PluginRegistry
+from .pluginRegistry import PluginRegistry, PluginMap
 from .baseLib import FatalAlgorithmError, MeasurementError
 
 # Exceptions that the measurement tasks should always propagate up to their callers
@@ -132,6 +132,7 @@ class AfterburnerTask(lsst.pipe.base.Task):
         if plugMetadata is None:
             plugMetadata = lsst.daf.base.PropertyList()
         self.plugMetadata = plugMetadata
+        self.plugins = PluginMap()
 
         self.initializePlugins()
 
@@ -150,6 +151,7 @@ class AfterburnerTask(lsst.pipe.base.Task):
                 self.executionDict[executionOrder] = pluginType(single=[], multi=[])
             if PluginClass.getExecutionOrder() >= BasePlugin.DEFAULT_AFTERBURNER:
                 plug = PluginClass(config, name, self.schema, metadata=self.plugMetadata)
+                self.plugins[name] = plug
                 if plug.plugType == 'single':
                     self.executionDict[executionOrder].single.append(plug)
                 elif plug.plugType == 'multi':
