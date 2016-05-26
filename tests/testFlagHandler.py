@@ -36,6 +36,7 @@ from lsst.meas.base.pluginRegistry import register
 from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin
 from lsst.meas.base.baseLib import MeasurementError
 from lsst.meas.base import FlagDefinition, FlagDefinitionVector, FlagHandler
+from lsst.meas.base.flagDecorator import addFlagHandler
 
 
 class PythonPluginConfig(SingleFramePluginConfig):
@@ -44,6 +45,8 @@ class PythonPluginConfig(SingleFramePluginConfig):
                                   doc="A failure mode to test")
 
 @register("test_PythonPlugin")
+@addFlagHandler(("flag", "General Failure error"), ("flag_error1","First type of Failure occured."),
+                ("flag_error2", "Second type of failure occured."))
 class PythonPlugin(SingleFramePlugin):
     '''
     This is a sample Python plugin.  The flag handler for this plugin is created
@@ -52,18 +55,7 @@ class PythonPlugin(SingleFramePlugin):
     output source record if an error occurs.
     '''
     ConfigClass = PythonPluginConfig
-
-    #   Constants to identify the failures.  Must match flagDefs below.
-    #   These are class statics which can be used during run() to identify
-    #   known error conditions
-    FAILURE = 0
-    ERROR1 = 1
-    ERROR2 = 2
-
-    FLAGDEFS = [ FlagDefinition("flag", "General failure error"),
-        FlagDefinition("flag_error1", "First type of failure occured."),
-        FlagDefinition("flag_error2", "Second type of failure occured."),
-    ]
+    # Class variables ErrEnum and FLAGDEFS are added by the decorator
 
     @classmethod
     def getExecutionOrder(cls):
@@ -71,19 +63,19 @@ class PythonPlugin(SingleFramePlugin):
 
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
-        self.flagHandler = FlagHandler.addFields(schema, name, FlagDefinitionVector(self.FLAGDEFS))
+        # The instance variable flagHandler is added by the decorator
 
     #   This is a measure routine which does nothing except to raise Exceptions
     #   as requested by the caller. Errors normally don't occur unless there is
     #   something wrong in the inputs, or if there is an error during the measurement
     def measure(self, measRecord, exposure):
         if not self.config.failureType is None:
-            if self.config.failureType == PythonPlugin.ERROR1:
-                raise MeasurementError(self.flagHandler.getDefinition(PythonPlugin.ERROR1).doc,
-                    PythonPlugin.ERROR1)
-            if self.config.failureType == PythonPlugin.ERROR2:
-                raise MeasurementError(self.flagHandler.getDefinition(PythonPlugin.ERROR2).doc,
-                    PythonPlugin.ERROR2)
+            if self.config.failureType == PythonPlugin.ErrEnum.flag_error1:
+                raise MeasurementError(self.flagHandler.getDefinition(PythonPlugin.ErrEnum.flag_error1).doc,
+                    PythonPlugin.ErrEnum.flag_error1)
+            if self.config.failureType == PythonPlugin.ErrEnum.flag_error2:
+                raise MeasurementError(self.flagHandler.getDefinition(PythonPlugin.ErrEnum.flag_error2).doc,
+                    PythonPlugin.ErrEnum.flag_error2)
             raise RuntimeError("An unexpected error occurred")
 
     #   This routine responds to the standard failure call in baseMeasurement
@@ -103,7 +95,7 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0,0), lsst.afw.geom.Point2I(100, 100))
         self.dataset = lsst.meas.base.tests.TestDataset(bbox)
         self.dataset.addSource(flux=1E5, centroid=lsst.afw.geom.Point2D(25, 26))
-        config = lsst.meas.base.SingleFrameMeasurementConfig() 
+        config = lsst.meas.base.SingleFrameMeasurementConfig()
         config.plugins = [self.algName]
         config.slots.centroid = None
         config.slots.apFlux = None
@@ -113,7 +105,7 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         config.slots.psfFlux = None
         config.slots.shape = None
         self.config = config
-   
+
     def tearDown(self):
         del self.config
         del self.dataset
@@ -177,7 +169,7 @@ class FlagHandlerTestCase(AlgorithmTestCase):
     def testNoError(self):
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema) 
+        exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
         task.run(cat, exposure)
         source = cat[0]
         self.assertEqual(source.get(self.algName + "_flag"), False)
@@ -188,7 +180,7 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         self.config.plugins[self.algName].failureType = -1     # any unknown error type will do
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema) 
+        exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
         task.log.setThreshold(task.log.FATAL)
         task.run(cat, exposure)
         source = cat[0]
@@ -197,10 +189,10 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         self.assertEqual(source.get(self.algName + "_flag_error2"), False)
 
     def testError1(self):
-        self.config.plugins[self.algName].failureType = PythonPlugin.ERROR1 
+        self.config.plugins[self.algName].failureType = PythonPlugin.ErrEnum.flag_error1
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema) 
+        exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
         task.run(cat, exposure)
         source = cat[0]
         self.assertEqual(source.get(self.algName + "_flag"), True)
@@ -208,7 +200,7 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         self.assertEqual(source.get(self.algName + "_flag_error2"), False)
 
     def testError2(self):
-        self.config.plugins[self.algName].failureType = PythonPlugin.ERROR2
+        self.config.plugins[self.algName].failureType = PythonPlugin.ErrEnum.flag_error2
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
         exposure, cat = self.dataset.realize(noise=0.0, schema=schema)
@@ -234,5 +226,3 @@ def run(shouldExit=False):
 
 if __name__ == "__main__":
     run(True)
-
-
