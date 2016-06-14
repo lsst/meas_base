@@ -44,6 +44,24 @@ FlagHandler FlagHandler::addFields(
     return r;
 }
 
+FlagHandler FlagHandler::addFields(
+    afw::table::Schema & schema,
+    std::string const & prefix,
+    std::vector<FlagDefinition> const * flagDefs
+) {
+    FlagHandler r;
+    r._vector.reserve(flagDefs->size());
+    for (unsigned int i = 0; i < flagDefs->size(); i++) {
+        r._vector.push_back(
+            std::make_pair(
+                flagDefs->at(i),
+                schema.addField<afw::table::Flag>(schema.join(prefix, flagDefs->at(i).name), flagDefs->at(i).doc)
+            )
+        );
+    }
+    return r;
+}
+
 FlagHandler::FlagHandler(
     afw::table::SubSchema const & s,
     FlagDefinition const * begin,
@@ -65,5 +83,6 @@ void FlagHandler::handleFailure(afw::table::BaseRecord & record, MeasurementErro
         record.set(_vector[error->getFlagBit()].second, true);
     }
 }
+
 
 }}} // lsst::meas::base

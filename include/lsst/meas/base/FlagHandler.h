@@ -39,8 +39,17 @@ namespace lsst { namespace meas { namespace base {
     C-strings so we can create these arrays using initializer lists even in C++98.
  */
 struct FlagDefinition {
-    char const * name;
-    char const * doc;
+
+    FlagDefinition() {
+    }
+
+    FlagDefinition(std::string _name, std::string _doc) {
+        name = _name;
+        doc = _doc;
+    }
+
+    std::string name;
+    std::string doc;
 };
 
 /**
@@ -117,6 +126,25 @@ public:
         std::string const & prefix,
         FlagDefinition const * begin,
         FlagDefinition const * end
+    );
+
+    /**
+     *  Add Flag fields to a schema, creating a FlagHandler object to manage them.
+     *
+     *  This is the way FlagHandlers will typically be constructed for new algorithms.
+     *
+     *  @param[out]  schema    Schema to which fields should be added.
+     *  @param[in]   prefix    String name of the algorithm or algorithm component.  Field names will
+     *                         be constructed by using schema.join() on this and the flag name from the
+     *                         FlagDefinition array.
+     *  @param[in]   flagDefs  std::vector of FlagDefinitions
+     *
+     *  This variation of addFields is for Python plugins
+     */
+    static FlagHandler addFields(
+        afw::table::Schema & schema,
+        std::string const & prefix,
+        std::vector<FlagDefinition> const * flagDefs
     );
 
     /**
