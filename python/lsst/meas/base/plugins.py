@@ -46,7 +46,6 @@ __all__ = (
     "SingleFrameInputCountConfig", "SingleFrameInputCountPlugin",
     "SingleFramePeakCentroidConfig", "SingleFramePeakCentroidPlugin", 
     "SingleFrameSkyCoordConfig", "SingleFrameSkyCoordPlugin",
-    "SingleFrameClassificationConfig", "SingleFrameClassificationPlugin",
     "ForcedPeakCentroidConfig", "ForcedPeakCentroidPlugin",
     "ForcedTransformedCentroidConfig", "ForcedTransformedCentroidPlugin",
     "ForcedTransformedShapeConfig", "ForcedTransformedShapePlugin",
@@ -335,74 +334,6 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
         # but we don't have a place to put failures because we don't allocate any fields.
         # Should consider fixing as part of DM-1011
         pass
-
-
-class SingleFrameClassificationConfig(SingleFramePluginConfig):
-
-    fluxRatio = lsst.pex.config.Field(dtype=float, default=.925, optional=True,
-                                  doc="critical ratio of model to psf flux")
-    modelErrFactor = lsst.pex.config.Field(dtype=float, default=0.0, optional=True,
-                                  doc="correction factor for modelFlux error")
-    psfErrFactor = lsst.pex.config.Field(dtype=float, default=0.0, optional=True,
-                                  doc="correction factor for psfFlux error")
-
-@register("base_ClassificationExtendedness")
-class SingleFrameClassificationPlugin(SingleFramePlugin):
-    """
-    A binary measure of the extendedness of a source, based a simple cut on the ratio of the
-    PSF flux to the model flux.
-
-    Because the fluxes on which this algorithm is based are slot measurements, they can be provided
-    by different algorithms, and the "fluxRatio" threshold used by this algorithm should generally
-    be set differently for different algorithms.  To do this, plot the difference between the PSF
-    magnitude and the model magnitude vs. the PSF magnitude, and look for where the cloud of galaxies
-    begins.
-    """
-
-    ConfigClass = SingleFrameClassificationConfig
-
-    @classmethod
-    def getExecutionOrder(cls):
-        return cls.CLASSIFY_ORDER
-
-    def __init__(self, config, name, schema, metadata):
-        SingleFramePlugin.__init__(self, config, name, schema, metadata)
-        self.keyProbability = schema.addField(name + "_value", type="D",
-                                              doc="Set to 1 for extended sources, 0 for point sources.")
-        self.keyFlag = schema.addField(name + "_flag", type="Flag", doc="Set to 1 for any fatal failure.")
-
-    def measure(self, measRecord, exposure):
-        modelFlux = measRecord.getModelFlux()
-        psfFlux = measRecord.getPsfFlux()
-        modelFluxFlag = (measRecord.getModelFluxFlag()
-                         if measRecord.table.getModelFluxFlagKey().isValid()
-                         else False)
-        psfFluxFlag = (measRecord.getPsfFluxFlag()
-                       if measRecord.table.getPsfFluxFlagKey().isValid()
-                       else False)
-        flux1 = self.config.fluxRatio*modelFlux
-        if not self.config.modelErrFactor == 0:
-            flux1 += self.config.modelErrFactor*measRecord.getModelFluxErr()
-        flux2 = psfFlux
-        if not self.config.psfErrFactor == 0:
-            flux2 += self.config.psfErrFactor*measRecord.getPsfFluxErr()
-
-        # A generic failure occurs when either FluxFlag is set to True
-        # A generic failure also occurs if either calculated flux value is NAN:
-        #     this can occur if the Flux field itself is NAN,
-        #     or the ErrFactor != 0 and the FluxErr is NAN
-        if numpy.isnan(flux1) or numpy.isnan(flux2) or modelFluxFlag or psfFluxFlag:
-            self.fail(measRecord)
-        else:
-            if flux1 < flux2:
-                measRecord.set(self.keyProbability, 0.0)
-            else:
-                measRecord.set(self.keyProbability, 1.0)
-
-    def fail(self, measRecord, error=None):
-        # Override fail() to do nothing in the case of an exception.  We should be setting a flag
-        # instead.
-        measRecord.set(self.keyFlag, True)
 
 
 # --- Forced Plugins ---

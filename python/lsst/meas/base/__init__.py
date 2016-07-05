@@ -4,6 +4,7 @@ from .baseMeasurement import *
 from .pluginsBase import *
 from .sfm import *
 from .plugins import *
+from .classification import *
 from .baseLib import *
 from .noiseReplacer import *
 from .baseMeasurement import *

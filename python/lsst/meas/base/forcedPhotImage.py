@@ -34,6 +34,8 @@ import lsst.pex.config
 from .pluginsBase import BasePlugin
 from .references import MultiBandReferencesTask
 from .forcedMeasurement import ForcedMeasurementTask
+from .applyApCorr import ApplyApCorrTask
+from .afterburner import AfterburnerTask
 
 __all__ = ("ProcessImageForcedConfig", "ProcessImageForcedTask")
 
@@ -53,13 +55,28 @@ class ProcessImageForcedConfig(lsst.pex.config.Config):
         dtype = str,
         default = "deep",
         )
+    doApCorr = lsst.pex.config.Field(
+            dtype=bool,
+            default=True,
+            doc="Run subtask to apply aperture corrections"
+            )
+    applyApCorr = lsst.pex.config.ConfigurableField(
+            target=ApplyApCorrTask,
+            doc="Subtask to apply aperture corrections"
+            )
+    afterburners = lsst.pex.config.ConfigurableField(
+            target=AfterburnerTask,
+            doc="Subtask to run afterburner plugins on catalog"
+            )
     copyColumns = lsst.pex.config.DictField(
         keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
         default={"id": "objectId", "parent": "parentObjectId", "deblend_nChild": "deblend_nChild"}
         )
 
     def setDefaults(self):
-        self.measurement.doApplyApCorr = "yes"
+        # Make afterburners a no-op by default as no modelFlux is setup by default in
+        # ForcedMeasurementTask
+        self.afterburners.plugins.names = []
 
 ## @addtogroup LSST_task_documentation
 ## @{
@@ -100,6 +117,11 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         if refSchema is None:
             refSchema = self.references.schema
         self.makeSubtask("measurement", refSchema=refSchema)
+        # It is necessary to get the schema internal to the forced measurement task until such a time
+        # that the schema is not owned by the measurement task, but is passed in by an external caller
+        if self.config.doApCorr:
+            self.makeSubtask("applyApCorr", schema=self.measurement.schema)
+        self.makeSubtask('afterburners', schema=self.measurement.schema)
 
     def run(self, dataRef):
         """!Measure a single exposure using forced detection for a reference catalog.
@@ -125,15 +147,15 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         self.log.info("Performing forced measurement on %s" % dataRef.dataId)
         self.attachFootprints(measCat, refCat, exposure, refWcs, dataRef)
 
-        # First run plugins with order up to and including APCORR_ORDER to measure all fluxes
-        # and apply the aperture correction (using the apCorrMap measured in the calibration
-        # task) to the measured fluxes whose plugins were registered with shouldApCorr=True
-        self.measurement.run(measCat, exposure, refCat, refWcs, exposureId=self.getExposureId(dataRef),
-                             endOrder=BasePlugin.APCORR_ORDER+1)
-        # Now run the remaining APCORR_ORDER+1 plugins (whose measurements should be performed on
-        # aperture corrected fluxes) disallowing apCorr (to avoid applying it more than once)
-        self.measurement.run(measCat, exposure, refCat, refWcs, exposureId=self.getExposureId(dataRef),
-                             beginOrder=BasePlugin.APCORR_ORDER+1, allowApCorr=False)
+        self.measurement.run(measCat, exposure, refCat, refWcs, exposureId=self.getExposureId(dataRef))
+
+        if self.config.doApCorr:
+            self.applyApCorr.run(
+                    catalog=measCat,
+                    apCorrMap=exposure.getInfo().getApCorrMap()
+                    )
+        self.afterburners.run(measCat)
+
 
         self.writeOutput(dataRef, measCat)
 

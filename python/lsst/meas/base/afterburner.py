@@ -1,13 +1,11 @@
 from collections import namedtuple
-import sys
-import traceback
 
 import lsst.pipe.base
 import lsst.pex.config
 import lsst.daf.base
 
 from .pluginsBase import BasePlugin, BasePluginConfig
-from .pluginRegistry import PluginRegistry
+from .pluginRegistry import PluginRegistry, PluginMap
 from .baseLib import FatalAlgorithmError, MeasurementError
 
 # Exceptions that the measurement tasks should always propagate up to their callers
@@ -15,11 +13,13 @@ FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)
 
 __all__ = ("AfterburnerPluginConfig", "AfterburnerPlugin", "AfterburnerConfig", "AfterburnerTask")
 
+
 class AfterburnerPluginConfig(BasePluginConfig):
     '''
     Default configuration class for afterburner plugins
     '''
     pass
+
 
 class AfterburnerPlugin(BasePlugin):
     '''
@@ -34,7 +34,7 @@ class AfterburnerPlugin(BasePlugin):
 
     plugType = 'single'
 
-    def __init__(self,config, name, schema, metadata):
+    def __init__(self, config, name, schema, metadata):
         """!
         Initialize the afterburner plugin
 
@@ -67,12 +67,13 @@ class AfterburnerPlugin(BasePlugin):
         """
         raise NotImplementedError()
 
+
 class AbContext(object):
     '''
     Context manager to handle catching errors that may have been thrown in an afterburner plugin
     @param[in] plugin   The plugin that is to be run
     @param[in] cat      Either a catalog or a source record entry of a catalog, depending of the plugin type,
-                        i.e. either working on a whole catalog, or a single record. 
+                        i.e. either working on a whole catalog, or a single record.
     @param[in] log      The log which to write to, most likely will always be the log (self.log) of the object
                         in which the context manager is used.
     '''
@@ -95,21 +96,24 @@ class AbContext(object):
             self.log.warn("Error in {}.burn: {}".format(self.plugin.name, exc_value))
         return True
 
+
 class AfterburnerConfig(lsst.pex.config.Config):
     '''
     Default AfterburnerConfig. Currently this is an empty list, meaning that there are no default plugins run.
     The config object for each plugin must use this variable to specify the names of all plugins to be run.
     '''
-    plugins = AfterburnerPlugin.registry.makeField(multi=True, default=[], doc="Plugins to be run and their "
-                                                    "configuration")
-    pass
+    plugins = AfterburnerPlugin.registry.makeField(
+            multi=True,
+            default=["base_ClassificationExtendedness"],
+            doc="Plugins to be run and their configuration")
+
 
 class AfterburnerTask(lsst.pipe.base.Task):
     '''
     This task facilitates running plugins which will operate on a source catalog. These plugins may do things
     such as classifying an object based on source record entries inserted during a measurement task.
 
-    Plugins may either take an entire catalog to work on at a time, or 
+    Plugins may either take an entire catalog to work on at a time, or
     '''
     ConfigClass = AfterburnerConfig
     _DefaultName = "afterburner"
@@ -123,11 +127,12 @@ class AfterburnerTask(lsst.pipe.base.Task):
                                     will be created.
         @param[in] **kwargs         Additional arguments passed to lsst.pipe.base.Task.__init__.
         """
-        lsst.pipe.base.Task.__init__(self,**kwargs)
+        lsst.pipe.base.Task.__init__(self, **kwargs)
         self.schema = schema
         if plugMetadata is None:
             plugMetadata = lsst.daf.base.PropertyList()
         self.plugMetadata = plugMetadata
+        self.plugins = PluginMap()
 
         self.initializePlugins()
 
@@ -136,7 +141,7 @@ class AfterburnerTask(lsst.pipe.base.Task):
         Initialize the plugins according to the configuration.
         '''
 
-        pluginType = namedtuple('pluginType','single multi')
+        pluginType = namedtuple('pluginType', 'single multi')
         self.executionDict = {}
         # Read the properties for each plugin. Allocate a dictionary entry for each run level. Verify that
         # the plugins are above the minimum run level for an afterburner plugin. For each run level, the
@@ -146,14 +151,15 @@ class AfterburnerTask(lsst.pipe.base.Task):
                 self.executionDict[executionOrder] = pluginType(single=[], multi=[])
             if PluginClass.getExecutionOrder() >= BasePlugin.DEFAULT_AFTERBURNER:
                 plug = PluginClass(config, name, self.schema, metadata=self.plugMetadata)
+                self.plugins[name] = plug
                 if plug.plugType == 'single':
                     self.executionDict[executionOrder].single.append(plug)
                 elif plug.plugType == 'multi':
                     self.executionDict[executionOrder].multi.append(plug)
             else:
                 raise ValueError("{} has an execution order less than the minimum for an afterburner plugin."
-                        "Value {} : Minimum {}".format(PluginClass, PluginClass.getExecutionOrder(),
-                                                                           BasePlugin.DEFAULT_AFTERBURNER))
+                                 "Value {} : Minimum {}".format(PluginClass, PluginClass.getExecutionOrder(),
+                                                                BasePlugin.DEFAULT_AFTERBURNER))
 
     def run(self, measCat):
         '''
@@ -170,10 +176,10 @@ class AfterburnerTask(lsst.pipe.base.Task):
         for runlevel in sorted(self.executionDict):
             # Run all of the plugins which take a whole catalog first
             for plug in self.executionDict[runlevel].multi:
-                with AbContext(plug, catalog, self.log) as cm:
+                with AbContext(plug, catalog, self.log):
                     plug.burn(catalog)
             # Run all the plugins which take single catalog entries
             for measRecord in catalog:
                 for plug in self.executionDict[runlevel].single:
-                    with AbContext(plug, measRecord, self.log) as cm:
+                    with AbContext(plug, measRecord, self.log):
                         plug.burn(measRecord)

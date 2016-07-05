@@ -236,11 +236,9 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.config.slots.setupSchema(self.mapper.editOutputSchema())
         self.initializePlugins(schemaMapper=self.mapper)
         self.schema = self.mapper.getOutputSchema()
-        self.makeSubtask("applyApCorr", schema=self.schema)
         self.schema.checkUnits(parse_strict=self.config.checkUnitsParseStrict)
 
-    def run(self, measCat, exposure, refCat, refWcs, exposureId=None, beginOrder=None, endOrder=None,
-            allowApCorr=True):
+    def run(self, measCat, exposure, refCat, refWcs, exposureId=None, beginOrder=None, endOrder=None):
         """!
         Perform forced measurement.
 
@@ -257,7 +255,6 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                                  executionOrder < beginOrder are not executed. None for no limit.
         @param[in]  endOrder     ending execution order (exclusive): measurements with
                                  executionOrder >= endOrder are not executed. None for no limit.
-        @param[in] allowApCorr  allow application of aperture correction?
 
         Fills the initial empty SourceCatalog with forced measurement results.  Two steps must occur
         before run() can be called:
@@ -335,12 +332,6 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()
 
-        if allowApCorr:
-            self._applyApCorrIfWanted(
-                sources = measCat,
-                apCorrMap = exposure.getInfo().getApCorrMap(),
-                endOrder = endOrder,
-            )
 
     def generateMeasCat(self, exposure, refCat, refWcs, idFactory=None):
         """!Initialize an output SourceCatalog using information from the reference catalog.

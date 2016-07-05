@@ -25,6 +25,9 @@ import unittest
 
 import lsst.utils.tests
 import lsst.meas.base.tests
+import lsst.meas.base as measBase
+import lsst.meas.base.afterburner as afterburners
+
 
 class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
@@ -43,14 +46,15 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         del self.dataset
 
     def testSingleFramePlugin(self):
-        config = self.makeSingleFrameMeasurementConfig("base_ClassificationExtendedness",
-                                                       dependencies=["base_PsfFlux"])
+        config = measBase.SingleFrameMeasurementConfig()
         # n.b. we use the truth value as ModelFlux
         config.slots.psfFlux = "base_PsfFlux"
         config.slots.modelFlux = "truth"
         task = self.makeSingleFrameMeasurementTask(config=config)
+        abTask = afterburners.AfterburnerTask(schema=task.schema)
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         task.run(exposure, catalog)
+        abTask.run(catalog)
         self.assertLess(catalog[0].get("base_ClassificationExtendedness_value"), 0.5)
         self.assertGreater(catalog[1].get("base_ClassificationExtendedness_value"), 0.5)
 
@@ -64,15 +68,17 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
         When modelFluxFactor != 0, the ModelFluxErr cannot be NAN, but otherwise is ignored
         """
-        config = self.makeSingleFrameMeasurementConfig("base_ClassificationExtendedness",
-                                                       dependencies=["base_PsfFlux", "base_GaussianFlux"])
+        config = measBase.SingleFrameMeasurementConfig()
         config.slots.psfFlux = "base_PsfFlux"
         config.slots.modelFlux = "base_GaussianFlux"
 
+        abConfig = afterburners.AfterburnerConfig()
+
         def runFlagTest(psfFlux=100.0, modelFlux=200.0,
-                       psfFluxSigma=1.0, modelFluxSigma=2.0,
-                       psfFluxFlag=False, modelFluxFlag=False):
+                         psfFluxSigma=1.0, modelFluxSigma=2.0,
+                         psfFluxFlag=False, modelFluxFlag=False):
             task = self.makeSingleFrameMeasurementTask(config=config)
+            abTask = afterburners.AfterburnerTask(schema=task.schema, config=abConfig)
             exposure, catalog = self.dataset.realize(10.0, task.schema)
             source = catalog[0]
             source.set("base_PsfFlux_flux", psfFlux)
@@ -81,7 +87,7 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             source.set("base_GaussianFlux_flux", modelFlux)
             source.set("base_GaussianFlux_fluxSigma", modelFluxSigma)
             source.set("base_GaussianFlux_flag", modelFluxFlag)
-            task.plugins["base_ClassificationExtendedness"].measure(source, exposure)
+            abTask.plugins["base_ClassificationExtendedness"].burn(source)
             return source.get("base_ClassificationExtendedness_flag")
 
         #  Test no error case - all necessary values are set
@@ -100,16 +106,17 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         self.assertTrue(runFlagTest(psfFlux=float("NaN"), psfFluxFlag=True))
 
         #  Test modelFluxErr NAN case when modelErrFactor is zero and non-zero
-        config.plugins["base_ClassificationExtendedness"].modelErrFactor = 0.
+        abConfig.plugins["base_ClassificationExtendedness"].modelErrFactor = 0.
         self.assertFalse(runFlagTest(modelFluxSigma=float("NaN")))
-        config.plugins["base_ClassificationExtendedness"].modelErrFactor = 1.
+        abConfig.plugins["base_ClassificationExtendedness"].modelErrFactor = 1.
         self.assertTrue(runFlagTest(modelFluxSigma=float("NaN")))
 
         #  Test psfFluxErr NAN case when psfErrFactor is zero and non-zero
-        config.plugins["base_ClassificationExtendedness"].psfErrFactor = 0.
+        abConfig.plugins["base_ClassificationExtendedness"].psfErrFactor = 0.
         self.assertFalse(runFlagTest(psfFluxSigma=float("NaN")))
-        config.plugins["base_ClassificationExtendedness"].psfErrFactor = 1.
+        abConfig.plugins["base_ClassificationExtendedness"].psfErrFactor = 1.
         self.assertTrue(runFlagTest(psfFluxSigma=float("NaN")))
+
 
 def suite():
     """Returns a suite containing all the test cases in this module."""
@@ -120,6 +127,7 @@ def suite():
     suites += unittest.makeSuite(ClassificationTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
+
 
 def run(shouldExit=False):
     """Run the tests"""
