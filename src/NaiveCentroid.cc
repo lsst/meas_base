@@ -48,10 +48,11 @@ NaiveCentroidAlgorithm::NaiveCentroidAlgorithm(
     _centroidKey(
         CentroidResultKey::addFields(schema, name, "centroid from Naive Centroid algorithm", NO_UNCERTAINTY)
     ),
-    _centroidExtractor(schema, name, true)
+    _flagHandler(FlagHandler::addFields(schema, name,
+                                          getFlagDefinitions().begin(), getFlagDefinitions().end())),
+    _centroidExtractor(schema, name, true),
+    _centroidChecker(schema, name, ctrl.doFootprintCheck, ctrl.maxDistToPeak)
 {
-    _flagHandler = FlagHandler::addFields(schema, name,
-                                          getFlagDefinitions().begin(), getFlagDefinitions().end());
 }
 
 void NaiveCentroidAlgorithm::measure(
@@ -111,6 +112,7 @@ void NaiveCentroidAlgorithm::measure(
     result.y = lsst::afw::image::indexToPosition(y + image.getY0()) + sum_y / sum;
     measRecord.set(_centroidKey, result);
     _flagHandler.setValue(measRecord, FAILURE, false);  // if we had a suspect flag, we'd set that instead
+    _centroidChecker(measRecord);
 }
 
 

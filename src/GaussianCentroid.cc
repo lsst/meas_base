@@ -517,10 +517,11 @@ GaussianCentroidAlgorithm::GaussianCentroidAlgorithm(
     _centroidKey(
         CentroidResultKey::addFields(schema, name, "centroid from Gaussian Centroid algorithm", NO_UNCERTAINTY)
     ),
-    _centroidExtractor(schema, name, true)
+    _flagHandler(FlagHandler::addFields(schema, name,
+                                          getFlagDefinitions().begin(), getFlagDefinitions().end())),
+    _centroidExtractor(schema, name, true),
+    _centroidChecker(schema, name, ctrl.doFootprintCheck, ctrl.maxDistToPeak)
 {
-    _flagHandler = FlagHandler::addFields(schema, name,
-                                          getFlagDefinitions().begin(), getFlagDefinitions().end());
 }
 
 
@@ -567,6 +568,7 @@ void GaussianCentroidAlgorithm::measure(
     result.y = lsst::afw::image::indexToPosition(image.getY0()) + fit.params[FittedModel::Y0];
     _flagHandler.setValue(measRecord, FAILURE, false);  // if we had a suspect flag, we'd set that instead
     measRecord.set(_centroidKey, result);
+    _centroidChecker(measRecord);
 }
 
 

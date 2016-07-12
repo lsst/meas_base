@@ -87,7 +87,6 @@ class CentroidTestCase(utilsTests.TestCase):
             foot = afwDetection.Footprint(exp.getBBox(afwImage.LOCAL))
             foot.addPeak(x + x0, y + y0, 1010)
             source.setFootprint(foot)
-
             centroider.measure(source, exp)
 
             self.assertClose(x + x0, source.getX(), rtol=.00001)
@@ -114,6 +113,7 @@ class CentroidTestCase(utilsTests.TestCase):
     def testGaussianMeasureCentroid(self):
         """Test that we can instantiate and play with GAUSSIAN centroids"""
         control = measBase.GaussianCentroidControl()
+        control.doFootprintCheck = False
         self.do_testAstrometry(measBase.GaussianCentroidAlgorithm, 10.0, control)
 
     def testNaiveMeasureCentroid(self):
@@ -122,11 +122,13 @@ class CentroidTestCase(utilsTests.TestCase):
         afwTable.SourceTable.makeMinimalSchema()
         control = measBase.NaiveCentroidControl()
         control.background = bkgd
+        control.doFootprintCheck = False
         self.do_testAstrometry(measBase.NaiveCentroidAlgorithm, bkgd, control)
 
     def testSdssMeasureCentroid(self):
         """Test that we can instantiate and play with SDSS centroids"""
         control = measBase.SdssCentroidControl()
+        control.doFootprintCheck = False
         self.do_testAstrometry(measBase.SdssCentroidAlgorithm, 10.0, control)
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -177,7 +179,6 @@ class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
         s = self.mySetup()
 
         # this does not match exactly, and it used to
-        print s.getCentroid(), self.xcen, self.ycen
         self.assertClose(s.getCentroid(), afwGeom.PointD(self.xcen, self.ycen), rtol=.01)
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -213,6 +214,7 @@ class MonetTestCase(unittest.TestCase):
                     ds9.line([(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)], ctype=ds9.RED)
         msConfig = measBase.SingleFrameMeasurementConfig()
         msConfig.algorithms.names = ["base_GaussianCentroid"]
+        msConfig.plugins["base_GaussianCentroid"].doFootprintCheck = False
         msConfig.slots.centroid = "base_GaussianCentroid"
         msConfig.slots.shape = None
         msConfig.slots.apFlux = None

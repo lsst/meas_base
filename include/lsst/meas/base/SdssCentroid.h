@@ -49,14 +49,17 @@ public:
     LSST_CONTROL_FIELD(binmax, int, "maximum allowed binning");
     LSST_CONTROL_FIELD(peakMin, double, "if the peak's less than this insist on binning at least once");
     LSST_CONTROL_FIELD(wfac, double, "fiddle factor for adjusting the binning");
-
+    LSST_CONTROL_FIELD(doFootprintCheck, bool,
+                       "Do check that the centroid is contained in footprint.");
+    LSST_CONTROL_FIELD(maxDistToPeak, double,
+                       "If set > 0, Centroid Check also checks distance from footprint peak.");
     /**
      *  @brief Default constructor
      *
      *  All control classes should define a default constructor that sets all fields to their default values.
      */
 
-    SdssCentroidControl() : binmax(16), peakMin(-1.0), wfac(1.5) {}
+    SdssCentroidControl() : binmax(16), peakMin(-1.0), wfac(1.5), doFootprintCheck(true), maxDistToPeak(-1.0) {}
 };
 
 /**
@@ -96,6 +99,7 @@ private:
     CentroidResultKey _centroidKey;
     FlagHandler _flagHandler;
     SafeCentroidExtractor _centroidExtractor;
+    CentroidChecker _centroidChecker;
 };
 
 class SdssCentroidTransform : public CentroidTransform {

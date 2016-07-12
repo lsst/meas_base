@@ -431,10 +431,11 @@ SdssCentroidAlgorithm::SdssCentroidAlgorithm(
     _centroidKey( 
         CentroidResultKey::addFields(schema, name, "centroid from Sdss Centroid algorithm", SIGMA_ONLY)
     ),
-    _centroidExtractor(schema, name, true)
+    _flagHandler(FlagHandler::addFields(schema, name,
+                                          getFlagDefinitions().begin(), getFlagDefinitions().end())),
+    _centroidExtractor(schema, name, true),
+    _centroidChecker(schema, name, ctrl.doFootprintCheck, ctrl.maxDistToPeak)
 {   
-    _flagHandler = FlagHandler::addFields(schema, name,
-                                          getFlagDefinitions().begin(), getFlagDefinitions().end());
 }
 void SdssCentroidAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
@@ -536,7 +537,7 @@ void SdssCentroidAlgorithm::measure(
     result.ySigma = sqrt(dyc*dyc);
     measRecord.set(_centroidKey, result);
     _flagHandler.setValue(measRecord, FAILURE, false);
-
+    _centroidChecker(measRecord);
 }
 
 

@@ -21,7 +21,6 @@
  */
 
 #include <cmath>
-
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/afw/table/BaseRecord.h"
 
@@ -189,4 +188,51 @@ void CentroidTransform::operator()(
     }
 }
 
+// Add a key "flag_resetToPeak" if something is wrong with the centroid
+// Save a key to this algorithm's Centroid, as well as the general failure flag
+CentroidChecker::CentroidChecker(
+    afw::table::Schema & schema,
+    std::string const & name,
+    bool doFootprintCheck,
+    double maxDistFromPeak
+) : _doFootprintCheck(doFootprintCheck), _maxDistFromPeak(maxDistFromPeak)
+{
+    _resetKey = schema.addField<afw::table::Flag>(schema.join(name, "flag_resetToPeak"),
+                                        "set if CentroidChecker reset the centroid");
+    _failureKey = schema.find<lsst::afw::table::Flag>(schema.join(name, "flag")).key;
+    _xKey = schema.find<CentroidElement>(schema.join(name, "x")).key;
+    _yKey = schema.find<CentroidElement>(schema.join(name, "y")).key;
+}
+
+//  Set the centroid to the first footprint if the centroid is eithe more than _maxDistFromPeak
+//  pixels from the centroid, or if it is outside the footprint.
+bool CentroidChecker::operator()(
+    afw::table::SourceRecord & record
+) const {
+    CentroidElement x = record.get(_xKey);
+    CentroidElement y = record.get(_yKey);
+
+    if (!_doFootprintCheck && _maxDistFromPeak < 0.0) {
+        return false;
+    }
+
+    if (!record.getFootprint()) {
+        throw LSST_EXCEPT(
+            pex::exceptions::RuntimeError,
+            "No Footprint attached to record");
+    }
+    PTR(afw::detection::Footprint) footprint = record.getFootprint();
+    CentroidElement footX = footprint->getPeaks().front().getFx();
+    CentroidElement footY = footprint->getPeaks().front().getFy();
+    double distsq = (x - footX) * (x - footX) + (y - footY) * (y - footY);
+    if ((_doFootprintCheck && !footprint->contains(lsst::afw::geom::Point2I(lsst::afw::geom::Point2D(x, y)))) || 
+        ((_maxDistFromPeak > 0) && (distsq > _maxDistFromPeak*_maxDistFromPeak))) {
+        record.set(_xKey, footX);
+        record.set(_yKey, footY);
+        record.set(_failureKey, true);
+        record.set(_resetKey, true);
+        return true;
+    }
+    return false;
+}
 }}} // lsst::meas::base

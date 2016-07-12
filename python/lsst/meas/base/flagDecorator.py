@@ -24,7 +24,6 @@ def addFlagHandler(*args):
         oldInit = cls.__init__
 
         def newInit(self, *args, **kwargs):
-            oldInit(self, *args, **kwargs)
             if 'schema' in kwargs:
                 schema = kwargs['schema']
             else:
@@ -34,6 +33,7 @@ def addFlagHandler(*args):
             else:
                 name = args[1]
             self.flagHandler = FlagHandler.addFields(schema, name, FlagDefinitionVector(self.FLAGDEFS))
+            oldInit(self, *args, **kwargs)
         cls.__init__ = newInit
         return cls
     return classFactory
