@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2014 AURA/LSST.
+# Copyright 2008-2016 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -18,19 +18,19 @@
 #
 # You should have received a copy of the LSST License Statement and
 # the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
+# see <https://www.lsstcorp.org/LegalNotices/>.
 #
 
 import math
 import unittest
 
-import lsst.afw.image as afwImage
+import lsst.afw.detection as afwDetection
 import lsst.afw.geom as afwGeom
+import lsst.afw.image as afwImage
 import lsst.afw.table as afwTable
 import lsst.daf.base as dafBase
 import lsst.meas.base as measBase
 import lsst.utils.tests as utilsTests
-import lsst.afw.detection as afwDetection
 
 import lsst.afw.display.ds9 as ds9
 
@@ -84,8 +84,7 @@ class ShapeTestCase(unittest.TestCase):
         control.background = bkgd
         control.maxShift = 2
         plugin, cat = makePluginAndCat(measBase.SdssShapeAlgorithm, "test", control, centroid="centroid")
-        
-        #cat.defineCentroid("test")
+
         cat.defineShape("test")
         #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
         #
@@ -156,8 +155,8 @@ class ShapeTestCase(unittest.TestCase):
 
             if False:
                 Ixx, Iyy, Ixy = source.getIxx(), source.getIyy(), source.getIxy()
-                A2 = 0.5*(Ixx + Iyy) + math.sqrt( (0.5*(Ixx - Iyy))**2 + Ixy**2 )
-                B2 = 0.5*(Ixx + Iyy) - math.sqrt( (0.5*(Ixx - Iyy))**2 + Ixy**2 )
+                A2 = 0.5*(Ixx + Iyy) + math.sqrt((0.5*(Ixx - Iyy))**2 + Ixy**2)
+                B2 = 0.5*(Ixx + Iyy) - math.sqrt((0.5*(Ixx - Iyy))**2 + Ixy**2)
 
                 print "I_xx:  %.5f %.5f" % (Ixx, sigma_xx)
                 print "I_xy:  %.5f %.5f" % (Ixy, sigma_xy)

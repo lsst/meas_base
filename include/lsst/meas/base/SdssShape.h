@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2013 LSST Corporation.
+ * Copyright 2008-2016 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -18,7 +18,7 @@
  *
  * You should have received a copy of the LSST License Statement and
  * the GNU General Public License along with this program.  If not,
- * see <http://www.lsstcorp.org/LegalNotices/>.
+ * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
 #ifndef LSST_MEAS_BASE_SdssShape_h_INCLUDED
@@ -34,14 +34,16 @@
 #include "lsst/meas/base/InputUtilities.h"
 #include "lsst/meas/base/Algorithm.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 class SdssShapeResult;
 
 /**
  *  @brief A C++ control class to handle SdssShapeAlgorithm's configuration
  *
- *  @copydetails PsfFluxControl
+ *  @copydetails SdssShapeControl
  */
 class SdssShapeControl {
 public:
@@ -51,7 +53,7 @@ public:
     LSST_CONTROL_FIELD(tol1, float, "Convergence tolerance for e1,e2");
     LSST_CONTROL_FIELD(tol2, float, "Convergence tolerance for FWHM");
 
-    /// @copydoc PsfFluxControl::PsfFluxControl
+    /// @copydoc SdssShapeControl::SdssShapeControl
     SdssShapeControl() : background(0.0), maxIter(100), maxShift(), tol1(1E-5), tol2(1E-4) {}
 
 };
@@ -92,10 +94,10 @@ public:
      */
     SdssShapeResultKey(afw::table::SubSchema const & s);
 
-    /// Get a CentroidResult from the given record
+    /// Get an SdssShapeResult from the given record
     virtual SdssShapeResult get(afw::table::BaseRecord const & record) const;
 
-    /// Set a CentroidResult in the given record
+    /// Set an SdssShapeResult in the given record
     virtual void set(afw::table::BaseRecord & record, SdssShapeResult const & value) const;
 
     //@{
