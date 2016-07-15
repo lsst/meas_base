@@ -656,19 +656,33 @@ static std::array<FlagDefinition,SdssShapeAlgorithm::N_FLAGS> const flagDefs = {
         {"flag_unweightedBad", "Both weighted and unweighted moments were invalid"},
         {"flag_unweighted", "Weighted moments converged to an invalid value; using unweighted moments"},
         {"flag_shift", "centroid shifted by more than the maximum allowed amount"},
-        {"flag_maxIter", "Too many iterations in adaptive moments"}
+        {"flag_maxIter", "Too many iterations in adaptive moments"},
+        {"flag_psf", "Failure in measureing PSF model shape"}
     }};
+
+// This is to accommodate not adding the psf shape flag to the schema if doMeasurePsf = False
+int SdssShapeResultKey::nFlags = SdssShapeAlgorithm::N_FLAGS;
 
 SdssShapeResultKey SdssShapeResultKey::addFields(
     afw::table::Schema & schema,
-    std::string const & name
+    std::string const & name,
+    int numFlags,
+    bool doMeasurePsf
 ) {
+    nFlags = numFlags;
+
     SdssShapeResultKey r;
     r._shapeResult = ShapeResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments",
                                                SIGMA_ONLY);
     r._centroidResult = CentroidResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments",
                                                      NO_UNCERTAINTY);
     r._fluxResult = FluxResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments");
+    // Do not add psf shape fields if doMeasurePsf = False
+    if (doMeasurePsf) {
+        r._psfShapeResult = ShapeResultKey::addFields(
+            schema, name + "_psf", "adaptive moments of the PSF model at the object position",
+            NO_UNCERTAINTY);
+    }
     r._flux_xx_Cov = schema.addField<ErrElement>(
         schema.join(name, "flux", "xx", "Cov"),
         (boost::format("uncertainty covariance between %s and %s")
@@ -687,7 +701,7 @@ SdssShapeResultKey SdssShapeResultKey::addFields(
          % schema.join(name, "flux") % schema.join(name, "xy")).str(),
         "count*pixel^2"
     );
-    r._flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+    r._flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.begin() + nFlags);
     return r;
 }
 
@@ -695,10 +709,11 @@ SdssShapeResultKey::SdssShapeResultKey(afw::table::SubSchema const & s) :
     _shapeResult(s),
     _centroidResult(s),
     _fluxResult(s),
+    _psfShapeResult(s),
     _flux_xx_Cov(s["flux"]["xx"]["Cov"]),
     _flux_yy_Cov(s["flux"]["yy"]["Cov"]),
     _flux_xy_Cov(s["flux"]["xy"]["Cov"]),
-    _flagHandler(s, flagDefs.begin(), flagDefs.end())
+    _flagHandler(s, flagDefs.begin(), flagDefs.begin() + nFlags)
 {}
 
 SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const & record) const {
@@ -709,7 +724,10 @@ SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const & record) c
     result.flux_xx_Cov = record.get(_flux_xx_Cov);
     result.flux_yy_Cov = record.get(_flux_yy_Cov);
     result.flux_xy_Cov = record.get(_flux_xy_Cov);
-    for (int n = 0; n < SdssShapeAlgorithm::N_FLAGS; ++n) {
+    if (nFlags == SdssShapeAlgorithm::N_FLAGS) {
+        static_cast<ShapeResult&>(result) = record.get(_psfShapeResult);
+    }
+    for (int n = 0; n < nFlags; ++n) {
         result.flags[n] = _flagHandler.getValue(record, n);
     }
     return result;
@@ -722,15 +740,20 @@ void SdssShapeResultKey::set(afw::table::BaseRecord & record, SdssShapeResult co
     record.set(_flux_xx_Cov, value.flux_xx_Cov);
     record.set(_flux_yy_Cov, value.flux_yy_Cov);
     record.set(_flux_xy_Cov, value.flux_xy_Cov);
-    for (int n = 0; n < SdssShapeAlgorithm::N_FLAGS; ++n) {
+    for (int n = 0; n < nFlags; ++n) {
         _flagHandler.setValue(record, n, value.flags[n]);
     }
+}
+
+void SdssShapeResultKey::setPsfShape(afw::table::BaseRecord & record, ShapeResult const & value) const {
+    record.set(_psfShapeResult, value);
 }
 
 bool SdssShapeResultKey::operator==(SdssShapeResultKey const & other) const {
     return _shapeResult == other._shapeResult &&
         _centroidResult == other._centroidResult &&
         _fluxResult == other._fluxResult &&
+        _psfShapeResult == other._psfShapeResult &&
         _flux_xx_Cov == other._flux_xx_Cov &&
         _flux_yy_Cov == other._flux_yy_Cov &&
         _flux_xy_Cov == other._flux_xy_Cov;
@@ -741,6 +764,7 @@ bool SdssShapeResultKey::isValid() const {
     return _shapeResult.isValid() &&
         _centroidResult.isValid() &&
         _fluxResult.isValid() &&
+        _psfShapeResult.isValid() &&
         _flux_xx_Cov.isValid() &&
         _flux_yy_Cov.isValid() &&
         _flux_xy_Cov.isValid();
@@ -753,7 +777,8 @@ SdssShapeAlgorithm::SdssShapeAlgorithm(
     afw::table::Schema & schema
 )
   : _ctrl(ctrl),
-    _resultKey(ResultKey::addFields(schema, name)),
+    _resultKey(ResultKey::addFields(schema, name, (ctrl.doMeasurePsf ? N_FLAGS: N_FLAGS - 1),
+                                    ctrl.doMeasurePsf)),
     _centroidExtractor(schema, name)
 {}
 
@@ -881,17 +906,40 @@ void SdssShapeAlgorithm::measure(
     afw::image::Exposure<float> const & exposure
 ) const {
     bool negative = false;
+
     try {
         negative = measRecord.get(measRecord.getSchema().find<afw::table::Flag>("flags_negative").key);
     } catch(pexExcept::Exception &e) {
     }
-
     SdssShapeResult result = computeAdaptiveMoments(
         exposure.getMaskedImage(),
         _centroidExtractor(measRecord, _resultKey.getFlagHandler()),
         negative,
         _ctrl
     );
+
+    if (_ctrl.doMeasurePsf) {
+        // Compute moments of Psf model.  In the interest of implementing this quickly, we're just
+        // calling Psf::computeShape(), which delegates to SdssShapeResult::computeAdaptiveMoments
+        // for all nontrivial Psf classes.  But this could in theory save the results of a shape
+        // computed some other way as part of shape.sdss, which might be confusing.  We should
+        // fix this eventually either by making Psf shape measurement not part of base_SdssShape,
+        // or by making the measurements stored with shape.sdss always computed via the
+        // SdssShapeAlgorithm instead of delegating to the Psf class.
+        try {
+            PTR(afw::detection::Psf const) psf = exposure.getPsf();
+            if (!psf) {
+                result.flags[PSF_SHAPE_BAD] = true;
+            } else {
+                ShapeResult psfShape;
+                psfShape.setShape(psf->computeShape(afw::geom::Point2D(result.x, result.y)));
+                _resultKey.setPsfShape(measRecord, psfShape);
+            }
+        } catch (pex::exceptions::Exception & err) {
+            result.flags[PSF_SHAPE_BAD] = true;
+        }
+    }
+
     measRecord.set(_resultKey, result);
 }
 
@@ -932,13 +980,18 @@ SdssShapeTransform::SdssShapeTransform(
     _fluxTransform{name, mapper},
     _centroidTransform{name, mapper}
 {
-    for (auto flag = flagDefs.begin() + 1; flag < flagDefs.end(); flag++) {
+    for (auto flag = flagDefs.begin() + 1; flag < flagDefs.begin() + SdssShapeResultKey::nFlags; flag++) {
         mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(
                           mapper.getInputSchema().join(name, flag->name)).key);
     }
 
     _outShapeKey = ShapeResultKey::addFields(mapper.editOutputSchema(), name, "Shape in celestial moments",
                                              FULL_COVARIANCE, afw::table::CoordinateType::CELESTIAL);
+    if (SdssShapeResultKey::nFlags == SdssShapeAlgorithm::N_FLAGS) {
+        _outPsfShapeKey = ShapeResultKey::addFields(mapper.editOutputSchema(), name + "_psf",
+                                                    "Shape in celestial moments",
+                                                    FULL_COVARIANCE, afw::table::CoordinateType::CELESTIAL);
+    }
 }
 
 void SdssShapeTransform::operator()(
@@ -954,6 +1007,7 @@ void SdssShapeTransform::operator()(
 
     CentroidResultKey centroidKey(inputCatalog.getSchema()[_name]);
     ShapeResultKey inShapeKey(inputCatalog.getSchema()[_name]);
+    ShapeResultKey inPsfShapeKey(inputCatalog.getSchema()[_name+"_psf"]);
 
     afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
     afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();
@@ -971,6 +1025,14 @@ void SdssShapeTransform::operator()(
         outShape.setShapeErr((m*inShape.getShapeErr().cast<double>()*m.transpose()).cast<ErrElement>());
 
         _outShapeKey.set(*outSrc, outShape);
+
+        if (SdssShapeResultKey::nFlags == SdssShapeAlgorithm::N_FLAGS) {
+            ShapeResult inPsfShape = inPsfShapeKey.get(*inSrc);
+            ShapeResult outPsfShape;
+
+            outPsfShape.setShape(inPsfShape.getShape().transform(crdTr.getLinear()));
+            _outPsfShapeKey.set(*outSrc, outPsfShape);
+        }
     }
 }
 
