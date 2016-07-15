@@ -223,5 +223,106 @@ before the measurement framework or in a particular Plugin/Algorithm not knowing
 failure modes.  This means that Plugin/Algorithm implementations should generally have a global try/catch
 block that re-throwns lower-level exceptions corresponding to known failure modes as @ref MeasurementErrors.
 
+@section measBaseFlagHandlerInPython Using a FlagHandler with Python Plugins
+
+As mentioned above, a plugin measure() method is used to implement the code which performs
+measurements on individual detected sources.  It also records the results in the output
+source catalog. If an error occurs during measure(), the plugin is obliged to record the error by setting a
+flag in the source catalog.  As described above, this is often done by raising a MeasurementError and relying
+on the fail() method of the plugin to set the error flags.
+
+<B>
+How to Define a FlagHandler in Python:
+</B>
+
+If you have looked at any of the C++ implementations of plugins in meas_base, you will notice that the C++
+algorithms implement their fail() method using a C++ class called lsst::meas::base::FlagHander.  In this
+section, we will show you how to do the same thing in Python using the addFlagHandler decorator.
+
+First examine the code testFlagHandler.py in the meas_base tests directory. This unit test defines a
+plugin written in Python which illustrates several useful techniques about using the FlagHander.
+Note first the line decorating the class definition, which reads like this:
+
+@code{.py}
+@addFlagHandler(("flag", "General Failure error"),
+                ("flag_containsNan","Measurement area contains a nan"),
+                ("flag_edge", "Measurement area over edge"))
+@endcode
+This decorator modifies your plugin class to add a member variable named "flagHandler". As you might expect,
+this is an object of type lsst.meas.base.FlagHandler which you can use to manage errors. The FlagHandler
+will define the following:
+
+- a general failure flag which indicates that something has gone wrong during measure().
+- a specific failure flag which indicates a source which contain nans.
+- a specific failure flag which indicates that the source is too close to the edge to be measured.
+
+The FlagHander makes it simple to implement your fail() method in Python. Recall that you must implement
+this method in you plugin class if your method can fail: either with an expected error which your code 
+raises as a MeasurementError, or an unexpected error which is caught by the measurement framework.
+
+The following addition to your class will correctly implement the error handling:
+
+@code{.py}
+    def fail(self, measRecord, error=None):
+        if error is None:
+            self.flagHandler.handleFailure(measRecord)
+        else:
+            self.flagHandler.handleFailure(measRecord, error.cpp)
+@endcode
+
+<B>
+Using the ErrEnum in Error Handling:
+</B>
+
+In addition to the flagHander member, the decorator also adds an "ErrEnum" member to your plugin.
+This enumeration allows each of the errors to be simply and uniquely identified.
+The example below shows how you would use the ErrEnum when raising an error:
+
+@code{.py}
+        #   If the measurement box falls outside the exposure, raise the edge MeasurementError
+        if not exposure.getBBox().contains(bbox):
+            raise MeasurementError(self.flagHandler.getDefinition(self.ErrEnum.flag_edge).doc,
+                PythonPlugin.ErrEnum.flag_edge)
+@endcode
+
+In our unit test code, the PythonPlugin measures the flux inside a square box drawn around the center
+of a detected source.  This aperture is "size" pixels square, where "size" is a configurable value.
+The requested aperture could lie partly outside the exposure being measured, which would constitute
+an error condition for this plugin. When the MeasurementError is raised, both the general flag 
+and the flag_edge flag will be set to True.
+
+<B>
+Using the SafeCentroidExtractor:
+</B>
+
+The PythonPlugin example also demonstrates the use of the SafeCentroidExtractor from Python.
+The SafeCentroidExtractor is used by many of the C++ algorithms to fetch a value for the centroid of
+the source, even if the centroid algorithm has failed on this source. Since the source was detected,
+it will always have a detection Footprint which can be used as a fallback to locate the center of
+the object.
+
+Define the SafeCentroidExtractor in the initializaion of your plugin, like this:
+
+@code{.py}
+    def __init__(self, config, name, schema, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
+        self.centroidExtractor = lsst.meas.base.SafeCentroidExtractor(schema, name)
+@endcode
+
+Then when you need to fetch the centroid of the object, do this:
+
+@code{.py}
+center = self.centroidExtractor(measRecord, self.flagHandler)
+@endcode
+
+The SafeCentroidExtractor will first try to read the centroid from the centroid slot.  But if the
+failure flag on the centroid slot has been set to "True", it will try to use the detection footprint
+to determine the centroid. This might potentially allow the plugin to complete its measure() method
+if the centroid provided is "good enough".
+
+To indicate at the same time that something has gone wrong, the general flag will automatically get
+set on this source.  The SafeCentroidExtractor will also create have a flag called "flag_badCentroid"
+which points to the centroid slot failure flag, and can be used to distinguish records where
+the failure flag was been set specifically because the centroid slot measurement was bad.
 */
 }}} // namespace lsst::meas::base
