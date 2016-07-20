@@ -51,70 +51,65 @@ class SdssShapeTestCase(AlgorithmTestCase):
     def assertFinite(self, value):
         self.assertTrue(numpy.isfinite(value), msg="%s is not finite" % value)
 
-    def testGaussians(self):
-        """Test that we get correct shape when measuring Gaussians with known position."""
+    def _runMeasurementTask(self):
         task = self.makeSingleFrameMeasurementTask("base_SdssShape", config=self.config)
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         task.run(exposure, catalog)
-        key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
-        for record in catalog:
-            result = record.get(key)
-            self.assertClose(result.flux, record.get("truth_flux"), rtol=1E-2)
-            self.assertFinite(result.fluxSigma)
-            self.assertClose(result.x, record.get("truth_x"), rtol=1E-2)
-            self.assertClose(result.y, record.get("truth_y"), rtol=1E-2)
-            self.assertClose(result.xx, record.get("truth_xx"), rtol=1E-2)
-            self.assertClose(result.yy, record.get("truth_yy"), rtol=1E-2)
-            self.assertClose(result.xy, record.get("truth_xy"), rtol=1E-2, atol=2E-2)
-            self.assertFinite(result.xxSigma)
-            self.assertFinite(result.yySigma)
-            self.assertFinite(result.xySigma)
-            self.assertFinite(result.flux_xx_Cov)
-            self.assertFinite(result.flux_yy_Cov)
-            self.assertFinite(result.flux_xy_Cov)
-            self.assertFinite(result.xx_yy_Cov)
-            self.assertFinite(result.xx_xy_Cov)
-            self.assertFinite(result.yy_xy_Cov)
+        return exposure, catalog
 
-            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.FAILURE))
-            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.UNWEIGHTED_BAD))
-            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.UNWEIGHTED))
-            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.SHIFT))
-            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.MAXITER))
+    def _checkShape(self, result, record):
+        self.assertClose(result.x, record.get("truth_x"), rtol=1E-2)
+        self.assertClose(result.y, record.get("truth_y"), rtol=1E-2)
+        self.assertClose(result.xx, record.get("truth_xx"), rtol=1E-2)
+        self.assertClose(result.yy, record.get("truth_yy"), rtol=1E-2)
+        self.assertClose(result.xy, record.get("truth_xy"), rtol=1E-1, atol=2E-1)
+        self.assertFinite(result.xxSigma)
+        self.assertFinite(result.yySigma)
+        self.assertFinite(result.xySigma)
+        self.assertFinite(result.flux_xx_Cov)
+        self.assertFinite(result.flux_yy_Cov)
+        self.assertFinite(result.flux_xy_Cov)
+        self.assertFinite(result.xx_yy_Cov)
+        self.assertFinite(result.xx_xy_Cov)
+        self.assertFinite(result.yy_xy_Cov)
+        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.FAILURE))
+        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.UNWEIGHTED_BAD))
+        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.UNWEIGHTED))
+        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.SHIFT))
+        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.MAXITER))
 
-    def testMeasurePsfShape(self):
-        """Test that we measure the Psf only when we want to and fail when we can't."""
-        # We try to measure the Psf shape, and do have one: shape of image should match shape of Psf
-        task = self.makeSingleFrameMeasurementTask("base_SdssShape", config=self.config)
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
-        task.run(exposure, catalog)
+    def _checkPsfShape(self, result, psfResult, psfTruth):
+        self.assertClose(psfResult.getIxx(), psfTruth.getIxx(), rtol=1E-4)
+        self.assertClose(psfResult.getIyy(), psfTruth.getIyy(), rtol=1E-4)
+        self.assertClose(psfResult.getIxy(), psfTruth.getIxy(), rtol=1E-4)
+        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.PSF_SHAPE_BAD))
+
+    def testMeasureGoodPsf(self):
+        """Test that we measure shapes and record the PSF shape correctly."""
+        exposure, catalog = self._runMeasurementTask()
         key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
-        psfKey = lsst.meas.base.ShapeResultKey(catalog.schema["base_SdssShape_psf"])
         psfTruth = exposure.getPsf().computeShape()
         for record in catalog:
             result = record.get(key)
-            psfResult = record.get(psfKey)
-            self.assertClose(result.x, record.get("truth_x"), rtol=1E-2)
-            self.assertClose(result.y, record.get("truth_y"), rtol=1E-2)
-            self.assertClose(result.xx, record.get("truth_xx"), rtol=1E-2)
-            self.assertClose(result.yy, record.get("truth_yy"), rtol=1E-2)
-            self.assertClose(result.xy, record.get("truth_xy"), rtol=1E-1, atol=2E-1)
-            self.assertClose(psfResult.xx, psfTruth.getIxx(), rtol=1E-4)
-            self.assertClose(psfResult.yy, psfTruth.getIyy(), rtol=1E-4)
-            self.assertClose(psfResult.xy, psfTruth.getIxy(), rtol=1E-4)
-            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.PSF_SHAPE_BAD))
+            self._checkShape(result, record)
+            psfResult = key.getPsfShape(record)
+            self._checkPsfShape(result, psfResult, psfTruth)
 
-        #  We don't try to measure the Psf shape: extra fields should not be present
+    def testMeasureWithoutPsf(self):
+        """Test that we measure shapes correctly and do not record the PSF shape when not needed."""
         self.config.plugins["base_SdssShape"].doMeasurePsf = False
-        task = self.makeSingleFrameMeasurementTask("base_SdssShape", config=self.config)
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
-        task.run(exposure, catalog)
+        _, catalog = self._runMeasurementTask()
+        key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
+        for record in catalog:
+            result = record.get(key)
+            self._checkShape(result, record)
         self.assertFalse("base_SdssShape_psf_xx" in catalog.schema)
         self.assertFalse("base_SdssShape_psf_yy" in catalog.schema)
         self.assertFalse("base_SdssShape_psf_xy" in catalog.schema)
         self.assertFalse("base_SdssShape_flag_psf" in catalog.schema)
 
-        # We try to measure the Psf shape, but we don't have one: flag should be set
+    def testMeasureBadPsf(self):
+        """Test that we measure shapes correctly and set a flag with the PSF is unavailable."""
         self.config.plugins["base_SdssShape"].doMeasurePsf = True
         task = self.makeSingleFrameMeasurementTask("base_SdssShape", config=self.config)
         exposure, catalog = self.dataset.realize(10.0, task.schema)
@@ -123,7 +118,9 @@ class SdssShapeTestCase(AlgorithmTestCase):
         key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
         for record in catalog:
             result = record.get(key)
+            self._checkShape(result, record)
             self.assertTrue(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.PSF_SHAPE_BAD))
+
 
 class SdssShapeTransformTestCase(FluxTransformTestCase, CentroidTransformTestCase,
                                  SingleFramePluginTransformSetupHelper):
