@@ -1,7 +1,7 @@
 // -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2013 LSST Corporation.
+ * Copyright 2008-2016 AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -18,7 +18,7 @@
  *
  * You should have received a copy of the LSST License Statement and
  * the GNU General Public License along with this program.  If not,
- * see <http://www.lsstcorp.org/LegalNotices/>.
+ * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
 #ifndef LSST_MEAS_BASE_SdssShape_h_INCLUDED
@@ -28,20 +28,24 @@
 
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
+#include "lsst/afw/geom/ellipses/Quadrupole.h"
+#include "lsst/afw/table/aggregates.h"
 #include "lsst/meas/base/FluxUtilities.h"
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/meas/base/ShapeUtilities.h"
 #include "lsst/meas/base/InputUtilities.h"
 #include "lsst/meas/base/Algorithm.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 class SdssShapeResult;
 
 /**
  *  @brief A C++ control class to handle SdssShapeAlgorithm's configuration
  *
- *  @copydetails PsfFluxControl
+ *  @copydetails SdssShapeControl
  */
 class SdssShapeControl {
 public:
@@ -50,10 +54,11 @@ public:
     LSST_CONTROL_FIELD(maxShift, double, "Maximum centroid shift, limited to 2-10");
     LSST_CONTROL_FIELD(tol1, float, "Convergence tolerance for e1,e2");
     LSST_CONTROL_FIELD(tol2, float, "Convergence tolerance for FWHM");
+    LSST_CONTROL_FIELD(doMeasurePsf, bool, "Whether to also compute the shape of the PSF model");
 
-    /// @copydoc PsfFluxControl::PsfFluxControl
-    SdssShapeControl() : background(0.0), maxIter(100), maxShift(), tol1(1E-5), tol2(1E-4) {}
-
+    /// @copydoc SdssShapeControl::SdssShapeControl
+    SdssShapeControl() : background(0.0), maxIter(100), maxShift(), tol1(1E-5), tol2(1E-4),
+                         doMeasurePsf(true) {}
 };
 
 /**
@@ -69,13 +74,18 @@ public:
     /**
      *  @brief Add the appropriate fields to a Schema, and return a SdssShapeResultKey that manages them
      *
-     *  @param[in,out] schema  Schema to add fields to.
-     *  @param[in]     name    Name prefix for all fields; "_xx", "_yy", etc. will be appended to this
-     *                         to form the full field names.
+     *  @param[in,out] schema        Schema to add fields to.
+     *  @param[in]     name          Name prefix for all fields; "_xx", "_yy", etc. will be appended to this
+     *                               to form the full field names.
+     *  @param[in]     numFlags      Integer to accommodate not setting the Psf shape fields when
+     *                               doMeasurePsf is false.
+     *  @param[in]     doMeasurePsf  Boolean indicating whether or not the Psf is being measured (as
+     *                               set in the SdssShapeControl class).
      */
     static SdssShapeResultKey addFields(
         afw::table::Schema & schema,
-        std::string const & name
+        std::string const & name,
+        bool doMeasurePsf
     );
 
     /// Default constructor; instance will not be usuable unless subsequently assigned to.
@@ -92,11 +102,18 @@ public:
      */
     SdssShapeResultKey(afw::table::SubSchema const & s);
 
-    /// Get a CentroidResult from the given record
+    /// Get an SdssShapeResult from the given record
     virtual SdssShapeResult get(afw::table::BaseRecord const & record) const;
 
-    /// Set a CentroidResult in the given record
+    /// Set an SdssShapeResult in the given record
     virtual void set(afw::table::BaseRecord & record, SdssShapeResult const & value) const;
+
+    /// Get a Quadrupole for the Psf from the given record
+    virtual afw::geom::ellipses::Quadrupole getPsfShape(afw::table::BaseRecord const & record) const;
+
+    /// Set a Quadrupole for the Psf at the position of the given record
+    virtual void setPsfShape(afw::table::BaseRecord & record,
+                             afw::geom::ellipses::Quadrupole const & value) const;
 
     //@{
     /// Compare the FunctorKey for equality with another, using the underlying Keys
@@ -110,9 +127,11 @@ public:
     FlagHandler const & getFlagHandler() const { return _flagHandler; }
 
 private:
+    bool _includePsf;
     ShapeResultKey _shapeResult;
     CentroidResultKey _centroidResult;
     FluxResultKey _fluxResult;
+    afw::table::QuadrupoleKey _psfShapeResult;
     afw::table::Key<ErrElement> _flux_xx_Cov;
     afw::table::Key<ErrElement> _flux_yy_Cov;
     afw::table::Key<ErrElement> _flux_xy_Cov;
@@ -137,12 +156,17 @@ public:
     typedef SdssShapeResult Result;
     typedef SdssShapeResultKey ResultKey;
 
+    // NOTE: In order to accommodate the optional setting of additional fields when running with
+    //       doMeasurePsf = true (do set extra fields) or false (do NOT set extra fields), all of
+    //       the code in SdssShape assumes that PSF_SHAPE_BAD is the last entry in the enum list.
+    //       If new flags are added, be sure to add them above the PSF_SHAPE_BAD entry.
     enum {
         FAILURE=FlagHandler::FAILURE,
         UNWEIGHTED_BAD,
         UNWEIGHTED,
         SHIFT,
         MAXITER,
+        PSF_SHAPE_BAD,  // NOTE: PSF_SHAPE_BAD must be the last entry in the enum list
         N_FLAGS
     };
 
@@ -257,6 +281,8 @@ private:
     FluxTransform _fluxTransform;
     CentroidTransform _centroidTransform;
     ShapeResultKey _outShapeKey;
+    afw::table::QuadrupoleKey _outPsfShapeKey;
+    bool _transformPsf;
 };
 
 }}} // namespace lsst::meas::base

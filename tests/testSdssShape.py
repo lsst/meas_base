@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2013 LSST Corporation.
+# Copyright 2008-2016 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -18,19 +18,20 @@
 #
 # You should have received a copy of the LSST License Statement and
 # the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
+# see <https://www.lsstcorp.org/LegalNotices/>.
 #
 
+import sys
 import unittest
 
 import numpy
 
-import lsst.utils.tests
+import lsst.afw.geom
+import lsst.meas.base
 import lsst.meas.base.tests
-from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
-                                  CentroidTransformTestCase, SingleFramePluginTransformSetupHelper)
+import lsst.utils.tests
 
-class SdssShapeTestCase(AlgorithmTestCase):
+class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
     def setUp(self):
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
@@ -41,48 +42,90 @@ class SdssShapeTestCase(AlgorithmTestCase):
         # second source is extended
         self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(149.9, 50.3),
                                lsst.afw.geom.ellipses.Quadrupole(8, 9, 3))
+        self.config = self.makeSingleFrameMeasurementConfig("base_SdssShape")
 
     def tearDown(self):
         del self.bbox
         del self.dataset
+        del self.config
 
     def assertFinite(self, value):
         self.assertTrue(numpy.isfinite(value), msg="%s is not finite" % value)
 
-    def testGaussians(self):
-        """Test that we get correct shape when measuring Gaussians with known position."""
-        task = self.makeSingleFrameMeasurementTask("base_SdssShape")
+    def _runMeasurementTask(self):
+        task = self.makeSingleFrameMeasurementTask("base_SdssShape", config=self.config)
         exposure, catalog = self.dataset.realize(10.0, task.schema)
+        task.run(exposure, catalog)
+        return exposure, catalog
+
+    def _checkShape(self, result, record):
+        self.assertClose(result.x, record.get("truth_x"), rtol=1E-2)
+        self.assertClose(result.y, record.get("truth_y"), rtol=1E-2)
+        self.assertClose(result.xx, record.get("truth_xx"), rtol=1E-2)
+        self.assertClose(result.yy, record.get("truth_yy"), rtol=1E-2)
+        self.assertClose(result.xy, record.get("truth_xy"), rtol=1E-1, atol=2E-1)
+        self.assertFinite(result.xxSigma)
+        self.assertFinite(result.yySigma)
+        self.assertFinite(result.xySigma)
+        self.assertFinite(result.flux_xx_Cov)
+        self.assertFinite(result.flux_yy_Cov)
+        self.assertFinite(result.flux_xy_Cov)
+        self.assertFinite(result.xx_yy_Cov)
+        self.assertFinite(result.xx_xy_Cov)
+        self.assertFinite(result.yy_xy_Cov)
+        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.FAILURE))
+        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.UNWEIGHTED_BAD))
+        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.UNWEIGHTED))
+        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.SHIFT))
+        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.MAXITER))
+
+    def _checkPsfShape(self, result, psfResult, psfTruth):
+        self.assertClose(psfResult.getIxx(), psfTruth.getIxx(), rtol=1E-4)
+        self.assertClose(psfResult.getIyy(), psfTruth.getIyy(), rtol=1E-4)
+        self.assertClose(psfResult.getIxy(), psfTruth.getIxy(), rtol=1E-4)
+        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.PSF_SHAPE_BAD))
+
+    def testMeasureGoodPsf(self):
+        """Test that we measure shapes and record the PSF shape correctly."""
+        exposure, catalog = self._runMeasurementTask()
+        key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
+        psfTruth = exposure.getPsf().computeShape()
+        for record in catalog:
+            result = record.get(key)
+            self._checkShape(result, record)
+            psfResult = key.getPsfShape(record)
+            self._checkPsfShape(result, psfResult, psfTruth)
+
+    def testMeasureWithoutPsf(self):
+        """Test that we measure shapes correctly and do not record the PSF shape when not needed."""
+        self.config.plugins["base_SdssShape"].doMeasurePsf = False
+        _, catalog = self._runMeasurementTask()
+        key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
+        for record in catalog:
+            result = record.get(key)
+            self._checkShape(result, record)
+        self.assertFalse("base_SdssShape_psf_xx" in catalog.schema)
+        self.assertFalse("base_SdssShape_psf_yy" in catalog.schema)
+        self.assertFalse("base_SdssShape_psf_xy" in catalog.schema)
+        self.assertFalse("base_SdssShape_flag_psf" in catalog.schema)
+
+    def testMeasureBadPsf(self):
+        """Test that we measure shapes correctly and set a flag with the PSF is unavailable."""
+        self.config.plugins["base_SdssShape"].doMeasurePsf = True
+        task = self.makeSingleFrameMeasurementTask("base_SdssShape", config=self.config)
+        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        exposure.setPsf(None) # Set Psf to None to test no psf case
         task.run(exposure, catalog)
         key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
         for record in catalog:
             result = record.get(key)
-            self.assertClose(result.flux, record.get("truth_flux"), rtol=1E-2)
-            self.assertFinite(result.fluxSigma)
-            self.assertClose(result.x, record.get("truth_x"), rtol=1E-2)
-            self.assertClose(result.y, record.get("truth_y"), rtol=1E-2)
-            self.assertClose(result.xx, record.get("truth_xx"), rtol=1E-2)
-            self.assertClose(result.yy, record.get("truth_yy"), rtol=1E-2)
-            self.assertClose(result.xy, record.get("truth_xy"), rtol=1E-2, atol=2E-2)
-            self.assertFinite(result.xxSigma)
-            self.assertFinite(result.yySigma)
-            self.assertFinite(result.xySigma)
-            self.assertFinite(result.flux_xx_Cov)
-            self.assertFinite(result.flux_yy_Cov)
-            self.assertFinite(result.flux_xy_Cov)
-            self.assertFinite(result.xx_yy_Cov)
-            self.assertFinite(result.xx_xy_Cov)
-            self.assertFinite(result.yy_xy_Cov)
-
-            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.FAILURE))
-            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.UNWEIGHTED_BAD))
-            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.UNWEIGHTED))
-            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.SHIFT))
-            self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.MAXITER))
+            self._checkShape(result, record)
+            self.assertTrue(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.PSF_SHAPE_BAD))
 
 
-class SdssShapeTransformTestCase(FluxTransformTestCase, CentroidTransformTestCase,
-                                 SingleFramePluginTransformSetupHelper):
+class SdssShapeTransformTestCase(lsst.meas.base.tests.FluxTransformTestCase,
+                                 lsst.meas.base.tests.CentroidTransformTestCase,
+                                 lsst.meas.base.tests.SingleFramePluginTransformSetupHelper):
     name = "sdssShape"
     controlClass = lsst.meas.base.SdssShapeControl
     algorithmClass = lsst.meas.base.SdssShapeAlgorithm
@@ -90,17 +133,19 @@ class SdssShapeTransformTestCase(FluxTransformTestCase, CentroidTransformTestCas
     flagNames = ("flag", "flag_unweighted", "flag_unweightedBad", "flag_shift", "flag_maxIter")
     singleFramePlugins = ('base_SdssShape',)
     forcedPlugins = ('base_SdssShape',)
+    testPsf = True
 
     def _setFieldsInRecords(self, records, name):
-        FluxTransformTestCase._setFieldsInRecords(self, records, name)
-        CentroidTransformTestCase._setFieldsInRecords(self, records, name)
+        lsst.meas.base.tests.FluxTransformTestCase._setFieldsInRecords(self, records, name)
+        lsst.meas.base.tests.CentroidTransformTestCase._setFieldsInRecords(self, records, name)
         for record in records:
-            for field in ('xx', 'yy', 'xy', 'xxSigma', 'yySigma', 'xySigma'):
-                record[record.schema.join(name, field)] = numpy.random.random()
+            for field in ('xx', 'yy', 'xy', 'xxSigma', 'yySigma', 'xySigma', 'psf_xx', 'psf_yy', 'psf_xy'):
+                if record.schema.join(name, field) in record.schema:
+                    record[record.schema.join(name, field)] = numpy.random.random()
 
     def _compareFieldsInRecords(self, inSrc, outSrc, name):
-        FluxTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
-        CentroidTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
+        lsst.meas.base.tests.FluxTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
+        lsst.meas.base.tests.CentroidTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
 
         inShape = lsst.meas.base.ShapeResultKey(inSrc.schema[name]).get(inSrc)
         outShape = lsst.meas.base.ShapeResultKey(outSrc.schema[name]).get(outSrc)
@@ -118,21 +163,38 @@ class SdssShapeTransformTestCase(FluxTransformTestCase, CentroidTransformTestCas
             numpy.dot(numpy.dot(m, inShape.getShapeErr()), m.transpose()), outShape.getShapeErr()
         )
 
+        if self.testPsf:
+            inPsfShape = lsst.meas.base.ShapeResultKey(
+                inSrc.schema[inSrc.schema.join(name, "psf")]
+            ).get(inSrc)
+            outPsfShape = lsst.meas.base.ShapeResultKey(
+                outSrc.schema[outSrc.schema.join(name, "psf")]
+            ).get(outSrc)
+            trInPsfShape = inPsfShape.getShape().transform(xform.getLinear())
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+            self.assertEqual(trInPsfShape.getIxx(), outPsfShape.getShape().getIxx())
+            self.assertEqual(trInPsfShape.getIyy(), outPsfShape.getShape().getIyy())
+            self.assertEqual(trInPsfShape.getIxy(), outPsfShape.getShape().getIxy())
+        else:
+            self.assertNotIn(inSrc.schema.join(name, "psf", "xx"), inSrc.schema)
+            self.assertNotIn(inSrc.schema.join(name, "flag", "psf"), inSrc.schema)
 
+
+class PsfSdssShapeTransformTestCase(SdssShapeTransformTestCase):
+    testPsf = False
+    def makeSdssShapeControl(self):
+        ctrl = lsst.meas.base.SdssShapeControl()
+        ctrl.doMeasurePsf = False
+        return ctrl
+    controlClass = makeSdssShapeControl
+
+# The "Z" prefix on the class name is a work around for DM-6998.
+class ZMemoryTestCase(lsst.utils.tests.MemoryTestCase):
+    pass
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(SdssShapeTestCase)
-    suites += unittest.makeSuite(SdssShapeTransformTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    setup_module(sys.modules[__name__])
+    unittest.main()
