@@ -21,16 +21,17 @@
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
 
+import sys
 import unittest
 
 import numpy
 
-import lsst.utils.tests
+import lsst.afw.geom
+import lsst.meas.base
 import lsst.meas.base.tests
-from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
-                                  CentroidTransformTestCase, SingleFramePluginTransformSetupHelper)
+import lsst.utils.tests
 
-class SdssShapeTestCase(AlgorithmTestCase):
+class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
     def setUp(self):
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
@@ -122,8 +123,9 @@ class SdssShapeTestCase(AlgorithmTestCase):
             self.assertTrue(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.PSF_SHAPE_BAD))
 
 
-class SdssShapeTransformTestCase(FluxTransformTestCase, CentroidTransformTestCase,
-                                 SingleFramePluginTransformSetupHelper):
+class SdssShapeTransformTestCase(lsst.meas.base.tests.FluxTransformTestCase,
+                                 lsst.meas.base.tests.CentroidTransformTestCase,
+                                 lsst.meas.base.tests.SingleFramePluginTransformSetupHelper):
     name = "sdssShape"
     controlClass = lsst.meas.base.SdssShapeControl
     algorithmClass = lsst.meas.base.SdssShapeAlgorithm
@@ -134,16 +136,16 @@ class SdssShapeTransformTestCase(FluxTransformTestCase, CentroidTransformTestCas
     testPsf = True
 
     def _setFieldsInRecords(self, records, name):
-        FluxTransformTestCase._setFieldsInRecords(self, records, name)
-        CentroidTransformTestCase._setFieldsInRecords(self, records, name)
+        lsst.meas.base.tests.FluxTransformTestCase._setFieldsInRecords(self, records, name)
+        lsst.meas.base.tests.CentroidTransformTestCase._setFieldsInRecords(self, records, name)
         for record in records:
             for field in ('xx', 'yy', 'xy', 'xxSigma', 'yySigma', 'xySigma', 'psf_xx', 'psf_yy', 'psf_xy'):
                 if record.schema.join(name, field) in record.schema:
                     record[record.schema.join(name, field)] = numpy.random.random()
 
     def _compareFieldsInRecords(self, inSrc, outSrc, name):
-        FluxTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
-        CentroidTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
+        lsst.meas.base.tests.FluxTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
+        lsst.meas.base.tests.CentroidTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
 
         inShape = lsst.meas.base.ShapeResultKey(inSrc.schema[name]).get(inSrc)
         outShape = lsst.meas.base.ShapeResultKey(outSrc.schema[name]).get(outSrc)
@@ -162,8 +164,12 @@ class SdssShapeTransformTestCase(FluxTransformTestCase, CentroidTransformTestCas
         )
 
         if self.testPsf:
-            inPsfShape = lsst.meas.base.ShapeResultKey(inSrc.schema[inSrc.schema.join(name, "psf")]).get(inSrc)
-            outPsfShape = lsst.meas.base.ShapeResultKey(outSrc.schema[outSrc.schema.join(name, "psf")]).get(outSrc)
+            inPsfShape = lsst.meas.base.ShapeResultKey(
+                inSrc.schema[inSrc.schema.join(name, "psf")]
+            ).get(inSrc)
+            outPsfShape = lsst.meas.base.ShapeResultKey(
+                outSrc.schema[outSrc.schema.join(name, "psf")]
+            ).get(outSrc)
             trInPsfShape = inPsfShape.getShape().transform(xform.getLinear())
 
             self.assertEqual(trInPsfShape.getIxx(), outPsfShape.getShape().getIxx())
@@ -173,6 +179,7 @@ class SdssShapeTransformTestCase(FluxTransformTestCase, CentroidTransformTestCas
             self.assertNotIn(inSrc.schema.join(name, "psf", "xx"), inSrc.schema)
             self.assertNotIn(inSrc.schema.join(name, "flag", "psf"), inSrc.schema)
 
+
 class PsfSdssShapeTransformTestCase(SdssShapeTransformTestCase):
     testPsf = False
     def makeSdssShapeControl(self):
@@ -181,21 +188,13 @@ class PsfSdssShapeTransformTestCase(SdssShapeTransformTestCase):
         return ctrl
     controlClass = makeSdssShapeControl
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+# The "Z" prefix on the class name is a work around for DM-6998.
+class ZMemoryTestCase(lsst.utils.tests.MemoryTestCase):
+    pass
 
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(SdssShapeTestCase)
-    suites += unittest.makeSuite(SdssShapeTransformTestCase)
-    suites += unittest.makeSuite(PsfSdssShapeTransformTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    setup_module(sys.modules[__name__])
+    unittest.main()
