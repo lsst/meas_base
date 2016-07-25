@@ -225,19 +225,18 @@ block that re-throwns lower-level exceptions corresponding to known failure mode
 
 @section measBaseFlagHandlerInPython Using a FlagHandler with Python Plugins
 
-As mentioned above, a plugin measure() method is used to implement the code which performs
-measurements on individual detected sources.  It also records the results in the output
-source catalog. If an error occurs during measure(), the plugin is obliged to record the error by setting a
-flag in the source catalog.  As described above, this is often done by raising a MeasurementError and relying
-on the fail() method of the plugin to set the error flags.
+Review the SingleFramePlugin requirements for the measure() and fail() methods which a plugin must implement.
+When the plugin detects an error, it should raise a MeasurementError exception, which triggers a call to fail().
+A FlagHandler is a convenient way for a plugin to define error flags for different errors, and to set those
+error flags in fail() method when they occur.
 
 <B>
 How to Define a FlagHandler in Python:
 </B>
 
-If you have looked at any of the C++ implementations of plugins in meas_base, you will notice that the C++
-algorithms implement their fail() method using a C++ class called lsst::meas::base::FlagHander.  In this
-section, we will show you how to do the same thing in Python using the addFlagHandler decorator.
+The meas_base plugins implemented in C++ use lsst::meas::base::FlagHander to handle measurement exceptions.
+In Python, measurement plugins may use the addFlagHandler decorator to create an an instance of this class.
+This section describes how to use the addFlagHandler decorator and the FlagHandler.
 
 First examine the code testFlagHandler.py in the meas_base tests directory. This unit test defines a
 plugin written in Python which illustrates several useful techniques about using the FlagHander.
@@ -247,18 +246,28 @@ Note first the line decorating the class definition, which reads like this:
 @addFlagHandler(("flag", "General Failure error"),
                 ("flag_containsNan","Measurement area contains a nan"),
                 ("flag_edge", "Measurement area over edge"))
+class PythonPlugin(SingleFramePlugin):
+
+    ConfigClass = PythonPluginConfig
+
+    def __init__(self, config, name, schema, metadata):
+        ...
+
+    def measure(self, measRecord, exposure):
+        ...
+
+    def fail(self, measRecord, error=None):
+        ...
 @endcode
-This decorator modifies your plugin class to add a member variable named "flagHandler". As you might expect,
-this is an object of type lsst.meas.base.FlagHandler which you can use to manage errors. The FlagHandler
-will define the following:
+This class decorator modifies your plugin class to add a <B>flagHandler</B> attribute, an instance of
+lsst.meas.base.FlagHandler. This instance defines error flags for your plugin:
 
 - a general failure flag which indicates that something has gone wrong during measure().
 - a specific failure flag which indicates a source which contain nans.
 - a specific failure flag which indicates that the source is too close to the edge to be measured.
 
-The FlagHander makes it simple to implement your fail() method in Python. Recall that you must implement
-this method in you plugin class if your method can fail: either with an expected error which your code 
-raises as a MeasurementError, or an unexpected error which is caught by the measurement framework.
+The FlagHander is also used to implement your fail() method in Python. Recall that you must implement
+this method in your plugin class if your method can fail.
 
 The following addition to your class will correctly implement the error handling:
 
@@ -270,13 +279,18 @@ The following addition to your class will correctly implement the error handling
             self.flagHandler.handleFailure(measRecord, error.cpp)
 @endcode
 
+When the error is one which your plugin code expects, your code will raise a MeasurementError exception.
+The error is sent to the fail() method in the "error" argument. The error will indicate which flag should
+be set in addition to the general failure flag. If the error argument is not supplied, only the general
+failure flag will be set.
+
 <B>
-Using the ErrEnum in Error Handling:
+Using the ErrEnum to raise a MeasurementError exception:
 </B>
 
-In addition to the flagHander member, the decorator also adds an "ErrEnum" member to your plugin.
-This enumeration allows each of the errors to be simply and uniquely identified.
-The example below shows how you would use the ErrEnum when raising an error:
+In addition to the flagHander attribute, the addFlagHandler class decorator also adds an "ErrEnum"
+member to your plugin.  This enumeration provides a unique name for each error type. For example,
+to raise a MeasurementError when the measured source is too near the edge of the exposure:
 
 @code{.py}
         #   If the measurement box falls outside the exposure, raise the edge MeasurementError
@@ -285,7 +299,7 @@ The example below shows how you would use the ErrEnum when raising an error:
                 PythonPlugin.ErrEnum.flag_edge)
 @endcode
 
-In our unit test code, the PythonPlugin measures the flux inside a square box drawn around the center
+The PythonPlugin measures the flux inside a square box drawn around the center
 of a detected source.  This aperture is "size" pixels square, where "size" is a configurable value.
 The requested aperture could lie partly outside the exposure being measured, which would constitute
 an error condition for this plugin. When the MeasurementError is raised, both the general flag 
@@ -301,7 +315,7 @@ the source, even if the centroid algorithm has failed on this source. Since the 
 it will always have a detection Footprint which can be used as a fallback to locate the center of
 the object.
 
-Define the SafeCentroidExtractor in the initializaion of your plugin, like this:
+Define the SafeCentroidExtractor in the initialization of your plugin, like this:
 
 @code{.py}
     def __init__(self, config, name, schema, metadata):
@@ -309,7 +323,7 @@ Define the SafeCentroidExtractor in the initializaion of your plugin, like this:
         self.centroidExtractor = lsst.meas.base.SafeCentroidExtractor(schema, name)
 @endcode
 
-Then when you need to fetch the centroid of the object, do this:
+Then use centroidExtractor to fetch the centroid:
 
 @code{.py}
 center = self.centroidExtractor(measRecord, self.flagHandler)
@@ -321,8 +335,8 @@ to determine the centroid. This might potentially allow the plugin to complete i
 if the centroid provided is "good enough".
 
 To indicate at the same time that something has gone wrong, the general flag will automatically get
-set on this source.  The SafeCentroidExtractor will also create have a flag called "flag_badCentroid"
+set on this source.  The SafeCentroidExtractor will also create a flag called "flag_badCentroid"
 which points to the centroid slot failure flag, and can be used to distinguish records where
-the failure flag was been set specifically because the centroid slot measurement was bad.
+the failure flag was been set because the centroid slot measurement was bad.
 */
 }}} // namespace lsst::meas::base
