@@ -4,7 +4,7 @@ from lsst.meas.base import FlagDefinition, FlagDefinitionVector, FlagHandler
 def addFlagHandler(*args):
     '''
     Class decorator to create a flag handler for a plugin. Adds the class variables FLAGDEFS and
-    ErrEnum. An instnace variable flagHandler is added to the __init__ function to be created at
+    ErrEnum. An instance variable flagHandler is added to the __init__ function to be created at
     initialization. The arguments to this function are tuples which have the name of the failure
     as the first element, and the documentation for the failure as the second element.
 
