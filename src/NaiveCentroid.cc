@@ -111,7 +111,6 @@ void NaiveCentroidAlgorithm::measure(
     result.x = lsst::afw::image::indexToPosition(x + image.getX0()) + sum_x / sum;
     result.y = lsst::afw::image::indexToPosition(y + image.getY0()) + sum_y / sum;
     measRecord.set(_centroidKey, result);
-    _flagHandler.setValue(measRecord, FAILURE, false);  // if we had a suspect flag, we'd set that instead
     _centroidChecker(measRecord);
 }
 

@@ -536,7 +536,6 @@ void SdssCentroidAlgorithm::measure(
     result.xSigma = sqrt(dxc*dxc);
     result.ySigma = sqrt(dyc*dyc);
     measRecord.set(_centroidKey, result);
-    _flagHandler.setValue(measRecord, FAILURE, false);
     _centroidChecker(measRecord);
 }
 
