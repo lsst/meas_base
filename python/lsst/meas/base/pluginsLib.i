@@ -29,8 +29,8 @@
 %define %convertConfig(NS, CLS)
 %extend NS ## :: ## CLS {
     %feature("pythonprepend") CLS %{
-        if args and hasattr(args[0], "makeControl"):
-            args = (args[0].makeControl(),) + args[1:]
+        if hasattr(ctrl, "makeControl"):
+            ctrl = ctrl.makeControl()
     %}
 }
 %enddef
