@@ -162,7 +162,7 @@ class TestDataset(object):
             cls.keys["centroid_flag"] = schema.addField("truth_flag", type="Flag",
                                                  doc="set if the object is a star")
             cls.keys["shape"] = lsst.afw.table.QuadrupoleKey.addFields(
-                schema, "truth", "true shape after PSF convolution", lsst.afw.table.PIXEL
+                schema, "truth", "true shape after PSF convolution", lsst.afw.table.CoordinateType_PIXEL
             )
             cls.keys["isStar"] = schema.addField("truth_isStar", type="Flag",
                                                  doc="set if the object is a star")
