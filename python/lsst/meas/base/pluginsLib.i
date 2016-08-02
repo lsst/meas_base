@@ -23,9 +23,10 @@
 
 // measurement transformations
 
-// Augment C++ measurement transforms with a Python fragment which converts
-// the Python config class to a C++ control object. They can then be called
-// from Python in exactly the same way as transforms implemented in Python.
+// Augment C++ measurement transform constructors with a Python fragment
+// which converts the Python config (first constructor argument) to a C++
+// control object. C++ measurement transforms can then be constructed from
+// Python in exactly the same way as transforms implemented in Python.
 %define %convertConfig(NS, CLS)
 %extend NS ## :: ## CLS {
     %feature("pythonprepend") CLS %{
