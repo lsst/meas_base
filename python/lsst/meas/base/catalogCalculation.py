@@ -13,22 +13,23 @@ from .baseLib import FatalAlgorithmError, MeasurementError
 # Exceptions that the measurement tasks should always propagate up to their callers
 FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)
 
-__all__ = ("AfterburnerPluginConfig", "AfterburnerPlugin", "AfterburnerConfig", "AfterburnerTask")
+__all__ = ("CatalogCalculationPluginConfig", "CatalogCalculationPlugin", "CatalogCalculationConfig",
+           "CatalogCalculationTask")
 
 
-class AfterburnerPluginConfig(BasePluginConfig):
+class CatalogCalculationPluginConfig(BasePluginConfig):
     '''
-    Default configuration class for afterburner plugins
+    Default configuration class for catalogCalcuation plugins
     '''
     pass
 
 
-class AfterburnerPlugin(BasePlugin):
+class CatalogCalculationPlugin(BasePlugin):
     '''
-    Base class for after burner plugin
+    Base class for after CatalogCalculation plugin
     '''
-    registry = PluginRegistry(AfterburnerPluginConfig)
-    ConfigClass = AfterburnerPluginConfig
+    registry = PluginRegistry(CatalogCalculationPluginConfig)
+    ConfigClass = CatalogCalculationPluginConfig
     # This defines if the plugin operates on a single source at a time, or expects the whole catalog.
     # The value defaults to single for a single source, set to multi when the plugin expects the whole
     # catalog. If The plugin is of type multi, the fail method should be implemented to accept the whole
@@ -38,9 +39,9 @@ class AfterburnerPlugin(BasePlugin):
 
     def __init__(self, config, name, schema, metadata):
         """!
-        Initialize the afterburner plugin
+        Initialize the catalogCalculation plugin
 
-        @param[in] config     An instance of afterburner config class.
+        @param[in] config     An instance of catalogCalculation config class.
         @param[in] name       The string the plugin was registered with.
         @param[in,out] schema The source schema, New fields should be added here to
                               hold output produced by this plugin.
@@ -52,27 +53,27 @@ class AfterburnerPlugin(BasePlugin):
     def getExecutionOrder(cls):
         ''' Sets the relative order of plugins (smaller numbers run first).
 
-        Afterburner plugins must run with BasePlugin.DEFAULT_AFTERBURNER or higher
+        CatalogCalculation plugins must run with BasePlugin.DEFAULT_CATALOGCALCULATION or higher
 
         All plugins must implement this method with an appropriate run level
         '''
         raise NotImplementedError()
 
-    def burn(self, cat, **kwargs):
+    def calculate(self, cat, **kwargs):
         """!
         Process either a single catalog enter or the whole catalog and produce output defined by the plugin
 
         @param[in,out] cat  Either a lsst source catalog or a catalog entery depending on the plug type
                             specified in the classes configuration. Results may be added to new columns,
                             or existing entries altered.
-        @param[in] kwargs   Any additional kwargs that may be passed through the afterburner task.
+        @param[in] kwargs   Any additional kwargs that may be passed through the CatalogCalculationPlugin.
         """
         raise NotImplementedError()
 
 
-class AbContext(object):
+class CCContext(object):
     '''
-    Context manager to handle catching errors that may have been thrown in an afterburner plugin
+    Context manager to handle catching errors that may have been thrown in a catalogCalculation plugin
     @param[in] plugin   The plugin that is to be run
     @param[in] cat      Either a catalog or a source record entry of a catalog, depending of the plugin type,
                         i.e. either working on a whole catalog, or a single record.
@@ -96,30 +97,31 @@ class AbContext(object):
         elif exc_type is MeasurementError:
             self.plugin.fail(self.cat, exc_value)
         else:
-            self.log.warn("Error in {}.burn: {}".format(self.plugin.name, exc_value))
+            self.log.warn("Error in {}.calculate: {}".format(self.plugin.name, exc_value))
         return True
 
 
-class AfterburnerConfig(lsst.pex.config.Config):
+class CatalogCalculationConfig(lsst.pex.config.Config):
     '''
-    Default AfterburnerConfig. Currently this is an empty list, meaning that there are no default plugins run.
-    The config object for each plugin must use this variable to specify the names of all plugins to be run.
+    Default CatalogCalculationConfig. Currently this is an empty list, meaning that there are no default
+    plugins run. The config object for each plugin must use this variable to specify the names of all
+    plugins to be run.
     '''
-    plugins = AfterburnerPlugin.registry.makeField(
+    plugins = CatalogCalculationPlugin.registry.makeField(
         multi=True,
         default=["base_ClassificationExtendedness"],
         doc="Plugins to be run and their configuration")
 
 
-class AfterburnerTask(lsst.pipe.base.Task):
+class CatalogCalculationTask(lsst.pipe.base.Task):
     '''
     This task facilitates running plugins which will operate on a source catalog. These plugins may do things
     such as classifying an object based on source record entries inserted during a measurement task.
 
-    Plugins may either take an entire catalog to work on at a time, or
+    Plugins may either take an entire catalog to work on at a time, or work on individual records
     '''
-    ConfigClass = AfterburnerConfig
-    _DefaultName = "afterburner"
+    ConfigClass = CatalogCalculationConfig
+    _DefaultName = "catalogCalculation"
 
     def __init__(self, schema, plugMetadata=None, **kwargs):
         """
@@ -147,12 +149,13 @@ class AfterburnerTask(lsst.pipe.base.Task):
         pluginType = namedtuple('pluginType', 'single multi')
         self.executionDict = {}
         # Read the properties for each plugin. Allocate a dictionary entry for each run level. Verify that
-        # the plugins are above the minimum run level for an afterburner plugin. For each run level, the
-        # plugins are sorted into either single record, or multi record groups to later be run appropriately
+        # the plugins are above the minimum run level for an catalogCalculation plugin. For each run level,
+        # the plugins are sorted into either single record, or multi record groups to later be run
+        # appropriately
         for executionOrder, name, config, PluginClass in self.config.plugins.apply():
             if executionOrder not in self.executionDict:
                 self.executionDict[executionOrder] = pluginType(single=[], multi=[])
-            if PluginClass.getExecutionOrder() >= BasePlugin.DEFAULT_AFTERBURNER:
+            if PluginClass.getExecutionOrder() >= BasePlugin.DEFAULT_CATALOGCALCULATION:
                 plug = PluginClass(config, name, self.schema, metadata=self.plugMetadata)
                 self.plugins[name] = plug
                 if plug.plugType == 'single':
@@ -160,13 +163,15 @@ class AfterburnerTask(lsst.pipe.base.Task):
                 elif plug.plugType == 'multi':
                     self.executionDict[executionOrder].multi.append(plug)
             else:
-                raise ValueError("{} has an execution order less than the minimum for an afterburner plugin."
-                                 "Value {} : Minimum {}".format(PluginClass, PluginClass.getExecutionOrder(),
-                                                                BasePlugin.DEFAULT_AFTERBURNER))
+                raise ValueError("{} has an execution order less than the minimum for an catalogCalculation "
+                                 "plugin. Value {} : Minimum {}".format(PluginClass,
+                                                                        PluginClass.getExecutionOrder(),
+                                                                        BasePlugin.DEFAULT_CATALOGCALCULATION)
+                                )
 
     def run(self, measCat):
         '''
-        The entry point for the afterburner task. This method should be called with a reference to a
+        The entry point for the catalogCalculation task. This method should be called with a reference to a
         measurement catalog.
         '''
         self.callCompute(measCat)
@@ -179,10 +184,10 @@ class AfterburnerTask(lsst.pipe.base.Task):
         for runlevel in sorted(self.executionDict):
             # Run all of the plugins which take a whole catalog first
             for plug in self.executionDict[runlevel].multi:
-                with AbContext(plug, catalog, self.log):
-                    plug.burn(catalog)
+                with CCContext(plug, catalog, self.log):
+                    plug.calculate(catalog)
             # Run all the plugins which take single catalog entries
             for measRecord in catalog:
                 for plug in self.executionDict[runlevel].single:
-                    with AbContext(plug, measRecord, self.log):
-                        plug.burn(measRecord)
+                    with CCContext(plug, measRecord, self.log):
+                        plug.calculate(measRecord)

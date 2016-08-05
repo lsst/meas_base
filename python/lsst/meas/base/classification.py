@@ -27,15 +27,15 @@ Definition and registration of classification plugins
 import numpy
 
 import lsst.pex.config
-from .afterburner import AfterburnerPluginConfig, AfterburnerPlugin
+from .catalogCalculation import CatalogCalculationPluginConfig, CatalogCalculationPlugin
 from .pluginRegistry import register
 
 __all__ = (
-    "AfterburnerClassificationConfig", "AfterburnerClassificationPlugin",
+    "CatalogCalculationClassificationConfig", "CatalogCalculationClassificationPlugin",
 )
 
 
-class AfterburnerClassificationConfig(AfterburnerPluginConfig):
+class CatalogCalculationClassificationConfig(CatalogCalculationPluginConfig):
     fluxRatio = lsst.pex.config.Field(dtype=float, default=.925, optional=True,
                                       doc="critical ratio of model to psf flux")
     modelErrFactor = lsst.pex.config.Field(dtype=float, default=0.0, optional=True,
@@ -45,7 +45,7 @@ class AfterburnerClassificationConfig(AfterburnerPluginConfig):
 
 
 @register("base_ClassificationExtendedness")
-class AfterburnerClassificationPlugin(AfterburnerPlugin):
+class CatalogCalculationClassificationPlugin(CatalogCalculationPlugin):
     """
     A binary measure of the extendedness of a source, based a simple cut on the ratio of the
     PSF flux to the model flux.
@@ -57,19 +57,19 @@ class AfterburnerClassificationPlugin(AfterburnerPlugin):
     begins.
     """
 
-    ConfigClass = AfterburnerClassificationConfig
+    ConfigClass = CatalogCalculationClassificationConfig
 
     @classmethod
     def getExecutionOrder(cls):
-        return cls.DEFAULT_AFTERBURNER
+        return cls.DEFAULT_CATALOGCALCULATION
 
     def __init__(self, config, name, schema, metadata):
-        AfterburnerPlugin.__init__(self, config, name, schema, metadata)
+        CatalogCalculationPlugin.__init__(self, config, name, schema, metadata)
         self.keyProbability = schema.addField(name + "_value", type="D",
                                               doc="Set to 1 for extended sources, 0 for point sources.")
         self.keyFlag = schema.addField(name + "_flag", type="Flag", doc="Set to 1 for any fatal failure.")
 
-    def burn(self, measRecord):
+    def calculate(self, measRecord):
         modelFlux = measRecord.getModelFlux()
         psfFlux = measRecord.getPsfFlux()
         modelFluxFlag = (measRecord.getModelFluxFlag()

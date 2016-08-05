@@ -34,7 +34,7 @@ import lsst.pex.config
 from .references import MultiBandReferencesTask
 from .forcedMeasurement import ForcedMeasurementTask
 from .applyApCorr import ApplyApCorrTask
-from .afterburner import AfterburnerTask
+from .catalogCalculation import CatalogCalculationTask
 
 __all__ = ("ForcedPhotImageConfig", "ForcedPhotImageTask")
 
@@ -64,9 +64,9 @@ class ForcedPhotImageConfig(lsst.pex.config.Config):
         target=ApplyApCorrTask,
         doc="Subtask to apply aperture corrections"
     )
-    afterburners = lsst.pex.config.ConfigurableField(
-        target=AfterburnerTask,
-        doc="Subtask to run afterburner plugins on catalog"
+    catalogCalculation = lsst.pex.config.ConfigurableField(
+        target=CatalogCalculationTask,
+        doc="Subtask to run catalogCalculation plugins on catalog"
     )
     copyColumns = lsst.pex.config.DictField(
         keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
@@ -74,9 +74,9 @@ class ForcedPhotImageConfig(lsst.pex.config.Config):
     )
 
     def setDefaults(self):
-        # Make afterburners a no-op by default as no modelFlux is setup by default in
+        # Make catalogCalculation a no-op by default as no modelFlux is setup by default in
         # ForcedMeasurementTask
-        self.afterburners.plugins.names = []
+        self.catalogCalculation.plugins.names = []
 
 ## @addtogroup LSST_task_documentation
 ## @{
@@ -122,7 +122,7 @@ class ForcedPhotImageTask(lsst.pipe.base.CmdLineTask):
         # that the schema is not owned by the measurement task, but is passed in by an external caller
         if self.config.doApCorr:
             self.makeSubtask("applyApCorr", schema=self.measurement.schema)
-        self.makeSubtask('afterburners', schema=self.measurement.schema)
+        self.makeSubtask('catalogCalculation', schema=self.measurement.schema)
 
     def run(self, dataRef):
         """!Measure a single exposure using forced detection for a reference catalog.
@@ -155,7 +155,7 @@ class ForcedPhotImageTask(lsst.pipe.base.CmdLineTask):
                 catalog=measCat,
                 apCorrMap=exposure.getInfo().getApCorrMap()
             )
-        self.afterburners.run(measCat)
+        self.catalogCalculation.run(measCat)
 
         self.writeOutput(dataRef, measCat)
 
