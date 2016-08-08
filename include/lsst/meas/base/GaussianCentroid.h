@@ -73,7 +73,11 @@ public:
      *
      *  All control classes should define a default constructor that sets all fields to their default values.
      */
-    GaussianCentroidControl() {}
+    LSST_CONTROL_FIELD(doFootprintCheck, bool,
+                       "Do check that the centroid is contained in footprint.");
+    LSST_CONTROL_FIELD(maxDistToPeak, double,
+                       "If set > 0, Centroid Check also checks distance from footprint peak.");
+    GaussianCentroidControl() : doFootprintCheck(true), maxDistToPeak(-1.0) {}
 };
 
 /**
@@ -125,6 +129,7 @@ private:
     CentroidResultKey _centroidKey;
     FlagHandler _flagHandler;
     SafeCentroidExtractor _centroidExtractor;
+    CentroidChecker _centroidChecker;
 };
 
 class GaussianCentroidTransform : public CentroidTransform {

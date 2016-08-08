@@ -201,6 +201,43 @@ private:
     afw::table::CovarianceMatrixKey<ErrElement,2> _coordErrKey;
 };
 
+class CentroidChecker {
+public:
+
+    /**
+     *  Check source record for an centroid algorithm called name, noting if the centroid
+     *  already set by the algorithm is outside the footprint attached to the record.
+     *  If that is the case, we should:
+     *     (1) set the general failure flag for the algorithm
+     *     (2) set the algorithmName + "_flag_resetToPeak" flag
+     *     (3) change the value of the centroid to the footprint Peak
+     *
+     *  Secondly, check to see if the centroid is more than "dist" pixels from
+     *  the footprint peak, and similarly modify the centroi value to the peak in that case
+     *
+     *  @param[in,out] schema        Schema to which the flag_resetToPeak is to be added
+     *  @param[in]  name             The name of the algorithm we will be checking
+     *  @param[in]  doFootprintCheck Check if centroid is within footprint
+     *  @param[in]  maxDistFromPeak Check if centroid is more than dist from footprint peak
+     */
+    CentroidChecker(afw::table::Schema & schema, std::string const & name, bool inside=true, double maxDistFromPeak=-1.0);
+
+    /**
+      *  Set the centroid to the first footprint if the centroid is either more than _dist
+      *  pixels from the footprint center, or if it is outside the footprint.
+     */
+    bool operator()(
+        afw::table::SourceRecord & record
+    ) const;
+
+private:
+    bool _doFootprintCheck;
+    double _maxDistFromPeak;
+    afw::table::Key<afw::table::Flag> _resetKey;
+    afw::table::Key<afw::table::Flag> _failureKey;
+    afw::table::Key<CentroidElement> _xKey;
+    afw::table::Key<CentroidElement> _yKey;
+};
 }}} // lsst::meas::base
 
 #endif // !LSST_MEAS_BASE_CentroidUtilities_h_INCLUDED
