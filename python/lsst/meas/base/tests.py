@@ -23,7 +23,6 @@
 
 import numpy
 
-import lsst.utils.tests
 import lsst.afw.table
 import lsst.afw.image
 import lsst.afw.detection
@@ -461,7 +460,7 @@ class TestDataset(object):
         return exposure, catalog
 
 
-class AlgorithmTestCase(lsst.utils.tests.TestCase):
+class AlgorithmTestCase(object):
     # Some tests depend on the noise realization in the test data or from the
     # numpy random number generator. In most cases, they are testing that the
     # measured flux lies within 2 sigma of the correct value, which we should
@@ -545,7 +544,7 @@ class AlgorithmTestCase(lsst.utils.tests.TestCase):
         return ForcedMeasurementTask(refSchema=refSchema, algMetadata=algMetadata, config=config)
 
 
-class TransformTestCase(lsst.utils.tests.TestCase):
+class TransformTestCase(object):
     """!
     Base class for testing measurement transformations.
 
