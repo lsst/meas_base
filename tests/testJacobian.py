@@ -32,6 +32,7 @@ import lsst.meas.base.tests
 from lsst.meas.base.tests import AlgorithmTestCase
 from lsst.meas.base.sfm import SingleFrameMeasurementConfig
 
+
 class JacobianTestCase(AlgorithmTestCase):
     def setUp(self):
         # Pick arbitrary numbers to create a detector object, and a synthetic
@@ -40,7 +41,7 @@ class JacobianTestCase(AlgorithmTestCase):
         # fake source is inside the bounding box)
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
-                                        lsst.afw.geom.Extent2I(140,160))
+                                        lsst.afw.geom.Extent2I(140, 160))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(100000.0, self.center)
 
@@ -48,18 +49,18 @@ class JacobianTestCase(AlgorithmTestCase):
 
         for k, v in (
                 ("EQUINOX", 2000.0),
-                ("CRPIX1" , 5353.0),
-                ("CRPIX2" , -35.0),
-                ("CD1_1"  , 0.0),
-                ("CD1_2"  , -5.611E-05),
-                ("CD2_1"  , -5.611E-05),
-                ("CD2_2"  , -0.0),
-                ("CRVAL1" , 4.5789875),
-                ("CRVAL2" , 16.30004444),
-                ("CUNIT1" , 'deg'),
-                ("CUNIT2" , 'deg'),
-                ("CTYPE1" , 'RA---TAN'),
-                ("CTYPE2" , 'DEC--TAN'),
+                ("CRPIX1", 5353.0),
+                ("CRPIX2", -35.0),
+                ("CD1_1", 0.0),
+                ("CD1_2", -5.611E-05),
+                ("CD2_1", -5.611E-05),
+                ("CD2_2", -0.0),
+                ("CRVAL1", 4.5789875),
+                ("CRVAL2", 16.30004444),
+                ("CUNIT1", 'deg'),
+                ("CUNIT2", 'deg'),
+                ("CTYPE1", 'RA---TAN'),
+                ("CTYPE2", 'DEC--TAN'),
                 ):
             md.set(k, v)
 
@@ -84,17 +85,15 @@ class JacobianTestCase(AlgorithmTestCase):
         self.assertFalse(record.get("base_Jacobian_flag"))
         self.assertAlmostEqual(record.get("base_Jacobian_value"), 1.0200183929088285, 4)
 
-def suite():
+
+class MemoryTester(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(JacobianTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    "Run the tests"
-    lsst.utils.tests.run(suite(), shouldExit)
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
