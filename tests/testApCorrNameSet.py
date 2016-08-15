@@ -26,6 +26,7 @@ import unittest
 import lsst.utils.tests
 import lsst.meas.base
 
+
 class ApCorrNameTestCase(unittest.TestCase):
 
     def testDefaultNames(self):
@@ -57,8 +58,7 @@ class ApCorrNameTestCase(unittest.TestCase):
         self.assertEqual(len(nameSet0 - nameSet1), 1)
 
     def testRegisterDecorator(self):
-        """Test the shouldApCorr argument of the register decorator for measurement plugins
-        """
+        """Test the shouldApCorr argument of the register decorator for measurement plugins."""
         @lsst.meas.base.register("test_ApCorrPlugin", shouldApCorr=True)
         class ApCorrPlugin(lsst.meas.base.SingleFramePlugin):
             pass
