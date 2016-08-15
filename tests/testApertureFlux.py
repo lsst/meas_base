@@ -244,7 +244,8 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
                 self.assertLess(measRecord.get(measRecord.schema.join(prefix, "fluxSigma")), (n+1)*150.0)
 
 
-class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper):
+class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,
+                                    lsst.utils.tests.TestCase):
     class circApFluxAlgorithmFactory(object):
         """
         Helper class to sub in an empty PropertyList as the final argument to
