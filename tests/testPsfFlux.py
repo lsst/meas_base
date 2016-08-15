@@ -34,7 +34,8 @@ import lsst.meas.base.tests
 from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 
-class PsfFluxTestCase(AlgorithmTestCase):
+
+class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
@@ -61,7 +62,7 @@ class PsfFluxTestCase(AlgorithmTestCase):
         algorithm, schema = self.makeAlgorithm()
         exposure, catalog = self.dataset.realize(10.0, schema)
         record = catalog[0]
-        badPoint = lsst.afw.geom.Point2I(self.center) + lsst.afw.geom.Extent2I(3,4)
+        badPoint = lsst.afw.geom.Point2I(self.center) + lsst.afw.geom.Extent2I(3, 4)
         imageArray = exposure.getMaskedImage().getImage().getArray()
         maskArray = exposure.getMaskedImage().getMask().getArray()
         badMask = exposure.getMaskedImage().getMask().getPlaneBitMask("BAD")
@@ -78,7 +79,7 @@ class PsfFluxTestCase(AlgorithmTestCase):
         self.assertClose(record.get("base_PsfFlux_flux"), record.get("truth_flux"),
                          atol=3*record.get("base_PsfFlux_fluxSigma"))
         # If we mask the whole image, we should get a MeasurementError
-        maskArray[:,:] |= badMask
+        maskArray[:, :] |= badMask
         with self.assertRaises(lsst.meas.base.MeasurementError) as context:
             algorithm.measure(record, exposure)
         self.assertEqual(context.exception.getFlagBit(), lsst.meas.base.PsfFluxAlgorithm.NO_GOOD_PIXELS)
@@ -168,7 +169,8 @@ class PsfFluxTestCase(AlgorithmTestCase):
         self.assertLess(measRecord.get("base_PsfFlux_fluxSigma"), 500.0)
 
 
-class PsfFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper):
+class PsfFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,
+                               lsst.utils.tests.TestCase):
     controlClass = lsst.meas.base.PsfFluxControl
     algorithmClass = lsst.meas.base.PsfFluxAlgorithm
     transformClass = lsst.meas.base.PsfFluxTransform
@@ -177,20 +179,13 @@ class PsfFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransform
     forcedPlugins = ('base_PsfFlux',)
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(PsfFluxTestCase)
-    suites += unittest.makeSuite(PsfFluxTransformTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
