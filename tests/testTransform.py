@@ -28,13 +28,14 @@ import lsst.daf.base as dafBase
 import lsst.meas.base as measBase
 import lsst.pex.config as pexConfig
 import lsst.pex.exceptions as pexExcept
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 import testLib
 
 try:
     type(verbose)
 except NameError:
     verbose = 0
+
 
 def makeWcs():
     """Provide a simple WCS for use in testing"""
@@ -51,11 +52,13 @@ def makeWcs():
     md.set("EQUINOX", 2000.0)
     return afwImage.makeWcs(md)
 
+
 @pexConfig.wrap(testLib.SillyCentroidControl)
 class SillyCentroidConfig(pexConfig.Config):
     pass
 
-class TransformTestCase(utilsTests.TestCase):
+
+class TransformTestCase(unittest.TestCase):
     pluginName = "base_SillyCentroid"
     centroidPosition = (1.0, -1.0)
 
@@ -140,7 +143,9 @@ class TransformTestCase(utilsTests.TestCase):
         sillyTransform(inCat, outCat, makeWcs(), afwImage.Calib())
         self._checkSillyOutputs(inCat, outCat)
 
-class AlgorithmConfigurationTestCase(utilsTests.TestCase):
+
+class AlgorithmConfigurationTestCase(unittest.TestCase):
+
     def testDefaultTransform(self):
         """By default, we perform no transformations"""
         self.assertEqual(measBase.BasePlugin.getTransformClass(), measBase.PassThroughTransform)
@@ -163,21 +168,14 @@ class AlgorithmConfigurationTestCase(utilsTests.TestCase):
         self.assertEqual(singleFrame.getTransformClass(), measBase.PassThroughTransform)
 
 
+def setup_module(module):
+    lsst.utils.tests.init()
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    utilsTests.init()
 
-    suites = []
-    suites += unittest.makeSuite(TransformTestCase)
-    suites += unittest.makeSuite(AlgorithmConfigurationTestCase)
-    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
-    return unittest.TestSuite(suites)
-
-def run(exit=False):
-    """Run the tests"""
-    utilsTests.run(suite(), exit)
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
