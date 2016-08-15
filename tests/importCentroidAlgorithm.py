@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-# 
+#
 # LSST Data Management System
 # Copyright 2008-2014 AURA/LSST.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -10,14 +10,14 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
@@ -46,8 +46,9 @@ lsst.meas.base.wrapSimpleAlgorithm(
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+
 class CentroidTestCase(unittest.TestCase):
-    """A test case for centroiding"""
+    """A test case for centroiding."""
 
     def setUp(self):
         pass
@@ -59,11 +60,11 @@ class CentroidTestCase(unittest.TestCase):
         """Test that we can instantiate and play with SillyMeasureCentroid"""
 
         for imageFactory in (
-                             afwImage.MaskedImageF,
-                             ):
+            afwImage.MaskedImageF,
+        ):
             im = imageFactory(afwGeom.ExtentI(100, 100))
             exp = afwImage.makeExposure(im)
-            for offset in (0,1,2):
+            for offset in (0, 1, 2):
                 control = testLib.SillyCentroidControl()
                 control.param = offset
                 x, y = 10, 20
@@ -80,21 +81,20 @@ class CentroidTestCase(unittest.TestCase):
                 self.assertEqual(x, source.get("test_x") - offset)
                 self.assertEqual(y, source.get("test_y") - offset)
 
-
     def testMeasureCentroid(self):
-        """Test that we can use our silly centroid through the usual Tasks"""
+        """Test that we can use our silly centroid through the usual Tasks."""
         testLib.SillyCentroidControl()
         x, y = 10, 20
 
         im = afwImage.MaskedImageF(afwGeom.ExtentI(512, 512))
         im.set(0)
         arr = im.getImage().getArray()
-        arr[y,x] = 1000
+        arr[y, x] = 1000
         exp = afwImage.makeExposure(im)
 
         schema = afwTable.SourceTable.makeMinimalSchema()
-        schema.addField("flags_negative", type="Flag", doc=
-            "set if source was detected as significantly negative")
+        schema.addField("flags_negative", type="Flag",
+                        doc="set if source was detected as significantly negative")
         sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
         sfm_config.plugins = ["testLib_SillyCentroid"]
         sfm_config.plugins["testLib_SillyCentroid"].param = 5
@@ -123,6 +123,7 @@ class CentroidTestCase(unittest.TestCase):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
     utilsTests.init()
@@ -133,9 +134,10 @@ def suite():
 
     return unittest.TestSuite(suites)
 
+
 def run(exit=False):
     """Run the tests"""
     utilsTests.run(suite(), exit)
- 
+
 if __name__ == "__main__":
     run(True)

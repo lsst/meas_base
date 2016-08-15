@@ -44,9 +44,10 @@ except NameError:
     display = False
     displayCoeffs = False
 
-def plantSources(bbox, kwid, sky, coordList, addPoissonNoise=True):
-    """Make an exposure with stars (modelled as Gaussians)
 
+def plantSources(bbox, kwid, sky, coordList, addPoissonNoise=True):
+    """Make an exposure with stars (modelled as Gaussians)."""
+    """
     @param bbox: parent bbox of exposure
     @param kwid: kernel width (and height; kernel is square)
     @param sky: amount of sky background (counts)
@@ -79,7 +80,7 @@ def plantSources(bbox, kwid, sky, coordList, addPoissonNoise=True):
 
     # add Poisson noise
     if (addPoissonNoise):
-        numpy.random.seed(seed=1) # make results reproducible
+        numpy.random.seed(seed=1)  # make results reproducible
         imgArr = img.getArray()
         imgArr[:] = numpy.random.poisson(imgArr)
 
@@ -96,6 +97,7 @@ def plantSources(bbox, kwid, sky, coordList, addPoissonNoise=True):
 
     return exposure
 
+
 class sincPhotSums(unittest.TestCase):
 
     def setUp(self):
@@ -103,7 +105,7 @@ class sincPhotSums(unittest.TestCase):
         self.ny = 64
         self.kwid = 15
         self.sky = 100.0
-        self.val  = 10000.0
+        self.val = 10000.0
         self.sigma = 4.0
         coordList = [[self.nx/2, self.ny/2, self.val, self.sigma]]
 
@@ -141,7 +143,7 @@ class sincPhotSums(unittest.TestCase):
         for y in range(height):
             for x in range(width):
                 dx, dy = x - xcen, y - ycen
-                u =  c*dx + s*dy
+                u = c*dx + s*dy
                 v = -s*dx + c*dy
                 val = I0*math.exp(-0.5*((u/a)**2 + (v/b)**2))
                 if val < 0:
@@ -162,10 +164,10 @@ class sincPhotSums(unittest.TestCase):
         #
         for r1, r2 in [(0.,      0.45*a),
                        (0.45*a, 1.0*a),
-                       ( 1.0*a, 2.0*a),
-                       ( 2.0*a, 3.0*a),
-                       ( 3.0*a, 5.0*a),
-                       ( 3.0*a, 10.0*a),
+                       (1.0*a, 2.0*a),
+                       (2.0*a, 3.0*a),
+                       (3.0*a, 5.0*a),
+                       (3.0*a, 10.0*a),
                        ]:
             if display:                 # draw the inner and outer boundaries of the aperture
                 Mxx = 1
@@ -181,16 +183,17 @@ class sincPhotSums(unittest.TestCase):
             # since that is no longer available from the ApertureFluxAlgorithm,
             # we will calculate the two and subtract.
 
-            axes = afwGeom.ellipses.Axes(r2, r2*(1-b/a), math.radians(theta));
+            axes = afwGeom.ellipses.Axes(r2, r2*(1-b/a), math.radians(theta))
             ellipse = afwGeom.ellipses.Ellipse(axes, center)
             result2 = measBase.ApertureFluxAlgorithm.computeSincFlux(objImg.getMaskedImage(), ellipse)
 
-            axes = afwGeom.ellipses.Axes(r1, r1*(1-b/a), math.radians(theta));
+            axes = afwGeom.ellipses.Axes(r1, r1*(1-b/a), math.radians(theta))
             ellipse = afwGeom.ellipses.Ellipse(axes, center)
             result1 = measBase.ApertureFluxAlgorithm.computeSincFlux(objImg.getMaskedImage(), ellipse)
 
             self.assertAlmostEqual(math.exp(-0.5*(r1/a)**2) - math.exp(-0.5*(r2/a)**2),
                                    (result2.flux-result1.flux)/flux, 4)
+
 
 class SincCoeffTestCase(unittest.TestCase):
     def setUp(self):
@@ -223,12 +226,12 @@ class SincCoeffTestCase(unittest.TestCase):
         self.assertNotCached(coeff1, coeff2)
 
     def testNoCachingCircular(self):
-        coeff1,coeff2 = self.getCoeffCircle(2*self.radius2) # not self.radius2 because that may be cached
+        coeff1, coeff2 = self.getCoeffCircle(2*self.radius2)  # not self.radius2 because that may be cached
         self.assertNotCached(coeff1, coeff2)
 
     def testWithCaching(self):
         measBase.SincCoeffsF.cache(self.radius1, self.radius2)
-        coeff1,coeff2 = self.getCoeffCircle(self.radius2)
+        coeff1, coeff2 = self.getCoeffCircle(self.radius2)
         self.assertCached(coeff1, coeff2)
 
 
@@ -245,10 +248,9 @@ def suite():
     return unittest.TestSuite(suites)
 
 
-def run(exit = False):
+def run(exit=False):
     """Run the tests"""
     utilsTests.run(suite(), exit)
 
 if __name__ == "__main__":
     run(True)
-

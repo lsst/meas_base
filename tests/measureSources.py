@@ -57,7 +57,7 @@ try:
 except NameError:
     display = False
 
-FwhmPerSigma = 2*math.sqrt(2*math.log(2)) # FWHM for an N(0, 1) Gaussian
+FwhmPerSigma = 2*math.sqrt(2*math.log(2))  # FWHM for an N(0, 1) Gaussian
 
 def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
     schema = afwTable.SourceTable.makeMinimalSchema()
@@ -91,7 +91,7 @@ class MeasureSourcesTestCase(unittest.TestCase):
         # Create our measuring engine
         #
 
-        radii =  ( 1.0,   5.0,   10.0)  # radii to use
+        radii = (1.0,   5.0,   10.0)  # radii to use
 
         control = measBase.ApertureFluxControl()
         control.radii = radii
@@ -100,7 +100,8 @@ class MeasureSourcesTestCase(unittest.TestCase):
         x0, y0 = 1234, 5678
         exp.setXY0(afwGeom.Point2I(x0, y0))
 
-        plugin, cat = makePluginAndCat(measBase.CircularApertureFluxAlgorithm, "test", control, True, centroid="centroid")
+        plugin, cat = makePluginAndCat(measBase.CircularApertureFluxAlgorithm,
+                                       "test", control, True, centroid="centroid")
         source = cat.makeRecord()
         source.set("centroid_x", 30+x0)
         source.set("centroid_y", 50+y0)
@@ -112,8 +113,7 @@ class MeasureSourcesTestCase(unittest.TestCase):
             self.assertAlmostEqual(10.0*math.pi*r*r/currentFlux, 1.0, places=4)
 
     def testPeakLikelihoodFlux(self):
-        """Test measurement with PeakLikelihoodFlux
-        """
+        """Test measurement with PeakLikelihoodFlux."""
         # make and measure a series of exposures containing just one star, approximately centered
         bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.Extent2I(100, 101))
         kernelWidth = 35
@@ -173,7 +173,8 @@ class MeasureSourcesTestCase(unittest.TestCase):
                 exp = afwImage.makeExposure(filteredImage)
                 exp.setPsf(psf)
                 control = measBase.PeakLikelihoodFluxControl()
-                plugin, cat = makePluginAndCat(measBase.PeakLikelihoodFluxAlgorithm, "test", control,centroid="centroid")
+                plugin, cat = makePluginAndCat(measBase.PeakLikelihoodFluxAlgorithm, "test",
+                                               control, centroid="centroid")
                 source = cat.makeRecord()
                 source.set("centroid_x", adjCenter.getX())
                 source.set("centroid_y", adjCenter.getY())
@@ -245,13 +246,13 @@ class MeasureSourcesTestCase(unittest.TestCase):
         mask.set(40, 20, bad)
         mask.set(20, 80, nodata)
         mask.set(30, 30, clipped)
-        mask.Factory(mask, afwGeom.Box2I(afwGeom.Point2I(0,0), afwGeom.Extent2I(3, height))).set(edge)
+        mask.Factory(mask, afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.Extent2I(3, height))).set(edge)
         x0, y0 = 1234, 5678
         exp.setXY0(afwGeom.Point2I(x0, y0))
         control = measBase.PixelFlagsControl()
         # Change the configuration of control to test for clipped mask
         control.masksFpAnywhere = ['CLIPPED']
-        plugin, cat = makePluginAndCat(measBase.PixelFlagsAlgorithm, "test", control,centroid="centroid")
+        plugin, cat = makePluginAndCat(measBase.PixelFlagsAlgorithm, "test", control, centroid="centroid")
         allFlags = [
             "",
             "edge",
@@ -263,18 +264,18 @@ class MeasureSourcesTestCase(unittest.TestCase):
             "crCenter",
             "bad",
             "clipped",
-            ]
+        ]
         for x, y, setFlags in [(1, 50, ['edge']),
                                (40, 20, ['bad']),
-                               (20, 20, ['saturatedCenter', 
+                               (20, 20, ['saturatedCenter',
                                          'saturated']),
                                (20, 22, ['saturated']),
-                               (60, 60, ['interpolatedCenter', 
+                               (60, 60, ['interpolatedCenter',
                                          'interpolated']),
                                (60, 62, ['interpolated']),
                                (20, 80, ['edge']),
                                (30, 30, ['clipped']),
-            ]:
+                               ]:
             foot = afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5)
             source = cat.makeRecord()
             source.setFootprint(foot)
@@ -295,7 +296,7 @@ class MeasureSourcesTestCase(unittest.TestCase):
         source.set("centroid_y", 40)
         source.set("centroid_flag", True)
         source.setFootprint(afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5))
-        self.assertRaises(  
+        self.assertRaises(
             lsst.pex.exceptions.RuntimeError,
             plugin.measure,
             source,
@@ -306,24 +307,24 @@ class MeasureSourcesTestCase(unittest.TestCase):
         # The first test should raise exception because there is no footprint
         source = cat.makeRecord()
         self.assertRaises(
-                lsst.pex.exceptions.RuntimeError,
-                plugin.measure,
-                source,
-                exp,
+            lsst.pex.exceptions.RuntimeError,
+            plugin.measure,
+            source,
+            exp,
         )
         # The second test will raise an error because no peaks are present
-        source.setFootprint(afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)),5))
+        source.setFootprint(afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5))
         self.assertRaises(
-                lsst.pex.exceptions.RuntimeError,
-                plugin.measure,
-                source,
-                exp,
+            lsst.pex.exceptions.RuntimeError,
+            plugin.measure,
+            source,
+            exp,
         )
         # The final test should pass because it detects a peak, we are reusing the location of the
         # clipped bit in the mask plane, so we will check first that it is false, then true
-        source.getFootprint().addPeak(x+x0,y+y0, 100)
+        source.getFootprint().addPeak(x+x0, y+y0, 100)
         self.assertFalse(source.get("test_flag_clipped"), "The clipped flag should be set False")
-        plugin.measure(source,exp)
+        plugin.measure(source, exp)
         self.assertTrue(source.get("test_flag_clipped"), "The clipped flag should be set True")
 
 
