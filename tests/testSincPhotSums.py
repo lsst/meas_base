@@ -29,7 +29,7 @@ import unittest
 
 import numpy
 
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 import lsst.meas.base as measBase
 import lsst.afw.image as afwImage
 import lsst.afw.detection as afwDetection
@@ -98,7 +98,7 @@ def plantSources(bbox, kwid, sky, coordList, addPoissonNoise=True):
     return exposure
 
 
-class sincPhotSums(unittest.TestCase):
+class sincPhotSums(lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.nx = 64
@@ -195,7 +195,7 @@ class sincPhotSums(unittest.TestCase):
                                    (result2.flux-result1.flux)/flux, 4)
 
 
-class SincCoeffTestCase(unittest.TestCase):
+class SincCoeffTestCase(lsst.utils.tests.TestCase):
     def setUp(self):
         self.ellipse = afwEll.Axes(10.0, 5.0, 0.12345)
         self.radius1 = 0.1234
@@ -237,20 +237,13 @@ class SincCoeffTestCase(unittest.TestCase):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    utilsTests.init()
-
-    suites = []
-    suites += unittest.makeSuite(sincPhotSums)
-    suites += unittest.makeSuite(SincCoeffTestCase)
-    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
-    return unittest.TestSuite(suites)
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
 
-def run(exit=False):
-    """Run the tests"""
-    utilsTests.run(suite(), exit)
+def setup_module(module):
+    lsst.utils.tests.init()
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

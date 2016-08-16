@@ -30,7 +30,7 @@ import unittest
 
 import numpy
 
-import lsst.utils.tests as tests
+import lsst.utils.tests
 import lsst.pex.logging as pexLogging
 import lsst.pex.exceptions
 import lsst.daf.base as dafBase
@@ -70,7 +70,7 @@ def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-class MeasureSourcesTestCase(unittest.TestCase):
+class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
     """A test case for Measure"""
 
     def setUp(self):
@@ -378,18 +378,13 @@ def makeFakeImage(bbox, centerList, fluxList, fwhm, var):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    tests.init()
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
-    suites = []
-    suites += unittest.makeSuite(MeasureSourcesTestCase)
-    suites += unittest.makeSuite(tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
 
-def run(exit = False):
-    """Run the tests"""
-    tests.run(suite(), exit)
+def setup_module(module):
+    lsst.utils.tests.init()
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
