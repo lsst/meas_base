@@ -100,8 +100,8 @@ class TransformTestCase(unittest.TestCase):
 
         # Other entries from the source table have not been copied
         for name in ("id", "coord_ra", "coord_dec", "parent"):
-            self.assertTrue(name in inCat.schema)
-            self.assertFalse(name in outCat.schema)
+            self.assertIn(name, inCat.schema)
+            self.assertNotIn(name, outCat.schema)
 
     def testNullTransform(self):
         """The NullTransform passes through nothing"""
