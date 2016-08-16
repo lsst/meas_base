@@ -39,6 +39,7 @@ from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
 # the measured flux lies within 2 sigma of the correct value, which we
 # should expect to fail sometimes.
 
+
 class SdssCentroidTestCase(AlgorithmTestCase):
 
     def setUp(self):
@@ -136,11 +137,11 @@ class SdssCentroidTestCase(AlgorithmTestCase):
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         # cutout a subimage around object in the test image
-        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(self.center), lsst.afw.geom.Extent2I(1,1))
+        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(self.center), lsst.afw.geom.Extent2I(1, 1))
         bbox.grow(20)
         subImage = lsst.afw.image.ExposureF(exposure, bbox)
         # A completely flat image will trigger the no 2nd derivative error
-        subImage.getMaskedImage().getImage().getArray()[:] =  0
+        subImage.getMaskedImage().getImage().getArray()[:] = 0
         task.measure(catalog, subImage)
         self.assertTrue(catalog[0].get("base_SdssCentroid_flag"))
         self.assertTrue(catalog[0].get("base_SdssCentroid_flag_noSecondDerivative"))
@@ -149,11 +150,11 @@ class SdssCentroidTestCase(AlgorithmTestCase):
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         # cutout a subimage around the object in the test image
-        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(self.center), lsst.afw.geom.Extent2I(1,1))
+        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(self.center), lsst.afw.geom.Extent2I(1, 1))
         bbox.grow(20)
         subImage = lsst.afw.image.ExposureF(exposure, bbox)
         # zero out the central region, which will destroy the maximum
-        subImage.getMaskedImage().getImage().getArray()[18:22,18:22] = 0
+        subImage.getMaskedImage().getImage().getArray()[18:22, 18:22] = 0
         task.measure(catalog, subImage)
         self.assertTrue(catalog[0].get("base_SdssCentroid_flag"))
         self.assertTrue(catalog[0].get("base_SdssCentroid_flag_notAtMaximum"))
@@ -178,6 +179,7 @@ def suite():
     suites += unittest.makeSuite(SdssCentroidTransformTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
+
 
 def run(shouldExit=False):
     """Run the tests"""

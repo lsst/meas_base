@@ -33,7 +33,9 @@ import lsst.meas.base.tests
 from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 
+
 class ScaledApertureFluxTestCase(AlgorithmTestCase):
+
     def setUp(self):
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0),
@@ -136,6 +138,7 @@ def suite():
     suites += unittest.makeSuite(ScaledApertureFluxTransformTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
+
 
 def run(shouldExit=False):
     """Run the tests"""

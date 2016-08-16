@@ -30,6 +30,7 @@ import lsst.meas.base.tests
 
 numpy.random.seed(1234)
 
+
 class PixelFlagsTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
     def setUp(self):
@@ -59,6 +60,7 @@ class PixelFlagsTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         self.assertFalse(record.get("base_PixelFlags_flag_crCenter"))
         self.assertFalse(record.get("base_PixelFlags_flag_bad"))
 
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
@@ -68,6 +70,7 @@ def suite():
     suites += unittest.makeSuite(PixelFlagsTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
+
 
 def run(shouldExit=False):
     """Run the tests"""

@@ -31,6 +31,7 @@ import lsst.meas.base
 import lsst.meas.base.tests
 import lsst.utils.tests
 
+
 class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
     def setUp(self):
@@ -114,7 +115,7 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         self.config.plugins["base_SdssShape"].doMeasurePsf = True
         task = self.makeSingleFrameMeasurementTask("base_SdssShape", config=self.config)
         exposure, catalog = self.dataset.realize(10.0, task.schema)
-        exposure.setPsf(None) # Set Psf to None to test no psf case
+        exposure.setPsf(None)  # Set Psf to None to test no psf case
         task.run(exposure, catalog)
         key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
         for record in catalog:
@@ -182,6 +183,7 @@ class SdssShapeTransformTestCase(lsst.meas.base.tests.FluxTransformTestCase,
 
 class PsfSdssShapeTransformTestCase(SdssShapeTransformTestCase):
     testPsf = False
+
     def makeSdssShapeControl(self):
         ctrl = lsst.meas.base.SdssShapeControl()
         ctrl.doMeasurePsf = False
@@ -189,8 +191,11 @@ class PsfSdssShapeTransformTestCase(SdssShapeTransformTestCase):
     controlClass = makeSdssShapeControl
 
 # The "Z" prefix on the class name is a work around for DM-6998.
+
+
 class ZMemoryTestCase(lsst.utils.tests.MemoryTestCase):
     pass
+
 
 def setup_module(module):
     lsst.utils.tests.init()

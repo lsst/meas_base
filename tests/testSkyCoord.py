@@ -26,6 +26,7 @@ import unittest
 import lsst.utils.tests
 import lsst.meas.base.tests
 
+
 class SkyCoordTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
     def setUp(self):
@@ -49,6 +50,7 @@ class SkyCoordTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         self.assertClose(position.getX(), record.get("truth_x"), rtol=1E-8)
         self.assertClose(position.getY(), record.get("truth_y"), rtol=1E-8)
 
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
@@ -58,6 +60,7 @@ def suite():
     suites += unittest.makeSuite(SkyCoordTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
+
 
 def run(shouldExit=False):
     """Run the tests"""
