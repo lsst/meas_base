@@ -30,6 +30,7 @@ import lsst.utils.tests
 from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 
+
 class GaussianFluxTestCase(AlgorithmTestCase):
 
     def setUp(self):
@@ -96,8 +97,8 @@ class GaussianFluxTestCase(AlgorithmTestCase):
         measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs())
         measDataset = self.dataset.transform(measWcs)
         exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
-        refWcs=self.dataset.exposure.getWcs()
-        refCat=self.dataset.catalog
+        refWcs = self.dataset.exposure.getWcs()
+        refCat = self.dataset.catalog
         measCat = task.generateMeasCat(exposure, refCat, refWcs)
         task.attachTransformedFootprints(measCat, refCat, exposure, refWcs)
         task.run(measCat, exposure, refCat, refWcs)
@@ -113,6 +114,7 @@ class GaussianFluxTestCase(AlgorithmTestCase):
             self.assertClose(measRecord.get("base_GaussianFlux_flux"), truthCatalog.get("truth_flux"),
                              rtol=0.3)
             self.assertLess(measRecord.get("base_GaussianFlux_fluxSigma"), 500.0)
+
 
 class GaussianFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper):
     controlClass = lsst.meas.base.GaussianFluxControl
@@ -132,6 +134,7 @@ def suite():
     suites += unittest.makeSuite(GaussianFluxTransformTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
+
 
 def run(shouldExit=False):
     """Run the tests"""
