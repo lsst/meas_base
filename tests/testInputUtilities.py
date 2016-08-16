@@ -29,7 +29,7 @@ import lsst.utils.tests
 import lsst.pex.exceptions
 
 
-class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase):
+class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testFlagAliases(self):
         """Test that we get flag aliases to the slot centroid and shape algorithms when we
@@ -87,20 +87,13 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         self.assertRaises(lsst.pex.exceptions.LogicError, self.makeSingleFrameMeasurementTask, config=config)
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(InputUtilitiesTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-
-    return unittest.TestSuite(suites)
-
-
-def run(exit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), exit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

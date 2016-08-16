@@ -1,6 +1,6 @@
 
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 
 import lsst.meas.base.afterburner as afterBurner
 import lsst.afw.table as afwTable
@@ -109,7 +109,7 @@ class DependentAb(afterBurner.AfterburnerPlugin):
         measRecord.set(self.failKey, True)
 
 
-class AfterburnerTest(unittest.TestCase):
+class AfterburnerTest(lsst.utils.tests.TestCase):
     """Test the after burner framework, running only the plugins defined above."""
 
     def setUp(self):
@@ -155,23 +155,13 @@ class AfterburnerTest(unittest.TestCase):
 ##########################################################################
 
 
-def suite():
-    """
-    Returns a suite containing all the test cases in this module.
-    """
-    utilsTests.init()
-
-    suites = []
-    suites += unittest.makeSuite(AfterburnerTest)
-    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
-    return unittest.TestSuite(suites)
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
 
-def run(exit=False):
-    """
-    Run the utilsTests
-    """
-    utilsTests.run(suite(), exit)
+def setup_module(module):
+    lsst.utils.tests.init()
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
