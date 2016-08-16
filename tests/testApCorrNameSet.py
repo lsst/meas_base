@@ -27,7 +27,7 @@ import lsst.utils.tests
 import lsst.meas.base
 
 
-class ApCorrNameTestCase(unittest.TestCase):
+class ApCorrNameTestCase(lsst.utils.tests.TestCase):
 
     def testDefaultNames(self):
         apCorrSet = lsst.meas.base.getApCorrNameSet()
