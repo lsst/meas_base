@@ -23,11 +23,6 @@
 """
 Tests for measuring sources using the meas_base framework
 
-Run with:
-   python measureSources.py
-or
-   python
-   >>> import measureSources; measureSources.run()
 """
 import itertools
 import math
