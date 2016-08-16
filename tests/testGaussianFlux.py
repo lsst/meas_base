@@ -31,7 +31,7 @@ from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 
 
-class GaussianFluxTestCase(AlgorithmTestCase):
+class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
@@ -116,7 +116,8 @@ class GaussianFluxTestCase(AlgorithmTestCase):
             self.assertLess(measRecord.get("base_GaussianFlux_fluxSigma"), 500.0)
 
 
-class GaussianFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper):
+class GaussianFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,
+                                    lsst.utils.tests.TestCase):
     controlClass = lsst.meas.base.GaussianFluxControl
     algorithmClass = lsst.meas.base.GaussianFluxAlgorithm
     transformClass = lsst.meas.base.GaussianFluxTransform
@@ -124,21 +125,13 @@ class GaussianFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTran
     forcedPlugins = ('base_GaussianFlux',)
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(GaussianFluxTestCase)
-    suites += unittest.makeSuite(GaussianFluxTransformTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
