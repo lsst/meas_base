@@ -29,7 +29,7 @@ import itertools
 from collections import namedtuple
 
 import unittest
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
 
 import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
@@ -37,7 +37,6 @@ import lsst.afw.image as afwImage
 import lsst.afw.coord as afwCoord
 import lsst.afw.detection as afwDetection
 import lsst.meas.base as measBase
-import lsst.pex.exceptions as pexExcept
 
 from lsst.afw.geom.polygon import Polygon
 
@@ -63,28 +62,28 @@ def ccdVennDiagram(exp, showImage=True, legendLocation='best'):
     # Create the figure object
     fig = plt.figure()
     # Use all the built in matplotib line style attributes to create a list of the possible styles
-    linestyles = ['solid','dashed','dashdot','dotted']
-    colors = ['b','g','r','c','m','y','k']
+    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']
+    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
     # Calculate the cartisian product of the styles, and randomize the order, to help each CCD get
     # it's own color
-    pcomb = np.random.permutation(list(itertools.product(colors,linestyles)))
+    pcomb = np.random.permutation(list(itertools.product(colors, linestyles)))
     # Filter out a black solid box, as that will be the style of the given exp object
-    pcomb = pcomb[((pcomb[:,0] == 'k') * (pcomb[:,1] == 'solid')) == False]
+    pcomb = pcomb[((pcomb[:, 0] == 'k') * (pcomb[:, 1] == 'solid')) == False]
     # Get the image properties
     origin = afwGeom.PointD(exp.getXY0())
     mainBox = exp.getBBox().getCorners()
     # Plot the exposure
-    plt.gca().add_patch(patches.Rectangle((0,0),*list(mainBox[2]-mainBox[0]), fill=False, label="exposure"))
+    plt.gca().add_patch(patches.Rectangle((0, 0), *list(mainBox[2]-mainBox[0]), fill=False, label="exposure"))
     # Grab all of the CCDs that went into creating the exposure
     ccds = exp.getInfo().getCoaddInputs().ccds
     # Loop over and plot the extents of each ccd
-    for i,ccd in enumerate(ccds):
+    for i, ccd in enumerate(ccds):
         ccdBox = afwGeom.Box2D(ccd.getBBox())
         ccdCorners = ccdBox.getCorners()
-        coaddCorners = [exp.getWcs().skyToPixel(ccd.getWcs().pixelToSky(point)) + \
+        coaddCorners = [exp.getWcs().skyToPixel(ccd.getWcs().pixelToSky(point)) +
                         (afwGeom.PointD() - origin) for point in ccdCorners]
         plt.gca().add_patch(patches.Rectangle(coaddCorners[0], *list(coaddCorners[2]-coaddCorners[0]),
-                            fill=False, color=pcomb[i][0], ls=pcomb[i][1], label="CCD{}".format(i)))
+                                              fill=False, color=pcomb[i][0], ls=pcomb[i][1], label="CCD{}".format(i)))
     # If showImage is true, plot the data contained in exp as well as the boundrys
     if showImage:
         plt.imshow(exp.getMaskedImage().getArrays()[0], cmap='Greys', origin='lower')
@@ -100,15 +99,17 @@ def ccdVennDiagram(exp, showImage=True, legendLocation='best'):
     fig.canvas.draw()
     plt.show()
 
+
 class InputCountTest(unittest.TestCase):
+
     def testInputCounts(self, showPlot=False):
         # Generate a simulated coadd of four overlapping-but-offset CCDs.
         # Populate it with three sources.
         # Demonstrate that we can correctly recover the number of images which
         # contribute to each source.
 
-        size = 20 # Size of images (pixels)
-        value = 100.0 # Source flux
+        size = 20  # Size of images (pixels)
+        value = 100.0  # Source flux
 
         ccdPositions = [
             afwGeom.Point2D(8, 0),
@@ -250,18 +251,15 @@ class InputCountTest(unittest.TestCase):
 
 ##############################################################################################################
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    utilsTests.init()
 
-    suites = []
-    suites += unittest.makeSuite(InputCountTest)
-    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
-    return unittest.TestSuite(suites)
+def setup_module(module):
+    lsst.utils.tests.init()
 
-def run(exit = False):
-    """Run the utilsTests"""
-    utilsTests.run(suite(), exit)
+
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
+
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
