@@ -57,7 +57,7 @@ class NoiseReplacerTestPlugin(lsst.meas.base.SingleFramePlugin):
         measRecord.set(self.outsideKey, outsideFlux)
 
 
-class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase):
+class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
@@ -92,20 +92,13 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         del self.dataset
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(NoiseReplacerTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

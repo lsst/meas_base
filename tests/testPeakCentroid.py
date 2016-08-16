@@ -49,7 +49,7 @@ def onlyLogFatal(log):
         log.setThreshold(oldLevel)
 
 
-class SingleFramePeakCentroidTestCase(AlgorithmTestCase,lsst.utils.tests.TestCase):
+class SingleFramePeakCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
@@ -93,7 +93,8 @@ class SingleFramePeakCentroidTestCase(AlgorithmTestCase,lsst.utils.tests.TestCas
 
 
 class SingleFramePeakCentroidTransformTestCase(CentroidTransformTestCase,
-                                               SingleFramePluginTransformSetupHelper):
+                                               SingleFramePluginTransformSetupHelper,
+                                               lsst.utils.tests.TestCase):
 
     class SingleFramePeakCentroidPluginFactory(object):
         """
@@ -112,7 +113,8 @@ class SingleFramePeakCentroidTransformTestCase(CentroidTransformTestCase,
 
 
 class ForcedPeakCentroidTransformTestCase(CentroidTransformTestCase,
-                                          ForcedPluginTransformSetupHelper):
+                                          ForcedPluginTransformSetupHelper,
+                                          lsst.utils.tests.TestCase):
     controlClass = lsst.meas.base.ForcedPeakCentroidConfig
     algorithmClass = lsst.meas.base.ForcedPeakCentroidPlugin
     transformClass = lsst.meas.base.SimpleCentroidTransform
@@ -120,22 +122,13 @@ class ForcedPeakCentroidTransformTestCase(CentroidTransformTestCase,
     forcedPlugins = ("base_PeakCentroid",)
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(SingleFramePeakCentroidTestCase)
-    suites += unittest.makeSuite(SingleFramePeakCentroidTransformTestCase)
-    suites += unittest.makeSuite(ForcedPeakCentroidTransformTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
