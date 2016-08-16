@@ -29,7 +29,9 @@ import lsst.meas.base.tests
 from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 
+
 class NaiveCentroidTestCase(AlgorithmTestCase):
+
     def setUp(self):
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
@@ -53,6 +55,7 @@ class NaiveCentroidTestCase(AlgorithmTestCase):
         self.assertClose(x, self.center.getX(), atol=None, rtol=.02)
         self.assertClose(y, self.center.getY(), atol=None, rtol=.02)
 
+
 class NaiveCentroidTransformTestCase(CentroidTransformTestCase, SingleFramePluginTransformSetupHelper):
     controlClass = lsst.meas.base.NaiveCentroidControl
     algorithmClass = lsst.meas.base.NaiveCentroidAlgorithm
@@ -72,6 +75,7 @@ def suite():
     suites += unittest.makeSuite(NaiveCentroidTransformTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
+
 
 def run(shouldExit=False):
     """Run the tests"""

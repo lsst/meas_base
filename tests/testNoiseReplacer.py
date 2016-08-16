@@ -32,6 +32,7 @@ import lsst.meas.base.tests
 
 numpy.random.seed(1234)
 
+
 @lsst.meas.base.register("test_NoiseReplacer")
 class NoiseReplacerTestPlugin(lsst.meas.base.SingleFramePlugin):
     """A measurement plugin that simply sums flux inside and outside the source's footprint."""
@@ -90,6 +91,7 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         del self.bbox
         del self.dataset
 
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
 
@@ -99,6 +101,7 @@ def suite():
     suites += unittest.makeSuite(NoiseReplacerTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
+
 
 def run(shouldExit=False):
     """Run the tests"""

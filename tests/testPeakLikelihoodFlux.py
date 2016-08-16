@@ -28,6 +28,7 @@ import lsst.utils.tests
 
 from lsst.meas.base.tests import FluxTransformTestCase, SingleFramePluginTransformSetupHelper
 
+
 class PeakLikelihoodFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper):
     controlClass = lsst.meas.base.PeakLikelihoodFluxControl
     algorithmClass = lsst.meas.base.PeakLikelihoodFluxAlgorithm
@@ -45,6 +46,7 @@ def suite():
     suites += unittest.makeSuite(PeakLikelihoodFluxTransformTestCase)
     suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
     return unittest.TestSuite(suites)
+
 
 def run(shouldExit=False):
     """Run the tests"""
