@@ -23,8 +23,6 @@
 
 import unittest
 
-import numpy
-
 import lsst.afw.geom
 import lsst.meas.base.tests
 import lsst.utils.tests
@@ -54,8 +52,7 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase):
                          "base_SdssShape_flag")
 
     def testCentroidFlagAliases(self):
-        """Test that we setup the right aliases when using centroid algorithms to feed each other.
-        """
+        """Test that we setup the right aliases when using centroid algorithms to feed each other."""
         config = self.makeSingleFrameMeasurementConfig("base_NaiveCentroid", ["base_SdssCentroid"])
         config.slots.centroid = "base_SdssCentroid"
         config.slots.shape = None
@@ -100,7 +97,8 @@ def suite():
 
     return unittest.TestSuite(suites)
 
-def run(exit = False):
+
+def run(exit=False):
     """Run the tests"""
     lsst.utils.tests.run(suite(), exit)
 

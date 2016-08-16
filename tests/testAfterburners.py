@@ -1,4 +1,3 @@
-import numpy as np
 
 import unittest
 import lsst.utils.tests as utilsTests
@@ -9,11 +8,11 @@ from lsst.meas.base.pluginRegistry import register
 from lsst.meas.base.baseLib import MeasurementError
 from lsst.meas.base import FlagHandler
 
+
 @register("afterburnerFail")
 class FailAb(afterBurner.AfterburnerPlugin):
-    '''
-    Afterburner plugin which is guaranteed to fail, testing the failure framework
-    '''
+    """Afterburner plugin which is guaranteed to fail, testing the failure framework."""
+
     @classmethod
     def getExecutionOrder(cls):
         return cls.DEFAULT_AFTERBURNER
@@ -28,12 +27,15 @@ class FailAb(afterBurner.AfterburnerPlugin):
     def fail(self, measRecord, error=None):
         measRecord.set(self.failKey, True)
 
+
 @register("singleRecordAfterburner")
 class SingleRecordAb(afterBurner.AfterburnerPlugin):
-    '''
-    Afterburner plugin which works in single mode. It takes a single record, reads a value, squares it, and
+    """Afterburner plugin which works in single mode."""
+
+    """
+    It takes a single record, reads a value, squares it, and
     writes out the results to the record
-    '''
+    """
     @classmethod
     def getExecutionOrder(cls):
         return cls.DEFAULT_AFTERBURNER
@@ -50,13 +52,16 @@ class SingleRecordAb(afterBurner.AfterburnerPlugin):
     def fail(self, measRecord, error=None):
         measRecord.set(self.failKey, True)
 
+
 @register("multiRecordAfterburner")
 class MultiRecordAb(afterBurner.AfterburnerPlugin):
-    '''
-    Afterburner plugin to test the framework in multimode. This plugin takes the whole source catalog at
+    """Afterburner plugin to test the framework in multimode."""
+
+    """
+    This plugin takes the whole source catalog at
     once, and loops over the catalog internally. The algorithm simply reads a value, cubes it, and writes the
     results out to the table
-    '''
+    """
     plugType = 'multi'
 
     @classmethod
@@ -77,12 +82,15 @@ class MultiRecordAb(afterBurner.AfterburnerPlugin):
         for rec in catalog:
             value = rec.set(self.failKey, True)
 
+
 @register("dependentAfterburner")
 class DependentAb(afterBurner.AfterburnerPlugin):
-    '''
-    Afterburner plugin to test the runlevel resolution. This plugin takes in single records, reads a value
+    """Afterburner plugin to test the runlevel resolution."""
+
+    """
+    This plugin takes in single records, reads a value
     from a previous plugin computes a square root, and writes the results to the table.
-    '''
+    """
     @classmethod
     def getExecutionOrder(cls):
         return cls.DEFAULT_AFTERBURNER + 1
@@ -100,10 +108,10 @@ class DependentAb(afterBurner.AfterburnerPlugin):
     def fail(self, measRecord, error=None):
         measRecord.set(self.failKey, True)
 
+
 class AfterburnerTest(unittest.TestCase):
-    '''
-    Test the after burner framework, running only the plugins defined above
-    '''
+    """Test the after burner framework, running only the plugins defined above."""
+
     def setUp(self):
         # Create a schema object, and populate it with a field to simulate results from measurements on an
         # image
@@ -112,7 +120,7 @@ class AfterburnerTest(unittest.TestCase):
         # Instantiate a config object adding each of the above plugins, and use it to create a task
         abConfig = afterBurner.AfterburnerConfig()
         abConfig.plugins.names = ["afterburnerFail", "singleRecordAfterburner",
-                "multiRecordAfterburner", "dependentAfterburner"]
+                                  "multiRecordAfterburner", "dependentAfterburner"]
         abTask = afterBurner.AfterburnerTask(schema=schema, config=abConfig)
         # Create a catalog with five sources as input to the task
         self.catalog = afwTable.SourceCatalog(schema)
@@ -144,13 +152,13 @@ class AfterburnerTest(unittest.TestCase):
     def tearDown(self):
         del self.catalog, self.numObjects,
 
-###########################################################################################################################
+##########################################################################
 
 
 def suite():
-    '''
+    """
     Returns a suite containing all the test cases in this module.
-    '''
+    """
     utilsTests.init()
 
     suites = []
@@ -160,9 +168,9 @@ def suite():
 
 
 def run(exit=False):
-    '''
+    """
     Run the utilsTests
-    '''
+    """
     utilsTests.run(suite(), exit)
 
 if __name__ == "__main__":
