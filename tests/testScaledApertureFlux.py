@@ -34,7 +34,7 @@ from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 
 
-class ScaledApertureFluxTestCase(AlgorithmTestCase):
+class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
@@ -119,7 +119,9 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase):
         self.assertTrue(catalog[0].get("base_ScaledApertureFlux_flag_sincCoeffsTruncated"))
 
 
-class ScaledApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper):
+class ScaledApertureFluxTransformTestCase(FluxTransformTestCase,
+                                          SingleFramePluginTransformSetupHelper,
+                                          lsst.utils.tests.TestCase):
     controlClass = lsst.meas.base.ScaledApertureFluxControl
     algorithmClass = lsst.meas.base.ScaledApertureFluxAlgorithm
     transformClass = lsst.meas.base.ScaledApertureFluxTransform
@@ -128,21 +130,13 @@ class ScaledApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePlug
     forcedPlugins = ('base_ScaledApertureFlux',)
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(ScaledApertureFluxTestCase)
-    suites += unittest.makeSuite(ScaledApertureFluxTransformTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

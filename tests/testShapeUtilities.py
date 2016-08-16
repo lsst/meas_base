@@ -46,7 +46,8 @@ class shapeTransformMatrixTestCase(lsst.utils.tests.TestCase):
         e = lsst.afw.geom.ellipses.Quadrupole(numpy.random.random(), numpy.random.random(),
                                               numpy.random.random())
         numpy.testing.assert_array_almost_equal(numpy.dot(lsst.meas.base.makeShapeTransformMatrix(l),
-                                                          e.getParameterVector()), e.transform(l).getParameterVector())
+                                                          e.getParameterVector()),
+                                                e.transform(l).getParameterVector())
 
     def testVales(self):
         # Test that the analytically-derived correct values are computed
@@ -66,20 +67,13 @@ class shapeTransformMatrixTestCase(lsst.utils.tests.TestCase):
         self.assertEqual(m[2, 2], l[0, 0]*l[1, 1] + l[0, 1]*l[1, 0])
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(shapeTransformMatrixTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-
-    return unittest.TestSuite(suites)
-
-
-def run(exit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), exit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

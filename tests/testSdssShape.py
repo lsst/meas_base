@@ -32,7 +32,7 @@ import lsst.meas.base.tests
 import lsst.utils.tests
 
 
-class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase):
+class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
@@ -105,10 +105,10 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         for record in catalog:
             result = record.get(key)
             self._checkShape(result, record)
-        self.assertFalse("base_SdssShape_psf_xx" in catalog.schema)
-        self.assertFalse("base_SdssShape_psf_yy" in catalog.schema)
-        self.assertFalse("base_SdssShape_psf_xy" in catalog.schema)
-        self.assertFalse("base_SdssShape_flag_psf" in catalog.schema)
+        self.assertNotIn("base_SdssShape_psf_xx", catalog.schema)
+        self.assertNotIn("base_SdssShape_psf_yy", catalog.schema)
+        self.assertNotIn("base_SdssShape_psf_xy", catalog.schema)
+        self.assertNotIn("base_SdssShape_flag_psf", catalog.schema)
 
     def testMeasureBadPsf(self):
         """Test that we measure shapes correctly and set a flag with the PSF is unavailable."""
@@ -126,7 +126,8 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
 class SdssShapeTransformTestCase(lsst.meas.base.tests.FluxTransformTestCase,
                                  lsst.meas.base.tests.CentroidTransformTestCase,
-                                 lsst.meas.base.tests.SingleFramePluginTransformSetupHelper):
+                                 lsst.meas.base.tests.SingleFramePluginTransformSetupHelper,
+                                 lsst.utils.tests.TestCase):
     name = "sdssShape"
     controlClass = lsst.meas.base.SdssShapeControl
     algorithmClass = lsst.meas.base.SdssShapeAlgorithm
@@ -181,7 +182,7 @@ class SdssShapeTransformTestCase(lsst.meas.base.tests.FluxTransformTestCase,
             self.assertNotIn(inSrc.schema.join(name, "flag", "psf"), inSrc.schema)
 
 
-class PsfSdssShapeTransformTestCase(SdssShapeTransformTestCase):
+class PsfSdssShapeTransformTestCase(SdssShapeTransformTestCase, lsst.utils.tests.TestCase):
     testPsf = False
 
     def makeSdssShapeControl(self):
@@ -190,10 +191,8 @@ class PsfSdssShapeTransformTestCase(SdssShapeTransformTestCase):
         return ctrl
     controlClass = makeSdssShapeControl
 
-# The "Z" prefix on the class name is a work around for DM-6998.
 
-
-class ZMemoryTestCase(lsst.utils.tests.MemoryTestCase):
+class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass
 
 
@@ -201,5 +200,5 @@ def setup_module(module):
     lsst.utils.tests.init()
 
 if __name__ == "__main__":
-    setup_module(sys.modules[__name__])
+    lsst.utils.tests.init()
     unittest.main()
