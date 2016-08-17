@@ -58,7 +58,7 @@ class SillyCentroidConfig(pexConfig.Config):
     pass
 
 
-class TransformTestCase(unittest.TestCase):
+class TransformTestCase(lsst.utils.tests.TestCase):
     pluginName = "base_SillyCentroid"
     centroidPosition = (1.0, -1.0)
 
@@ -144,7 +144,7 @@ class TransformTestCase(unittest.TestCase):
         self._checkSillyOutputs(inCat, outCat)
 
 
-class AlgorithmConfigurationTestCase(unittest.TestCase):
+class AlgorithmConfigurationTestCase(lsst.utils.tests.TestCase):
 
     def testDefaultTransform(self):
         """By default, we perform no transformations"""
@@ -168,13 +168,12 @@ class AlgorithmConfigurationTestCase(unittest.TestCase):
         self.assertEqual(singleFrame.getTransformClass(), measBase.PassThroughTransform)
 
 
-def setup_module(module):
-    lsst.utils.tests.init()
-
-
 class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass
 
+
+def setup_module(module):
+    lsst.utils.tests.init()
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

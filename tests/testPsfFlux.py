@@ -23,7 +23,7 @@
 
 import unittest
 
-import numpy
+import numpy as np
 
 import lsst.afw.geom
 import lsst.afw.image
@@ -66,7 +66,7 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         imageArray = exposure.getMaskedImage().getImage().getArray()
         maskArray = exposure.getMaskedImage().getMask().getArray()
         badMask = exposure.getMaskedImage().getMask().getPlaneBitMask("BAD")
-        imageArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] = numpy.inf
+        imageArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] = np.inf
         maskArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] |= badMask
         # Should get an infinite value exception, because we didn't mask that one pixel
         self.assertRaises(lsst.meas.base.PixelValueError, algorithm.measure, record, exposure)
@@ -123,15 +123,15 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             fluxes = []
             fluxSigmas = []
             nSamples = 1000
-            for repeat in xrange(nSamples):
+            for repeat in range(nSamples):
                 exposure, catalog = self.dataset.realize(noise*flux, schema)
                 record = catalog[0]
                 algorithm.measure(record, exposure)
                 fluxes.append(record.get("base_PsfFlux_flux"))
                 fluxSigmas.append(record.get("base_PsfFlux_fluxSigma"))
-            fluxMean = numpy.mean(fluxes)
-            fluxSigmaMean = numpy.mean(fluxSigmas)
-            fluxStandardDeviation = numpy.std(fluxes)
+            fluxMean = np.mean(fluxes)
+            fluxSigmaMean = np.mean(fluxSigmas)
+            fluxStandardDeviation = np.std(fluxes)
             self.assertClose(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)   # rng dependent
             self.assertLess(fluxMean - flux, 2.0*fluxSigmaMean / nSamples**0.5)   # rng dependent
 

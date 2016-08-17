@@ -29,7 +29,7 @@ import lsst.meas.base as measBase
 import lsst.meas.base.afterburner as afterburners
 
 
-class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase):
+class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -20),

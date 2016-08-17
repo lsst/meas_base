@@ -22,7 +22,7 @@
 #
 
 import unittest
-import numpy
+import numpy as np
 
 import lsst.utils.tests
 import lsst.meas.base.tests
@@ -47,7 +47,7 @@ def initializeSourceCatalog(schema=None, name=None, flux=None, sigma=None, centr
     return(sourceCat)
 
 
-class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase):
+class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         schema = afwTable.SourceTable.makeMinimalSchema()
@@ -69,9 +69,9 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
     def testAddFields(self):
         # Check that the required fields have been added to the schema
-        self.assertTrue(self.name + "_apCorr" in self.schema.getNames())
-        self.assertTrue(self.name + "_apCorrSigma" in self.schema.getNames())
-        self.assertTrue(self.name + "_flag_apCorr" in self.schema.getNames())
+        self.assertIn(self.name + "_apCorr", self.schema.getNames())
+        self.assertIn(self.name + "_apCorrSigma", self.schema.getNames())
+        self.assertIn(self.name + "_flag_apCorr", self.schema.getNames())
 
     def testSuccessUnflagged(self):
         # Check that the aperture correction flag is set to False if aperture correction was successfully run
@@ -86,8 +86,8 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
         apCorrMap = afwImage.ApCorrMap()
         bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.ExtentI(10, 10))
-        coefficients = numpy.ones((1, 1), dtype=float)
-        coefficients_sigma = numpy.zeros((1, 1), dtype=float)
+        coefficients = np.ones((1, 1), dtype=float)
+        coefficients_sigma = np.zeros((1, 1), dtype=float)
         apCorrMap[fluxName] = ChebyshevBoundedField(bbox, coefficients)
         apCorrMap[fluxSigmaName] = ChebyshevBoundedField(bbox, coefficients_sigma)
         self.ap_corr_task.run(sourceCat, apCorrMap)
@@ -106,8 +106,8 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
         apCorrMap = afwImage.ApCorrMap()
         bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.ExtentI(10, 10))
-        coefficients = -(numpy.ones((1, 1), dtype=float))
-        coefficients_sigma = numpy.zeros((1, 1), dtype=float)
+        coefficients = -(np.ones((1, 1), dtype=float))
+        coefficients_sigma = np.zeros((1, 1), dtype=float)
         apCorrMap[fluxName] = ChebyshevBoundedField(bbox, coefficients)
         apCorrMap[fluxSigmaName] = ChebyshevBoundedField(bbox, coefficients_sigma)
         self.ap_corr_task.run(sourceCat, apCorrMap)
@@ -125,8 +125,8 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
         apCorrMap = afwImage.ApCorrMap()
         bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.ExtentI(10, 10))
-        coefficients = numpy.ones((1, 1), dtype=float)
-        coefficients_sigma = numpy.zeros((1, 1), dtype=float)
+        coefficients = np.ones((1, 1), dtype=float)
+        coefficients_sigma = np.zeros((1, 1), dtype=float)
         apCorrMap[fluxName] = ChebyshevBoundedField(bbox, coefficients)
         apCorrMap[fluxSigmaName] = ChebyshevBoundedField(bbox, coefficients_sigma)
         self.ap_corr_task.run(sourceCat, apCorrMap)
@@ -145,9 +145,9 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
         apCorrMap = afwImage.ApCorrMap()
         bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.ExtentI(10, 10))
-        coefficients = numpy.ones((1, 1), dtype=float)
+        coefficients = np.ones((1, 1), dtype=float)
         coefficients /= 2.
-        coefficients_sigma = numpy.zeros((1, 1), dtype=float)
+        coefficients_sigma = np.zeros((1, 1), dtype=float)
         apCorrMap[fluxName] = ChebyshevBoundedField(bbox, coefficients)
         apCorrMap[fluxSigmaName] = ChebyshevBoundedField(bbox, coefficients_sigma)
         self.ap_corr_task.run(sourceCat, apCorrMap)
@@ -173,8 +173,8 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase):
 
         apCorrMap = afwImage.ApCorrMap()
         bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.ExtentI(10, 10))
-        coefficients = numpy.ones((1, 1), dtype=float)
-        coefficients_sigma = numpy.ones((1, 1), dtype=float)
+        coefficients = np.ones((1, 1), dtype=float)
+        coefficients_sigma = np.ones((1, 1), dtype=float)
         apCorrMap[fluxName] = ChebyshevBoundedField(bbox, coefficients)
         apCorrMap[fluxSigmaName] = ChebyshevBoundedField(bbox, coefficients_sigma)
         self.ap_corr_task.run(sourceCat, apCorrMap)

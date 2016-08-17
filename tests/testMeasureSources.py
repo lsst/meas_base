@@ -28,7 +28,7 @@ import itertools
 import math
 import unittest
 
-import numpy
+import numpy as np
 
 import lsst.utils.tests
 import lsst.pex.logging as pexLogging
@@ -119,7 +119,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         psf = afwDetection.GaussianPsf(kernelWidth, kernelWidth, sigma)
         psfKernel = psf.getLocalKernel()
         psfImage = psf.computeKernelImage()
-        sumPsfSq = numpy.sum(psfImage.getArray()**2)
+        sumPsfSq = np.sum(psfImage.getArray()**2)
         psfSqArr = psfImage.getArray()**2
 
         for flux in (1000, 10000):
@@ -151,7 +151,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
             # again, this is a test of the algorithm
             varView = afwImage.ImageF(unshMImage.getVariance(), kernelBBox)
             varArr = varView.getArray()
-            unfiltPredFluxErr = math.sqrt(numpy.sum(varArr*psfSqArr)) / sumPsfSq
+            unfiltPredFluxErr = math.sqrt(np.sum(varArr*psfSqArr)) / sumPsfSq
             self.assertLess(abs(unfiltPredFluxErr - predFluxErr), predFluxErr * 0.01)
 
             for fracOffset in (afwGeom.Extent2D(0, 0), afwGeom.Extent2D(0.2, -0.3)):

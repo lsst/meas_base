@@ -33,7 +33,7 @@ from lsst.meas.base.tests import AlgorithmTestCase
 from lsst.meas.base.sfm import SingleFrameMeasurementConfig
 
 
-class JacobianTestCase(AlgorithmTestCase):
+class JacobianTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     def setUp(self):
         # Pick arbitrary numbers to create a detector object, and a synthetic
         # dataset. The particular numbers have no special meaning to the test
@@ -86,13 +86,12 @@ class JacobianTestCase(AlgorithmTestCase):
         self.assertAlmostEqual(record.get("base_Jacobian_value"), 1.0200183929088285, 4)
 
 
-class MemoryTester(lsst.utils.tests.MemoryTestCase):
+class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass
 
 
 def setup_module(module):
     lsst.utils.tests.init()
-
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

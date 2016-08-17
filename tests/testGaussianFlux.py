@@ -23,7 +23,7 @@
 
 import unittest
 
-import numpy
+import numpy as np
 
 import lsst.meas.base
 import lsst.utils.tests
@@ -80,15 +80,15 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             fluxes = []
             fluxSigmas = []
             nSamples = 1000
-            for repeat in xrange(nSamples):
+            for repeat in range(nSamples):
                 exposure, catalog = self.dataset.realize(noise*flux, schema)
                 record = catalog[1]
                 algorithm.measure(record, exposure)
                 fluxes.append(record.get("base_GaussianFlux_flux"))
                 fluxSigmas.append(record.get("base_GaussianFlux_fluxSigma"))
-            fluxMean = numpy.mean(fluxes)
-            fluxSigmaMean = numpy.mean(fluxSigmas)
-            fluxStandardDeviation = numpy.std(fluxes)
+            fluxMean = np.mean(fluxes)
+            fluxSigmaMean = np.mean(fluxSigmas)
+            fluxStandardDeviation = np.std(fluxes)
             self.assertClose(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)   # rng dependent
             self.assertLess(fluxMean - flux, 2.0*fluxSigmaMean / nSamples**0.5)   # rng dependent
 

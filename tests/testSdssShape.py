@@ -21,10 +21,9 @@
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
 
-import sys
 import unittest
 
-import numpy
+import numpy as np
 
 import lsst.afw.geom
 import lsst.meas.base
@@ -51,7 +50,7 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         del self.config
 
     def assertFinite(self, value):
-        self.assertTrue(numpy.isfinite(value), msg="%s is not finite" % value)
+        self.assertTrue(np.isfinite(value), msg="%s is not finite" % value)
 
     def _runMeasurementTask(self):
         task = self.makeSingleFrameMeasurementTask("base_SdssShape", config=self.config)
@@ -143,7 +142,7 @@ class SdssShapeTransformTestCase(lsst.meas.base.tests.FluxTransformTestCase,
         for record in records:
             for field in ('xx', 'yy', 'xy', 'xxSigma', 'yySigma', 'xySigma', 'psf_xx', 'psf_yy', 'psf_xy'):
                 if record.schema.join(name, field) in record.schema:
-                    record[record.schema.join(name, field)] = numpy.random.random()
+                    record[record.schema.join(name, field)] = np.random.random()
 
     def _compareFieldsInRecords(self, inSrc, outSrc, name):
         lsst.meas.base.tests.FluxTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
@@ -161,8 +160,8 @@ class SdssShapeTransformTestCase(lsst.meas.base.tests.FluxTransformTestCase,
         self.assertEqual(trInShape.getIxy(), outShape.getShape().getIxy())
 
         m = lsst.meas.base.makeShapeTransformMatrix(xform.getLinear())
-        numpy.testing.assert_array_almost_equal(
-            numpy.dot(numpy.dot(m, inShape.getShapeErr()), m.transpose()), outShape.getShapeErr()
+        np.testing.assert_array_almost_equal(
+            np.dot(np.dot(m, inShape.getShapeErr()), m.transpose()), outShape.getShapeErr()
         )
 
         if self.testPsf:

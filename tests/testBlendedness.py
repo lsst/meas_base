@@ -48,7 +48,7 @@ def onlyLogFatal(log):
         log.setThreshold(oldLevel)
 
 
-class BlendednessTestCase(AlgorithmTestCase):
+class BlendednessTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
@@ -71,8 +71,8 @@ class BlendednessTestCase(AlgorithmTestCase):
         task = self.makeSingleFrameMeasurementTask("base_Blendedness")
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         task.run(exposure, catalog)
-        self.assertTrue(catalog[1].get('base_Blendedness_abs_flux') > 0)
-        self.assertTrue(catalog[2].get('base_Blendedness_abs_flux') > 0)
+        self.assertGreater(catalog[1].get('base_Blendedness_abs_flux'), 0)
+        self.assertGreater(catalog[2].get('base_Blendedness_abs_flux'), 0)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
@@ -81,7 +81,6 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
-
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

@@ -30,7 +30,7 @@ from lsst.afw.cameraGeom.testUtils import DetectorWrapper
 from lsst.meas.base.tests import AlgorithmTestCase
 
 
-class FPPositionTestCase(AlgorithmTestCase):
+class FPPositionTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         # Define point2D object which are distributed about a detector

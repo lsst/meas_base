@@ -23,7 +23,7 @@
 
 import unittest
 
-import numpy
+import numpy as np
 
 import lsst.utils.tests
 import lsst.meas.base.tests
@@ -102,12 +102,12 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                 yList.append(record.get("base_SdssCentroid_y"))
                 xSigmaList.append(record.get("base_SdssCentroid_xSigma"))
                 ySigmaList.append(record.get("base_SdssCentroid_ySigma"))
-            xMean = numpy.mean(xList)
-            yMean = numpy.mean(yList)
-            xSigmaMean = numpy.mean(xSigmaList)
-            ySigmaMean = numpy.mean(ySigmaList)
-            xStandardDeviation = numpy.std(xList)
-            yStandardDeviation = numpy.std(yList)
+            xMean = np.mean(xList)
+            yMean = np.mean(yList)
+            xSigmaMean = np.mean(xSigmaList)
+            ySigmaMean = np.mean(ySigmaList)
+            xStandardDeviation = np.std(xList)
+            yStandardDeviation = np.std(yList)
             self.assertClose(xSigmaMean, xStandardDeviation, rtol=0.2)   # rng dependent
             self.assertClose(ySigmaMean, yStandardDeviation, rtol=0.2)   # rng dependent
             self.assertLess(xMean - x, 3.0*xSigmaMean / nSamples**0.5)   # rng dependent

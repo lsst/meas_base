@@ -23,12 +23,8 @@
 
 import unittest
 
-import numpy
-
 import lsst.utils.tests
 import lsst.meas.base.tests
-
-numpy.random.seed(1234)
 
 
 class PixelFlagsTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):

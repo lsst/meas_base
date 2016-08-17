@@ -100,7 +100,7 @@ def ccdVennDiagram(exp, showImage=True, legendLocation='best'):
     plt.show()
 
 
-class InputCountTest(unittest.TestCase):
+class InputCountTest(lsst.utils.tests.TestCase):
 
     def testInputCounts(self, showPlot=False):
         # Generate a simulated coadd of four overlapping-but-offset CCDs.
@@ -252,13 +252,12 @@ class InputCountTest(unittest.TestCase):
 ##############################################################################################################
 
 
-def setup_module(module):
-    lsst.utils.tests.init()
-
-
 class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass
 
+
+def setup_module(module):
+    lsst.utils.tests.init()
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

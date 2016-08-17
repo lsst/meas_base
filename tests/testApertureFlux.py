@@ -22,7 +22,7 @@
 #
 
 import unittest
-import numpy
+import numpy as np
 
 import lsst.afw.geom
 import lsst.afw.image
@@ -51,8 +51,8 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         the 'naive' definition of the aperture - just test whether the center of each pixel is within
         the circle.
         """
-        x, y = numpy.meshgrid(numpy.arange(self.bbox.getBeginX(), self.bbox.getEndX()),
-                              numpy.arange(self.bbox.getBeginY(), self.bbox.getEndY()))
+        x, y = np.meshgrid(np.arange(self.bbox.getBeginX(), self.bbox.getEndX()),
+                           np.arange(self.bbox.getBeginY(), self.bbox.getEndY()))
         return ((x - position.getX())**2 + (y - position.getY())**2 <= radius**2).sum()
 
     def testNaive(self):
@@ -83,7 +83,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                     if hasattr(image, "getVariance"):
                         self.assertClose(result.fluxSigma, (area*0.25)**0.5)
                     else:
-                        self.assertTrue(numpy.isnan(result.fluxSigma))
+                        self.assertTrue(np.isnan(result.fluxSigma))
                 check(ApertureFluxAlgorithm.computeNaiveFlux, self.exposure.getMaskedImage())
                 check(ApertureFluxAlgorithm.computeNaiveFlux, self.exposure.getMaskedImage().getImage())
                 check(ApertureFluxAlgorithm.computeFlux, self.exposure.getMaskedImage())
@@ -96,7 +96,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             self.ctrl)
         self.assertTrue(invalid.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
         self.assertFalse(invalid.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
-        self.assertTrue(numpy.isnan(invalid.flux))
+        self.assertTrue(np.isnan(invalid.flux))
 
     def testSinc(self):
         positions = [lsst.afw.geom.Point2D(60.0, -60.0),
@@ -122,9 +122,9 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                     self.assertFalse(result.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
                     self.assertFalse(result.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
                     if hasattr(image, "getVariance"):
-                        self.assertFalse(numpy.isnan(result.fluxSigma))
+                        self.assertFalse(np.isnan(result.fluxSigma))
                     else:
-                        self.assertTrue(numpy.isnan(result.fluxSigma))
+                        self.assertTrue(np.isnan(result.fluxSigma))
                 check(ApertureFluxAlgorithm.computeSincFlux, self.exposure.getMaskedImage())
                 check(ApertureFluxAlgorithm.computeSincFlux, self.exposure.getMaskedImage().getImage())
                 check(ApertureFluxAlgorithm.computeFlux, self.exposure.getMaskedImage())
@@ -137,7 +137,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             self.ctrl)
         self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
         self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
-        self.assertTrue(numpy.isnan(invalid1.flux))
+        self.assertTrue(np.isnan(invalid1.flux))
         # test failure conditions when the aperture is not truncated, but the sinc coeffs are
         invalid2 = ApertureFluxAlgorithm.computeSincFlux(
             self.exposure.getMaskedImage().getImage(),
@@ -146,7 +146,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             self.ctrl)
         self.assertFalse(invalid2.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
         self.assertTrue(invalid2.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
-        self.assertFalse(numpy.isnan(invalid2.flux))
+        self.assertFalse(np.isnan(invalid2.flux))
 
 
 class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
@@ -208,8 +208,8 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
                     lastFlux = currentFlux
                     lastFluxSigma = currentFluxSigma
                 else:
-                    self.assertTrue(numpy.isnan(currentFlux))
-                    self.assertTrue(numpy.isnan(currentFluxSigma))
+                    self.assertTrue(np.isnan(currentFlux))
+                    self.assertTrue(np.isnan(currentFluxSigma))
             # When measuring an isolated point source with a sufficiently large aperture, we should
             # recover the known input flux.
             if record.get("truth_isStar") and record.get("parent") == 0:

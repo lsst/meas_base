@@ -21,7 +21,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 """ Unit tests for Python Plugin FlagHandlers and Sample Plugin Example."""
-import numpy
+import numpy as np
 import unittest
 
 import lsst.utils.tests
@@ -121,14 +121,14 @@ class PythonPlugin(SingleFramePlugin):
         measRecord.set(self.fluxKey, flux)
 
         # If there was a nan inside the bounding box, the flux will still be nan
-        if numpy.isnan(flux):
+        if np.isnan(flux):
             raise MeasurementError(self.flagHandler.getDefinition(self.ErrEnum.flag_containsNan).doc,
                                    PythonPlugin.ErrEnum.flag_containsNan)
 
         if self.config.flux0 is not None:
             if self.config.flux0 == 0:
                 raise ZeroDivisionError("self.config.flux0 is zero in divisor")
-            mag = -2.5 * numpy.log10(flux/self.config.flux0)
+            mag = -2.5 * np.log10(flux/self.config.flux0)
             measRecord.set(self.magKey, mag)
 
     def fail(self, measRecord, error=None):
@@ -145,7 +145,7 @@ class PythonPlugin(SingleFramePlugin):
             self.flagHandler.handleFailure(measRecord, error.cpp)
 
 
-class FlagHandlerTestCase(AlgorithmTestCase):
+class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     # Setup a configuration and datasource to be used by the plugin tests
     def setUp(self):
         self.algName = "test_PythonPlugin"
@@ -236,9 +236,9 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
         task.run(cat, exposure)
         source = cat[0]
-        self.assertEqual(source.get(self.algName + "_flag"), False)
-        self.assertEqual(source.get(self.algName + "_flag_containsNan"), False)
-        self.assertEqual(source.get(self.algName + "_flag_edge"), False)
+        self.assertFalse(source.get(self.algName + "_flag"))
+        self.assertFalse(source.get(self.algName + "_flag_containsNan"))
+        self.assertFalse(source.get(self.algName + "_flag_edge"))
 
     def testPluginUnexpectedError(self):
         """
@@ -253,9 +253,9 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         task.log.setThreshold(task.log.FATAL)
         task.run(cat, exposure)
         source = cat[0]
-        self.assertEqual(source.get(self.algName + "_flag"), True)
-        self.assertEqual(source.get(self.algName + "_flag_containsNan"), False)
-        self.assertEqual(source.get(self.algName + "_flag_edge"), False)
+        self.assertTrue(source.get(self.algName + "_flag"))
+        self.assertFalse(source.get(self.algName + "_flag_containsNan"))
+        self.assertFalse(source.get(self.algName + "_flag_edge"))
 
     def testPluginContainsNan(self):
         """
@@ -265,11 +265,11 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
         exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
         source = cat[0]
-        exposure.getMaskedImage().getImage().getArray()[int(source.getY()), int(source.getX())] = numpy.nan
+        exposure.getMaskedImage().getImage().getArray()[int(source.getY()), int(source.getX())] = np.nan
         task.run(cat, exposure)
-        self.assertEqual(source.get(self.algName + "_flag"), True)
-        self.assertEqual(source.get(self.algName + "_flag_containsNan"), True)
-        self.assertEqual(source.get(self.algName + "_flag_edge"), False)
+        self.assertTrue(source.get(self.algName + "_flag"))
+        self.assertTrue(source.get(self.algName + "_flag_containsNan"))
+        self.assertFalse(source.get(self.algName + "_flag_edge"))
 
     def testPluginEdgeError(self):
         """
@@ -283,9 +283,9 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         task.log.setThreshold(task.log.FATAL)
         task.run(cat, exposure)
         source = cat[0]
-        self.assertEqual(source.get(self.algName + "_flag"), True)
-        self.assertEqual(source.get(self.algName + "_flag_containsNan"), False)
-        self.assertEqual(source.get(self.algName + "_flag_edge"), True)
+        self.assertTrue(source.get(self.algName + "_flag"))
+        self.assertFalse(source.get(self.algName + "_flag_containsNan"))
+        self.assertTrue(source.get(self.algName + "_flag_edge"))
 
     def testSafeCentroider(self):
         """
@@ -298,33 +298,33 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         exposure, cat = self.dataset.realize(noise=0.0, schema=schema)
         source = cat[0]
         task.run(cat, exposure)
-        self.assertEqual(source.get(self.algName + "_flag"), False)
+        self.assertFalse(source.get(self.algName + "_flag"))
         flux = source.get("test_PythonPlugin_flux")
-        self.assertFalse(numpy.isnan(flux))
+        self.assertFalse(np.isnan(flux))
 
         # If one of the center coordinates is nan and the centroid slot error flag has
         # not been set, the SafeCentroidExtractor will fail.
-        source.set('truth_x', numpy.nan)
+        source.set('truth_x', np.nan)
         source.set('truth_flag', False)
-        source.set("test_PythonPlugin_flux", numpy.nan)
+        source.set("test_PythonPlugin_flux", np.nan)
         source.set(self.algName + "_flag", False)
         task.run(cat, exposure)
-        self.assertEqual(source.get(self.algName + "_flag"), True)
-        self.assertTrue(numpy.isnan(source.get("test_PythonPlugin_flux")))
+        self.assertTrue(source.get(self.algName + "_flag"))
+        self.assertTrue(np.isnan(source.get("test_PythonPlugin_flux")))
 
         # But if the same conditions occur and the centroid slot error flag is set
         # to true, the SafeCentroidExtractor will succeed and the algorithm will complete.
         # However, the failure flag will also be set.
-        source.set('truth_x', numpy.nan)
+        source.set('truth_x', np.nan)
         source.set('truth_flag', True)
-        source.set("test_PythonPlugin_flux", numpy.nan)
+        source.set("test_PythonPlugin_flux", np.nan)
         source.set(self.algName + "_flag", False)
         task.run(cat, exposure)
-        self.assertEqual(source.get(self.algName + "_flag"), True)
+        self.assertTrue(source.get(self.algName + "_flag"))
         self.assertEqual(source.get("test_PythonPlugin_flux"), flux)
 
 
-class MemoryTester(lsst.utils.tests.MemoryTestCase):
+class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass
 
 

@@ -142,7 +142,7 @@ class VarianceTest(lsst.utils.tests.TestCase):
     def testVariance(self):
         self.task.run(self.catalog, self.exp)
 
-        self.assertTrue(np.abs(self.source.get("base_Variance_value") - self.variance) < self.varianceStd)
+        self.assertLess(np.abs(self.source.get("base_Variance_value") - self.variance), self.varianceStd)
 
         # flag_emptyFootprint should not have been set since the footprint has non-masked pixels at this
         # point.

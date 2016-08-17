@@ -27,7 +27,7 @@
 import math
 import unittest
 
-import numpy
+import numpy as np
 
 import lsst.utils.tests
 import lsst.meas.base as measBase
@@ -80,9 +80,9 @@ def plantSources(bbox, kwid, sky, coordList, addPoissonNoise=True):
 
     # add Poisson noise
     if (addPoissonNoise):
-        numpy.random.seed(seed=1)  # make results reproducible
+        np.random.seed(seed=1)  # make results reproducible
         imgArr = img.getArray()
-        imgArr[:] = numpy.random.poisson(imgArr)
+        imgArr[:] = np.random.poisson(imgArr)
 
     # bundle into a maskedimage and an exposure
     mask = afwImage.MaskU(bbox)
@@ -206,11 +206,11 @@ class SincCoeffTestCase(lsst.utils.tests.TestCase):
         del self.ellipse
 
     def assertCached(self, coeff1, coeff2):
-        self.assertTrue(numpy.all(coeff1.getArray() == coeff2.getArray()))
+        np.testing.assert_array_equal(coeff1.getArray(), coeff2.getArray())
         self.assertEqual(coeff1.getId(), coeff2.getId())
 
     def assertNotCached(self, coeff1, coeff2):
-        self.assertTrue(numpy.all(coeff1.getArray() == coeff2.getArray()))
+        np.testing.assert_array_equal(coeff1.getArray(), coeff2.getArray())
         self.assertNotEqual(coeff1.getId(), coeff2.getId())
 
     def getCoeffCircle(self, radius2):
