@@ -74,7 +74,8 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
                                                        ["base_SdssCentroid", "base_SdssShape"])
         config.slots.centroid = None
         config.slots.shape = "base_SdssShape"
-        self.assertRaises(lsst.pex.exceptions.LogicError, self.makeSingleFrameMeasurementTask, config=config)
+        with self.assertRaises(lsst.pex.exceptions.LogicError):
+            self.makeSingleFrameMeasurementTask(config=config)
 
     def testUnmetShapeDependency(self):
         """Test that we throw an exception (LogicError) when initializing an algorithm
@@ -84,7 +85,8 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
                                                        ["base_SdssCentroid", "base_SdssShape"])
         config.slots.centroid = "base_SdssCentroid"
         config.slots.shape = None
-        self.assertRaises(lsst.pex.exceptions.LogicError, self.makeSingleFrameMeasurementTask, config=config)
+        with self.assertRaises(lsst.pex.exceptions.LogicError):
+            self.makeSingleFrameMeasurementTask(config=config)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):

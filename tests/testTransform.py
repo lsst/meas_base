@@ -106,8 +106,8 @@ class TransformTestCase(lsst.utils.tests.TestCase):
     def testNullTransform(self):
         """The NullTransform passes through nothing"""
         inCat = self._generateCatalog()
-        self.assertRaises(pexExcept.LengthError, self._performTransform,
-                          measBase.NullTransform, inCat, False)
+        with self.assertRaises(pexExcept.LengthError):
+            self._performTransform(measBase.NullTransform, inCat, False)
         outCat = self._performTransform(measBase.NullTransform, inCat)
         self.assertEqual(len(inCat), len(outCat))
         self.assertEqual(outCat.schema.getFieldCount(), 0)
@@ -115,8 +115,8 @@ class TransformTestCase(lsst.utils.tests.TestCase):
     def testPassThroughTransform(self):
         """The PassThroughTransform copies all fields starting with the plugin name"""
         inCat = self._generateCatalog()
-        self.assertRaises(pexExcept.LengthError, self._performTransform,
-                          measBase.PassThroughTransform, inCat, False)
+        with self.assertRaises(pexExcept.LengthError):
+            self._performTransform(measBase.PassThroughTransform, inCat, False)
         outCat = self._performTransform(measBase.PassThroughTransform, inCat)
         self.assertEqual(len(inCat), len(outCat))
         for inSrc, outSrc in zip(inCat, outCat):
@@ -126,8 +126,8 @@ class TransformTestCase(lsst.utils.tests.TestCase):
     def testPythonConfig(self):
         """The Python Config should be automatically converted to Control when calling a C++ transform."""
         inCat = self._generateCatalog()
-        self.assertRaises(pexExcept.LengthError, self._performTransform,
-                          testLib.SillyTransform, inCat, False)
+        with self.assertRaises(pexExcept.LengthError):
+            self._performTransform(testLib.SillyTransform, inCat, False)
         outCat = self._performTransform(testLib.SillyTransform, inCat)
         self._checkSillyOutputs(inCat, outCat)
 

@@ -21,8 +21,9 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 """ Unit tests for Python Plugin FlagHandlers and Sample Plugin Example."""
-import numpy as np
 import unittest
+
+import numpy as np
 
 import lsst.utils.tests
 import lsst.meas.base
@@ -172,12 +173,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         Standalone test to create a flaghandler and call it
         This is not a real world example, just a simple unit test
         """
-        #control = lsst.meas.base.GaussianCentroidControl()
-        #alg = lsst.meas.base.GaussianCentroidAlgorithm
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        #plugin = alg(control, 'test', schema)
-        #cat = lsst.afw.table.SourceCatalog(schema)
-        #subSchema = schema["test"]
 
         # This is a FlagDefinition structure like a plugin might have
         FAILURE = 0

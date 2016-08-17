@@ -22,6 +22,7 @@
 #
 
 import unittest
+
 import numpy as np
 
 import lsst.afw.geom
@@ -69,8 +70,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                 # test that this isn't the same as the sinc flux
                 self.assertNotClose(
                     ApertureFluxAlgorithm.computeSincFlux(self.exposure.getMaskedImage().getImage(),
-                                                          ellipse, self.ctrl).flux,
-                    area)
+                                                          ellipse, self.ctrl).flux, area)
 
                 def check(method, image):
                     """test that all the ways we could invoke naive flux measurement
@@ -93,7 +93,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             self.exposure.getMaskedImage().getImage(),
             lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(12.0, 12.0),
                                            lsst.afw.geom.Point2D(25.0, -60.0)),
-            self.ctrl)
+                                           self.ctrl)
         self.assertTrue(invalid.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
         self.assertFalse(invalid.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
         self.assertTrue(np.isnan(invalid.flux))
@@ -112,8 +112,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                 # test that this isn't the same as the naive flux
                 self.assertNotClose(
                     ApertureFluxAlgorithm.computeNaiveFlux(self.exposure.getMaskedImage().getImage(),
-                                                           ellipse, self.ctrl).flux,
-                    area)
+                                                           ellipse, self.ctrl).flux, area)
 
                 def check(method, image):
                     # test that all the ways we could invoke sinc flux measurement produce the expected result
@@ -134,7 +133,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             self.exposure.getMaskedImage().getImage(),
             lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0),
                                            lsst.afw.geom.Point2D(25.0, -60.0)),
-            self.ctrl)
+                                           self.ctrl)
         self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
         self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
         self.assertTrue(np.isnan(invalid1.flux))
@@ -143,7 +142,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             self.exposure.getMaskedImage().getImage(),
             lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0),
                                            lsst.afw.geom.Point2D(30.0, -60.0)),
-            self.ctrl)
+                                           self.ctrl)
         self.assertFalse(invalid2.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
         self.assertTrue(invalid2.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
         self.assertFalse(np.isnan(invalid2.flux))

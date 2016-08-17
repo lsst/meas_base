@@ -69,7 +69,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         imageArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] = np.inf
         maskArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] |= badMask
         # Should get an infinite value exception, because we didn't mask that one pixel
-        self.assertRaises(lsst.meas.base.PixelValueError, algorithm.measure, record, exposure)
+        with self.assertRaises(lsst.meas.base.PixelValueError):
+            algorithm.measure(record, exposure)
         # If we do mask it, we should get a reasonable result
         ctrl = lsst.meas.base.PsfFluxControl()
         ctrl.badMaskPlanes = ["BAD"]
@@ -106,7 +107,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         algorithm, schema = self.makeAlgorithm()
         exposure, catalog = self.dataset.realize(10.0, schema)
         exposure.setPsf(None)
-        self.assertRaises(lsst.meas.base.FatalAlgorithmError, algorithm.measure, catalog[0], exposure)
+        with self.assertRaises(lsst.meas.base.FatalAlgorithmError):
+            algorithm.measure(catalog[0], exposure)
 
     def testMonteCarlo(self):
         """Test that we get exactly the right answer on an ideal sim with no noise, and that
