@@ -34,7 +34,6 @@ import lsst.afw.table as afwTable
 import lsst.afw.image as afwImage
 import lsst.afw.detection as afwDetection
 import lsst.meas.base as measBase
-import lsst.pex.config as pexConfig
 import lsst.pex.exceptions as pexExcept
 
 try:
@@ -46,18 +45,18 @@ except NameError:
 class VarianceTest(unittest.TestCase):
 
     def setUp(self):
-        size = 128 # size of image (pixels)
-        center = afwGeom.Point2D(size//2, size//2) # object center
-        width = 2.0 # PSF width
-        flux = 10.0 # Flux of object
-        variance = 1.0 # Mean variance value
-        varianceStd = 0.1 # Standard deviation of the variance value
-        
+        size = 128  # size of image (pixels)
+        center = afwGeom.Point2D(size//2, size//2)  # object center
+        width = 2.0  # PSF width
+        flux = 10.0  # Flux of object
+        variance = 1.0  # Mean variance value
+        varianceStd = 0.1  # Standard deviation of the variance value
+
         # Set a seed for predictable randomness
         np.random.seed(300)
 
         # Create a random image to be used as variance plane
-        variancePlane = np.random.normal(variance, varianceStd, size*size).reshape(size,size)
+        variancePlane = np.random.normal(variance, varianceStd, size*size).reshape(size, size)
 
         # Initial setup of an image
         exp = afwImage.ExposureF(size, size)
@@ -66,7 +65,7 @@ class VarianceTest(unittest.TestCase):
         var = exp.getMaskedImage().getVariance()
         image.set(0.0)
         mask.set(0)
-        var.getArray()[:,:] = variancePlane
+        var.getArray()[:, :] = variancePlane
 
         # Put down a PSF
         psfSize = int(6*width + 1)  # Size of PSF image; must be odd
@@ -151,21 +150,19 @@ class VarianceTest(unittest.TestCase):
 
     def testEmptyFootprint(self):
         # Set the pixel mask for all pixels to 'BAD' and remeasure.
-        self.mask.getArray()[:,:] = self.mask.getPlaneBitMask("BAD")
+        self.mask.getArray()[:, :] = self.mask.getPlaneBitMask("BAD")
         self.task.run(self.catalog, self.exp)
 
         # The computed variance should be nan and flag_emptyFootprint should have been set since the footprint
-        #has all masked pixels at this point.
+        # has all masked pixels at this point.
         self.assertTrue(np.isnan(self.source.get("base_Variance_value")))
         self.assertTrue(self.source.get("base_Variance_flag_emptyFootprint"))
+
 
 class BadCentroidTest(unittest.TestCase):
 
     def testBadCentroid(self):
-        """
-        The flag from the centroid slot should propagate to the badCentroid
-        flag on the variance plugin.
-        """
+        """The flag from the centroid slot should propagate to the badCentroid flag on the variance plugin."""
         schema = afwTable.SourceTable.makeMinimalSchema()
         measBase.SingleFramePeakCentroidPlugin(measBase.SingleFramePeakCentroidConfig(),
                                                "centroid", schema, None)
@@ -196,6 +193,7 @@ class BadCentroidTest(unittest.TestCase):
 
 ##############################################################################################################
 
+
 def suite():
     """Returns a suite containing all the test cases in this module."""
     utilsTests.init()
@@ -206,7 +204,8 @@ def suite():
     suites += unittest.makeSuite(utilsTests.MemoryTestCase)
     return unittest.TestSuite(suites)
 
-def run(exit = False):
+
+def run(exit=False):
     """Run the utilsTests"""
     utilsTests.run(suite(), exit)
 
