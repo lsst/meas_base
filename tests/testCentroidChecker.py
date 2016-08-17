@@ -206,5 +206,15 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         self.assertTrue(source.get("base_GaussianCentroid_flag"))
         self.assertTrue(source.get("base_GaussianCentroid_flag_resetToPeak"))
 
+
+class MemoryTester(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
+
 if __name__ == "__main__":
+    lsst.utils.tests.init()
     unittest.main()
