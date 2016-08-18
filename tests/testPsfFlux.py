@@ -21,6 +21,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
 
 import numpy as np
@@ -29,7 +30,6 @@ import lsst.afw.geom
 import lsst.afw.image
 import lsst.afw.table
 import lsst.utils.tests
-import lsst.meas.base.tests
 
 from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
@@ -50,8 +50,7 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         del self.dataset
 
     def makeAlgorithm(self, ctrl=None):
-        """Construct an algorithm (finishing a schema in the process), and return both.
-        """
+        """Construct an algorithm (finishing a schema in the process), and return both."""
         if ctrl is None:
             ctrl = lsst.meas.base.PsfFluxControl()
         schema = lsst.meas.base.tests.TestDataset.makeMinimalSchema()
@@ -102,8 +101,7 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertTrue(record.get("base_PsfFlux_flag_edge"))
 
     def testNoPsf(self):
-        """Test that we raise FatalAlgorithmError when there's no PSF.
-        """
+        """Test that we raise FatalAlgorithmError when there's no PSF."""
         algorithm, schema = self.makeAlgorithm()
         exposure, catalog = self.dataset.realize(10.0, schema)
         exposure.setPsf(None)

@@ -21,6 +21,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 from contextlib import contextmanager
 import unittest
 
@@ -69,9 +70,7 @@ class SingleFramePeakCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCa
         del self.catalog
 
     def testSingleFramePlugin(self):
-        """
-        Check that we recover the correct location of the centroid.
-        """
+        """Check that we recover the correct location of the centroid."""
         self.task.run(self.exposure, self.catalog)
         x = self.catalog[0].get("base_PeakCentroid_x")
         y = self.catalog[0].get("base_PeakCentroid_y")

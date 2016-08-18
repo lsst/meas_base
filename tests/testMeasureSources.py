@@ -24,13 +24,13 @@
 Tests for measuring sources using the meas_base framework
 
 """
+from __future__ import absolute_import, division, print_function
 import itertools
 import math
 import unittest
 
 import numpy as np
 
-import lsst.utils.tests
 import lsst.pex.logging as pexLogging
 import lsst.pex.exceptions
 import lsst.daf.base as dafBase
@@ -40,6 +40,7 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
 import lsst.afw.image as afwImage
 import lsst.meas.base as measBase
+import lsst.utils.tests
 
 try:
     type(verbose)
@@ -53,6 +54,7 @@ except NameError:
     display = False
 
 FwhmPerSigma = 2*math.sqrt(2*math.log(2))  # FWHM for an N(0, 1) Gaussian
+
 
 def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
     schema = afwTable.SourceTable.makeMinimalSchema()
@@ -69,6 +71,7 @@ def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
     return plugin, cat
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 
 class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
     """A test case for Measure"""
@@ -351,6 +354,7 @@ def addStar(image, center, flux, fwhm):
     starImage *= flux / actFlux
 
     image += starImage
+
 
 def makeFakeImage(bbox, centerList, fluxList, fwhm, var):
     """Make a fake image containing a set of stars variance = image + var

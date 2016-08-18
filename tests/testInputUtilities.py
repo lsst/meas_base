@@ -21,12 +21,13 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
 
 import lsst.afw.geom
 import lsst.meas.base.tests
-import lsst.utils.tests
 import lsst.pex.exceptions
+import lsst.utils.tests
 
 
 class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):

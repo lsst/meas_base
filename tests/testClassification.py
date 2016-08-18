@@ -21,6 +21,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
 
 import lsst.utils.tests
@@ -118,13 +119,12 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
         self.assertTrue(runFlagTest(psfFluxSigma=float("NaN")))
 
 
-class MemoryTester(lsst.utils.tests.MemoryTestCase):
+class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass
 
 
 def setup_module(module):
     lsst.utils.tests.init()
-
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

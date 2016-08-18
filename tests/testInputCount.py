@@ -24,6 +24,7 @@
 """
 Tests for InputCounts measurement algorithm
 """
+from __future__ import division, absolute_import, print_function
 import numpy as np
 import itertools
 from collections import namedtuple
@@ -31,14 +32,14 @@ from collections import namedtuple
 import unittest
 import lsst.utils.tests
 
-import lsst.afw.geom as afwGeom
-import lsst.afw.table as afwTable
-import lsst.afw.image as afwImage
 import lsst.afw.coord as afwCoord
 import lsst.afw.detection as afwDetection
+import lsst.afw.geom as afwGeom
+from lsst.afw.geom.polygon import Polygon
+import lsst.afw.image as afwImage
+import lsst.afw.table as afwTable
 import lsst.meas.base as measBase
 
-from lsst.afw.geom.polygon import Polygon
 
 try:
     display
@@ -68,7 +69,7 @@ def ccdVennDiagram(exp, showImage=True, legendLocation='best'):
     # it's own color
     pcomb = np.random.permutation(list(itertools.product(colors, linestyles)))
     # Filter out a black solid box, as that will be the style of the given exp object
-    pcomb = pcomb[((pcomb[:, 0] == 'k') * (pcomb[:, 1] == 'solid')) == False]
+    pcomb = pcomb[((pcomb[:, 0] == 'k') * (pcomb[:, 1] == 'solid')) is False]
     # Get the image properties
     origin = afwGeom.PointD(exp.getXY0())
     mainBox = exp.getBBox().getCorners()
@@ -83,7 +84,8 @@ def ccdVennDiagram(exp, showImage=True, legendLocation='best'):
         coaddCorners = [exp.getWcs().skyToPixel(ccd.getWcs().pixelToSky(point)) +
                         (afwGeom.PointD() - origin) for point in ccdCorners]
         plt.gca().add_patch(patches.Rectangle(coaddCorners[0], *list(coaddCorners[2]-coaddCorners[0]),
-                                              fill=False, color=pcomb[i][0], ls=pcomb[i][1], label="CCD{}".format(i)))
+                                              fill=False, color=pcomb[i][0], ls=pcomb[i][1],
+                                              label="CCD{}".format(i)))
     # If showImage is true, plot the data contained in exp as well as the boundrys
     if showImage:
         plt.imshow(exp.getMaskedImage().getArrays()[0], cmap='Greys', origin='lower')

@@ -24,10 +24,9 @@
 """
 Tests for Variance measurement algorithm
 """
+from __future__ import absolute_import, division, print_function
 import numpy as np
-
 import unittest
-import lsst.utils.tests
 
 import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
@@ -35,6 +34,7 @@ import lsst.afw.image as afwImage
 import lsst.afw.detection as afwDetection
 import lsst.meas.base as measBase
 import lsst.pex.exceptions as pexExcept
+import lsst.utils.tests
 
 try:
     display

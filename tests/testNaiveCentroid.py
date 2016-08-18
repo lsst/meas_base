@@ -21,13 +21,12 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
-
-import lsst.utils.tests
-import lsst.meas.base.tests
 
 from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
+import lsst.utils.tests
 
 
 class NaiveCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):

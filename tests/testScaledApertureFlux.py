@@ -21,17 +21,17 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
 import math
 
 import lsst.afw.geom
 import lsst.afw.image
 import lsst.afw.table
-import lsst.utils.tests
-import lsst.meas.base.tests
-
 from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
+import lsst.utils.tests
+
 
 
 class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
@@ -60,9 +60,7 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         return algorithm, schema
 
     def testSourceFlux(self):
-        """
-        Check that we recover the source flux.
-        """
+        """Check that we recover the source flux."""
         ctrl = lsst.meas.base.ScaledApertureFluxControl()
         algorithm, schema = self.makeAlgorithm(ctrl)
         exposure, catalog = self.dataset.realize(10.0, schema)
@@ -84,9 +82,8 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag_sincCoeffsTruncated"))
 
     def testApertureTruncated(self):
+        """Check that we set a flag appropriately when the aperture overflows the image."""
         """
-        Check that we set a flag appropriately when the aperture overflows the image.
-
         Note that this is a fatal failure: we do not return a useful result, but rather set the global flag.
         """
         ctrl = lsst.meas.base.ScaledApertureFluxControl()
@@ -101,9 +98,8 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertTrue(catalog[0].get("base_ScaledApertureFlux_flag_sincCoeffsTruncated"))
 
     def testSincCoeffsTruncated(self):
+        """Check that we set a flag appropriately when the coefficient image is clipped."""
         """
-        Check that we set a flag appropriately when the coefficient image is clipped.
-
         Note that we don't regard this as a fatal failure, so the global flag
         is not set and we still provide a numeric result.
         """

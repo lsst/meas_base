@@ -21,16 +21,15 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
 
 import numpy as np
 
-import lsst.utils.tests
 import lsst.afw.detection
 import lsst.afw.table
 import lsst.meas.base.tests
-
-np.random.seed(1234)
+import lsst.utils.tests
 
 
 @lsst.meas.base.register("test_NoiseReplacer")

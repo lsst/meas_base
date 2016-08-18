@@ -21,15 +21,15 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
 
 import numpy as np
 
-import lsst.utils.tests
-import lsst.meas.base.tests
 
 from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
+import lsst.utils.tests
 
 # n.b. Some tests here depend on the noise realization in the test data
 # or from the numpy random number generator.
@@ -94,7 +94,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             xSigmaList = []
             ySigmaList = []
             nSamples = 1000
-            for repeat in xrange(nSamples):
+            for repeat in range(nSamples):
                 exposure, catalog = self.dataset.realize(noise*flux, schema)
                 record = catalog[0]
                 algorithm.measure(record, exposure)

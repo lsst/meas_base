@@ -21,6 +21,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import division, absolute_import, print_function
 import unittest
 
 import numpy as np
@@ -48,8 +49,7 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         del self.dataset
 
     def makeAlgorithm(self, ctrl=None):
-        """Construct an algorithm (finishing a schema in the process), and return both.
-        """
+        """Construct an algorithm (finishing a schema in the process), and return both."""
         if ctrl is None:
             ctrl = lsst.meas.base.GaussianFluxControl()
         schema = lsst.meas.base.tests.TestDataset.makeMinimalSchema()

@@ -24,22 +24,23 @@
 
 # -*- lsst-python -*-
 
+from __future__ import absolute_import, division, print_function
 import math
 import unittest
 
 import numpy as np
 
-import lsst.utils.tests
-import lsst.meas.base as measBase
 import lsst.afw.image as afwImage
 import lsst.afw.detection as afwDetection
 import lsst.afw.math as afwMath
 import lsst.afw.geom as afwGeom
 import lsst.afw.geom.ellipses as afwEll
-import lsst.afw.display.ds9 as ds9
+import lsst.meas.base as measBase
+import lsst.utils.tests
 
 try:
     display
+    import lsst.afw.display.ds9 as ds9
 except NameError:
     display = False
     displayCoeffs = False

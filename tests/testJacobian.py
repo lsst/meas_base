@@ -21,13 +21,12 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-
+from __future__ import absolute_import, division, print_function
 import unittest
 
 import lsst.daf.base as dafBase
 import lsst.afw.image as afwImage
 import lsst.utils.tests
-import lsst.meas.base.tests
 
 from lsst.meas.base.tests import AlgorithmTestCase
 from lsst.meas.base.sfm import SingleFrameMeasurementConfig
@@ -48,20 +47,20 @@ class JacobianTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         md = dafBase.PropertyList()
 
         for k, v in (
-                ("EQUINOX", 2000.0),
-                ("CRPIX1", 5353.0),
-                ("CRPIX2", -35.0),
-                ("CD1_1", 0.0),
-                ("CD1_2", -5.611E-05),
-                ("CD2_1", -5.611E-05),
-                ("CD2_2", -0.0),
-                ("CRVAL1", 4.5789875),
-                ("CRVAL2", 16.30004444),
-                ("CUNIT1", 'deg'),
-                ("CUNIT2", 'deg'),
-                ("CTYPE1", 'RA---TAN'),
-                ("CTYPE2", 'DEC--TAN'),
-                ):
+            ("EQUINOX", 2000.0),
+            ("CRPIX1", 5353.0),
+            ("CRPIX2", -35.0),
+            ("CD1_1", 0.0),
+            ("CD1_2", -5.611E-05),
+            ("CD2_1", -5.611E-05),
+            ("CD2_2", -0.0),
+            ("CRVAL1", 4.5789875),
+            ("CRVAL2", 16.30004444),
+            ("CUNIT1", 'deg'),
+            ("CUNIT2", 'deg'),
+            ("CTYPE1", 'RA---TAN'),
+            ("CTYPE2", 'DEC--TAN'),
+        ):
             md.set(k, v)
 
         self.wcs = afwImage.makeWcs(md)
