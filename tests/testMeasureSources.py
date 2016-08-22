@@ -206,24 +206,16 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
             source = cat.makeRecord()
             source.set("centroid_x", edgePos[0])
             source.set("centroid_y", edgePos[1])
-            self.assertRaises(
-                lsst.pex.exceptions.RangeError,
-                plugin.measure,
-                source,
-                exp,
-            )
+            with self.assertRaises(lsst.pex.exceptions.RangeError):
+                plugin.measure(source,exp)
 
         # no PSF should result in failure: flags set
         noPsfExposure = afwImage.ExposureF(filteredImage)
         source = cat.makeRecord()
         source.set("centroid_x", edgePos[0])
         source.set("centroid_y", edgePos[1])
-        self.assertRaises(
-            lsst.pex.exceptions.InvalidParameterError,
-            plugin.measure,
-            source,
-            noPsfExposure,
-        )
+        with self.assertRaises(lsst.pex.exceptions.InvalidParameterError):
+            plugin.measure(source, noPsfExposure)
 
     def testPixelFlags(self):
         width, height = 100, 100
@@ -294,30 +286,18 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         source.set("centroid_y", 40)
         source.set("centroid_flag", True)
         source.setFootprint(afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5))
-        self.assertRaises(
-            lsst.pex.exceptions.RuntimeError,
-            plugin.measure,
-            source,
-            exp,
-        )
+        with self.assertRaises(lsst.pex.exceptions.RuntimeError):
+            plugin.measure(source,exp)
         # Test that if there is no center and centroider that the object should look at the footprint
         plugin, cat = makePluginAndCat(measBase.PixelFlagsAlgorithm, "test", control)
         # The first test should raise exception because there is no footprint
         source = cat.makeRecord()
-        self.assertRaises(
-            lsst.pex.exceptions.RuntimeError,
-            plugin.measure,
-            source,
-            exp,
-        )
+        with self.assertRaises(lsst.pex.exceptions.RuntimeError):
+            plugin.measure(source, exp)
         # The second test will raise an error because no peaks are present
         source.setFootprint(afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5))
-        self.assertRaises(
-            lsst.pex.exceptions.RuntimeError,
-            plugin.measure,
-            source,
-            exp,
-        )
+        with self.assertRaises(lsst.pex.exceptions.RuntimeError):
+            plugin.measure(source, exp)
         # The final test should pass because it detects a peak, we are reusing the location of the
         # clipped bit in the mask plane, so we will check first that it is false, then true
         source.getFootprint().addPeak(x+x0, y+y0, 100)
