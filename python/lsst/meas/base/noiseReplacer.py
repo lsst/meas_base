@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import object
 #!/usr/bin/env python
 #
 # LSST Data Management System
@@ -144,8 +146,7 @@ class NoiseReplacer(object):
         # so they are never available for forced measurements.
 
         # Create in the dict heavies = {id:heavyfootprint}
-        for id in footprints.keys():
-            fp = footprints[id]
+        for id, fp in footprints.items():
             if fp[1].isHeavy():
                 self.heavies[id] = afwDet.cast_HeavyFootprintF(fp[1])
             elif fp[0] == 0:
@@ -166,7 +167,7 @@ class NoiseReplacer(object):
         self.noiseGenStd = noisegen.std
         if self.log:
             self.log.logdebug('Using noise generator: %s' % (str(noisegen)))
-        for id in self.heavies.keys():
+        for id in self.heavies:
             fp = footprints[id][1]
             noiseFp = noisegen.getHeavyFootprint(fp)
             self.heavyNoise[id] = noiseFp
@@ -193,7 +194,7 @@ class NoiseReplacer(object):
         # parent chain which has a heavy footprint (or to the topmost parent,
         # which always has one)
         usedid = id
-        while self.footprints[usedid][0] != 0 and not usedid in self.heavies.keys():
+        while self.footprints[usedid][0] != 0 and not usedid in self.heavies:
             usedid = self.footprints[usedid][0]
         fp = self.heavies[usedid]
         fp.insert(im)
@@ -218,7 +219,7 @@ class NoiseReplacer(object):
         # use the same algorithm as in remove Source to find the heavy noise footprint
         # which will undo what insertSource(id) does
         usedid = id
-        while self.footprints[usedid][0] != 0 and not usedid in self.heavies.keys():
+        while self.footprints[usedid][0] != 0 and not usedid in self.heavies:
             usedid = self.footprints[usedid][0]
         # Re-insert the noise pixels
         fp = self.heavyNoise[usedid]
@@ -329,7 +330,7 @@ class NoiseReplacerList(list):
         # exposuresById --- dict of {exposureId: exposure} (possibly subimages)
         # footprintsByExp --- nested dict of {exposureId: {objId: (parent, footprint)}}
         list.__init__(self)
-        for expId, exposure in exposuresById.iteritems():
+        for expId, exposure in exposuresById.items():
             self.append(NoiseReplacer(exposure, footprintsByExp[expId]), expId)
 
     def insertSource(self, id):

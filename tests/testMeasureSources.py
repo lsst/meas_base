@@ -25,6 +25,8 @@ Tests for measuring sources using the meas_base framework
 
 """
 from __future__ import absolute_import, division, print_function
+from builtins import zip
+from builtins import range
 import itertools
 import math
 import unittest
@@ -352,7 +354,7 @@ def makeFakeImage(bbox, centerList, fluxList, fwhm, var):
         raise RuntimeError("len(centerList) != len(fluxList)")
     maskedImage = afwImage.MaskedImageF(bbox)
     image = maskedImage.getImage()
-    for center, flux in itertools.izip(centerList, fluxList):
+    for center, flux in zip(centerList, fluxList):
         addStar(image, center=center, flux=flux, fwhm=fwhm)
     variance = maskedImage.getVariance()
     variance[:] = image

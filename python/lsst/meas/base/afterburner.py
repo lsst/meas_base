@@ -1,3 +1,4 @@
+from builtins import object
 from collections import namedtuple
 
 import lsst.pipe.base

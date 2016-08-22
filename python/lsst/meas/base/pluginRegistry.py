@@ -22,6 +22,7 @@
 #
 """Registry for measurement plugins and associated utilities generateAlgorithmName and PluginMap
 """
+from builtins import object
 
 import collections
 
@@ -157,7 +158,7 @@ class PluginMap(collections.OrderedDict):
 
         @note plugin.config.doMeasure is usually a simple boolean class attribute, not a normal Config field.
         """
-        for plugin in self.itervalues():
+        for plugin in self.values():
             if plugin.config.doMeasure:
                 yield plugin
 
@@ -166,6 +167,6 @@ class PluginMap(collections.OrderedDict):
 
         @note plugin.config.doMeasureN is usually a simple boolean class attribute, not a normal Config field.
         """
-        for plugin in self.itervalues():
+        for plugin in self.values():
             if plugin.config.doMeasureN:
                 yield plugin

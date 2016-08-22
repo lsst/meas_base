@@ -1,3 +1,4 @@
+from builtins import object
 #
 # LSST Data Management System
 #

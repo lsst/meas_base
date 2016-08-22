@@ -44,6 +44,8 @@ assume that the contents of the output catalog are inconsistent.
 Transformations can be defined in Python or in C++. Python code should inherit
 from `MeasurementTransform`, following its interface.
 """
+from builtins import zip
+from builtins import object
 
 from lsst.afw.table import CoordKey
 from lsst.pex.exceptions import LengthError
@@ -92,7 +94,7 @@ class PassThroughTransform(MeasurementTransform):
 
     def __init__(self, config, name, mapper):
         MeasurementTransform.__init__(self, config, name, mapper)
-        for key, field in mapper.getInputSchema().extract(name + "*").itervalues():
+        for key, field in mapper.getInputSchema().extract(name + "*").values():
             mapper.addMapping(key)
 
     def __call__(self, inputCatalog, outputCatalog, wcs, calib):

@@ -100,13 +100,13 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
                     self._addDataRef(namespace, ref.dataId, tract)
 
         # Ensure all components of a visit are kept together by putting them all in the same set of tracts
-        for visit, tractSet in visitTract.iteritems():
+        for visit, tractSet in visitTract.items():
             for ref in visitRefs[visit]:
                 for tract in tractSet:
                     self._addDataRef(namespace, ref.dataId, tract)
         if visitTract:
             tractCounter = collections.Counter()
-            for tractSet in visitTract.itervalues():
+            for tractSet in visitTract.values():
                 tractCounter.update(tractSet)
             log.info("Number of visits for each tract: %s" % (dict(tractCounter),))
 
@@ -191,11 +191,11 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
                              (e.g. visit, raft, sensor for LSST data).
         """
         expBits = dataRef.get("ccdExposureId_bits")
-        expId = long(dataRef.get("ccdExposureId"))
+        expId = int(dataRef.get("ccdExposureId"))
         return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
 
     def getExposureId(self, dataRef):
-        return long(dataRef.get("ccdExposureId", immediate=True))
+        return int(dataRef.get("ccdExposureId", immediate=True))
 
     def fetchReferences(self, dataRef, exposure):
         """Return a SourceCatalog of sources which overlap the exposure.

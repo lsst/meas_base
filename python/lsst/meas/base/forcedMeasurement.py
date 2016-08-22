@@ -46,6 +46,7 @@ run, and hence avoid using the reference catalog at all.
 Command-line driver tasks for forced measurement can be found in forcedPhotImage.py, including
 ForcedPhotImageTask, ForcedPhotCcdTask, and ForcedPhotCoaddTask.
 """
+from builtins import zip
 
 import lsst.pex.config
 import lsst.pipe.base
@@ -284,7 +285,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             refId = ref.getId()
             topId = refId
             while(topId > 0):
-                if not topId in refCatIdDict.keys():
+                if topId not in refCatIdDict:
                     raise RuntimeError("Reference catalog contains a child for which at least "
                                        "one parent in its parent chain is not in the catalog.")
                 topId = refCatIdDict[topId]

@@ -36,6 +36,9 @@
 %prog [options] arg
 """
 from __future__ import print_function
+from builtins import map
+from builtins import range
+from builtins import object
 
 import sys
 import re
@@ -56,7 +59,7 @@ import lsst.meas.base as measBase
 #
 
 
-class Gaussian():  # public std::binary_function<double, double, double> {
+class Gaussian(object):  # public std::binary_function<double, double, double> {
 
     def __init__(self, xcen, ycen, sigma, a):
         self.xcen = xcen
@@ -78,7 +81,7 @@ class Gaussian():  # public std::binary_function<double, double, double> {
 #
 # This functor isn't currently used in the routine
 # I'll leave it here in case I (someday) figure out how to integrate a python functor
-class RGaussian():  # public std::unary_function<double, double> {
+class RGaussian(object):  # public std::unary_function<double, double> {
 
     def __init__(self, sigma, a, apradius, aptaper):
         self.sigma = sigma
@@ -120,7 +123,7 @@ def main():
     if len(args) == 0:
         r1, r2, dr = 3.0, 3.0, 0.5
     elif len(args) == 3:
-        r1, r2, dr = map(float, args)
+        r1, r2, dr = list(map(float, args))
     else:
         parser.print_help()
         sys.exit(1)

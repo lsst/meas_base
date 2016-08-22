@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+from builtins import object
 #
 # LSST Data Management System
 # Copyright 2015 LSST Corporation.
@@ -146,7 +147,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
         else:
             self.log.info("Use complex flux sigma computation that double-counts photon noise "
                           " and thus over-estimates flux uncertainty")
-        for apCorrInfo in self.apCorrInfoDict.itervalues():
+        for apCorrInfo in self.apCorrInfoDict.values():
             apCorrModel = apCorrMap.get(apCorrInfo.fluxName)
             apCorrSigmaModel = apCorrMap.get(apCorrInfo.fluxSigmaName)
             if None in (apCorrModel, apCorrSigmaModel):

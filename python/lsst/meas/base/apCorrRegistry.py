@@ -22,6 +22,7 @@
 #
 """Registry for names of flux fields that should be aperture corrected
 """
+from builtins import str
 
 __all__ = ("addApCorrName", "getApCorrNameSet")
 
