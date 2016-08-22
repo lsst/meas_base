@@ -22,6 +22,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import print_function
 import os
 import sys
 import numpy
@@ -43,7 +44,7 @@ def loadData():
     # Load sample input from disk
     mypath = eups.productDir("afwdata")
     if not mypath:
-        print >> sys.stderr, "Please setup afwdata and try again"
+        print("Please setup afwdata and try again", file=sys.stderr)
         sys.exit(1)
 
     imFile = os.path.join(mypath, "CFHT", "D4", "cal-53535-i-797722_small_1.fits")
@@ -84,7 +85,7 @@ def run(display=False):
     #
     # Print the schema the configuration produced
     #
-    print schema
+    print(schema)
 
     #
     # Create the output table
@@ -97,7 +98,7 @@ def run(display=False):
 
     sources = result.sources
 
-    print "Found %d sources (%d +ve, %d -ve)" % (len(sources), result.fpSets.numPos, result.fpSets.numNeg)
+    print("Found %d sources (%d +ve, %d -ve)" % (len(sources), result.fpSets.numPos, result.fpSets.numNeg))
 
     measureTask.run(sources, exposure)
     if display:                         # display on ds9 (see also --debug argparse option)
@@ -127,6 +128,6 @@ if __name__ == "__main__":
         try:
             import debug
         except ImportError as e:
-            print >> sys.stderr, e
+            print(e, file=sys.stderr)
 
     run(display=args.ds9)

@@ -35,6 +35,7 @@
 """
 %prog [options] arg
 """
+from __future__ import print_function
 
 import sys
 import re
@@ -148,7 +149,7 @@ def main():
     plugin = alg(measBase.PsfFluxControl(), "test", schema)
     cat = afwTable.SourceCatalog(schema)
     cat.defineCentroid("centroid")
-    print "# sig rad  Naive Sinc Psf"
+    print("# sig rad  Naive Sinc Psf")
     for iS in range(nS):
         sigma = sigmas[iS]
 
@@ -192,7 +193,7 @@ def main():
             # rpsf = RGaussian(sigma, a, radius[iR], aptaper)
             # *** not sure how to integrate a python functor ***
 
-            print "%.2f %.2f  %.3f %.3f %.3f" % (sigma, radius[iR], fluxNaive, fluxSinc, fluxPsf)
+            print("%.2f %.2f  %.3f %.3f %.3f" % (sigma, radius[iR], fluxNaive, fluxSinc, fluxPsf))
 
 
 #############################################################

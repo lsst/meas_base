@@ -21,6 +21,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import print_function
 import os
 import re
 import math
@@ -281,7 +282,7 @@ class MonetTestCase(unittest.TestCase):
                 msg = "Star at (%.1f, %.1f): (dx, dy) = %g, %g)" % \
                     (match[0].getXAstrom(), match[0].getYAstrom(), dx, dy)
                 if True:
-                    print msg
+                    print(msg)
                 else:
                     self.assertTrue(good, msg)
 
