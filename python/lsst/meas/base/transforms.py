@@ -51,6 +51,7 @@ from .baseLib import CentroidResultKey
 
 __all__ = ("NullTransform", "PassThroughTransform", "SimpleCentroidTransform")
 
+
 class MeasurementTransform(object):
     """!
     Base class for measurement transformations.
@@ -58,6 +59,7 @@ class MeasurementTransform(object):
     Create transformations by deriving from this class, implementing
     `__call__()` and (optionally) augmenting `__init__()`.
     """
+
     def __init__(self, config, name, mapper):
         self.name = name
         self.config = config
@@ -78,6 +80,7 @@ class NullTransform(MeasurementTransform):
     This is intended as the default for measurements for which no other
     transformation is specified.
     """
+
     def __call__(self, inputCatalog, outputCatalog, wcs, calib):
         self._checkCatalogSize(inputCatalog, outputCatalog)
 
@@ -86,6 +89,7 @@ class PassThroughTransform(MeasurementTransform):
     """!
     Copy all fields named after the measurement plugin from input to output, without transformation.
     """
+
     def __init__(self, config, name, mapper):
         MeasurementTransform.__init__(self, config, name, mapper)
         for key, field in mapper.getInputSchema().extract(name + "*").itervalues():
@@ -99,6 +103,7 @@ class SimpleCentroidTransform(MeasurementTransform):
     """!
     Transform a pixel centroid, excluding uncertainties, to celestial coordinates.
     """
+
     def __init__(self, config, name, mapper):
         MeasurementTransform.__init__(self, config, name, mapper)
         self.coordKey = CoordKey.addFields(mapper.editOutputSchema(), name, "Position from " + name)

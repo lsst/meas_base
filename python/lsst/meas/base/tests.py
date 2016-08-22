@@ -36,8 +36,9 @@ from .forcedMeasurement import ForcedMeasurementTask
 from .baseLib import CentroidResultKey
 
 __all__ = ("BlendContext", "TestDataset", "AlgorithmTestCase", "TransformTestCase",
-            "SingleFramePluginTransformSetupHelper", "ForcedPluginTransformSetupHelper",
-            "FluxTransformTestCase", "CentroidTransformTestCase")
+           "SingleFramePluginTransformSetupHelper", "ForcedPluginTransformSetupHelper",
+           "FluxTransformTestCase", "CentroidTransformTestCase")
+
 
 class BlendContext(object):
     """!
@@ -112,7 +113,7 @@ class BlendContext(object):
         # for the noise we'll add to the image.
         deblend = lsst.afw.image.MaskedImageF(self.owner.exposure.getMaskedImage(), True)
         for record, image in self.children:
-            deblend.getImage().getArray()[:,:] = image.getArray()
+            deblend.getImage().getArray()[:, :] = image.getArray()
             heavyFootprint = lsst.afw.detection.HeavyFootprintF(self.parentRecord.getFootprint(), deblend)
             record.setFootprint(heavyFootprint)
 
@@ -159,7 +160,7 @@ class TestDataset(object):
                 schema, "truth", "true simulated centroid", "pixel"
             )
             cls.keys["centroid_flag"] = schema.addField("truth_flag", type="Flag",
-                                                 doc="set if the object is a star")
+                                                        doc="set if the object is a star")
             cls.keys["shape"] = lsst.afw.table.QuadrupoleKey.addFields(
                 schema, "truth", "true shape after PSF convolution", lsst.afw.table.CoordinateType_PIXEL
             )
@@ -193,13 +194,20 @@ class TestDataset(object):
         is 0.5-1.0 arcseconds (these cannot be safely included directly as default values because Angle
         objects are mutable).
         """
-        if minRotation is None: minRotation = 30.0*lsst.afw.geom.degrees
-        if maxRotation is None: maxRotation = 60.0*lsst.afw.geom.degrees
-        if minRefShift is None: minRefShift = 0.5*lsst.afw.geom.arcseconds
-        if maxRefShift is None: maxRefShift = 1.0*lsst.afw.geom.arcseconds
+        if minRotation is None:
+            minRotation = 30.0*lsst.afw.geom.degrees
+        if maxRotation is None:
+            maxRotation = 60.0*lsst.afw.geom.degrees
+        if minRefShift is None:
+            minRefShift = 0.5*lsst.afw.geom.arcseconds
+        if maxRefShift is None:
+            maxRefShift = 1.0*lsst.afw.geom.arcseconds
+
         def splitRandom(min1, max1, min2=None, max2=None):
-            if min2 is None: min2 = -max1
-            if max2 is None: max2 = -min1
+            if min2 is None:
+                min2 = -max1
+            if max2 is None:
+                max2 = -min1
             if numpy.random.uniform() > 0.5:
                 return float(numpy.random.uniform(min1, max1))
             else:
@@ -226,7 +234,7 @@ class TestDataset(object):
         newPixOrigin = lsst.afw.geom.Point2D(oldPixOrigin.getX() + pixShiftX,
                                              oldPixOrigin.getY() + pixShiftY)
         return lsst.afw.image.makeWcs(newSkyOrigin, newPixOrigin,
-                                      matrix[0,0], matrix[0,1], matrix[1,0], matrix[1,1])
+                                      matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1])
 
     @staticmethod
     def makeEmptyExposure(bbox, wcs=None, crval=None, cdelt=None, psfSigma=2.0, psfDim=17, fluxMag0=1E12):
@@ -273,7 +281,7 @@ class TestDataset(object):
         xt = t[t.XX] * x + t[t.XY] * y + t[t.X]
         yt = t[t.YX] * x + t[t.YY] * y + t[t.Y]
         image = lsst.afw.image.ImageF(bbox)
-        image.getArray()[:,:] = numpy.exp(-0.5*(xt**2 + yt**2))*flux/(2.0*ellipse.getCore().getArea())
+        image.getArray()[:, :] = numpy.exp(-0.5*(xt**2 + yt**2))*flux/(2.0*ellipse.getCore().getArea())
         return image
 
     def __init__(self, bbox, threshold=10.0, exposure=None, **kwds):
@@ -344,7 +352,7 @@ class TestDataset(object):
         # Generate a footprint for this source
         self._installFootprint(record, image)
         # Actually add the source to the full exposure
-        self.exposure.getMaskedImage().getImage().getArray()[:,:] += image.getArray()
+        self.exposure.getMaskedImage().getImage().getArray()[:, :] += image.getArray()
         return record, image
 
     def addBlend(self):
@@ -421,8 +429,8 @@ class TestDataset(object):
         mapper = lsst.afw.table.SchemaMapper(self.schema)
         mapper.addMinimalSchema(self.schema, True)
         exposure = self.exposure.clone()
-        exposure.getMaskedImage().getVariance().getArray()[:,:] = noise**2
-        exposure.getMaskedImage().getImage().getArray()[:,:] \
+        exposure.getMaskedImage().getVariance().getArray()[:, :] = noise**2
+        exposure.getMaskedImage().getImage().getArray()[:, :] \
             += numpy.random.randn(exposure.getHeight(), exposure.getWidth())*noise
         catalog = lsst.afw.table.SourceCatalog(schema)
         catalog.extend(self.catalog, mapper=mapper)
@@ -430,7 +438,8 @@ class TestDataset(object):
         # ideal no-noise pixels.
         for record in catalog:
             # parent objects have non-Heavy Footprints, which don't need to be updated after adding noise.
-            if record.getParent() == 0: continue
+            if record.getParent() == 0:
+                continue
             # get flattened arrays that correspond to the no-noise and noisy parent images
             parent = catalog.find(record.getParent())
             footprint = parent.getFootprint()
@@ -509,7 +518,6 @@ class AlgorithmTestCase(object):
             algMetadata = lsst.daf.base.PropertyList()
         return SingleFrameMeasurementTask(schema=schema, algMetadata=algMetadata, config=config)
 
-
     def makeForcedMeasurementConfig(self, plugin=None, dependencies=()):
         """Convenience function to create a Config instance for ForcedMeasurementTask
 
@@ -579,7 +587,7 @@ class TransformTestCase(object):
     forcedPlugins = ()
 
     def setUp(self):
-        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0,0), lsst.afw.geom.Point2I(200, 200))
+        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0), lsst.afw.geom.Point2I(200, 200))
         self.calexp = TestDataset.makeEmptyExposure(bbox)
         self._setupTransform()
 
@@ -657,6 +665,7 @@ class TransformTestCase(object):
 
 
 class SingleFramePluginTransformSetupHelper(object):
+
     def _setupTransform(self):
         self.control = self.controlClass()
         inputSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
@@ -675,6 +684,7 @@ class SingleFramePluginTransformSetupHelper(object):
 
 
 class ForcedPluginTransformSetupHelper(object):
+
     def _setupTransform(self):
         self.control = self.controlClass()
         inputMapper = lsst.afw.table.SchemaMapper(lsst.afw.table.SourceTable.makeMinimalSchema(),
@@ -694,6 +704,7 @@ class ForcedPluginTransformSetupHelper(object):
 
 
 class FluxTransformTestCase(TransformTestCase):
+
     def _setFieldsInRecords(self, records, name):
         for record in records:
             record[record.schema.join(name, 'flux')] = numpy.random.random()
@@ -715,6 +726,7 @@ class FluxTransformTestCase(TransformTestCase):
 
 
 class CentroidTransformTestCase(TransformTestCase):
+
     def _setFieldsInRecords(self, records, name):
         for record in records:
             record[record.schema.join(name, 'x')] = numpy.random.random()

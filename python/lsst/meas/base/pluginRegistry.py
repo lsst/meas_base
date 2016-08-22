@@ -29,7 +29,8 @@ import lsst.pipe.base
 import lsst.pex.config
 from .apCorrRegistry import addApCorrName
 
-__all__ = ("generateAlgorithmName", "PluginRegistry", "register",  "PluginMap")
+__all__ = ("generateAlgorithmName", "PluginRegistry", "register", "PluginMap")
+
 
 def generateAlgorithmName(AlgClass):
     """Generate a string name for an algorithm class that strips away terms that are generally redundant
@@ -52,6 +53,7 @@ def generateAlgorithmName(AlgClass):
     if name.lower().startswith(terms[-1].lower()):
         terms = terms[:-1]
     return "%s_%s" % ("_".join(terms), name)
+
 
 class PluginRegistry(lsst.pex.config.Registry):
     """!

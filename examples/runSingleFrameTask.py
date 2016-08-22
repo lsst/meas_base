@@ -28,13 +28,14 @@ import numpy
 
 import eups
 
-import lsst.daf.base               as dafBase
-import lsst.afw.table              as afwTable
-import lsst.afw.image              as afwImage
-import lsst.afw.display.ds9        as ds9
-import lsst.meas.algorithms        as measAlg
+import lsst.daf.base as dafBase
+import lsst.afw.table as afwTable
+import lsst.afw.image as afwImage
+import lsst.afw.display.ds9 as ds9
+import lsst.meas.algorithms as measAlg
 from lsst.meas.algorithms.detection import SourceDetectionTask
 from lsst.meas.base import SingleFrameMeasurementTask
+
 
 def loadData():
     """Prepare the data we need to run the example"""
@@ -55,6 +56,7 @@ def loadData():
     im -= float(numpy.median(im.getArray()))
 
     return exposure
+
 
 def run(display=False):
     exposure = loadData()

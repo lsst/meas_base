@@ -53,12 +53,16 @@ import lsst.meas.base as measBase
 # =====================================================================
 # a functor for the PSF
 #
-class Gaussian(): # public std::binary_function<double, double, double> {
-    def __init__(self, xcen, ycen, sigma, a) :
+
+
+class Gaussian():  # public std::binary_function<double, double, double> {
+
+    def __init__(self, xcen, ycen, sigma, a):
         self.xcen = xcen
         self.ycen = ycen
         self.sigma = sigma
-        self.a  = a
+        self.a = a
+
     def __call__(self, x, y):
         xx = x - self.xcen
         yy = y - self.ycen
@@ -73,7 +77,7 @@ class Gaussian(): # public std::binary_function<double, double, double> {
 #
 # This functor isn't currently used in the routine
 # I'll leave it here in case I (someday) figure out how to integrate a python functor
-class RGaussian(): #public std::unary_function<double, double> {
+class RGaussian():  # public std::unary_function<double, double> {
 
     def __init__(self, sigma, a, apradius, aptaper):
         self.sigma = sigma
@@ -81,13 +85,13 @@ class RGaussian(): #public std::unary_function<double, double> {
         self.apradius = apradius
         self.aptaper = aptaper
 
-    def __call__ (self, r):
+    def __call__(self, r):
         ss = self.sigma*self.sigma
-        gauss = self.a * (1.0/(2.0*numpy.pi*ss)) * numpy.exp(-(r*r)/(2.0*ss));
+        gauss = self.a * (1.0/(2.0*numpy.pi*ss)) * numpy.exp(-(r*r)/(2.0*ss))
         aperture = 0.0
-        if ( r <= apradius ):
+        if (r <= apradius):
             aperture = 1.0
-        elif ( r > apradius and r < apradius + aptaper ):
+        elif (r > apradius and r < apradius + aptaper):
             aperture = 0.5*(1.0 + cos(numpy.pi*(r - apradius)/aptaper))
         return aperture*gauss*(r*2.0*numpy.pi)
 
@@ -106,8 +110,8 @@ def main():
     # command line arguments and options
     ########################################################################
 
-    parser = optparse.OptionParser(usage = __doc__)
-    #parser.add_option("-a", "--aa", dest="aa", type=float,
+    parser = optparse.OptionParser(usage=__doc__)
+    # parser.add_option("-a", "--aa", dest="aa", type=float,
     #                  default=1.0, help="default=%default")
 
     opts, args = parser.parse_args()
@@ -120,13 +124,11 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-
     # make a list of radii to compute the growthcurve points
     radius = []
-    nR = int( (r2 - r1)/dr + 1 )
+    nR = int((r2 - r1)/dr + 1)
     for iR in range(nR):
         radius.append(r1 + iR*dr)
-
 
     # make an image big enough to hold the largest requested aperture
     xwidth = 2*(0 + 128)
@@ -148,17 +150,17 @@ def main():
     cat.defineCentroid("centroid")
     print "# sig rad  Naive Sinc Psf"
     for iS in range(nS):
-        sigma = sigmas[iS];
+        sigma = sigmas[iS]
 
         # make a Gaussian star to measure
-        gauss  = afwMath.GaussianFunction2D(sigma, sigma)
+        gauss = afwMath.GaussianFunction2D(sigma, sigma)
         kernel = afwMath.AnalyticKernel(xwidth, ywidth, gauss)
-        kimg   = afwImage.ImageD(kernel.getDimensions())
+        kimg = afwImage.ImageD(kernel.getDimensions())
         kernel.computeImage(kimg, False)
-        kimg  *= 100.0
-        mimg   = afwImage.MaskedImageF(kimg.convertFloat(),
-                                       afwImage.MaskU(kimg.getDimensions(), 0x0),
-                                       afwImage.ImageF(kimg.getDimensions(), 0.0))
+        kimg *= 100.0
+        mimg = afwImage.MaskedImageF(kimg.convertFloat(),
+                                     afwImage.MaskU(kimg.getDimensions(), 0x0),
+                                     afwImage.ImageF(kimg.getDimensions(), 0.0))
         exposure = afwImage.ExposureF(mimg)
 
         # loop over all the radii in the growthcurve
@@ -172,8 +174,8 @@ def main():
 
             # get the aperture fluxes for Naive and Sinc methods
 
-            axes = afwGeom.ellipses.Axes(radius[iR], radius[iR], math.radians(0));
-            center = afwGeom.Point2D(0,0)
+            axes = afwGeom.ellipses.Axes(radius[iR], radius[iR], math.radians(0))
+            center = afwGeom.Point2D(0, 0)
             ellipse = afwGeom.ellipses.Ellipse(axes, center)
             resultSinc = measBase.ApertureFluxAlgorithm.computeSincFlux(mimg.getImage(), ellipse)
             resultNaive = measBase.ApertureFluxAlgorithm.computeNaiveFlux(mimg.getImage(), ellipse)
@@ -184,7 +186,7 @@ def main():
             plugin.measure(source, exposure)
             fluxNaive = resultNaive.flux
             fluxSinc = resultSinc.flux
-            fluxPsf   = source["test_flux"]
+            fluxPsf = source["test_flux"]
 
             # get the exact flux for the theoretical smooth PSF
             # rpsf = RGaussian(sigma, a, radius[iR], aptaper)

@@ -71,7 +71,7 @@ def wrapAlgorithmControl(Base, Control, module=2, hasMeasureN=False):
             (Base,),
             {"doMeasureN": lsst.pex.config.Field(dtype=bool, default=True,
                                                  doc="whether to run this plugin in multi-object mode")}
-            )
+        )
         ConfigClass = lsst.pex.config.makeConfigClass(Control, module=module, cls=cls)
     else:
         # If we don't have to add that Config field, we can delegate all of the work to
@@ -137,6 +137,7 @@ def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=No
         if Control is None:
             Control = AlgClass.Control
         ConfigClass = wrapAlgorithmControl(Base.ConfigClass, Control, **kwds)
+
     def getExecutionOrder():
         return executionOrder
     typeDict = dict(AlgClass=AlgClass, ConfigClass=ConfigClass, factory=staticmethod(factory),

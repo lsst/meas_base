@@ -39,39 +39,40 @@ from .afterburner import AfterburnerTask
 
 __all__ = ("ProcessImageForcedConfig", "ProcessImageForcedTask")
 
+
 class ProcessImageForcedConfig(lsst.pex.config.Config):
     """!Config class for forced measurement driver task."""
 
     references = lsst.pex.config.ConfigurableField(
         target=MultiBandReferencesTask,
         doc="subtask to retrieve reference source catalog"
-        )
+    )
     measurement = lsst.pex.config.ConfigurableField(
         target=ForcedMeasurementTask,
         doc="subtask to do forced measurement"
-        )
+    )
     coaddName = lsst.pex.config.Field(
-        doc = "coadd name: typically one of deep or goodSeeing",
-        dtype = str,
-        default = "deep",
-        )
+        doc="coadd name: typically one of deep or goodSeeing",
+        dtype=str,
+        default="deep",
+    )
     doApCorr = lsst.pex.config.Field(
-            dtype=bool,
-            default=True,
-            doc="Run subtask to apply aperture corrections"
-            )
+        dtype=bool,
+        default=True,
+        doc="Run subtask to apply aperture corrections"
+    )
     applyApCorr = lsst.pex.config.ConfigurableField(
-            target=ApplyApCorrTask,
-            doc="Subtask to apply aperture corrections"
-            )
+        target=ApplyApCorrTask,
+        doc="Subtask to apply aperture corrections"
+    )
     afterburners = lsst.pex.config.ConfigurableField(
-            target=AfterburnerTask,
-            doc="Subtask to run afterburner plugins on catalog"
-            )
+        target=AfterburnerTask,
+        doc="Subtask to run afterburner plugins on catalog"
+    )
     copyColumns = lsst.pex.config.DictField(
         keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
         default={"id": "objectId", "parent": "parentObjectId", "deblend_nChild": "deblend_nChild"}
-        )
+    )
 
     def setDefaults(self):
         # Make afterburners a no-op by default as no modelFlux is setup by default in
@@ -84,6 +85,7 @@ class ProcessImageForcedConfig(lsst.pex.config.Config):
 ## ProcessImageForcedTask
 ## @copybrief ProcessImageForcedTask
 ## @}
+
 
 class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
     """!A base class for command-line forced measurement drivers.
@@ -151,11 +153,10 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
 
         if self.config.doApCorr:
             self.applyApCorr.run(
-                    catalog=measCat,
-                    apCorrMap=exposure.getInfo().getApCorrMap()
-                    )
+                catalog=measCat,
+                apCorrMap=exposure.getInfo().getApCorrMap()
+            )
         self.afterburners.run(measCat)
-
 
         self.writeOutput(dataRef, measCat)
 
@@ -220,7 +221,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         catalog = lsst.afw.table.SourceCatalog(self.measurement.mapper.getOutputSchema())
         catalog.getTable().setMetadata(self.measurement.algMetadata)
         datasetType = self.dataPrefix + "forced_src"
-        return {datasetType:catalog}
+        return {datasetType: catalog}
 
     def _getConfigName(self):
         """!Return the name of the config dataset.  Forces config comparison from run-to-run
@@ -231,4 +232,3 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
         """!Return the name of the metadata dataset.  Forced metadata to be saved
         """
         return self.dataPrefix + "forced_metadata"
-

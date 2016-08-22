@@ -32,10 +32,12 @@ from .baseLib import FatalAlgorithmError, MeasurementError
 from .pluginsBase import BasePluginConfig, BasePlugin
 from .noiseReplacer import NoiseReplacerConfig
 
-__all__ = ("BaseMeasurementPluginConfig", "BaseMeasurementPlugin", "BaseMeasurementConfig", "BaseMeasurementTask")
+__all__ = ("BaseMeasurementPluginConfig", "BaseMeasurementPlugin",
+           "BaseMeasurementConfig", "BaseMeasurementTask")
 
 # Exceptions that the measurement tasks should always propagate up to their callers
 FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)
+
 
 class BaseMeasurementPluginConfig(BasePluginConfig):
     """!
@@ -54,6 +56,7 @@ class BaseMeasurementPluginConfig(BasePluginConfig):
 
     doMeasureN = False  # replace this class attribute with a Field if measureN-capable
 
+
 class BaseMeasurementPlugin(BasePlugin):
     '''
     Base class for all measurement plugins
@@ -63,6 +66,7 @@ class BaseMeasurementPlugin(BasePlugin):
     configuration class
     '''
     pass
+
 
 class SourceSlotConfig(lsst.pex.config.Config):
     """!
@@ -95,13 +99,21 @@ class SourceSlotConfig(lsst.pex.config.Config):
         to construct a Task object.
         """
         aliases = schema.getAliasMap()
-        if self.centroid is not None: aliases.set("slot_Centroid", self.centroid)
-        if self.shape is not None: aliases.set("slot_Shape", self.shape)
-        if self.apFlux is not None: aliases.set("slot_ApFlux", self.apFlux)
-        if self.modelFlux is not None: aliases.set("slot_ModelFlux", self.modelFlux)
-        if self.psfFlux is not None: aliases.set("slot_PsfFlux", self.psfFlux)
-        if self.instFlux is not None: aliases.set("slot_InstFlux", self.instFlux)
-        if self.calibFlux is not None: aliases.set("slot_CalibFlux", self.calibFlux)
+        if self.centroid is not None:
+            aliases.set("slot_Centroid", self.centroid)
+        if self.shape is not None:
+            aliases.set("slot_Shape", self.shape)
+        if self.apFlux is not None:
+            aliases.set("slot_ApFlux", self.apFlux)
+        if self.modelFlux is not None:
+            aliases.set("slot_ModelFlux", self.modelFlux)
+        if self.psfFlux is not None:
+            aliases.set("slot_PsfFlux", self.psfFlux)
+        if self.instFlux is not None:
+            aliases.set("slot_InstFlux", self.instFlux)
+        if self.calibFlux is not None:
+            aliases.set("slot_CalibFlux", self.calibFlux)
+
 
 class BaseMeasurementConfig(lsst.pex.config.Config):
     """!
@@ -109,17 +121,17 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
     """
 
     slots = lsst.pex.config.ConfigField(
-        dtype = SourceSlotConfig,
+        dtype=SourceSlotConfig,
         doc="Mapping from algorithms to special aliases in Source."
-        )
+    )
 
     doReplaceWithNoise = lsst.pex.config.Field(dtype=bool, default=True, optional=False,
-        doc='When measuring, replace other detected footprints with noise?')
+                                               doc='When measuring, replace other detected footprints with noise?')
 
     noiseReplacer = lsst.pex.config.ConfigField(
         dtype=NoiseReplacerConfig,
         doc="configuration that sets how to replace neighboring sources with noise"
-        )
+    )
 
     def validate(self):
         lsst.pex.config.Config.validate(self)
@@ -141,6 +153,7 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
 ## @page baseMeasurementTask
 ## BaseMeasurementTask @copybrief BaseMeasurementTask
 ## @}
+
 
 class BaseMeasurementTask(lsst.pipe.base.Task):
     """!

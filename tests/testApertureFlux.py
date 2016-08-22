@@ -94,7 +94,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             self.exposure.getMaskedImage().getImage(),
             lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(12.0, 12.0),
                                            lsst.afw.geom.Point2D(25.0, -60.0)),
-                                           self.ctrl)
+            self.ctrl)
         self.assertTrue(invalid.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
         self.assertFalse(invalid.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
         self.assertTrue(np.isnan(invalid.flux))
@@ -246,11 +246,13 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
 
 class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,
                                     lsst.utils.tests.TestCase):
+
     class circApFluxAlgorithmFactory(object):
         """
         Helper class to sub in an empty PropertyList as the final argument to
         CircularApertureFluxAlgorithm.
         """
+
         def __call__(self, control, name, inputSchema):
             return lsst.meas.base.CircularApertureFluxAlgorithm(control, name, inputSchema,
                                                                 lsst.daf.base.PropertyList())

@@ -39,6 +39,7 @@ except ImportError:
 
 __all__ = ("PerTractCcdDataIdContainer", "ForcedPhotCcdConfig", "ForcedPhotCcdTask")
 
+
 class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
     """A version of lsst.pipe.base.DataIdContainer that combines raw data IDs with a tract.
 
@@ -52,6 +53,7 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
     what set of coadds to use.  The references from the tract whose patches intersect with
     the calexp are used.
     """
+
     def _addDataRef(self, namespace, dataId, tract):
         """Construct a dataRef based on dataId, but with an added tract key"""
         forcedDataId = dataId.copy()
@@ -127,21 +129,21 @@ def overlapsTract(tract, imageWcs, imageBox):
     except lsst.pex.exceptions.LsstCppException, e:
         # Protecting ourselves from awful Wcs solutions in input images
         if (not isinstance(e.message, lsst.pex.exceptions.DomainErrorException) and
-            not isinstance(e.message, lsst.pex.exceptions.RuntimeErrorException)):
+                not isinstance(e.message, lsst.pex.exceptions.RuntimeErrorException)):
             raise
         return False
 
     imagePoly = convexHull([coord.getVector() for coord in imageCorners])
     if imagePoly is None:
         return False
-    return tractPoly.intersects(imagePoly) # "intersects" also covers "contains" or "is contained by"
+    return tractPoly.intersects(imagePoly)  # "intersects" also covers "contains" or "is contained by"
 
 
 class ForcedPhotCcdConfig(ProcessImageForcedConfig):
     doApplyUberCal = lsst.pex.config.Field(
-        dtype = bool,
-        doc = "Apply meas_mosaic ubercal results to input calexps?",
-        default = False
+        dtype=bool,
+        doc="Apply meas_mosaic ubercal results to input calexps?",
+        default=False
     )
 
 ## @addtogroup LSST_task_documentation
@@ -150,6 +152,7 @@ class ForcedPhotCcdConfig(ProcessImageForcedConfig):
 ## ForcedPhotCcdTask
 ## @copybrief ForcedPhotCcdTask
 ## @}
+
 
 class ForcedPhotCcdTask(ProcessImageForcedTask):
     """!A command-line driver for performing forced measurement on CCD images
@@ -215,7 +218,7 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
             if record.getFootprint() is None or record.getFootprint().getArea() == 0:
                 if record.getParent() != 0:
                     self.log.warn("Skipping reference %s (child of %s) with bad Footprint" %
-                    (record.getId(), record.getParent()))
+                                  (record.getId(), record.getParent()))
                 else:
                     self.log.warn("Skipping reference parent %s with bad Footprint" % (record.getId(),))
                     badParents.add(record.getId())
@@ -239,7 +242,7 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
             raise RuntimeError(
                 "Cannot use improved calibrations for %s because meas_mosaic could not be imported."
                 % dataRef.dataId
-                )
+            )
         else:
             applyMosaicResults(dataRef, calexp=exposure)
         return exposure

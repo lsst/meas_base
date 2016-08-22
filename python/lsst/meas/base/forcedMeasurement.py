@@ -58,9 +58,11 @@ from .noiseReplacer import NoiseReplacer, DummyNoiseReplacer
 __all__ = ("ForcedPluginConfig", "ForcedPlugin",
            "ForcedMeasurementConfig", "ForcedMeasurementTask")
 
+
 class ForcedPluginConfig(BaseMeasurementPluginConfig):
     """Base class for configs of forced measurement plugins."""
     pass
+
 
 class ForcedPlugin(BaseMeasurementPlugin):
 
@@ -137,6 +139,7 @@ class ForcedPlugin(BaseMeasurementPlugin):
         """
         raise NotImplementedError()
 
+
 class ForcedMeasurementConfig(BaseMeasurementConfig):
     """Config class for forced measurement driver task."""
 
@@ -149,19 +152,19 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
                  "base_PsfFlux",
                  ],
         doc="Plugins to be run and their configuration"
-        )
+    )
     algorithms = property(lambda self: self.plugins, doc="backwards-compatibility alias for plugins")
 
     copyColumns = lsst.pex.config.DictField(
         keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
-        default={"id": "objectId", "parent":"parentObjectId"}
-        )
+        default={"id": "objectId", "parent": "parentObjectId"}
+    )
 
     checkUnitsParseStrict = lsst.pex.config.Field(
-        doc = "Strictness of Astropy unit compatibility check, can be 'raise', 'warn' or 'silent'",
-        dtype = str,
-        default = "raise",
-        )
+        doc="Strictness of Astropy unit compatibility check, can be 'raise', 'warn' or 'silent'",
+        dtype=str,
+        default="raise",
+    )
 
     def setDefaults(self):
         self.slots.centroid = "base_TransformedCentroid"
@@ -178,6 +181,7 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
 ## \ref ForcedMeasurementTask_ "ForcedMeasurementTask"
 ## \copybrief ForcedMeasurementTask
 ## \}
+
 
 class ForcedMeasurementTask(BaseMeasurementTask):
     """!
@@ -294,7 +298,8 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.log.info("Performing forced measurement on %d sources" % len(refCat))
 
         if self.config.doReplaceWithNoise:
-            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints, log=self.log, exposureId=exposureId)
+            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure,
+                                          footprints, log=self.log, exposureId=exposureId)
             algMetadata = measCat.getTable().getMetadata()
             if not algMetadata is None:
                 algMetadata.addInt("NOISE_SEED_MULTIPLIER", self.config.noiseReplacer.noiseSeedMultiplier)
@@ -308,7 +313,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         # Create parent cat which slices both the refCat and measCat (sources)
         # first, get the reference and source records which have no parent
         refParentCat, measParentCat = refCat.getChildren(0, measCat)
-        for parentIdx, (refParentRecord, measParentRecord) in enumerate(zip(refParentCat,measParentCat)):
+        for parentIdx, (refParentRecord, measParentRecord) in enumerate(zip(refParentCat, measParentCat)):
 
             # first process the records which have the current parent as children
             refChildCat, measChildCat = refCat.getChildren(refParentRecord.getId(), measCat)
@@ -316,22 +321,21 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
                 noiseReplacer.insertSource(refChildRecord.getId())
                 self.callMeasure(measChildRecord, exposure, refChildRecord, refWcs,
-                        beginOrder=beginOrder, endOrder=endOrder)
+                                 beginOrder=beginOrder, endOrder=endOrder)
                 noiseReplacer.removeSource(refChildRecord.getId())
 
             # then process the parent record
             noiseReplacer.insertSource(refParentRecord.getId())
             self.callMeasure(measParentRecord, exposure, refParentRecord, refWcs,
-                    beginOrder=beginOrder, endOrder=endOrder)
+                             beginOrder=beginOrder, endOrder=endOrder)
             self.callMeasureN(measParentCat[parentIdx:parentIdx+1], exposure,
-                    refParentCat[parentIdx:parentIdx+1],
-                    beginOrder=beginOrder, endOrder=endOrder)
+                              refParentCat[parentIdx:parentIdx+1],
+                              beginOrder=beginOrder, endOrder=endOrder)
             # measure all the children simultaneously
             self.callMeasureN(measChildCat, exposure, refChildCat,
-                    beginOrder=beginOrder, endOrder=endOrder)
+                              beginOrder=beginOrder, endOrder=endOrder)
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()
-
 
     def generateMeasCat(self, exposure, refCat, refWcs, idFactory=None):
         """!Initialize an output SourceCatalog using information from the reference catalog.
