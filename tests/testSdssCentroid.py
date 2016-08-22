@@ -21,15 +21,15 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
 
-import numpy
+import numpy as np
 
-import lsst.utils.tests
-import lsst.meas.base.tests
 
 from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
+import lsst.utils.tests
 
 # n.b. Some tests here depend on the noise realization in the test data
 # or from the numpy random number generator.
@@ -39,7 +39,8 @@ from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
 # the measured flux lies within 2 sigma of the correct value, which we
 # should expect to fail sometimes.
 
-class SdssCentroidTestCase(AlgorithmTestCase):
+
+class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
@@ -93,7 +94,7 @@ class SdssCentroidTestCase(AlgorithmTestCase):
             xSigmaList = []
             ySigmaList = []
             nSamples = 1000
-            for repeat in xrange(nSamples):
+            for repeat in range(nSamples):
                 exposure, catalog = self.dataset.realize(noise*flux, schema)
                 record = catalog[0]
                 algorithm.measure(record, exposure)
@@ -101,12 +102,12 @@ class SdssCentroidTestCase(AlgorithmTestCase):
                 yList.append(record.get("base_SdssCentroid_y"))
                 xSigmaList.append(record.get("base_SdssCentroid_xSigma"))
                 ySigmaList.append(record.get("base_SdssCentroid_ySigma"))
-            xMean = numpy.mean(xList)
-            yMean = numpy.mean(yList)
-            xSigmaMean = numpy.mean(xSigmaList)
-            ySigmaMean = numpy.mean(ySigmaList)
-            xStandardDeviation = numpy.std(xList)
-            yStandardDeviation = numpy.std(yList)
+            xMean = np.mean(xList)
+            yMean = np.mean(yList)
+            xSigmaMean = np.mean(xSigmaList)
+            ySigmaMean = np.mean(ySigmaList)
+            xStandardDeviation = np.std(xList)
+            yStandardDeviation = np.std(yList)
             self.assertClose(xSigmaMean, xStandardDeviation, rtol=0.2)   # rng dependent
             self.assertClose(ySigmaMean, yStandardDeviation, rtol=0.2)   # rng dependent
             self.assertLess(xMean - x, 3.0*xSigmaMean / nSamples**0.5)   # rng dependent
@@ -136,11 +137,11 @@ class SdssCentroidTestCase(AlgorithmTestCase):
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         # cutout a subimage around object in the test image
-        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(self.center), lsst.afw.geom.Extent2I(1,1))
+        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(self.center), lsst.afw.geom.Extent2I(1, 1))
         bbox.grow(20)
         subImage = lsst.afw.image.ExposureF(exposure, bbox)
         # A completely flat image will trigger the no 2nd derivative error
-        subImage.getMaskedImage().getImage().getArray()[:] =  0
+        subImage.getMaskedImage().getImage().getArray()[:] = 0
         task.measure(catalog, subImage)
         self.assertTrue(catalog[0].get("base_SdssCentroid_flag"))
         self.assertTrue(catalog[0].get("base_SdssCentroid_flag_noSecondDerivative"))
@@ -149,17 +150,19 @@ class SdssCentroidTestCase(AlgorithmTestCase):
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         # cutout a subimage around the object in the test image
-        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(self.center), lsst.afw.geom.Extent2I(1,1))
+        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(self.center), lsst.afw.geom.Extent2I(1, 1))
         bbox.grow(20)
         subImage = lsst.afw.image.ExposureF(exposure, bbox)
         # zero out the central region, which will destroy the maximum
-        subImage.getMaskedImage().getImage().getArray()[18:22,18:22] = 0
+        subImage.getMaskedImage().getImage().getArray()[18:22, 18:22] = 0
         task.measure(catalog, subImage)
         self.assertTrue(catalog[0].get("base_SdssCentroid_flag"))
         self.assertTrue(catalog[0].get("base_SdssCentroid_flag_notAtMaximum"))
 
 
-class SdssCentroidTransformTestCase(CentroidTransformTestCase, SingleFramePluginTransformSetupHelper):
+class SdssCentroidTransformTestCase(CentroidTransformTestCase,
+                                    SingleFramePluginTransformSetupHelper,
+                                    lsst.utils.tests.TestCase):
     controlClass = lsst.meas.base.SdssCentroidControl
     algorithmClass = lsst.meas.base.SdssCentroidAlgorithm
     transformClass = lsst.meas.base.SdssCentroidTransform
@@ -168,20 +171,13 @@ class SdssCentroidTransformTestCase(CentroidTransformTestCase, SingleFramePlugin
     forcedPlugins = ('base_SdssCentroid',)
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(SdssCentroidTestCase)
-    suites += unittest.makeSuite(SdssCentroidTransformTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

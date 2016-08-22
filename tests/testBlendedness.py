@@ -21,6 +21,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 from contextlib import contextmanager
 import unittest
 
@@ -29,6 +30,7 @@ import lsst.meas.base
 import lsst.utils.tests
 
 from lsst.meas.base.tests import AlgorithmTestCase
+
 
 @contextmanager
 def onlyLogFatal(log):
@@ -47,7 +49,8 @@ def onlyLogFatal(log):
         log.setThreshold(oldLevel)
 
 
-class BlendednessTestCase(AlgorithmTestCase):
+class BlendednessTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
+
     def setUp(self):
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(1, 4),
@@ -56,7 +59,6 @@ class BlendednessTestCase(AlgorithmTestCase):
         with self.dataset.addBlend() as family:
             family.addChild(flux=2E5, centroid=lsst.afw.geom.Point2D(47, 33))
             family.addChild(flux=1.5E5, centroid=lsst.afw.geom.Point2D(53, 31))
-
 
     def tearDown(self):
         del self.center
@@ -70,22 +72,17 @@ class BlendednessTestCase(AlgorithmTestCase):
         task = self.makeSingleFrameMeasurementTask("base_Blendedness")
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         task.run(exposure, catalog)
-        self.assertTrue(catalog[1].get('base_Blendedness_abs_flux') > 0)
-        self.assertTrue(catalog[2].get('base_Blendedness_abs_flux') > 0)
+        self.assertGreater(catalog[1].get('base_Blendedness_abs_flux'), 0)
+        self.assertGreater(catalog[2].get('base_Blendedness_abs_flux'), 0)
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
 
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(BlendednessTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

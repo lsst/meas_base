@@ -21,17 +21,16 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
-
-import numpy
 
 import lsst.afw.geom
 import lsst.meas.base.tests
-import lsst.utils.tests
 import lsst.pex.exceptions
+import lsst.utils.tests
 
 
-class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase):
+class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testFlagAliases(self):
         """Test that we get flag aliases to the slot centroid and shape algorithms when we
@@ -54,8 +53,7 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase):
                          "base_SdssShape_flag")
 
     def testCentroidFlagAliases(self):
-        """Test that we setup the right aliases when using centroid algorithms to feed each other.
-        """
+        """Test that we setup the right aliases when using centroid algorithms to feed each other."""
         config = self.makeSingleFrameMeasurementConfig("base_NaiveCentroid", ["base_SdssCentroid"])
         config.slots.centroid = "base_SdssCentroid"
         config.slots.shape = None
@@ -77,7 +75,8 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase):
                                                        ["base_SdssCentroid", "base_SdssShape"])
         config.slots.centroid = None
         config.slots.shape = "base_SdssShape"
-        self.assertRaises(lsst.pex.exceptions.LogicError, self.makeSingleFrameMeasurementTask, config=config)
+        with self.assertRaises(lsst.pex.exceptions.LogicError):
+            self.makeSingleFrameMeasurementTask(config=config)
 
     def testUnmetShapeDependency(self):
         """Test that we throw an exception (LogicError) when initializing an algorithm
@@ -87,22 +86,17 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase):
                                                        ["base_SdssCentroid", "base_SdssShape"])
         config.slots.centroid = "base_SdssCentroid"
         config.slots.shape = None
-        self.assertRaises(lsst.pex.exceptions.LogicError, self.makeSingleFrameMeasurementTask, config=config)
+        with self.assertRaises(lsst.pex.exceptions.LogicError):
+            self.makeSingleFrameMeasurementTask(config=config)
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(InputUtilitiesTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-
-    return unittest.TestSuite(suites)
-
-def run(exit = False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), exit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

@@ -21,16 +21,16 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
 
-import numpy
+import numpy as np
 
-import lsst.utils.tests
 import lsst.afw.detection
 import lsst.afw.table
 import lsst.meas.base.tests
+import lsst.utils.tests
 
-numpy.random.seed(1234)
 
 @lsst.meas.base.register("test_NoiseReplacer")
 class NoiseReplacerTestPlugin(lsst.meas.base.SingleFramePlugin):
@@ -48,7 +48,7 @@ class NoiseReplacerTestPlugin(lsst.meas.base.SingleFramePlugin):
     def measure(self, measRecord, exposure):
         footprint = measRecord.getFootprint()
         fullArray = exposure.getMaskedImage().getImage().getArray()
-        insideArray = numpy.zeros(footprint.getArea(), dtype=fullArray.dtype)
+        insideArray = np.zeros(footprint.getArea(), dtype=fullArray.dtype)
         lsst.afw.detection.flattenArray(footprint, fullArray, insideArray, exposure.getXY0())
         insideFlux = float(insideArray.sum())
         outsideFlux = float(fullArray.sum()) - insideFlux
@@ -56,7 +56,7 @@ class NoiseReplacerTestPlugin(lsst.meas.base.SingleFramePlugin):
         measRecord.set(self.outsideKey, outsideFlux)
 
 
-class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase):
+class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
@@ -84,25 +84,20 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase):
             self.assertClose(record.get("test_NoiseReplacer_inside"), record.get("truth_flux"), rtol=1E-3)
             # n.b. Next line checks that a random value is correct to a statistical 1-sigma prediction;
             # some RNG seeds may cause it to fail (indeed, 67% should)
-            self.assertLess(record.get("test_NoiseReplacer_outside"), numpy.sqrt(sumVariance))
+            self.assertLess(record.get("test_NoiseReplacer_outside"), np.sqrt(sumVariance))
 
     def tearDown(self):
         del self.bbox
         del self.dataset
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
 
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(NoiseReplacerTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

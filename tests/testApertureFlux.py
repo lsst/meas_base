@@ -21,8 +21,10 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
-import numpy
+
+import numpy as np
 
 import lsst.afw.geom
 import lsst.afw.image
@@ -31,9 +33,9 @@ from lsst.meas.base import ApertureFluxAlgorithm
 from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 
+
 class ApertureFluxTestCase(lsst.utils.tests.TestCase):
-    """Test case for the ApertureFlux algorithm base class
-    """
+    """Test case for the ApertureFlux algorithm base class."""
 
     def setUp(self):
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(20, -100), lsst.afw.geom.Point2I(100, -20))
@@ -51,8 +53,8 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         the 'naive' definition of the aperture - just test whether the center of each pixel is within
         the circle.
         """
-        x, y = numpy.meshgrid(numpy.arange(self.bbox.getBeginX(), self.bbox.getEndX()),
-                              numpy.arange(self.bbox.getBeginY(), self.bbox.getEndY()))
+        x, y = np.meshgrid(np.arange(self.bbox.getBeginX(), self.bbox.getEndX()),
+                           np.arange(self.bbox.getBeginY(), self.bbox.getEndY()))
         return ((x - position.getX())**2 + (y - position.getY())**2 <= radius**2).sum()
 
     def testNaive(self):
@@ -69,11 +71,12 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                 # test that this isn't the same as the sinc flux
                 self.assertNotClose(
                     ApertureFluxAlgorithm.computeSincFlux(self.exposure.getMaskedImage().getImage(),
-                                                          ellipse, self.ctrl).flux,
-                    area
-                )
-                # test that all the ways we could invoke naive flux measurement produce the expected result
+                                                          ellipse, self.ctrl).flux, area)
+
                 def check(method, image):
+                    """test that all the ways we could invoke naive flux measurement
+                    produce the expected result
+                    """
                     result = method(image, ellipse, self.ctrl)
                     self.assertClose(result.flux, area)
                     self.assertFalse(result.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
@@ -81,7 +84,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                     if hasattr(image, "getVariance"):
                         self.assertClose(result.fluxSigma, (area*0.25)**0.5)
                     else:
-                        self.assertTrue(numpy.isnan(result.fluxSigma))
+                        self.assertTrue(np.isnan(result.fluxSigma))
                 check(ApertureFluxAlgorithm.computeNaiveFlux, self.exposure.getMaskedImage())
                 check(ApertureFluxAlgorithm.computeNaiveFlux, self.exposure.getMaskedImage().getImage())
                 check(ApertureFluxAlgorithm.computeFlux, self.exposure.getMaskedImage())
@@ -91,11 +94,10 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             self.exposure.getMaskedImage().getImage(),
             lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(12.0, 12.0),
                                            lsst.afw.geom.Point2D(25.0, -60.0)),
-            self.ctrl
-            )
+                                           self.ctrl)
         self.assertTrue(invalid.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
         self.assertFalse(invalid.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
-        self.assertTrue(numpy.isnan(invalid.flux))
+        self.assertTrue(np.isnan(invalid.flux))
 
     def testSinc(self):
         positions = [lsst.afw.geom.Point2D(60.0, -60.0),
@@ -111,19 +113,18 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                 # test that this isn't the same as the naive flux
                 self.assertNotClose(
                     ApertureFluxAlgorithm.computeNaiveFlux(self.exposure.getMaskedImage().getImage(),
-                                                           ellipse, self.ctrl).flux,
-                    area
-                )
-                # test that all the ways we could invoke sinc flux measurement produce the expected result
+                                                           ellipse, self.ctrl).flux, area)
+
                 def check(method, image):
+                    # test that all the ways we could invoke sinc flux measurement produce the expected result
                     result = method(image, ellipse, self.ctrl)
                     self.assertClose(result.flux, area, rtol=1E-3)
                     self.assertFalse(result.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
                     self.assertFalse(result.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
                     if hasattr(image, "getVariance"):
-                        self.assertFalse(numpy.isnan(result.fluxSigma))
+                        self.assertFalse(np.isnan(result.fluxSigma))
                     else:
-                        self.assertTrue(numpy.isnan(result.fluxSigma))
+                        self.assertTrue(np.isnan(result.fluxSigma))
                 check(ApertureFluxAlgorithm.computeSincFlux, self.exposure.getMaskedImage())
                 check(ApertureFluxAlgorithm.computeSincFlux, self.exposure.getMaskedImage().getImage())
                 check(ApertureFluxAlgorithm.computeFlux, self.exposure.getMaskedImage())
@@ -133,25 +134,23 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             self.exposure.getMaskedImage().getImage(),
             lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0),
                                            lsst.afw.geom.Point2D(25.0, -60.0)),
-            self.ctrl
-            )
+                                           self.ctrl)
         self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
         self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
-        self.assertTrue(numpy.isnan(invalid1.flux))
+        self.assertTrue(np.isnan(invalid1.flux))
         # test failure conditions when the aperture is not truncated, but the sinc coeffs are
         invalid2 = ApertureFluxAlgorithm.computeSincFlux(
             self.exposure.getMaskedImage().getImage(),
             lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0),
                                            lsst.afw.geom.Point2D(30.0, -60.0)),
-            self.ctrl
-            )
+                                           self.ctrl)
         self.assertFalse(invalid2.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
         self.assertTrue(invalid2.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
-        self.assertFalse(numpy.isnan(invalid2.flux))
+        self.assertFalse(np.isnan(invalid2.flux))
 
-class CircularApertureFluxTestCase(AlgorithmTestCase):
-    """Test case for the CircularApertureFlux algorithm/plugin
-    """
+
+class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
+    """Test case for the CircularApertureFlux algorithm/plugin."""
 
     def setUp(self):
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0),
@@ -203,14 +202,14 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
                 currentFlux = record.get(record.schema.join(prefix, "flux"))
                 currentFluxSigma = record.get(record.schema.join(prefix, "fluxSigma"))
                 if not record.get(record.schema.join(prefix, "flag")):
-                    self.assertTrue(currentFlux > lastFlux
-                                    or (record.get("truth_flux") - currentFlux) < 3*currentFluxSigma)
+                    self.assertTrue(currentFlux > lastFlux or
+                                    (record.get("truth_flux") - currentFlux) < 3*currentFluxSigma)
                     self.assertGreater(currentFluxSigma, lastFluxSigma)
                     lastFlux = currentFlux
                     lastFluxSigma = currentFluxSigma
                 else:
-                    self.assertTrue(numpy.isnan(currentFlux))
-                    self.assertTrue(numpy.isnan(currentFluxSigma))
+                    self.assertTrue(np.isnan(currentFlux))
+                    self.assertTrue(np.isnan(currentFluxSigma))
             # When measuring an isolated point source with a sufficiently large aperture, we should
             # recover the known input flux.
             if record.get("truth_isStar") and record.get("parent") == 0:
@@ -229,7 +228,7 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
         refWcs = self.dataset.exposure.getWcs()
         measCat = task.generateMeasCat(exposure, refCat, refWcs)
         task.attachTransformedFootprints(measCat, refCat, exposure, refWcs)
-        s = task.run(measCat, exposure, refCat, refWcs)
+        task.run(measCat, exposure, refCat, refWcs)
         for measRecord, truthRecord in zip(measCat, truthCatalog):
             # Centroid tolerances set to ~ single precision epsilon
             self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-7)
@@ -245,7 +244,8 @@ class CircularApertureFluxTestCase(AlgorithmTestCase):
                 self.assertLess(measRecord.get(measRecord.schema.join(prefix, "fluxSigma")), (n+1)*150.0)
 
 
-class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper):
+class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,
+                                    lsst.utils.tests.TestCase):
     class circApFluxAlgorithmFactory(object):
         """
         Helper class to sub in an empty PropertyList as the final argument to
@@ -264,25 +264,17 @@ class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTran
 
     def testTransform(self):
         """Demonstrate application of the ApertureFluxTransform to a synthetic SourceCatalog."""
-        FluxTransformTestCase.testTransform(self,
-            [ApertureFluxAlgorithm.makeFieldPrefix(self.name, r) for r in self.control.radii])
+        FluxTransformTestCase.testTransform(self, [ApertureFluxAlgorithm.makeFieldPrefix(self.name, r)
+                                                   for r in self.control.radii])
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(ApertureFluxTestCase)
-    suites += unittest.makeSuite(CircularApertureFluxTestCase)
-    suites += unittest.makeSuite(ApertureFluxTransformTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

@@ -21,16 +21,18 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import division, absolute_import, print_function
 import unittest
 
-import numpy
+import numpy as np
 
 import lsst.meas.base
 import lsst.utils.tests
 from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 
-class GaussianFluxTestCase(AlgorithmTestCase):
+
+class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
@@ -47,8 +49,7 @@ class GaussianFluxTestCase(AlgorithmTestCase):
         del self.dataset
 
     def makeAlgorithm(self, ctrl=None):
-        """Construct an algorithm (finishing a schema in the process), and return both.
-        """
+        """Construct an algorithm (finishing a schema in the process), and return both."""
         if ctrl is None:
             ctrl = lsst.meas.base.GaussianFluxControl()
         schema = lsst.meas.base.tests.TestDataset.makeMinimalSchema()
@@ -79,15 +80,15 @@ class GaussianFluxTestCase(AlgorithmTestCase):
             fluxes = []
             fluxSigmas = []
             nSamples = 1000
-            for repeat in xrange(nSamples):
+            for repeat in range(nSamples):
                 exposure, catalog = self.dataset.realize(noise*flux, schema)
                 record = catalog[1]
                 algorithm.measure(record, exposure)
                 fluxes.append(record.get("base_GaussianFlux_flux"))
                 fluxSigmas.append(record.get("base_GaussianFlux_fluxSigma"))
-            fluxMean = numpy.mean(fluxes)
-            fluxSigmaMean = numpy.mean(fluxSigmas)
-            fluxStandardDeviation = numpy.std(fluxes)
+            fluxMean = np.mean(fluxes)
+            fluxSigmaMean = np.mean(fluxSigmas)
+            fluxStandardDeviation = np.std(fluxes)
             self.assertClose(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)   # rng dependent
             self.assertLess(fluxMean - flux, 2.0*fluxSigmaMean / nSamples**0.5)   # rng dependent
 
@@ -96,8 +97,8 @@ class GaussianFluxTestCase(AlgorithmTestCase):
         measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs())
         measDataset = self.dataset.transform(measWcs)
         exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
-        refWcs=self.dataset.exposure.getWcs()
-        refCat=self.dataset.catalog
+        refWcs = self.dataset.exposure.getWcs()
+        refCat = self.dataset.catalog
         measCat = task.generateMeasCat(exposure, refCat, refWcs)
         task.attachTransformedFootprints(measCat, refCat, exposure, refWcs)
         task.run(measCat, exposure, refCat, refWcs)
@@ -114,7 +115,9 @@ class GaussianFluxTestCase(AlgorithmTestCase):
                              rtol=0.3)
             self.assertLess(measRecord.get("base_GaussianFlux_fluxSigma"), 500.0)
 
-class GaussianFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper):
+
+class GaussianFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,
+                                    lsst.utils.tests.TestCase):
     controlClass = lsst.meas.base.GaussianFluxControl
     algorithmClass = lsst.meas.base.GaussianFluxAlgorithm
     transformClass = lsst.meas.base.GaussianFluxTransform
@@ -122,20 +125,13 @@ class GaussianFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTran
     forcedPlugins = ('base_GaussianFlux',)
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(GaussianFluxTestCase)
-    suites += unittest.makeSuite(GaussianFluxTransformTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

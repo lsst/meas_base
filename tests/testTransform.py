@@ -20,6 +20,7 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 
+from __future__ import absolute_import, division, print_function
 import unittest
 
 import lsst.afw.image as afwImage
@@ -28,13 +29,15 @@ import lsst.daf.base as dafBase
 import lsst.meas.base as measBase
 import lsst.pex.config as pexConfig
 import lsst.pex.exceptions as pexExcept
-import lsst.utils.tests as utilsTests
+import lsst.utils.tests
+
 import testLib
 
 try:
     type(verbose)
 except NameError:
     verbose = 0
+
 
 def makeWcs():
     """Provide a simple WCS for use in testing"""
@@ -51,11 +54,13 @@ def makeWcs():
     md.set("EQUINOX", 2000.0)
     return afwImage.makeWcs(md)
 
+
 @pexConfig.wrap(testLib.SillyCentroidControl)
 class SillyCentroidConfig(pexConfig.Config):
     pass
 
-class TransformTestCase(utilsTests.TestCase):
+
+class TransformTestCase(lsst.utils.tests.TestCase):
     pluginName = "base_SillyCentroid"
     centroidPosition = (1.0, -1.0)
 
@@ -97,14 +102,14 @@ class TransformTestCase(utilsTests.TestCase):
 
         # Other entries from the source table have not been copied
         for name in ("id", "coord_ra", "coord_dec", "parent"):
-            self.assertTrue(name in inCat.schema)
-            self.assertFalse(name in outCat.schema)
+            self.assertIn(name, inCat.schema)
+            self.assertNotIn(name, outCat.schema)
 
     def testNullTransform(self):
         """The NullTransform passes through nothing"""
         inCat = self._generateCatalog()
-        self.assertRaises(pexExcept.LengthError, self._performTransform,
-                          measBase.NullTransform, inCat, False)
+        with self.assertRaises(pexExcept.LengthError):
+            self._performTransform(measBase.NullTransform, inCat, False)
         outCat = self._performTransform(measBase.NullTransform, inCat)
         self.assertEqual(len(inCat), len(outCat))
         self.assertEqual(outCat.schema.getFieldCount(), 0)
@@ -112,8 +117,8 @@ class TransformTestCase(utilsTests.TestCase):
     def testPassThroughTransform(self):
         """The PassThroughTransform copies all fields starting with the plugin name"""
         inCat = self._generateCatalog()
-        self.assertRaises(pexExcept.LengthError, self._performTransform,
-                          measBase.PassThroughTransform, inCat, False)
+        with self.assertRaises(pexExcept.LengthError):
+            self._performTransform(measBase.PassThroughTransform, inCat, False)
         outCat = self._performTransform(measBase.PassThroughTransform, inCat)
         self.assertEqual(len(inCat), len(outCat))
         for inSrc, outSrc in zip(inCat, outCat):
@@ -123,8 +128,8 @@ class TransformTestCase(utilsTests.TestCase):
     def testPythonConfig(self):
         """The Python Config should be automatically converted to Control when calling a C++ transform."""
         inCat = self._generateCatalog()
-        self.assertRaises(pexExcept.LengthError, self._performTransform,
-                          testLib.SillyTransform, inCat, False)
+        with self.assertRaises(pexExcept.LengthError):
+            self._performTransform(testLib.SillyTransform, inCat, False)
         outCat = self._performTransform(testLib.SillyTransform, inCat)
         self._checkSillyOutputs(inCat, outCat)
 
@@ -140,7 +145,9 @@ class TransformTestCase(utilsTests.TestCase):
         sillyTransform(inCat, outCat, makeWcs(), afwImage.Calib())
         self._checkSillyOutputs(inCat, outCat)
 
-class AlgorithmConfigurationTestCase(utilsTests.TestCase):
+
+class AlgorithmConfigurationTestCase(lsst.utils.tests.TestCase):
+
     def testDefaultTransform(self):
         """By default, we perform no transformations"""
         self.assertEqual(measBase.BasePlugin.getTransformClass(), measBase.PassThroughTransform)
@@ -163,21 +170,13 @@ class AlgorithmConfigurationTestCase(utilsTests.TestCase):
         self.assertEqual(singleFrame.getTransformClass(), measBase.PassThroughTransform)
 
 
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    utilsTests.init()
 
-    suites = []
-    suites += unittest.makeSuite(TransformTestCase)
-    suites += unittest.makeSuite(AlgorithmConfigurationTestCase)
-    suites += unittest.makeSuite(utilsTests.MemoryTestCase)
-
-    return unittest.TestSuite(suites)
-
-def run(exit=False):
-    """Run the tests"""
-    utilsTests.run(suite(), exit)
+def setup_module(module):
+    lsst.utils.tests.init()
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

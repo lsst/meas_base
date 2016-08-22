@@ -21,6 +21,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
 
 import lsst.meas.base
@@ -28,7 +29,10 @@ import lsst.utils.tests
 
 from lsst.meas.base.tests import FluxTransformTestCase, SingleFramePluginTransformSetupHelper
 
-class PeakLikelihoodFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper):
+
+class PeakLikelihoodFluxTransformTestCase(FluxTransformTestCase,
+                                          SingleFramePluginTransformSetupHelper,
+                                          lsst.utils.tests.TestCase):
     controlClass = lsst.meas.base.PeakLikelihoodFluxControl
     algorithmClass = lsst.meas.base.PeakLikelihoodFluxAlgorithm
     transformClass = lsst.meas.base.PeakLikelihoodFluxTransform
@@ -36,19 +40,13 @@ class PeakLikelihoodFluxTransformTestCase(FluxTransformTestCase, SingleFramePlug
     forcedPlugins = ('base_PeakLikelihoodFlux',)
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(PeakLikelihoodFluxTransformTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

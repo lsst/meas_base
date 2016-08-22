@@ -23,19 +23,14 @@
 """
 Tests for measuring sources using the meas_base framework
 
-Run with:
-   python measureSources.py
-or
-   python
-   >>> import measureSources; measureSources.run()
 """
+from __future__ import absolute_import, division, print_function
 import itertools
 import math
 import unittest
 
-import numpy
+import numpy as np
 
-import lsst.utils.tests as tests
 import lsst.pex.logging as pexLogging
 import lsst.pex.exceptions
 import lsst.daf.base as dafBase
@@ -45,6 +40,7 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
 import lsst.afw.image as afwImage
 import lsst.meas.base as measBase
+import lsst.utils.tests
 
 try:
     type(verbose)
@@ -57,7 +53,8 @@ try:
 except NameError:
     display = False
 
-FwhmPerSigma = 2*math.sqrt(2*math.log(2)) # FWHM for an N(0, 1) Gaussian
+FwhmPerSigma = 2*math.sqrt(2*math.log(2))  # FWHM for an N(0, 1) Gaussian
+
 
 def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
     schema = afwTable.SourceTable.makeMinimalSchema()
@@ -75,7 +72,8 @@ def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-class MeasureSourcesTestCase(unittest.TestCase):
+
+class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
     """A test case for Measure"""
 
     def setUp(self):
@@ -91,7 +89,7 @@ class MeasureSourcesTestCase(unittest.TestCase):
         # Create our measuring engine
         #
 
-        radii =  ( 1.0,   5.0,   10.0)  # radii to use
+        radii = (1.0,   5.0,   10.0)  # radii to use
 
         control = measBase.ApertureFluxControl()
         control.radii = radii
@@ -100,7 +98,8 @@ class MeasureSourcesTestCase(unittest.TestCase):
         x0, y0 = 1234, 5678
         exp.setXY0(afwGeom.Point2I(x0, y0))
 
-        plugin, cat = makePluginAndCat(measBase.CircularApertureFluxAlgorithm, "test", control, True, centroid="centroid")
+        plugin, cat = makePluginAndCat(measBase.CircularApertureFluxAlgorithm,
+                                       "test", control, True, centroid="centroid")
         source = cat.makeRecord()
         source.set("centroid_x", 30+x0)
         source.set("centroid_y", 50+y0)
@@ -112,8 +111,7 @@ class MeasureSourcesTestCase(unittest.TestCase):
             self.assertAlmostEqual(10.0*math.pi*r*r/currentFlux, 1.0, places=4)
 
     def testPeakLikelihoodFlux(self):
-        """Test measurement with PeakLikelihoodFlux
-        """
+        """Test measurement with PeakLikelihoodFlux."""
         # make and measure a series of exposures containing just one star, approximately centered
         bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.Extent2I(100, 101))
         kernelWidth = 35
@@ -124,7 +122,7 @@ class MeasureSourcesTestCase(unittest.TestCase):
         psf = afwDetection.GaussianPsf(kernelWidth, kernelWidth, sigma)
         psfKernel = psf.getLocalKernel()
         psfImage = psf.computeKernelImage()
-        sumPsfSq = numpy.sum(psfImage.getArray()**2)
+        sumPsfSq = np.sum(psfImage.getArray()**2)
         psfSqArr = psfImage.getArray()**2
 
         for flux in (1000, 10000):
@@ -156,7 +154,7 @@ class MeasureSourcesTestCase(unittest.TestCase):
             # again, this is a test of the algorithm
             varView = afwImage.ImageF(unshMImage.getVariance(), kernelBBox)
             varArr = varView.getArray()
-            unfiltPredFluxErr = math.sqrt(numpy.sum(varArr*psfSqArr)) / sumPsfSq
+            unfiltPredFluxErr = math.sqrt(np.sum(varArr*psfSqArr)) / sumPsfSq
             self.assertLess(abs(unfiltPredFluxErr - predFluxErr), predFluxErr * 0.01)
 
             for fracOffset in (afwGeom.Extent2D(0, 0), afwGeom.Extent2D(0.2, -0.3)):
@@ -173,7 +171,8 @@ class MeasureSourcesTestCase(unittest.TestCase):
                 exp = afwImage.makeExposure(filteredImage)
                 exp.setPsf(psf)
                 control = measBase.PeakLikelihoodFluxControl()
-                plugin, cat = makePluginAndCat(measBase.PeakLikelihoodFluxAlgorithm, "test", control,centroid="centroid")
+                plugin, cat = makePluginAndCat(measBase.PeakLikelihoodFluxAlgorithm, "test",
+                                               control, centroid="centroid")
                 source = cat.makeRecord()
                 source.set("centroid_x", adjCenter.getX())
                 source.set("centroid_y", adjCenter.getY())
@@ -207,24 +206,16 @@ class MeasureSourcesTestCase(unittest.TestCase):
             source = cat.makeRecord()
             source.set("centroid_x", edgePos[0])
             source.set("centroid_y", edgePos[1])
-            self.assertRaises(
-                lsst.pex.exceptions.RangeError,
-                plugin.measure,
-                source,
-                exp,
-            )
+            with self.assertRaises(lsst.pex.exceptions.RangeError):
+                plugin.measure(source,exp)
 
         # no PSF should result in failure: flags set
         noPsfExposure = afwImage.ExposureF(filteredImage)
         source = cat.makeRecord()
         source.set("centroid_x", edgePos[0])
         source.set("centroid_y", edgePos[1])
-        self.assertRaises(
-            lsst.pex.exceptions.InvalidParameterError,
-            plugin.measure,
-            source,
-            noPsfExposure,
-        )
+        with self.assertRaises(lsst.pex.exceptions.InvalidParameterError):
+            plugin.measure(source, noPsfExposure)
 
     def testPixelFlags(self):
         width, height = 100, 100
@@ -245,13 +236,13 @@ class MeasureSourcesTestCase(unittest.TestCase):
         mask.set(40, 20, bad)
         mask.set(20, 80, nodata)
         mask.set(30, 30, clipped)
-        mask.Factory(mask, afwGeom.Box2I(afwGeom.Point2I(0,0), afwGeom.Extent2I(3, height))).set(edge)
+        mask.Factory(mask, afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.Extent2I(3, height))).set(edge)
         x0, y0 = 1234, 5678
         exp.setXY0(afwGeom.Point2I(x0, y0))
         control = measBase.PixelFlagsControl()
         # Change the configuration of control to test for clipped mask
         control.masksFpAnywhere = ['CLIPPED']
-        plugin, cat = makePluginAndCat(measBase.PixelFlagsAlgorithm, "test", control,centroid="centroid")
+        plugin, cat = makePluginAndCat(measBase.PixelFlagsAlgorithm, "test", control, centroid="centroid")
         allFlags = [
             "",
             "edge",
@@ -263,18 +254,18 @@ class MeasureSourcesTestCase(unittest.TestCase):
             "crCenter",
             "bad",
             "clipped",
-            ]
+        ]
         for x, y, setFlags in [(1, 50, ['edge']),
                                (40, 20, ['bad']),
-                               (20, 20, ['saturatedCenter', 
+                               (20, 20, ['saturatedCenter',
                                          'saturated']),
                                (20, 22, ['saturated']),
-                               (60, 60, ['interpolatedCenter', 
+                               (60, 60, ['interpolatedCenter',
                                          'interpolated']),
                                (60, 62, ['interpolated']),
                                (20, 80, ['edge']),
                                (30, 30, ['clipped']),
-            ]:
+                               ]:
             foot = afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5)
             source = cat.makeRecord()
             source.setFootprint(foot)
@@ -295,35 +286,23 @@ class MeasureSourcesTestCase(unittest.TestCase):
         source.set("centroid_y", 40)
         source.set("centroid_flag", True)
         source.setFootprint(afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5))
-        self.assertRaises(  
-            lsst.pex.exceptions.RuntimeError,
-            plugin.measure,
-            source,
-            exp,
-        )
+        with self.assertRaises(lsst.pex.exceptions.RuntimeError):
+            plugin.measure(source,exp)
         # Test that if there is no center and centroider that the object should look at the footprint
         plugin, cat = makePluginAndCat(measBase.PixelFlagsAlgorithm, "test", control)
         # The first test should raise exception because there is no footprint
         source = cat.makeRecord()
-        self.assertRaises(
-                lsst.pex.exceptions.RuntimeError,
-                plugin.measure,
-                source,
-                exp,
-        )
+        with self.assertRaises(lsst.pex.exceptions.RuntimeError):
+            plugin.measure(source, exp)
         # The second test will raise an error because no peaks are present
-        source.setFootprint(afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)),5))
-        self.assertRaises(
-                lsst.pex.exceptions.RuntimeError,
-                plugin.measure,
-                source,
-                exp,
-        )
+        source.setFootprint(afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5))
+        with self.assertRaises(lsst.pex.exceptions.RuntimeError):
+            plugin.measure(source, exp)
         # The final test should pass because it detects a peak, we are reusing the location of the
         # clipped bit in the mask plane, so we will check first that it is false, then true
-        source.getFootprint().addPeak(x+x0,y+y0, 100)
+        source.getFootprint().addPeak(x+x0, y+y0, 100)
         self.assertFalse(source.get("test_flag_clipped"), "The clipped flag should be set False")
-        plugin.measure(source,exp)
+        plugin.measure(source, exp)
         self.assertTrue(source.get("test_flag_clipped"), "The clipped flag should be set True")
 
 
@@ -356,6 +335,7 @@ def addStar(image, center, flux, fwhm):
 
     image += starImage
 
+
 def makeFakeImage(bbox, centerList, fluxList, fwhm, var):
     """Make a fake image containing a set of stars variance = image + var
 
@@ -382,18 +362,13 @@ def makeFakeImage(bbox, centerList, fluxList, fwhm, var):
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
-    tests.init()
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
-    suites = []
-    suites += unittest.makeSuite(MeasureSourcesTestCase)
-    suites += unittest.makeSuite(tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
 
-def run(exit = False):
-    """Run the tests"""
-    tests.run(suite(), exit)
+def setup_module(module):
+    lsst.utils.tests.init()
 
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

@@ -21,30 +21,32 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
 
 import lsst.utils.tests
 import lsst.meas.base
 
-class ApCorrNameTestCase(unittest.TestCase):
+
+class ApCorrNameTestCase(lsst.utils.tests.TestCase):
 
     def testDefaultNames(self):
         apCorrSet = lsst.meas.base.getApCorrNameSet()
-        self.assertTrue("base_PsfFlux" in apCorrSet)
-        self.assertTrue("base_GaussianFlux" in apCorrSet)
+        self.assertIn("base_PsfFlux", apCorrSet)
+        self.assertIn("base_GaussianFlux", apCorrSet)
 
     def testAdd(self):
         nameSet0 = lsst.meas.base.getApCorrNameSet()
 
         lsst.meas.base.addApCorrName("test_NewName")
         nameSet1 = lsst.meas.base.getApCorrNameSet()
-        self.assertTrue("test_NewName" in nameSet1)
+        self.assertIn("test_NewName", nameSet1)
         self.assertEqual(len(nameSet1 - nameSet0), 1)
 
         # adding a name twice is silently ignored
         lsst.meas.base.addApCorrName("test_NewName")
         nameSet2 = lsst.meas.base.getApCorrNameSet()
-        self.assertTrue("test_NewName" in nameSet2)
+        self.assertIn("test_NewName", nameSet2)
         self.assertEqual(len(nameSet2 - nameSet1), 0)
 
     def testCopy(self):
@@ -53,12 +55,11 @@ class ApCorrNameTestCase(unittest.TestCase):
         nameSet0 = lsst.meas.base.getApCorrNameSet()
         nameSet0.add("test_LocalName")
         nameSet1 = lsst.meas.base.getApCorrNameSet()
-        self.assertTrue("test_LocalName" not in nameSet1)
+        self.assertNotIn("test_LocalName", nameSet1)
         self.assertEqual(len(nameSet0 - nameSet1), 1)
 
     def testRegisterDecorator(self):
-        """Test the shouldApCorr argument of the register decorator for measurement plugins
-        """
+        """Test the shouldApCorr argument of the register decorator for measurement plugins."""
         @lsst.meas.base.register("test_ApCorrPlugin", shouldApCorr=True)
         class ApCorrPlugin(lsst.meas.base.SingleFramePlugin):
             pass
@@ -68,24 +69,17 @@ class ApCorrNameTestCase(unittest.TestCase):
             pass
 
         apCorrSet = lsst.meas.base.getApCorrNameSet()
-        self.assertTrue("test_ApCorrPlugin" in apCorrSet)
-        self.assertFalse("test_NonApCorrPlugin" in apCorrSet)
+        self.assertIn("test_ApCorrPlugin", apCorrSet)
+        self.assertNotIn("test_NonApCorrPlugin", apCorrSet)
 
 
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
 
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(ApCorrNameTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

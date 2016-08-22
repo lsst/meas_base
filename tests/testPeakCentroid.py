@@ -21,6 +21,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 from contextlib import contextmanager
 import unittest
 
@@ -30,6 +31,7 @@ import lsst.utils.tests
 
 from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
                                   SingleFramePluginTransformSetupHelper, ForcedPluginTransformSetupHelper)
+
 
 @contextmanager
 def onlyLogFatal(log):
@@ -48,7 +50,8 @@ def onlyLogFatal(log):
         log.setThreshold(oldLevel)
 
 
-class SingleFramePeakCentroidTestCase(AlgorithmTestCase):
+class SingleFramePeakCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
+
     def setUp(self):
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
@@ -67,9 +70,7 @@ class SingleFramePeakCentroidTestCase(AlgorithmTestCase):
         del self.catalog
 
     def testSingleFramePlugin(self):
-        """
-        Check that we recover the correct location of the centroid.
-        """
+        """Check that we recover the correct location of the centroid."""
         self.task.run(self.exposure, self.catalog)
         x = self.catalog[0].get("base_PeakCentroid_x")
         y = self.catalog[0].get("base_PeakCentroid_y")
@@ -91,12 +92,15 @@ class SingleFramePeakCentroidTestCase(AlgorithmTestCase):
 
 
 class SingleFramePeakCentroidTransformTestCase(CentroidTransformTestCase,
-                                               SingleFramePluginTransformSetupHelper):
+                                               SingleFramePluginTransformSetupHelper,
+                                               lsst.utils.tests.TestCase):
+
     class SingleFramePeakCentroidPluginFactory(object):
         """
         Helper class to sub in an empty PropertyList as the final argument to
         lsst.meas.base.SingleFramePeakCentroidPlugin.
         """
+
         def __call__(self, control, name, inputSchema):
             return lsst.meas.base.SingleFramePeakCentroidPlugin(control, name, inputSchema,
                                                                 lsst.daf.base.PropertyList())
@@ -108,7 +112,8 @@ class SingleFramePeakCentroidTransformTestCase(CentroidTransformTestCase,
 
 
 class ForcedPeakCentroidTransformTestCase(CentroidTransformTestCase,
-                                          ForcedPluginTransformSetupHelper):
+                                          ForcedPluginTransformSetupHelper,
+                                          lsst.utils.tests.TestCase):
     controlClass = lsst.meas.base.ForcedPeakCentroidConfig
     algorithmClass = lsst.meas.base.ForcedPeakCentroidPlugin
     transformClass = lsst.meas.base.SimpleCentroidTransform
@@ -116,21 +121,13 @@ class ForcedPeakCentroidTransformTestCase(CentroidTransformTestCase,
     forcedPlugins = ("base_PeakCentroid",)
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(SingleFramePeakCentroidTestCase)
-    suites += unittest.makeSuite(SingleFramePeakCentroidTransformTestCase)
-    suites += unittest.makeSuite(ForcedPeakCentroidTransformTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

@@ -20,7 +20,10 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-import numpy
+
+from __future__ import absolute_import, division, print_function
+import numpy as np
+
 import unittest
 
 import lsst.utils.tests
@@ -62,8 +65,8 @@ class Centroider(SingleFramePlugin):
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
 
-        self.xKey = schema.addField(schema.join(name, "x"), type=numpy.float64)
-        self.yKey = schema.addField(schema.join(name, "y"), type=numpy.float64)
+        self.xKey = schema.addField(schema.join(name, "x"), type=np.float64)
+        self.yKey = schema.addField(schema.join(name, "y"), type=np.float64)
         if self.config.dist is None:
             self.centroidChecker = lsst.meas.base.CentroidChecker(schema, name)
         else:
@@ -89,7 +92,7 @@ class Centroider(SingleFramePlugin):
             self.flagHandler.handleFailure(measRecord, error.cpp)
 
 
-class FlagHandlerTestCase(AlgorithmTestCase):
+class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     #   Setup a configuration and datasource to be used by the plugin tests
     def setUp(self):
@@ -206,5 +209,14 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         self.assertTrue(source.get("base_GaussianCentroid_flag"))
         self.assertTrue(source.get("base_GaussianCentroid_flag_resetToPeak"))
 
+
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
 if __name__ == "__main__":
+    lsst.utils.tests.init()
     unittest.main()

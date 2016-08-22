@@ -21,6 +21,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
 
 import lsst.utils.tests
@@ -28,7 +29,8 @@ import lsst.meas.base.tests
 from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 
-class GaussianCentroidTestCase(AlgorithmTestCase):
+
+class GaussianCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     def setUp(self):
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
@@ -54,7 +56,8 @@ class GaussianCentroidTestCase(AlgorithmTestCase):
         self.assertClose(y, self.center.getY(), atol=None, rtol=.01)
 
 
-class GaussianCentroidTransformTestCase(CentroidTransformTestCase, SingleFramePluginTransformSetupHelper):
+class GaussianCentroidTransformTestCase(CentroidTransformTestCase, SingleFramePluginTransformSetupHelper,
+                                        lsst.utils.tests.TestCase):
     controlClass = lsst.meas.base.GaussianCentroidControl
     algorithmClass = lsst.meas.base.GaussianCentroidAlgorithm
     transformClass = lsst.meas.base.GaussianCentroidTransform
@@ -63,20 +66,13 @@ class GaussianCentroidTransformTestCase(CentroidTransformTestCase, SingleFramePl
     forcedPlugins = ('base_GaussianCentroid',)
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(GaussianCentroidTestCase)
-    suites += unittest.makeSuite(GaussianCentroidTransformTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

@@ -21,9 +21,10 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 """ Unit tests for Python Plugin FlagHandlers and Sample Plugin Example."""
-import numpy
-import os
+from __future__ import absolute_import, division, print_function
 import unittest
+
+import numpy as np
 
 import lsst.utils.tests
 import lsst.meas.base
@@ -36,9 +37,8 @@ from lsst.meas.base.tests import (AlgorithmTestCase)
 import lsst.pex.exceptions
 from lsst.meas.base.pluginRegistry import register
 from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin
-from lsst.meas.base.baseLib import MeasurementError
-from lsst.meas.base import FlagDefinition, FlagDefinitionVector, FlagHandler
 from lsst.meas.base.flagDecorator import addFlagHandler
+
 
 class PythonPluginConfig(SingleFramePluginConfig):
     """
@@ -46,16 +46,16 @@ class PythonPluginConfig(SingleFramePluginConfig):
     """
 
     edgeLimit = lsst.pex.config.Field(dtype=int, default=0, optional=False,
-                                  doc="How close to the edge can the object be?")
+                                      doc="How close to the edge can the object be?")
     size = lsst.pex.config.Field(dtype=int, default=1, optional=False,
-                                  doc="size of aperture to measure around the center?")
+                                 doc="size of aperture to measure around the center?")
     flux0 = lsst.pex.config.Field(dtype=float, default=None, optional=False,
                                   doc="Flux for zero mag, used to set mag if defined")
 
-@register("test_PythonPlugin")
 
+@register("test_PythonPlugin")
 @addFlagHandler(("flag", "General Failure error"),
-                ("flag_containsNan","Measurement area contains a nan"),
+                ("flag_containsNan", "Measurement area contains a nan"),
                 ("flag_edge", "Measurement area over edge"))
 class PythonPlugin(SingleFramePlugin):
     """
@@ -93,8 +93,8 @@ class PythonPlugin(SingleFramePlugin):
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.centroidExtractor = lsst.meas.base.SafeCentroidExtractor(schema, name)
-        self.fluxKey = schema.addField(name + "_flux", "F", doc = "flux")
-        self.magKey = schema.addField(name + "_mag", "F", doc = "mag")
+        self.fluxKey = schema.addField(name + "_flux", "F", doc="flux")
+        self.magKey = schema.addField(name + "_mag", "F", doc="mag")
 
     def measure(self, measRecord, exposure):
         """
@@ -110,25 +110,27 @@ class PythonPlugin(SingleFramePlugin):
 
         # create a square bounding box of size = config.size around the center
         centerPoint = lsst.afw.geom.Point2I(int(center.getX()), int(center.getY()))
-        bbox = lsst.afw.geom.Box2I(centerPoint, lsst.afw.geom.Extent2I(1,1))
+        bbox = lsst.afw.geom.Box2I(centerPoint, lsst.afw.geom.Extent2I(1, 1))
         bbox.grow(self.config.size)
 
         # If the measurement box falls outside the exposure, raise the edge MeasurementError
         if not exposure.getBBox().contains(bbox):
             raise MeasurementError(self.flagHandler.getDefinition(self.ErrEnum.flag_edge).doc,
-                PythonPlugin.ErrEnum.flag_edge)
+                                   PythonPlugin.ErrEnum.flag_edge)
 
         # Sum the pixels inside the bounding box
         flux = lsst.afw.image.ImageF(exposure.getMaskedImage().getImage(), bbox).getArray().sum()
         measRecord.set(self.fluxKey, flux)
 
         # If there was a nan inside the bounding box, the flux will still be nan
-        if numpy.isnan(flux):
+        if np.isnan(flux):
             raise MeasurementError(self.flagHandler.getDefinition(self.ErrEnum.flag_containsNan).doc,
-                PythonPlugin.ErrEnum.flag_containsNan)
+                                   PythonPlugin.ErrEnum.flag_containsNan)
 
-        if not self.config.flux0 is None:
-            mag = -2.5 * math.log(flux/self.config.flux0)
+        if self.config.flux0 is not None:
+            if self.config.flux0 == 0:
+                raise ZeroDivisionError("self.config.flux0 is zero in divisor")
+            mag = -2.5 * np.log10(flux/self.config.flux0)
             measRecord.set(self.magKey, mag)
 
     def fail(self, measRecord, error=None):
@@ -144,12 +146,12 @@ class PythonPlugin(SingleFramePlugin):
         else:
             self.flagHandler.handleFailure(measRecord, error.cpp)
 
-class FlagHandlerTestCase(AlgorithmTestCase):
 
+class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     # Setup a configuration and datasource to be used by the plugin tests
     def setUp(self):
         self.algName = "test_PythonPlugin"
-        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0,0), lsst.afw.geom.Point2I(100, 100))
+        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0), lsst.afw.geom.Point2I(100, 100))
         self.dataset = lsst.meas.base.tests.TestDataset(bbox)
         self.dataset.addSource(flux=1E5, centroid=lsst.afw.geom.Point2D(25, 26))
         config = lsst.meas.base.SingleFrameMeasurementConfig()
@@ -172,28 +174,22 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         Standalone test to create a flaghandler and call it
         This is not a real world example, just a simple unit test
         """
-        control = lsst.meas.base.GaussianCentroidControl()
-        alg = lsst.meas.base.GaussianCentroidAlgorithm
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        plugin = alg(control, 'test', schema)
-        cat = lsst.afw.table.SourceCatalog(schema)
-        subSchema = schema["test"]
 
         # This is a FlagDefinition structure like a plugin might have
         FAILURE = 0
         FIRST = 1
         SECOND = 2
-        flagDefs = [ FlagDefinition("General Failure", "general failure error"),
-            FlagDefinition("1st error", "this is the first failure type"),
-            FlagDefinition("2nd error", "this is the second failure type")
-        ]
-        fh = FlagHandler.addFields(schema, "test",
-            FlagDefinitionVector(flagDefs))
+        flagDefs = [FlagDefinition("General Failure", "general failure error"),
+                    FlagDefinition("1st error", "this is the first failure type"),
+                    FlagDefinition("2nd error", "this is the second failure type")
+                    ]
+        fh = FlagHandler.addFields(schema, "test", FlagDefinitionVector(flagDefs))
 
         # Check to be sure that the FlagHandler was correctly initialized
         for index, flagDef in enumerate(flagDefs):
-           assert(flagDef.name == fh.getDefinition(index).name)
-           assert(flagDef.doc == fh.getDefinition(index).doc)
+            self.assertEqual(flagDef.name, fh.getDefinition(index).name)
+            self.assertEqual(flagDef.doc, fh.getDefinition(index).doc)
 
         catalog = lsst.afw.table.SourceCatalog(schema)
 
@@ -237,9 +233,9 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
         task.run(cat, exposure)
         source = cat[0]
-        self.assertEqual(source.get(self.algName + "_flag"), False)
-        self.assertEqual(source.get(self.algName + "_flag_containsNan"), False)
-        self.assertEqual(source.get(self.algName + "_flag_edge"), False)
+        self.assertFalse(source.get(self.algName + "_flag"))
+        self.assertFalse(source.get(self.algName + "_flag_containsNan"))
+        self.assertFalse(source.get(self.algName + "_flag_edge"))
 
     def testPluginUnexpectedError(self):
         """
@@ -254,9 +250,9 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         task.log.setThreshold(task.log.FATAL)
         task.run(cat, exposure)
         source = cat[0]
-        self.assertEqual(source.get(self.algName + "_flag"), True)
-        self.assertEqual(source.get(self.algName + "_flag_containsNan"), False)
-        self.assertEqual(source.get(self.algName + "_flag_edge"), False)
+        self.assertTrue(source.get(self.algName + "_flag"))
+        self.assertFalse(source.get(self.algName + "_flag_containsNan"))
+        self.assertFalse(source.get(self.algName + "_flag_edge"))
 
     def testPluginContainsNan(self):
         """
@@ -266,11 +262,11 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
         exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
         source = cat[0]
-        exposure.getMaskedImage().getImage().getArray()[source.getY(), source.getX()] = numpy.nan
+        exposure.getMaskedImage().getImage().getArray()[int(source.getY()), int(source.getX())] = np.nan
         task.run(cat, exposure)
-        self.assertEqual(source.get(self.algName + "_flag"), True)
-        self.assertEqual(source.get(self.algName + "_flag_containsNan"), True)
-        self.assertEqual(source.get(self.algName + "_flag_edge"), False)
+        self.assertTrue(source.get(self.algName + "_flag"))
+        self.assertTrue(source.get(self.algName + "_flag_containsNan"))
+        self.assertFalse(source.get(self.algName + "_flag_edge"))
 
     def testPluginEdgeError(self):
         """
@@ -284,9 +280,9 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         task.log.setThreshold(task.log.FATAL)
         task.run(cat, exposure)
         source = cat[0]
-        self.assertEqual(source.get(self.algName + "_flag"), True)
-        self.assertEqual(source.get(self.algName + "_flag_containsNan"), False)
-        self.assertEqual(source.get(self.algName + "_flag_edge"), True)
+        self.assertTrue(source.get(self.algName + "_flag"))
+        self.assertFalse(source.get(self.algName + "_flag_containsNan"))
+        self.assertTrue(source.get(self.algName + "_flag_edge"))
 
     def testSafeCentroider(self):
         """
@@ -299,45 +295,39 @@ class FlagHandlerTestCase(AlgorithmTestCase):
         exposure, cat = self.dataset.realize(noise=0.0, schema=schema)
         source = cat[0]
         task.run(cat, exposure)
-        self.assertEqual(source.get(self.algName + "_flag"), False)
+        self.assertFalse(source.get(self.algName + "_flag"))
         flux = source.get("test_PythonPlugin_flux")
-        self.assertFalse(numpy.isnan(flux))
+        self.assertFalse(np.isnan(flux))
 
         # If one of the center coordinates is nan and the centroid slot error flag has
         # not been set, the SafeCentroidExtractor will fail.
-        source.set('truth_x', numpy.nan)
+        source.set('truth_x', np.nan)
         source.set('truth_flag', False)
-        source.set("test_PythonPlugin_flux", numpy.nan)
+        source.set("test_PythonPlugin_flux", np.nan)
         source.set(self.algName + "_flag", False)
         task.run(cat, exposure)
-        self.assertEqual(source.get(self.algName + "_flag"), True)
-        self.assertTrue(numpy.isnan(source.get("test_PythonPlugin_flux")))
+        self.assertTrue(source.get(self.algName + "_flag"))
+        self.assertTrue(np.isnan(source.get("test_PythonPlugin_flux")))
 
         # But if the same conditions occur and the centroid slot error flag is set
         # to true, the SafeCentroidExtractor will succeed and the algorithm will complete.
         # However, the failure flag will also be set.
-        source.set('truth_x', numpy.nan)
+        source.set('truth_x', np.nan)
         source.set('truth_flag', True)
-        source.set("test_PythonPlugin_flux", numpy.nan)
-        flag = source.get(self.algName + "_flag")
+        source.set("test_PythonPlugin_flux", np.nan)
         source.set(self.algName + "_flag", False)
         task.run(cat, exposure)
-        self.assertEqual(source.get(self.algName + "_flag"), True)
+        self.assertTrue(source.get(self.algName + "_flag"))
         self.assertEqual(source.get("test_PythonPlugin_flux"), flux)
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
 
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(FlagHandlerTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

@@ -21,6 +21,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
 
 import lsst.utils.tests
@@ -29,7 +30,7 @@ import lsst.meas.base as measBase
 import lsst.meas.base.afterburner as afterburners
 
 
-class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase):
+class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -20),
@@ -75,8 +76,8 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         abConfig = afterburners.AfterburnerConfig()
 
         def runFlagTest(psfFlux=100.0, modelFlux=200.0,
-                         psfFluxSigma=1.0, modelFluxSigma=2.0,
-                         psfFluxFlag=False, modelFluxFlag=False):
+                        psfFluxSigma=1.0, modelFluxSigma=2.0,
+                        psfFluxFlag=False, modelFluxFlag=False):
             task = self.makeSingleFrameMeasurementTask(config=config)
             abTask = afterburners.AfterburnerTask(schema=task.schema, config=abConfig)
             exposure, catalog = self.dataset.realize(10.0, task.schema)
@@ -118,20 +119,13 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase):
         self.assertTrue(runFlagTest(psfFluxSigma=float("NaN")))
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(ClassificationTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()

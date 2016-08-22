@@ -21,20 +21,21 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+from __future__ import absolute_import, division, print_function
 import unittest
 
-import numpy
+import numpy as np
 
 import lsst.afw.geom
 import lsst.afw.image
 import lsst.afw.table
 import lsst.utils.tests
-import lsst.meas.base.tests
 
 from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 
-class PsfFluxTestCase(AlgorithmTestCase):
+
+class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
@@ -49,8 +50,7 @@ class PsfFluxTestCase(AlgorithmTestCase):
         del self.dataset
 
     def makeAlgorithm(self, ctrl=None):
-        """Construct an algorithm (finishing a schema in the process), and return both.
-        """
+        """Construct an algorithm (finishing a schema in the process), and return both."""
         if ctrl is None:
             ctrl = lsst.meas.base.PsfFluxControl()
         schema = lsst.meas.base.tests.TestDataset.makeMinimalSchema()
@@ -61,14 +61,15 @@ class PsfFluxTestCase(AlgorithmTestCase):
         algorithm, schema = self.makeAlgorithm()
         exposure, catalog = self.dataset.realize(10.0, schema)
         record = catalog[0]
-        badPoint = lsst.afw.geom.Point2I(self.center) + lsst.afw.geom.Extent2I(3,4)
+        badPoint = lsst.afw.geom.Point2I(self.center) + lsst.afw.geom.Extent2I(3, 4)
         imageArray = exposure.getMaskedImage().getImage().getArray()
         maskArray = exposure.getMaskedImage().getMask().getArray()
         badMask = exposure.getMaskedImage().getMask().getPlaneBitMask("BAD")
-        imageArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] = numpy.inf
+        imageArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] = np.inf
         maskArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] |= badMask
         # Should get an infinite value exception, because we didn't mask that one pixel
-        self.assertRaises(lsst.meas.base.PixelValueError, algorithm.measure, record, exposure)
+        with self.assertRaises(lsst.meas.base.PixelValueError):
+            algorithm.measure(record, exposure)
         # If we do mask it, we should get a reasonable result
         ctrl = lsst.meas.base.PsfFluxControl()
         ctrl.badMaskPlanes = ["BAD"]
@@ -78,7 +79,7 @@ class PsfFluxTestCase(AlgorithmTestCase):
         self.assertClose(record.get("base_PsfFlux_flux"), record.get("truth_flux"),
                          atol=3*record.get("base_PsfFlux_fluxSigma"))
         # If we mask the whole image, we should get a MeasurementError
-        maskArray[:,:] |= badMask
+        maskArray[:, :] |= badMask
         with self.assertRaises(lsst.meas.base.MeasurementError) as context:
             algorithm.measure(record, exposure)
         self.assertEqual(context.exception.getFlagBit(), lsst.meas.base.PsfFluxAlgorithm.NO_GOOD_PIXELS)
@@ -100,12 +101,12 @@ class PsfFluxTestCase(AlgorithmTestCase):
         self.assertTrue(record.get("base_PsfFlux_flag_edge"))
 
     def testNoPsf(self):
-        """Test that we raise FatalAlgorithmError when there's no PSF.
-        """
+        """Test that we raise FatalAlgorithmError when there's no PSF."""
         algorithm, schema = self.makeAlgorithm()
         exposure, catalog = self.dataset.realize(10.0, schema)
         exposure.setPsf(None)
-        self.assertRaises(lsst.meas.base.FatalAlgorithmError, algorithm.measure, catalog[0], exposure)
+        with self.assertRaises(lsst.meas.base.FatalAlgorithmError):
+            algorithm.measure(catalog[0], exposure)
 
     def testMonteCarlo(self):
         """Test that we get exactly the right answer on an ideal sim with no noise, and that
@@ -122,15 +123,15 @@ class PsfFluxTestCase(AlgorithmTestCase):
             fluxes = []
             fluxSigmas = []
             nSamples = 1000
-            for repeat in xrange(nSamples):
+            for repeat in range(nSamples):
                 exposure, catalog = self.dataset.realize(noise*flux, schema)
                 record = catalog[0]
                 algorithm.measure(record, exposure)
                 fluxes.append(record.get("base_PsfFlux_flux"))
                 fluxSigmas.append(record.get("base_PsfFlux_fluxSigma"))
-            fluxMean = numpy.mean(fluxes)
-            fluxSigmaMean = numpy.mean(fluxSigmas)
-            fluxStandardDeviation = numpy.std(fluxes)
+            fluxMean = np.mean(fluxes)
+            fluxSigmaMean = np.mean(fluxSigmas)
+            fluxStandardDeviation = np.std(fluxes)
             self.assertClose(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)   # rng dependent
             self.assertLess(fluxMean - flux, 2.0*fluxSigmaMean / nSamples**0.5)   # rng dependent
 
@@ -168,7 +169,8 @@ class PsfFluxTestCase(AlgorithmTestCase):
         self.assertLess(measRecord.get("base_PsfFlux_fluxSigma"), 500.0)
 
 
-class PsfFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper):
+class PsfFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,
+                               lsst.utils.tests.TestCase):
     controlClass = lsst.meas.base.PsfFluxControl
     algorithmClass = lsst.meas.base.PsfFluxAlgorithm
     transformClass = lsst.meas.base.PsfFluxTransform
@@ -177,20 +179,13 @@ class PsfFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransform
     forcedPlugins = ('base_PsfFlux',)
 
 
-def suite():
-    """Returns a suite containing all the test cases in this module."""
+class TestMemory(lsst.utils.tests.MemoryTestCase):
+    pass
 
+
+def setup_module(module):
     lsst.utils.tests.init()
 
-    suites = []
-    suites += unittest.makeSuite(PsfFluxTestCase)
-    suites += unittest.makeSuite(PsfFluxTransformTestCase)
-    suites += unittest.makeSuite(lsst.utils.tests.MemoryTestCase)
-    return unittest.TestSuite(suites)
-
-def run(shouldExit=False):
-    """Run the tests"""
-    lsst.utils.tests.run(suite(), shouldExit)
-
 if __name__ == "__main__":
-    run(True)
+    lsst.utils.tests.init()
+    unittest.main()
