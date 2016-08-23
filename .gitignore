@@ -1,4 +1,5 @@
 _build.*
+.cache
 *.dylib
 *.o
 *.so
@@ -19,6 +20,7 @@ python/lsst/meas/base/version.py
 python/lsst/meas/base/*.pyc
 python/lsst/meas/base/baseLib.py
 tests/.tests
+tests/.cache
 ups/*.cfgc
 bin/forcedPhotCcd.py
 bin/forcedPhotCoadd.py
