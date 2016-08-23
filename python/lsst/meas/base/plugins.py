@@ -267,9 +267,6 @@ class SingleFrameInputCountPlugin(SingleFramePlugin):
             raise bl.MeasurementError("Source has a bad centroid.", self.FAILURE_BAD_CENTROID)
 
         center = measRecord.getCentroid()
-        # Promote bounding box of the Footprint to type D to ensure
-        # the ability to compare the Footprint and center (they may be of mixed types I and D)
-        fpBbox = lsst.afw.geom.Box2D(measRecord.getFootprint().getBBox())
         ccds = exposure.getInfo().getCoaddInputs().ccds
         measRecord.set(self.numberKey, len(ccds.subsetContaining(center, exposure.getWcs())))
 
