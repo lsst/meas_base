@@ -25,6 +25,7 @@
 # -*- lsst-python -*-
 
 from __future__ import absolute_import, division, print_function
+from builtins import range
 import math
 import unittest
 
@@ -163,7 +164,7 @@ class sincPhotSums(lsst.utils.tests.TestCase):
         #
         # Now measure some annuli
         #
-        for r1, r2 in [(0.,      0.45*a),
+        for r1, r2 in [(0., 0.45*a),
                        (0.45*a, 1.0*a),
                        (1.0*a, 2.0*a),
                        (2.0*a, 3.0*a),
@@ -197,6 +198,7 @@ class sincPhotSums(lsst.utils.tests.TestCase):
 
 
 class SincCoeffTestCase(lsst.utils.tests.TestCase):
+
     def setUp(self):
         self.ellipse = afwEll.Axes(10.0, 5.0, 0.12345)
         self.radius1 = 0.1234

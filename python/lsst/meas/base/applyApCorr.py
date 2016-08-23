@@ -1,4 +1,3 @@
-from __future__ import absolute_import, division
 #
 # LSST Data Management System
 # Copyright 2015 LSST Corporation.
@@ -20,8 +19,10 @@ from __future__ import absolute_import, division
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from __future__ import absolute_import, division
 import math
 
+from builtins import object
 import numpy
 
 import lsst.pex.config
@@ -38,9 +39,11 @@ UseNaiveFluxSigma = True
 
 __all__ = ("ApplyApCorrConfig", "ApplyApCorrTask")
 
+
 class ApCorrInfo(object):
     """!Catalog field names and keys needed to aperture correct a particular flux
     """
+
     def __init__(self, schema, name):
         """!Construct an ApCorrInfo and add fields to the schema
 
@@ -74,32 +77,33 @@ class ApCorrInfo(object):
         self.fluxFlagKey = schema.find(name + "_flag").key
         self.apCorrKey = schema.addField(
             name + "_apCorr",
-            doc = "aperture correction applied to %s" % (name,),
-            type = float,
+            doc="aperture correction applied to %s" % (name,),
+            type=float,
         )
         self.apCorrSigmaKey = schema.addField(
             name + "_apCorrSigma",
-            doc = "aperture correction applied to %s" % (name,),
-            type = float,
+            doc="aperture correction applied to %s" % (name,),
+            type=float,
         )
         self.apCorrFlagKey = schema.addField(
             name + "_flag_apCorr",
-            doc = "set if unable to aperture correct %s" % (name,),
-            type = "Flag",
+            doc="set if unable to aperture correct %s" % (name,),
+            type="Flag",
         )
+
 
 class ApplyApCorrConfig(lsst.pex.config.Config):
     ignoreList = lsst.pex.config.ListField(
-        doc = "flux measurement algorithms in getApCorrNameSet() to ignore;" +
-            " if a name is listed that does not appear in getApCorrNameSet() then a warning is logged",
-        dtype = str,
-        optional = False,
-        default = (),
+        doc="flux measurement algorithms in getApCorrNameSet() to ignore; "
+            "if a name is listed that does not appear in getApCorrNameSet() then a warning is logged",
+        dtype=str,
+        optional=False,
+        default=(),
     )
     doFlagApCorrFailures = lsst.pex.config.Field(
-        doc = "set the general failure flag for a flux when it cannot be aperture-corrected?",
-        dtype = bool,
-        default = True,
+        doc="set the general failure flag for a flux when it cannot be aperture-corrected?",
+        dtype=bool,
+        default=True,
     )
 
 
@@ -120,7 +124,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
         missingNameSet = ignoreSet - set(apCorrNameSet)
         if missingNameSet:
             self.log.warn("Fields in ignoreList that are not in fluxCorrectList: %s" %
-                (sorted(list(missingNameSet)),))
+                          (sorted(list(missingNameSet)),))
         for name in apCorrNameSet - ignoreSet:
             if name + "_flux" in schema:
                 self.apCorrInfoDict[name] = ApCorrInfo(schema=schema, name=name)
@@ -142,13 +146,13 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
             self.log.info("Use naive flux sigma computation")
         else:
             self.log.info("Use complex flux sigma computation that double-counts photon noise "
-                " and thus over-estimates flux uncertainty")
-        for apCorrInfo in self.apCorrInfoDict.itervalues():
+                          "and thus over-estimates flux uncertainty")
+        for apCorrInfo in self.apCorrInfoDict.values():
             apCorrModel = apCorrMap.get(apCorrInfo.fluxName)
             apCorrSigmaModel = apCorrMap.get(apCorrInfo.fluxSigmaName)
             if None in (apCorrModel, apCorrSigmaModel):
                 missingNames = [(apCorrInfo.fluxName, apCorrInfo.fluxSigmaName)[i]
-                    for i, model in enumerate((apCorrModel, apCorrSigmaModel)) if model is None]
+                                for i, model in enumerate((apCorrModel, apCorrSigmaModel)) if model is None]
                 self.log.warn("Could not find %s in apCorrMap" % (" or ".join(missingNames),))
                 for source in catalog:
                     source.set(apCorrInfo.apCorrFlagKey, True)
@@ -194,9 +198,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                 # log statistics on the effects of aperture correction
                 apCorrArr = numpy.array([s.get(apCorrInfo.apCorrKey) for s in catalog])
                 apCorrSigmaArr = numpy.array([s.get(apCorrInfo.apCorrSigmaKey) for s in catalog])
-                self.log.logdebug("For flux field %r: mean apCorr=%s, stdDev apCorr=%s,"
-                    " mean apCorrSigma=%s, stdDev apCorrSigma=%s for %s sources" %
-                    (apCorrInfo.name, apCorrArr.mean(), apCorrArr.std(),
-                    apCorrSigmaArr.mean(), apCorrSigmaArr.std(), len(catalog)))
-
-
+                self.log.logdebug("For flux field %r: mean apCorr=%s, stdDev apCorr=%s, "
+                                  "mean apCorrSigma=%s, stdDev apCorrSigma=%s for %s sources" %
+                                  (apCorrInfo.name, apCorrArr.mean(), apCorrArr.std(),
+                                   apCorrSigmaArr.mean(), apCorrSigmaArr.std(), len(catalog)))

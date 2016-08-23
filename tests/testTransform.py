@@ -21,6 +21,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 
 from __future__ import absolute_import, division, print_function
+from builtins import zip
 import unittest
 
 import lsst.afw.image as afwImage
@@ -122,7 +123,7 @@ class TransformTestCase(lsst.utils.tests.TestCase):
         outCat = self._performTransform(measBase.PassThroughTransform, inCat)
         self.assertEqual(len(inCat), len(outCat))
         for inSrc, outSrc in zip(inCat, outCat):
-            for fieldname in inCat.schema.extract(self.pluginName + "*").keys():
+            for fieldname in inCat.schema.extract(self.pluginName + "*"):
                 self.assertEqual(inSrc.get(fieldname), outSrc.get(fieldname))
 
     def testPythonConfig(self):

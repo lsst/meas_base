@@ -25,6 +25,8 @@ Tests for measuring sources using the meas_base framework
 
 """
 from __future__ import absolute_import, division, print_function
+from builtins import zip
+from builtins import range
 import itertools
 import math
 import unittest
@@ -89,7 +91,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         # Create our measuring engine
         #
 
-        radii = (1.0,   5.0,   10.0)  # radii to use
+        radii = (1.0, 5.0, 10.0)  # radii to use
 
         control = measBase.ApertureFluxControl()
         control.radii = radii
@@ -207,7 +209,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
             source.set("centroid_x", edgePos[0])
             source.set("centroid_y", edgePos[1])
             with self.assertRaises(lsst.pex.exceptions.RangeError):
-                plugin.measure(source,exp)
+                plugin.measure(source, exp)
 
         # no PSF should result in failure: flags set
         noPsfExposure = afwImage.ExposureF(filteredImage)
@@ -287,7 +289,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         source.set("centroid_flag", True)
         source.setFootprint(afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5))
         with self.assertRaises(lsst.pex.exceptions.RuntimeError):
-            plugin.measure(source,exp)
+            plugin.measure(source, exp)
         # Test that if there is no center and centroider that the object should look at the footprint
         plugin, cat = makePluginAndCat(measBase.PixelFlagsAlgorithm, "test", control)
         # The first test should raise exception because there is no footprint
@@ -352,7 +354,7 @@ def makeFakeImage(bbox, centerList, fluxList, fwhm, var):
         raise RuntimeError("len(centerList) != len(fluxList)")
     maskedImage = afwImage.MaskedImageF(bbox)
     image = maskedImage.getImage()
-    for center, flux in itertools.izip(centerList, fluxList):
+    for center, flux in zip(centerList, fluxList):
         addStar(image, center=center, flux=flux, fwhm=fwhm)
     variance = maskedImage.getVariance()
     variance[:] = image

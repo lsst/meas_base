@@ -30,7 +30,7 @@ import lsst.afw.image
 import lsst.afw.table
 from lsst.geom import convexHull
 
-from .forcedPhotImage import ProcessImageForcedTask, ProcessImageForcedConfig
+from .forcedPhotImage import ForcedPhotImageTask, ForcedPhotImageConfig
 
 try:
     from lsst.meas.mosaic import applyMosaicResults
@@ -38,6 +38,7 @@ except ImportError:
     applyMosaicResults = None
 
 __all__ = ("PerTractCcdDataIdContainer", "ForcedPhotCcdConfig", "ForcedPhotCcdTask")
+
 
 class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
     """A version of lsst.pipe.base.DataIdContainer that combines raw data IDs with a tract.
@@ -52,6 +53,7 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
     what set of coadds to use.  The references from the tract whose patches intersect with
     the calexp are used.
     """
+
     def _addDataRef(self, namespace, dataId, tract):
         """Construct a dataRef based on dataId, but with an added tract key"""
         forcedDataId = dataId.copy()
@@ -98,13 +100,13 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
                     self._addDataRef(namespace, ref.dataId, tract)
 
         # Ensure all components of a visit are kept together by putting them all in the same set of tracts
-        for visit, tractSet in visitTract.iteritems():
+        for visit, tractSet in visitTract.items():
             for ref in visitRefs[visit]:
                 for tract in tractSet:
                     self._addDataRef(namespace, ref.dataId, tract)
         if visitTract:
             tractCounter = collections.Counter()
-            for tractSet in visitTract.itervalues():
+            for tractSet in visitTract.values():
                 tractCounter.update(tractSet)
             log.info("Number of visits for each tract: %s" % (dict(tractCounter),))
 
@@ -124,24 +126,24 @@ def overlapsTract(tract, imageWcs, imageBox):
 
     try:
         imageCorners = [imageWcs.pixelToSky(lsst.afw.geom.Point2D(pix)) for pix in imageBox.getCorners()]
-    except lsst.pex.exceptions.LsstCppException, e:
+    except lsst.pex.exceptions.LsstCppException as e:
         # Protecting ourselves from awful Wcs solutions in input images
         if (not isinstance(e.message, lsst.pex.exceptions.DomainErrorException) and
-            not isinstance(e.message, lsst.pex.exceptions.RuntimeErrorException)):
+                not isinstance(e.message, lsst.pex.exceptions.RuntimeErrorException)):
             raise
         return False
 
     imagePoly = convexHull([coord.getVector() for coord in imageCorners])
     if imagePoly is None:
         return False
-    return tractPoly.intersects(imagePoly) # "intersects" also covers "contains" or "is contained by"
+    return tractPoly.intersects(imagePoly)  # "intersects" also covers "contains" or "is contained by"
 
 
-class ForcedPhotCcdConfig(ProcessImageForcedConfig):
+class ForcedPhotCcdConfig(ForcedPhotImageConfig):
     doApplyUberCal = lsst.pex.config.Field(
-        dtype = bool,
-        doc = "Apply meas_mosaic ubercal results to input calexps?",
-        default = False
+        dtype=bool,
+        doc="Apply meas_mosaic ubercal results to input calexps?",
+        default=False
     )
 
 ## @addtogroup LSST_task_documentation
@@ -151,7 +153,8 @@ class ForcedPhotCcdConfig(ProcessImageForcedConfig):
 ## @copybrief ForcedPhotCcdTask
 ## @}
 
-class ForcedPhotCcdTask(ProcessImageForcedTask):
+
+class ForcedPhotCcdTask(ForcedPhotImageTask):
     """!A command-line driver for performing forced measurement on CCD images
 
     This task is a subclass of ForcedPhotImageTask which is specifically for doing forced
@@ -188,11 +191,11 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
                              (e.g. visit, raft, sensor for LSST data).
         """
         expBits = dataRef.get("ccdExposureId_bits")
-        expId = long(dataRef.get("ccdExposureId"))
+        expId = int(dataRef.get("ccdExposureId"))
         return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
 
     def getExposureId(self, dataRef):
-        return long(dataRef.get("ccdExposureId", immediate=True))
+        return int(dataRef.get("ccdExposureId", immediate=True))
 
     def fetchReferences(self, dataRef, exposure):
         """Return a SourceCatalog of sources which overlap the exposure.
@@ -215,7 +218,7 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
             if record.getFootprint() is None or record.getFootprint().getArea() == 0:
                 if record.getParent() != 0:
                     self.log.warn("Skipping reference %s (child of %s) with bad Footprint" %
-                    (record.getId(), record.getParent()))
+                                  (record.getId(), record.getParent()))
                 else:
                     self.log.warn("Skipping reference parent %s with bad Footprint" % (record.getId(),))
                     badParents.add(record.getId())
@@ -232,14 +235,13 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
                              unless config.doApplyUberCal is true, in which case the corresponding
                              meas_mosaic outputs are used as well.
         """
-        exposure = ProcessImageForcedTask.getExposure(self, dataRef)
+        exposure = ForcedPhotImageTask.getExposure(self, dataRef)
         if not self.config.doApplyUberCal:
             return exposure
         if applyMosaicResults is None:
             raise RuntimeError(
                 "Cannot use improved calibrations for %s because meas_mosaic could not be imported."
-                % dataRef.dataId
-                )
+                % (dataRef.dataId,))
         else:
             applyMosaicResults(dataRef, calexp=exposure)
         return exposure

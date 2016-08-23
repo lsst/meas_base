@@ -25,6 +25,8 @@
 Tests for InputCounts measurement algorithm
 """
 from __future__ import division, absolute_import, print_function
+from builtins import zip
+from builtins import range
 import numpy as np
 import itertools
 from collections import namedtuple

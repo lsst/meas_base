@@ -1,8 +1,8 @@
-# 
+#
 # LSST Data Management System
 #
 # Copyright 2008-2016  AURA/LSST.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -10,22 +10,25 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
+import traceback
+
+from builtins import object
 
 import lsst.pex.config
-
 from .transforms import PassThroughTransform
 
 __all__ = ("BasePluginConfig", "BasePlugin")
+
 
 class BasePluginConfig(lsst.pex.config.Config):
     """!
@@ -34,6 +37,7 @@ class BasePluginConfig(lsst.pex.config.Config):
     Most derived classes will want to set defaults that make sense for the plugin type
     """
     pass
+
 
 class BasePlugin(object):
     """!
@@ -55,7 +59,8 @@ class BasePlugin(object):
 
         In general, the following class constants should be used (other values
         are also allowed, but should be avoided unless they are needed):
-        CENTROID_ORDER      centroids and other algorithms that require only a Footprint and its Peaks as input
+        CENTROID_ORDER      centroids and other algorithms that require only a Footprint
+                            and its Peaks as input
         SHAPE_ORDER         shape measurements and other algorithms that require getCentroid() to return
                             a good centroid (in addition to a Footprint and its Peaks).
         FLUX_ORDER          flux algorithms that require both getShape() and getCentroid(),
@@ -101,7 +106,7 @@ class BasePlugin(object):
         traceback.print_exc()
         message = ("The algorithm '%s' thinks it cannot fail, but it did; "
                    "please report this as a bug (the full traceback is above)."
-                   % self.__class__.__name__)
+                   % (self.__class__.__name__,))
         raise NotImplementedError(message)
 
     @staticmethod

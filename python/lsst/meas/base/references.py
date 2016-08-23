@@ -30,17 +30,19 @@ import lsst.pipe.base
 
 __all__ = ("BaseReferencesTask", "CoaddSrcReferencesTask")
 
+
 class BaseReferencesConfig(lsst.pex.config.Config):
     removePatchOverlaps = lsst.pex.config.Field(
-        doc = "Only include reference sources for each patch that lie within the patch's inner bbox",
-        dtype = bool,
-        default = True
+        doc="Only include reference sources for each patch that lie within the patch's inner bbox",
+        dtype=bool,
+        default=True
     )
     filter = lsst.pex.config.Field(
-        doc = "Bandpass for reference sources; None indicates chi-squared detections.",
-        dtype = str,
-        optional = True
+        doc="Bandpass for reference sources; None indicates chi-squared detections.",
+        dtype=str,
+        optional=True
     )
+
 
 class BaseReferencesTask(lsst.pipe.base.Task):
     """!
@@ -155,9 +157,9 @@ class BaseReferencesTask(lsst.pipe.base.Task):
 
 class CoaddSrcReferencesConfig(BaseReferencesTask.ConfigClass):
     coaddName = lsst.pex.config.Field(
-        doc = "Coadd name: typically one of deep or goodSeeing.",
-        dtype = str,
-        default = "deep",
+        doc="Coadd name: typically one of deep or goodSeeing.",
+        dtype=str,
+        default="deep",
     )
 
     def validate(self):
@@ -166,7 +168,8 @@ class CoaddSrcReferencesConfig(BaseReferencesTask.ConfigClass):
                 field=CoaddSrcReferencesConfig.coaddName,
                 config=self,
                 msg="filter may be None if and only if coaddName is chiSquared"
-                )
+            )
+
 
 class CoaddSrcReferencesTask(BaseReferencesTask):
     """!
@@ -175,7 +178,7 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
     """
 
     ConfigClass = CoaddSrcReferencesConfig
-    datasetSuffix = "src" # Suffix to add to "Coadd_" for dataset name
+    datasetSuffix = "src"  # Suffix to add to "Coadd_" for dataset name
 
     def __init__(self, butler=None, schema=None, **kwargs):
         """! Initialize the task.
@@ -242,7 +245,7 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
         tract = skyMap[dataRef.dataId["tract"]]
         coordList = [wcs.pixelToSky(corner) for corner in lsst.afw.geom.Box2D(bbox).getCorners()]
         self.log.info("Getting references in region with corners %s [degrees]" %
-                      ", ".join("(%s)" % coord.getPosition(lsst.afw.geom.degrees) for coord in coordList))
+                      ", ".join("(%s)" % (coord.getPosition(lsst.afw.geom.degrees),) for coord in coordList))
         patchList = tract.findPatchList(coordList)
         # After figuring out which patch catalogs to read from the bbox, pad out the bbox if desired
         # But don't add any new patches while padding
@@ -255,8 +258,10 @@ class MultiBandReferencesConfig(CoaddSrcReferencesTask.ConfigClass):
 
     def validate(self):
         if self.filter is not None:
-            raise lsst.pex.config.FieldValidationError(field=MultiBandReferencesConfig.filter, config=self,
-                                       msg="Filter should not be set for the multiband processing scheme")
+            raise lsst.pex.config.FieldValidationError(
+                field=MultiBandReferencesConfig.filter,
+                config=self,
+                msg="Filter should not be set for the multiband processing scheme")
         # Delegate to ultimate base class, because the direct one has a check we don't want.
         BaseReferencesTask.ConfigClass.validate(self)
 

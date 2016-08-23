@@ -22,14 +22,16 @@
 #
 """Registry for measurement plugins and associated utilities generateAlgorithmName and PluginMap
 """
-
 import collections
+
+from builtins import object
 
 import lsst.pipe.base
 import lsst.pex.config
 from .apCorrRegistry import addApCorrName
 
-__all__ = ("generateAlgorithmName", "PluginRegistry", "register",  "PluginMap")
+__all__ = ("generateAlgorithmName", "PluginRegistry", "register", "PluginMap")
+
 
 def generateAlgorithmName(AlgClass):
     """Generate a string name for an algorithm class that strips away terms that are generally redundant
@@ -52,6 +54,7 @@ def generateAlgorithmName(AlgClass):
     if name.lower().startswith(terms[-1].lower()):
         terms = terms[:-1]
     return "%s_%s" % ("_".join(terms), name)
+
 
 class PluginRegistry(lsst.pex.config.Registry):
     """!
@@ -82,7 +85,8 @@ class PluginRegistry(lsst.pex.config.Registry):
             self.PluginClass = PluginClass
 
         @property
-        def ConfigClass(self): return self.PluginClass.ConfigClass
+        def ConfigClass(self):
+            return self.PluginClass.ConfigClass
 
         def __call__(self, config):
             return (self.PluginClass.getExecutionOrder(), self.name, config, self.PluginClass)
@@ -155,7 +159,7 @@ class PluginMap(collections.OrderedDict):
 
         @note plugin.config.doMeasure is usually a simple boolean class attribute, not a normal Config field.
         """
-        for plugin in self.itervalues():
+        for plugin in self.values():
             if plugin.config.doMeasure:
                 yield plugin
 
@@ -164,6 +168,6 @@ class PluginMap(collections.OrderedDict):
 
         @note plugin.config.doMeasureN is usually a simple boolean class attribute, not a normal Config field.
         """
-        for plugin in self.itervalues():
+        for plugin in self.values():
             if plugin.config.doMeasureN:
                 yield plugin

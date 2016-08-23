@@ -33,6 +33,7 @@ from lsst.meas.base.sfm import SingleFrameMeasurementConfig
 
 
 class JacobianTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
+
     def setUp(self):
         # Pick arbitrary numbers to create a detector object, and a synthetic
         # dataset. The particular numbers have no special meaning to the test

@@ -29,7 +29,6 @@ import numpy
 import lsst.pex.exceptions
 import lsst.afw.detection
 import lsst.afw.geom
-import lsst.afw.math as afwMath
 
 from .pluginRegistry import register
 from . import baseLib as bl
@@ -44,7 +43,7 @@ __all__ = (
     "SingleFrameJacobianConfig", "SingleFrameJacobianPlugin",
     "SingleFrameVarianceConfig", "SingleFrameVariancePlugin",
     "SingleFrameInputCountConfig", "SingleFrameInputCountPlugin",
-    "SingleFramePeakCentroidConfig", "SingleFramePeakCentroidPlugin", 
+    "SingleFramePeakCentroidConfig", "SingleFramePeakCentroidPlugin",
     "SingleFrameSkyCoordConfig", "SingleFrameSkyCoordPlugin",
     "ForcedPeakCentroidConfig", "ForcedPeakCentroidPlugin",
     "ForcedTransformedCentroidConfig", "ForcedTransformedCentroidPlugin",
@@ -54,31 +53,37 @@ __all__ = (
 # --- Wrapped C++ Plugins ---
 
 wrapSimpleAlgorithm(bl.PsfFluxAlgorithm, Control=bl.PsfFluxControl,
-                TransformClass=bl.PsfFluxTransform, executionOrder=BasePlugin.FLUX_ORDER, shouldApCorr=True)
+                    TransformClass=bl.PsfFluxTransform, executionOrder=BasePlugin.FLUX_ORDER,
+                    shouldApCorr=True)
 wrapSimpleAlgorithm(bl.PeakLikelihoodFluxAlgorithm, Control=bl.PeakLikelihoodFluxControl,
-                TransformClass=bl.PeakLikelihoodFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
+                    TransformClass=bl.PeakLikelihoodFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 wrapSimpleAlgorithm(bl.GaussianFluxAlgorithm, Control=bl.GaussianFluxControl,
-                TransformClass=bl.GaussianFluxTransform, executionOrder=BasePlugin.FLUX_ORDER, shouldApCorr=True)
+                    TransformClass=bl.GaussianFluxTransform, executionOrder=BasePlugin.FLUX_ORDER,
+                    shouldApCorr=True)
 wrapSimpleAlgorithm(bl.GaussianCentroidAlgorithm, Control=bl.GaussianCentroidControl,
-                TransformClass=bl.GaussianCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
+                    TransformClass=bl.GaussianCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
 wrapSimpleAlgorithm(bl.NaiveCentroidAlgorithm, Control=bl.NaiveCentroidControl,
-                TransformClass=bl.NaiveCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
+                    TransformClass=bl.NaiveCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
 wrapSimpleAlgorithm(bl.SdssCentroidAlgorithm, Control=bl.SdssCentroidControl,
-                TransformClass=bl.SdssCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
-wrapSimpleAlgorithm(bl.PixelFlagsAlgorithm, Control=bl.PixelFlagsControl, executionOrder=BasePlugin.FLUX_ORDER)
+                    TransformClass=bl.SdssCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
+wrapSimpleAlgorithm(bl.PixelFlagsAlgorithm, Control=bl.PixelFlagsControl,
+                    executionOrder=BasePlugin.FLUX_ORDER)
 wrapSimpleAlgorithm(bl.SdssShapeAlgorithm, Control=bl.SdssShapeControl,
-                TransformClass=bl.SdssShapeTransform, executionOrder=BasePlugin.SHAPE_ORDER)
+                    TransformClass=bl.SdssShapeTransform, executionOrder=BasePlugin.SHAPE_ORDER)
 wrapSimpleAlgorithm(bl.ScaledApertureFluxAlgorithm, Control=bl.ScaledApertureFluxControl,
-                TransformClass=bl.ScaledApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
+                    TransformClass=bl.ScaledApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 
 wrapSimpleAlgorithm(bl.CircularApertureFluxAlgorithm, needsMetadata=True, Control=bl.ApertureFluxControl,
                     TransformClass=bl.ApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 wrapSimpleAlgorithm(bl.BlendednessAlgorithm, Control=bl.BlendednessControl,
-                TransformClass=bl.BaseTransform, executionOrder=BasePlugin.SHAPE_ORDER)
+                    TransformClass=bl.BaseTransform, executionOrder=BasePlugin.SHAPE_ORDER)
 
 # --- Single-Frame Measurement Plugins ---
+
+
 class SingleFrameFPPositionConfig(SingleFramePluginConfig):
     pass
+
 
 @register("base_FPPosition")
 class SingleFrameFPPositionPlugin(SingleFramePlugin):
@@ -114,8 +119,10 @@ class SingleFrameFPPositionPlugin(SingleFramePlugin):
     def fail(self, measRecord, error=None):
         measRecord.set(self.focalFlag, True)
 
+
 class SingleFrameJacobianConfig(SingleFramePluginConfig):
     pixelScale = lsst.pex.config.Field(dtype=float, default=0.5, doc="Nominal pixel size (arcsec)")
+
 
 @register("base_Jacobian")
 class SingleFrameJacobianPlugin(SingleFramePlugin):
@@ -141,8 +148,9 @@ class SingleFrameJacobianPlugin(SingleFramePlugin):
         center = measRecord.getCentroid()
         # Compute the area of a pixel at the center of a source records centroid, and take the
         # ratio of that with the defined reference pixel area.
-        result = numpy.abs(self.scale*exposure.getWcs().linearizePixelToSky(center,
-                           lsst.afw.geom.arcseconds).getLinear().computeDeterminant())
+        result = numpy.abs(self.scale*exposure.getWcs().linearizePixelToSky(
+            center,
+            lsst.afw.geom.arcseconds).getLinear().computeDeterminant())
         measRecord.set(self.jacValue, result)
 
     def fail(self, measRecord, error=None):
@@ -150,10 +158,11 @@ class SingleFrameJacobianPlugin(SingleFramePlugin):
 
 
 class SingleFrameVarianceConfig(SingleFramePluginConfig):
-        scale = lsst.pex.config.Field(dtype=float, default=5.0, optional=True,
-                                      doc="Scale factor to apply to shape for aperture")
-        mask = lsst.pex.config.ListField(doc="Mask planes to ignore", dtype=str,
-                                         default=["DETECTED", "DETECTED_NEGATIVE", "BAD", "SAT"])
+    scale = lsst.pex.config.Field(dtype=float, default=5.0, optional=True,
+                                  doc="Scale factor to apply to shape for aperture")
+    mask = lsst.pex.config.ListField(doc="Mask planes to ignore", dtype=str,
+                                     default=["DETECTED", "DETECTED_NEGATIVE", "BAD", "SAT"])
+
 
 @register("base_Variance")
 class SingleFrameVariancePlugin(SingleFramePlugin):
@@ -174,7 +183,7 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.varValue = schema.addField(name + '_value', type="D", doc="Variance at object position")
         self.varFlag = schema.addField(name + '_flag', type="Flag", doc="Set to True for any fatal failure")
-        self.emptyFootprintFlag = schema.addField(name + '_flag_emptyFootprint', type="Flag", 
+        self.emptyFootprintFlag = schema.addField(name + '_flag_emptyFootprint', type="Flag",
                                                   doc="Set to True when the footprint has no usable pixels")
 
         # Alias the badCentroid flag to that which is defined for the target of the centroid slot.
@@ -184,7 +193,6 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
     def measure(self, measRecord, exposure):
         if measRecord.getCentroidFlag():
             raise bl.MeasurementError("Source record has a bad centroid.", self.FAILURE_BAD_CENTROID)
-        center = measRecord.getCentroid()
         # Create an aperture and grow it by scale value defined in config to ensure there are enough
         # pixels around the object to get decent statistics
         aperture = lsst.afw.geom.ellipses.Ellipse(measRecord.getShape(), measRecord.getCentroid())
@@ -217,8 +225,10 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
         measRecord.set(self.varValue, numpy.nan)
         measRecord.set(self.varFlag, True)
 
+
 class SingleFrameInputCountConfig(SingleFramePluginConfig):
     pass
+
 
 @register("base_InputCount")
 class SingleFrameInputCountPlugin(SingleFramePlugin):
@@ -257,9 +267,6 @@ class SingleFrameInputCountPlugin(SingleFramePlugin):
             raise bl.MeasurementError("Source has a bad centroid.", self.FAILURE_BAD_CENTROID)
 
         center = measRecord.getCentroid()
-        # Promote bounding box of the Footprint to type D to ensure
-        # the ability to compare the Footprint and center (they may be of mixed types I and D)
-        fpBbox = lsst.afw.geom.Box2D(measRecord.getFootprint().getBBox())
         ccds = exposure.getInfo().getCoaddInputs().ccds
         measRecord.set(self.numberKey, len(ccds.subsetContaining(center, exposure.getWcs())))
 
@@ -271,8 +278,10 @@ class SingleFrameInputCountPlugin(SingleFramePlugin):
             if error.getFlagBit() == self.FAILURE_NO_INPUTS:
                 measRecord.set(self.noInputsFlag, True)
 
+
 class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
     pass
+
 
 @register("base_PeakCentroid")
 class SingleFramePeakCentroidPlugin(SingleFramePlugin):
@@ -306,8 +315,10 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
     def getTransformClass():
         return SimpleCentroidTransform
 
+
 class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
     pass
+
 
 @register("base_SkyCoord")
 class SingleFrameSkyCoordPlugin(SingleFramePlugin):
@@ -340,6 +351,7 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
 
 class ForcedPeakCentroidConfig(ForcedPluginConfig):
     pass
+
 
 @register("base_PeakCentroid")
 class ForcedPeakCentroidPlugin(ForcedPlugin):
@@ -374,8 +386,10 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
     def getTransformClass():
         return SimpleCentroidTransform
 
+
 class ForcedTransformedCentroidConfig(ForcedPluginConfig):
     pass
+
 
 @register("base_TransformedCentroid")
 class ForcedTransformedCentroidPlugin(ForcedPlugin):
@@ -422,6 +436,7 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
 
 class ForcedTransformedShapeConfig(ForcedPluginConfig):
     pass
+
 
 @register("base_TransformedShape")
 class ForcedTransformedShapePlugin(ForcedPlugin):

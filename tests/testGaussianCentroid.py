@@ -31,6 +31,7 @@ from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
 
 
 class GaussianCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
+
     def setUp(self):
         self.center = lsst.afw.geom.Point2D(50.1, 49.8)
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),

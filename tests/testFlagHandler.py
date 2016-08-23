@@ -149,6 +149,7 @@ class PythonPlugin(SingleFramePlugin):
 
 class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     # Setup a configuration and datasource to be used by the plugin tests
+
     def setUp(self):
         self.algName = "test_PythonPlugin"
         bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0), lsst.afw.geom.Point2I(100, 100))

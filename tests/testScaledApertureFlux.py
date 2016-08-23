@@ -33,7 +33,6 @@ from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
 import lsst.utils.tests
 
 
-
 class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):

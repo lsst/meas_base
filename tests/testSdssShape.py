@@ -51,7 +51,7 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         del self.config
 
     def assertFinite(self, value):
-        self.assertTrue(np.isfinite(value), msg="%s is not finite" % value)
+        self.assertTrue(np.isfinite(value), msg="%s is not finite" % (value,))
 
     def _runMeasurementTask(self):
         task = self.makeSingleFrameMeasurementTask("base_SdssShape", config=self.config)

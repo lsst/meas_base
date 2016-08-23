@@ -1,5 +1,7 @@
 from collections import namedtuple
 
+from builtins import object
+
 import lsst.pipe.base
 import lsst.pex.config
 import lsst.daf.base
@@ -77,6 +79,7 @@ class AbContext(object):
     @param[in] log      The log which to write to, most likely will always be the log (self.log) of the object
                         in which the context manager is used.
     '''
+
     def __init__(self, plugin, cat, log):
         self.plugin = plugin
         self.cat = cat
@@ -103,9 +106,9 @@ class AfterburnerConfig(lsst.pex.config.Config):
     The config object for each plugin must use this variable to specify the names of all plugins to be run.
     '''
     plugins = AfterburnerPlugin.registry.makeField(
-            multi=True,
-            default=["base_ClassificationExtendedness"],
-            doc="Plugins to be run and their configuration")
+        multi=True,
+        default=["base_ClassificationExtendedness"],
+        doc="Plugins to be run and their configuration")
 
 
 class AfterburnerTask(lsst.pipe.base.Task):

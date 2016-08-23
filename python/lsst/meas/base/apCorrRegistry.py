@@ -22,11 +22,13 @@
 #
 """Registry for names of flux fields that should be aperture corrected
 """
+from builtins import str
 
 __all__ = ("addApCorrName", "getApCorrNameSet")
 
 # Set of names of algorithms that measure fluxes that can be aperture corrected
 _ApCorrNameSet = set()
+
 
 def addApCorrName(name):
     """!Add to the set of field name prefixes for fluxes that should be aperture corrected
@@ -38,6 +40,7 @@ def addApCorrName(name):
     """
     global _ApCorrNameSet
     _ApCorrNameSet.add(str(name))
+
 
 def getApCorrNameSet():
     """!Return a copy of the set of field name prefixes for fluxes that should be aperture corrected
