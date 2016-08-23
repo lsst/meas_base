@@ -30,7 +30,7 @@ import lsst.afw.image
 import lsst.afw.table
 from lsst.geom import convexHull
 
-from .forcedPhotImage import ProcessImageForcedTask, ProcessImageForcedConfig
+from .forcedPhotImage import ForcedPhotImageTask, ForcedPhotImageConfig
 
 try:
     from lsst.meas.mosaic import applyMosaicResults
@@ -139,7 +139,7 @@ def overlapsTract(tract, imageWcs, imageBox):
     return tractPoly.intersects(imagePoly)  # "intersects" also covers "contains" or "is contained by"
 
 
-class ForcedPhotCcdConfig(ProcessImageForcedConfig):
+class ForcedPhotCcdConfig(ForcedPhotImageConfig):
     doApplyUberCal = lsst.pex.config.Field(
         dtype=bool,
         doc="Apply meas_mosaic ubercal results to input calexps?",
@@ -154,7 +154,7 @@ class ForcedPhotCcdConfig(ProcessImageForcedConfig):
 ## @}
 
 
-class ForcedPhotCcdTask(ProcessImageForcedTask):
+class ForcedPhotCcdTask(ForcedPhotImageTask):
     """!A command-line driver for performing forced measurement on CCD images
 
     This task is a subclass of ForcedPhotImageTask which is specifically for doing forced
@@ -235,7 +235,7 @@ class ForcedPhotCcdTask(ProcessImageForcedTask):
                              unless config.doApplyUberCal is true, in which case the corresponding
                              meas_mosaic outputs are used as well.
         """
-        exposure = ProcessImageForcedTask.getExposure(self, dataRef)
+        exposure = ForcedPhotImageTask.getExposure(self, dataRef)
         if not self.config.doApplyUberCal:
             return exposure
         if applyMosaicResults is None:

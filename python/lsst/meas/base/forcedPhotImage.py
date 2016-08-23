@@ -36,10 +36,10 @@ from .forcedMeasurement import ForcedMeasurementTask
 from .applyApCorr import ApplyApCorrTask
 from .afterburner import AfterburnerTask
 
-__all__ = ("ProcessImageForcedConfig", "ProcessImageForcedTask")
+__all__ = ("ForcedPhotImageConfig", "ForcedPhotImageTask")
 
 
-class ProcessImageForcedConfig(lsst.pex.config.Config):
+class ForcedPhotImageConfig(lsst.pex.config.Config):
     """!Config class for forced measurement driver task."""
 
     references = lsst.pex.config.ConfigurableField(
@@ -80,13 +80,13 @@ class ProcessImageForcedConfig(lsst.pex.config.Config):
 
 ## @addtogroup LSST_task_documentation
 ## @{
-## @page ProcessImageForcedTask
-## ProcessImageForcedTask
-## @copybrief ProcessImageForcedTask
+## @page ForcedPhotImageTask
+## ForcedPhotImageTask
+## @copybrief ForcedPhotImageTask
 ## @}
 
 
-class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
+class ForcedPhotImageTask(lsst.pipe.base.CmdLineTask):
     """!A base class for command-line forced measurement drivers.
 
     This is a an abstract class, which is the common ancestor for ForcedPhotCcdTask
@@ -100,7 +100,7 @@ class ProcessImageForcedTask(lsst.pipe.base.CmdLineTask):
      - Implement fetchReferences
      - (optional) Implement attachFootprints
     """
-    ConfigClass = ProcessImageForcedConfig
+    ConfigClass = ForcedPhotImageConfig
     _DefaultName = "processImageForcedTask"
 
     def __init__(self, butler=None, refSchema=None, **kwds):

@@ -26,12 +26,12 @@ import lsst.pipe.base
 import lsst.coadd.utils
 import lsst.afw.table
 
-from .forcedPhotImage import ProcessImageForcedConfig, ProcessImageForcedTask
+from .forcedPhotImage import ForcedPhotImageConfig, ForcedPhotImageTask
 
 __all__ = ("ForcedPhotCoaddConfig", "ForcedPhotCoaddTask")
 
 
-class ForcedPhotCoaddConfig(ProcessImageForcedConfig):
+class ForcedPhotCoaddConfig(ForcedPhotImageConfig):
     footprintDatasetName = lsst.pex.config.Field(
         doc=("Dataset (without coadd prefix) that should be used to obtain (Heavy)Footprints for sources."
              "  Must have IDs that match those of the reference catalog."
@@ -42,11 +42,11 @@ class ForcedPhotCoaddConfig(ProcessImageForcedConfig):
     )
 
     def setDefaults(self):
-        ProcessImageForcedTask.ConfigClass.setDefaults(self)
+        ForcedPhotImageTask.ConfigClass.setDefaults(self)
         self.references.removePatchOverlaps = False  # see validate() for why
 
     def validate(self):
-        ProcessImageForcedTask.ConfigClass.validate(self)
+        ForcedPhotImageTask.ConfigClass.validate(self)
         if (self.measurement.doReplaceWithNoise and self.footprintDatasetName is not None
                 and self.references.removePatchOverlaps):
             raise ValueError("Cannot use removePatchOverlaps=True with deblended footprints, as parent "
@@ -60,7 +60,7 @@ class ForcedPhotCoaddConfig(ProcessImageForcedConfig):
 ## @}
 
 
-class ForcedPhotCoaddTask(ProcessImageForcedTask):
+class ForcedPhotCoaddTask(ForcedPhotImageTask):
     """!
     A command-line driver for performing forced measurement on coadd images
 
