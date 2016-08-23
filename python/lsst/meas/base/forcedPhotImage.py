@@ -145,7 +145,7 @@ class ForcedPhotImageTask(lsst.pipe.base.CmdLineTask):
         refCat = self.fetchReferences(dataRef, exposure)
         measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
                                                    idFactory=self.makeIdFactory(dataRef))
-        self.log.info("Performing forced measurement on %s" % dataRef.dataId)
+        self.log.info("Performing forced measurement on %s" % (dataRef.dataId,))
         self.attachFootprints(measCat, refCat, exposure, refWcs, dataRef)
 
         self.measurement.run(measCat, exposure, refCat, refWcs, exposureId=self.getExposureId(dataRef))

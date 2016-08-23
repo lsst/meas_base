@@ -245,7 +245,7 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
         tract = skyMap[dataRef.dataId["tract"]]
         coordList = [wcs.pixelToSky(corner) for corner in lsst.afw.geom.Box2D(bbox).getCorners()]
         self.log.info("Getting references in region with corners %s [degrees]" %
-                      ", ".join("(%s)" % coord.getPosition(lsst.afw.geom.degrees) for coord in coordList))
+                      ", ".join("(%s)" % (coord.getPosition(lsst.afw.geom.degrees),) for coord in coordList))
         patchList = tract.findPatchList(coordList)
         # After figuring out which patch catalogs to read from the bbox, pad out the bbox if desired
         # But don't add any new patches while padding

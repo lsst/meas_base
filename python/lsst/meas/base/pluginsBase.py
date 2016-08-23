@@ -106,7 +106,7 @@ class BasePlugin(object):
         traceback.print_exc()
         message = ("The algorithm '%s' thinks it cannot fail, but it did; "
                    "please report this as a bug (the full traceback is above)."
-                   % self.__class__.__name__)
+                   % (self.__class__.__name__,))
         raise NotImplementedError(message)
 
     @staticmethod

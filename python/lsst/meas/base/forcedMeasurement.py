@@ -296,7 +296,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         footprints = {ref.getId(): (ref.getParent(), measRecord.getFootprint())
                       for (ref, measRecord) in zip(refCat, measCat)}
 
-        self.log.info("Performing forced measurement on %d sources" % len(refCat))
+        self.log.info("Performing forced measurement on %d sources" % (len(refCat),))
 
         if self.config.doReplaceWithNoise:
             noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure,

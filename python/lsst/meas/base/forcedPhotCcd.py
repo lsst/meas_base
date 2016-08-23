@@ -241,8 +241,7 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
         if applyMosaicResults is None:
             raise RuntimeError(
                 "Cannot use improved calibrations for %s because meas_mosaic could not be imported."
-                % dataRef.dataId
-            )
+                % (dataRef.dataId,))
         else:
             applyMosaicResults(dataRef, calexp=exposure)
         return exposure

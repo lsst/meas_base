@@ -123,7 +123,7 @@ class NoiseReplacer(object):
                 # does it already exist?
                 plane = mask.getMaskPlane(maskname)
                 if self.log:
-                    self.log.logdebug('Mask plane "%s" already existed' % maskname)
+                    self.log.logdebug('Mask plane "%s" already existed' % (maskname,))
             except:
                 # if not, add it; we should delete it when done.
                 plane = mask.addMaskPlane(maskname)
@@ -166,7 +166,7 @@ class NoiseReplacer(object):
         self.noiseGenMean = noisegen.mean
         self.noiseGenStd = noisegen.std
         if self.log:
-            self.log.logdebug('Using noise generator: %s' % (str(noisegen)))
+            self.log.logdebug('Using noise generator: %s' % (str(noisegen),))
         for id in self.heavies:
             fp = footprints[id][1]
             noiseFp = noisegen.getHeavyFootprint(fp)
@@ -281,7 +281,7 @@ class NoiseReplacer(object):
             except:
                 if self.log:
                     self.log.logdebug('Failed to cast passed-in noiseMeanVar to floats: %s'
-                                      % (str(noiseMeanVar)))
+                                      % (str(noiseMeanVar),))
         offset = self.noiseOffset
         noiseSource = self.noiseSource
 
@@ -295,7 +295,7 @@ class NoiseReplacer(object):
                 noiseStd = math.sqrt(bgMean)
                 if self.log:
                     self.log.logdebug('Using noise variance = (BGMEAN = %g) from exposure metadata'
-                                      % (bgMean))
+                                      % (bgMean,))
                 return FixedGaussianNoiseGenerator(offset, noiseStd, rand=rand)
             except:
                 if self.log:
