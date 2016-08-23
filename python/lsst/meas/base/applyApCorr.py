@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division
-from builtins import object
 #
 # LSST Data Management System
 # Copyright 2015 LSST Corporation.
@@ -21,8 +19,10 @@ from builtins import object
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+from __future__ import absolute_import, division
 import math
 
+from builtins import object
 import numpy
 
 import lsst.pex.config

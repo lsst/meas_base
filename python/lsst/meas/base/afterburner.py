@@ -1,5 +1,6 @@
-from builtins import object
 from collections import namedtuple
+
+from builtins import object
 
 import lsst.pipe.base
 import lsst.pex.config

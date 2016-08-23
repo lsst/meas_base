@@ -27,9 +27,7 @@ import os
 import sys
 import numpy
 
-import eups
-
-import lsst.daf.base as dafBase
+from lsst.utils import getProductDir
 import lsst.afw.table as afwTable
 import lsst.afw.image as afwImage
 import lsst.afw.display.ds9 as ds9
@@ -42,7 +40,7 @@ def loadData():
     """Prepare the data we need to run the example"""
 
     # Load sample input from disk
-    mypath = eups.productDir("afwdata")
+    mypath = getProductDir("afwdata")
     if not mypath:
         print("Please setup afwdata and try again", file=sys.stderr)
         sys.exit(1)

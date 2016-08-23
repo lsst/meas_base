@@ -22,9 +22,9 @@
 #
 """Registry for measurement plugins and associated utilities generateAlgorithmName and PluginMap
 """
-from builtins import object
-
 import collections
+
+from builtins import object
 
 import lsst.pipe.base
 import lsst.pex.config

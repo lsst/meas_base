@@ -29,7 +29,6 @@ import numpy
 import lsst.pex.exceptions
 import lsst.afw.detection
 import lsst.afw.geom
-import lsst.afw.math as afwMath
 
 from .pluginRegistry import register
 from . import baseLib as bl

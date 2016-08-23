@@ -36,17 +36,15 @@
 %prog [options] arg
 """
 from __future__ import print_function
+import sys
+import optparse
+import math
+
 from builtins import map
 from builtins import range
 from builtins import object
-
-import sys
-import re
-import optparse
-import os
-import datetime
-import math
 import numpy
+
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.table as afwTable

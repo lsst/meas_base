@@ -1,5 +1,3 @@
-from builtins import zip
-from builtins import object
 #!/usr/bin/env python
 #
 # LSST Data Management System
@@ -23,7 +21,9 @@ from builtins import object
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-import numpy
+from builtins import zip
+from builtins import object
+import numpy as np
 
 import lsst.afw.table
 import lsst.afw.image
@@ -210,10 +210,10 @@ class TestDataset(object):
                 min2 = -max1
             if max2 is None:
                 max2 = -min1
-            if numpy.random.uniform() > 0.5:
-                return float(numpy.random.uniform(min1, max1))
+            if np.random.uniform() > 0.5:
+                return float(np.random.uniform(min1, max1))
             else:
-                return float(numpy.random.uniform(min2, max2))
+                return float(np.random.uniform(min2, max2))
         # Generate random perturbations
         scaleFactor = splitRandom(minScaleFactor, maxScaleFactor, 1.0/maxScaleFactor, 1.0/minScaleFactor)
         rotation = splitRandom(minRotation.asRadians(), maxRotation.asRadians())*lsst.afw.geom.radians
@@ -277,13 +277,13 @@ class TestDataset(object):
                                    values)
         @param[in]     ellipse     lsst.afw.geom.ellipses.Ellipse holding the centroid and shape.
         """
-        x, y = numpy.meshgrid(numpy.arange(bbox.getBeginX(), bbox.getEndX()),
-                              numpy.arange(bbox.getBeginY(), bbox.getEndY()))
+        x, y = np.meshgrid(np.arange(bbox.getBeginX(), bbox.getEndX()),
+                              np.arange(bbox.getBeginY(), bbox.getEndY()))
         t = ellipse.getGridTransform()
         xt = t[t.XX] * x + t[t.XY] * y + t[t.X]
         yt = t[t.YX] * x + t[t.YY] * y + t[t.Y]
         image = lsst.afw.image.ImageF(bbox)
-        image.getArray()[:, :] = numpy.exp(-0.5*(xt**2 + yt**2))*flux/(2.0*ellipse.getCore().getArea())
+        image.getArray()[:, :] = np.exp(-0.5*(xt**2 + yt**2))*flux/(2.0*ellipse.getCore().getArea())
         return image
 
     def __init__(self, bbox, threshold=10.0, exposure=None, **kwds):
@@ -433,7 +433,7 @@ class TestDataset(object):
         exposure = self.exposure.clone()
         exposure.getMaskedImage().getVariance().getArray()[:, :] = noise**2
         exposure.getMaskedImage().getImage().getArray()[:, :] \
-            += numpy.random.randn(exposure.getHeight(), exposure.getWidth())*noise
+            += np.random.randn(exposure.getHeight(), exposure.getWidth())*noise
         catalog = lsst.afw.table.SourceCatalog(schema)
         catalog.extend(self.catalog, mapper=mapper)
         # Loop over sources and generate new HeavyFootprints that divide up the noisy pixels, not the
@@ -445,14 +445,14 @@ class TestDataset(object):
             # get flattened arrays that correspond to the no-noise and noisy parent images
             parent = catalog.find(record.getParent())
             footprint = parent.getFootprint()
-            parentFluxArrayNoNoise = numpy.zeros(footprint.getArea(), dtype=numpy.float32)
+            parentFluxArrayNoNoise = np.zeros(footprint.getArea(), dtype=np.float32)
             lsst.afw.detection.flattenArray(
                 footprint,
                 self.exposure.getMaskedImage().getImage().getArray(),
                 parentFluxArrayNoNoise,
                 self.exposure.getXY0()
             )
-            parentFluxArrayNoisy = numpy.zeros(footprint.getArea(), dtype=numpy.float32)
+            parentFluxArrayNoisy = np.zeros(footprint.getArea(), dtype=np.float32)
             lsst.afw.detection.flattenArray(
                 footprint,
                 exposure.getMaskedImage().getImage().getArray(),
@@ -473,19 +473,19 @@ class TestDataset(object):
 
 class AlgorithmTestCase(object):
     # Some tests depend on the noise realization in the test data or from the
-    # numpy random number generator. In most cases, they are testing that the
+    # np.random number generator. In most cases, they are testing that the
     # measured flux lies within 2 sigma of the correct value, which we should
     # expect to fail sometimes. Some -- but sadly not all -- of these cases
     # have been marked with an "rng dependent" comment.
     #
     # We ensure these tests are provided with data which causes them to pass
-    # by seeding the numpy RNG with this value. It can be over-ridden as
+    # by seeding the np.RNG with this value. It can be over-ridden as
     # necessary in subclasses.
     randomSeed = 1234
 
     @classmethod
     def setUpClass(cls):
-        numpy.random.seed(cls.randomSeed)
+        np.random.seed(cls.randomSeed)
 
     def makeSingleFrameMeasurementConfig(self, plugin=None, dependencies=()):
         """Convenience function to create a Config instance for SingleFrameMeasurementTask
@@ -709,8 +709,8 @@ class FluxTransformTestCase(TransformTestCase):
 
     def _setFieldsInRecords(self, records, name):
         for record in records:
-            record[record.schema.join(name, 'flux')] = numpy.random.random()
-            record[record.schema.join(name, 'fluxSigma')] = numpy.random.random()
+            record[record.schema.join(name, 'flux')] = np.random.random()
+            record[record.schema.join(name, 'fluxSigma')] = np.random.random()
 
         # Negative fluxes should be converted to NaNs.
         assert len(records) > 1
@@ -723,22 +723,22 @@ class FluxTransformTestCase(TransformTestCase):
             self.assertEqual(outSrc[outSrc.schema.join(name, 'mag')], mag)
             self.assertEqual(outSrc[outSrc.schema.join(name, 'magErr')], magErr)
         else:
-            self.assertTrue(numpy.isnan(outSrc[outSrc.schema.join(name, 'mag')]))
-            self.assertTrue(numpy.isnan(outSrc[outSrc.schema.join(name, 'magErr')]))
+            self.assertTrue(np.isnan(outSrc[outSrc.schema.join(name, 'mag')]))
+            self.assertTrue(np.isnan(outSrc[outSrc.schema.join(name, 'magErr')]))
 
 
 class CentroidTransformTestCase(TransformTestCase):
 
     def _setFieldsInRecords(self, records, name):
         for record in records:
-            record[record.schema.join(name, 'x')] = numpy.random.random()
-            record[record.schema.join(name, 'y')] = numpy.random.random()
+            record[record.schema.join(name, 'x')] = np.random.random()
+            record[record.schema.join(name, 'y')] = np.random.random()
             # Some algorithms set no errors; some set only sigma on x & y; some provide
             # a full covariance matrix. Set only those which exist in the schema.
             for fieldSuffix in ('xSigma', 'ySigma', 'x_y_Cov'):
                 fieldName = record.schema.join(name, fieldSuffix)
                 if fieldName in record.schema:
-                    record[fieldName] = numpy.random.random()
+                    record[fieldName] = np.random.random()
 
     def _compareFieldsInRecords(self, inSrc, outSrc, name):
         centroidResultKey = CentroidResultKey(inSrc.schema[self.name])
@@ -757,7 +757,7 @@ class CentroidTransformTestCase(TransformTestCase):
             self.assertFalse(centroidResultKey.getCentroidErr().isValid())
         else:
             transform = self.calexp.getWcs().linearizePixelToSky(coordTruth, lsst.afw.geom.radians)
-            coordErrTruth = numpy.dot(numpy.dot(transform.getLinear().getMatrix(),
+            coordErrTruth = np.dot(np.dot(transform.getLinear().getMatrix(),
                                                 centroidResult.getCentroidErr()),
                                       transform.getLinear().getMatrix().transpose())
-            numpy.testing.assert_array_almost_equal(numpy.array(coordErrTruth), coordErr)
+            np.testing.assert_array_almost_equal(np.array(coordErrTruth), coordErr)

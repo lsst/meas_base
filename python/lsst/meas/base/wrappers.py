@@ -1,5 +1,4 @@
 import lsst.pex.config
-
 from .pluginRegistry import generateAlgorithmName
 from .apCorrRegistry import addApCorrName
 from .sfm import SingleFramePlugin

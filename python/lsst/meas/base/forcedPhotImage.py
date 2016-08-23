@@ -31,7 +31,6 @@ import lsst.daf.base
 import lsst.pipe.base
 import lsst.pex.config
 
-from .pluginsBase import BasePlugin
 from .references import MultiBandReferencesTask
 from .forcedMeasurement import ForcedMeasurementTask
 from .applyApCorr import ApplyApCorrTask
