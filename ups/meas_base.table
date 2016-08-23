@@ -1,3 +1,4 @@
+setupRequired(utils)
 setupRequired(afw)
 setupRequired(coadd_utils)
 setupRequired(daf_base)
