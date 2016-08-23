@@ -193,7 +193,6 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
     def measure(self, measRecord, exposure):
         if measRecord.getCentroidFlag():
             raise bl.MeasurementError("Source record has a bad centroid.", self.FAILURE_BAD_CENTROID)
-        center = measRecord.getCentroid()
         # Create an aperture and grow it by scale value defined in config to ensure there are enough
         # pixels around the object to get decent statistics
         aperture = lsst.afw.geom.ellipses.Ellipse(measRecord.getShape(), measRecord.getCentroid())

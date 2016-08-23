@@ -194,7 +194,7 @@ class NoiseReplacer(object):
         # parent chain which has a heavy footprint (or to the topmost parent,
         # which always has one)
         usedid = id
-        while self.footprints[usedid][0] != 0 and not usedid in self.heavies:
+        while self.footprints[usedid][0] != 0 and usedid not in self.heavies:
             usedid = self.footprints[usedid][0]
         fp = self.heavies[usedid]
         fp.insert(im)
@@ -219,7 +219,7 @@ class NoiseReplacer(object):
         # use the same algorithm as in remove Source to find the heavy noise footprint
         # which will undo what insertSource(id) does
         usedid = id
-        while self.footprints[usedid][0] != 0 and not usedid in self.heavies:
+        while self.footprints[usedid][0] != 0 and usedid not in self.heavies:
             usedid = self.footprints[usedid][0]
         # Re-insert the noise pixels
         fp = self.heavyNoise[usedid]
@@ -262,7 +262,7 @@ class NoiseReplacer(object):
         rand = None
         if self.noiseSeedMultiplier:
             # default plugin, our seed
-            if not exposureId is None and not exposureId == 0:
+            if exposureId is not None and exposureId != 0:
                 seed = exposureId * self.noiseSeedMultiplier
             else:
                 seed = self.noiseSeedMultiplier

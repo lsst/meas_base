@@ -258,8 +258,10 @@ class MultiBandReferencesConfig(CoaddSrcReferencesTask.ConfigClass):
 
     def validate(self):
         if self.filter is not None:
-            raise lsst.pex.config.FieldValidationError(field=MultiBandReferencesConfig.filter, config=self,
-                                                       msg="Filter should not be set for the multiband processing scheme")
+            raise lsst.pex.config.FieldValidationError(
+                field=MultiBandReferencesConfig.filter,
+                config=self,
+                msg="Filter should not be set for the multiband processing scheme")
         # Delegate to ultimate base class, because the direct one has a check we don't want.
         BaseReferencesTask.ConfigClass.validate(self)
 

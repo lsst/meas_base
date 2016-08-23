@@ -116,7 +116,7 @@ def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=No
                                algorithm produces multiple such fields then it must specify apCorrList,
                                instead. For example modelfit_CModel produces 3 such fields: apCorrList=
                                    ("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
-                               If apCorrList is non-empty then shouldApCorr is ignored.                               
+                               If apCorrList is non-empty then shouldApCorr is ignored.
                                If non-empty and doRegister is True then the names are added to the set
                                retrieved by getApCorrNameSet
 
@@ -190,7 +190,7 @@ def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=
                                  algorithm produces multiple such fields then it must specify apCorrList,
                                  instead. For example modelfit_CModel produces 3 such fields: apCorrList=
                                    ("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
-                                 If apCorrList is non-empty then shouldApCorr is ignored.                               
+                                 If apCorrList is non-empty then shouldApCorr is ignored.
                                  If non-empty and doRegister is True then the names are added to the set
                                  retrieved by getApCorrNameSet
                                - executionOrder: If not None, an override for the default executionOrder for
@@ -270,7 +270,7 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
                                  algorithm produces multiple such fields then it must specify apCorrList,
                                  instead. For example modelfit_CModel produces 3 such fields: apCorrList=
                                    ("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
-                                 If apCorrList is non-empty then shouldApCorr is ignored.                               
+                                 If apCorrList is non-empty then shouldApCorr is ignored.
                                  If non-empty and doRegister is True then the names are added to the set
                                  retrieved by getApCorrNameSet
                                - executionOrder: If not None, an override for the default executionOrder for
@@ -361,7 +361,7 @@ def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
                                  algorithm produces multiple such fields then it must specify apCorrList,
                                  instead. For example modelfit_CModel produces 3 such fields: apCorrList=
                                    ("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
-                                 If apCorrList is non-empty then shouldApCorr is ignored.                               
+                                 If apCorrList is non-empty then shouldApCorr is ignored.
                                  If non-empty and doRegister is True then the names are added to the set
                                  retrieved by getApCorrNameSet
                                - executionOrder: If not None, an override for the default executionOrder for

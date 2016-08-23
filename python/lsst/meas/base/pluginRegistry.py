@@ -85,7 +85,8 @@ class PluginRegistry(lsst.pex.config.Registry):
             self.PluginClass = PluginClass
 
         @property
-        def ConfigClass(self): return self.PluginClass.ConfigClass
+        def ConfigClass(self):
+            return self.PluginClass.ConfigClass
 
         def __call__(self, config):
             return (self.PluginClass.getExecutionOrder(), self.name, config, self.PluginClass)

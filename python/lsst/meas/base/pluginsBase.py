@@ -59,7 +59,8 @@ class BasePlugin(object):
 
         In general, the following class constants should be used (other values
         are also allowed, but should be avoided unless they are needed):
-        CENTROID_ORDER      centroids and other algorithms that require only a Footprint and its Peaks as input
+        CENTROID_ORDER      centroids and other algorithms that require only a Footprint
+                            and its Peaks as input
         SHAPE_ORDER         shape measurements and other algorithms that require getCentroid() to return
                             a good centroid (in addition to a Footprint and its Peaks).
         FLUX_ORDER          flux algorithms that require both getShape() and getCentroid(),

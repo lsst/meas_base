@@ -302,11 +302,11 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure,
                                           footprints, log=self.log, exposureId=exposureId)
             algMetadata = measCat.getTable().getMetadata()
-            if not algMetadata is None:
+            if algMetadata is not None:
                 algMetadata.addInt("NOISE_SEED_MULTIPLIER", self.config.noiseReplacer.noiseSeedMultiplier)
                 algMetadata.addString("NOISE_SOURCE", self.config.noiseReplacer.noiseSource)
                 algMetadata.addDouble("NOISE_OFFSET", self.config.noiseReplacer.noiseOffset)
-                if not exposureId is None:
+                if exposureId is not None:
                     algMetadata.addLong("NOISE_EXPOSURE_ID", exposureId)
         else:
             noiseReplacer = DummyNoiseReplacer()
@@ -353,7 +353,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
         @return    Source catalog ready for measurement
         """
-        if idFactory == None:
+        if idFactory is None:
             idFactory = lsst.afw.table.IdFactory.makeSimple()
         table = lsst.afw.table.SourceTable.make(self.schema, idFactory)
         measCat = lsst.afw.table.SourceCatalog(table)

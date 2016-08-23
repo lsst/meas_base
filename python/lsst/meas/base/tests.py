@@ -278,7 +278,7 @@ class TestDataset(object):
         @param[in]     ellipse     lsst.afw.geom.ellipses.Ellipse holding the centroid and shape.
         """
         x, y = np.meshgrid(np.arange(bbox.getBeginX(), bbox.getEndX()),
-                              np.arange(bbox.getBeginY(), bbox.getEndY()))
+                           np.arange(bbox.getBeginY(), bbox.getEndY()))
         t = ellipse.getGridTransform()
         xt = t[t.XX] * x + t[t.XY] * y + t[t.X]
         yt = t[t.YX] * x + t[t.YY] * y + t[t.Y]
@@ -758,6 +758,6 @@ class CentroidTransformTestCase(TransformTestCase):
         else:
             transform = self.calexp.getWcs().linearizePixelToSky(coordTruth, lsst.afw.geom.radians)
             coordErrTruth = np.dot(np.dot(transform.getLinear().getMatrix(),
-                                                centroidResult.getCentroidErr()),
-                                      transform.getLinear().getMatrix().transpose())
+                                          centroidResult.getCentroidErr()),
+                                   transform.getLinear().getMatrix().transpose())
             np.testing.assert_array_almost_equal(np.array(coordErrTruth), coordErr)

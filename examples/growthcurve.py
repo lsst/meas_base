@@ -106,8 +106,6 @@ class RGaussian(object):  # public std::unary_function<double, double> {
 
 def main():
 
-    date = datetime.datetime.now().strftime("%a %Y-%m-%d %H:%M:%S")
-
     ########################################################################
     # command line arguments and options
     ########################################################################
@@ -139,10 +137,6 @@ def main():
     # initializations
     sigmas = [1.5, 2.5]  # the Gaussian widths of the psfs we'll use
     nS = len(sigmas)
-    a = 100.0
-    aptaper = 2.0
-    xcen = xwidth/2
-    ycen = ywidth/2
     alg = measBase.PsfFluxAlgorithm
     schema = afwTable.SourceTable.makeMinimalSchema()
     schema.addField("centroid_x", type=float)

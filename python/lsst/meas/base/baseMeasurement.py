@@ -22,8 +22,6 @@
 #
 """Base measurement task, which subclassed by the single frame and forced measurement tasks.
 """
-import traceback
-
 import lsst.pipe.base
 import lsst.pex.config
 
@@ -125,8 +123,9 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
         doc="Mapping from algorithms to special aliases in Source."
     )
 
-    doReplaceWithNoise = lsst.pex.config.Field(dtype=bool, default=True, optional=False,
-                                               doc='When measuring, replace other detected footprints with noise?')
+    doReplaceWithNoise = lsst.pex.config.Field(
+        dtype=bool, default=True, optional=False,
+        doc='When measuring, replace other detected footprints with noise?')
 
     noiseReplacer = lsst.pex.config.ConfigField(
         dtype=NoiseReplacerConfig,
@@ -202,7 +201,7 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         # Make a place at the beginning for the centroid plugin to run first (because it's an OrderedDict,
         # adding an empty element in advance means it will get run first when it's reassigned to the
         # actual Plugin).
-        if self.config.slots.centroid != None:
+        if self.config.slots.centroid is not None:
             self.plugins[self.config.slots.centroid] = None
         # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
