@@ -91,10 +91,10 @@ class RGaussian(object):  # public std::unary_function<double, double> {
         ss = self.sigma*self.sigma
         gauss = self.a * (1.0/(2.0*numpy.pi*ss)) * numpy.exp(-(r*r)/(2.0*ss))
         aperture = 0.0
-        if (r <= apradius):
+        if (r <= self.apradius):
             aperture = 1.0
-        elif (r > apradius and r < apradius + aptaper):
-            aperture = 0.5*(1.0 + cos(numpy.pi*(r - apradius)/aptaper))
+        elif (r > self.apradius and r < self.apradius + self.aptaper):
+            aperture = 0.5*(1.0 + math.cos(numpy.pi*(r - self.apradius)/self.aptaper))
         return aperture*gauss*(r*2.0*numpy.pi)
 
 
