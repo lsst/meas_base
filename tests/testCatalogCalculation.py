@@ -79,7 +79,7 @@ class MultiRecordAb(catCalc.CatalogCalculationPlugin):
 
     def fail(self, catalog, error=None):
         for rec in catalog:
-            value = rec.set(self.failKey, True)
+            rec.set(self.failKey, True)
 
 
 @register("dependentCatalogCalulation")
@@ -114,7 +114,7 @@ class CatalogCalculationTest(unittest.TestCase):
         # Create a schema object, and populate it with a field to simulate results from measurements on an
         # image
         schema = afwTable.SourceTable.makeMinimalSchema()
-        startKey = schema.addField("start", type="D")
+        schema.addField("start", type="D")
         # Instantiate a config object adding each of the above plugins, and use it to create a task
         catCalcConfig = catCalc.CatalogCalculationConfig()
         catCalcConfig.plugins.names = ["FailcatalogCalculation", "singleRecordCatalogCalculation",
