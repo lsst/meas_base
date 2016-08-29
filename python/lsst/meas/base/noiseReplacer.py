@@ -3,7 +3,7 @@ from builtins import object
 #!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008, 2009, 2010, 2014 LSST Corporation.
+# Copyright 2008-2016 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -15,18 +15,18 @@ from builtins import object
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the LSST License Statement and
 # the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
+# see <https://www.lsstcorp.org/LegalNotices/>.
 #
 import math
 
 import lsst.afw.detection as afwDet
-import lsst.afw.math as afwMath
 import lsst.afw.image as afwImage
+import lsst.afw.math as afwMath
 import lsst.pex.config
 
 __all__ = ("NoiseReplacerConfig", "NoiseReplacer", "DummyNoiseReplacer")
@@ -44,8 +44,8 @@ class NoiseReplacerConfig(lsst.pex.config.Config):
         default='measure', optional=False
     )
     noiseOffset = lsst.pex.config.Field(
-        dtype=float, optional=False, default=0.,
-        doc='Add ann offset to the generated noise.'
+        doc='Add ann offset to the generated noise.',
+        dtype=float, optional=False, default=0.0
     )
     noiseSeedMultiplier = lsst.pex.config.Field(
         dtype=int, default=1,
@@ -265,7 +265,7 @@ class NoiseReplacer(object):
         if self.noiseSeedMultiplier:
             # default plugin, our seed
             if exposureId is not None and exposureId != 0:
-                seed = exposureId * self.noiseSeedMultiplier
+                seed = exposureId*self.noiseSeedMultiplier
             else:
                 seed = self.noiseSeedMultiplier
             rand = afwMath.Random(afwMath.Random.MT19937, seed)
@@ -381,8 +381,8 @@ class ImageNoiseGenerator(NoiseGenerator):
     """
 
     def __init__(self, img):
-        """
-        img: an afwImage.ImageF
+        """!
+        @param[in]  img  an afwImage.ImageF
         """
         self.mim = afwImage.MaskedImageF(img)
         self.mean = afwMath.makeStatistics(img, afwMath.MEAN)
@@ -438,9 +438,9 @@ class VariancePlaneNoiseGenerator(GaussianNoiseGenerator):
     """
 
     def __init__(self, var, mean=None, rand=None):
-        """
-        var: an afwImage.ImageF; the variance plane.
-        mean: floating-point or afwImage.Image
+        """!
+        @param[in]       var    an afwImage.ImageF; the variance plane.
+        @param[in,out]   mean   floating-point or afwImage.Image
         """
         super(VariancePlaneNoiseGenerator, self).__init__(rand=rand)
         self.var = var
