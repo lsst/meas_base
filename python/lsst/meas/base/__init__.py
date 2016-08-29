@@ -15,4 +15,4 @@ from .forcedPhotCoadd import *
 from .transforms import *
 from .applyApCorr import *
 from .wrappers import *
-from .afterburner import *
+from .catalogCalculation import *

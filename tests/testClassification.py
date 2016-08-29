@@ -27,8 +27,7 @@ import unittest
 import lsst.utils.tests
 import lsst.meas.base.tests
 import lsst.meas.base as measBase
-import lsst.meas.base.afterburner as afterburners
-
+import lsst.meas.base.catalogCalculation as catCalc
 
 class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
@@ -52,7 +51,7 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
         config.slots.psfFlux = "base_PsfFlux"
         config.slots.modelFlux = "truth"
         task = self.makeSingleFrameMeasurementTask(config=config)
-        abTask = afterburners.AfterburnerTask(schema=task.schema)
+        abTask = catCalc.CatalogCalculationTask(schema=task.schema)
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         task.run(exposure, catalog)
         abTask.run(catalog)
@@ -73,13 +72,13 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
         config.slots.psfFlux = "base_PsfFlux"
         config.slots.modelFlux = "base_GaussianFlux"
 
-        abConfig = afterburners.AfterburnerConfig()
+        abConfig = catCalc.CatalogCalculationConfig()
 
         def runFlagTest(psfFlux=100.0, modelFlux=200.0,
                         psfFluxSigma=1.0, modelFluxSigma=2.0,
                         psfFluxFlag=False, modelFluxFlag=False):
             task = self.makeSingleFrameMeasurementTask(config=config)
-            abTask = afterburners.AfterburnerTask(schema=task.schema, config=abConfig)
+            abTask = catCalc.CatalogCalculationTask(schema=task.schema, config=abConfig)
             exposure, catalog = self.dataset.realize(10.0, task.schema)
             source = catalog[0]
             source.set("base_PsfFlux_flux", psfFlux)
@@ -88,7 +87,7 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
             source.set("base_GaussianFlux_flux", modelFlux)
             source.set("base_GaussianFlux_fluxSigma", modelFluxSigma)
             source.set("base_GaussianFlux_flag", modelFluxFlag)
-            abTask.plugins["base_ClassificationExtendedness"].burn(source)
+            abTask.plugins["base_ClassificationExtendedness"].calculate(source)
             return source.get("base_ClassificationExtendedness_flag")
 
         #  Test no error case - all necessary values are set

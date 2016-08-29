@@ -51,7 +51,7 @@ class BasePlugin(object):
     SHAPE_ORDER = 1.0
     FLUX_ORDER = 2.0
     APCORR_ORDER = 3.0
-    DEFAULT_AFTERBURNER = 4.0
+    DEFAULT_CATALOGCALCULATION = 4.0
 
     @classmethod
     def getExecutionOrder(cls):
@@ -65,7 +65,7 @@ class BasePlugin(object):
                             a good centroid (in addition to a Footprint and its Peaks).
         FLUX_ORDER          flux algorithms that require both getShape() and getCentroid(),
                             in addition to a Footprint and its Peaks
-        DEFAULT_AFTERBURNER plugins that only operate on the catalog
+        DEFAULT_CATALOGCALCULATION plugins that only operate on the catalog
 
         Must be reimplemented as a class method by concrete derived classes.
 
