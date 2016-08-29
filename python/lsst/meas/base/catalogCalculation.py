@@ -163,11 +163,10 @@ class CatalogCalculationTask(lsst.pipe.base.Task):
                 elif plug.plugType == 'multi':
                     self.executionDict[executionOrder].multi.append(plug)
             else:
+                errorTuple = (PluginClass, PluginClass.getExecutionOrder(),
+                              BasePlugin.DEFAULT_CATALOGCALCULATION)
                 raise ValueError("{} has an execution order less than the minimum for an catalogCalculation "
-                                 "plugin. Value {} : Minimum {}".format(PluginClass,
-                                                                        PluginClass.getExecutionOrder(),
-                                                                        BasePlugin.DEFAULT_CATALOGCALCULATION)
-                                )
+                                 "plugin. Value {} : Minimum {}".format(*errorTuple))
 
     def run(self, measCat):
         '''
