@@ -33,7 +33,6 @@ import unittest
 
 import numpy as np
 
-import lsst.pex.logging as pexLogging
 import lsst.pex.exceptions
 import lsst.daf.base as dafBase
 import lsst.afw.detection as afwDetection
@@ -43,12 +42,6 @@ import lsst.afw.table as afwTable
 import lsst.afw.image as afwImage
 import lsst.meas.base as measBase
 import lsst.utils.tests
-
-try:
-    type(verbose)
-except NameError:
-    verbose = 0
-pexLogging.Trace_setVerbosity("afwDetection.Measure", verbose)
 
 try:
     type(display)
