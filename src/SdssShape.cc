@@ -26,7 +26,6 @@
 
 #include "boost/tuple/tuple.hpp"
 #include "Eigen/LU"
-#include "lsst/pex/logging/Trace.h"
 #include "lsst/afw/image.h"
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/geom/Angle.h"
@@ -38,7 +37,6 @@
 
 namespace pexPolicy = lsst::pex::policy;
 namespace pexExceptions = lsst::pex::exceptions;
-namespace pexLogging = lsst::pex::logging;
 namespace afwDet = lsst::afw::detection;
 namespace afwImage = lsst::afw::image;
 namespace afwGeom = lsst::afw::geom;
