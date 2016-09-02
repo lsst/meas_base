@@ -48,6 +48,7 @@ __all__ = (
     "ForcedPeakCentroidConfig", "ForcedPeakCentroidPlugin",
     "ForcedTransformedCentroidConfig", "ForcedTransformedCentroidPlugin",
     "ForcedTransformedShapeConfig", "ForcedTransformedShapePlugin",
+    "ForcedRaDecCentroidConfig", "ForcedRaDecCentroidPlugin",
 )
 
 # --- Wrapped C++ Plugins ---
@@ -482,3 +483,47 @@ class ForcedTransformedShapePlugin(ForcedPlugin):
             measRecord.set(self.shapeKey, refRecord.getShape())
         if self.flagKey is not None:
             measRecord.set(self.flagKey, refRecord.getShapeFlag())
+
+
+class ForcedRaDecCentroidConfig(ForcedPluginConfig):
+    pass
+
+
+@register("base_RaDecCentroid")
+class ForcedRaDecCentroidPlugin(ForcedPlugin):
+    """A centroid pseudo-algorithm for forced measurement that simply transforms the centroid
+    from the reference catalog RA, Dec to the measurement coordinate system.  This is used as
+    the slot centroid for external-catalog-based forced measurement, allowing subsequent measurements
+    to simply refer to the slot value just as they would in single-frame measurement.
+    """
+
+    ConfigClass = ForcedRaDecCentroidConfig
+
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.CENTROID_ORDER
+
+    def __init__(self, config, name, schemaMapper, metadata):
+        ForcedPlugin.__init__(self, config, name, schemaMapper, metadata)
+        schema = schemaMapper.editOutputSchema()
+        # Allocate x and y fields, join these into a single FunctorKey for ease-of-use.
+        xKey = schema.addField(name + "_x", type="D", doc="transformed reference centroid column",
+                               units="pixel")
+        yKey = schema.addField(name + "_y", type="D", doc="transformed reference centroid row",
+                               units="pixel")
+        self.centroidKey = lsst.afw.table.Point2DKey(xKey, yKey)
+        # Because we're taking the reference position as given, we don't bother transforming its
+        # uncertainty and reporting that here, so there are no sigma or cov fields.  We do propagate
+        # the flag field, if it exists.
+        if "slot_Centroid_flag" in schemaMapper.getInputSchema():
+            self.flagKey = schema.addField(name + "_flag", type="Flag",
+                                           doc="whether the reference centroid is marked as bad")
+        else:
+            self.flagKey = None
+
+    def measure(self, measRecord, exposure, refRecord, refWcs):
+        targetWcs = exposure.getWcs()
+        targetPos = targetWcs.skyToPixel(refRecord.getCentroid())
+        measRecord.set(self.centroidKey, targetPos)
+        if self.flagKey is not None:
+            measRecord.set(self.flagKey, refRecord.getCentroidFlag())
