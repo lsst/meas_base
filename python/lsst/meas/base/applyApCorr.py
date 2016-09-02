@@ -123,8 +123,8 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
         ignoreSet = set(self.config.ignoreList)
         missingNameSet = ignoreSet - set(apCorrNameSet)
         if missingNameSet:
-            self.log.warn("Fields in ignoreList that are not in fluxCorrectList: %s" %
-                          (sorted(list(missingNameSet)),))
+            self.log.warn("Fields in ignoreList that are not in fluxCorrectList: %s",
+                          sorted(list(missingNameSet)))
         for name in apCorrNameSet - ignoreSet:
             if name + "_flux" in schema:
                 self.apCorrInfoDict[name] = ApCorrInfo(schema=schema, name=name)
@@ -141,7 +141,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
         If you show debug-level log messages then you will see statistics for the effects of
         aperture correction.
         """
-        self.log.info("Applying aperture corrections to %d flux fields" % (len(self.apCorrInfoDict),))
+        self.log.info("Applying aperture corrections to %d flux fields", len(self.apCorrInfoDict))
         if UseNaiveFluxSigma:
             self.log.info("Use naive flux sigma computation")
         else:
@@ -194,11 +194,11 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                 if self.config.doFlagApCorrFailures:
                     source.set(apCorrInfo.fluxFlagKey, oldFluxFlagState)
 
-            if self.log.getThreshold() <= self.log.DEBUG:
+            if self.log.getLevel() <= self.log.DEBUG:
                 # log statistics on the effects of aperture correction
                 apCorrArr = numpy.array([s.get(apCorrInfo.apCorrKey) for s in catalog])
                 apCorrSigmaArr = numpy.array([s.get(apCorrInfo.apCorrSigmaKey) for s in catalog])
-                self.log.logdebug("For flux field %r: mean apCorr=%s, stdDev apCorr=%s, "
-                                  "mean apCorrSigma=%s, stdDev apCorrSigma=%s for %s sources" %
-                                  (apCorrInfo.name, apCorrArr.mean(), apCorrArr.std(),
-                                   apCorrSigmaArr.mean(), apCorrSigmaArr.std(), len(catalog)))
+                self.log.debug("For flux field %r: mean apCorr=%s, stdDev apCorr=%s, "
+                               "mean apCorrSigma=%s, stdDev apCorrSigma=%s for %s sources",
+                               apCorrInfo.name, apCorrArr.mean(), apCorrArr.std(),
+                               apCorrSigmaArr.mean(), apCorrSigmaArr.std(), len(catalog))

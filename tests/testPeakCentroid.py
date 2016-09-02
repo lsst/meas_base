@@ -43,12 +43,12 @@ def onlyLogFatal(log):
     want to be able to check that they have set appropriate flags without
     spewing alarming & confusing error messages to the console.
     """
-    oldLevel = log.getThreshold()
-    log.setThreshold(log.FATAL)
+    oldLevel = log.getLevel()
+    log.setLevel(log.FATAL)
     try:
         yield
     finally:
-        log.setThreshold(oldLevel)
+        log.setLevel(oldLevel)
 
 
 class SingleFramePeakCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):

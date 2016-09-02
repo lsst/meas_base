@@ -26,7 +26,6 @@
 #include "ndarray/eigen.h"
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/pex/exceptions.h"
-#include "lsst/pex/logging/Trace.h"
 #include "lsst/afw/math/ConvolveImage.h"
 #include "lsst/afw/math/offsetImage.h"
 #include "lsst/afw/geom/Angle.h"
