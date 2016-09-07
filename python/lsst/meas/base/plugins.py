@@ -523,7 +523,5 @@ class ForcedRaDecCentroidPlugin(ForcedPlugin):
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
         targetWcs = exposure.getWcs()
-        targetPos = targetWcs.skyToPixel(refRecord.getCentroid())
+        targetPos = targetWcs.skyToPixel(refRecord.getCoord())
         measRecord.set(self.centroidKey, targetPos)
-        if self.flagKey is not None:
-            measRecord.set(self.flagKey, refRecord.getCentroidFlag())
