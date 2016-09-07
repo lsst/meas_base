@@ -239,16 +239,34 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
                 continue
             if endOrder is not None and plugin.getExecutionOrder() >= endOrder:
                 break
-            try:
-                plugin.measure(measRecord, *args, **kwds)
-            except FATAL_EXCEPTIONS:
-                raise
-            except MeasurementError as error:
-                plugin.fail(measRecord, error)
-            except Exception as error:
-                self.log.warn("Error in %s.measure on record %s: %s"
-                              % (plugin.name, measRecord.getId(), error))
-                plugin.fail(measRecord)
+            self.doMeasurement(plugin, measRecord, *args, **kwds)
+
+    def doMeasurement(self, plugin, measRecord, *args, **kwds):
+        """!
+        Call the measure() method on the nominated plugin, handling exceptions in a consistent way.
+
+        @param[in]      plugin         Plugin that will measure
+        @param[in,out]  measRecord     lsst.afw.table.SourceRecord that corresponds to the object being
+                                       measured, and where outputs should be written.
+        @param[in]      *args          Positional arguments forwarded to plugin.measure()
+        @param[in]      **kwds         Keyword arguments forwarded to plugin.measure()
+
+        This method can be used with plugins that have different signatures; the only requirement is that
+        the 'plugin' and 'measRecord' be the first two arguments.  Subsequent positional arguments and
+        keyword arguments are forwarded directly to the plugin.
+
+        This method should be considered "protected"; it is intended for use by derived classes, not users.
+        """
+        try:
+            plugin.measure(measRecord, *args, **kwds)
+        except FATAL_EXCEPTIONS:
+            raise
+        except MeasurementError as error:
+            plugin.fail(measRecord, error)
+        except Exception as error:
+            self.log.warn("Error in %s.measure on record %s: %s"
+                          % (plugin.name, measRecord.getId(), error))
+            plugin.fail(measRecord)
 
     def callMeasureN(self, measCat, *args, **kwds):
         """!
@@ -282,15 +300,34 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
                 continue
             if endOrder is not None and plugin.getExecutionOrder() >= endOrder:
                 break
-            try:
-                plugin.measureN(measCat, *args, **kwds)
-            except FATAL_EXCEPTIONS:
-                raise
-            except MeasurementError as error:
-                for measRecord in measCat:
-                    plugin.fail(measRecord, error)
-            except Exception as error:
-                for measRecord in measCat:
-                    plugin.fail(measRecord)
-                self.log.warn("Error in %s.measureN on records %s-%s: %s"
-                              % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
+            self.doMeasurementN(plugin, measCat, *args, **kwds)
+
+    def doMeasurementN(self, plugin, measCat, *args, **kwds):
+        """!
+        Call the measureN() method on the nominated plugin, handling exceptions in a consistent way.
+
+        @param[in]      plugin         Plugin that will measure
+        @param[in,out]  measCat        lsst.afw.table.SourceCatalog containing records for just
+                                       the source family to be measured, and where outputs should
+                                       be written.
+        @param[in]      *args          Positional arguments forwarded to plugin.measureN()
+        @param[in]      **kwds         Keyword arguments forwarded to plugin.measureN()
+
+        This method can be used with plugins that have different signatures; the only requirement is that
+        the 'plugin' and 'measCat' be the first two arguments.  Subsequent positional arguments and
+        keyword arguments are forwarded directly to the plugin.
+
+        This method should be considered "protected"; it is intended for use by derived classes, not users.
+        """
+        try:
+            plugin.measureN(measCat, *args, **kwds)
+        except FATAL_EXCEPTIONS:
+            raise
+        except MeasurementError as error:
+            for measRecord in measCat:
+                plugin.fail(measRecord, error)
+        except Exception as error:
+            for measRecord in measCat:
+                plugin.fail(measRecord)
+            self.log.warn("Error in %s.measureN on records %s-%s: %s"
+                          % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
