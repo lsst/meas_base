@@ -44,8 +44,15 @@ class ApCorrInfo(object):
     """!Catalog field names and keys needed to aperture correct a particular flux
     """
 
-    def __init__(self, schema, name):
+    def __init__(self, schema, model, name=None):
         """!Construct an ApCorrInfo and add fields to the schema
+
+        The aperture correction can be derived from the meaasurements in the
+        column being aperture-corrected or from measurements in a different
+        column (a "proxy"). In the first case, we will add columns to contain
+        the aperture correction values; in the second case (using a proxy),
+        we will add an alias to the proxy's aperture correction values. In
+        all cases, we add a flag.
 
         @param[in,out] schema  source catalog schema;
             three fields are used to generate keys:
@@ -53,13 +60,19 @@ class ApCorrInfo(object):
             - {name}_fluxSigma
             - {name}_flag
             three fields are added:
-            - {name}_apCorr
-            - {name}_apCorrSigma
+            - {name}_apCorr (only if not already added by proxy)
+            - {name}_apCorrSigma (only if not already added by proxy)
             - {name}_flag_apCorr
-        @param[in] name  field name prefix for flux needing aperture correction, e.g. "base_PsfFlux"
+        @param[in] model  field name prefix for flux with aperture correction model, e.g. "base_PsfFlux"
+        @param[in] name  field name prefix for flux needing aperture correction; may be None if it's the
+            same as for the 'model' parameter
 
         ApCorrInfo has the following attributes:
         - name: field name prefix for flux needing aperture correction
+        - modelName: field name for aperture correction model for flux
+        - modelSigmaName: field name for aperture correction model for fluxSigma
+        - doApCorrColumn: should we write the aperture correction values? (not if they're already being
+             written by a proxy)
         - fluxName: name of flux field
         - fluxSigmaName: name of flux sigma field
         - fluxKey: key to flux field
@@ -69,22 +82,37 @@ class ApCorrInfo(object):
         - apCorrSigmaKey: key to new aperture correction sigma field
         - apCorrFlagKey: key to new aperture correction flag field
         """
+        if name is None:
+            name = model
         self.name = name
+        self.modelName = model + "_flux"
+        self.modelSigmaName = model + "_fluxSigma"
         self.fluxName = name + "_flux"
         self.fluxSigmaName = name + "_fluxSigma"
         self.fluxKey = schema.find(self.fluxName).key
         self.fluxSigmaKey = schema.find(self.fluxSigmaName).key
         self.fluxFlagKey = schema.find(name + "_flag").key
-        self.apCorrKey = schema.addField(
-            name + "_apCorr",
-            doc="aperture correction applied to %s" % (name,),
-            type=float,
-        )
-        self.apCorrSigmaKey = schema.addField(
-            name + "_apCorrSigma",
-            doc="aperture correction applied to %s" % (name,),
-            type=float,
-        )
+
+        # No need to write the same aperture corrections multiple times
+        self.doApCorrColumn = (name == model or model + "_apCorr" not in schema)
+        if self.doApCorrColumn:
+            self.apCorrKey = schema.addField(
+                name + "_apCorr",
+                doc="aperture correction applied to %s" % (name,),
+                type=float,
+            )
+            self.apCorrSigmaKey = schema.addField(
+                name + "_apCorrSigma",
+                doc="aperture correction applied to %s" % (name,),
+                type=float,
+            )
+        else:
+            aliases = schema.getAliasMap()
+            aliases.set(name + "_apCorr", model + "_apCorr")
+            aliases.set(name + "_apCorrSigma", model + "_apCorrSigma")
+            self.apCorrKey = schema.find(name + "_apCorr").key
+            self.apCorrSigmaKey = schema.find(name + "_apCorrSigma").key
+
         self.apCorrFlagKey = schema.addField(
             name + "_flag_apCorr",
             doc="set if unable to aperture correct %s" % (name,),
@@ -127,7 +155,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                           sorted(list(missingNameSet)))
         for name in apCorrNameSet - ignoreSet:
             if name + "_flux" in schema:
-                self.apCorrInfoDict[name] = ApCorrInfo(schema=schema, name=name)
+                self.apCorrInfoDict[name] = ApCorrInfo(schema=schema, model=name)
             else:
                 # if a field in the registry is missing from the schema, silently ignore it.
                 pass
@@ -148,12 +176,13 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
             self.log.info("Use complex flux sigma computation that double-counts photon noise "
                           "and thus over-estimates flux uncertainty")
         for apCorrInfo in self.apCorrInfoDict.values():
-            apCorrModel = apCorrMap.get(apCorrInfo.fluxName)
-            apCorrSigmaModel = apCorrMap.get(apCorrInfo.fluxSigmaName)
+            apCorrModel = apCorrMap.get(apCorrInfo.modelName)
+            apCorrSigmaModel = apCorrMap.get(apCorrInfo.modelSigmaName)
             if None in (apCorrModel, apCorrSigmaModel):
-                missingNames = [(apCorrInfo.fluxName, apCorrInfo.fluxSigmaName)[i]
+                missingNames = [(apCorrInfo.modelName, apCorrInfo.modelSigmaName)[i]
                                 for i, model in enumerate((apCorrModel, apCorrSigmaModel)) if model is None]
-                self.log.warn("Could not find %s in apCorrMap" % (" or ".join(missingNames),))
+                self.log.warn("Cannot aperture correct %s because could not find %s in apCorrMap" %
+                              (apCorrInfo.name, " or ".join(missingNames),))
                 for source in catalog:
                     source.set(apCorrInfo.apCorrFlagKey, True)
                 continue
@@ -176,8 +205,10 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                 except lsst.pex.exceptions.DomainError:
                     continue
 
-                source.set(apCorrInfo.apCorrKey, apCorr)
-                source.set(apCorrInfo.apCorrSigmaKey, apCorrSigma)
+                if apCorrInfo.doApCorrColumn:
+                    source.set(apCorrInfo.apCorrKey, apCorr)
+                    source.set(apCorrInfo.apCorrSigmaKey, apCorrSigma)
+
                 if apCorr <= 0.0 or apCorrSigma < 0.0:
                     continue
 
