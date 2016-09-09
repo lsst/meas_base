@@ -133,6 +133,14 @@ class ApplyApCorrConfig(lsst.pex.config.Config):
         dtype=bool,
         default=True,
     )
+    proxies = lsst.pex.config.DictField(
+        doc="flux measurement algorithms to be aperture-corrected by reference to another algorithm; "
+            "this is a mapping alg1:alg2, where 'alg1' is the algorithm being corrected, and 'alg2' "
+            "is the algorithm supplying the corrections",
+        keytype=str,
+        itemtype=str,
+        default={},
+    )
 
 
 class ApplyApCorrTask(lsst.pipe.base.Task):
@@ -154,11 +162,20 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
             self.log.warn("Fields in ignoreList that are not in fluxCorrectList: %s",
                           sorted(list(missingNameSet)))
         for name in apCorrNameSet - ignoreSet:
-            if name + "_flux" in schema:
-                self.apCorrInfoDict[name] = ApCorrInfo(schema=schema, model=name)
-            else:
+            if name + "_flux" not in schema:
                 # if a field in the registry is missing from the schema, silently ignore it.
-                pass
+                continue
+            self.apCorrInfoDict[name] = ApCorrInfo(schema=schema, model=name)
+
+        for name, model in self.config.proxies.items():
+            if name in apCorrNameSet:
+                # Already done or ignored
+                continue
+            if name + "_flux" not in schema:
+                # Silently ignore
+                continue
+            self.apCorrInfoDict[name] = ApCorrInfo(schema=schema, model=model, name=name)
+
 
     def run(self, catalog, apCorrMap):
         """Apply aperture corrections to a catalog of sources
