@@ -1,3 +1,4 @@
+setupRequired(python_future)
 setupRequired(utils)
 setupRequired(afw)
 setupRequired(coadd_utils)
