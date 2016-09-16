@@ -31,7 +31,6 @@ Basic routines to talk to lsst::meas::base classes
 %module(package="lsst.meas.base", docstring=baseLib_DOCSTRING) baseLib
 
 %{
-#include "lsst/pex/logging.h"
 #include "lsst/afw/geom.h"
 #include "lsst/afw/math.h"
 #include "lsst/afw/table.h"

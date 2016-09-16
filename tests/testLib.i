@@ -27,7 +27,6 @@
 #include "SillyCentroid.h"
 #include "lsst/afw/math.h"
 #include "lsst/afw/detection.h"
-#include "lsst/pex/logging.h"
 %}
 
 %include "lsst/p_lsstSwig.i"
