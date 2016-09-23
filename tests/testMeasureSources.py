@@ -300,7 +300,6 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         plugin.measure(source, exp)
         self.assertTrue(source.get("test_flag_clipped"), "The clipped flag should be set True")
 
-
 def addStar(image, center, flux, fwhm):
     """Add a perfect single Gaussian star to an image
 
