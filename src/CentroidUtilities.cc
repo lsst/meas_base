@@ -215,13 +215,18 @@ bool CentroidChecker::operator()(
     if (!_doFootprintCheck && _maxDistFromPeak < 0.0) {
         return false;
     }
-
-    if (!record.getFootprint()) {
+    PTR(afw::detection::Footprint) footprint = record.getFootprint();
+    if (!footprint) {
         throw LSST_EXCEPT(
             pex::exceptions::RuntimeError,
             "No Footprint attached to record");
     }
-    PTR(afw::detection::Footprint) footprint = record.getFootprint();
+    if (footprint->getPeaks().empty()) {
+        throw LSST_EXCEPT(
+            pex::exceptions::RuntimeError,
+            "Footprint has no peaks; cannot verify centroid."
+        );
+    }
     CentroidElement footX = footprint->getPeaks().front().getFx();
     CentroidElement footY = footprint->getPeaks().front().getFy();
     double distsq = (x - footX) * (x - footX) + (y - footY) * (y - footY);
