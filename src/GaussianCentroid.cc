@@ -45,7 +45,7 @@ struct Fit2d {
     typedef Eigen::Matrix<double, FittedModel::NPARAM, 1> Vector;
 
     template<typename PixelT>
-    explicit Fit2d(afw::image::Image<PixelT> const& im) : wide(32), rast(*new std::vector<Raster>(wide*wide)) {
+    explicit Fit2d(afw::image::Image<PixelT> const& im) : wide(32), rast(wide*wide) {
         ncols = im.getWidth();
         nrows = im.getHeight();
 
@@ -62,12 +62,9 @@ struct Fit2d {
         iter = 0;
         flamd = 1.0;
     }
-    ~Fit2d() {
-        delete &rast;
-    }
 
     int wide;                           // patch of image being fitted is wide*wide
-    std::vector<Raster> &rast;          // The pixels being fitted, thought of as a raster scan
+    std::vector<Raster> rast;          // The pixels being fitted, thought of as a raster scan
     int nin;
     int nref;
     int iter;
