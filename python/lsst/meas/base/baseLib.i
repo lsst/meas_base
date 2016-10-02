@@ -44,7 +44,7 @@ Basic routines to talk to lsst::meas::base classes
 %initializeNumPy(meas_base)
 %{
 #include "ndarray/swig.h"
-#include "ndarray/swig/eigen.h"
+#include "ndarray/converter/eigen.h"
 %}
 %include "ndarray.i"
 
