@@ -188,10 +188,10 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
         """
         self.log.info("Applying aperture corrections to %d flux fields", len(self.apCorrInfoDict))
         if UseNaiveFluxSigma:
-            self.log.info("Use naive flux sigma computation")
+            self.log.debug("Use naive flux sigma computation")
         else:
-            self.log.info("Use complex flux sigma computation that double-counts photon noise "
-                          "and thus over-estimates flux uncertainty")
+            self.log.debug("Use complex flux sigma computation that double-counts photon noise "
+                           "and thus over-estimates flux uncertainty")
         for apCorrInfo in self.apCorrInfoDict.values():
             apCorrModel = apCorrMap.get(apCorrInfo.modelName)
             apCorrSigmaModel = apCorrMap.get(apCorrInfo.modelSigmaName)
