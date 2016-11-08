@@ -102,7 +102,7 @@ class ForcedPhotCoaddTask(ForcedPhotImageTask):
         """
         # With the default configuration, this IdFactory doesn't do anything, because
         # the IDs it generates are immediately overwritten by the ID from the reference
-        # catalog (since that's in config.copyColumns).  But we create one here anyway, to
+        # catalog (since that's in config.measurement.copyColumns).  But we create one here anyway, to
         # allow us to revert back to the old behavior of generating new forced source IDs,
         # just by renaming the ID in config.copyColumns to "object_id".
         expBits = dataRef.get(self.config.coaddName + "CoaddId_bits")
