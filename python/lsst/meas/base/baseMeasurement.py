@@ -116,6 +116,22 @@ class SourceSlotConfig(lsst.pex.config.Config):
 class BaseMeasurementConfig(lsst.pex.config.Config):
     """!
     Base config class for all measurement driver tasks.
+
+    Subclasses should define the 'plugins' and 'undeblended' registries, e.g.:
+
+        plugins = PluginBaseClass.registry.makeField(
+            multi=True,
+            default=[],
+            doc="Plugins to be run and their configuration"
+        )
+        undeblended = PluginBaseClass.registry.makeField(
+            multi=True,
+            default=[],
+            doc="Plugins to run on undeblended image"
+        )
+
+    where PluginBaseClass is the appropriate base class of the plugin
+    (e.g., SingleFramePlugin or ForcedPlugin).
     """
 
     slots = lsst.pex.config.ConfigField(
@@ -130,6 +146,10 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
     noiseReplacer = lsst.pex.config.ConfigField(
         dtype=NoiseReplacerConfig,
         doc="configuration that sets how to replace neighboring sources with noise"
+    )
+    undeblendedPrefix = lsst.pex.config.Field(
+        dtype=str, default="undeblended_",
+        doc="Prefix to give undeblended plugins"
     )
 
     def validate(self):
@@ -182,6 +202,7 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         """
         super(BaseMeasurementTask, self).__init__(**kwds)
         self.plugins = PluginMap()
+        self.undeblendedPlugins = PluginMap()
         if algMetadata is None:
             algMetadata = lsst.daf.base.PropertyList()
         self.algMetadata = algMetadata
@@ -211,6 +232,11 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         # remove it.
         if self.config.slots.centroid is not None and self.plugins[self.config.slots.centroid] is None:
             del self.plugins[self.config.slots.centroid]
+        # Initialize the plugins to run on the undeblended image
+        for executionOrder, name, config, PluginClass in sorted(self.config.undeblended.apply()):
+            undeblendedName = self.config.undeblendedPrefix + name
+            self.undeblendedPlugins[name] = PluginClass(config, undeblendedName, metadata=self.algMetadata,
+                                                        **kwds)
 
     def callMeasure(self, measRecord, *args, **kwds):
         """!

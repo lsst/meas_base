@@ -133,7 +133,6 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
         doc="Plugins to be run and their configuration"
     )
     algorithms = property(lambda self: self.plugins, doc="backwards-compatibility alias for plugins")
-    undeblendedPrefix = Field(dtype=str, default="undeblended_", doc="Prefix to give undeblended plugins")
     undeblended = SingleFramePlugin.registry.makeField(
         multi=True,
         default=[],
@@ -255,7 +254,6 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         @param[in]     **kwds      Keyword arguments forwarded to lsst.pipe.base.Task.__init__
         """
         super(SingleFrameMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
-        self.undeblendedPlugins = PluginMap()
         self.schema = schema
         self.config.slots.setupSchema(self.schema)
         self.initializePlugins(schema=self.schema)
@@ -266,22 +264,6 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
             self.blendPlugin = self.plugins['base_Blendedness']
         else:
             self.doBlendedness = False
-
-    def initializePlugins(self, **kwds):
-        """!
-        Set up undeblended plugins in addition to regular plugins
-
-        The parent class will set up the regular plugins; we just set up the
-        undeblended plugins.
-
-        Keyword arguments are forwarded directly to plugin constructors, allowing derived
-        classes to use plugins with different signatures.
-        """
-        BaseMeasurementTask.initializePlugins(self, **kwds)
-        for executionOrder, name, config, PluginClass in sorted(self.config.undeblended.apply()):
-            undeblendedName = self.config.undeblendedPrefix + name
-            self.undeblendedPlugins[name] = PluginClass(config, undeblendedName, metadata=self.algMetadata,
-                                                        **kwds)
 
     def run(self, measCat, exposure, noiseImage=None, exposureId=None, beginOrder=None, endOrder=None):
         """!
@@ -364,13 +346,15 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         # when done, restore the exposure to its original state
         noiseReplacer.end()
 
-        # Now we loop over all of the sources one more time to compute the blendedness metrics
-        # and perform undeblended measurements on the original image (i.e. with no noise replacement).
-        for source in measCat:
-            if endOrder is None:  # Undeblended plugins only fire if we're running everything
+        # Undeblended plugins only fire if we're running everything
+        if endOrder is None:
+            for source in measCat:
                 for plugin in self.undeblendedPlugins.iter():
                     self.doMeasurement(plugin, source, exposure)
-            if self.doBlendedness:
+
+        # Now we loop over all of the sources one more time to compute the blendedness metrics
+        if self.doBlendedness:
+            for source in measCat:
                 self.blendPlugin.cpp.measureParentPixels(exposure.getMaskedImage(), source)
 
     def measure(self, measCat, exposure):
