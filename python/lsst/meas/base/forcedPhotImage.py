@@ -70,7 +70,8 @@ class ForcedPhotImageConfig(lsst.pex.config.Config):
     )
     copyColumns = lsst.pex.config.DictField(
         keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
-        default={"id": "objectId", "parent": "parentObjectId", "deblend_nChild": "deblend_nChild"}
+        default={"id": "objectId", "parent": "parentObjectId", "deblend_nChild": "deblend_nChild",
+                 "coord_ra": "coord_ra", "coord_dec": "coord_dec"}
     )
 
     def setDefaults(self):

@@ -233,7 +233,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         """
         super(ForcedMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
         self.mapper = lsst.afw.table.SchemaMapper(refSchema)
-        self.mapper.addMinimalSchema(lsst.afw.table.SourceTable.makeMinimalSchema())
+        self.mapper.addMinimalSchema(lsst.afw.table.SourceTable.makeMinimalSchema(), False)
         self.config.slots.setupSchema(self.mapper.editOutputSchema())
         for refName, targetName in self.config.copyColumns.items():
             refItem = refSchema.find(refName)
