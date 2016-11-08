@@ -43,6 +43,11 @@ class ForcedPhotCoaddConfig(ForcedPhotImageConfig):
 
     def setDefaults(self):
         ForcedPhotImageTask.ConfigClass.setDefaults(self)
+        # Copy 'id' and 'parent' columns without renaming them; since these are
+        # the only IDs we have in coadd processing, there's no need to qualify
+        # them with 'object'.
+        self.measurement.copyColumns["id"] = "id"
+        self.measurement.copyColumns["parent"] = "parent"
         self.references.removePatchOverlaps = False  # see validate() for why
 
     def validate(self):
