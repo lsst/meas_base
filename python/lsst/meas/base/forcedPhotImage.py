@@ -213,7 +213,7 @@ class ForcedPhotImageTask(lsst.pipe.base.CmdLineTask):
         In the case of forced taks, there is only one schema for each type of forced measurement.
         The dataset type for this measurement is defined in the mapper.
         """
-        catalog = lsst.afw.table.SourceCatalog(self.measurement.mapper.getOutputSchema())
+        catalog = lsst.afw.table.SourceCatalog(self.measurement.schema)
         catalog.getTable().setMetadata(self.measurement.algMetadata)
         datasetType = self.dataPrefix + "forced_src"
         return {datasetType: catalog}
