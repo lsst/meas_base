@@ -68,10 +68,6 @@ class ForcedPhotImageConfig(lsst.pex.config.Config):
         target=CatalogCalculationTask,
         doc="Subtask to run catalogCalculation plugins on catalog"
     )
-    copyColumns = lsst.pex.config.DictField(
-        keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
-        default={"id": "objectId", "parent": "parentObjectId", "deblend_nChild": "deblend_nChild"}
-    )
 
     def setDefaults(self):
         # Make catalogCalculation a no-op by default as no modelFlux is setup by default in
@@ -163,7 +159,7 @@ class ForcedPhotImageTask(lsst.pipe.base.CmdLineTask):
         """!Hook for derived classes to define how to make an IdFactory for forced sources.
 
         Note that this is for forced source IDs, not object IDs, which are usually handled by
-        the copyColumns config option.
+        the measurement.copyColumns config option.
         """
         raise NotImplementedError()
 
