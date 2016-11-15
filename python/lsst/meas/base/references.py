@@ -161,6 +161,11 @@ class CoaddSrcReferencesConfig(BaseReferencesTask.ConfigClass):
         dtype=str,
         default="deep",
     )
+    skipMissing = lsst.pex.config.Field(
+        doc="Silently skip patches where the reference catalog does not exist.",
+        dtype=bool,
+        default=False
+    )
 
     def validate(self):
         if (self.coaddName == "chiSquared") != (self.filter is None):
@@ -216,6 +221,8 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
                 dataId['filter'] = self.config.filter
 
             if not butler.datasetExists(dataset, dataId):
+                if self.config.skipMissing:
+                    continue
                 raise lsst.pipe.base.TaskError("Reference %s doesn't exist" % (dataId,))
             self.log.info("Getting references in %s" % (dataId,))
             catalog = butler.get(dataset, dataId, immediate=True)

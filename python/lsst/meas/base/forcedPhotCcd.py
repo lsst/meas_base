@@ -54,13 +54,6 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
     the calexp are used.
     """
 
-    def _addDataRef(self, namespace, dataId, tract):
-        """Construct a dataRef based on dataId, but with an added tract key"""
-        forcedDataId = dataId.copy()
-        forcedDataId['tract'] = tract
-        dataRef = namespace.butler.dataRef(datasetType=self.datasetType, dataId=forcedDataId)
-        self.refList.append(dataRef)
-
     def makeDataRefList(self, namespace):
         """Make self.refList from self.idList
         """
@@ -94,16 +87,13 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
                     if overlapsTract(tract, wcs, box):
                         visitTract[visit].add(tract.getId())
             else:
-                tract = dataId.pop("tract")
-                # making a DataRef for src fills out any missing keys and allows us to iterate
-                for ref in namespace.butler.subset("src", dataId=dataId):
-                    self._addDataRef(namespace, ref.dataId, tract)
+                self.refList.extend(ref for ref in namespace.butler.subset(self.datasetType, dataId=dataId))
 
         # Ensure all components of a visit are kept together by putting them all in the same set of tracts
         for visit, tractSet in visitTract.items():
             for ref in visitRefs[visit]:
                 for tract in tractSet:
-                    self._addDataRef(namespace, ref.dataId, tract)
+                    namespace.butler.dataRef(datasetType=self.datasetType, dataId=ref.dataId, tract=tract)
         if visitTract:
             tractCounter = collections.Counter()
             for tractSet in visitTract.values():
