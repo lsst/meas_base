@@ -93,7 +93,8 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
         for visit, tractSet in visitTract.items():
             for ref in visitRefs[visit]:
                 for tract in tractSet:
-                    namespace.butler.dataRef(datasetType=self.datasetType, dataId=ref.dataId, tract=tract)
+                    self.refList.append(namespace.butler.dataRef(datasetType=self.datasetType,
+                                                                 dataId=ref.dataId, tract=tract))
         if visitTract:
             tractCounter = collections.Counter()
             for tractSet in visitTract.values():
