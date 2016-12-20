@@ -155,6 +155,11 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         doc="Plugins to be run and their configuration"
     )
     algorithms = property(lambda self: self.plugins, doc="backwards-compatibility alias for plugins")
+    undeblended = ForcedPlugin.registry.makeField(
+        multi=True,
+        default=[],
+        doc="Plugins to run on undeblended image"
+    )
 
     copyColumns = lsst.pex.config.DictField(
         keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
@@ -337,6 +342,12 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                               beginOrder=beginOrder, endOrder=endOrder)
             noiseReplacer.removeSource(refParentRecord.getId())
         noiseReplacer.end()
+
+        # Undeblended plugins only fire if we're running everything
+        if endOrder is None:
+            for measRecord, refRecord in zip(measCat, refCat):
+                for plugin in self.undeblendedPlugins.iter():
+                    self.doMeasurement(plugin, measRecord, exposure, refRecord, refWcs)
 
     def generateMeasCat(self, exposure, refCat, refWcs, idFactory=None):
         """!Initialize an output SourceCatalog using information from the reference catalog.
