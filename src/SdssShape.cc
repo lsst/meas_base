@@ -942,7 +942,7 @@ void SdssShapeAlgorithm::measure(
             if (!psf) {
                 result.flags[PSF_SHAPE_BAD] = true;
             } else {
-                _resultKey.setPsfShape(measRecord, psf->computeShape());
+                _resultKey.setPsfShape(measRecord, psf->computeShape(afw::geom::Point2D(result.x, result.y)));
             }
         } catch (pex::exceptions::Exception & err) {
             result.flags[PSF_SHAPE_BAD] = true;
