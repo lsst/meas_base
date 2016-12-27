@@ -87,7 +87,15 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.PSF_SHAPE_BAD))
 
     def testMeasureGoodPsf(self):
-        """Test that we measure shapes and record the PSF shape correctly."""
+        """Test that we measure shapes and record the PSF shape correctly
+
+        Note: Given that the PSF model here is constant over the entire image, this test
+        would not catch an error in the potition at which base_SdssShape_psf is computed.
+        Such a test requires a spatially varying PSF model such that different locations
+        can be distinguished by their different PSF model shapes.  Such a test exists in
+        meas_algorithms (tests/testSdssShapePsf.py), making use of the PcaPsf algorithm
+        to build the spatially varying PSF.
+        """
         exposure, catalog = self._runMeasurementTask()
         key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
         psfTruth = exposure.getPsf().computeShape()
@@ -115,7 +123,7 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         self.config.plugins["base_SdssShape"].doMeasurePsf = True
         task = self.makeSingleFrameMeasurementTask("base_SdssShape", config=self.config)
         exposure, catalog = self.dataset.realize(10.0, task.schema)
-        exposure.setPsf(None)  # Set Psf to None to test no psf case
+        exposure.setPsf(None)  # Set PSF to None to test no PSF case
         task.run(exposure, catalog)
         key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
         for record in catalog:
