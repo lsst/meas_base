@@ -7,6 +7,7 @@ setupRequired(geom)
 setupRequired(numpy)
 setupRequired(pex_config)
 setupRequired(pipe_base)
+setupRequired(pybind11)
 setupRequired(scons)
 setupRequired(sconsUtils)
 
