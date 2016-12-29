@@ -24,6 +24,8 @@ from __future__ import absolute_import, division, print_function
 from builtins import zip
 import unittest
 
+import numpy as np
+
 import lsst.afw.image as afwImage
 import lsst.afw.table as afwTable
 import lsst.daf.base as dafBase
