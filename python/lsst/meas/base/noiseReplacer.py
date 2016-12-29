@@ -150,7 +150,7 @@ class NoiseReplacer(object):
         # Create in the dict heavies = {id:heavyfootprint}
         for id, fp in footprints.items():
             if fp[1].isHeavy():
-                self.heavies[id] = afwDet.cast_HeavyFootprintF(fp[1])
+                self.heavies[id] = fp[1]
             elif fp[0] == 0:
                 self.heavies[id] = afwDet.makeHeavyFootprint(fp[1], mi)
 

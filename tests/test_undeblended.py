@@ -110,11 +110,11 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         foot2 = afwDetection.Footprint(afwGeom.Point2I(x0 + xCenter + xOffset, y0 + yCenter + yOffset), 0.1)
         child2.setFootprint(afwDetection.HeavyFootprintF(foot2, image))
 
-        spans = afwDetection.SpanContainerT()
+        spans = []
         for ss in foot1.getSpans():
-            spans.push_back(ss)
+            spans.append(ss)
         for ss in foot2.getSpans():
-            spans.push_back(ss)
+            spans.append(ss)
         bbox = afwGeom.Box2I()
         bbox.include(foot1.getBBox())
         bbox.include(foot2.getBBox())
