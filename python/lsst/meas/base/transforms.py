@@ -49,7 +49,7 @@ from builtins import object
 
 from lsst.afw.table import CoordKey
 from lsst.pex.exceptions import LengthError
-from .baseLib import CentroidResultKey
+from . import CentroidResultKey
 
 __all__ = ("NullTransform", "PassThroughTransform", "SimpleCentroidTransform")
 

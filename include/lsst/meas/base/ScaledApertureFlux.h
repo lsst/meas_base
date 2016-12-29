@@ -27,6 +27,7 @@
 #include "lsst/afw/table.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Algorithm.h"
+#include "lsst/meas/base/ApertureFlux.h"
 #include "lsst/meas/base/FluxUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"

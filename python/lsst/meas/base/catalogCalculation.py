@@ -8,7 +8,7 @@ import lsst.daf.base
 
 from .pluginsBase import BasePlugin, BasePluginConfig
 from .pluginRegistry import PluginRegistry, PluginMap
-from .baseLib import FatalAlgorithmError, MeasurementError
+from . import FatalAlgorithmError, MeasurementError
 
 # Exceptions that the measurement tasks should always propagate up to their callers
 FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)

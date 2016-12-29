@@ -54,8 +54,8 @@ FwhmPerSigma = 2*math.sqrt(2*math.log(2))  # FWHM for an N(0, 1) Gaussian
 def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
     schema = afwTable.SourceTable.makeMinimalSchema()
     if centroid:
-        schema.addField(centroid + "_x", type=float)
-        schema.addField(centroid + "_y", type=float)
+        schema.addField(centroid + "_x", type=np.float64)
+        schema.addField(centroid + "_y", type=np.float64)
         schema.addField(centroid + "_flag", type='Flag')
         schema.getAliasMap().set("slot_Centroid", centroid)
     if metadata:
@@ -154,7 +154,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
 
             for fracOffset in (afwGeom.Extent2D(0, 0), afwGeom.Extent2D(0.2, -0.3)):
                 adjCenter = ctrPos + fracOffset
-                if fracOffset == (0, 0):
+                if fracOffset == afwGeom.Extent2D(0, 0):
                     maskedImage = unshMImage
                     filteredImage = unshFiltMImage
                 else:
