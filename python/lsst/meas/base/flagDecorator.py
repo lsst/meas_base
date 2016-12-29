@@ -1,4 +1,4 @@
-from lsst.meas.base import FlagDefinition, FlagDefinitionVector, FlagHandler
+from lsst.meas.base import FlagDefinition, FlagHandler
 
 
 def addFlagHandler(*args):
@@ -32,7 +32,7 @@ def addFlagHandler(*args):
                 name = kwargs['name']
             else:
                 name = args[1]
-            self.flagHandler = FlagHandler.addFields(schema, name, FlagDefinitionVector(self.FLAGDEFS))
+            self.flagHandler = FlagHandler.addFields(schema, name, self.FLAGDEFS)
             oldInit(self, *args, **kwargs)
         cls.__init__ = newInit
         return cls
