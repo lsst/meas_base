@@ -45,7 +45,10 @@ def generateAlgorithmName(AlgClass):
     pkg = AlgClass.__module__
     name = name.replace("Algorithm", "")
     terms = pkg.split(".")
-    if terms[-1].endswith("Lib"):
+    # Hide private module name only if it's part of a public package
+    if len(terms) > 1 and terms[-1].startswith("_"):
+        terms = terms[:-1]
+    if len(terms) > 1 and terms[-1].endswith("Lib"):
         terms = terms[:-1]
     if terms[0] == "lsst":
         terms = terms[1:]

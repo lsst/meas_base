@@ -5,8 +5,6 @@ _build.*
 *.so
 *.os
 *.pyc
-*_wrap.*
-*Lib.py
 *~
 core.*
 .sconf_temp
@@ -18,7 +16,6 @@ doc/xml
 doc/doxygen.conf
 python/lsst/meas/base/version.py
 python/lsst/meas/base/*.pyc
-python/lsst/meas/base/baseLib.py
 tests/.tests
 tests/.cache
 ups/*.cfgc
