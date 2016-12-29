@@ -31,7 +31,7 @@ import lsst.meas.base
 import lsst.meas.base.tests
 import lsst.afw.table
 from lsst.meas.base.baseLib import MeasurementError
-from lsst.meas.base import FlagDefinition, FlagDefinitionVector, FlagHandler
+from lsst.meas.base import FlagDefinition, FlagHandler
 from lsst.meas.base.tests import (AlgorithmTestCase)
 
 import lsst.pex.exceptions
@@ -185,7 +185,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                     FlagDefinition("1st error", "this is the first failure type"),
                     FlagDefinition("2nd error", "this is the second failure type")
                     ]
-        fh = FlagHandler.addFields(schema, "test", FlagDefinitionVector(flagDefs))
+        fh = FlagHandler.addFields(schema, "test", flagDefs)
 
         # Check to be sure that the FlagHandler was correctly initialized
         for index, flagDef in enumerate(flagDefs):

@@ -24,6 +24,8 @@
 from __future__ import division, absolute_import, print_function
 import unittest
 
+import numpy as np
+
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable

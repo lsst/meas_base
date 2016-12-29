@@ -154,7 +154,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
 
             for fracOffset in (afwGeom.Extent2D(0, 0), afwGeom.Extent2D(0.2, -0.3)):
                 adjCenter = ctrPos + fracOffset
-                if fracOffset == (0, 0):
+                if fracOffset == afwGeom.Extent2D(0, 0):
                     maskedImage = unshMImage
                     filteredImage = unshFiltMImage
                 else:
