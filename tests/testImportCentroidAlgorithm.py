@@ -72,8 +72,8 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
                 control.param = offset
                 x, y = 10, 20
                 schema = afwTable.SourceTable.makeMinimalSchema()
-                schema.addField("centroid_x", type=float)
-                schema.addField("centroid_y", type=float)
+                schema.addField("centroid_x", type=np.float64)
+                schema.addField("centroid_y", type=np.float64)
                 schema.getAliasMap().set("slot_Centroid", "centroid")
                 plugin = testLib.SillyCentroidAlgorithm(control, "test", schema)
                 measCat = afwTable.SourceCatalog(schema)
