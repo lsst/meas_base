@@ -54,8 +54,8 @@ FwhmPerSigma = 2*math.sqrt(2*math.log(2))  # FWHM for an N(0, 1) Gaussian
 def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
     schema = afwTable.SourceTable.makeMinimalSchema()
     if centroid:
-        schema.addField(centroid + "_x", type=float)
-        schema.addField(centroid + "_y", type=float)
+        schema.addField(centroid + "_x", type=np.float64)
+        schema.addField(centroid + "_y", type=np.float64)
         schema.addField(centroid + "_flag", type='Flag')
         schema.getAliasMap().set("slot_Centroid", centroid)
     if metadata:
