@@ -99,12 +99,12 @@ class ApCorrInfo(object):
             self.apCorrKey = schema.addField(
                 name + "_apCorr",
                 doc="aperture correction applied to %s" % (name,),
-                type=float,
+                type=numpy.float64,
             )
             self.apCorrSigmaKey = schema.addField(
                 name + "_apCorrSigma",
                 doc="aperture correction applied to %s" % (name,),
-                type=float,
+                type=numpy.float64,
             )
         else:
             aliases = schema.getAliasMap()

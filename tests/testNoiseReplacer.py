@@ -42,8 +42,8 @@ class NoiseReplacerTestPlugin(lsst.meas.base.SingleFramePlugin):
 
     def __init__(self, config, name, schema, metadata):
         lsst.meas.base.SingleFramePlugin.__init__(self, config, name, schema, metadata)
-        self.insideKey = schema.addField("%s_inside" % (name,), type=float, doc="flux inside footprint")
-        self.outsideKey = schema.addField("%s_outside" % (name,), type=float, doc="flux outside footprint")
+        self.insideKey = schema.addField("%s_inside" % (name,), type=np.float64, doc="flux inside footprint")
+        self.outsideKey = schema.addField("%s_outside" % (name,), type=np.float64, doc="flux outside footprint")
 
     def measure(self, measRecord, exposure):
         footprint = measRecord.getFootprint()
