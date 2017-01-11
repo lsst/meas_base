@@ -70,8 +70,8 @@ class TransformTestCase(lsst.utils.tests.TestCase):
     def _generateCatalog(self):
         """Returns a SourceCatalog with one entry"""
         schema = afwTable.SourceTable.makeMinimalSchema()
-        schema.addField(self.pluginName + "_x", type=float)
-        schema.addField(self.pluginName + "_y", type=float)
+        schema.addField(self.pluginName + "_x", type=np.float64)
+        schema.addField(self.pluginName + "_y", type=np.float64)
         cat = afwTable.SourceCatalog(schema)
         source = cat.addNew()
         source.set(self.pluginName + "_x", self.centroidPosition[0])
