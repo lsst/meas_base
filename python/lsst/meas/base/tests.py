@@ -157,7 +157,7 @@ class TestDataset(object):
             cls.keys = {}
             cls.keys["parent"] = schema.find("parent").key
             cls.keys["nChild"] = schema.addField("deblend_nChild", type=np.int32)
-            cls.keys["flux"] = schema.addField("truth_flux", type=float, doc="true flux", units="count")
+            cls.keys["flux"] = schema.addField("truth_flux", type=np.float64, doc="true flux", units="count")
             cls.keys["centroid"] = lsst.afw.table.Point2DKey.addFields(
                 schema, "truth", "true simulated centroid", "pixel"
             )
