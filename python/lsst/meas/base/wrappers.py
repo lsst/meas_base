@@ -4,7 +4,7 @@ from .apCorrRegistry import addApCorrName
 from .sfm import SingleFramePlugin
 from .forcedMeasurement import ForcedPlugin
 
-__all__ = ("wrapSingleFrameAlgorithm", "wrapForcedAlgorithm", "wrapSimpleAlgorithm")
+__all__ = ("wrapSingleFrameAlgorithm", "wrapForcedAlgorithm", "wrapSimpleAlgorithm", "wrapTransform")
 
 
 class WrappedSingleFramePlugin(SingleFramePlugin):
@@ -388,3 +388,22 @@ def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
                                      needsMetadata=needsMetadata, **kwds),
             wrapForcedAlgorithm(AlgClass, executionOrder=executionOrder, name=name,
                                 needsMetadata=needsMetadata, needsSchemaOnly=True, **kwds))
+
+
+def wrapTransform(transformClass):
+    """Modify a C++ Transform class so that it can be configured with either a Config or a Control.
+
+    Parameters
+    ----------
+    transformClass: class
+        A Transform class. Its constructor must take a Control, a string, and
+        a SchemaMapper, in that order.
+    """
+    oldInit = transformClass.__init__
+
+    def _init(self, ctrl, name, mapper):
+        if hasattr(ctrl, "makeControl"):
+            ctrl = ctrl.makeControl()
+        oldInit(self, ctrl, name, mapper)
+
+    transformClass.__init__ = _init
