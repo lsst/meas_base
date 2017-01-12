@@ -35,7 +35,7 @@ from . import baseLib as bl
 from .pluginsBase import BasePlugin
 from .sfm import SingleFramePluginConfig, SingleFramePlugin
 from .forcedMeasurement import ForcedPluginConfig, ForcedPlugin
-from .wrappers import wrapSimpleAlgorithm
+from .wrappers import wrapSimpleAlgorithm, wrapTransform
 from .transforms import SimpleCentroidTransform
 
 __all__ = (
@@ -77,6 +77,16 @@ wrapSimpleAlgorithm(bl.CircularApertureFluxAlgorithm, needsMetadata=True, Contro
                     TransformClass=bl.ApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 wrapSimpleAlgorithm(bl.BlendednessAlgorithm, Control=bl.BlendednessControl,
                     TransformClass=bl.BaseTransform, executionOrder=BasePlugin.SHAPE_ORDER)
+
+wrapTransform(bl.PsfFluxTransform)
+wrapTransform(bl.PeakLikelihoodFluxTransform)
+wrapTransform(bl.GaussianFluxTransform)
+wrapTransform(bl.GaussianCentroidTransform)
+wrapTransform(bl.NaiveCentroidTransform)
+wrapTransform(bl.SdssCentroidTransform)
+wrapTransform(bl.SdssShapeTransform)
+wrapTransform(bl.ScaledApertureFluxTransform)
+wrapTransform(bl.ApertureFluxTransform)
 
 # --- Single-Frame Measurement Plugins ---
 
