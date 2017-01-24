@@ -1,5 +1,8 @@
 from __future__ import absolute_import
 
+# Needed for pybind11-generated docstrings
+from lsst.afw.image import Calib, Wcs
+
 from ._centroidUtilities import *
 from ._fluxUtilities import *
 from ._inputUtilities import *
