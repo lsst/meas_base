@@ -45,7 +45,7 @@ class PixelFlagsTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.test
     def testNoFlags(self):
         task = self.makeSingleFrameMeasurementTask("base_PixelFlags")
         exposure, catalog = self.dataset.realize(10.0, task.schema)
-        task.run(exposure, catalog)
+        task.run(catalog, exposure)
         record = catalog[0]
         self.assertFalse(record.get("base_PixelFlags_flag"))
         self.assertFalse(record.get("base_PixelFlags_flag_edge"))

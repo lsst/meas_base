@@ -80,7 +80,7 @@ class JacobianTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         task = self.makeSingleFrameMeasurementTask(config=config)
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         exposure.setWcs(self.wcs)
-        task.run(exposure, catalog)
+        task.run(catalog, exposure)
         record = catalog[0]
         self.assertFalse(record.get("base_Jacobian_flag"))
         self.assertAlmostEqual(record.get("base_Jacobian_value"), 1.0200183929088285, 4)

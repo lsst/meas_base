@@ -284,12 +284,6 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         @param[in] endOrder      ending execution order (exclusive): measurements with
                                  executionOrder >= endOrder are not executed. None for no limit.
         """
-        # Temporary workaround for change in order of arguments; will be removed when transition
-        # from meas_algorithms to meas_base is complete.
-        if exposure.__class__.__name__ == "SourceCatalog":
-            temp = exposure
-            exposure = measCat
-            measCat = temp
         assert measCat.getSchema().contains(self.schema)
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
                       for measRecord in measCat}

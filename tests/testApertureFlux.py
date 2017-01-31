@@ -173,7 +173,7 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
         algMetadata = lsst.daf.base.PropertyList()
         task = self.makeSingleFrameMeasurementTask(config=config, algMetadata=algMetadata)
         exposure, catalog = self.dataset.realize(10.0, task.schema)
-        task.run(exposure, catalog)
+        task.run(catalog, exposure)
         radii = algMetadata.get("%s_radii" % (baseName,))
         self.assertEqual(list(radii), list(ctrl.radii))
         for record in catalog:

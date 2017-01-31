@@ -78,7 +78,7 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.t
         by comparing flux inside and outside source Footprints on an extremely high S/N image."""
         task = self.makeSingleFrameMeasurementTask("test_NoiseReplacer")
         exposure, catalog = self.dataset.realize(1.0, task.schema)
-        task.run(exposure, catalog)
+        task.run(catalog, exposure)
         sumVariance = exposure.getMaskedImage().getVariance().getArray().sum()
         for record in catalog:
             self.assertClose(record.get("test_NoiseReplacer_inside"), record.get("truth_flux"), rtol=1E-3)
