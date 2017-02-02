@@ -25,6 +25,7 @@
 
 #include "lsst/afw/image/Wcs.h"
 #include "lsst/afw/table/Source.h"
+#include "lsst/meas/base/pybind11.h"
 #include "lsst/meas/base/Algorithm.h"
 
 namespace py = pybind11;
@@ -38,7 +39,8 @@ PYBIND11_PLUGIN(_algorithm) {
     py::module mod("_algorithm", "Python wrapper for afw _algorithm library");
 
     /* Module level */
-    py::class_<SimpleAlgorithm> clsSimpleAlgorithm(mod, "SimpleAlgorithm");
+    py::class_<SingleFrameAlgorithm> clsSingleFrameAlgorithm(mod, "SingleFrameAlgorithm");
+    py::class_<SimpleAlgorithm, SingleFrameAlgorithm> clsSimpleAlgorithm(mod, "SimpleAlgorithm");
 
     /* Member types and enums */
 
@@ -47,6 +49,8 @@ PYBIND11_PLUGIN(_algorithm) {
     /* Operators */
 
     /* Members */
+    python::declareAlgorithm<SingleFrameAlgorithm>(clsSingleFrameAlgorithm);
+
     clsSimpleAlgorithm.def("measureForced", &SimpleAlgorithm::measureForced,
         "measRecord"_a, "exposure"_a, "refRecord"_a, "refWcs"_a);
 
