@@ -60,13 +60,6 @@ public:
      *
      *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
      */
-    enum {
-        FAILURE=lsst::meas::base::FlagHandler::FAILURE,
-        NO_COUNTS,
-        EDGE,
-        N_FLAGS
-    };
-
     typedef SillyCentroidControl Control;
 
     SillyCentroidAlgorithm(
@@ -80,7 +73,7 @@ public:
         ),
         _centroidExtractor(schema, name, true)
     {
-        static std::array<lsst::meas::base::FlagDefinition,N_FLAGS> const flagDefs = {{
+        static std::vector<lsst::meas::base::FlagDefinition> flagDefs = {{
             {"flag", "general failure flag, set if anything went wrong"},
             {"flag_noCounts", "Object to be centroided has no counts"},
             {"flag_edge", "Object too close to edge"}
@@ -101,7 +94,7 @@ public:
         measRecord.set(_centroidKey, result); // better than NaN
     
         measRecord.set(_centroidKey, result);
-        _flagHandler.setValue(measRecord, FAILURE, false);  // if we had a suspect flag, we'd set that instead
+        _flagHandler.setValue(measRecord, "flag", false);  // if we had a suspect flag, we'd set that instead
     }
 
     void fail(lsst::afw::table::SourceRecord & measRecord, lsst::meas::base::MeasurementError * error) const {

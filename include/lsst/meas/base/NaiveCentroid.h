@@ -66,17 +66,11 @@ public:
 class NaiveCentroidAlgorithm : public SimpleAlgorithm {
 public:
 
-    /**
-     *  @brief Flag bits to be used with the 'flags' data member of the Result object.
-     *
-     *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
-     */
-    enum {
-        FAILURE=FlagHandler::FAILURE,
-        NO_COUNTS,
-        EDGE,
-        N_FLAGS
-    };
+    // Structures and routines to manage flaghandler
+    struct Flags;
+
+    static std::size_t getFlagNumber(std::string const & name);
+    static std::string const getFlagName(std::size_t flagNumber);
 
     typedef NaiveCentroidControl Control;
 

@@ -26,17 +26,48 @@
 
 
 namespace lsst { namespace meas { namespace base {
+struct NaiveCentroidAlgorithm::Flags {
+    static FlagDefinition FAILURE;
+    static FlagDefinition NO_COUNTS;
+    static FlagDefinition EDGE;
+};
+FlagDefinition NaiveCentroidAlgorithm::Flags::FAILURE("flag", "general failure flag, set if anything went wrong");
+FlagDefinition NaiveCentroidAlgorithm::Flags::NO_COUNTS("flag_noCounts", "Object to be centroided has no counts");
+FlagDefinition NaiveCentroidAlgorithm::Flags::EDGE("flag_edge", "Object too close to edge");
+namespace {
+std::vector<FlagDefinition> const flagVector = {
+    NaiveCentroidAlgorithm::Flags::FAILURE,
+    NaiveCentroidAlgorithm::Flags::NO_COUNTS,
+    NaiveCentroidAlgorithm::Flags::EDGE,
+};
+std::vector<FlagDefinition> const & getFlagDefinitions() {
+    return flagVector;
+};
+} // end anonymous
+
+std::size_t NaiveCentroidAlgorithm::getFlagNumber(std::string const & name) {
+    std::size_t i = 0;
+    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
+        if (iter->name == name) {
+            return i;
+        }
+        i++;
+    }
+    throw lsst::pex::exceptions::RuntimeError("NaiveCentroid flag does not exist for name: " + name);
+}
+
+std::string const NaiveCentroidAlgorithm::getFlagName(std::size_t flagNumber) {
+    std::size_t i = 0;
+    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
+        if (i == flagNumber) {
+            return iter->name;
+        }
+    }
+    throw lsst::pex::exceptions::RuntimeError("NaiveCentroid flag does not exist for number: " + flagNumber);
+}
 
 namespace {
 
-std::array<FlagDefinition,NaiveCentroidAlgorithm::N_FLAGS> const & getFlagDefinitions() {
-    static std::array<FlagDefinition,NaiveCentroidAlgorithm::N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag, set if anything went wrong"},
-        {"flag_noCounts", "Object to be centroided has no counts"},
-        {"flag_edge", "Object too close to edge"}
-    }};
-    return flagDefs;
-}
 
 } // anonymous
 
@@ -79,8 +110,8 @@ void NaiveCentroidAlgorithm::measure(
 
         throw LSST_EXCEPT(
             MeasurementError,
-            _flagHandler.getDefinition(EDGE).doc,
-            EDGE
+            Flags::EDGE.doc,
+            getFlagNumber(Flags::EDGE.name)
         );
     }
 
@@ -95,8 +126,8 @@ void NaiveCentroidAlgorithm::measure(
     if (sum == 0.0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            _flagHandler.getDefinition(NO_COUNTS).doc,
-            NO_COUNTS
+            Flags::NO_COUNTS.doc,
+            getFlagNumber(Flags::NO_COUNTS.name)
         );
     }
 

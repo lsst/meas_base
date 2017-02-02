@@ -74,17 +74,17 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         self.assertFinite(result.xx_yy_Cov)
         self.assertFinite(result.xx_xy_Cov)
         self.assertFinite(result.yy_xy_Cov)
-        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.FAILURE))
-        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.UNWEIGHTED_BAD))
-        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.UNWEIGHTED))
-        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.SHIFT))
-        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.MAXITER))
+        self.assertFalse(result.getFlag("flag"))
+        self.assertFalse(result.getFlag("flag_unweightedBad"))
+        self.assertFalse(result.getFlag("flag_unweighted"))
+        self.assertFalse(result.getFlag("flag_shift"))
+        self.assertFalse(result.getFlag("flag_maxIter"))
 
     def _checkPsfShape(self, result, psfResult, psfTruth):
         self.assertClose(psfResult.getIxx(), psfTruth.getIxx(), rtol=1E-4)
         self.assertClose(psfResult.getIyy(), psfTruth.getIyy(), rtol=1E-4)
         self.assertClose(psfResult.getIxy(), psfTruth.getIxy(), rtol=1E-4)
-        self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.PSF_SHAPE_BAD))
+        self.assertFalse(result.getFlag("flag_psf"))
 
     def testMeasureGoodPsf(self):
         """Test that we measure shapes and record the PSF shape correctly
@@ -129,7 +129,7 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         for record in catalog:
             result = record.get(key)
             self._checkShape(result, record)
-            self.assertTrue(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.PSF_SHAPE_BAD))
+            self.assertTrue(result.getFlag("flag_psf"))
 
 
 class SdssShapeTransformTestCase(lsst.meas.base.tests.FluxTransformTestCase,

@@ -83,15 +83,14 @@ struct ApertureFluxResult;
 class ApertureFluxAlgorithm : public SimpleAlgorithm {
 public:
 
-    /// @copydoc PsfFluxAlgorithm::FlagBits
-    enum FlagBits {
-        FAILURE=0,
-        APERTURE_TRUNCATED,
-        SINC_COEFFS_TRUNCATED,
-        N_FLAGS
-    };
+    // Structures and routines to manage flaghandler
+    struct Flags;
 
-    /// Typedef to the control object associated with this algorithm, defined above.
+    static std::size_t getFlagNumber(std::string const & name);
+    static std::string const getFlagName(std::size_t flagNumber);
+    static std::vector<FlagDefinition> const & getFlagDefinitions();
+    static unsigned int const N_FLAGS = 3;
+
     typedef ApertureFluxControl Control;
 
     /// Result object returned by static methods.
@@ -222,7 +221,6 @@ public:
     /**
      *  Return the flag definitions which apply to aperture flux measurements.
      */
-    static std::array<FlagDefinition,ApertureFluxAlgorithm::N_FLAGS> const & getFlagDefinitions();
 
 protected:
 
@@ -254,13 +252,13 @@ private:
 struct ApertureFluxResult : public FluxResult {
 
     /// Return the flag value associated with the given bit
-    bool getFlag(ApertureFluxAlgorithm::FlagBits bit) const { return _flags[bit]; }
+    bool getFlag(std::string flagName) const { return _flags[ApertureFluxAlgorithm::getFlagNumber(flagName)]; }
 
     /// Set the flag value associated with the given bit
-    void setFlag(ApertureFluxAlgorithm::FlagBits bit, bool value=true) { _flags[bit] = value; }
+    void setFlag(std::string flagName, bool value=true) { _flags[ApertureFluxAlgorithm::getFlagNumber(flagName)] = value; }
 
     /// Clear (i.e. set to false) the flag associated with the given bit
-    void unsetFlag(ApertureFluxAlgorithm::FlagBits bit) { _flags[bit] = false; }
+    void unsetFlag(std::string flagName) { _flags[ApertureFluxAlgorithm::getFlagNumber(flagName)] = false; }
 
 private:
     std::bitset<ApertureFluxAlgorithm::N_FLAGS> _flags;

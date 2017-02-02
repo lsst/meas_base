@@ -1,4 +1,4 @@
-// -*- lsst-c++ -*-
+/*// -*- lsst-c++ -*-
 /*
  * LSST Data Management System
  * Copyright 2008-2014 LSST Corporation.
@@ -95,8 +95,8 @@ public:
     /**
      *  Default constructor for delayed initialization.
      *
-     *  This constructor creates an invalid, unusable FlagHandler in the same way an iterator
-     *  default constructor constructs an invalid iterator.  Its only purpose is to delay construction
+     *  This constructor creates an invalid, unusable FlagHandler in the same way an const_iterator
+     *  default constructor constructs an invalid const_iterator.  Its only purpose is to delay construction
      *  of the FlagHandler from an Algorithm constructor's initializer list to the constructor body,
      *  which can be necessary when the list of possible flags depends on the algorithm's configuration.
      *  To use this constructor to delay initialization, simply use it in the initializer list, and then
@@ -113,21 +113,16 @@ public:
      *  @param[in]   prefix    String name of the algorithm or algorithm component.  Field names will
      *                         be constructed by using schema.join() on this and the flag name from the
      *                         FlagDefinition array.
-     *  @param[in]   begin     Iterator to the beginning of an array of FlagDefinition.
-     *  @param[in]   end       Iterator to one past the end of an array of FlagDefinition.
+     *  @param[in]   begin     Iterator to the beginning of a std::vector of FlagDefinition.
+     *  @param[in]   end       Iterator to one past the end of a std::vector of FlagDefinition.
      *
-     *  We use pointers rather than an iterator type for the FlagDefinition array to allow the user
-     *  maximum flexibility in the array type - C arrays, std::array, std::array, and std::vector
-     *  (as well as any other container with contiguous memory) may be used.  The pointers must remain
-     *  valid only for the duration of the call to this function.
      */
     static FlagHandler addFields(
         afw::table::Schema & schema,
         std::string const & prefix,
-        FlagDefinition const * begin,
-        FlagDefinition const * end
+        std::vector<FlagDefinition>::const_iterator begin,
+        std::vector<FlagDefinition>::const_iterator end
     );
-
     /**
      *  Add Flag fields to a schema, creating a FlagHandler object to manage them.
      *
@@ -137,16 +132,14 @@ public:
      *  @param[in]   prefix    String name of the algorithm or algorithm component.  Field names will
      *                         be constructed by using schema.join() on this and the flag name from the
      *                         FlagDefinition array.
-     *  @param[in]   flagDefs  std::vector of FlagDefinitions
+     *  @param[in]   flagDefs  Pointer to a std:vector of flagDefs
      *
-     *  This variation of addFields is for Python plugins
      */
     static FlagHandler addFields(
         afw::table::Schema & schema,
         std::string const & prefix,
         std::vector<FlagDefinition> const * flagDefs
     );
-
     /**
      *  Construct a FlagHandler to manage fields already added to a schema.
      *
@@ -162,32 +155,72 @@ public:
      */
     FlagHandler(
         afw::table::SubSchema const & s,
-        FlagDefinition const * begin,
-        FlagDefinition const * end
+        std::vector<FlagDefinition>::const_iterator begin,
+        std::vector<FlagDefinition>::const_iterator end
     );
-
     /**
-     *  Return the FlagDefinition object that corresponds to a particular enum value.
+     *  Return the FlagDefinition object that corresponds to given FlagHandler index
      */
     FlagDefinition getDefinition(std::size_t i) const {
         assert(_vector.size() > i);  // Flag 'i' needs to be available
         return _vector[i].first;
     }
-
     /**
-     *  Return the value of the flag field corresponding to the given enum value.
+     *  Return the index of a flag with the given flag name
+    */
+    unsigned int getFlagNumber(std::string const & flagName) const {
+        for (unsigned int i=0; i < _vector.size(); i++) {
+            if (_vector[i].first.name == flagName) {
+                return i;
+            }
+        }
+        throw pex::exceptions::RuntimeError("Flagname: " + flagName + " is not in FlagHandler");
+    }
+    /**
+     *  Return the value of the flag field corresponding to the given flag index.
      */
     bool getValue(afw::table::BaseRecord const & record, std::size_t i) const {
         assert(_vector.size() > i);  // Flag 'i' needs to be available
         return record.get(_vector[i].second);
     }
-
     /**
-     *  Set the flag field corresponding to the given enum value.
+     *  Return the value of the flag field with the given flag name 
+     */
+    bool getValue(afw::table::BaseRecord const & record, std::string flagName) const {
+        for (std::size_t i = 0; i < _vector.size(); i++) {
+            if (_vector[i].first.name == flagName) {
+                return record.get(_vector[i].second);
+            }
+        }
+        throw pex::exceptions::RuntimeError("flagName not found in initialization vector");
+    }
+    /**
+     *  Set the flag field corresponding to the given flag index.
      */
     void setValue(afw::table::BaseRecord & record, std::size_t i, bool value) const {
         assert(_vector.size() > i);  // Flag 'i' needs to be available
         record.set(_vector[i].second, value);
+    }
+    /**
+     *  Set the flag field corresponding to the given FlagDefinition Address.
+     */
+    /**
+     *  Set the flag field corresponding to the given flag name.
+     */
+    void setValue(afw::table::BaseRecord & record, std::string flagName, bool value) const {
+        for (std::size_t i = 0; i < _vector.size(); i++) {
+            if (_vector[i].first.name == flagName) {
+                record.set(_vector[i].second, value);
+                return;
+            }
+        }
+        throw pex::exceptions::RuntimeError("flagName not found in initialization vector");
+    }
+    /**
+     *  Set the flag field corresponding to the given FlagDefinition Address.
+     */
+    void setValue(afw::table::BaseRecord & record, FlagDefinition const * flagDefinition, bool value) const {
+        setValue(record, flagDefinition->name, value);
     }
 
     /**

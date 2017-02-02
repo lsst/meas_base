@@ -30,6 +30,42 @@
 
 
 namespace lsst { namespace meas { namespace base {
+struct GaussianCentroidAlgorithm::Flags {
+    static FlagDefinition FAILURE;
+    static FlagDefinition NO_PEAK;
+};
+FlagDefinition GaussianCentroidAlgorithm::Flags::FAILURE("flag", "general failure flag, set if anything went wrong");
+FlagDefinition GaussianCentroidAlgorithm::Flags::NO_PEAK("flag_noPeak", "Fitted Centroid has a negative peak");
+namespace {
+std::vector<FlagDefinition> const flagVector = {
+    GaussianCentroidAlgorithm::Flags::FAILURE,
+    GaussianCentroidAlgorithm::Flags::NO_PEAK,
+};
+std::vector<FlagDefinition> const & getFlagDefinitions() {
+    return flagVector;
+};
+} // end anonymous
+
+std::size_t GaussianCentroidAlgorithm::getFlagNumber(std::string const & name) {
+    std::size_t i = 0;
+    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
+        if (iter->name == name) {
+            return i;
+        }
+        i++;
+    }
+    throw lsst::pex::exceptions::RuntimeError("GaussianCentroid flag does not exist for name: " + name);
+}
+
+std::string const GaussianCentroidAlgorithm::getFlagName(std::size_t flagNumber) {
+    std::size_t i = 0;
+    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
+        if (i == flagNumber) {
+            return iter->name;
+        }
+    }
+    throw lsst::pex::exceptions::RuntimeError("GaussianCentroid flag does not exist for number: " + flagNumber);
+}
 namespace {
 #define USE_WEIGHT 0                    // zweight is only set, not used.  It isn't even set if this is false
 struct Raster {
@@ -496,13 +532,6 @@ MAKE_TWODG(afw::image::Image<float>);
 MAKE_TWODG(afw::image::Image<double>);
 MAKE_TWODG(afw::image::Image<int>);
 
-std::array<FlagDefinition,GaussianCentroidAlgorithm::N_FLAGS> const & getFlagDefinitions() {
-    static std::array<FlagDefinition,GaussianCentroidAlgorithm::N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag, set if anything went wrong"},
-        {"flag_noPeak", "Fitted Centroid has a negative peak"}
-    }};
-    return flagDefs;
-}
 
 } // end anonymous namespace
 
@@ -557,13 +586,13 @@ void GaussianCentroidAlgorithm::measure(
     if (fit.params[FittedModel::PEAK] <= 0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            _flagHandler.getDefinition(NO_PEAK).doc,
-            NO_PEAK
+            Flags::NO_PEAK.doc,
+            getFlagNumber(Flags::NO_PEAK.name)
         );
     }
     result.x = lsst::afw::image::indexToPosition(image.getX0()) + fit.params[FittedModel::X0];
     result.y = lsst::afw::image::indexToPosition(image.getY0()) + fit.params[FittedModel::Y0];
-    _flagHandler.setValue(measRecord, FAILURE, false);  // if we had a suspect flag, we'd set that instead
+    _flagHandler.setValue(measRecord, Flags::FAILURE.name, false);  // if we had a suspect flag, we'd set that instead
     measRecord.set(_centroidKey, result);
     _centroidChecker(measRecord);
 }

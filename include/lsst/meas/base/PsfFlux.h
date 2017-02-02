@@ -68,12 +68,11 @@ public:
 class PsfFluxAlgorithm : public SimpleAlgorithm {
 public:
 
-    enum {
-        FAILURE=FlagHandler::FAILURE,
-        NO_GOOD_PIXELS,
-        EDGE,
-        N_FLAGS
-    };
+    // Structures and routines to manage flaghandler
+    struct Flags;
+
+    static std::size_t getFlagNumber(std::string const & name);
+    static std::string const getFlagName(std::size_t flagNumber);
 
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.

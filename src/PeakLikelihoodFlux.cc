@@ -34,6 +34,39 @@
 #include "lsst/afw/table/Source.h"
 
 namespace lsst { namespace meas { namespace base {
+struct PeakLikelihoodFluxAlgorithm::Flags {
+    static FlagDefinition FAILURE;
+};
+FlagDefinition PeakLikelihoodFluxAlgorithm::Flags::FAILURE("flag", "general failure flag, set if anything went wrong");
+namespace {
+std::vector<FlagDefinition> const flagVector = {
+    PeakLikelihoodFluxAlgorithm::Flags::FAILURE,
+};
+std::vector<FlagDefinition> const & getFlagDefinitions() {
+    return flagVector;
+};
+} // end anonymous
+
+std::size_t PeakLikelihoodFluxAlgorithm::getFlagNumber(std::string const & name) {
+    std::size_t i = 0;
+    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
+        if (iter->name == name) {
+            return i;
+        }
+        i++;
+    }
+    throw lsst::pex::exceptions::RuntimeError("PeakLikelihoodFlux flag does not exist for name: " + name);
+}
+
+std::string const PeakLikelihoodFluxAlgorithm::getFlagName(std::size_t flagNumber) {
+    std::size_t i = 0;
+    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
+        if (i == flagNumber) {
+            return iter->name;
+        }
+    }
+    throw lsst::pex::exceptions::RuntimeError("PeakLikelihoodFlux flag does not exist for number: " + flagNumber);
+}
 
 namespace {
 
@@ -182,10 +215,7 @@ PeakLikelihoodFluxAlgorithm::PeakLikelihoodFluxAlgorithm(
     ),
     _centroidExtractor(schema, name)
 {
-    static std::array<FlagDefinition,N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag, set if anything went wrong"}
-    }};
-    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+    _flagHandler = FlagHandler::addFields(schema, name, getFlagDefinitions().begin(), getFlagDefinitions().end());
 }
 
 void PeakLikelihoodFluxAlgorithm::measure(
@@ -248,7 +278,7 @@ void PeakLikelihoodFluxAlgorithm::measure(
     result.flux = flux;
     result.fluxSigma = std::sqrt(var);
     measRecord.set(_fluxResultKey, result);
-    _flagHandler.setValue(measRecord, FAILURE, false);
+    _flagHandler.setValue(measRecord, Flags::FAILURE.name, false);
 
 }
 

@@ -68,14 +68,11 @@ public:
 class SdssCentroidAlgorithm : public SimpleAlgorithm {
 public:
 
-    enum {
-        FAILURE=FlagHandler::FAILURE,
-        EDGE,
-        NO_SECOND_DERIVATIVE,
-        ALMOST_NO_SECOND_DERIVATIVE,
-        NOT_AT_MAXIMUM,
-        N_FLAGS
-    };
+    // Structures and routines to manage flaghandler
+    struct Flags;
+
+    static std::size_t getFlagNumber(std::string const & name);
+    static std::string const getFlagName(std::size_t flagNumber);
 
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.

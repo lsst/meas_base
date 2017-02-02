@@ -63,14 +63,12 @@ void ScaledApertureFluxAlgorithm::measure(
                                                            afw::geom::ellipses::Ellipse(axes, center),
                                                            apCtrl);
     measRecord.set(_fluxResultKey, result);
-    if (result.getFlag(ApertureFluxAlgorithm::FAILURE)) {
-        _flagHandler.setValue(measRecord, ApertureFluxAlgorithm::FAILURE, true);
-    }
-    if (result.getFlag(ApertureFluxAlgorithm::APERTURE_TRUNCATED)) {
-        _flagHandler.setValue(measRecord, ApertureFluxAlgorithm::APERTURE_TRUNCATED, true);
-    }
-    if (result.getFlag(ApertureFluxAlgorithm::SINC_COEFFS_TRUNCATED)) {
-        _flagHandler.setValue(measRecord, ApertureFluxAlgorithm::SINC_COEFFS_TRUNCATED, true);
+
+    for (unsigned int i = 0; i < ApertureFluxAlgorithm::getFlagDefinitions().size(); i++) {
+        std::string const flagName = ApertureFluxAlgorithm::getFlagDefinitions()[i].name;
+        if (result.getFlag(flagName)) {
+            _flagHandler.setValue(measRecord, flagName, true);
+        }
     }
 }
 

@@ -33,6 +33,39 @@
 #include "lsst/meas/base/SdssShape.h"
 
 namespace lsst { namespace meas { namespace base {
+struct GaussianFluxAlgorithm::Flags {
+    static FlagDefinition FAILURE;
+};
+FlagDefinition GaussianFluxAlgorithm::Flags::FAILURE("flag", "general failure flag, set if anything went wrong");
+namespace {
+std::vector<FlagDefinition> const flagVector = {
+    GaussianFluxAlgorithm::Flags::FAILURE,
+};
+std::vector<FlagDefinition> const & getFlagDefinitions() {
+    return flagVector;
+};
+} // end anonymous
+
+std::size_t GaussianFluxAlgorithm::getFlagNumber(std::string const & name) {
+    std::size_t i = 0;
+    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
+        if (iter->name == name) {
+            return i;
+        }
+        i++;
+    }
+    throw lsst::pex::exceptions::RuntimeError("GaussianFlux flag does not exist for name: " + name);
+}
+
+std::string const GaussianFluxAlgorithm::getFlagName(std::size_t flagNumber) {
+    std::size_t i = 0;
+    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
+        if (i == flagNumber) {
+            return iter->name;
+        }
+    }
+    throw lsst::pex::exceptions::RuntimeError("GaussianFlux flag does not exist for number: " + flagNumber);
+}
 
 GaussianFluxAlgorithm::GaussianFluxAlgorithm(
     Control const & ctrl,
@@ -45,10 +78,7 @@ GaussianFluxAlgorithm::GaussianFluxAlgorithm(
     _centroidExtractor(schema, name),
     _shapeExtractor(schema, name)
 {
-    static std::array<FlagDefinition,N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag, set if anything went wrong"}
-    }};
-    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+    _flagHandler = FlagHandler::addFields(schema, name, getFlagDefinitions().begin(), getFlagDefinitions().end());
 }
 
 void GaussianFluxAlgorithm::measure(
@@ -63,7 +93,7 @@ void GaussianFluxAlgorithm::measure(
     );
 
     measRecord.set(_fluxResultKey, result);
-    _flagHandler.setValue(measRecord, FAILURE, false);
+    _flagHandler.setValue(measRecord, Flags::FAILURE.name, false);
 }
 
 
