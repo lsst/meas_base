@@ -22,6 +22,7 @@
  */
 
 %{
+#include <vector>
 #include "lsst/meas/base/FluxUtilities.h"
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/meas/base/ShapeUtilities.h"
@@ -34,7 +35,6 @@
 
 %immutable lsst::meas::base::FlagDefinition::name;
 %immutable lsst::meas::base::FlagDefinition::doc;
-%template(FlagDefinitionVector) std::vector< lsst::meas::base::FlagDefinition>;
 %declareNumPyConverters(lsst::meas::base::CentroidCov);
 %declareNumPyConverters(lsst::meas::base::ShapeCov);
 %declareNumPyConverters(lsst::meas::base::ShapeTrMatrix);
@@ -50,7 +50,6 @@
 
 %declareFunctorKey(ShapeResult, lsst::meas::base::ShapeResult)
 %shared_ptr(lsst::meas::base::ShapeResultKey)
-
 %include "lsst/meas/base/FluxUtilities.h"
 %include "lsst/meas/base/CentroidUtilities.h"
 %include "lsst/meas/base/ShapeUtilities.h"

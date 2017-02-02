@@ -26,19 +26,17 @@
 
 
 namespace lsst { namespace meas { namespace base {
-
 namespace {
+FlagDefinitionList flagDefinitions;
+} // end anonymous
 
-std::array<FlagDefinition,NaiveCentroidAlgorithm::N_FLAGS> const & getFlagDefinitions() {
-    static std::array<FlagDefinition,NaiveCentroidAlgorithm::N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag, set if anything went wrong"},
-        {"flag_noCounts", "Object to be centroided has no counts"},
-        {"flag_edge", "Object too close to edge"}
-    }};
-    return flagDefs;
+FlagDefinition const NaiveCentroidAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
+FlagDefinition const NaiveCentroidAlgorithm::NO_COUNTS = flagDefinitions.add("flag_noCounts", "Object to be centroided has no counts");
+FlagDefinition const NaiveCentroidAlgorithm::EDGE = flagDefinitions.add("flag_edge", "Object too close to edge");
+
+FlagDefinitionList const & NaiveCentroidAlgorithm::getFlagDefinitions() {
+    return flagDefinitions;
 }
-
-} // anonymous
 
 NaiveCentroidAlgorithm::NaiveCentroidAlgorithm(
     Control const & ctrl,
@@ -49,7 +47,7 @@ NaiveCentroidAlgorithm::NaiveCentroidAlgorithm(
         CentroidResultKey::addFields(schema, name, "centroid from Naive Centroid algorithm", NO_UNCERTAINTY)
     ),
     _flagHandler(FlagHandler::addFields(schema, name,
-                                          getFlagDefinitions().begin(), getFlagDefinitions().end())),
+                                          getFlagDefinitions())),
     _centroidExtractor(schema, name, true),
     _centroidChecker(schema, name, ctrl.doFootprintCheck, ctrl.maxDistToPeak)
 {
@@ -79,8 +77,8 @@ void NaiveCentroidAlgorithm::measure(
 
         throw LSST_EXCEPT(
             MeasurementError,
-            _flagHandler.getDefinition(EDGE).doc,
-            EDGE
+            EDGE.doc,
+            EDGE.number
         );
     }
 
@@ -95,8 +93,8 @@ void NaiveCentroidAlgorithm::measure(
     if (sum == 0.0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            _flagHandler.getDefinition(NO_COUNTS).doc,
-            NO_COUNTS
+            NO_COUNTS.doc,
+            NO_COUNTS.number
         );
     }
 
@@ -126,9 +124,14 @@ NaiveCentroidTransform::NaiveCentroidTransform(
 ) :
     CentroidTransform{name, mapper}
 {
-    for (auto flag = getFlagDefinitions().begin() + 1; flag < getFlagDefinitions().end(); ++flag) {
-        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(
-                          mapper.getInputSchema().join(name, flag->name)).key);
+    for (std::size_t i = 0; i < NaiveCentroidAlgorithm::getFlagDefinitions().size(); i++) {
+        FlagDefinition const & flag = NaiveCentroidAlgorithm::getFlagDefinitions()[i];
+        if (flag == NaiveCentroidAlgorithm::FAILURE) continue;
+        if (mapper.getInputSchema().getNames().count(
+            mapper.getInputSchema().join(name, flag.name)) == 0) continue;
+        afw::table::Key<afw::table::Flag> key = mapper.getInputSchema().find<afw::table::Flag>(
+            name + "_" + flag.name).key;
+        mapper.addMapping(key);
     }
 }
 

@@ -33,17 +33,21 @@
 #include "lsst/meas/base/PsfFlux.h"
 
 namespace lsst { namespace meas { namespace base {
+namespace {
+FlagDefinitionList flagDefinitions;
+} // end anonymous
+
+FlagDefinition const PsfFluxAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
+FlagDefinition const PsfFluxAlgorithm::NO_GOOD_PIXELS = flagDefinitions.add("flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit");
+FlagDefinition const PsfFluxAlgorithm::EDGE = flagDefinitions.add("flag_edge", "object was too close to the edge of the image to use the full PSF model");
+
+FlagDefinitionList const & PsfFluxAlgorithm::getFlagDefinitions() {
+    return flagDefinitions;
+}
+
 
 namespace {
 
-std::array<FlagDefinition,PsfFluxAlgorithm::N_FLAGS> const & getFlagDefinitions() {
-    static std::array<FlagDefinition,PsfFluxAlgorithm::N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag"},
-        {"flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit"},
-        {"flag_edge", "object was too close to the edge of the image to use the full PSF model"}
-    }};
-    return flagDefs;
-}
 
 } // anonymous
 
@@ -58,7 +62,7 @@ PsfFluxAlgorithm::PsfFluxAlgorithm(
     _centroidExtractor(schema, name)
 {
     _flagHandler = FlagHandler::addFields(schema, name,
-                                          getFlagDefinitions().begin(), getFlagDefinitions().end());
+                                          getFlagDefinitions());
 }
 
 void PsfFluxAlgorithm::measure(
@@ -77,8 +81,8 @@ void PsfFluxAlgorithm::measure(
     afw::geom::Box2I fitBBox = psfImage->getBBox();
     fitBBox.clip(exposure.getBBox());
     if (fitBBox != psfImage->getBBox()) {
-        _flagHandler.setValue(measRecord, FAILURE, true);  // if we had a suspect flag, we'd set that instead
-        _flagHandler.setValue(measRecord, EDGE, true);
+        _flagHandler.setValue(measRecord, FAILURE.number, true);  // if we had a suspect flag, we'd set that instead
+        _flagHandler.setValue(measRecord, EDGE.number, true);
     }
     afw::detection::Footprint fitRegion(fitBBox);
     if (!_ctrl.badMaskPlanes.empty()) {
@@ -95,8 +99,8 @@ void PsfFluxAlgorithm::measure(
     if (fitRegion.getArea() == 0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            _flagHandler.getDefinition(NO_GOOD_PIXELS).doc,
-            NO_GOOD_PIXELS
+            NO_GOOD_PIXELS.doc,
+            NO_GOOD_PIXELS.number
         );
     }
     typedef afw::detection::Psf::Pixel PsfPixel;
@@ -146,8 +150,14 @@ PsfFluxTransform::PsfFluxTransform(
 ) :
     FluxTransform{name, mapper}
 {
-    for (auto flag = getFlagDefinitions().begin() + 1; flag < getFlagDefinitions().end(); flag++) {
-        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(name + "_" + flag->name).key);
+    for (std::size_t i = 0; i < PsfFluxAlgorithm::getFlagDefinitions().size(); i++) {
+        FlagDefinition const & flag = PsfFluxAlgorithm::getFlagDefinitions()[i];
+        if (flag == PsfFluxAlgorithm::FAILURE) continue;
+        if (mapper.getInputSchema().getNames().count(
+            mapper.getInputSchema().join(name, flag.name)) == 0) continue;
+        afw::table::Key<afw::table::Flag> key = mapper.getInputSchema().find<afw::table::Flag>(
+            name + "_" + flag.name).key;
+        mapper.addMapping(key);
     }
 }
 

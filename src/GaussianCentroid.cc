@@ -31,6 +31,17 @@
 
 namespace lsst { namespace meas { namespace base {
 namespace {
+FlagDefinitionList flagDefinitions;
+} // end anonymous
+
+FlagDefinition const GaussianCentroidAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
+FlagDefinition const GaussianCentroidAlgorithm::NO_PEAK = flagDefinitions.add("flag_noPeak", "Fitted Centroid has a negative peak");
+
+FlagDefinitionList const & GaussianCentroidAlgorithm::getFlagDefinitions() {
+    return flagDefinitions;
+}
+
+namespace {
 #define USE_WEIGHT 0                    // zweight is only set, not used.  It isn't even set if this is false
 struct Raster {
     int x, y;                           // x, y index of rastered pixel
@@ -496,13 +507,6 @@ MAKE_TWODG(afw::image::Image<float>);
 MAKE_TWODG(afw::image::Image<double>);
 MAKE_TWODG(afw::image::Image<int>);
 
-std::array<FlagDefinition,GaussianCentroidAlgorithm::N_FLAGS> const & getFlagDefinitions() {
-    static std::array<FlagDefinition,GaussianCentroidAlgorithm::N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag, set if anything went wrong"},
-        {"flag_noPeak", "Fitted Centroid has a negative peak"}
-    }};
-    return flagDefs;
-}
 
 } // end anonymous namespace
 
@@ -515,7 +519,7 @@ GaussianCentroidAlgorithm::GaussianCentroidAlgorithm(
         CentroidResultKey::addFields(schema, name, "centroid from Gaussian Centroid algorithm", NO_UNCERTAINTY)
     ),
     _flagHandler(FlagHandler::addFields(schema, name,
-                                          getFlagDefinitions().begin(), getFlagDefinitions().end())),
+                                          getFlagDefinitions())),
     _centroidExtractor(schema, name, true),
     _centroidChecker(schema, name, ctrl.doFootprintCheck, ctrl.maxDistToPeak)
 {
@@ -557,13 +561,13 @@ void GaussianCentroidAlgorithm::measure(
     if (fit.params[FittedModel::PEAK] <= 0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            _flagHandler.getDefinition(NO_PEAK).doc,
-            NO_PEAK
+            NO_PEAK.doc,
+            NO_PEAK.number
         );
     }
     result.x = lsst::afw::image::indexToPosition(image.getX0()) + fit.params[FittedModel::X0];
     result.y = lsst::afw::image::indexToPosition(image.getY0()) + fit.params[FittedModel::Y0];
-    _flagHandler.setValue(measRecord, FAILURE, false);  // if we had a suspect flag, we'd set that instead
+    _flagHandler.setValue(measRecord, FAILURE.number, false);  // if we had a suspect flag, we'd set that instead
     measRecord.set(_centroidKey, result);
     _centroidChecker(measRecord);
 }
@@ -589,9 +593,14 @@ GaussianCentroidTransform::GaussianCentroidTransform(
 ) :
     CentroidTransform{name, mapper}
 {
-    for (auto flag = getFlagDefinitions().begin() + 1; flag < getFlagDefinitions().end(); ++flag) {
-        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(
-                          mapper.getInputSchema().join(name, flag->name)).key);
+    for (std::size_t i = 0; i < GaussianCentroidAlgorithm::getFlagDefinitions().size(); i++) {
+        FlagDefinition const & flag = GaussianCentroidAlgorithm::getFlagDefinitions()[i];
+        if (flag == GaussianCentroidAlgorithm::FAILURE) continue;
+        if (mapper.getInputSchema().getNames().count(
+            mapper.getInputSchema().join(name, flag.name)) == 0) continue;
+        afw::table::Key<afw::table::Flag> key = mapper.getInputSchema().find<afw::table::Flag>(
+            name + "_" + flag.name).key;
+        mapper.addMapping(key);
     }
 }
 

@@ -71,10 +71,9 @@ public:
 class PeakLikelihoodFluxAlgorithm : public SimpleAlgorithm {
 public:
 
-    enum {
-        FAILURE=FlagHandler::FAILURE,
-        N_FLAGS
-    };
+    // Structures and routines to manage flaghandler
+    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinition const FAILURE;
 
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.

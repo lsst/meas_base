@@ -33,6 +33,16 @@
 #include "lsst/meas/base/SdssShape.h"
 
 namespace lsst { namespace meas { namespace base {
+namespace {
+FlagDefinitionList flagDefinitions;
+} // end anonymous
+
+FlagDefinition const GaussianFluxAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
+
+FlagDefinitionList const & GaussianFluxAlgorithm::getFlagDefinitions() {
+    return flagDefinitions;
+}
+
 
 GaussianFluxAlgorithm::GaussianFluxAlgorithm(
     Control const & ctrl,
@@ -45,10 +55,7 @@ GaussianFluxAlgorithm::GaussianFluxAlgorithm(
     _centroidExtractor(schema, name),
     _shapeExtractor(schema, name)
 {
-    static std::array<FlagDefinition,N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag, set if anything went wrong"}
-    }};
-    _flagHandler = FlagHandler::addFields(schema, name, flagDefs.begin(), flagDefs.end());
+    _flagHandler = FlagHandler::addFields(schema, name, getFlagDefinitions());
 }
 
 void GaussianFluxAlgorithm::measure(
@@ -63,7 +70,7 @@ void GaussianFluxAlgorithm::measure(
     );
 
     measRecord.set(_fluxResultKey, result);
-    _flagHandler.setValue(measRecord, FAILURE, false);
+    _flagHandler.setValue(measRecord, FAILURE.number, false);
 }
 
 

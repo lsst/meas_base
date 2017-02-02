@@ -81,8 +81,8 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                     """
                     result = method(image, ellipse, self.ctrl)
                     self.assertClose(result.flux, area)
-                    self.assertFalse(result.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
-                    self.assertFalse(result.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
+                    self.assertFalse(result.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
+                    self.assertFalse(result.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
                     if hasattr(image, "getVariance"):
                         self.assertClose(result.fluxSigma, (area*0.25)**0.5)
                     else:
@@ -97,8 +97,8 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(12.0, 12.0),
                                            lsst.afw.geom.Point2D(25.0, -60.0)),
             self.ctrl)
-        self.assertTrue(invalid.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
-        self.assertFalse(invalid.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
+        self.assertTrue(invalid.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
+        self.assertFalse(invalid.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
         self.assertTrue(np.isnan(invalid.flux))
 
     def testSinc(self):
@@ -121,8 +121,8 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                     # test that all the ways we could invoke sinc flux measurement produce the expected result
                     result = method(image, ellipse, self.ctrl)
                     self.assertClose(result.flux, area, rtol=1E-3)
-                    self.assertFalse(result.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
-                    self.assertFalse(result.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
+                    self.assertFalse(result.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
+                    self.assertFalse(result.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
                     if hasattr(image, "getVariance"):
                         self.assertFalse(np.isnan(result.fluxSigma))
                     else:
@@ -137,8 +137,8 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0),
                                            lsst.afw.geom.Point2D(25.0, -60.0)),
             self.ctrl)
-        self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
-        self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
+        self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
+        self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
         self.assertTrue(np.isnan(invalid1.flux))
         # test failure conditions when the aperture is not truncated, but the sinc coeffs are
         invalid2 = ApertureFluxAlgorithm.computeSincFlux(
@@ -146,8 +146,8 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0),
                                            lsst.afw.geom.Point2D(30.0, -60.0)),
             self.ctrl)
-        self.assertFalse(invalid2.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED))
-        self.assertTrue(invalid2.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED))
+        self.assertFalse(invalid2.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
+        self.assertTrue(invalid2.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
         self.assertFalse(np.isnan(invalid2.flux))
 
 

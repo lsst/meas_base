@@ -68,14 +68,13 @@ public:
 class SdssCentroidAlgorithm : public SimpleAlgorithm {
 public:
 
-    enum {
-        FAILURE=FlagHandler::FAILURE,
-        EDGE,
-        NO_SECOND_DERIVATIVE,
-        ALMOST_NO_SECOND_DERIVATIVE,
-        NOT_AT_MAXIMUM,
-        N_FLAGS
-    };
+    // Structures and routines to manage flaghandler
+    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinition const FAILURE;
+    static FlagDefinition const EDGE;
+    static FlagDefinition const NO_SECOND_DERIVATIVE;
+    static FlagDefinition const ALMOST_NO_SECOND_DERIVATIVE;
+    static FlagDefinition const NOT_AT_MAXIMUM;
 
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.
