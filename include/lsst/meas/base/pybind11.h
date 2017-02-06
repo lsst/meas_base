@@ -72,6 +72,31 @@ typename std::enable_if<std::is_abstract<Algorithm>::value, void>::type declareA
 }
 
 /**
+ * Wrap the implicit API used by meas_base's algorithms.
+ *
+ * This function only initializes constructors, fields, and methods common to
+ * all Algorithms.
+ *
+ * @tparam Algorithm The algorithm class.
+ * @tparam PyAlg The `pybind11::class_` class corresponding to `Algorithm`.
+ *
+ * @param[in,out] clsAlgorithm The pybind11 wrapper for `Algorithm`.
+ */
+template <class Algorithm, class PyAlg>
+void declareAlgorithm(PyAlg & clsAlgorithm) {
+    /* Member types and enums */
+
+    /* Constructors */
+    declareAlgorithmConstructor<Algorithm>(clsAlgorithm);
+
+    /* Operators */
+
+    /* Members */
+    clsAlgorithm.def("fail", &Algorithm::fail, "measRecord"_a, "error"_a=NULL);
+    clsAlgorithm.def("measure", &Algorithm::measure, "record"_a, "exposure"_a);
+}
+
+/**
  * Wrap the implicit API used by meas_base's algorithm-control pairs (no transform).
  *
  * This function only initializes constructors, fields, and methods common to
@@ -88,18 +113,16 @@ typename std::enable_if<std::is_abstract<Algorithm>::value, void>::type declareA
  */
 template <class Algorithm, class Control, class PyAlg, class PyCtrl>
 void declareAlgorithm(PyAlg & clsAlgorithm, PyCtrl & clsControl) {
+    declareAlgorithm<Algorithm>(clsAlgorithm);
+
     /* Member types and enums */
 
     /* Constructors */
-    declareAlgorithmConstructor<Algorithm>(clsAlgorithm);
-
     clsControl.def(py::init<>());
 
     /* Operators */
 
     /* Members */
-    clsAlgorithm.def("fail", &Algorithm::fail, "measRecord"_a, "error"_a=NULL);
-    clsAlgorithm.def("measure", &Algorithm::measure, "record"_a, "exposure"_a);
 }
 
 /**
