@@ -48,7 +48,7 @@ class VarianceTest(lsst.utils.tests.TestCase):
     def setUp(self):
         size = 128  # size of image (pixels)
         center = afwGeom.Point2D(size//2, size//2)  # object center
-        width = 2.0  # PSF width
+        width = 2  # PSF width
         flux = 10.0  # Flux of object
         variance = 1.0  # Mean variance value
         varianceStd = 0.1  # Standard deviation of the variance value
