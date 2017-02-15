@@ -79,9 +79,9 @@ public:
 
     // Structures and routines to manage flaghandler
     struct Flags;
-
-    static std::size_t getFlagNumber(std::string const & name);
-    static std::string const getFlagName(std::size_t flagNumber);
+    static FlagDefinition const & getDefinition(std::string name);
+    static std::string const & getFlagName(std::size_t number);
+    static std::size_t getFlagCount();
 
     typedef BlendednessControl Control;
 

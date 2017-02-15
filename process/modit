@@ -4,38 +4,39 @@ for alg in SdssShape ApertureFlux Blendedness GaussianCentroid GaussianFlux Naiv
     echo "public:" >> ${alg}.h
     cat include.add >> ${alg}.h
     if [ ${alg} == "ApertureFlux" ]; then
-        echo "    static std::vector<FlagDefinition> const & getFlagDefinitions();" >> ${alg}.h
+        echo "    static FlagDefinitions & getFlagDefinitions();" >> ${alg}.h
         echo "    static unsigned int const N_FLAGS = 3;" >> ${alg}.h
     fi
     if [ ${alg} == "SdssShape" ]; then
-        echo "    static std::vector<FlagDefinition> const & getFlagDefinitions();" >> ${alg}.h
+        echo "    static FlagDefinitions & getFlagDefinitions();" >> ${alg}.h
         echo "    static unsigned int const N_FLAGS = 6;" >> ${alg}.h
     fi
     echo "" >> ${alg}.h
     sed -ne "/typedef/,100000p" orig/${alg}.h | sed -e "/    enum {/,/    };/d" | grep -v "getFlagDefinitions" >> ${alg}.h
 
     if [ ${alg} == "ApertureFlux" ]; then
-        sed -e 's/bool getFlag(ApertureFluxAlgorithm::FlagBits bit) const { return _flags\[bit\]; }/bool getFlag(std::string flagName) const { return _flags[ApertureFluxAlgorithm::getFlagNumber(flagName)]; }/' ${alg}.h > temp
-        sed -e 's/setFlag(ApertureFluxAlgorithm::FlagBits bit, bool value=true) { _flags\[bit\] = /setFlag(std::string flagName, bool value=true) { _flags[ApertureFluxAlgorithm::getFlagNumber(flagName)] = /' temp > temp2
-        sed -e 's/unsetFlag(ApertureFluxAlgorithm::FlagBits bit) { _flags\[bit\]/unsetFlag(std::string flagName) { _flags[ApertureFluxAlgorithm::getFlagNumber(flagName)]/' temp2 > ${alg}.h  
+        sed -e 's/bool getFlag(ApertureFluxAlgorithm::FlagBits bit) const { return _flags\[bit\]; }/bool getFlag(unsigned int index) const { return _flags[index]; }/' ${alg}.h > temp
+        sed -e 's/setFlag(ApertureFluxAlgorithm::FlagBits bit, bool value=true) { _flags\[bit\] = /setFlag(unsigned int index, bool value=true) { _flags[index] = /' temp > temp2
+        sed -e 's/unsetFlag(ApertureFluxAlgorithm::FlagBits bit) { _flags\[bit\]/unsetFlag(unsigned int index) { _flags[index]/' temp2 > ${alg}.h  
     fi
+
     export enum=`cat $alg.enum`
     cp orig/${alg}.cc ${alg}.cc
     for flag in $enum; do
         sed -e 's/_*'"flagHandler.getDefinition(\(${alg}Algorithm::\|\)$flag).doc/\1Flags::${flag}.doc/" ${alg}.cc > temp
-        sed -e "s/getFlag(\(${alg}Algorithm::\|\)${flag}/getFlag(\1Flags::${flag}.name/" temp >  temp2
-        sed -e "s/setFlag(\(${alg}Algorithm::\|\)${flag}/setFlag(\1Flags::${flag}.name/" temp2 > temp
+        sed -e "s/getFlag(\(${alg}Algorithm::\|\)${flag}/getFlag(\1Flags::${flag}.number/" temp >  temp2
+        sed -e "s/setFlag(\(${alg}Algorithm::\|\)${flag}/setFlag(\1Flags::${flag}.number/" temp2 > temp
         sed -e "s/flagDefs\./getFlagDefinitions()./g" temp > temp2
-        sed -e "s/flags\[\(${alg}Algorithm::\|\)${flag}\]/flags[\1getFlagNumber(\1Flags::${flag}.name)]/" temp2 > temp
+        sed -e "s/flags\[\(${alg}Algorithm::\|\)${flag}\]/flags[\1Flags::${flag}.number]/" temp2 > temp
 
-        sed -e 's/setValue(\([^,]*\), '"\(${arg}Algorithm::\|\)${flag}/setValue(\1, \2Flags::${flag}.name/" temp > temp2
-        sed -e 's/getValue(\([^,]*\), '"\(${arg}Algorithm::\|\)${flag}/getValue(\1, \2Flags::${flag}/" temp2 > temp
-        sed -e "s/    \(${alg}Algorithm::\|\)${flag}/    \1getFlagNumber(\1Flags::${flag}.name)/" temp > ${alg}.cc 
+        sed -e 's/setValue(\([^,]*\), '"\(${arg}Algorithm::\|\)${flag}/setValue(\1, \2Flags::${flag}.number/" temp > temp2
+        sed -e 's/getValue(\([^,]*\), '"\(${arg}Algorithm::\|\)${flag}/getValue(\1, \2Flags::${flag}.number/" temp2 > temp
+        sed -e "s/    \(${alg}Algorithm::\|\)${flag}/    \1Flags::${flag}.number/" temp > ${alg}.cc 
     done
     export target="namespace lsst { namespace meas { namespace base {"
     sed -e "s/XX/${alg}/" ${alg}.flagDefs > flagDefs
     for flag in $enum; do
-        sed -e "1,/Flags::(/s/Flags::(/Flags::${flag}(/" flagDefs > temp
+        sed -e "1,/Flags::(/s/Flags::(/Flags::${flag} = flagDefinitions.add(/" flagDefs > temp
         cp temp flagDefs
     done
     sed -ne "1,/${target}/p" ${alg}.cc > temp

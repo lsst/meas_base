@@ -28,12 +28,12 @@ namespace lsst { namespace meas { namespace base {
 FlagHandler FlagHandler::addFields(
     afw::table::Schema & schema,
     std::string const & prefix,
-    std::vector<FlagDefinition>::const_iterator begin,
-    std::vector<FlagDefinition>::const_iterator end
+    FlagDefinition const * begin,
+    FlagDefinition const * end
 ) {
     FlagHandler r;
     r._vector.reserve(end - begin);
-    for (std::vector<FlagDefinition>::const_iterator iter = begin; iter != end; ++iter) {
+    for (FlagDefinition const * iter = begin; iter != end; ++iter) {
         r._vector.push_back(
             std::make_pair(
                 *iter,
@@ -47,18 +47,18 @@ FlagHandler FlagHandler::addFields(
 FlagHandler FlagHandler::addFields(
     afw::table::Schema & schema,
     std::string const & prefix,
-    std::vector<FlagDefinition> const * flagDefs
+    FlagDefinitions * flagDefs
 ) {
     return addFields(schema, prefix, flagDefs->begin(), flagDefs->end());
 }
 
 FlagHandler::FlagHandler(
     afw::table::SubSchema const & s,
-    std::vector<FlagDefinition>::const_iterator begin,
-    std::vector<FlagDefinition>::const_iterator end
+    FlagDefinition const * begin,
+    FlagDefinition const * end
 ) {
     _vector.reserve(end - begin);
-    for (std::vector<FlagDefinition>::const_iterator iter = begin; iter != end; ++iter) {
+    for (FlagDefinition const * iter = begin; iter != end; ++iter) {
         afw::table::Key<afw::table::Flag> key = s[iter->name];
         _vector.push_back(std::make_pair(*iter, key));
     }

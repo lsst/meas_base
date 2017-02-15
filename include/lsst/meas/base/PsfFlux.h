@@ -70,9 +70,9 @@ public:
 
     // Structures and routines to manage flaghandler
     struct Flags;
-
-    static std::size_t getFlagNumber(std::string const & name);
-    static std::string const getFlagName(std::size_t flagNumber);
+    static FlagDefinition const & getDefinition(std::string name);
+    static std::string const & getFlagName(std::size_t number);
+    static std::size_t getFlagCount();
 
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.

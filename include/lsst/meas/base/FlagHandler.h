@@ -1,5 +1,4 @@
 /*// -*- lsst-c++ -*-
-/*
  * LSST Data Management System
  * Copyright 2008-2014 LSST Corporation.
  *
@@ -34,9 +33,6 @@ namespace lsst { namespace meas { namespace base {
 
 /**
  *  @brief Simple POD struct used to define and document flags
- *
- *  When we switch to C++11, we can make the attributes std::strings, but at least for now we'll use
-    C-strings so we can create these arrays using initializer lists even in C++98.
  */
 struct FlagDefinition {
 
@@ -46,10 +42,108 @@ struct FlagDefinition {
     FlagDefinition(std::string _name, std::string _doc) {
         name = _name;
         doc = _doc;
+        number = 0;
+    }
+
+    FlagDefinition(std::string _name, std::string _doc, std::size_t  _number) {
+        name = _name;
+        doc = _doc;
+        number = _number;
     }
 
     std::string name;
     std::string doc;
+    std::size_t number;
+};
+
+/**
+ *  @brief Array-type utility class to build a collection of FlagDefinitions
+ *  The number of flags must be specified in the constructor argument
+ *  if the number of flags > 10, or FlagDefinitions can be constructed
+ *  from a std::initializer<FlagDefinition> list.
+ */
+class FlagDefinitions {
+public:
+    /**
+     *  @brief initialize a FlagDefinition collection with max size 10.
+     */
+    FlagDefinitions() {
+        _array = new FlagDefinition[10];
+        _maxsize = 10;
+        _size = 0;
+    };
+
+    /**
+     *  @brief initialize a FlagDefinition collection with specified max size.
+     */
+    FlagDefinitions(std::size_t maxsize) {
+        _array = new FlagDefinition[maxsize];
+        _size = 0;
+        _maxsize = maxsize;
+    };
+#ifndef SWIG
+
+    FlagDefinitions(std::initializer_list<FlagDefinition> list) {
+        _array = new FlagDefinition[list.size()];
+        _maxsize = list.size();
+        _size = 0;
+        for (FlagDefinition const * iter = list.begin(); iter < list.end(); iter++) {
+            add(iter->name, iter->doc);
+        }
+    }
+#endif
+
+    /**
+     *  @brief get a reference to the FlagDefinition with specified name.
+     */
+    FlagDefinition const & getDefinition(std::string name) {
+        for (std::size_t i = 0; i < size(); i++) {
+            if (_array[i].name == name) return _array[i];
+        }
+        throw pex::exceptions::RuntimeError("No flag defined named: " + name);
+    }
+
+    /**
+     *  @brief get a reference to the FlagDefinition with specified array index
+     */
+    FlagDefinition const & getDefinition(const size_t index) { return _array[index]; }
+
+    /**
+     *  @brief Add a new FlagDefinition to this collection.
+     *  Number of flags may not exceed the maxsize (default: 10)
+     *  Return a reference to the newly create definition with the
+     *  FlagDefinition.number corresponding to its index in the array..
+     */
+    FlagDefinition const & add(std::string name, std::string doc) {
+        if (_size>=_maxsize) {
+            throw pex::exceptions::RuntimeError("Maximum flag count of " + std::to_string(_maxsize) +
+                ".  Initialize definitions with FlagDefinitions(nflags).");
+        }
+        FlagDefinition flagDef(name, doc, _size);
+        _array[_size++] = flagDef;
+        return _array[_size - 1];
+    }
+
+    /**
+     *  @brief return a const pointer to the beginning of the array
+     */
+    FlagDefinition const * begin() { return &_array[0]; }
+
+    /**
+     *  @brief return a const pointer to the end (last defined element + 1)
+     */
+    FlagDefinition const * end() { return &_array[_size]; }
+
+    /**
+     *  @brief return the current size (number of defined elements) of the collection
+     */
+    std::size_t size() { return _size; }
+
+
+private:
+    mutable std::size_t _size;
+    mutable std::size_t _maxsize;
+    mutable FlagDefinition *  _array;
 };
 
 /**
@@ -120,8 +214,8 @@ public:
     static FlagHandler addFields(
         afw::table::Schema & schema,
         std::string const & prefix,
-        std::vector<FlagDefinition>::const_iterator begin,
-        std::vector<FlagDefinition>::const_iterator end
+        FlagDefinition const * begin,
+        FlagDefinition const * end
     );
     /**
      *  Add Flag fields to a schema, creating a FlagHandler object to manage them.
@@ -132,13 +226,13 @@ public:
      *  @param[in]   prefix    String name of the algorithm or algorithm component.  Field names will
      *                         be constructed by using schema.join() on this and the flag name from the
      *                         FlagDefinition array.
-     *  @param[in]   flagDefs  Pointer to a std:vector of flagDefs
+     *  @param[in]   flagDefs  Pointer to a FlagDefinitions collection
      *
      */
     static FlagHandler addFields(
         afw::table::Schema & schema,
         std::string const & prefix,
-        std::vector<FlagDefinition> const * flagDefs
+        FlagDefinitions * flagDefs
     );
     /**
      *  Construct a FlagHandler to manage fields already added to a schema.
@@ -155,8 +249,8 @@ public:
      */
     FlagHandler(
         afw::table::SubSchema const & s,
-        std::vector<FlagDefinition>::const_iterator begin,
-        std::vector<FlagDefinition>::const_iterator end
+        FlagDefinition const * begin,
+        FlagDefinition const * end
     );
     /**
      *  Return the FlagDefinition object that corresponds to given FlagHandler index
@@ -184,7 +278,7 @@ public:
         return record.get(_vector[i].second);
     }
     /**
-     *  Return the value of the flag field with the given flag name 
+     *  Return the value of the flag field with the given flag name
      */
     bool getValue(afw::table::BaseRecord const & record, std::string flagName) const {
         for (std::size_t i = 0; i < _vector.size(); i++) {

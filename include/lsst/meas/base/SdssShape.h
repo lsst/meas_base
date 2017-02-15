@@ -154,10 +154,10 @@ public:
 
     // Structures and routines to manage flaghandler
     struct Flags;
-
-    static std::size_t getFlagNumber(std::string const & name);
-    static std::string const getFlagName(std::size_t flagNumber);
-    static std::vector<FlagDefinition> const & getFlagDefinitions();
+    static FlagDefinition const & getDefinition(std::string name);
+    static std::string const & getFlagName(std::size_t number);
+    static std::size_t getFlagCount();
+    static FlagDefinitions & getFlagDefinitions();
     static unsigned int const N_FLAGS = 6;
 
     typedef SdssShapeControl Control;
@@ -244,7 +244,11 @@ public:
 #endif
 
     /// Flag getter for Swig, which doesn't understand std::bitset
-    bool getFlag(std::string flagName) const { return flags[SdssShapeAlgorithm::getFlagNumber(flagName)]; }
+    bool getFlag(unsigned int index) { return flags[index]; }
+
+    bool getFlag(std::string name) {
+       return flags[SdssShapeAlgorithm::getDefinition(name).number];
+    }
 
     SdssShapeResult(); ///< Constructor; initializes everything to NaN
 

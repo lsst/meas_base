@@ -31,7 +31,7 @@ import lsst.meas.base
 import lsst.meas.base.tests
 import lsst.afw.table
 from lsst.meas.base.baseLib import MeasurementError
-from lsst.meas.base import FlagDefinition, FlagDefinitionVector, FlagHandler
+from lsst.meas.base import FlagDefinition, FlagDefinitions, FlagHandler, FlagDefinitionVector
 from lsst.meas.base.tests import (AlgorithmTestCase)
 
 import lsst.pex.exceptions
@@ -80,11 +80,10 @@ class PythonPlugin(SingleFramePlugin):
 
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
-        flagDefs = FlagDefinitionVector((
-                FlagDefinition("flag", "General Failure error"),
-                FlagDefinition("flag_containsNan", "Measurement area contains a nan"),
-                FlagDefinition("flag_edge", "Measurement area over edge"))
-        )
+        flagDefs = FlagDefinitions(3)
+        flagDefs.add("flag", "General Failure error")
+        flagDefs.add("flag_containsNan", "Measurement area contains a nan")
+        flagDefs.add("flag_edge", "Measurement area over edge")
         self.flagHandler = FlagHandler.addFields(schema, name, flagDefs)
         self.centroidExtractor = lsst.meas.base.SafeCentroidExtractor(schema, name)
         self.fluxKey = schema.addField(name + "_flux", "F", doc="flux")
@@ -175,16 +174,16 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         FAILURE = 0
         FIRST = 1
         SECOND = 2
-        flagDefs = [FlagDefinition("General Failure", "general failure error"),
-                    FlagDefinition("1st error", "this is the first failure type"),
-                    FlagDefinition("2nd error", "this is the second failure type")
-                    ]
-        fh = FlagHandler.addFields(schema, "test", FlagDefinitionVector(flagDefs))
+        flagDefs = FlagDefinitions()
+        flagDefs.add("General Failure", "general failure error"),
+        flagDefs.add("1st error", "this is the first failure type"),
+        flagDefs.add("2nd error", "this is the second failure type")
+        fh = FlagHandler.addFields(schema, "test", flagDefs)
 
         # Check to be sure that the FlagHandler was correctly initialized
-        for index, flagDef in enumerate(flagDefs):
-            self.assertEqual(flagDef.name, fh.getDefinition(index).name)
-            self.assertEqual(flagDef.doc, fh.getDefinition(index).doc)
+        for index in range(flagDefs.size()):
+            self.assertEqual(flagDefs.getDefinition(index).name, fh.getDefinition(index).name)
+            self.assertEqual(flagDefs.getDefinition(index).doc, fh.getDefinition(index).doc)
 
         catalog = lsst.afw.table.SourceCatalog(schema)
 

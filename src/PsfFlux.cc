@@ -33,45 +33,42 @@
 #include "lsst/meas/base/PsfFlux.h"
 
 namespace lsst { namespace meas { namespace base {
+namespace {
+FlagDefinitions flagDefinitions;
+FlagDefinitions & getFlagDefinitions() {
+    return flagDefinitions;
+};
+} // end anonymous
+
 struct PsfFluxAlgorithm::Flags {
     static FlagDefinition FAILURE;
     static FlagDefinition NO_GOOD_PIXELS;
     static FlagDefinition EDGE;
 };
-FlagDefinition PsfFluxAlgorithm::Flags::FAILURE("flag", "general failure flag");
-FlagDefinition PsfFluxAlgorithm::Flags::NO_GOOD_PIXELS("flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit");
-FlagDefinition PsfFluxAlgorithm::Flags::EDGE("flag_edge", "object was too close to the edge of the image to use the full PSF model");
-namespace {
-std::vector<FlagDefinition> const flagVector = {
-    PsfFluxAlgorithm::Flags::FAILURE,
-    PsfFluxAlgorithm::Flags::NO_GOOD_PIXELS,
-    PsfFluxAlgorithm::Flags::EDGE,
-};
-std::vector<FlagDefinition> const & getFlagDefinitions() {
-    return flagVector;
-};
-} // end anonymous
+FlagDefinition PsfFluxAlgorithm::Flags::FAILURE = flagDefinitions.add("flag", "general failure flag");
+FlagDefinition PsfFluxAlgorithm::Flags::NO_GOOD_PIXELS = flagDefinitions.add("flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit");
+FlagDefinition PsfFluxAlgorithm::Flags::EDGE = flagDefinitions.add("flag_edge", "object was too close to the edge of the image to use the full PSF model");
 
-std::size_t PsfFluxAlgorithm::getFlagNumber(std::string const & name) {
-    std::size_t i = 0;
-    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
-        if (iter->name == name) {
-            return i;
-        }
-        i++;
-    }
-    throw lsst::pex::exceptions::RuntimeError("PsfFlux flag does not exist for name: " + name);
-}
-
-std::string const PsfFluxAlgorithm::getFlagName(std::size_t flagNumber) {
-    std::size_t i = 0;
-    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
-        if (i == flagNumber) {
-            return iter->name;
+FlagDefinition const & PsfFluxAlgorithm::getDefinition(std::string name) {
+    for (FlagDefinition const * iter = flagDefinitions.begin(); iter < flagDefinitions.end(); iter++) {
+        if (name == iter->name) {
+            return * iter;
         }
     }
-    throw lsst::pex::exceptions::RuntimeError("PsfFlux flag does not exist for number: " + flagNumber);
+    throw pex::exceptions::RuntimeError("No flag for PsfFlux named: " + name);
 }
+
+std::string const & PsfFluxAlgorithm::getFlagName(std::size_t number) {
+    if (number < flagDefinitions.size()) {
+        return flagDefinitions.getDefinition(number).name;
+    }
+    throw pex::exceptions::RuntimeError("No flag for PsfFlux numbered: " + std::to_string(number));
+}
+
+std::size_t PsfFluxAlgorithm::getFlagCount() {
+    return flagDefinitions.size();
+}
+
 
 namespace {
 
@@ -108,8 +105,8 @@ void PsfFluxAlgorithm::measure(
     afw::geom::Box2I fitBBox = psfImage->getBBox();
     fitBBox.clip(exposure.getBBox());
     if (fitBBox != psfImage->getBBox()) {
-        _flagHandler.setValue(measRecord, Flags::FAILURE.name, true);  // if we had a suspect flag, we'd set that instead
-        _flagHandler.setValue(measRecord, Flags::EDGE.name, true);
+        _flagHandler.setValue(measRecord, Flags::FAILURE.number, true);  // if we had a suspect flag, we'd set that instead
+        _flagHandler.setValue(measRecord, Flags::EDGE.number, true);
     }
     afw::detection::Footprint fitRegion(fitBBox);
     if (!_ctrl.badMaskPlanes.empty()) {
@@ -127,7 +124,7 @@ void PsfFluxAlgorithm::measure(
         throw LSST_EXCEPT(
             MeasurementError,
             Flags::NO_GOOD_PIXELS.doc,
-            getFlagNumber(Flags::NO_GOOD_PIXELS.name)
+            Flags::NO_GOOD_PIXELS.number
         );
     }
     typedef afw::detection::Psf::Pixel PsfPixel;

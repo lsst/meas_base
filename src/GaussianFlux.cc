@@ -33,39 +33,38 @@
 #include "lsst/meas/base/SdssShape.h"
 
 namespace lsst { namespace meas { namespace base {
-struct GaussianFluxAlgorithm::Flags {
-    static FlagDefinition FAILURE;
-};
-FlagDefinition GaussianFluxAlgorithm::Flags::FAILURE("flag", "general failure flag, set if anything went wrong");
 namespace {
-std::vector<FlagDefinition> const flagVector = {
-    GaussianFluxAlgorithm::Flags::FAILURE,
-};
-std::vector<FlagDefinition> const & getFlagDefinitions() {
-    return flagVector;
+FlagDefinitions flagDefinitions;
+FlagDefinitions & getFlagDefinitions() {
+    return flagDefinitions;
 };
 } // end anonymous
 
-std::size_t GaussianFluxAlgorithm::getFlagNumber(std::string const & name) {
-    std::size_t i = 0;
-    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
-        if (iter->name == name) {
-            return i;
+struct GaussianFluxAlgorithm::Flags {
+    static FlagDefinition FAILURE;
+};
+FlagDefinition GaussianFluxAlgorithm::Flags::FAILURE = flagDefinitions.add("flag", "general failure flag, set if anything went wrong");
+
+FlagDefinition const & GaussianFluxAlgorithm::getDefinition(std::string name) {
+    for (FlagDefinition const * iter = flagDefinitions.begin(); iter < flagDefinitions.end(); iter++) {
+        if (name == iter->name) {
+            return * iter;
         }
-        i++;
     }
-    throw lsst::pex::exceptions::RuntimeError("GaussianFlux flag does not exist for name: " + name);
+    throw pex::exceptions::RuntimeError("No flag for GaussianFlux named: " + name);
 }
 
-std::string const GaussianFluxAlgorithm::getFlagName(std::size_t flagNumber) {
-    std::size_t i = 0;
-    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
-        if (i == flagNumber) {
-            return iter->name;
-        }
+std::string const & GaussianFluxAlgorithm::getFlagName(std::size_t number) {
+    if (number < flagDefinitions.size()) {
+        return flagDefinitions.getDefinition(number).name;
     }
-    throw lsst::pex::exceptions::RuntimeError("GaussianFlux flag does not exist for number: " + flagNumber);
+    throw pex::exceptions::RuntimeError("No flag for GaussianFlux numbered: " + std::to_string(number));
 }
+
+std::size_t GaussianFluxAlgorithm::getFlagCount() {
+    return flagDefinitions.size();
+}
+
 
 GaussianFluxAlgorithm::GaussianFluxAlgorithm(
     Control const & ctrl,
@@ -93,7 +92,7 @@ void GaussianFluxAlgorithm::measure(
     );
 
     measRecord.set(_fluxResultKey, result);
-    _flagHandler.setValue(measRecord, Flags::FAILURE.name, false);
+    _flagHandler.setValue(measRecord, Flags::FAILURE.number, false);
 }
 
 

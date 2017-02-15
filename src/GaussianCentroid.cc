@@ -30,42 +30,40 @@
 
 
 namespace lsst { namespace meas { namespace base {
+namespace {
+FlagDefinitions flagDefinitions;
+FlagDefinitions & getFlagDefinitions() {
+    return flagDefinitions;
+};
+} // end anonymous
+
 struct GaussianCentroidAlgorithm::Flags {
     static FlagDefinition FAILURE;
     static FlagDefinition NO_PEAK;
 };
-FlagDefinition GaussianCentroidAlgorithm::Flags::FAILURE("flag", "general failure flag, set if anything went wrong");
-FlagDefinition GaussianCentroidAlgorithm::Flags::NO_PEAK("flag_noPeak", "Fitted Centroid has a negative peak");
-namespace {
-std::vector<FlagDefinition> const flagVector = {
-    GaussianCentroidAlgorithm::Flags::FAILURE,
-    GaussianCentroidAlgorithm::Flags::NO_PEAK,
-};
-std::vector<FlagDefinition> const & getFlagDefinitions() {
-    return flagVector;
-};
-} // end anonymous
+FlagDefinition GaussianCentroidAlgorithm::Flags::FAILURE = flagDefinitions.add("flag", "general failure flag, set if anything went wrong");
+FlagDefinition GaussianCentroidAlgorithm::Flags::NO_PEAK = flagDefinitions.add("flag_noPeak", "Fitted Centroid has a negative peak");
 
-std::size_t GaussianCentroidAlgorithm::getFlagNumber(std::string const & name) {
-    std::size_t i = 0;
-    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
-        if (iter->name == name) {
-            return i;
-        }
-        i++;
-    }
-    throw lsst::pex::exceptions::RuntimeError("GaussianCentroid flag does not exist for name: " + name);
-}
-
-std::string const GaussianCentroidAlgorithm::getFlagName(std::size_t flagNumber) {
-    std::size_t i = 0;
-    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
-        if (i == flagNumber) {
-            return iter->name;
+FlagDefinition const & GaussianCentroidAlgorithm::getDefinition(std::string name) {
+    for (FlagDefinition const * iter = flagDefinitions.begin(); iter < flagDefinitions.end(); iter++) {
+        if (name == iter->name) {
+            return * iter;
         }
     }
-    throw lsst::pex::exceptions::RuntimeError("GaussianCentroid flag does not exist for number: " + flagNumber);
+    throw pex::exceptions::RuntimeError("No flag for GaussianCentroid named: " + name);
 }
+
+std::string const & GaussianCentroidAlgorithm::getFlagName(std::size_t number) {
+    if (number < flagDefinitions.size()) {
+        return flagDefinitions.getDefinition(number).name;
+    }
+    throw pex::exceptions::RuntimeError("No flag for GaussianCentroid numbered: " + std::to_string(number));
+}
+
+std::size_t GaussianCentroidAlgorithm::getFlagCount() {
+    return flagDefinitions.size();
+}
+
 namespace {
 #define USE_WEIGHT 0                    // zweight is only set, not used.  It isn't even set if this is false
 struct Raster {
@@ -587,12 +585,12 @@ void GaussianCentroidAlgorithm::measure(
         throw LSST_EXCEPT(
             MeasurementError,
             Flags::NO_PEAK.doc,
-            getFlagNumber(Flags::NO_PEAK.name)
+            Flags::NO_PEAK.number
         );
     }
     result.x = lsst::afw::image::indexToPosition(image.getX0()) + fit.params[FittedModel::X0];
     result.y = lsst::afw::image::indexToPosition(image.getY0()) + fit.params[FittedModel::Y0];
-    _flagHandler.setValue(measRecord, Flags::FAILURE.name, false);  // if we had a suspect flag, we'd set that instead
+    _flagHandler.setValue(measRecord, Flags::FAILURE.number, false);  // if we had a suspect flag, we'd set that instead
     measRecord.set(_centroidKey, result);
     _centroidChecker(measRecord);
 }

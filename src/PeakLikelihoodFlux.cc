@@ -34,39 +34,38 @@
 #include "lsst/afw/table/Source.h"
 
 namespace lsst { namespace meas { namespace base {
-struct PeakLikelihoodFluxAlgorithm::Flags {
-    static FlagDefinition FAILURE;
-};
-FlagDefinition PeakLikelihoodFluxAlgorithm::Flags::FAILURE("flag", "general failure flag, set if anything went wrong");
 namespace {
-std::vector<FlagDefinition> const flagVector = {
-    PeakLikelihoodFluxAlgorithm::Flags::FAILURE,
-};
-std::vector<FlagDefinition> const & getFlagDefinitions() {
-    return flagVector;
+FlagDefinitions flagDefinitions;
+FlagDefinitions & getFlagDefinitions() {
+    return flagDefinitions;
 };
 } // end anonymous
 
-std::size_t PeakLikelihoodFluxAlgorithm::getFlagNumber(std::string const & name) {
-    std::size_t i = 0;
-    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
-        if (iter->name == name) {
-            return i;
+struct PeakLikelihoodFluxAlgorithm::Flags {
+    static FlagDefinition FAILURE;
+};
+FlagDefinition PeakLikelihoodFluxAlgorithm::Flags::FAILURE = flagDefinitions.add("flag", "general failure flag, set if anything went wrong");
+
+FlagDefinition const & PeakLikelihoodFluxAlgorithm::getDefinition(std::string name) {
+    for (FlagDefinition const * iter = flagDefinitions.begin(); iter < flagDefinitions.end(); iter++) {
+        if (name == iter->name) {
+            return * iter;
         }
-        i++;
     }
-    throw lsst::pex::exceptions::RuntimeError("PeakLikelihoodFlux flag does not exist for name: " + name);
+    throw pex::exceptions::RuntimeError("No flag for PeakLikelihoodFlux named: " + name);
 }
 
-std::string const PeakLikelihoodFluxAlgorithm::getFlagName(std::size_t flagNumber) {
-    std::size_t i = 0;
-    for (auto iter = getFlagDefinitions().begin(); iter < getFlagDefinitions().end(); iter++) {
-        if (i == flagNumber) {
-            return iter->name;
-        }
+std::string const & PeakLikelihoodFluxAlgorithm::getFlagName(std::size_t number) {
+    if (number < flagDefinitions.size()) {
+        return flagDefinitions.getDefinition(number).name;
     }
-    throw lsst::pex::exceptions::RuntimeError("PeakLikelihoodFlux flag does not exist for number: " + flagNumber);
+    throw pex::exceptions::RuntimeError("No flag for PeakLikelihoodFlux numbered: " + std::to_string(number));
 }
+
+std::size_t PeakLikelihoodFluxAlgorithm::getFlagCount() {
+    return flagDefinitions.size();
+}
+
 
 namespace {
 
@@ -278,7 +277,7 @@ void PeakLikelihoodFluxAlgorithm::measure(
     result.flux = flux;
     result.fluxSigma = std::sqrt(var);
     measRecord.set(_fluxResultKey, result);
-    _flagHandler.setValue(measRecord, Flags::FAILURE.name, false);
+    _flagHandler.setValue(measRecord, Flags::FAILURE.number, false);
 
 }
 

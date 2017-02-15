@@ -73,7 +73,7 @@ public:
         ),
         _centroidExtractor(schema, name, true)
     {
-        static std::vector<lsst::meas::base::FlagDefinition> flagDefs = {{
+        static lsst::meas::base::FlagDefinitions flagDefs = {{
             {"flag", "general failure flag, set if anything went wrong"},
             {"flag_noCounts", "Object to be centroided has no counts"},
             {"flag_edge", "Object too close to edge"}

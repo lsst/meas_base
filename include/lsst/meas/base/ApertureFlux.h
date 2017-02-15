@@ -85,10 +85,10 @@ public:
 
     // Structures and routines to manage flaghandler
     struct Flags;
-
-    static std::size_t getFlagNumber(std::string const & name);
-    static std::string const getFlagName(std::size_t flagNumber);
-    static std::vector<FlagDefinition> const & getFlagDefinitions();
+    static FlagDefinition const & getDefinition(std::string name);
+    static std::string const & getFlagName(std::size_t number);
+    static std::size_t getFlagCount();
+    static FlagDefinitions & getFlagDefinitions();
     static unsigned int const N_FLAGS = 3;
 
     typedef ApertureFluxControl Control;
@@ -252,13 +252,15 @@ private:
 struct ApertureFluxResult : public FluxResult {
 
     /// Return the flag value associated with the given bit
-    bool getFlag(std::string flagName) const { return _flags[ApertureFluxAlgorithm::getFlagNumber(flagName)]; }
+    bool getFlag(unsigned int index) const { return _flags[index]; }
+    
+    bool getFlag(std::string name) const { return _flags[ApertureFluxAlgorithm::getDefinition(name).number]; }
 
     /// Set the flag value associated with the given bit
-    void setFlag(std::string flagName, bool value=true) { _flags[ApertureFluxAlgorithm::getFlagNumber(flagName)] = value; }
+    void setFlag(unsigned int index, bool value=true) { _flags[index] = value; }
 
     /// Clear (i.e. set to false) the flag associated with the given bit
-    void unsetFlag(std::string flagName) { _flags[ApertureFluxAlgorithm::getFlagNumber(flagName)] = false; }
+    void unsetFlag(unsigned int index) { _flags[index] = false; }
 
 private:
     std::bitset<ApertureFluxAlgorithm::N_FLAGS> _flags;

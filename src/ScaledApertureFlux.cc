@@ -64,10 +64,10 @@ void ScaledApertureFluxAlgorithm::measure(
                                                            apCtrl);
     measRecord.set(_fluxResultKey, result);
 
-    for (unsigned int i = 0; i < ApertureFluxAlgorithm::getFlagDefinitions().size(); i++) {
-        std::string const flagName = ApertureFluxAlgorithm::getFlagDefinitions()[i].name;
-        if (result.getFlag(flagName)) {
-            _flagHandler.setValue(measRecord, flagName, true);
+    for (FlagDefinition const * iter = ApertureFluxAlgorithm::getFlagDefinitions().begin();
+         iter < ApertureFluxAlgorithm::getFlagDefinitions().end(); iter++) {
+        if (result.getFlag(iter->number)) {
+            _flagHandler.setValue(measRecord, iter->number, true);
         }
     }
 }
