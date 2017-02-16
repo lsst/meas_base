@@ -25,7 +25,10 @@
 
 #include "lsst/meas/base/ApertureFlux.h"
 
+#include "lsst/afw/table/pybind11/functorKey.h"
+
 namespace py = pybind11;
+using namespace py::literals;
 
 namespace lsst {
 namespace meas {
@@ -34,18 +37,48 @@ namespace base {
 PYBIND11_PLUGIN(_fluxUtilities) {
     py::module mod("_fluxUtilities", "Python wrapper for afw _fluxUtilities library");
 
-    /* Module level */
     py::class_<FluxResult> clsFluxResult(mod, "FluxResult");
 
-    /* Member types and enums */
-
-    /* Constructors */
-
-    /* Operators */
-
-    /* Members */
     clsFluxResult.def_readwrite("flux", &FluxResult::flux);
     clsFluxResult.def_readwrite("fluxSigma", &FluxResult::fluxSigma);
+
+    afw::table::pybind11::declareFunctorKeys<FluxResult>(mod, "FluxResult");
+
+    py::class_<FluxResultKey, std::shared_ptr<FluxResultKey>, afw::table::FunctorKey<FluxResult>> clsFluxResultKey(mod, "FluxResultKey");
+
+    clsFluxResultKey.def(py::init<>());
+    clsFluxResultKey.def(py::init<afw::table::Key<meas::base::Flux> const &, afw::table::Key<FluxErrElement> const &>(),
+            "flux"_a, "fluxSigma"_a);
+    clsFluxResultKey.def(py::init<afw::table::SubSchema const &>());
+
+    clsFluxResultKey.def("__eq__", &FluxResultKey::operator==, py::is_operator());
+    clsFluxResultKey.def("__ne__", &FluxResultKey::operator!=, py::is_operator());
+
+    clsFluxResultKey.def("get", &FluxResultKey::get);
+    clsFluxResultKey.def("set", &FluxResultKey::set);
+    clsFluxResultKey.def_static("addFields", &FluxResultKey::addFields,
+            "schema"_a, "name"_a, "doc"_a);
+    clsFluxResultKey.def("isValid", &FluxResultKey::isValid);
+    clsFluxResultKey.def("getFlux", &FluxResultKey::getFlux);
+    clsFluxResultKey.def("getFluxSigma", &FluxResultKey::getFluxSigma);
+
+    py::class_<MagResult> clsMagResult(mod, "MagResult");
+
+    clsMagResult.def_readwrite("mag", &MagResult::mag);
+    clsMagResult.def_readwrite("magErr", &MagResult::magErr);
+
+    afw::table::pybind11::declareFunctorKeys<MagResult>(mod, "MagResult");
+
+    py::class_<MagResultKey, std::shared_ptr<MagResultKey>, afw::table::FunctorKey<MagResult>> clsMagResultKey(mod, "MagResultKey");
+
+    clsMagResultKey.def(py::init<>());
+    clsMagResultKey.def(py::init<afw::table::SubSchema const &>());
+
+    clsMagResultKey.def("get", &MagResultKey::get);
+    clsMagResultKey.def("set", (void (MagResultKey::*)(afw::table::BaseRecord &, MagResult const &) const) &MagResultKey::set);
+    clsMagResultKey.def("set", (void (MagResultKey::*)(afw::table::BaseRecord &, std::pair<double,double> const &) const) &MagResultKey::set);
+    clsMagResultKey.def_static("addFields", &MagResultKey::addFields,
+            "schema"_a, "name"_a);
 
     return mod.ptr();
 }
