@@ -56,7 +56,7 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
     def _runMeasurementTask(self):
         task = self.makeSingleFrameMeasurementTask("base_SdssShape", config=self.config)
         exposure, catalog = self.dataset.realize(10.0, task.schema)
-        task.run(exposure, catalog)
+        task.run(catalog, exposure)
         return exposure, catalog
 
     def _checkShape(self, result, record):
@@ -124,7 +124,7 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         task = self.makeSingleFrameMeasurementTask("base_SdssShape", config=self.config)
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         exposure.setPsf(None)  # Set PSF to None to test no PSF case
-        task.run(exposure, catalog)
+        task.run(catalog, exposure)
         key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
         for record in catalog:
             result = record.get(key)

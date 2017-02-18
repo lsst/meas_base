@@ -62,7 +62,7 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """Test that we get correct fluxes when measuring Gaussians with known positions and shapes."""
         task = self.makeSingleFrameMeasurementTask("base_GaussianFlux")
         exposure, catalog = self.dataset.realize(10.0, task.schema)
-        task.run(exposure, catalog)
+        task.run(catalog, exposure)
         for measRecord in catalog:
             self.assertClose(measRecord.get("base_GaussianFlux_flux"),
                              measRecord.get("truth_flux"), rtol=3E-3)

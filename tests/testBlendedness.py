@@ -71,7 +71,7 @@ class BlendednessTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """
         task = self.makeSingleFrameMeasurementTask("base_Blendedness")
         exposure, catalog = self.dataset.realize(10.0, task.schema)
-        task.run(exposure, catalog)
+        task.run(catalog, exposure)
         self.assertGreater(catalog[1].get('base_Blendedness_abs_flux'), 0)
         self.assertGreater(catalog[2].get('base_Blendedness_abs_flux'), 0)
 

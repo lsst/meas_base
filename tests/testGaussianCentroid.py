@@ -47,7 +47,7 @@ class GaussianCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     def testSingleFramePlugin(self):
         task = self.makeSingleFrameMeasurementTask("base_GaussianCentroid")
         exposure, catalog = self.dataset.realize(10.0, task.schema)
-        task.run(exposure, catalog)
+        task.run(catalog, exposure)
         record = catalog[0]
         x = record.get("base_GaussianCentroid_x")
         y = record.get("base_GaussianCentroid_y")

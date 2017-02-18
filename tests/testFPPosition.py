@@ -56,7 +56,7 @@ class FPPositionTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         task = self.makeSingleFrameMeasurementTask("base_FPPosition")
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         exposure.setDetector(self.dw.detector)
-        task.run(exposure, catalog)
+        task.run(catalog, exposure)
         pointKey = lsst.afw.table.Point2DKey(catalog.schema["base_FPPosition"])
         # Compare the derived focal plane position to the true position.
         # True position is calculated as pixel coordinate plus half pixel offset

@@ -139,7 +139,7 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     def testSingleFramePlugin(self):
         task = self.makeSingleFrameMeasurementTask("base_PsfFlux")
         exposure, catalog = self.dataset.realize(10.0, task.schema)
-        task.run(exposure, catalog)
+        task.run(catalog, exposure)
         record = catalog[0]
         self.assertFalse(record.get("base_PsfFlux_flag"))
         self.assertFalse(record.get("base_PsfFlux_flag_noGoodPixels"))

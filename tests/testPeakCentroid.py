@@ -72,7 +72,7 @@ class SingleFramePeakCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCa
 
     def testSingleFramePlugin(self):
         """Check that we recover the correct location of the centroid."""
-        self.task.run(self.exposure, self.catalog)
+        self.task.run(self.catalog, self.exposure)
         x = self.catalog[0].get("base_PeakCentroid_x")
         y = self.catalog[0].get("base_PeakCentroid_y")
         self.assertFalse(self.catalog[0].get("base_PeakCentroid_flag"))
@@ -88,7 +88,7 @@ class SingleFramePeakCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCa
         self.catalog[0].getFootprint().getPeaks().clear()
         # The decorator suppresses alarming but expected errors on the console.
         with onlyLogFatal(self.task.log):
-            self.task.run(self.exposure, self.catalog)
+            self.task.run(self.catalog, self.exposure)
         self.assertTrue(self.catalog[0].get("base_PeakCentroid_flag"))
 
 

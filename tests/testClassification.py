@@ -53,7 +53,7 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
         task = self.makeSingleFrameMeasurementTask(config=config)
         abTask = catCalc.CatalogCalculationTask(schema=task.schema)
         exposure, catalog = self.dataset.realize(10.0, task.schema)
-        task.run(exposure, catalog)
+        task.run(catalog, exposure)
         abTask.run(catalog)
         self.assertLess(catalog[0].get("base_ClassificationExtendedness_value"), 0.5)
         self.assertGreater(catalog[1].get("base_ClassificationExtendedness_value"), 0.5)
