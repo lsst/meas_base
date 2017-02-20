@@ -113,7 +113,9 @@ class VarianceTest(lsst.utils.tests.TestCase):
         task = measBase.SingleFrameMeasurementTask(schema, config=config)
         catalog = afwTable.SourceCatalog(schema)
 
-        foot = afwDetection.Footprint(afwGeom.Point2I(center), width)
+        spans = afwGeom.SpanSet.fromShape(int(width))
+        spans = spans.shiftedBy(int(center.getX()), int(center.getY()))
+        foot = afwDetection.Footprint(spans)
         peak = foot.getPeaks().addNew()
         peak.setIx(int(center.getX()))
         peak.setIy(int(center.getY()))

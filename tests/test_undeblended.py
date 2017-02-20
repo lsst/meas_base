@@ -90,7 +90,9 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         parent = cat.addNew()
         parent.set("centroid_x", x0 + xCenter)
         parent.set("centroid_y", y0 + yCenter)
-        parent.setFootprint(afwDetection.Footprint(afwGeom.Point2I(x0 + xCenter, y0 + yCenter), radius))
+        spanSetParent = afwGeom.SpanSet.fromShape(int(radius))
+        spanSetParent = spanSetParent.shiftedBy(x0 + xCenter, y0 + yCenter)
+        parent.setFootprint(afwDetection.Footprint(spanSetParent))
 
         # First child is bright, dominating the blend
         child1 = cat.addNew()
@@ -98,7 +100,9 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         child1.set("centroid_y", parent.get("centroid_y"))
         child1.setParent(parent.getId())
         image.set(xCenter, yCenter, (flux1, 0, 0))
-        foot1 = afwDetection.Footprint(afwGeom.Point2I(x0 + xCenter, y0 + yCenter), 0.1)
+        spanSetChild1 = afwGeom.SpanSet.fromShape(1)
+        spanSetChild1 = spanSetChild1.shiftedBy(x0 + xCenter, y0 + yCenter)
+        foot1 = afwDetection.Footprint(spanSetChild1)
         child1.setFootprint(afwDetection.HeavyFootprintF(foot1, image))
 
         # Second child is fainter, but we want to be able to measure it!
@@ -107,14 +111,13 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         child2.set("centroid_y", parent.get("centroid_y") + yOffset)
         child2.setParent(parent.getId())
         image.set(xCenter + xOffset, yCenter + yOffset, (flux2, 0, 0))
-        foot2 = afwDetection.Footprint(afwGeom.Point2I(x0 + xCenter + xOffset, y0 + yCenter + yOffset), 0.1)
+        spanSetChild2 = afwGeom.SpanSet.fromShape(1)
+        tmpPoint = (x0 + xCenter + xOffset, y0 + yCenter + yOffset)
+        spanSetChild2 = spanSetChild2.shiftedBy(*tmpPoint)
+        foot2 = afwDetection.Footprint(spanSetChild2)
         child2.setFootprint(afwDetection.HeavyFootprintF(foot2, image))
 
-        spans = []
-        for ss in foot1.getSpans():
-            spans.append(ss)
-        for ss in foot2.getSpans():
-            spans.append(ss)
+        spans = foot1.spans.union(foot2.spans)
         bbox = afwGeom.Box2I()
         bbox.include(foot1.getBBox())
         bbox.include(foot2.getBBox())

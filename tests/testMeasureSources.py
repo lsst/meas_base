@@ -257,7 +257,9 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
                                (20, 80, ['edge']),
                                (30, 30, ['clipped']),
                                ]:
-            foot = afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5)
+            spans = afwGeom.SpanSet.fromShape(5).shiftedBy(x + x0,
+                                                           y + y0)
+            foot = afwDetection.Footprint(spans)
             source = cat.makeRecord()
             source.setFootprint(foot)
             source.set("centroid_x", x+x0)
@@ -276,7 +278,9 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         source.set("centroid_x", float("NAN"))
         source.set("centroid_y", 40)
         source.set("centroid_flag", True)
-        source.setFootprint(afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5))
+        tmpSpanSet = afwGeom.SpanSet.fromShape(5).shiftedBy(x + x0,
+                                                            y + y0)
+        source.setFootprint(afwDetection.Footprint(tmpSpanSet))
         with self.assertRaises(lsst.pex.exceptions.RuntimeError):
             plugin.measure(source, exp)
         # Test that if there is no center and centroider that the object should look at the footprint
@@ -286,7 +290,9 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         with self.assertRaises(lsst.pex.exceptions.RuntimeError):
             plugin.measure(source, exp)
         # The second test will raise an error because no peaks are present
-        source.setFootprint(afwDetection.Footprint(afwGeom.Point2I(afwGeom.Point2D(x + x0, y + y0)), 5))
+        tmpSpanSet2 = afwGeom.SpanSet.fromShape(5).shiftedBy(x + x0,
+                                                             y + y0)
+        source.setFootprint(afwDetection.Footprint(tmpSpanSet2))
         with self.assertRaises(lsst.pex.exceptions.RuntimeError):
             plugin.measure(source, exp)
         # The final test should pass because it detects a peak, we are reusing the location of the

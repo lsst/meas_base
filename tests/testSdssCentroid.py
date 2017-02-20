@@ -29,6 +29,7 @@ import numpy as np
 
 from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
+import lsst.afw.geom as afwGeom
 import lsst.utils.tests
 
 # n.b. Some tests here depend on the noise realization in the test data
@@ -124,7 +125,8 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         # we also need to install a smaller footprint, or NoiseReplacer complains before we even get to
         # measuring the centriod
         record = catalog[0]
-        newFootprint = lsst.afw.detection.Footprint(bbox)
+        spanSet = afwGeom.SpanSet(bbox)
+        newFootprint = lsst.afw.detection.Footprint(spanSet)
         peak = record.getFootprint().getPeaks()[0]
         newFootprint.addPeak(peak.getFx(), peak.getFy(), peak.getPeakValue())
         record.setFootprint(newFootprint)
