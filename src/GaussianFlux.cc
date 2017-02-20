@@ -26,8 +26,6 @@
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/geom/Box.h"
 #include "lsst/afw/geom/ellipses/Ellipse.h"
-#include "lsst/afw/detection/FootprintArray.h"
-#include "lsst/afw/detection/FootprintArray.cc"
 #include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/GaussianFlux.h"
 #include "lsst/meas/base/SdssShape.h"

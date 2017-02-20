@@ -77,16 +77,15 @@ double computeOldBlendedness(
     // Iterate over all the spans in the child HeavyFootprint,
     // along with iterators for the child pixels (from the HeavyFootprint)
     // and parent pixels (from the Exposure).
-    typedef afw::detection::Footprint::SpanList::const_iterator SpanIter;
     typedef afw::image::Image<float>::const_x_iterator ParentPixIter;
     typedef ndarray::Array<float const,1,1>::Iterator ChildPixIter;
-    SpanIter spanIter = childHeavy->getSpans().begin();
-    SpanIter const spanEnd = childHeavy->getSpans().end();
+    auto spanIter = childHeavy->getSpans()->begin();
+    auto const spanEnd = childHeavy->getSpans()->end();
     ChildPixIter childPixIter = childHeavy->getImageArray().begin();
     double cp = 0.0;   // child.dot(parent)
     double cc = 0.0;   // child.dot(child)
     while (spanIter != spanEnd) {
-        afw::geom::Span const & span = **spanIter;
+        afw::geom::Span const & span = *spanIter;
         ParentPixIter parentPixIter = parentImage.x_at(
             span.getBeginX() - parentImage.getX0(),
             span.getY() - parentImage.getY0()

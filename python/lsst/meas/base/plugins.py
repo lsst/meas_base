@@ -221,7 +221,8 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
         # pixels around the object to get decent statistics
         aperture = lsst.afw.geom.ellipses.Ellipse(measRecord.getShape(), measRecord.getCentroid())
         aperture.scale(self.config.scale)
-        foot = lsst.afw.detection.Footprint(aperture)
+        ellipse = lsst.afw.geom.SpanSet.fromShape(aperture)
+        foot = lsst.afw.detection.Footprint(ellipse)
         foot.clipTo(exposure.getBBox(lsst.afw.image.PARENT))
         # Filter out any pixels which have mask bits set corresponding to the planes to be excluded
         # (defined in config.mask)

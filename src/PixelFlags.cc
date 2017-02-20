@@ -28,31 +28,26 @@
 #include "ndarray/eigen.h"
 
 #include "lsst/afw/detection/Psf.h"
-#include "lsst/afw/detection/FootprintFunctor.h"
 #include "lsst/afw/table/Source.h"
+#include "lsst/afw/geom/Point.h"
+#include "lsst/afw/geom/SpanSet.h"
 #include "lsst/meas/base/PixelFlags.h"
 
 namespace lsst { namespace meas { namespace base {
 namespace {
 template <typename MaskedImageT>
-class FootprintBits : public afw::detection::FootprintFunctor<MaskedImageT> {
+class FootprintBits {
 public:
-    explicit FootprintBits(MaskedImageT const& mimage) :
-        afw::detection::FootprintFunctor<MaskedImageT>(mimage), _bits(0)
-    {}
+    explicit FootprintBits() : _bits(0) {}
 
     /// \brief Reset everything for a new Footprint
     void reset() {
         _bits = 0x0;
     }
-    virtual void reset(afw::detection::Footprint const&) {}
 
-    /// \brief method called for each pixel by apply()
-    void operator()(typename MaskedImageT::xy_locator loc, ///< locator pointing at the pixel
-                    int x,                                 ///< column-position of pixel
-                    int y                                  ///< row-position of pixel
-                   ) {
-        _bits |= loc.mask(0, 0);
+    void operator()(lsst::afw::geom::Point2I const & point,
+                    typename MaskedImageT::Mask::Pixel const & value) {
+        _bits |= value;
     }
 
     /// Return the union of the bits set anywhere in the Footprint
@@ -118,7 +113,7 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(
         _centerKeys[i] = schema.addField<afw::table::Flag>(name + "_flag_" + maskName + "Center",
                                         "Source center is close to "+ i + " pixels");
     }
-    
+
     for (auto const & i: _ctrl.masksFpAnywhere) {
         std::string maskName(i);
         std::transform(maskName.begin(), maskName.end(), maskName.begin(), ::tolower);
@@ -133,7 +128,7 @@ void PixelFlagsAlgorithm::measure(
 ) const {
 
     MaskedImageF mimage = exposure.getMaskedImage();
-    FootprintBits<MaskedImageF> func(mimage);
+    FootprintBits<MaskedImageF> func;
 
     // Check if the measRecord has a valid centroid key, i.e. it was centroided
     afw::geom::Point2D center;
@@ -174,7 +169,7 @@ void PixelFlagsAlgorithm::measure(
 
     // Check for bits set in the source's Footprint
     afw::detection::Footprint const & footprint(*measRecord.getFootprint());
-    func.apply(footprint);
+    footprint.getSpans()->clippedTo(mimage.getBBox())->applyFunctor(func, *(mimage.getMask()));
 
     // Set the EDGE flag if the bitmask has NO_DATA set
     try {
@@ -192,11 +187,14 @@ void PixelFlagsAlgorithm::measure(
     afw::geom::Point2I llc(afw::image::positionToIndex(center.getX()) - 1,
                            afw::image::positionToIndex(center.getY()) - 1);
 
-    afw::detection::Footprint const middle(afw::geom::BoxI(llc, afw::geom::ExtentI(3))); // central 3x3
-    func.apply(middle);
+    func.reset();
+    auto spans = std::make_shared<afw::geom::SpanSet>(afw::geom::Box2I(llc, afw::geom::ExtentI(3)));
+    afw::detection::Footprint const middle(spans); // central 3x3
+    middle.getSpans()->clippedTo(mimage.getBBox())->applyFunctor(func, *(mimage.getMask()));
 
     // Update the flags which have to do with the center of the footprint
     updateFlags(_centerKeys, func, measRecord);
+
 }
 
 void PixelFlagsAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
@@ -204,4 +202,3 @@ void PixelFlagsAlgorithm::fail(afw::table::SourceRecord & measRecord, Measuremen
 }
 
 }}} // namespace lsst::meas::base
-
