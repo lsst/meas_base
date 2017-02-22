@@ -69,8 +69,6 @@ struct FlagDefinition {
 class FlagDefinitionList {
 public:
 
-    static FlagDefinitionList const & NOSKIPS;
-
     /**
      *  @brief initialize a FlagDefinition collection with no entries.
      */
@@ -136,8 +134,8 @@ public:
      */
 
     static FlagDefinition getFailureFlag() {
-        static FlagDefinition FAILURE = FlagDefinition("flag", "General Failure");
-        return FAILURE;
+        static FlagDefinition flagDef = FlagDefinition("flag", "General Failure");
+        return flagDef;
     }
 
     FlagDefinition addFailureFlag() {
@@ -214,7 +212,7 @@ public:
         afw::table::Schema & schema,
         std::string const & prefix,
         FlagDefinitionList const & flagDefs,
-        FlagDefinitionList const & skipDefs=FlagDefinitionList::NOSKIPS
+        FlagDefinitionList const & skipDefs=FlagDefinitionList()
     );
     /**
      *  Construct a FlagHandler to manage fields already added to a schema.
@@ -232,7 +230,7 @@ public:
     FlagHandler(
         afw::table::SubSchema const & s,
         FlagDefinitionList const & flagDefs,
-        FlagDefinitionList const & skipDefs=FlagDefinitionList::NOSKIPS
+        FlagDefinitionList const & skipDefs=FlagDefinitionList()
     );
     /**
      *  Return the FlagDefinition object that corresponds to given FlagHandler name

@@ -66,10 +66,11 @@ ApertureFluxAlgorithm::Keys::Keys(
 ) :
     fluxKey(FluxResultKey::addFields(schema, prefix, doc)),
     flags(
+           //  The exclusion List can either be empty, or constain the sinc coeffs flag
             FlagHandler::addFields(
                 schema, prefix,
                 ApertureFluxAlgorithm::getFlagDefinitions(),
-                isSinc ? FlagDefinitionList::NOSKIPS : FlagDefinitionList({{SINC_COEFFS_TRUNCATED}})
+                isSinc ? FlagDefinitionList() : FlagDefinitionList({{SINC_COEFFS_TRUNCATED}})
             )
     )
 {}

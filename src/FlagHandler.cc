@@ -25,7 +25,7 @@
 
 namespace lsst { namespace meas { namespace base {
 
-FlagDefinitionList const & FlagDefinitionList::NOSKIPS = FlagDefinitionList();
+
 FlagHandler FlagHandler::addFields(
     afw::table::Schema & schema,
     std::string const & prefix,
