@@ -40,6 +40,32 @@ namespace afwGeom = lsst::afw::geom;
 namespace lsst {
 namespace meas {
 namespace base {
+namespace {
+
+using PySdssShapeAlgorithm = py::class_<SdssShapeAlgorithm, SimpleAlgorithm>;
+
+template <typename ImageT>
+static void declareComputeMethods(PySdssShapeAlgorithm & cls) {
+    cls.def_static(
+        "computeAdaptiveMoments",
+        (SdssShapeResult (*)(
+            ImageT const &,
+            afw::geom::Point2D const &,
+            bool,
+            SdssShapeControl const &
+        )) &SdssShapeAlgorithm::computeAdaptiveMoments,
+        "image"_a, "position"_a, "negative"_a=false, "ctrl"_a=SdssShapeControl()
+    );
+    cls.def_static(
+        "computeFixedMomentsFlux",
+        (FluxResult (*)(
+            ImageT const &,
+            afw::geom::ellipses::Quadrupole const &,
+            afw::geom::Point2D const &
+        )) &SdssShapeAlgorithm::computeFixedMomentsFlux,
+        "image"_a, "shape"_a, "position"_a
+    );
+}
 
 PYBIND11_PLUGIN(_sdssShape) {
     py::module mod("_sdssShape", "Python wrapper for afw _sdssShape library");
@@ -75,6 +101,13 @@ PYBIND11_PLUGIN(_sdssShape) {
     /* Operators */
 
     /* Members */
+    declareComputeMethods<afw::image::Image<int>>(clsSdssShapeAlgorithm);
+    declareComputeMethods<afw::image::Image<float>>(clsSdssShapeAlgorithm);
+    declareComputeMethods<afw::image::Image<double>>(clsSdssShapeAlgorithm);
+    declareComputeMethods<afw::image::MaskedImage<int>>(clsSdssShapeAlgorithm);
+    declareComputeMethods<afw::image::MaskedImage<float>>(clsSdssShapeAlgorithm);
+    declareComputeMethods<afw::image::MaskedImage<double>>(clsSdssShapeAlgorithm);
+    
     python::declareAlgorithm<SdssShapeAlgorithm,
                              SdssShapeControl,
                              SdssShapeTransform>(clsSdssShapeAlgorithm,
@@ -104,4 +137,4 @@ PYBIND11_PLUGIN(_sdssShape) {
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}}}}     // lsst::meas::base::<anonymous>
