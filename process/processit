@@ -1,33 +1,13 @@
 for alg in SdssShape ApertureFlux Blendedness GaussianCentroid GaussianFlux NaiveCentroid PeakLikelihoodFlux PsfFlux SdssCentroid; do
     echo $alg
     echo 'namespace {' > ${alg}.flagDefs
-    echo "FlagDefinitions flagDefinitions;" >> ${alg}.flagDefs
-    echo 'FlagDefinitions & getFlagDefinitions() {' >> ${alg}.flagDefs
-    echo '    return flagDefinitions;' >> ${alg}.flagDefs
-    echo '};' >> ${alg}.flagDefs
+    echo "FlagDefinitionList flagDefinitions;" >> ${alg}.flagDefs
     echo '} // end anonymous' >> ${alg}.flagDefs
     echo '' >> ${alg}.flagDefs
-    echo "struct ${alg}Algorithm::Flags {" >> ${alg}.flagDefs
-    sed -ne '/FAILURE/,/N_FLAGS/p' orig/${alg}.h|grep -v '{'|grep -v '}'|sed -e 's/=.*/,/' |grep -v 'N_FLAGS'|sed -e 's/^/    static FlagDefinition /'|sed -e 's/,/;/'|sed -e 's/        //' >> ${alg}.flagDefs
-    echo '};' >> ${alg}.flagDefs
 
-    sed -ne '/flagDefs =/,/\}\}/p' orig/${alg}.cc|grep '"flag' | sed -e "s/^/FlagDefinition ${alg}Algorithm::Flags::/" |sed -e 's/        {/(/'|sed -e 's/}/)/'|sed -e 's/,$//'|sed -e 's/$/;/' >> ${alg}.flagDefs
+    sed -ne '/flagDefs =/,/\}\}/p' orig/${alg}.cc|grep '"flag' | sed -e "s/^/FlagDefinition const ${alg}Algorithm::YY/" |sed -e 's/        {/(/'|sed -e 's/}/)/'|sed -e 's/,$//'|sed -e 's/$/;/' >> ${alg}.flagDefs
     cat flagDefs.add >> ${alg}.flagDefs
     sed -ne '/FAILURE/,/N_FLAGS/p' orig/${alg}.h|grep -v '{'|grep -v '}'|sed -e 's/^ *\([A-Z][A-Z_]*\).*/\1/' |grep -v 'N_FLAGS' > ${alg}.enum
-    if [ ${alg} == "SdssShape" ]; then
-        echo '' >> ${alg}.flagDefs
-        echo "FlagDefinitions & ${alg}Algorithm::getFlagDefinitions() {" >> ${alg}.flagDefs
-        echo '    assert(N_FLAGS == flagDefinitions.size());' >> ${alg}.flagDefs
-        echo '    return flagDefinitions;' >> ${alg}.flagDefs
-        echo '}' >> ${alg}.flagDefs
-    fi
-    if [ ${alg} == "ApertureFlux" ]; then
-        echo '' >> ${alg}.flagDefs
-        echo "FlagDefinitions & ${alg}Algorithm::getFlagDefinitions() {" >> ${alg}.flagDefs
-        echo '    assert(N_FLAGS == flagDefinitions.size());' >> ${alg}.flagDefs
-        echo '    return flagDefinitions;' >> ${alg}.flagDefs
-        echo '};' >> ${alg}.flagDefs
-    fi
 done
 
 

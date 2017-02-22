@@ -83,8 +83,7 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         maskArray[:, :] |= badMask
         with self.assertRaises(lsst.meas.base.MeasurementError) as context:
             algorithm.measure(record, exposure)
-        self.assertEqual(context.exception.getFlagBit(),
-                         algorithm.getDefinition("flag_noGoodPixels").number)
+        self.assertEqual(context.exception.getFlagBit(), lsst.meas.base.PsfFluxAlgorithm.NO_GOOD_PIXELS.number)
 
     def testSubImage(self):
         """Test that we don't get confused by images with nonzero xy0, and that the EDGE flag is set

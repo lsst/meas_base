@@ -34,39 +34,15 @@
 
 namespace lsst { namespace meas { namespace base {
 namespace {
-FlagDefinitions flagDefinitions;
-FlagDefinitions & getFlagDefinitions() {
-    return flagDefinitions;
-};
+FlagDefinitionList flagDefinitions;
 } // end anonymous
 
-struct PsfFluxAlgorithm::Flags {
-    static FlagDefinition FAILURE;
-    static FlagDefinition NO_GOOD_PIXELS;
-    static FlagDefinition EDGE;
-};
-FlagDefinition PsfFluxAlgorithm::Flags::FAILURE = flagDefinitions.add("flag", "general failure flag");
-FlagDefinition PsfFluxAlgorithm::Flags::NO_GOOD_PIXELS = flagDefinitions.add("flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit");
-FlagDefinition PsfFluxAlgorithm::Flags::EDGE = flagDefinitions.add("flag_edge", "object was too close to the edge of the image to use the full PSF model");
+FlagDefinition const PsfFluxAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
+FlagDefinition const PsfFluxAlgorithm::NO_GOOD_PIXELS = flagDefinitions.add("flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit");
+FlagDefinition const PsfFluxAlgorithm::EDGE = flagDefinitions.add("flag_edge", "object was too close to the edge of the image to use the full PSF model");
 
-FlagDefinition const & PsfFluxAlgorithm::getDefinition(std::string name) {
-    for (FlagDefinition const * iter = flagDefinitions.begin(); iter < flagDefinitions.end(); iter++) {
-        if (name == iter->name) {
-            return * iter;
-        }
-    }
-    throw pex::exceptions::RuntimeError("No flag for PsfFlux named: " + name);
-}
-
-std::string const & PsfFluxAlgorithm::getFlagName(std::size_t number) {
-    if (number < flagDefinitions.size()) {
-        return flagDefinitions.getDefinition(number).name;
-    }
-    throw pex::exceptions::RuntimeError("No flag for PsfFlux numbered: " + std::to_string(number));
-}
-
-std::size_t PsfFluxAlgorithm::getFlagCount() {
-    return flagDefinitions.size();
+FlagDefinitionList const & PsfFluxAlgorithm::getFlagDefinitions() {
+    return flagDefinitions;
 }
 
 
@@ -86,7 +62,7 @@ PsfFluxAlgorithm::PsfFluxAlgorithm(
     _centroidExtractor(schema, name)
 {
     _flagHandler = FlagHandler::addFields(schema, name,
-                                          getFlagDefinitions().begin(), getFlagDefinitions().end());
+                                          getFlagDefinitions());
 }
 
 void PsfFluxAlgorithm::measure(
@@ -105,8 +81,8 @@ void PsfFluxAlgorithm::measure(
     afw::geom::Box2I fitBBox = psfImage->getBBox();
     fitBBox.clip(exposure.getBBox());
     if (fitBBox != psfImage->getBBox()) {
-        _flagHandler.setValue(measRecord, Flags::FAILURE.number, true);  // if we had a suspect flag, we'd set that instead
-        _flagHandler.setValue(measRecord, Flags::EDGE.number, true);
+        _flagHandler.setValue(measRecord, FAILURE.number, true);  // if we had a suspect flag, we'd set that instead
+        _flagHandler.setValue(measRecord, EDGE.number, true);
     }
     afw::detection::Footprint fitRegion(fitBBox);
     if (!_ctrl.badMaskPlanes.empty()) {
@@ -123,8 +99,8 @@ void PsfFluxAlgorithm::measure(
     if (fitRegion.getArea() == 0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            Flags::NO_GOOD_PIXELS.doc,
-            Flags::NO_GOOD_PIXELS.number
+            NO_GOOD_PIXELS.doc,
+            NO_GOOD_PIXELS.number
         );
     }
     typedef afw::detection::Psf::Pixel PsfPixel;
@@ -174,8 +150,13 @@ PsfFluxTransform::PsfFluxTransform(
 ) :
     FluxTransform{name, mapper}
 {
-    for (auto flag = getFlagDefinitions().begin() + 1; flag < getFlagDefinitions().end(); flag++) {
-        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(name + "_" + flag->name).key);
+    for (std::size_t i = 0; i < PsfFluxAlgorithm::getFlagDefinitions().size(); i++) {
+        FlagDefinition const & flag = PsfFluxAlgorithm::getFlagDefinitions()[i];
+        if (flag == PsfFluxAlgorithm::FAILURE) continue;
+        if (mapper.getInputSchema().getNames().count(name + "_" + flag.name) == 0) continue;
+        afw::table::Key<afw::table::Flag> key = mapper.getInputSchema().find<afw::table::Flag>(
+            name + "_" + flag.name).key;
+        mapper.addMapping(key);
     }
 }
 

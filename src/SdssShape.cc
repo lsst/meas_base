@@ -44,52 +44,20 @@ namespace afwTable = lsst::afw::table;
 
 namespace lsst { namespace meas { namespace base {
 namespace {
-FlagDefinitions flagDefinitions;
-FlagDefinitions & getFlagDefinitions() {
-    return flagDefinitions;
-};
+FlagDefinitionList flagDefinitions;
 } // end anonymous
 
-struct SdssShapeAlgorithm::Flags {
-    static FlagDefinition FAILURE;
-    static FlagDefinition UNWEIGHTED_BAD;
-    static FlagDefinition UNWEIGHTED;
-    static FlagDefinition SHIFT;
-    static FlagDefinition MAXITER;
-    static FlagDefinition PSF_SHAPE_BAD;  // NOTE: PSF_SHAPE_BAD must be the last entry in the enum list
-};
-FlagDefinition SdssShapeAlgorithm::Flags::FAILURE = flagDefinitions.add("flag", "general failure flag, set if anything went wrong");
-FlagDefinition SdssShapeAlgorithm::Flags::UNWEIGHTED_BAD = flagDefinitions.add("flag_unweightedBad", "Both weighted and unweighted moments were invalid");
-FlagDefinition SdssShapeAlgorithm::Flags::UNWEIGHTED = flagDefinitions.add("flag_unweighted", "Weighted moments converged to an invalid value; using unweighted moments");
-FlagDefinition SdssShapeAlgorithm::Flags::SHIFT = flagDefinitions.add("flag_shift", "centroid shifted by more than the maximum allowed amount");
-FlagDefinition SdssShapeAlgorithm::Flags::MAXITER = flagDefinitions.add("flag_maxIter", "Too many iterations in adaptive moments");
-FlagDefinition SdssShapeAlgorithm::Flags::PSF_SHAPE_BAD = flagDefinitions.add("flag_psf", "Failure in measuring PSF model shape");
+FlagDefinition const SdssShapeAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
+FlagDefinition const SdssShapeAlgorithm::UNWEIGHTED_BAD = flagDefinitions.add("flag_unweightedBad", "Both weighted and unweighted moments were invalid");
+FlagDefinition const SdssShapeAlgorithm::UNWEIGHTED = flagDefinitions.add("flag_unweighted", "Weighted moments converged to an invalid value; using unweighted moments");
+FlagDefinition const SdssShapeAlgorithm::SHIFT = flagDefinitions.add("flag_shift", "centroid shifted by more than the maximum allowed amount");
+FlagDefinition const SdssShapeAlgorithm::MAXITER = flagDefinitions.add("flag_maxIter", "Too many iterations in adaptive moments");
+FlagDefinition const SdssShapeAlgorithm::PSF_SHAPE_BAD = flagDefinitions.add("flag_psf", "Failure in measuring PSF model shape");
 
-FlagDefinition const & SdssShapeAlgorithm::getDefinition(std::string name) {
-    for (FlagDefinition const * iter = flagDefinitions.begin(); iter < flagDefinitions.end(); iter++) {
-        if (name == iter->name) {
-            return * iter;
-        }
-    }
-    throw pex::exceptions::RuntimeError("No flag for SdssShape named: " + name);
-}
-
-std::string const & SdssShapeAlgorithm::getFlagName(std::size_t number) {
-    if (number < flagDefinitions.size()) {
-        return flagDefinitions.getDefinition(number).name;
-    }
-    throw pex::exceptions::RuntimeError("No flag for SdssShape numbered: " + std::to_string(number));
-}
-
-std::size_t SdssShapeAlgorithm::getFlagCount() {
-    return flagDefinitions.size();
-}
-
-
-FlagDefinitions & SdssShapeAlgorithm::getFlagDefinitions() {
-    assert(N_FLAGS == flagDefinitions.size());
+FlagDefinitionList const & SdssShapeAlgorithm::getFlagDefinitions() {
     return flagDefinitions;
 }
+
 
 namespace {  // anonymous
 
@@ -460,7 +428,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
 
     if (std::isnan(xcen) || std::isnan(ycen)) {
         // Can't do anything
-        shape->flags[SdssShapeAlgorithm::Flags::UNWEIGHTED_BAD.number] = true;
+        shape->flags[SdssShapeAlgorithm::UNWEIGHTED_BAD.number] = true;
         return false;
     }
 
@@ -473,7 +441,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
         std::tuple<std::pair<bool, double>, double, double, double> weights =
             getWeights(sigma11W, sigma12W, sigma22W);
         if (!std::get<0>(weights).first) {
-            shape->flags[SdssShapeAlgorithm::Flags::UNWEIGHTED.number] = true;
+            shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number] = true;
             break;
         }
 
@@ -510,7 +478,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
 
         if (calcmom<false>(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22,
                            &I0, &sum, &sumx, &sumy, &sumxx, &sumxy, &sumyy, &sums4, negative) < 0) {
-            shape->flags[SdssShapeAlgorithm::Flags::UNWEIGHTED.number] = true;
+            shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number] = true;
             break;
         }
 
@@ -527,7 +495,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
         shape->y = sumy/sum;
 
         if (fabs(shape->x - xcen0) > shiftmax || fabs(shape->y - ycen0) > shiftmax) {
-            shape->flags[SdssShapeAlgorithm::Flags::SHIFT.number] = true;
+            shape->flags[SdssShapeAlgorithm::SHIFT.number] = true;
         }
 /*
  * OK, we have the centre. Proceed to find the second moments.
@@ -537,7 +505,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
         float const sigma12_ow = sumxy/sum; //                 xx, xy, and yy
 
         if (sigma11_ow <= 0 || sigma22_ow <= 0) {
-            shape->flags[SdssShapeAlgorithm::Flags::UNWEIGHTED.number] = true;
+            shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number] = true;
             break;
         }
 
@@ -585,7 +553,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
             std::tuple<std::pair<bool, double>, double, double, double> weights =
                 getWeights(sigma11_ow, sigma12_ow, sigma22_ow);
             if (!std::get<0>(weights).first) {
-                shape->flags[SdssShapeAlgorithm::Flags::UNWEIGHTED.number] = true;
+                shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number] = true;
                 break;
             }
 
@@ -600,7 +568,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
             weights = getWeights(n11, n12, n22);
             if (!std::get<0>(weights).first) {
                 // product-of-Gaussians assumption failed
-                shape->flags[SdssShapeAlgorithm::Flags::UNWEIGHTED.number] = true;
+                shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number] = true;
                 break;
             }
 
@@ -610,29 +578,29 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
         }
 
         if (sigma11W <= 0 || sigma22W <= 0) {
-            shape->flags[SdssShapeAlgorithm::Flags::UNWEIGHTED.number] = true;
+            shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number] = true;
             break;
         }
     }
 
     if (iter == maxIter) {
-        shape->flags[SdssShapeAlgorithm::Flags::UNWEIGHTED.number] = true;
-        shape->flags[SdssShapeAlgorithm::Flags::MAXITER.number] = true;
+        shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number] = true;
+        shape->flags[SdssShapeAlgorithm::MAXITER.number] = true;
     }
 
     if (sumxx + sumyy == 0.0) {
-        shape->flags[SdssShapeAlgorithm::Flags::UNWEIGHTED.number] = true;
+        shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number] = true;
     }
 /*
  * Problems; try calculating the un-weighted moments
  */
-    if (shape->flags[SdssShapeAlgorithm::Flags::UNWEIGHTED.number]) {
+    if (shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number]) {
         w11 = w22 = w12 = 0;
         if (calcmom<false>(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22,
                            &I0, &sum, &sumx, &sumy, &sumxx, &sumxy, &sumyy, NULL, negative) < 0 ||
 	    (!negative && sum <= 0) || (negative && sum >= 0)) {
-            shape->flags[SdssShapeAlgorithm::Flags::UNWEIGHTED.number] = false;
-            shape->flags[SdssShapeAlgorithm::Flags::UNWEIGHTED_BAD.number] = true;
+            shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number] = false;
+            shape->flags[SdssShapeAlgorithm::UNWEIGHTED_BAD.number] = true;
 
             if (sum > 0) {
                 shape->xx = 1/12.0;      // a single pixel
@@ -662,7 +630,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
                 ImageAdaptor<ImageT>().getVariance(mimage, ix, iy); // XXX Overestimate as it includes object
 
             if (bkgd_var > 0.0) {                                   // NaN is not > 0.0
-                if (!(shape->flags[SdssShapeAlgorithm::Flags::UNWEIGHTED.number])) {
+                if (!(shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number])) {
                     Matrix4d fisher = calc_fisher(*shape, bkgd_var); // Fisher matrix
                     Matrix4d cov = fisher.inverse();
                     // convention in afw::geom::ellipses is to order moments (xx, yy, xy),
@@ -737,10 +705,14 @@ SdssShapeResultKey SdssShapeResultKey::addFields(
         "count*pixel^2"
     );
 
-    // Skip the last flag if not recording the PSF shape.
-    r._flagHandler = FlagHandler::addFields(schema, name, getFlagDefinitions().begin(),
-                                            getFlagDefinitions().end() - (r._includePsf ? 0 : 1));
-
+    // Skip the psf flag if not recording the PSF shape.
+    if (r._includePsf) {
+        r._flagHandler = FlagHandler::addFields(schema, name, SdssShapeAlgorithm::getFlagDefinitions());
+    }
+    else {
+        r._flagHandler = FlagHandler::addFields(schema, name, SdssShapeAlgorithm::getFlagDefinitions(),
+                            {SdssShapeAlgorithm::PSF_SHAPE_BAD});
+    }
     return r;
 }
 
@@ -755,10 +727,10 @@ SdssShapeResultKey::SdssShapeResultKey(afw::table::SubSchema const & s) :
     // The input SubSchema may optionally provide for a PSF.
     try {
         _psfShapeResult = afwTable::QuadrupoleKey(s["psf"]);
-        _flagHandler = FlagHandler(s, getFlagDefinitions().begin(), getFlagDefinitions().end());
+        _flagHandler = FlagHandler(s, SdssShapeAlgorithm::getFlagDefinitions());
         _includePsf = true;
     } catch (pex::exceptions::NotFoundError& e) {
-        _flagHandler = FlagHandler(s, getFlagDefinitions().begin(), getFlagDefinitions().end() - 1);
+        _flagHandler = FlagHandler(s, SdssShapeAlgorithm::getFlagDefinitions(), {SdssShapeAlgorithm::PSF_SHAPE_BAD});
         _includePsf = false;
     }
 }
@@ -771,7 +743,8 @@ SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const & record) c
     result.flux_xx_Cov = record.get(_flux_xx_Cov);
     result.flux_yy_Cov = record.get(_flux_yy_Cov);
     result.flux_xy_Cov = record.get(_flux_xy_Cov);
-    for (unsigned int n = 0; n < SdssShapeAlgorithm::N_FLAGS - (_includePsf ? 0 : 1); ++n) {
+    for (unsigned int n = 0; n < SdssShapeAlgorithm::N_FLAGS; ++n) {
+        if (n == SdssShapeAlgorithm::PSF_SHAPE_BAD.number && !_includePsf) continue;
         result.flags[n] = _flagHandler.getValue(record, n);
     }
     return result;
@@ -788,7 +761,8 @@ void SdssShapeResultKey::set(afw::table::BaseRecord & record, SdssShapeResult co
     record.set(_flux_xx_Cov, value.flux_xx_Cov);
     record.set(_flux_yy_Cov, value.flux_yy_Cov);
     record.set(_flux_xy_Cov, value.flux_xy_Cov);
-    for (unsigned int n = 0; n < SdssShapeAlgorithm::N_FLAGS - (_includePsf ? 0 : 1); ++n) {
+    for (unsigned int n = 0; n < SdssShapeAlgorithm::N_FLAGS; ++n) {
+        if (n == SdssShapeAlgorithm::PSF_SHAPE_BAD.number && !_includePsf) continue;
         _flagHandler.setValue(record, n, value.flags[n]);
     }
 }
@@ -852,17 +826,17 @@ SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(
 
     SdssShapeResult result;
     try {
-        result.flags[Flags::FAILURE.number] = !getAdaptiveMoments(
+        result.flags[FAILURE.number] = !getAdaptiveMoments(
             image, control.background, xcen, ycen, shiftmax, &result,
             control.maxIter, control.tol1, control.tol2, negative
         );
     } catch (pex::exceptions::Exception & err) {
-        result.flags[Flags::FAILURE.number] = true;
+        result.flags[FAILURE.number] = true;
     }
-    if (result.flags[Flags::UNWEIGHTED.number] || result.flags[Flags::SHIFT.number]) {
+    if (result.flags[UNWEIGHTED.number] || result.flags[SHIFT.number]) {
         // These are also considered fatal errors in terms of the quality of the results,
         // even though they do produce some results.
-        result.flags[Flags::FAILURE.number] = true;
+        result.flags[FAILURE.number] = true;
     }
     if (result.getQuadrupole().getIxx()*result.getQuadrupole().getIyy() <
             (1.0 + 1.0e-6)*result.getQuadrupole().getIxy()*result.getQuadrupole().getIxy())
@@ -870,7 +844,7 @@ SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(
                   // value of epsilon used here is a magic number. DM-5801 is supposed to figure out if we are
                   // to keep this value.
         {
-        if (!result.flags[Flags::FAILURE.number]) {
+        if (!result.flags[FAILURE.number]) {
             throw LSST_EXCEPT(
                 pex::exceptions::LogicError,
                 "Should not get singular moments unless a flag is set");
@@ -977,12 +951,12 @@ void SdssShapeAlgorithm::measure(
         try {
             PTR(afw::detection::Psf const) psf = exposure.getPsf();
             if (!psf) {
-                result.flags[Flags::PSF_SHAPE_BAD.number] = true;
+                result.flags[PSF_SHAPE_BAD.number] = true;
             } else {
                 _resultKey.setPsfShape(measRecord, psf->computeShape(afw::geom::Point2D(result.x, result.y)));
             }
         } catch (pex::exceptions::Exception & err) {
-            result.flags[Flags::PSF_SHAPE_BAD.number] = true;
+            result.flags[PSF_SHAPE_BAD.number] = true;
         }
     }
 
@@ -1030,9 +1004,13 @@ SdssShapeTransform::SdssShapeTransform(
     _transformPsf = mapper.getInputSchema().getNames().count("sdssShape_flag_psf") ? true : false;
 
     // Skip the last flag if not transforming the PSF shape.
-    for (auto flag = getFlagDefinitions().begin() + 1; flag < getFlagDefinitions().end() - (_transformPsf ? 0 : 1); flag++) {
-        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(
-                          mapper.getInputSchema().join(name, flag->name)).key);
+    for (std::size_t i = 0; i < SdssShapeAlgorithm::getFlagDefinitions().size(); i++) {
+        FlagDefinition const & flag = SdssShapeAlgorithm::getFlagDefinitions()[i];
+        if (flag == SdssShapeAlgorithm::FAILURE) continue;
+        if (mapper.getInputSchema().getNames().count(name + "_" + flag.name) == 0) continue;
+        afw::table::Key<afw::table::Flag> key = mapper.getInputSchema().find<afw::table::Flag>(
+            name + "_" + flag.name).key;
+        mapper.addMapping(key);
     }
 
     _outShapeKey = ShapeResultKey::addFields(mapper.editOutputSchema(), name, "Shape in celestial moments",

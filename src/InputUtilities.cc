@@ -126,13 +126,13 @@ afw::geom::Point2D SafeCentroidExtractor::operator()(
         result = extractPeak(record, _name);
         if (!_isCentroider) {
             // set the general flag, because using the Peak might affect the current measurement
-            flags.setValue(record, FlagHandler::FAILURE, true);
+            flags.setValue(record, flags.getFlagNumber("flag"), true);
         }
     } else if (!_isCentroider && record.getTable()->getCentroidFlagKey().isValid()
                && record.getCentroidFlag()) {
         // we got a usable value, but the centroid flag is still be set, and that might affect
         // the current measurement
-        flags.setValue(record, FlagHandler::FAILURE, true);
+        flags.setValue(record, flags.getFlagNumber("flag"), true);
     }
     return result;
 }
@@ -193,12 +193,12 @@ afw::geom::ellipses::Quadrupole SafeShapeExtractor::operator()(
         throw LSST_EXCEPT(
             MeasurementError,
             (boost::format("%s: Shape needed, and Shape slot measurement failed.") % _name).str(),
-            FlagHandler::FAILURE
+            flags.getFlagNumber("flag")
         );
     } else if (record.getTable()->getShapeFlagKey().isValid() && record.getShapeFlag()) {
         // we got a usable value, but the shape flag might still be set, and that might affect
         // the current measurement
-        flags.setValue(record, FlagHandler::FAILURE, true);
+        flags.setValue(record, flags.getFlagNumber("flag"), true);
     }
     return result;
 }

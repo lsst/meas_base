@@ -31,7 +31,7 @@ import lsst.meas.base
 import lsst.meas.base.tests
 import lsst.afw.table
 from lsst.meas.base.baseLib import MeasurementError
-from lsst.meas.base import FlagDefinition, FlagDefinitions, FlagHandler, FlagDefinitionVector
+from lsst.meas.base import FlagDefinition, FlagDefinitionList, FlagHandler
 from lsst.meas.base.tests import (AlgorithmTestCase)
 
 import lsst.pex.exceptions
@@ -80,7 +80,7 @@ class PythonPlugin(SingleFramePlugin):
 
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
-        flagDefs = FlagDefinitions(3)
+        flagDefs = FlagDefinitionList()
         flagDefs.add("flag", "General Failure error")
         flagDefs.add("flag_containsNan", "Measurement area contains a nan")
         flagDefs.add("flag_edge", "Measurement area over edge")
@@ -108,8 +108,8 @@ class PythonPlugin(SingleFramePlugin):
 
         # If the measurement box falls outside the exposure, raise the edge MeasurementError
         if not exposure.getBBox().contains(bbox):
-            flagNumber = self.flagHandler.getFlagNumber("flag_edge")
-            raise MeasurementError(self.flagHandler.getDefinition(flagNumber).doc, flagNumber)
+            flagDef = self.flagHandler.getDefinition("flag_edge")
+            raise MeasurementError(flagDef.doc, flagDef.number)
 
         # Sum the pixels inside the bounding box
         flux = lsst.afw.image.ImageF(exposure.getMaskedImage().getImage(), bbox).getArray().sum()
@@ -117,8 +117,8 @@ class PythonPlugin(SingleFramePlugin):
 
         # If there was a nan inside the bounding box, the flux will still be nan
         if np.isnan(flux):
-            flagNumber = self.flagHandler.getFlagNumber("flag_containsNan")
-            raise MeasurementError(self.flagHandler.getDefinition(flagNumber).doc, flagNumber)
+            flagDef = self.flagHandler.getDefinition("flag_containsNan")
+            raise MeasurementError(flagDef.doc, flagDef.number)
 
         if self.config.flux0 is not None:
             if self.config.flux0 == 0:
@@ -171,15 +171,11 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
 
         # This is a FlagDefinition structure like a plugin might have
-        FAILURE = 0
-        FIRST = 1
-        SECOND = 2
-        flagDefs = FlagDefinitions()
-        flagDefs.add("General Failure", "general failure error"),
-        flagDefs.add("1st error", "this is the first failure type"),
-        flagDefs.add("2nd error", "this is the second failure type")
+        flagDefs = FlagDefinitionList()
+        FAILURE = flagDefs.add("General Failure", "general failure error")
+        FIRST = flagDefs.add("1st error", "this is the first failure type")
+        SECOND = flagDefs.add("2nd error", "this is the second failure type")
         fh = FlagHandler.addFields(schema, "test", flagDefs)
-
         # Check to be sure that the FlagHandler was correctly initialized
         for index in range(flagDefs.size()):
             self.assertEqual(flagDefs.getDefinition(index).name, fh.getDefinition(index).name)
@@ -190,30 +186,30 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         # Now check to be sure that all of the known failures set the bits correctly
         record = catalog.addNew()
         fh.handleFailure(record)
-        self.assertTrue(fh.getValue(record, FAILURE))
-        self.assertFalse(fh.getValue(record, FIRST))
-        self.assertFalse(fh.getValue(record, SECOND))
+        self.assertTrue(fh.getValue(record, FAILURE.number))
+        self.assertFalse(fh.getValue(record, FIRST.number))
+        self.assertFalse(fh.getValue(record, SECOND.number))
         record = catalog.addNew()
 
-        error = MeasurementError(fh.getDefinition(FAILURE).doc, FAILURE)
+        error = MeasurementError(FAILURE.doc, FAILURE.number)
         fh.handleFailure(record, error.cpp)
-        self.assertTrue(fh.getValue(record, FAILURE))
-        self.assertFalse(fh.getValue(record, FIRST))
-        self.assertFalse(fh.getValue(record, SECOND))
+        self.assertTrue(fh.getValue(record, FAILURE.number))
+        self.assertFalse(fh.getValue(record, FIRST.number))
+        self.assertFalse(fh.getValue(record, SECOND.number))
 
         record = catalog.addNew()
-        error = MeasurementError(fh.getDefinition(FIRST).doc, FIRST)
+        error = MeasurementError(FIRST.doc, FIRST.number)
         fh.handleFailure(record, error.cpp)
-        self.assertTrue(fh.getValue(record, FAILURE))
-        self.assertTrue(fh.getValue(record, FIRST))
-        self.assertFalse(fh.getValue(record, SECOND))
+        self.assertTrue(fh.getValue(record, FAILURE.number))
+        self.assertTrue(fh.getValue(record, FIRST.number))
+        self.assertFalse(fh.getValue(record, SECOND.number))
 
         record = catalog.addNew()
-        error = MeasurementError(fh.getDefinition(SECOND).doc, SECOND)
+        error = MeasurementError(SECOND.doc, SECOND.number)
         fh.handleFailure(record, error.cpp)
-        self.assertTrue(fh.getValue(record, FAILURE))
-        self.assertFalse(fh.getValue(record, FIRST))
-        self.assertTrue(fh.getValue(record, SECOND))
+        self.assertTrue(fh.getValue(record, FAILURE.number))
+        self.assertFalse(fh.getValue(record, FIRST.number))
+        self.assertTrue(fh.getValue(record, SECOND.number))
 
     # This and the following tests using the toy plugin, and demonstrate how
     # the flagHandler is used.

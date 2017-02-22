@@ -73,13 +73,12 @@ public:
         ),
         _centroidExtractor(schema, name, true)
     {
-        static lsst::meas::base::FlagDefinitions flagDefs = {{
+        static lsst::meas::base::FlagDefinitionList flagDefs = {{
             {"flag", "general failure flag, set if anything went wrong"},
             {"flag_noCounts", "Object to be centroided has no counts"},
             {"flag_edge", "Object too close to edge"}
         }};
-        _flagHandler = lsst::meas::base::FlagHandler::addFields(schema, name, flagDefs.begin(),
-                       flagDefs.end());
+        _flagHandler = lsst::meas::base::FlagHandler::addFields(schema, name, flagDefs);
     }
     
     void measure(

@@ -27,39 +27,15 @@
 
 namespace lsst { namespace meas { namespace base {
 namespace {
-FlagDefinitions flagDefinitions;
-FlagDefinitions & getFlagDefinitions() {
-    return flagDefinitions;
-};
+FlagDefinitionList flagDefinitions;
 } // end anonymous
 
-struct NaiveCentroidAlgorithm::Flags {
-    static FlagDefinition FAILURE;
-    static FlagDefinition NO_COUNTS;
-    static FlagDefinition EDGE;
-};
-FlagDefinition NaiveCentroidAlgorithm::Flags::FAILURE = flagDefinitions.add("flag", "general failure flag, set if anything went wrong");
-FlagDefinition NaiveCentroidAlgorithm::Flags::NO_COUNTS = flagDefinitions.add("flag_noCounts", "Object to be centroided has no counts");
-FlagDefinition NaiveCentroidAlgorithm::Flags::EDGE = flagDefinitions.add("flag_edge", "Object too close to edge");
+FlagDefinition const NaiveCentroidAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
+FlagDefinition const NaiveCentroidAlgorithm::NO_COUNTS = flagDefinitions.add("flag_noCounts", "Object to be centroided has no counts");
+FlagDefinition const NaiveCentroidAlgorithm::EDGE = flagDefinitions.add("flag_edge", "Object too close to edge");
 
-FlagDefinition const & NaiveCentroidAlgorithm::getDefinition(std::string name) {
-    for (FlagDefinition const * iter = flagDefinitions.begin(); iter < flagDefinitions.end(); iter++) {
-        if (name == iter->name) {
-            return * iter;
-        }
-    }
-    throw pex::exceptions::RuntimeError("No flag for NaiveCentroid named: " + name);
-}
-
-std::string const & NaiveCentroidAlgorithm::getFlagName(std::size_t number) {
-    if (number < flagDefinitions.size()) {
-        return flagDefinitions.getDefinition(number).name;
-    }
-    throw pex::exceptions::RuntimeError("No flag for NaiveCentroid numbered: " + std::to_string(number));
-}
-
-std::size_t NaiveCentroidAlgorithm::getFlagCount() {
-    return flagDefinitions.size();
+FlagDefinitionList const & NaiveCentroidAlgorithm::getFlagDefinitions() {
+    return flagDefinitions;
 }
 
 
@@ -77,7 +53,7 @@ NaiveCentroidAlgorithm::NaiveCentroidAlgorithm(
         CentroidResultKey::addFields(schema, name, "centroid from Naive Centroid algorithm", NO_UNCERTAINTY)
     ),
     _flagHandler(FlagHandler::addFields(schema, name,
-                                          getFlagDefinitions().begin(), getFlagDefinitions().end())),
+                                          getFlagDefinitions())),
     _centroidExtractor(schema, name, true),
     _centroidChecker(schema, name, ctrl.doFootprintCheck, ctrl.maxDistToPeak)
 {
@@ -107,8 +83,8 @@ void NaiveCentroidAlgorithm::measure(
 
         throw LSST_EXCEPT(
             MeasurementError,
-            Flags::EDGE.doc,
-            Flags::EDGE.number
+            EDGE.doc,
+            EDGE.number
         );
     }
 
@@ -123,8 +99,8 @@ void NaiveCentroidAlgorithm::measure(
     if (sum == 0.0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            Flags::NO_COUNTS.doc,
-            Flags::NO_COUNTS.number
+            NO_COUNTS.doc,
+            NO_COUNTS.number
         );
     }
 
@@ -154,9 +130,13 @@ NaiveCentroidTransform::NaiveCentroidTransform(
 ) :
     CentroidTransform{name, mapper}
 {
-    for (auto flag = getFlagDefinitions().begin() + 1; flag < getFlagDefinitions().end(); ++flag) {
-        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(
-                          mapper.getInputSchema().join(name, flag->name)).key);
+    for (std::size_t i = 0; i < NaiveCentroidAlgorithm::getFlagDefinitions().size(); i++) {
+        FlagDefinition const & flag = NaiveCentroidAlgorithm::getFlagDefinitions()[i];
+        if (flag == NaiveCentroidAlgorithm::FAILURE) continue;
+        if (mapper.getInputSchema().getNames().count(name + "_" + flag.name) == 0) continue;
+        afw::table::Key<afw::table::Flag> key = mapper.getInputSchema().find<afw::table::Flag>(
+            name + "_" + flag.name).key;
+        mapper.addMapping(key);
     }
 }
 

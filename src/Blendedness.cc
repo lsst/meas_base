@@ -35,39 +35,15 @@
 
 namespace lsst { namespace meas { namespace base {
 namespace {
-FlagDefinitions flagDefinitions;
-FlagDefinitions & getFlagDefinitions() {
-    return flagDefinitions;
-};
+FlagDefinitionList flagDefinitions;
 } // end anonymous
 
-struct BlendednessAlgorithm::Flags {
-    static FlagDefinition FAILURE;
-    static FlagDefinition NO_CENTROID;
-    static FlagDefinition NO_SHAPE;
-};
-FlagDefinition BlendednessAlgorithm::Flags::FAILURE = flagDefinitions.add("flag", "general failure flag");
-FlagDefinition BlendednessAlgorithm::Flags::NO_CENTROID = flagDefinitions.add("flag_noCentroid", "Object has no centroid");
-FlagDefinition BlendednessAlgorithm::Flags::NO_SHAPE = flagDefinitions.add("flag_noShape", "Object has no shape");
+FlagDefinition const BlendednessAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
+FlagDefinition const BlendednessAlgorithm::NO_CENTROID = flagDefinitions.add("flag_noCentroid", "Object has no centroid");
+FlagDefinition const BlendednessAlgorithm::NO_SHAPE = flagDefinitions.add("flag_noShape", "Object has no shape");
 
-FlagDefinition const & BlendednessAlgorithm::getDefinition(std::string name) {
-    for (FlagDefinition const * iter = flagDefinitions.begin(); iter < flagDefinitions.end(); iter++) {
-        if (name == iter->name) {
-            return * iter;
-        }
-    }
-    throw pex::exceptions::RuntimeError("No flag for Blendedness named: " + name);
-}
-
-std::string const & BlendednessAlgorithm::getFlagName(std::size_t number) {
-    if (number < flagDefinitions.size()) {
-        return flagDefinitions.getDefinition(number).name;
-    }
-    throw pex::exceptions::RuntimeError("No flag for Blendedness numbered: " + std::to_string(number));
-}
-
-std::size_t BlendednessAlgorithm::getFlagCount() {
-    return flagDefinitions.size();
+FlagDefinitionList const & BlendednessAlgorithm::getFlagDefinitions() {
+    return flagDefinitions;
 }
 
 
@@ -304,7 +280,7 @@ BlendednessAlgorithm::BlendednessAlgorithm(Control const & ctrl,  std::string co
     }
     if (_ctrl.doShape || _ctrl.doFlux) {
         _flagHandler = FlagHandler::addFields(schema, name,
-                                              getFlagDefinitions().begin(), getFlagDefinitions().end());
+                                              getFlagDefinitions());
     }
 }
 
@@ -336,25 +312,25 @@ void BlendednessAlgorithm::_measureMoments(
                 // don't set general flag, because even a failed centroid should
                 // just fall back to the peak, and that should be fine for this
                 // measurement.
-                _flagHandler.setValue(child, Flags::NO_CENTROID.number, true);
+                _flagHandler.setValue(child, NO_CENTROID.number, true);
             }
         }
         if (child.getTable()->getShapeFlagKey().isValid()) {
             if (child.getShapeFlag()) {
-                _flagHandler.setValue(child, Flags::NO_SHAPE.number, true);
-                _flagHandler.setValue(child, Flags::FAILURE.number, true);
+                _flagHandler.setValue(child, NO_SHAPE.number, true);
+                _flagHandler.setValue(child, FAILURE.number, true);
             }
         }
         if (!(child.getShape().getDeterminant() >= 0.0)) {
             // shape flag should have been set already, but we're paranoid
-            _flagHandler.setValue(child, Flags::NO_SHAPE.number, true);
-            _flagHandler.setValue(child, Flags::FAILURE.number, true);
+            _flagHandler.setValue(child, NO_SHAPE.number, true);
+            _flagHandler.setValue(child, FAILURE.number, true);
             fatal = true;
         }
         if (!(std::isfinite(child.getX()) && std::isfinite(child.getY()))) {
             // shape flag should have been set already, but we're paranoid
-            _flagHandler.setValue(child, Flags::NO_CENTROID.number, true);
-            _flagHandler.setValue(child, Flags::FAILURE.number, true);
+            _flagHandler.setValue(child, NO_CENTROID.number, true);
+            _flagHandler.setValue(child, FAILURE.number, true);
             fatal = true;
         }
         if (fatal) return;
@@ -416,7 +392,7 @@ void BlendednessAlgorithm::measureParentPixels(
             // We can get NaNs in the absolute measure if both parent and child have only negative
             // biased-corrected fluxes (which we clip to zero).  We can't really recover from this,
             // so we should set the flag.
-            _flagHandler.setValue(child, Flags::FAILURE.number, true);
+            _flagHandler.setValue(child, FAILURE.number, true);
         }
     }
 }

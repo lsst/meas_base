@@ -35,43 +35,17 @@
 
 namespace lsst { namespace meas { namespace base {
 namespace {
-FlagDefinitions flagDefinitions;
-FlagDefinitions & getFlagDefinitions() {
-    return flagDefinitions;
-};
+FlagDefinitionList flagDefinitions;
 } // end anonymous
 
-struct SdssCentroidAlgorithm::Flags {
-    static FlagDefinition FAILURE;
-    static FlagDefinition EDGE;
-    static FlagDefinition NO_SECOND_DERIVATIVE;
-    static FlagDefinition ALMOST_NO_SECOND_DERIVATIVE;
-    static FlagDefinition NOT_AT_MAXIMUM;
-};
-FlagDefinition SdssCentroidAlgorithm::Flags::FAILURE = flagDefinitions.add("flag", "general failure flag, set if anything went wrong");
-FlagDefinition SdssCentroidAlgorithm::Flags::EDGE = flagDefinitions.add("flag_edge", "Object too close to edge");
-FlagDefinition SdssCentroidAlgorithm::Flags::NO_SECOND_DERIVATIVE = flagDefinitions.add("flag_noSecondDerivative", "Vanishing second derivative");
-FlagDefinition SdssCentroidAlgorithm::Flags::ALMOST_NO_SECOND_DERIVATIVE = flagDefinitions.add("flag_almostNoSecondDerivative", "Almost vanishing second derivative");
-FlagDefinition SdssCentroidAlgorithm::Flags::NOT_AT_MAXIMUM = flagDefinitions.add("flag_notAtMaximum", "Object is not at a maximum");
+FlagDefinition const SdssCentroidAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
+FlagDefinition const SdssCentroidAlgorithm::EDGE = flagDefinitions.add("flag_edge", "Object too close to edge");
+FlagDefinition const SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE = flagDefinitions.add("flag_noSecondDerivative", "Vanishing second derivative");
+FlagDefinition const SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE = flagDefinitions.add("flag_almostNoSecondDerivative", "Almost vanishing second derivative");
+FlagDefinition const SdssCentroidAlgorithm::NOT_AT_MAXIMUM = flagDefinitions.add("flag_notAtMaximum", "Object is not at a maximum");
 
-FlagDefinition const & SdssCentroidAlgorithm::getDefinition(std::string name) {
-    for (FlagDefinition const * iter = flagDefinitions.begin(); iter < flagDefinitions.end(); iter++) {
-        if (name == iter->name) {
-            return * iter;
-        }
-    }
-    throw pex::exceptions::RuntimeError("No flag for SdssCentroid named: " + name);
-}
-
-std::string const & SdssCentroidAlgorithm::getFlagName(std::size_t number) {
-    if (number < flagDefinitions.size()) {
-        return flagDefinitions.getDefinition(number).name;
-    }
-    throw pex::exceptions::RuntimeError("No flag for SdssCentroid numbered: " + std::to_string(number));
-}
-
-std::size_t SdssCentroidAlgorithm::getFlagCount() {
-    return flagDefinitions.size();
+FlagDefinitionList const & SdssCentroidAlgorithm::getFlagDefinitions() {
+    return flagDefinitions;
 }
 
 
@@ -176,16 +150,16 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     if (d2x == 0.0 || d2y == 0.0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            SdssCentroidAlgorithm::Flags::NO_SECOND_DERIVATIVE.doc,
-            SdssCentroidAlgorithm::Flags::NO_SECOND_DERIVATIVE.number
+            SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.doc,
+            SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.number
         );
     }
     if (d2x < 0.0 || d2y < 0.0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            SdssCentroidAlgorithm::Flags::NOT_AT_MAXIMUM.doc +
+            SdssCentroidAlgorithm::NOT_AT_MAXIMUM.doc +
                 (boost::format(": d2I/dx2, d2I/dy2 = %g %g") % d2x % d2y).str(),
-            SdssCentroidAlgorithm::Flags::NOT_AT_MAXIMUM.number
+            SdssCentroidAlgorithm::NOT_AT_MAXIMUM.number
         );
     }
 
@@ -195,9 +169,9 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     if (fabs(dx0) > 10.0 || fabs(dy0) > 10.0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            SdssCentroidAlgorithm::Flags::ALMOST_NO_SECOND_DERIVATIVE.doc +
+            SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE.doc +
                 (boost::format(": sx, d2x, sy, d2y = %f %f %f %f") % sx % d2x % sy % d2y).str(),
-            SdssCentroidAlgorithm::Flags::ALMOST_NO_SECOND_DERIVATIVE.number
+            SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE.number
         );
     }
 
@@ -298,17 +272,17 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     if (d2x == 0.0 || d2y == 0.0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            SdssCentroidAlgorithm::Flags::NO_SECOND_DERIVATIVE.doc,
-            SdssCentroidAlgorithm::Flags::NO_SECOND_DERIVATIVE.number
+            SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.doc,
+            SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.number
         );
     }
    if ((!negative && (d2x < 0.0 || d2y < 0.0)) ||
         ( negative && (d2x > 0.0 || d2y > 0.0))) {
         throw LSST_EXCEPT(
             MeasurementError,
-            SdssCentroidAlgorithm::Flags::NOT_AT_MAXIMUM.doc +
+            SdssCentroidAlgorithm::NOT_AT_MAXIMUM.doc +
                 (boost::format(": d2I/dx2, d2I/dy2 = %g %g") % d2x % d2y).str(),
-            SdssCentroidAlgorithm::Flags::NOT_AT_MAXIMUM.number
+            SdssCentroidAlgorithm::NOT_AT_MAXIMUM.number
         );
     }
 
@@ -318,9 +292,9 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     if (fabs(dx0) > 10.0 || fabs(dy0) > 10.0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            SdssCentroidAlgorithm::Flags::NO_SECOND_DERIVATIVE.doc +
+            SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.doc +
                 (boost::format(": sx, d2x, sy, d2y = %f %f %f %f") % sx % d2x % sy % d2y).str(),
-            SdssCentroidAlgorithm::Flags::ALMOST_NO_SECOND_DERIVATIVE.number
+            SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE.number
         );
     }
 
@@ -431,8 +405,8 @@ smoothAndBinImage(CONST_PTR(lsst::afw::detection::Psf) psf,
     } catch (pex::exceptions::LengthError & err) {
         throw LSST_EXCEPT(
             MeasurementError,
-            SdssCentroidAlgorithm::Flags::EDGE.doc,
-            SdssCentroidAlgorithm::Flags::EDGE.number
+            SdssCentroidAlgorithm::EDGE.doc,
+            SdssCentroidAlgorithm::EDGE.number
         );
     }
     PTR(MaskedImageT) binnedImage = lsst::afw::math::binImage(*subImage, binX, binY, lsst::afw::math::MEAN);
@@ -461,7 +435,7 @@ SdssCentroidAlgorithm::SdssCentroidAlgorithm(
         CentroidResultKey::addFields(schema, name, "centroid from Sdss Centroid algorithm", SIGMA_ONLY)
     ),
     _flagHandler(FlagHandler::addFields(schema, name,
-                                          getFlagDefinitions().begin(), getFlagDefinitions().end())),
+                                          getFlagDefinitions())),
     _centroidExtractor(schema, name, true),
     _centroidChecker(schema, name, ctrl.doFootprintCheck, ctrl.maxDistToPeak)
 {   
@@ -496,8 +470,8 @@ void SdssCentroidAlgorithm::measure(
     if (!image.getBBox().contains(lsst::afw::geom::Extent2I(x,y) + image.getXY0())) {
             throw LSST_EXCEPT(
             lsst::meas::base::MeasurementError,
-            Flags::EDGE.doc,
-            Flags::EDGE.number
+            EDGE.doc,
+            EDGE.number
         );
     }
 
@@ -580,9 +554,13 @@ SdssCentroidTransform::SdssCentroidTransform(
 ) :
     CentroidTransform{name, mapper}
 {
-    for (auto flag = getFlagDefinitions().begin() + 1; flag < getFlagDefinitions().end(); ++flag) {
-        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(
-                          mapper.getInputSchema().join(name, flag->name)).key);
+    for (std::size_t i = 0; i < SdssCentroidAlgorithm::getFlagDefinitions().size(); i++) {
+        FlagDefinition const & flag = SdssCentroidAlgorithm::getFlagDefinitions()[i];
+        if (flag == SdssCentroidAlgorithm::FAILURE) continue;
+        if (mapper.getInputSchema().getNames().count(name + "_" + flag.name) == 0) continue;
+        afw::table::Key<afw::table::Flag> key = mapper.getInputSchema().find<afw::table::Flag>(
+            name + "_" + flag.name).key;
+        mapper.addMapping(key);
     }
 }
 

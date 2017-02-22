@@ -31,37 +31,14 @@
 
 namespace lsst { namespace meas { namespace base {
 namespace {
-FlagDefinitions flagDefinitions;
-FlagDefinitions & getFlagDefinitions() {
-    return flagDefinitions;
-};
+FlagDefinitionList flagDefinitions;
 } // end anonymous
 
-struct GaussianCentroidAlgorithm::Flags {
-    static FlagDefinition FAILURE;
-    static FlagDefinition NO_PEAK;
-};
-FlagDefinition GaussianCentroidAlgorithm::Flags::FAILURE = flagDefinitions.add("flag", "general failure flag, set if anything went wrong");
-FlagDefinition GaussianCentroidAlgorithm::Flags::NO_PEAK = flagDefinitions.add("flag_noPeak", "Fitted Centroid has a negative peak");
+FlagDefinition const GaussianCentroidAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
+FlagDefinition const GaussianCentroidAlgorithm::NO_PEAK = flagDefinitions.add("flag_noPeak", "Fitted Centroid has a negative peak");
 
-FlagDefinition const & GaussianCentroidAlgorithm::getDefinition(std::string name) {
-    for (FlagDefinition const * iter = flagDefinitions.begin(); iter < flagDefinitions.end(); iter++) {
-        if (name == iter->name) {
-            return * iter;
-        }
-    }
-    throw pex::exceptions::RuntimeError("No flag for GaussianCentroid named: " + name);
-}
-
-std::string const & GaussianCentroidAlgorithm::getFlagName(std::size_t number) {
-    if (number < flagDefinitions.size()) {
-        return flagDefinitions.getDefinition(number).name;
-    }
-    throw pex::exceptions::RuntimeError("No flag for GaussianCentroid numbered: " + std::to_string(number));
-}
-
-std::size_t GaussianCentroidAlgorithm::getFlagCount() {
-    return flagDefinitions.size();
+FlagDefinitionList const & GaussianCentroidAlgorithm::getFlagDefinitions() {
+    return flagDefinitions;
 }
 
 namespace {
@@ -542,7 +519,7 @@ GaussianCentroidAlgorithm::GaussianCentroidAlgorithm(
         CentroidResultKey::addFields(schema, name, "centroid from Gaussian Centroid algorithm", NO_UNCERTAINTY)
     ),
     _flagHandler(FlagHandler::addFields(schema, name,
-                                          getFlagDefinitions().begin(), getFlagDefinitions().end())),
+                                          getFlagDefinitions())),
     _centroidExtractor(schema, name, true),
     _centroidChecker(schema, name, ctrl.doFootprintCheck, ctrl.maxDistToPeak)
 {
@@ -584,13 +561,13 @@ void GaussianCentroidAlgorithm::measure(
     if (fit.params[FittedModel::PEAK] <= 0) {
         throw LSST_EXCEPT(
             MeasurementError,
-            Flags::NO_PEAK.doc,
-            Flags::NO_PEAK.number
+            NO_PEAK.doc,
+            NO_PEAK.number
         );
     }
     result.x = lsst::afw::image::indexToPosition(image.getX0()) + fit.params[FittedModel::X0];
     result.y = lsst::afw::image::indexToPosition(image.getY0()) + fit.params[FittedModel::Y0];
-    _flagHandler.setValue(measRecord, Flags::FAILURE.number, false);  // if we had a suspect flag, we'd set that instead
+    _flagHandler.setValue(measRecord, FAILURE.number, false);  // if we had a suspect flag, we'd set that instead
     measRecord.set(_centroidKey, result);
     _centroidChecker(measRecord);
 }
@@ -616,9 +593,13 @@ GaussianCentroidTransform::GaussianCentroidTransform(
 ) :
     CentroidTransform{name, mapper}
 {
-    for (auto flag = getFlagDefinitions().begin() + 1; flag < getFlagDefinitions().end(); ++flag) {
-        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(
-                          mapper.getInputSchema().join(name, flag->name)).key);
+    for (std::size_t i = 0; i < GaussianCentroidAlgorithm::getFlagDefinitions().size(); i++) {
+        FlagDefinition const & flag = GaussianCentroidAlgorithm::getFlagDefinitions()[i];
+        if (flag == GaussianCentroidAlgorithm::FAILURE) continue;
+        if (mapper.getInputSchema().getNames().count(name + "_" + flag.name) == 0) continue;
+        afw::table::Key<afw::table::Flag> key = mapper.getInputSchema().find<afw::table::Flag>(
+            name + "_" + flag.name).key;
+        mapper.addMapping(key);
     }
 }
 

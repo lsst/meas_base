@@ -25,42 +25,54 @@
 
 namespace lsst { namespace meas { namespace base {
 
+FlagDefinitionList const & FlagDefinitionList::NOSKIPS = FlagDefinitionList();
 FlagHandler FlagHandler::addFields(
     afw::table::Schema & schema,
     std::string const & prefix,
-    FlagDefinition const * begin,
-    FlagDefinition const * end
+    FlagDefinitionList const & flagDefs,
+    FlagDefinitionList const & skipDefs
 ) {
     FlagHandler r;
-    r._vector.reserve(end - begin);
-    for (FlagDefinition const * iter = begin; iter != end; ++iter) {
-        r._vector.push_back(
-            std::make_pair(
-                *iter,
-                schema.addField<afw::table::Flag>(schema.join(prefix, iter->name), iter->doc)
-            )
-        );
+    r._vector.reserve(flagDefs.size());
+    for (std::size_t i = 0; i < flagDefs.size(); i++) {
+        FlagDefinition const & flagDef = flagDefs[i];
+        if (skipDefs.hasDefinition(flagDef.name)) {
+            afw::table::Key<afw::table::Flag> key;
+            r._vector.push_back( std::make_pair( flagDef, key));
+        }
+        else {
+            afw::table::Key<afw::table::Flag> key(schema.addField<afw::table::Flag>(schema.join(prefix, flagDef.name), flagDef.doc));
+            r._vector.push_back( std::make_pair( flagDef, key));
+        }
     }
     return r;
 }
 
-FlagHandler FlagHandler::addFields(
-    afw::table::Schema & schema,
-    std::string const & prefix,
-    FlagDefinitions * flagDefs
-) {
-    return addFields(schema, prefix, flagDefs->begin(), flagDefs->end());
-}
-
 FlagHandler::FlagHandler(
     afw::table::SubSchema const & s,
-    FlagDefinition const * begin,
-    FlagDefinition const * end
+    FlagDefinitionList const & flagDefs,
+    FlagDefinitionList const & skipDefs
 ) {
-    _vector.reserve(end - begin);
-    for (FlagDefinition const * iter = begin; iter != end; ++iter) {
-        afw::table::Key<afw::table::Flag> key = s[iter->name];
-        _vector.push_back(std::make_pair(*iter, key));
+    _vector.reserve(flagDefs.size());
+    for (std::size_t i = 0; i < flagDefs.size(); i++ ) {
+        FlagDefinition const & flagDef = flagDefs[i];
+        if (skipDefs.hasDefinition(flagDef.name)) {
+            afw::table::Key<afw::table::Flag> key;
+            _vector.push_back(
+                std::make_pair(
+                    flagDef,
+                    key
+                )
+            );
+        }
+        else {
+            _vector.push_back(
+                std::make_pair(
+                    flagDef,
+                    s[flagDef.name]
+                )
+            );
+        }
     }
 }
 

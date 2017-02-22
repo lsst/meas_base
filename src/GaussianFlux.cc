@@ -34,35 +34,13 @@
 
 namespace lsst { namespace meas { namespace base {
 namespace {
-FlagDefinitions flagDefinitions;
-FlagDefinitions & getFlagDefinitions() {
-    return flagDefinitions;
-};
+FlagDefinitionList flagDefinitions;
 } // end anonymous
 
-struct GaussianFluxAlgorithm::Flags {
-    static FlagDefinition FAILURE;
-};
-FlagDefinition GaussianFluxAlgorithm::Flags::FAILURE = flagDefinitions.add("flag", "general failure flag, set if anything went wrong");
+FlagDefinition const GaussianFluxAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
 
-FlagDefinition const & GaussianFluxAlgorithm::getDefinition(std::string name) {
-    for (FlagDefinition const * iter = flagDefinitions.begin(); iter < flagDefinitions.end(); iter++) {
-        if (name == iter->name) {
-            return * iter;
-        }
-    }
-    throw pex::exceptions::RuntimeError("No flag for GaussianFlux named: " + name);
-}
-
-std::string const & GaussianFluxAlgorithm::getFlagName(std::size_t number) {
-    if (number < flagDefinitions.size()) {
-        return flagDefinitions.getDefinition(number).name;
-    }
-    throw pex::exceptions::RuntimeError("No flag for GaussianFlux numbered: " + std::to_string(number));
-}
-
-std::size_t GaussianFluxAlgorithm::getFlagCount() {
-    return flagDefinitions.size();
+FlagDefinitionList const & GaussianFluxAlgorithm::getFlagDefinitions() {
+    return flagDefinitions;
 }
 
 
@@ -77,7 +55,7 @@ GaussianFluxAlgorithm::GaussianFluxAlgorithm(
     _centroidExtractor(schema, name),
     _shapeExtractor(schema, name)
 {
-    _flagHandler = FlagHandler::addFields(schema, name, getFlagDefinitions().begin(), getFlagDefinitions().end());
+    _flagHandler = FlagHandler::addFields(schema, name, getFlagDefinitions());
 }
 
 void GaussianFluxAlgorithm::measure(
@@ -92,7 +70,7 @@ void GaussianFluxAlgorithm::measure(
     );
 
     measRecord.set(_fluxResultKey, result);
-    _flagHandler.setValue(measRecord, Flags::FAILURE.number, false);
+    _flagHandler.setValue(measRecord, FAILURE.number, false);
 }
 
 

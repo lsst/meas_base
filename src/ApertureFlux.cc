@@ -35,46 +35,17 @@
 
 namespace lsst { namespace meas { namespace base {
 namespace {
-FlagDefinitions flagDefinitions;
-FlagDefinitions & getFlagDefinitions() {
-    return flagDefinitions;
-};
+FlagDefinitionList flagDefinitions;
 } // end anonymous
 
-struct ApertureFluxAlgorithm::Flags {
-    static FlagDefinition FAILURE;
-    static FlagDefinition APERTURE_TRUNCATED;
-    static FlagDefinition SINC_COEFFS_TRUNCATED;
-};
-FlagDefinition ApertureFluxAlgorithm::Flags::FAILURE = flagDefinitions.add("flag", "general failure flag");
-FlagDefinition ApertureFluxAlgorithm::Flags::APERTURE_TRUNCATED = flagDefinitions.add("flag_apertureTruncated", "aperture did not fit within measurement image");
-FlagDefinition ApertureFluxAlgorithm::Flags::SINC_COEFFS_TRUNCATED = flagDefinitions.add("flag_sincCoeffsTruncated", "full sinc coefficient image did not fit within measurement image");
+FlagDefinition const ApertureFluxAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
+FlagDefinition const ApertureFluxAlgorithm::APERTURE_TRUNCATED = flagDefinitions.add("flag_apertureTruncated", "aperture did not fit within measurement image");
+FlagDefinition const ApertureFluxAlgorithm::SINC_COEFFS_TRUNCATED = flagDefinitions.add("flag_sincCoeffsTruncated", "full sinc coefficient image did not fit within measurement image");
 
-FlagDefinition const & ApertureFluxAlgorithm::getDefinition(std::string name) {
-    for (FlagDefinition const * iter = flagDefinitions.begin(); iter < flagDefinitions.end(); iter++) {
-        if (name == iter->name) {
-            return * iter;
-        }
-    }
-    throw pex::exceptions::RuntimeError("No flag for ApertureFlux named: " + name);
-}
-
-std::string const & ApertureFluxAlgorithm::getFlagName(std::size_t number) {
-    if (number < flagDefinitions.size()) {
-        return flagDefinitions.getDefinition(number).name;
-    }
-    throw pex::exceptions::RuntimeError("No flag for ApertureFlux numbered: " + std::to_string(number));
-}
-
-std::size_t ApertureFluxAlgorithm::getFlagCount() {
-    return flagDefinitions.size();
-}
-
-
-FlagDefinitions & ApertureFluxAlgorithm::getFlagDefinitions() {
-    assert(N_FLAGS == flagDefinitions.size());
+FlagDefinitionList const & ApertureFluxAlgorithm::getFlagDefinitions() {
     return flagDefinitions;
-};
+}
+
 
 ApertureFluxControl::ApertureFluxControl() : radii(10), maxSincRadius(10.0), shiftKernel("lanczos5") {
     // defaults here stolen from HSC pipeline defaults
@@ -95,11 +66,11 @@ ApertureFluxAlgorithm::Keys::Keys(
 ) :
     fluxKey(FluxResultKey::addFields(schema, prefix, doc)),
     flags(
-        FlagHandler::addFields(
-            schema, prefix,
-            ApertureFluxAlgorithm::getFlagDefinitions().begin(),
-            ApertureFluxAlgorithm::getFlagDefinitions().begin() + (isSinc ? 3 : 2)
-        )
+            FlagHandler::addFields(
+                schema, prefix,
+                ApertureFluxAlgorithm::getFlagDefinitions(),
+                isSinc ? FlagDefinitionList::NOSKIPS : FlagDefinitionList({{SINC_COEFFS_TRUNCATED}})
+            )
     )
 {}
 
@@ -136,14 +107,14 @@ void ApertureFluxAlgorithm::copyResultToRecord(
     int index
 ) const {
     record.set(_keys[index].fluxKey, result);
-    if (result.getFlag(Flags::FAILURE.number)) {
-        _keys[index].flags.setValue(record, Flags::FAILURE.number, true);
+    if (result.getFlag(FAILURE.number)) {
+        _keys[index].flags.setValue(record, FAILURE.number, true);
     }
-    if (result.getFlag(Flags::APERTURE_TRUNCATED.number)) {
-        _keys[index].flags.setValue(record, Flags::APERTURE_TRUNCATED.number, true);
+    if (result.getFlag(APERTURE_TRUNCATED.number)) {
+        _keys[index].flags.setValue(record, APERTURE_TRUNCATED.number, true);
     }
-    if (result.getFlag(Flags::SINC_COEFFS_TRUNCATED.number)) {
-        _keys[index].flags.setValue(record, Flags::SINC_COEFFS_TRUNCATED.number, true);
+    if (result.getFlag(SINC_COEFFS_TRUNCATED.number)) {
+        _keys[index].flags.setValue(record, SINC_COEFFS_TRUNCATED.number, true);
     }
 }
 
@@ -170,14 +141,14 @@ CONST_PTR(afw::image::Image<T>) getSincCoeffs(
         // but since that's much larger than the aperture (and close
         // to zero outside the aperture), it may not be a serious
         // problem.
-        result.setFlag(ApertureFluxAlgorithm::Flags::SINC_COEFFS_TRUNCATED.number);
+        result.setFlag(ApertureFluxAlgorithm::SINC_COEFFS_TRUNCATED.number);
         afw::geom::Box2I overlap = cImage->getBBox();
         overlap.clip(bbox);
         if (!overlap.contains(afw::geom::Box2I(ellipse.computeBBox()))) {
             // The clipping was indeed serious, as we we did have to clip within
             // the aperture; can't expect any decent answer at this point.
-            result.setFlag(ApertureFluxAlgorithm::Flags::APERTURE_TRUNCATED.number);
-            result.setFlag(ApertureFluxAlgorithm::Flags::FAILURE.number);
+            result.setFlag(ApertureFluxAlgorithm::APERTURE_TRUNCATED.number);
+            result.setFlag(ApertureFluxAlgorithm::FAILURE.number);
         }
         cImage = std::make_shared< afw::image::Image<T> >(*cImage, overlap);
     }
@@ -194,7 +165,7 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux(
 ) {
     Result result;
     CONST_PTR(afw::image::Image<T>) cImage = getSincCoeffs<T>(image.getBBox(), ellipse, result, ctrl);
-    if (result.getFlag(Flags::APERTURE_TRUNCATED.number)) return result;
+    if (result.getFlag(APERTURE_TRUNCATED.number)) return result;
     afw::image::Image<T> subImage(image, cImage->getBBox());
     result.flux = (subImage.getArray().template asEigen<Eigen::ArrayXpr>()
                    * cImage->getArray().template asEigen<Eigen::ArrayXpr>()).sum();
@@ -209,7 +180,7 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux(
 ) {
     Result result;
     CONST_PTR(afw::image::Image<T>) cImage = getSincCoeffs<T>(image.getBBox(), ellipse, result, ctrl);
-    if (result.getFlag(Flags::APERTURE_TRUNCATED.number)) return result;
+    if (result.getFlag(APERTURE_TRUNCATED.number)) return result;
     afw::image::MaskedImage<T> subImage(image, cImage->getBBox(afw::image::PARENT), afw::image::PARENT);
     result.flux = (subImage.getImage()->getArray().template asEigen<Eigen::ArrayXpr>()
                    * cImage->getArray().template asEigen<Eigen::ArrayXpr>()).sum();
@@ -229,8 +200,8 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeNaiveFlux(
     Result result;
     afw::geom::ellipses::PixelRegion region(ellipse); // behaves mostly like a Footprint
     if (!image.getBBox().contains(region.getBBox())) {
-        result.setFlag(Flags::APERTURE_TRUNCATED.number);
-        result.setFlag(Flags::FAILURE.number);
+        result.setFlag(APERTURE_TRUNCATED.number);
+        result.setFlag(FAILURE.number);
         return result;
     }
     result.flux = 0;
@@ -257,8 +228,8 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeNaiveFlux(
     Result result;
     afw::geom::ellipses::PixelRegion region(ellipse); // behaves mostly like a Footprint
     if (!image.getBBox().contains(region.getBBox())) {
-        result.setFlag(Flags::APERTURE_TRUNCATED.number);
-        result.setFlag(Flags::FAILURE.number);
+        result.setFlag(APERTURE_TRUNCATED.number);
+        result.setFlag(FAILURE.number);
         return result;
     }
     result.flux = 0.0;
@@ -355,12 +326,14 @@ ApertureFluxTransform::ApertureFluxTransform(
     _ctrl(ctrl)
 {
     for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
-        for (auto flag = ApertureFluxAlgorithm::getFlagDefinitions().begin();
-            flag < ApertureFluxAlgorithm::getFlagDefinitions().begin() +
-                   (_ctrl.radii[i] <= _ctrl.maxSincRadius ? 3 : 2); flag++) {
+        for (std::size_t j = 0; j < ApertureFluxAlgorithm::getFlagDefinitions().size(); j++) {
+            FlagDefinition const & flag = ApertureFluxAlgorithm::getFlagDefinitions()[j];
+            if (_ctrl.radii[i] > _ctrl.maxSincRadius && flag == ApertureFluxAlgorithm::SINC_COEFFS_TRUNCATED) {
+                continue;
+            } 
             mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>((boost::format("%s_%s") %
                               ApertureFluxAlgorithm::makeFieldPrefix(name, _ctrl.radii[i]) %
-                              flag->name).str()).key);
+                              flag.name).str()).key);
         }
         _magKeys.push_back(MagResultKey::addFields(mapper.editOutputSchema(),
                            ApertureFluxAlgorithm::makeFieldPrefix(name, _ctrl.radii[i])));

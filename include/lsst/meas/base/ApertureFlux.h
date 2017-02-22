@@ -84,12 +84,11 @@ class ApertureFluxAlgorithm : public SimpleAlgorithm {
 public:
 
     // Structures and routines to manage flaghandler
-    struct Flags;
-    static FlagDefinition const & getDefinition(std::string name);
-    static std::string const & getFlagName(std::size_t number);
-    static std::size_t getFlagCount();
-    static FlagDefinitions & getFlagDefinitions();
+    static FlagDefinitionList const & getFlagDefinitions();
     static unsigned int const N_FLAGS = 3;
+    static FlagDefinition const FAILURE;
+    static FlagDefinition const APERTURE_TRUNCATED;
+    static FlagDefinition const SINC_COEFFS_TRUNCATED;
 
     typedef ApertureFluxControl Control;
 
@@ -254,7 +253,7 @@ struct ApertureFluxResult : public FluxResult {
     /// Return the flag value associated with the given bit
     bool getFlag(unsigned int index) const { return _flags[index]; }
     
-    bool getFlag(std::string name) const { return _flags[ApertureFluxAlgorithm::getDefinition(name).number]; }
+    bool getFlag(std::string name) const { return _flags[ApertureFluxAlgorithm::getFlagDefinitions().getDefinition(name).number]; }
 
     /// Set the flag value associated with the given bit
     void setFlag(unsigned int index, bool value=true) { _flags[index] = value; }

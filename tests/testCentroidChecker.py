@@ -33,7 +33,7 @@ from lsst.meas.base.tests import (AlgorithmTestCase)
 import lsst.pex.config
 from lsst.meas.base.pluginRegistry import register
 from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin
-from lsst.meas.base import FlagDefinitions, FlagDefinition, FlagHandler
+from lsst.meas.base import FlagDefinitionList, FlagDefinition, FlagHandler
 
 class CentroiderConfig(SingleFramePluginConfig):
 
@@ -63,7 +63,7 @@ class Centroider(SingleFramePlugin):
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
 
-        flagDefs = FlagDefinitions()
+        flagDefs = FlagDefinitionList()
         flagDefs.add("flag", "General Failure error")
         flagDefs.add("test_flag", "second flag")
         self.flagHandler = FlagHandler.addFields(schema, name, flagDefs)

@@ -153,12 +153,14 @@ class SdssShapeAlgorithm : public SimpleAlgorithm {
 public:
 
     // Structures and routines to manage flaghandler
-    struct Flags;
-    static FlagDefinition const & getDefinition(std::string name);
-    static std::string const & getFlagName(std::size_t number);
-    static std::size_t getFlagCount();
-    static FlagDefinitions & getFlagDefinitions();
+    static FlagDefinitionList const & getFlagDefinitions();
     static unsigned int const N_FLAGS = 6;
+    static FlagDefinition const FAILURE;
+    static FlagDefinition const UNWEIGHTED_BAD;
+    static FlagDefinition const UNWEIGHTED;
+    static FlagDefinition const SHIFT;
+    static FlagDefinition const MAXITER;
+    static FlagDefinition const PSF_SHAPE_BAD;
 
     typedef SdssShapeControl Control;
     typedef SdssShapeResult Result;
@@ -247,7 +249,7 @@ public:
     bool getFlag(unsigned int index) { return flags[index]; }
 
     bool getFlag(std::string name) {
-       return flags[SdssShapeAlgorithm::getDefinition(name).number];
+       return flags[SdssShapeAlgorithm::getFlagDefinitions().getDefinition(name).number];
     }
 
     SdssShapeResult(); ///< Constructor; initializes everything to NaN

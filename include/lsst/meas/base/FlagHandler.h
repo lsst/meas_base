@@ -33,16 +33,19 @@ namespace lsst { namespace meas { namespace base {
 
 /**
  *  @brief Simple POD struct used to define and document flags
- */
+ *         The name and doc constitute the identity of the FlagDefinition
+ *         The number is used for indexing, but is assigned arbitrarily 
+*/
 struct FlagDefinition {
 
+    static const std::size_t number_undefined = 1000000;
     FlagDefinition() {
     }
 
     FlagDefinition(std::string _name, std::string _doc) {
         name = _name;
         doc = _doc;
-        number = 0;
+        number = number_undefined;
     }
 
     FlagDefinition(std::string _name, std::string _doc, std::size_t  _number) {
@@ -51,42 +54,35 @@ struct FlagDefinition {
         number = _number;
     }
 
+    bool operator==(FlagDefinition const & other) const {
+        return (other.name == name && other.doc == doc);
+    }
+
     std::string name;
     std::string doc;
     std::size_t number;
 };
 
 /**
- *  @brief Array-type utility class to build a collection of FlagDefinitions
- *  The number of flags must be specified in the constructor argument
- *  if the number of flags > 10, or FlagDefinitions can be constructed
- *  from a std::initializer<FlagDefinition> list.
+ *  @brief vector-type utility class to build a collection of FlagDefinitions
  */
-class FlagDefinitions {
+class FlagDefinitionList {
 public:
-    /**
-     *  @brief initialize a FlagDefinition collection with max size 10.
-     */
-    FlagDefinitions() {
-        _array = new FlagDefinition[10];
-        _maxsize = 10;
-        _size = 0;
-    };
+
+    static FlagDefinitionList const & NOSKIPS;
 
     /**
-     *  @brief initialize a FlagDefinition collection with specified max size.
+     *  @brief initialize a FlagDefinition collection with no entries.
      */
-    FlagDefinitions(std::size_t maxsize) {
-        _array = new FlagDefinition[maxsize];
-        _size = 0;
-        _maxsize = maxsize;
+    FlagDefinitionList() {
     };
+
 #ifndef SWIG
 
-    FlagDefinitions(std::initializer_list<FlagDefinition> list) {
-        _array = new FlagDefinition[list.size()];
-        _maxsize = list.size();
-        _size = 0;
+    /**
+     *  @brief initialize a FlagDefinition collection from initializer_list.
+     */
+    FlagDefinitionList(std::initializer_list<FlagDefinition> const & list) {
         for (FlagDefinition const * iter = list.begin(); iter < list.end(); iter++) {
             add(iter->name, iter->doc);
         }
@@ -94,56 +90,64 @@ public:
 #endif
 
     /**
-     *  @brief get a reference to the FlagDefinition with specified name.
+     *  @brief get a reference to the FlagDefinition with specified index.
      */
-    FlagDefinition const & getDefinition(std::string name) {
-        for (std::size_t i = 0; i < size(); i++) {
-            if (_array[i].name == name) return _array[i];
-        }
-        throw pex::exceptions::RuntimeError("No flag defined named: " + name);
+    FlagDefinition getDefinition(size_t index) const {
+        return _vector[index];
     }
-
     /**
      *  @brief get a reference to the FlagDefinition with specified array index
      */
-    FlagDefinition const & getDefinition(const size_t index) { return _array[index]; }
-
+    FlagDefinition operator[](size_t index) const {
+        return getDefinition(index);
+    }
     /**
-     *  @brief Add a new FlagDefinition to this collection.
-     *  Number of flags may not exceed the maxsize (default: 10)
-     *  Return a reference to the newly create definition with the
-     *  FlagDefinition.number corresponding to its index in the array..
+     *  @brief get a reference to the FlagDefinition with specified name.
      */
-    FlagDefinition const & add(std::string name, std::string doc) {
-        if (_size>=_maxsize) {
-            throw pex::exceptions::RuntimeError("Maximum flag count of " + std::to_string(_maxsize) +
-                ".  Initialize definitions with FlagDefinitions(nflags).");
+    FlagDefinition getDefinition(std::string const & name) const {
+        for (std::size_t i = 0; i < size(); i++) {
+            if (_vector[i].name == name) return _vector[i];
         }
-        FlagDefinition flagDef(name, doc, _size);
-        _array[_size++] = flagDef;
-        return _array[_size - 1];
+        throw lsst::pex::exceptions::RuntimeError("No Flag Definition for " + name);
+    }
+    /**
+     *  @brief See if there is a FlagDefinition with specified name.
+     */
+    bool hasDefinition(std::string const & name) const {
+        for (std::size_t i = 0; i < size(); i++) {
+            if (_vector[i].name == name) return true;
+        }
+        return false;
     }
 
     /**
-     *  @brief return a const pointer to the beginning of the array
+     *  @brief Add a new FlagDefinition to this collection.
+     *  Return a reference to the newly create definition with the
+     *  FlagDefinition.number corresponding to its index in the array..
      */
-    FlagDefinition const * begin() { return &_array[0]; }
-
-    /**
-     *  @brief return a const pointer to the end (last defined element + 1)
-     */
-    FlagDefinition const * end() { return &_array[_size]; }
-
+    FlagDefinition add(std::string const name, std::string const doc) {
+        FlagDefinition * flagDef = new FlagDefinition(name, doc, _vector.size());
+        _vector.push_back(* flagDef);
+        return _vector.back(); //* flagDef; 
+    }
+    FlagDefinition add(FlagDefinition const & flagDef) { return add(flagDef.name, flagDef.doc); }
     /**
      *  @brief return the current size (number of defined elements) of the collection
      */
-    std::size_t size() { return _size; }
 
+    static FlagDefinition getFailureFlag() {
+        static FlagDefinition FAILURE = FlagDefinition("flag", "General Failure");
+        return FAILURE;
+    }
+
+    FlagDefinition addFailureFlag() {
+        return add(getFailureFlag());
+    }
+
+    std::size_t size() const { return _vector.size(); }
 
 private:
-    mutable std::size_t _size;
-    mutable std::size_t _maxsize;
-    mutable FlagDefinition *  _array;
+    mutable std::vector<FlagDefinition> _vector;
 };
 
 /**
@@ -151,11 +155,8 @@ private:
  *
  *  The typical pattern for using FlagHandler within an Algorithm is:
  *   - Add a FlagHandler object as a data member.
- *   - Create an old-style enum that defines all of the failure modes.  This must start with a
- *     "general" failure flag that is set on any fatal condition, set to the numeric value
- *     FlagHandler::FAILURE.
- *   - Create a static array of FlagDefinition to hold the field names for the error flags, with each
- *     entry corresponding to an entry in the enum.  Names here should not include the algorihtm name,
+ *   - Create a FlagDefinitionList to hold the names and docs for the error flags, with each
+ *     entry corresponding to   Names here should not include the algorihtm name,
  *     and should generally have the form "flag_*", with the first entry (corresponding to the general
  *     failure flag) simply "flag".
  *   - Initialize the FlagHandler data member within the Algorithm's constructor, using the addFields
@@ -168,23 +169,21 @@ class FlagHandler {
 public:
 
     /**
-     *  Required enum values for all Algorithm failure mode enumerations.
+     *  Each error should have a corresponding static FlagDefinition object.
+     *  In the Algorithm header file, this will be defined like this:
      *
-     *  This should be considered logically to be a "base class" for all Algorithm failure enums;
-     *  enums can't actually have a base class in C/C++, but we can fake this with the following pattern:
-     *  @code
-     *  class MyAlgorithm : public Algorithm {
-     *  public:
-     *      enum {
-     *          FAILURE=FlagHandler::FAILURE,
-     *          SOME_OTHER_FAILURE_MODE,
+     *      static FlagDefinition const & FAILURE;
+     *      static FlagDefinition const & SOME_OTHER_FAILURE_MODE;
      *          ...
-     *      };
-     *      ...
-     *  };
+     *
+     *  A FlagDefinitionList is created in the .cc file and is used to create the FlagDefinition
+     *  objects and insure that they are properly sequence:
+     *
+     *      FlagDefinitionList flagDefinitions;
+     *      FlagDefinition const FAILURE = flagDefinitions.add(FlagHandler::FAILURE); 
+     *      FlagDefinition const FAILURE_MODE = flagDefinitions.add("flag_mode", "Specific failure flag"); 
      *  @endcode
      */
-    enum { FAILURE=0 };
 
     /**
      *  Default constructor for delayed initialization.
@@ -207,32 +206,15 @@ public:
      *  @param[in]   prefix    String name of the algorithm or algorithm component.  Field names will
      *                         be constructed by using schema.join() on this and the flag name from the
      *                         FlagDefinition array.
-     *  @param[in]   begin     Iterator to the beginning of a std::vector of FlagDefinition.
-     *  @param[in]   end       Iterator to one past the end of a std::vector of FlagDefinition.
+     *  @param[in]   flagDefs  Reference to a FlagDefinitionList
+     *  @param[in]   skipDefs  Reference to a FlagDefinitionList of entries in flagDefs skip
      *
      */
     static FlagHandler addFields(
         afw::table::Schema & schema,
         std::string const & prefix,
-        FlagDefinition const * begin,
-        FlagDefinition const * end
-    );
-    /**
-     *  Add Flag fields to a schema, creating a FlagHandler object to manage them.
-     *
-     *  This is the way FlagHandlers will typically be constructed for new algorithms.
-     *
-     *  @param[out]  schema    Schema to which fields should be added.
-     *  @param[in]   prefix    String name of the algorithm or algorithm component.  Field names will
-     *                         be constructed by using schema.join() on this and the flag name from the
-     *                         FlagDefinition array.
-     *  @param[in]   flagDefs  Pointer to a FlagDefinitions collection
-     *
-     */
-    static FlagHandler addFields(
-        afw::table::Schema & schema,
-        std::string const & prefix,
-        FlagDefinitions * flagDefs
+        FlagDefinitionList const & flagDefs,
+        FlagDefinitionList const & skipDefs=FlagDefinitionList::NOSKIPS
     );
     /**
      *  Construct a FlagHandler to manage fields already added to a schema.
@@ -242,58 +224,76 @@ public:
      *
      *  @param[in] s      A SubSchema object that holds the fields to extract and their namespace.
      *                    Obtainable from the arguments to addFields() as "schema[prefix]".
-     *  @param[in] begin  Iterator to the beginning of an array of FlagDefinition.
-     *  @param[in] end    Iterator to one past the end of an array of FlagDefinition.
+     *  @param[in]   flagDefs  Reference to a FlagDefinitionList
+     *  @param[in]   skipDefs  Reference to a FlagDefinitionList of entries in flagDefs skip
      *
      *  As with addFields(), pointers must be valid only for the duration of this constructor call.
      */
     FlagHandler(
         afw::table::SubSchema const & s,
-        FlagDefinition const * begin,
-        FlagDefinition const * end
+        FlagDefinitionList const & flagDefs,
+        FlagDefinitionList const & skipDefs=FlagDefinitionList::NOSKIPS
     );
+    /**
+     *  Return the FlagDefinition object that corresponds to given FlagHandler name
+     */
+    FlagDefinition getDefinition(std::string const & flagName) const {
+        for (std::size_t i = 0; i < _vector.size(); i++) {
+            if (_vector[i].first.name == flagName && _vector[i].second.isValid()) {
+                return _vector[i].first;
+            }
+        }
+        throw pex::exceptions::RuntimeError("No FlagHandler entry for " + flagName);
+    }
     /**
      *  Return the FlagDefinition object that corresponds to given FlagHandler index
      */
     FlagDefinition getDefinition(std::size_t i) const {
-        assert(_vector.size() > i);  // Flag 'i' needs to be available
-        return _vector[i].first;
+        if (i < _vector.size() && _vector[i].second.isValid()) {
+            return _vector[i].first;
+        }
+        throw pex::exceptions::RuntimeError("No legal FlagHandler entry number " + std::to_string(i));
     }
     /**
      *  Return the index of a flag with the given flag name
     */
     unsigned int getFlagNumber(std::string const & flagName) const {
         for (unsigned int i=0; i < _vector.size(); i++) {
-            if (_vector[i].first.name == flagName) {
+            if (_vector[i].first.name == flagName && _vector[i].second.isValid()) {
                 return i;
             }
         }
-        throw pex::exceptions::RuntimeError("Flagname: " + flagName + " is not in FlagHandler");
+        throw pex::exceptions::RuntimeError("No FlagHandler entry for " + flagName);
     }
     /**
      *  Return the value of the flag field corresponding to the given flag index.
      */
     bool getValue(afw::table::BaseRecord const & record, std::size_t i) const {
-        assert(_vector.size() > i);  // Flag 'i' needs to be available
-        return record.get(_vector[i].second);
+        if (i < _vector.size() && _vector[i].second.isValid()) {
+            return record.get(_vector[i].second);
+        }
+        throw pex::exceptions::RuntimeError("No legal FlagHandler entry number " + std::to_string(i));
     }
     /**
      *  Return the value of the flag field with the given flag name
      */
     bool getValue(afw::table::BaseRecord const & record, std::string flagName) const {
         for (std::size_t i = 0; i < _vector.size(); i++) {
-            if (_vector[i].first.name == flagName) {
+            if (_vector[i].first.name == flagName && _vector[i].second.isValid()) {
                 return record.get(_vector[i].second);
             }
         }
-        throw pex::exceptions::RuntimeError("flagName not found in initialization vector");
+        throw pex::exceptions::RuntimeError("No FlagHandler entry for " + flagName);
     }
     /**
      *  Set the flag field corresponding to the given flag index.
      */
     void setValue(afw::table::BaseRecord & record, std::size_t i, bool value) const {
-        assert(_vector.size() > i);  // Flag 'i' needs to be available
-        record.set(_vector[i].second, value);
+        if (i < _vector.size() && _vector[i].second.isValid()) {
+            record.set(_vector[i].second, value);
+            return;
+        }
+        throw pex::exceptions::RuntimeError("No legal FlagHandler entry number " + std::to_string(i));
     }
     /**
      *  Set the flag field corresponding to the given FlagDefinition Address.
@@ -303,20 +303,13 @@ public:
      */
     void setValue(afw::table::BaseRecord & record, std::string flagName, bool value) const {
         for (std::size_t i = 0; i < _vector.size(); i++) {
-            if (_vector[i].first.name == flagName) {
+            if (_vector[i].first.name == flagName && _vector[i].second.isValid()) {
                 record.set(_vector[i].second, value);
                 return;
             }
         }
-        throw pex::exceptions::RuntimeError("flagName not found in initialization vector");
+        throw pex::exceptions::RuntimeError("No FlagHandler entry for " + flagName);
     }
-    /**
-     *  Set the flag field corresponding to the given FlagDefinition Address.
-     */
-    void setValue(afw::table::BaseRecord & record, FlagDefinition const * flagDefinition, bool value) const {
-        setValue(record, flagDefinition->name, value);
-    }
-
     /**
      *  Handle an expected or unexpected Exception thrown by a measurement algorithm.
      *

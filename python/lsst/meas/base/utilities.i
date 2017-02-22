@@ -35,8 +35,6 @@
 
 %immutable lsst::meas::base::FlagDefinition::name;
 %immutable lsst::meas::base::FlagDefinition::doc;
-%immutable lsst::meas::base::FlagDefinition::number;
-%template(FlagDefinitionVector) std::vector<lsst::meas::base::FlagDefinition>;
 %declareNumPyConverters(lsst::meas::base::CentroidCov);
 %declareNumPyConverters(lsst::meas::base::ShapeCov);
 %declareNumPyConverters(lsst::meas::base::ShapeTrMatrix);

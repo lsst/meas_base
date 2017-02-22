@@ -67,10 +67,10 @@ class NaiveCentroidAlgorithm : public SimpleAlgorithm {
 public:
 
     // Structures and routines to manage flaghandler
-    struct Flags;
-    static FlagDefinition const & getDefinition(std::string name);
-    static std::string const & getFlagName(std::size_t number);
-    static std::size_t getFlagCount();
+    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinition const FAILURE;
+    static FlagDefinition const NO_COUNTS;
+    static FlagDefinition const EDGE;
 
     typedef NaiveCentroidControl Control;
 

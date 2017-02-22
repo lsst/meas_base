@@ -69,10 +69,12 @@ class SdssCentroidAlgorithm : public SimpleAlgorithm {
 public:
 
     // Structures and routines to manage flaghandler
-    struct Flags;
-    static FlagDefinition const & getDefinition(std::string name);
-    static std::string const & getFlagName(std::size_t number);
-    static std::size_t getFlagCount();
+    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinition const FAILURE;
+    static FlagDefinition const EDGE;
+    static FlagDefinition const NO_SECOND_DERIVATIVE;
+    static FlagDefinition const ALMOST_NO_SECOND_DERIVATIVE;
+    static FlagDefinition const NOT_AT_MAXIMUM;
 
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.

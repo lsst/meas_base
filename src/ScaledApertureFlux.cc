@@ -40,8 +40,7 @@ ScaledApertureFluxAlgorithm::ScaledApertureFluxAlgorithm(
     _centroidExtractor(schema, name)
 {
     _flagHandler = FlagHandler::addFields(schema, name,
-                                          ApertureFluxAlgorithm::getFlagDefinitions().begin(),
-                                          ApertureFluxAlgorithm::getFlagDefinitions().end());
+                                          ApertureFluxAlgorithm::getFlagDefinitions());
 }
 
 void ScaledApertureFluxAlgorithm::measure(
@@ -64,10 +63,10 @@ void ScaledApertureFluxAlgorithm::measure(
                                                            apCtrl);
     measRecord.set(_fluxResultKey, result);
 
-    for (FlagDefinition const * iter = ApertureFluxAlgorithm::getFlagDefinitions().begin();
-         iter < ApertureFluxAlgorithm::getFlagDefinitions().end(); iter++) {
-        if (result.getFlag(iter->number)) {
-            _flagHandler.setValue(measRecord, iter->number, true);
+    for (std::size_t i = 0; i < ApertureFluxAlgorithm::getFlagDefinitions().size(); i++) {
+        FlagDefinition const & iter = ApertureFluxAlgorithm::getFlagDefinitions()[i];
+        if (result.getFlag(iter.number)) {
+            _flagHandler.setValue(measRecord, iter.number, true);
         }
     }
 }
@@ -84,9 +83,12 @@ ScaledApertureFluxTransform::ScaledApertureFluxTransform(
 ) :
     FluxTransform{name, mapper}
 {
-    for (auto flag = ApertureFluxAlgorithm::getFlagDefinitions().begin() + 1;
-         flag < ApertureFluxAlgorithm::getFlagDefinitions().end(); flag++) {
-        mapper.addMapping(mapper.getInputSchema().find<afw::table::Flag>(name + "_" + flag->name).key);
+    for (std::size_t i = 0; i < ApertureFluxAlgorithm::getFlagDefinitions().size(); i++) {
+        std::string flagName = ApertureFluxAlgorithm::getFlagDefinitions()[i].name;
+        afw::table::Key<afw::table::Flag> key = mapper.getInputSchema().find<afw::table::Flag>(name + "_" + flagName).key;
+        if (key.isValid()) {
+            mapper.addMapping(key);
+        }
     }
 }
 
