@@ -27,8 +27,11 @@
 #include "lsst/afw/detection/Footprint.h"
 #include "lsst/meas/base/exceptions.h"
 #include "lsst/meas/base/InputUtilities.h"
+#include "lsst/meas/base/FlagHandler.h"
 
 namespace lsst { namespace meas { namespace base {
+
+static std::string const & failureFlagName =  FlagDefinition::getFailureFlag().name;
 
 SafeCentroidExtractor::SafeCentroidExtractor(
     afw::table::Schema & schema,
@@ -42,12 +45,13 @@ SafeCentroidExtractor::SafeCentroidExtractor(
     // look up the target of slot_Centroid_flag, and alias that to MyAlgorithm_flag_badCentroid.
     // That way, if someone changes the slots later, after we've already done the measurement,
     // this alias still points to the right thing.
-    std::string aliasedFlagName = schema.join("slot", "Centroid", "flag");
+
+    std::string aliasedFlagName = schema.join("slot", "Centroid", failureFlagName);
     std::string slotFlagName = schema.getAliasMap()->apply(aliasedFlagName);
     if (_isCentroider) {
-        if (slotFlagName != schema.join(name, "flag")) {
+        if (slotFlagName != schema.join(name, failureFlagName)) {
             // only setup the alias if this isn't the slot algorithm itself (otherwise it'd be circular)
-            schema.getAliasMap()->set(schema.join(name, "flag", "badInitialCentroid"), slotFlagName);
+            schema.getAliasMap()->set(schema.join(name, failureFlagName, "badInitialCentroid"), slotFlagName);
         }
     } else {
         if (aliasedFlagName == slotFlagName) {
@@ -57,7 +61,7 @@ SafeCentroidExtractor::SafeCentroidExtractor(
                 % aliasedFlagName % name).str()
             );
         }
-        schema.getAliasMap()->set(schema.join(name, "flag", "badCentroid"), slotFlagName);
+        schema.getAliasMap()->set(schema.join(name, failureFlagName, "badCentroid"), slotFlagName);
     }
 }
 
@@ -126,13 +130,13 @@ afw::geom::Point2D SafeCentroidExtractor::operator()(
         result = extractPeak(record, _name);
         if (!_isCentroider) {
             // set the general flag, because using the Peak might affect the current measurement
-            flags.setValue(record, flags.getFlagNumber("flag"), true);
+            flags.setValue(record, flags.getFlagNumber(failureFlagName), true);
         }
     } else if (!_isCentroider && record.getTable()->getCentroidFlagKey().isValid()
                && record.getCentroidFlag()) {
         // we got a usable value, but the centroid flag is still be set, and that might affect
         // the current measurement
-        flags.setValue(record, flags.getFlagNumber("flag"), true);
+        flags.setValue(record, flags.getFlagNumber(failureFlagName), true);
     }
     return result;
 }

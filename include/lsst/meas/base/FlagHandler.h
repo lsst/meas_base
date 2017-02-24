@@ -38,7 +38,7 @@ namespace lsst { namespace meas { namespace base {
 */
 struct FlagDefinition {
 
-    static const std::size_t number_undefined = 1000000;
+    static const std::size_t number_undefined = SIZE_MAX;
     FlagDefinition() {
     }
 
@@ -56,6 +56,11 @@ struct FlagDefinition {
 
     bool operator==(FlagDefinition const & other) const {
         return (other.name == name && other.doc == doc);
+    }
+
+    static FlagDefinition getFailureFlag() {
+        static FlagDefinition flagDef = FlagDefinition("flag", "General Failure");
+        return flagDef;
     }
 
     std::string name;
@@ -133,13 +138,8 @@ public:
      *  @brief return the current size (number of defined elements) of the collection
      */
 
-    static FlagDefinition getFailureFlag() {
-        static FlagDefinition flagDef = FlagDefinition("flag", "General Failure");
-        return flagDef;
-    }
-
     FlagDefinition addFailureFlag() {
-        return add(getFailureFlag());
+        return add(FlagDefinition::getFailureFlag());
     }
 
     std::size_t size() const { return _vector.size(); }
@@ -193,7 +193,7 @@ public:
      *  To use this constructor to delay initialization, simply use it in the initializer list, and then
      *  assign the result of a call to addFields() to the FlagHandler data member later in the constructor.
      */
-    FlagHandler() {}
+    FlagHandler() : failureFlagNumber(FlagDefinition::number_undefined) {}
 
     /**
      *  Add Flag fields to a schema, creating a FlagHandler object to manage them.
@@ -318,10 +318,10 @@ public:
      */
     void handleFailure(afw::table::BaseRecord & record, MeasurementError const * error=NULL) const;
 
+    std::size_t failureFlagNumber;
 private:
 
     typedef std::vector< std::pair<FlagDefinition, afw::table::Key<afw::table::Flag> > > Vector;
-
     Vector _vector;
 };
 

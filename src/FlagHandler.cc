@@ -43,6 +43,9 @@ FlagHandler FlagHandler::addFields(
         else {
             afw::table::Key<afw::table::Flag> key(schema.addField<afw::table::Flag>(schema.join(prefix, flagDef.name), flagDef.doc));
             r._vector.push_back( std::make_pair( flagDef, key));
+            if (flagDef == FlagDefinition::getFailureFlag()) {
+                r.failureFlagNumber = i;
+            }
         }
     }
     return r;
@@ -52,7 +55,7 @@ FlagHandler::FlagHandler(
     afw::table::SubSchema const & s,
     FlagDefinitionList const & flagDefs,
     FlagDefinitionList const & skipDefs
-) {
+) : failureFlagNumber(FlagDefinition::number_undefined) {
     _vector.reserve(flagDefs.size());
     for (std::size_t i = 0; i < flagDefs.size(); i++ ) {
         FlagDefinition const & flagDef = flagDefs[i];
@@ -72,14 +75,18 @@ FlagHandler::FlagHandler(
                     s[flagDef.name]
                 )
             );
+            if (flagDef == FlagDefinition::getFailureFlag()) {
+                failureFlagNumber = i;
+            }
         }
     }
 }
 
 void FlagHandler::handleFailure(afw::table::BaseRecord & record, MeasurementError const * error) const {
     std::size_t const numFlags = _vector.size();
-    assert(numFlags > 0);  // We need a general failure flag
-    record.set(_vector[0].second, true);
+    if (failureFlagNumber != FlagDefinition::number_undefined) {
+        record.set(_vector[failureFlagNumber].second, true);
+    }
     if (error) {
         assert(numFlags > error->getFlagBit());  // We need the particular flag
         record.set(_vector[error->getFlagBit()].second, true);

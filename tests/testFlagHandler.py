@@ -81,7 +81,7 @@ class PythonPlugin(SingleFramePlugin):
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
         flagDefs = FlagDefinitionList()
-        flagDefs.add("flag", "General Failure error")
+        flagDefs.addFailureFlag()
         flagDefs.add("flag_containsNan", "Measurement area contains a nan")
         flagDefs.add("flag_edge", "Measurement area over edge")
         self.flagHandler = FlagHandler.addFields(schema, name, flagDefs)
@@ -172,7 +172,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
         # This is a FlagDefinition structure like a plugin might have
         flagDefs = FlagDefinitionList()
-        FAILURE = flagDefs.add("General Failure", "general failure error")
+        FAILURE = flagDefs.addFailureFlag()
         FIRST = flagDefs.add("1st error", "this is the first failure type")
         SECOND = flagDefs.add("2nd error", "this is the second failure type")
         fh = FlagHandler.addFields(schema, "test", flagDefs)
@@ -208,6 +208,45 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         error = MeasurementError(SECOND.doc, SECOND.number)
         fh.handleFailure(record, error.cpp)
         self.assertTrue(fh.getValue(record, FAILURE.number))
+        self.assertFalse(fh.getValue(record, FIRST.number))
+        self.assertTrue(fh.getValue(record, SECOND.number))
+
+    #   Test with no failure flag
+    def testNoFailureFlag(self):
+        """
+        Standalone test to create a flaghandler and call it
+        This is not a real world example, just a simple unit test
+        """
+        schema = lsst.afw.table.SourceTable.makeMinimalSchema()
+
+        # This is a FlagDefinition structure like a plugin might have
+        flagDefs = FlagDefinitionList()
+        FIRST = flagDefs.add("1st error", "this is the first failure type")
+        SECOND = flagDefs.add("2nd error", "this is the second failure type")
+        fh = FlagHandler.addFields(schema, "test", flagDefs)
+        # Check to be sure that the FlagHandler was correctly initialized
+        for index in range(flagDefs.size()):
+            self.assertEqual(flagDefs.getDefinition(index).name, fh.getDefinition(index).name)
+            self.assertEqual(flagDefs.getDefinition(index).doc, fh.getDefinition(index).doc)
+
+        catalog = lsst.afw.table.SourceCatalog(schema)
+
+        # Now check to be sure that all of the known failures set the bits correctly
+        record = catalog.addNew()
+        fh.handleFailure(record)
+        self.assertFalse(fh.getValue(record, FIRST.number))
+        self.assertFalse(fh.getValue(record, SECOND.number))
+        record = catalog.addNew()
+
+        record = catalog.addNew()
+        error = MeasurementError(FIRST.doc, FIRST.number)
+        fh.handleFailure(record, error.cpp)
+        self.assertTrue(fh.getValue(record, FIRST.number))
+        self.assertFalse(fh.getValue(record, SECOND.number))
+
+        record = catalog.addNew()
+        error = MeasurementError(SECOND.doc, SECOND.number)
+        fh.handleFailure(record, error.cpp)
         self.assertFalse(fh.getValue(record, FIRST.number))
         self.assertTrue(fh.getValue(record, SECOND.number))
 
