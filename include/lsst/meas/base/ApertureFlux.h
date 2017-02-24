@@ -252,7 +252,8 @@ struct ApertureFluxResult : public FluxResult {
 
     /// Return the flag value associated with the given bit
     bool getFlag(unsigned int index) const { return _flags[index]; }
-    
+
+    /// Return the flag value associated with the given flag name
     bool getFlag(std::string name) const { return _flags[ApertureFluxAlgorithm::getFlagDefinitions().getDefinition(name).number]; }
 
     /// Set the flag value associated with the given bit

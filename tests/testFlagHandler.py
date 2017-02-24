@@ -81,9 +81,9 @@ class PythonPlugin(SingleFramePlugin):
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
         flagDefs = FlagDefinitionList()
-        flagDefs.addFailureFlag()
-        flagDefs.add("flag_containsNan", "Measurement area contains a nan")
-        flagDefs.add("flag_edge", "Measurement area over edge")
+        self.FAILURE = flagDefs.addFailureFlag()
+        self.CONTAINS_NAN = flagDefs.add("flag_containsNan", "Measurement area contains a nan")
+        self.EDGE = flagDefs.add("flag_edge", "Measurement area over edge")
         self.flagHandler = FlagHandler.addFields(schema, name, flagDefs)
         self.centroidExtractor = lsst.meas.base.SafeCentroidExtractor(schema, name)
         self.fluxKey = schema.addField(name + "_flux", "F", doc="flux")
@@ -108,8 +108,7 @@ class PythonPlugin(SingleFramePlugin):
 
         # If the measurement box falls outside the exposure, raise the edge MeasurementError
         if not exposure.getBBox().contains(bbox):
-            flagDef = self.flagHandler.getDefinition("flag_edge")
-            raise MeasurementError(flagDef.doc, flagDef.number)
+            raise MeasurementError(self.EDGE.doc, self.EDGE.number)
 
         # Sum the pixels inside the bounding box
         flux = lsst.afw.image.ImageF(exposure.getMaskedImage().getImage(), bbox).getArray().sum()
@@ -117,8 +116,7 @@ class PythonPlugin(SingleFramePlugin):
 
         # If there was a nan inside the bounding box, the flux will still be nan
         if np.isnan(flux):
-            flagDef = self.flagHandler.getDefinition("flag_containsNan")
-            raise MeasurementError(flagDef.doc, flagDef.number)
+            raise MeasurementError(self.CONTAINS_NAN.doc, self.CONTAINS_NAN.number)
 
         if self.config.flux0 is not None:
             if self.config.flux0 == 0:
@@ -178,8 +176,8 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         fh = FlagHandler.addFields(schema, "test", flagDefs)
         # Check to be sure that the FlagHandler was correctly initialized
         for index in range(flagDefs.size()):
-            self.assertEqual(flagDefs.getDefinition(index).name, fh.getDefinition(index).name)
-            self.assertEqual(flagDefs.getDefinition(index).doc, fh.getDefinition(index).doc)
+            self.assertEqual(flagDefs.getDefinition(index).name, fh.getFlagName(index))
+
 
         catalog = lsst.afw.table.SourceCatalog(schema)
 
@@ -226,8 +224,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         fh = FlagHandler.addFields(schema, "test", flagDefs)
         # Check to be sure that the FlagHandler was correctly initialized
         for index in range(flagDefs.size()):
-            self.assertEqual(flagDefs.getDefinition(index).name, fh.getDefinition(index).name)
-            self.assertEqual(flagDefs.getDefinition(index).doc, fh.getDefinition(index).doc)
+            self.assertEqual(flagDefs.getDefinition(index).name, fh.getFlagName(index))
 
         catalog = lsst.afw.table.SourceCatalog(schema)
 

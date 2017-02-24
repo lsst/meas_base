@@ -30,15 +30,15 @@
 #include "lsst/meas/base/exceptions.h"
 
 namespace lsst { namespace meas { namespace base {
-
 /**
  *  @brief Simple POD struct used to define and document flags
  *         The name and doc constitute the identity of the FlagDefinition
- *         The number is used for indexing, but is assigned arbitrarily 
+ *         The number is used for indexing, but is assigned arbitrarily
 */
 struct FlagDefinition {
 
     static const std::size_t number_undefined = SIZE_MAX;
+
     FlagDefinition() {
     }
 
@@ -54,13 +54,9 @@ struct FlagDefinition {
         number = _number;
     }
 
+    // equality of this type is based solely on the name key
     bool operator==(FlagDefinition const & other) const {
-        return (other.name == name && other.doc == doc);
-    }
-
-    static FlagDefinition getFailureFlag() {
-        static FlagDefinition flagDef = FlagDefinition("flag", "General Failure");
-        return flagDef;
+        return (other.name == name);
     }
 
     std::string name;
@@ -73,7 +69,6 @@ struct FlagDefinition {
  */
 class FlagDefinitionList {
 public:
-
     /**
      *  @brief initialize a FlagDefinition collection with no entries.
      */
@@ -111,7 +106,7 @@ public:
         for (std::size_t i = 0; i < size(); i++) {
             if (_vector[i].name == name) return _vector[i];
         }
-        throw lsst::pex::exceptions::RuntimeError("No Flag Definition for " + name);
+        throw FatalAlgorithmError("No Flag Definition for " + name);
     }
     /**
      *  @brief See if there is a FlagDefinition with specified name.
@@ -122,6 +117,10 @@ public:
         }
         return false;
     }
+    /**
+     *  @brief Add a Flag Defintion to act as a "General" failure flag
+     */
+    FlagDefinition addFailureFlag(std::string const & doc="General Failure Flag");
 
     /**
      *  @brief Add a new FlagDefinition to this collection.
@@ -129,18 +128,14 @@ public:
      *  FlagDefinition.number corresponding to its index in the array..
      */
     FlagDefinition add(std::string const name, std::string const doc) {
-        FlagDefinition * flagDef = new FlagDefinition(name, doc, _vector.size());
-        _vector.push_back(* flagDef);
-        return _vector.back(); //* flagDef; 
+        FlagDefinition flagDef = FlagDefinition(name, doc, _vector.size());
+        _vector.push_back(flagDef);
+        return _vector.back();
     }
     FlagDefinition add(FlagDefinition const & flagDef) { return add(flagDef.name, flagDef.doc); }
     /**
      *  @brief return the current size (number of defined elements) of the collection
      */
-
-    FlagDefinition addFailureFlag() {
-        return add(FlagDefinition::getFailureFlag());
-    }
 
     std::size_t size() const { return _vector.size(); }
 
@@ -165,7 +160,6 @@ private:
  */
 class FlagHandler {
 public:
-
     /**
      *  Each error should have a corresponding static FlagDefinition object.
      *  In the Algorithm header file, this will be defined like this:
@@ -175,11 +169,12 @@ public:
      *          ...
      *
      *  A FlagDefinitionList is created in the .cc file and is used to create the FlagDefinition
-     *  objects and insure that they are properly sequence:
+     *  objects and insure that they are properly sequenced: The Failure Flag is a General Failure
+     *  flag which is set if any of the specific failure flags get set.
      *
      *      FlagDefinitionList flagDefinitions;
-     *      FlagDefinition const FAILURE = flagDefinitions.add(FlagHandler::FAILURE); 
-     *      FlagDefinition const FAILURE_MODE = flagDefinitions.add("flag_mode", "Specific failure flag"); 
+     *      FlagDefinition const FAILURE = flagDefinitions.addFailureFlag();
+     *      FlagDefinition const FAILURE_MODE = flagDefinitions.add("flag_mode", "Specific failure flag");
      *  @endcode
      */
 
@@ -195,6 +190,13 @@ public:
      */
     FlagHandler() : failureFlagNumber(FlagDefinition::number_undefined) {}
 
+    /**
+     *  Define the universal name of the general failure flag
+    */
+    static std::string const & getFailureFlagName() {
+        static std::string name = "flag";
+        return name;
+    }
     /**
      *  Add Flag fields to a schema, creating a FlagHandler object to manage them.
      *
@@ -233,35 +235,24 @@ public:
         FlagDefinitionList const & skipDefs=FlagDefinitionList()
     );
     /**
-     *  Return the FlagDefinition object that corresponds to given FlagHandler name
-     */
-    FlagDefinition getDefinition(std::string const & flagName) const {
-        for (std::size_t i = 0; i < _vector.size(); i++) {
-            if (_vector[i].first.name == flagName && _vector[i].second.isValid()) {
-                return _vector[i].first;
-            }
-        }
-        throw pex::exceptions::RuntimeError("No FlagHandler entry for " + flagName);
-    }
-    /**
-     *  Return the FlagDefinition object that corresponds to given FlagHandler index
-     */
-    FlagDefinition getDefinition(std::size_t i) const {
-        if (i < _vector.size() && _vector[i].second.isValid()) {
-            return _vector[i].first;
-        }
-        throw pex::exceptions::RuntimeError("No legal FlagHandler entry number " + std::to_string(i));
-    }
-    /**
      *  Return the index of a flag with the given flag name
     */
     unsigned int getFlagNumber(std::string const & flagName) const {
         for (unsigned int i=0; i < _vector.size(); i++) {
-            if (_vector[i].first.name == flagName && _vector[i].second.isValid()) {
+            if (_vector[i].first == flagName && _vector[i].second.isValid()) {
                 return i;
             }
         }
-        throw pex::exceptions::RuntimeError("No FlagHandler entry for " + flagName);
+        throw FatalAlgorithmError("No FlagHandler entry for " + flagName);
+    }
+    /**
+     *  Return the value of the flag name corresponding to the given flag index.
+     */
+    std::string getFlagName(std::size_t i) const {
+        if (i < _vector.size() && _vector[i].second.isValid()) {
+            return _vector[i].first;
+        }
+        throw FatalAlgorithmError("No legal FlagHandler entry number " + std::to_string(i));
     }
     /**
      *  Return the value of the flag field corresponding to the given flag index.
@@ -270,18 +261,18 @@ public:
         if (i < _vector.size() && _vector[i].second.isValid()) {
             return record.get(_vector[i].second);
         }
-        throw pex::exceptions::RuntimeError("No legal FlagHandler entry number " + std::to_string(i));
+        throw FatalAlgorithmError("No legal FlagHandler entry number " + std::to_string(i));
     }
     /**
      *  Return the value of the flag field with the given flag name
      */
     bool getValue(afw::table::BaseRecord const & record, std::string flagName) const {
         for (std::size_t i = 0; i < _vector.size(); i++) {
-            if (_vector[i].first.name == flagName && _vector[i].second.isValid()) {
+            if (_vector[i].first == flagName && _vector[i].second.isValid()) {
                 return record.get(_vector[i].second);
             }
         }
-        throw pex::exceptions::RuntimeError("No FlagHandler entry for " + flagName);
+        throw FatalAlgorithmError("No FlagHandler entry for " + flagName);
     }
     /**
      *  Set the flag field corresponding to the given flag index.
@@ -291,7 +282,7 @@ public:
             record.set(_vector[i].second, value);
             return;
         }
-        throw pex::exceptions::RuntimeError("No legal FlagHandler entry number " + std::to_string(i));
+        throw FatalAlgorithmError("No legal FlagHandler entry number " + std::to_string(i));
     }
     /**
      *  Set the flag field corresponding to the given FlagDefinition Address.
@@ -301,12 +292,15 @@ public:
      */
     void setValue(afw::table::BaseRecord & record, std::string flagName, bool value) const {
         for (std::size_t i = 0; i < _vector.size(); i++) {
-            if (_vector[i].first.name == flagName && _vector[i].second.isValid()) {
+            if (_vector[i].first == flagName && _vector[i].second.isValid()) {
                 record.set(_vector[i].second, value);
                 return;
             }
         }
-        throw pex::exceptions::RuntimeError("No FlagHandler entry for " + flagName);
+        throw FatalAlgorithmError("No FlagHandler entry for " + flagName);
+    }
+    std::size_t getFailureFlagNumber() const {
+        return failureFlagNumber;
     }
     /**
      *  Handle an expected or unexpected Exception thrown by a measurement algorithm.
@@ -321,7 +315,7 @@ public:
     std::size_t failureFlagNumber;
 private:
 
-    typedef std::vector< std::pair<FlagDefinition, afw::table::Key<afw::table::Flag> > > Vector;
+    typedef std::vector< std::pair<std::string, afw::table::Key<afw::table::Flag> > > Vector;
     Vector _vector;
 };
 

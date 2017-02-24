@@ -25,6 +25,11 @@
 
 namespace lsst { namespace meas { namespace base {
 
+FlagDefinition FlagDefinitionList::addFailureFlag(
+    std::string const & doc
+) {
+        return add(FlagHandler::getFailureFlagName(), doc);
+}
 
 FlagHandler FlagHandler::addFields(
     afw::table::Schema & schema,
@@ -38,14 +43,14 @@ FlagHandler FlagHandler::addFields(
         FlagDefinition const & flagDef = flagDefs[i];
         if (skipDefs.hasDefinition(flagDef.name)) {
             afw::table::Key<afw::table::Flag> key;
-            r._vector.push_back( std::make_pair( flagDef, key));
+            r._vector.push_back( std::make_pair( flagDef.name, key));
         }
         else {
             afw::table::Key<afw::table::Flag> key(schema.addField<afw::table::Flag>(schema.join(prefix, flagDef.name), flagDef.doc));
-            r._vector.push_back( std::make_pair( flagDef, key));
-            if (flagDef == FlagDefinition::getFailureFlag()) {
+            r._vector.push_back( std::make_pair( flagDef.name, key));
+            if (flagDef.name == FlagHandler::getFailureFlagName()) {
                 r.failureFlagNumber = i;
-            }
+     }
         }
     }
     return r;
@@ -63,7 +68,7 @@ FlagHandler::FlagHandler(
             afw::table::Key<afw::table::Flag> key;
             _vector.push_back(
                 std::make_pair(
-                    flagDef,
+                    flagDef.name,
                     key
                 )
             );
@@ -71,11 +76,11 @@ FlagHandler::FlagHandler(
         else {
             _vector.push_back(
                 std::make_pair(
-                    flagDef,
+                    flagDef.name,
                     s[flagDef.name]
                 )
             );
-            if (flagDef == FlagDefinition::getFailureFlag()) {
+            if (flagDef.name == FlagHandler::getFailureFlagName()) {
                 failureFlagNumber = i;
             }
         }
@@ -87,7 +92,7 @@ void FlagHandler::handleFailure(afw::table::BaseRecord & record, MeasurementErro
     if (failureFlagNumber != FlagDefinition::number_undefined) {
         record.set(_vector[failureFlagNumber].second, true);
     }
-    if (error) {
+    if (error && error->getFlagBit() != FlagDefinition::number_undefined) {
         assert(numFlags > error->getFlagBit());  // We need the particular flag
         record.set(_vector[error->getFlagBit()].second, true);
     }
