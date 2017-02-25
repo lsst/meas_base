@@ -39,7 +39,7 @@ PYBIND11_PLUGIN(_pixelFlags) {
     py::module mod("_pixelFlags", "Python wrapper for afw _pixelFlags library");
 
     /* Module level */
-    py::class_<PixelFlagsAlgorithm, SimpleAlgorithm> clsPixelFlagsAlgorithm(mod, "PixelFlagsAlgorithm");
+    py::class_<PixelFlagsAlgorithm, std::shared_ptr<PixelFlagsAlgorithm>, SimpleAlgorithm> clsPixelFlagsAlgorithm(mod, "PixelFlagsAlgorithm");
     py::class_<PixelFlagsControl> clsPixelFlagsControl(mod, "PixelFlagsControl");
 
     /* Member types and enums */

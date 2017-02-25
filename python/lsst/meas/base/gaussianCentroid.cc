@@ -39,7 +39,7 @@ PYBIND11_PLUGIN(_gaussianCentroid) {
     py::module mod("_gaussianCentroid", "Python wrapper for afw _gaussianCentroid library");
 
     /* Module level */
-    py::class_<GaussianCentroidAlgorithm, SimpleAlgorithm> clsGaussianCentroidAlgorithm(mod, "GaussianCentroidAlgorithm");
+    py::class_<GaussianCentroidAlgorithm, std::shared_ptr<GaussianCentroidAlgorithm>, SimpleAlgorithm> clsGaussianCentroidAlgorithm(mod, "GaussianCentroidAlgorithm");
     py::class_<GaussianCentroidControl> clsGaussianCentroidControl(mod, "GaussianCentroidControl");
     py::class_<GaussianCentroidTransform> clsGaussianCentroidTransform(mod, "GaussianCentroidTransform");
 

@@ -39,7 +39,7 @@ PYBIND11_PLUGIN(_psfFlux) {
     py::module mod("_psfFlux", "Python wrapper for afw _psfFlux library");
 
     /* Module level */
-    py::class_<PsfFluxAlgorithm, SimpleAlgorithm> clsPsfFluxAlgorithm(mod, "PsfFluxAlgorithm");
+    py::class_<PsfFluxAlgorithm, std::shared_ptr<PsfFluxAlgorithm>, SimpleAlgorithm> clsPsfFluxAlgorithm(mod, "PsfFluxAlgorithm");
     py::class_<PsfFluxControl> clsPsfFluxControl(mod, "PsfFluxControl");
     py::class_<PsfFluxTransform> clsPsfFluxTransform(mod, "PsfFluxTransform");
 

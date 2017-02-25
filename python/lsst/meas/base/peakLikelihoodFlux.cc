@@ -38,7 +38,7 @@ PYBIND11_PLUGIN(_peakLikelihoodFlux) {
     py::module mod("_peakLikelihoodFlux", "Python wrapper for afw _peakLikelihoodFlux library");
 
     /* Module level */
-    py::class_<PeakLikelihoodFluxAlgorithm, SimpleAlgorithm> clsPeakLikelihoodFluxAlgorithm(mod, "PeakLikelihoodFluxAlgorithm");
+    py::class_<PeakLikelihoodFluxAlgorithm, std::shared_ptr<PeakLikelihoodFluxAlgorithm>, SimpleAlgorithm> clsPeakLikelihoodFluxAlgorithm(mod, "PeakLikelihoodFluxAlgorithm");
     py::class_<PeakLikelihoodFluxControl> clsPeakLikelihoodFluxControl(mod, "PeakLikelihoodFluxControl");
     py::class_<PeakLikelihoodFluxTransform> clsPeakLikelihoodFluxTransform(mod, "PeakLikelihoodFluxTransform");
 

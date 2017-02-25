@@ -41,7 +41,7 @@ PYBIND11_PLUGIN(_blendedness) {
     /* Module level */
 
     /* Member types and enums */
-    py::class_<BlendednessAlgorithm, SimpleAlgorithm> clsBlendednessAlgorithm(mod, "BlendednessAlgorithm");
+    py::class_<BlendednessAlgorithm, std::shared_ptr<BlendednessAlgorithm>, SimpleAlgorithm> clsBlendednessAlgorithm(mod, "BlendednessAlgorithm");
     py::class_<BlendednessControl> clsBlendednessControl(mod, "BlendednessControl");
 
     /* Constructors */

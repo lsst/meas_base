@@ -42,7 +42,7 @@ namespace meas {
 namespace base {
 namespace {
 
-using PySdssShapeAlgorithm = py::class_<SdssShapeAlgorithm, SimpleAlgorithm>;
+using PySdssShapeAlgorithm = py::class_<SdssShapeAlgorithm, std::shared_ptr<SdssShapeAlgorithm>, SimpleAlgorithm>;
 
 template <typename ImageT>
 static void declareComputeMethods(PySdssShapeAlgorithm & cls) {
@@ -78,7 +78,7 @@ PYBIND11_PLUGIN(_sdssShape) {
     /* Module level */
     py::class_<SdssShapeResult, CentroidResult, FluxResult, ShapeResult> clsSdssShapeResult(mod, "SdssShapeResult");
     py::class_<SdssShapeResultKey> clsSdssShapeResultKey(mod, "SdssShapeResultKey");
-    py::class_<SdssShapeAlgorithm, SimpleAlgorithm> clsSdssShapeAlgorithm(mod, "SdssShapeAlgorithm");
+    py::class_<SdssShapeAlgorithm, std::shared_ptr<SdssShapeAlgorithm>, SimpleAlgorithm> clsSdssShapeAlgorithm(mod, "SdssShapeAlgorithm");
     py::class_<SdssShapeControl> clsSdssShapeControl(mod, "SdssShapeControl");
     py::class_<SdssShapeTransform> clsSdssShapeTransform(mod, "SdssShapeTransform");
 
