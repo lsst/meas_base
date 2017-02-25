@@ -39,7 +39,7 @@ PYBIND11_PLUGIN(_sdssCentroid) {
     py::module mod("_sdssCentroid", "Python wrapper for afw _sdssCentroid library");
 
     /* Module level */
-    py::class_<SdssCentroidAlgorithm, SimpleAlgorithm> clsSdssCentroidAlgorithm(mod, "SdssCentroidAlgorithm");
+    py::class_<SdssCentroidAlgorithm, std::shared_ptr<SdssCentroidAlgorithm>, SimpleAlgorithm> clsSdssCentroidAlgorithm(mod, "SdssCentroidAlgorithm");
     py::class_<SdssCentroidControl> clsSdssCentroidControl(mod, "SdssCentroidControl");
     py::class_<SdssCentroidTransform> clsSdssCentroidTransform(mod, "SdssCentroidTransform");
 

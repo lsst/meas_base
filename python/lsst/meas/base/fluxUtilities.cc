@@ -25,7 +25,7 @@
 
 #include "lsst/meas/base/ApertureFlux.h"
 
-#include "lsst/afw/table/pybind11/functorKey.h"
+#include "lsst/afw/table/python/functorKey.h"
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -42,7 +42,7 @@ PYBIND11_PLUGIN(_fluxUtilities) {
     clsFluxResult.def_readwrite("flux", &FluxResult::flux);
     clsFluxResult.def_readwrite("fluxSigma", &FluxResult::fluxSigma);
 
-    afw::table::pybind11::declareFunctorKeys<FluxResult>(mod, "FluxResult");
+    afw::table::python::declareFunctorKeys<FluxResult>(mod, "FluxResult");
 
     py::class_<FluxResultKey, std::shared_ptr<FluxResultKey>, afw::table::FunctorKey<FluxResult>> clsFluxResultKey(mod, "FluxResultKey");
 
@@ -67,7 +67,7 @@ PYBIND11_PLUGIN(_fluxUtilities) {
     clsMagResult.def_readwrite("mag", &MagResult::mag);
     clsMagResult.def_readwrite("magErr", &MagResult::magErr);
 
-    afw::table::pybind11::declareFunctorKeys<MagResult>(mod, "MagResult");
+    afw::table::python::declareFunctorKeys<MagResult>(mod, "MagResult");
 
     py::class_<MagResultKey, std::shared_ptr<MagResultKey>, afw::table::FunctorKey<MagResult>> clsMagResultKey(mod, "MagResultKey");
 
