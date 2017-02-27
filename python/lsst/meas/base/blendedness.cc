@@ -20,8 +20,7 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/pex/config/python.h"
 #include "lsst/meas/base/python.h"
@@ -36,9 +35,7 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(blendedness) {
-    py::module mod("blendedness", "Python wrapper for afw _blendedness library");
-
-    /* Module level */
+    py::module mod("blendedness");
 
     /* Member types and enums */
     py::class_<BlendednessAlgorithm, std::shared_ptr<BlendednessAlgorithm>, SimpleAlgorithm> clsBlendednessAlgorithm(mod, "BlendednessAlgorithm");
@@ -51,8 +48,6 @@ PYBIND11_PLUGIN(blendedness) {
                                 "ctrl"_a, "name"_a, "schema"_a);
 
     clsBlendednessControl.def(py::init<>());
-
-    /* Operators */
 
     /* Members */
     python::declareAlgorithm<BlendednessAlgorithm, BlendednessControl>(

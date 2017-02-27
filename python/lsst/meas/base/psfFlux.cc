@@ -20,8 +20,8 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "lsst/pex/config/python.h"
 #include "lsst/meas/base/python.h"
@@ -36,7 +36,7 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(psfFlux) {
-    py::module mod("psfFlux", "Python wrapper for afw _psfFlux library");
+    py::module mod("psfFlux");
 
     /* Module level */
     py::class_<PsfFluxAlgorithm, std::shared_ptr<PsfFluxAlgorithm>, SimpleAlgorithm> clsPsfFluxAlgorithm(mod, "PsfFluxAlgorithm");
@@ -49,10 +49,6 @@ PYBIND11_PLUGIN(psfFlux) {
     clsPsfFluxAlgorithm.attr("NO_GOOD_PIXELS") = py::cast(static_cast<int>(PsfFluxAlgorithm::NO_GOOD_PIXELS));
     clsPsfFluxAlgorithm.attr("EDGE") = py::cast(static_cast<int>(PsfFluxAlgorithm::EDGE));
     clsPsfFluxAlgorithm.attr("N_FLAGS") = py::cast(static_cast<int>(PsfFluxAlgorithm::N_FLAGS));
-
-    /* Constructors */
-
-    /* Operators */
 
     /* Members */
     python::declareAlgorithm<PsfFluxAlgorithm,

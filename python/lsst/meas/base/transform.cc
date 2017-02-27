@@ -20,8 +20,7 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/meas/base/Transform.h"
 
@@ -33,14 +32,10 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(transform) {
-    py::module mod("transform", "Python wrapper for afw _transform library");
+    py::module mod("transform");
 
     /* Module level */
     py::class_<BaseTransform> cls(mod, "BaseTransform");
-
-    /* Member types and enums */
-
-    /* Constructors */
 
     /* Operators */
     cls.def("__call__", [](BaseTransform const & self,
@@ -50,8 +45,6 @@ PYBIND11_PLUGIN(transform) {
                            afw::image::Calib const & calib) {
             return self(inputCatalog, outputCatalog, wcs, calib);
         }, "inputCatalog"_a, "outputCatalog"_a, "wcs"_a, "calib"_a);
-
-    /* Members */
 
     return mod.ptr();
 }

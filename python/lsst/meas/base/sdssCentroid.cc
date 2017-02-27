@@ -20,8 +20,7 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/pex/config/python.h"
 #include "lsst/meas/base/python.h"
@@ -36,7 +35,7 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(sdssCentroid) {
-    py::module mod("sdssCentroid", "Python wrapper for afw _sdssCentroid library");
+    py::module mod("sdssCentroid");
 
     /* Module level */
     py::class_<SdssCentroidAlgorithm, std::shared_ptr<SdssCentroidAlgorithm>, SimpleAlgorithm> clsSdssCentroidAlgorithm(mod, "SdssCentroidAlgorithm");
@@ -48,10 +47,6 @@ PYBIND11_PLUGIN(sdssCentroid) {
                                           std::string const &,
                                           afw::table::Schema &>(),
                                  "ctrl"_a, "name"_a, "schema"_a);
-
-    /* Constructors */
-
-    /* Operators */
 
     /* Members */
     python::declareAlgorithm<SdssCentroidAlgorithm,

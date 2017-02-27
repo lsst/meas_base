@@ -20,8 +20,8 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "lsst/pex/config/python.h"
 
@@ -36,13 +36,11 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(pixelFlags) {
-    py::module mod("pixelFlags", "Python wrapper for afw _pixelFlags library");
+    py::module mod("pixelFlags");
 
     /* Module level */
     py::class_<PixelFlagsAlgorithm, std::shared_ptr<PixelFlagsAlgorithm>, SimpleAlgorithm> clsPixelFlagsAlgorithm(mod, "PixelFlagsAlgorithm");
     py::class_<PixelFlagsControl> clsPixelFlagsControl(mod, "PixelFlagsControl");
-
-    /* Member types and enums */
 
     /* Constructors */
     clsPixelFlagsAlgorithm.def(py::init<PixelFlagsAlgorithm::Control const &,
@@ -51,8 +49,6 @@ PYBIND11_PLUGIN(pixelFlags) {
                                "ctrl"_a, "name"_a, "schema"_a);
 
     clsPixelFlagsControl.def(py::init<>());
-
-    /* Operators */
 
     /* Members */
     clsPixelFlagsAlgorithm.def("measure", &PixelFlagsAlgorithm::measure,

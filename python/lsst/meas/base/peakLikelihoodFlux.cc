@@ -20,8 +20,7 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/meas/base/python.h"
 
@@ -35,18 +34,12 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(peakLikelihoodFlux) {
-    py::module mod("peakLikelihoodFlux", "Python wrapper for afw _peakLikelihoodFlux library");
+    py::module mod("peakLikelihoodFlux");
 
     /* Module level */
     py::class_<PeakLikelihoodFluxAlgorithm, std::shared_ptr<PeakLikelihoodFluxAlgorithm>, SimpleAlgorithm> clsPeakLikelihoodFluxAlgorithm(mod, "PeakLikelihoodFluxAlgorithm");
     py::class_<PeakLikelihoodFluxControl> clsPeakLikelihoodFluxControl(mod, "PeakLikelihoodFluxControl");
     py::class_<PeakLikelihoodFluxTransform> clsPeakLikelihoodFluxTransform(mod, "PeakLikelihoodFluxTransform");
-
-    /* Member types and enums */
-
-    /* Constructors */
-
-    /* Operators */
 
     /* Members */
     python::declareAlgorithm<PeakLikelihoodFluxAlgorithm,

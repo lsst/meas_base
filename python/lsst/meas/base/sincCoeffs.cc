@@ -20,8 +20,7 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/meas/base/SincCoeffs.h"
 
@@ -37,12 +36,6 @@ namespace {
     void declareSincCoeffs(py::module & mod, std::string const & suffix) {
         /* Module level */
         py::class_<SincCoeffs<T>> cls(mod, ("SincCoeffs" + suffix).c_str());
-
-        /* Member types and enums */
-
-        /* Constructors */
-
-        /* Operators */
 
         /* Members */
         cls.def_static("cache", &SincCoeffs<T>::cache, "rInner"_a, "rOuter"_a);

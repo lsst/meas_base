@@ -20,12 +20,10 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "numpy/arrayobject.h"
 #include "ndarray/pybind11.h"
-#include "ndarray/converter.h"
 
 #include "lsst/meas/base/CentroidUtilities.h"
 
@@ -37,7 +35,7 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(centroidUtilities) {
-    py::module mod("centroidUtilities", "Python wrapper for afw _centroidUtilities library");
+    py::module mod("centroidUtilities");
 
     if (_import_array() < 0) {
         PyErr_SetString(PyExc_ImportError, "numpy.core.multiarray failed to import");
@@ -48,8 +46,6 @@ PYBIND11_PLUGIN(centroidUtilities) {
     py::class_<CentroidChecker> clsCentroidChecker(mod, "CentroidChecker");
     py::class_<CentroidResult> clsCentroidResult(mod, "CentroidResult");
     py::class_<CentroidResultKey> clsCentroidResultKey(mod, "CentroidResultKey");
-
-    /* Member types and enums */
 
     /* Constructors */
     clsCentroidChecker.def(py::init<afw::table::Schema &,

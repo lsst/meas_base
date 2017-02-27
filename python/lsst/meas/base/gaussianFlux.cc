@@ -20,8 +20,7 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/meas/base/python.h"
 
@@ -35,18 +34,12 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(gaussianFlux) {
-    py::module mod("gaussianFlux", "Python wrapper for afw _gaussianFlux library");
+    py::module mod("gaussianFlux");
 
     /* Module level */
     py::class_<GaussianFluxAlgorithm, std::shared_ptr<GaussianFluxAlgorithm>, SimpleAlgorithm> clsGaussianFluxAlgorithm(mod, "GaussianFluxAlgorithm");
     py::class_<GaussianFluxControl> clsGaussianFluxControl(mod, "GaussianFluxControl");
     py::class_<GaussianFluxTransform> clsGaussianFluxTransform(mod, "GaussianFluxTransform");
-
-    /* Member types and enums */
-
-    /* Constructors */
-
-    /* Operators */
 
     /* Members */
     python::declareAlgorithm<GaussianFluxAlgorithm,

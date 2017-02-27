@@ -20,8 +20,7 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/pex/config/python.h"
 #include "lsst/meas/base/python.h"
@@ -36,18 +35,12 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(naiveCentroid) {
-    py::module mod("naiveCentroid", "Python wrapper for afw _naiveCentroid library");
+    py::module mod("naiveCentroid");
 
     /* Module level */
     py::class_<NaiveCentroidAlgorithm, std::shared_ptr<NaiveCentroidAlgorithm>, SimpleAlgorithm> clsNaiveCentroidAlgorithm(mod, "NaiveCentroidAlgorithm");
     py::class_<NaiveCentroidControl> clsNaiveCentroidControl(mod, "NaiveCentroidControl");
     py::class_<NaiveCentroidTransform> clsNaiveCentroidTransform(mod, "NaiveCentroidTransform");
-
-    /* Member types and enums */
-
-    /* Constructors */
-
-    /* Operators */
 
     /* Members */
     python::declareAlgorithm<NaiveCentroidAlgorithm,

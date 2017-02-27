@@ -20,8 +20,7 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/pex/config/python.h"
 #include "lsst/meas/base/python.h"
@@ -36,19 +35,12 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(gaussianCentroid) {
-    py::module mod("gaussianCentroid", "Python wrapper for afw _gaussianCentroid library");
+    py::module mod("gaussianCentroid");
 
     /* Module level */
     py::class_<GaussianCentroidAlgorithm, std::shared_ptr<GaussianCentroidAlgorithm>, SimpleAlgorithm> clsGaussianCentroidAlgorithm(mod, "GaussianCentroidAlgorithm");
     py::class_<GaussianCentroidControl> clsGaussianCentroidControl(mod, "GaussianCentroidControl");
     py::class_<GaussianCentroidTransform> clsGaussianCentroidTransform(mod, "GaussianCentroidTransform");
-
-    /* Member types and enums */
-
-    /* Constructors */
-
-    /* Operators */
-
 
     /* Members */
     python::declareAlgorithm<GaussianCentroidAlgorithm,

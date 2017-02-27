@@ -20,8 +20,7 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/meas/base/ApertureFlux.h"
 
@@ -35,7 +34,7 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(fluxUtilities) {
-    py::module mod("fluxUtilities", "Python wrapper for afw _fluxUtilities library");
+    py::module mod("fluxUtilities");
 
     py::class_<FluxResult> clsFluxResult(mod, "FluxResult");
 
