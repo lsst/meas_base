@@ -35,8 +35,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_sdssCentroid) {
-    py::module mod("_sdssCentroid", "Python wrapper for afw _sdssCentroid library");
+PYBIND11_PLUGIN(sdssCentroid) {
+    py::module mod("sdssCentroid", "Python wrapper for afw _sdssCentroid library");
 
     /* Module level */
     py::class_<SdssCentroidAlgorithm, std::shared_ptr<SdssCentroidAlgorithm>, SimpleAlgorithm> clsSdssCentroidAlgorithm(mod, "SdssCentroidAlgorithm");

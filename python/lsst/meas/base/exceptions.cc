@@ -34,11 +34,11 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_exceptions) {
+PYBIND11_PLUGIN(exceptions) {
     using lsst::pex::exceptions::python::declareException;
     using lsst::pex::exceptions::DomainError;
     using lsst::pex::exceptions::RuntimeError;
-    py::module mod("_exceptions", "Python wrapper for afw _exceptions library");
+    py::module mod("exceptions", "Python wrapper for afw _exceptions library");
 
     /* Module level */
     auto clsFatalAlgorithmError = declareException<FatalAlgorithmError, RuntimeError>(

@@ -67,8 +67,8 @@ static void declareComputeMethods(PySdssShapeAlgorithm & cls) {
     );
 }
 
-PYBIND11_PLUGIN(_sdssShape) {
-    py::module mod("_sdssShape", "Python wrapper for afw _sdssShape library");
+PYBIND11_PLUGIN(sdssShape) {
+    py::module mod("sdssShape", "Python wrapper for afw _sdssShape library");
 
     if (_import_array() < 0) {
         PyErr_SetString(PyExc_ImportError, "numpy.core.multiarray failed to import");

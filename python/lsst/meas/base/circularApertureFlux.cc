@@ -32,8 +32,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_circularApertureFlux) {
-    py::module mod("_circularApertureFlux", "Python wrapper for afw _circularApertureFlux library");
+PYBIND11_PLUGIN(circularApertureFlux) {
+    py::module mod("circularApertureFlux", "Python wrapper for afw _circularApertureFlux library");
 
     /* Module level */
     py::class_<CircularApertureFluxAlgorithm, std::shared_ptr<CircularApertureFluxAlgorithm>, ApertureFluxAlgorithm> cls(mod, "CircularApertureFluxAlgorithm");

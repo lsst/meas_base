@@ -57,8 +57,8 @@ namespace {
     }
 }
 
-PYBIND11_PLUGIN(_apertureFlux) {
-    py::module mod("_apertureFlux", "Python wrapper for afw _apertureFlux library");
+PYBIND11_PLUGIN(apertureFlux) {
+    py::module mod("apertureFlux", "Python wrapper for afw _apertureFlux library");
 
     /* Module level */
     py::class_<ApertureFluxAlgorithm, std::shared_ptr<ApertureFluxAlgorithm>, SimpleAlgorithm> clsApertureFluxAlgorithm(mod, "ApertureFluxAlgorithm");

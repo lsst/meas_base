@@ -32,8 +32,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_flagHandler) {
-    py::module mod("_flagHandler", "Python wrapper for afw _flagHandler library");
+PYBIND11_PLUGIN(flagHandler) {
+    py::module mod("flagHandler", "Python wrapper for afw _flagHandler library");
 
     /* Module level */
     py::class_<FlagDefinition> clsFlagDefinition(mod, "FlagDefinition");

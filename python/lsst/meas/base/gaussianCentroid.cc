@@ -35,8 +35,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_gaussianCentroid) {
-    py::module mod("_gaussianCentroid", "Python wrapper for afw _gaussianCentroid library");
+PYBIND11_PLUGIN(gaussianCentroid) {
+    py::module mod("gaussianCentroid", "Python wrapper for afw _gaussianCentroid library");
 
     /* Module level */
     py::class_<GaussianCentroidAlgorithm, std::shared_ptr<GaussianCentroidAlgorithm>, SimpleAlgorithm> clsGaussianCentroidAlgorithm(mod, "GaussianCentroidAlgorithm");

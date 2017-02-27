@@ -34,8 +34,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_fluxUtilities) {
-    py::module mod("_fluxUtilities", "Python wrapper for afw _fluxUtilities library");
+PYBIND11_PLUGIN(fluxUtilities) {
+    py::module mod("fluxUtilities", "Python wrapper for afw _fluxUtilities library");
 
     py::class_<FluxResult> clsFluxResult(mod, "FluxResult");
 

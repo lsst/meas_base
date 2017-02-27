@@ -35,8 +35,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_scaledApertureFlux) {
-    py::module mod("_scaledApertureFlux", "Python wrapper for afw _scaledApertureFlux library");
+PYBIND11_PLUGIN(scaledApertureFlux) {
+    py::module mod("scaledApertureFlux", "Python wrapper for afw _scaledApertureFlux library");
 
     /* Module level */
     py::class_<ScaledApertureFluxAlgorithm, std::shared_ptr<ScaledApertureFluxAlgorithm>, SimpleAlgorithm> clsScaledApertureFluxAlgorithm(

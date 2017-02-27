@@ -1,7 +1,7 @@
 ## -*- python -*-
 from lsst.sconsUtils import scripts
 scripts.BasicSConscript.pybind11(['algorithm',
-                                  'apertureFlux',
+                                  'apertureFlux/apertureFlux',
                                   'blendedness',
                                   'centroidUtilities',
                                   'circularApertureFlux',
@@ -20,4 +20,4 @@ scripts.BasicSConscript.pybind11(['algorithm',
                                   'sdssShape',
                                   'sincCoeffs',
                                   'shapeUtilities',
-                                  'transform',])
+                                  'transform',], addUnderscore=False)

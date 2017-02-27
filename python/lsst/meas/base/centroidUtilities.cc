@@ -36,8 +36,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_centroidUtilities) {
-    py::module mod("_centroidUtilities", "Python wrapper for afw _centroidUtilities library");
+PYBIND11_PLUGIN(centroidUtilities) {
+    py::module mod("centroidUtilities", "Python wrapper for afw _centroidUtilities library");
 
     if (_import_array() < 0) {
         PyErr_SetString(PyExc_ImportError, "numpy.core.multiarray failed to import");

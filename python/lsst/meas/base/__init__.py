@@ -23,6 +23,31 @@
 """lsst..meas.base
 """
 from __future__ import absolute_import
+# Needed for pybind11-generated docstrings
+from lsst.afw.image import Calib, Wcs
+
+from .centroidUtilities import *
+from .fluxUtilities import *
+from .inputUtilities import *
+from .shapeUtilities import *
+from .algorithm import *
+from .apertureFlux import *
+from .blendedness import *
+from .circularApertureFlux import *
+from .exceptions import *
+from .flagHandler import *
+from .gaussianCentroid import *
+from .gaussianFlux import *
+from .naiveCentroid import *
+from .peakLikelihoodFlux import *
+from .pixelFlags import *
+from .psfFlux import *
+from .scaledApertureFlux import *
+from .sdssCentroid import *
+from .sdssShape import *
+from .sincCoeffs import *
+from .transform import *
+
 from .apCorrRegistry import *
 from .pluginRegistry import *
 from .baseMeasurement import *
@@ -30,7 +55,6 @@ from .pluginsBase import *
 from .sfm import *
 from .plugins import *
 from .classification import *
-from .baseLib import *
 from .noiseReplacer import *
 from .baseMeasurement import *
 from .forcedMeasurement import *
