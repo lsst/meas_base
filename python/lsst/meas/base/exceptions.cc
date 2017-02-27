@@ -20,8 +20,7 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/meas/base/exceptions.h"
 #include "lsst/pex/exceptions/Runtime.h"
@@ -38,7 +37,8 @@ PYBIND11_PLUGIN(exceptions) {
     using lsst::pex::exceptions::python::declareException;
     using lsst::pex::exceptions::DomainError;
     using lsst::pex::exceptions::RuntimeError;
-    py::module mod("exceptions", "Python wrapper for afw _exceptions library");
+
+    py::module mod("exceptions");
 
     /* Module level */
     auto clsFatalAlgorithmError = declareException<FatalAlgorithmError, RuntimeError>(
@@ -48,14 +48,10 @@ PYBIND11_PLUGIN(exceptions) {
     auto clsPixelValueError = declareException<PixelValueError, DomainError>(
         mod, "PixelValueError", "DomainError");
 
-    /* Member types and enums */
-
     /* Constructors */
     clsMeasurementError.def(py::init<std::string const &,
                                      std::size_t>(),
                             "message"_a, "flagBit"_a);
-
-    /* Operators */
 
     /* Members */
     clsMeasurementError.def("getFlagBit", &MeasurementError::getFlagBit);

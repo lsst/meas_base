@@ -20,8 +20,7 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/meas/base/CircularApertureFlux.h"
 
@@ -33,12 +32,10 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(circularApertureFlux) {
-    py::module mod("circularApertureFlux", "Python wrapper for afw _circularApertureFlux library");
+    py::module mod("circularApertureFlux");
 
     /* Module level */
     py::class_<CircularApertureFluxAlgorithm, std::shared_ptr<CircularApertureFluxAlgorithm>, ApertureFluxAlgorithm> cls(mod, "CircularApertureFluxAlgorithm");
-
-    /* Member types and enums */
 
     /* Constructors */
     cls.def(py::init<CircularApertureFluxAlgorithm::Control const &,
@@ -46,10 +43,6 @@ PYBIND11_PLUGIN(circularApertureFlux) {
                      afw::table::Schema &,
                      daf::base::PropertySet &>(),
             "ctrl"_a, "name"_a, "schema"_a, "metadata"_a);
-
-    /* Operators */
-
-    /* Members */
 
     return mod.ptr();
 }

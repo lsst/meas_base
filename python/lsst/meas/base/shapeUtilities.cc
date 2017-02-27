@@ -20,12 +20,10 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "numpy/arrayobject.h"
 #include "ndarray/pybind11.h"
-#include "ndarray/converter.h"
 
 #include "lsst/afw/table/BaseRecord.h"
 #include "lsst/meas/base/ShapeUtilities.h"
@@ -38,7 +36,7 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(shapeUtilities) {
-    py::module mod("shapeUtilities", "Python wrapper for afw _shapeUtilities library");
+    py::module mod("shapeUtilities");
 
     if (_import_array() < 0) {
         PyErr_SetString(PyExc_ImportError, "numpy.core.multiarray failed to import");
@@ -51,12 +49,8 @@ PYBIND11_PLUGIN(shapeUtilities) {
 
     mod.def("makeShapeTransformMatrix", &makeShapeTransformMatrix, "xform"_a);
 
-    /* Member types and enums */
-
     /* Constructors */
     clsShapeResultKey.def(py::init<afw::table::SubSchema const &>(), "s"_a);
-
-    /* Operators */
 
     /* Members */
     clsShapeResult.def("getShape", &ShapeResult::getShape);

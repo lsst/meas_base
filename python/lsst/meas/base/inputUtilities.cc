@@ -20,8 +20,7 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/InputUtilities.h"
@@ -34,12 +33,10 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(inputUtilities) {
-    py::module mod("inputUtilities", "Python wrapper for afw _inputUtilities library");
+    py::module mod("inputUtilities");
 
     /* Module level */
     py::class_<SafeCentroidExtractor> clsSafeCentroidExtractor(mod, "SafeCentroidExtractor");
-
-    /* Member types and enums */
 
     /* Constructors */
     clsSafeCentroidExtractor.def(py::init<afw::table::Schema &,
@@ -53,8 +50,6 @@ PYBIND11_PLUGIN(inputUtilities) {
                            FlagHandler const & flags) {
             return self(record, flags);
         }, "record"_a, "flags"_a);
-
-    /* Members */
 
     return mod.ptr();
 }

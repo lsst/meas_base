@@ -20,8 +20,8 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "lsst/pex/config/python.h"
 #include "lsst/meas/base/python.h"
@@ -58,7 +58,7 @@ namespace {
 }
 
 PYBIND11_PLUGIN(apertureFlux) {
-    py::module mod("apertureFlux", "Python wrapper for afw _apertureFlux library");
+    py::module mod("apertureFlux");
 
     /* Module level */
     py::class_<ApertureFluxAlgorithm, std::shared_ptr<ApertureFluxAlgorithm>, SimpleAlgorithm> clsApertureFluxAlgorithm(mod, "ApertureFluxAlgorithm");
@@ -67,6 +67,8 @@ PYBIND11_PLUGIN(apertureFlux) {
     py::class_<ApertureFluxTransform> clsApertureFluxTransform(mod, "ApertureFluxTransform");
 
     /* Member types and enums */
+    clsApertureFluxAlgorithm.attr("Control") = clsApertureFluxControl;
+
     // ApertureFluxAlgorithm::Control wrapped in apertureFlux.py
     py::enum_<ApertureFluxAlgorithm::FlagBits>(clsApertureFluxAlgorithm, "FlagBits")
         .value("FAILURE", ApertureFluxAlgorithm::FlagBits::FAILURE)
@@ -74,10 +76,6 @@ PYBIND11_PLUGIN(apertureFlux) {
         .value("SINC_COEFFS_TRUNCATED", ApertureFluxAlgorithm::FlagBits::SINC_COEFFS_TRUNCATED)
         .value("N_FLAGS", ApertureFluxAlgorithm::FlagBits::N_FLAGS)
         .export_values();
-
-    /* Constructors */
-
-    /* Operators */
 
     /* Members */
     python::declareAlgorithm<ApertureFluxAlgorithm,

@@ -20,8 +20,7 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/afw/image/Wcs.h"
 #include "lsst/afw/table/Source.h"
@@ -36,17 +35,11 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(algorithm) {
-    py::module mod("algorithm", "Python wrapper for afw _algorithm library");
+    py::module mod("algorithm");
 
     /* Module level */
     py::class_<SingleFrameAlgorithm, std::shared_ptr<SingleFrameAlgorithm>> clsSingleFrameAlgorithm(mod, "SingleFrameAlgorithm");
     py::class_<SimpleAlgorithm, std::shared_ptr<SimpleAlgorithm>, SingleFrameAlgorithm> clsSimpleAlgorithm(mod, "SimpleAlgorithm");
-
-    /* Member types and enums */
-
-    /* Constructors */
-
-    /* Operators */
 
     /* Members */
     python::declareAlgorithm<SingleFrameAlgorithm>(clsSingleFrameAlgorithm);

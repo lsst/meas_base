@@ -20,8 +20,8 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
+#include "pybind11/stl.h"
 
 #include "lsst/meas/base/FlagHandler.h"
 
@@ -33,7 +33,7 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(flagHandler) {
-    py::module mod("flagHandler", "Python wrapper for afw _flagHandler library");
+    py::module mod("flagHandler");
 
     /* Module level */
     py::class_<FlagDefinition> clsFlagDefinition(mod, "FlagDefinition");
@@ -46,8 +46,6 @@ PYBIND11_PLUGIN(flagHandler) {
     /* Constructors */
     clsFlagDefinition.def(py::init<>());
     clsFlagDefinition.def(py::init<std::string, std::string>(), "_name"_a, "_doc"_a);
-
-    /* Operators */
 
     /* Members */
     clsFlagDefinition.def_readwrite("doc", &FlagDefinition::doc);

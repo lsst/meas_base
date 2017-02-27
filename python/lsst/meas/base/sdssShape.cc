@@ -20,12 +20,10 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "numpy/arrayobject.h"
 #include "ndarray/pybind11.h"
-#include "ndarray/converter.h"
 
 #include "lsst/pex/config/python.h"
 #include "lsst/meas/base/python.h"
@@ -68,7 +66,7 @@ static void declareComputeMethods(PySdssShapeAlgorithm & cls) {
 }
 
 PYBIND11_PLUGIN(sdssShape) {
-    py::module mod("sdssShape", "Python wrapper for afw _sdssShape library");
+    py::module mod("sdssShape");
 
     if (_import_array() < 0) {
         PyErr_SetString(PyExc_ImportError, "numpy.core.multiarray failed to import");

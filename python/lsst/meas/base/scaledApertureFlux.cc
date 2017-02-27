@@ -20,8 +20,7 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-#include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
+#include "pybind11/pybind11.h"
 
 #include "lsst/pex/config/python.h"
 #include "lsst/meas/base/python.h"
@@ -36,19 +35,13 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(scaledApertureFlux) {
-    py::module mod("scaledApertureFlux", "Python wrapper for afw _scaledApertureFlux library");
+    py::module mod("scaledApertureFlux");
 
     /* Module level */
     py::class_<ScaledApertureFluxAlgorithm, std::shared_ptr<ScaledApertureFluxAlgorithm>, SimpleAlgorithm> clsScaledApertureFluxAlgorithm(
         mod, "ScaledApertureFluxAlgorithm");
     py::class_<ScaledApertureFluxControl> clsScaledApertureFluxControl(mod, "ScaledApertureFluxControl");
     py::class_<ScaledApertureFluxTransform> clsScaledApertureFluxTransform(mod, "ScaledApertureFluxTransform");
-
-    /* Member types and enums */
-
-    /* Constructors */
-
-    /* Operators */
 
     /* Members */
     python::declareAlgorithm<ScaledApertureFluxAlgorithm,
