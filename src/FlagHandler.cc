@@ -35,13 +35,13 @@ FlagHandler FlagHandler::addFields(
     afw::table::Schema & schema,
     std::string const & prefix,
     FlagDefinitionList const & flagDefs,
-    FlagDefinitionList const & skipDefs
+    FlagDefinitionList const & exclDefs
 ) {
     FlagHandler r;
     r._vector.reserve(flagDefs.size());
     for (std::size_t i = 0; i < flagDefs.size(); i++) {
         FlagDefinition const & flagDef = flagDefs[i];
-        if (skipDefs.hasDefinition(flagDef.name)) {
+        if (exclDefs.hasDefinition(flagDef.name)) {
             afw::table::Key<afw::table::Flag> key;
             r._vector.push_back( std::make_pair( flagDef.name, key));
         }
@@ -59,12 +59,12 @@ FlagHandler FlagHandler::addFields(
 FlagHandler::FlagHandler(
     afw::table::SubSchema const & s,
     FlagDefinitionList const & flagDefs,
-    FlagDefinitionList const & skipDefs
+    FlagDefinitionList const & exclDefs
 ) : failureFlagNumber(FlagDefinition::number_undefined) {
     _vector.reserve(flagDefs.size());
     for (std::size_t i = 0; i < flagDefs.size(); i++ ) {
         FlagDefinition const & flagDef = flagDefs[i];
-        if (skipDefs.hasDefinition(flagDef.name)) {
+        if (exclDefs.hasDefinition(flagDef.name)) {
             afw::table::Key<afw::table::Flag> key;
             _vector.push_back(
                 std::make_pair(

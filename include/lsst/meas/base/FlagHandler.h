@@ -31,7 +31,7 @@
 
 namespace lsst { namespace meas { namespace base {
 /**
- *  @brief Simple POD struct used to define and document flags
+ *  @brief Simple class used to define and document flags
  *         The name and doc constitute the identity of the FlagDefinition
  *         The number is used for indexing, but is assigned arbitrarily
 */
@@ -70,15 +70,14 @@ struct FlagDefinition {
 class FlagDefinitionList {
 public:
     /**
-     *  @brief initialize a FlagDefinition collection with no entries.
+     *  @brief initialize a FlagDefinition list with no entries.
      */
     FlagDefinitionList() {
     };
 
 #ifndef SWIG
-
     /**
-     *  @brief initialize a FlagDefinition collection from initializer_list.
+     *  @brief initialize a FlagDefinition list from initializer_list.
      */
     FlagDefinitionList(std::initializer_list<FlagDefinition> const & list) {
         for (FlagDefinition const * iter = list.begin(); iter < list.end(); iter++) {
@@ -87,6 +86,10 @@ public:
     }
 #endif
 
+    static FlagDefinitionList const & getEmptyList() {
+        static FlagDefinitionList list;
+        return list;
+    }
     /**
      *  @brief get a reference to the FlagDefinition with specified index.
      */
@@ -119,20 +122,19 @@ public:
     }
     /**
      *  @brief Add a Flag Defintion to act as a "General" failure flag
+     *  This flag will be set if a Measurement error is thrown
      */
     FlagDefinition addFailureFlag(std::string const & doc="General Failure Flag");
 
     /**
-     *  @brief Add a new FlagDefinition to this collection.
-     *  Return a reference to the newly create definition with the
-     *  FlagDefinition.number corresponding to its index in the array..
+     *  @brief Add a new FlagDefinition to this list. Return a copy with the
+     *  FlagDefinition.number set corresponding to its index in the list.
      */
     FlagDefinition add(std::string const name, std::string const doc) {
         FlagDefinition flagDef = FlagDefinition(name, doc, _vector.size());
         _vector.push_back(flagDef);
         return _vector.back();
     }
-    FlagDefinition add(FlagDefinition const & flagDef) { return add(flagDef.name, flagDef.doc); }
     /**
      *  @brief return the current size (number of defined elements) of the collection
      */
@@ -147,14 +149,16 @@ private:
  *  Utility class for handling flag fields that indicate the failure modes of an algorithm.
  *
  *  The typical pattern for using FlagHandler within an Algorithm is:
+ *
  *   - Add a FlagHandler object as a data member.
- *   - Create a FlagDefinitionList to hold the names and docs for the error flags, with each
- *     entry corresponding to   Names here should not include the algorihtm name,
- *     and should generally have the form "flag_*", with the first entry (corresponding to the general
- *     failure flag) simply "flag".
- *   - Initialize the FlagHandler data member within the Algorithm's constructor, using the addFields
- *     static method to add fields to the schema at the same time the FlagHandler is constructed to
- *     manage them.
+ *
+ *   - Create a FlagDefinitionList to specify the name and doc for each flag
+ *     Add a "general" failure flag if one is needed (this indicates that some failure occurred).
+ *     Add specific error flags for each type of error (these indicate a specific failure).
+ *
+ *   - Initialize the FlagHandler data member within the Algorithm's constructor,
+ *     using the static addFields method to add the flags from the FlagDefinitionList
+ *     to the schema.
  *
  *  See PsfFluxAlgorithm for a complete example.
  */
@@ -168,9 +172,7 @@ public:
      *      static FlagDefinition const & SOME_OTHER_FAILURE_MODE;
      *          ...
      *
-     *  A FlagDefinitionList is created in the .cc file and is used to create the FlagDefinition
-     *  objects and insure that they are properly sequenced: The Failure Flag is a General Failure
-     *  flag which is set if any of the specific failure flags get set.
+     *  A static FlagDefinitionList is created in the Algorithm .cc file, like this:
      *
      *      FlagDefinitionList flagDefinitions;
      *      FlagDefinition const FAILURE = flagDefinitions.addFailureFlag();
@@ -207,14 +209,17 @@ public:
      *                         be constructed by using schema.join() on this and the flag name from the
      *                         FlagDefinition array.
      *  @param[in]   flagDefs  Reference to a FlagDefinitionList
-     *  @param[in]   skipDefs  Reference to a FlagDefinitionList of entries in flagDefs skip
+     *  @param[in]   exclDefs  optional FlagDefinitionList of flags to exclude
      *
+     *  If the set of flags depends on the algorithm configuration, a flag may be excluded from the
+     *  schema using the optional exclDefs parameter.  This can be specified using an initializer_list,
+     *  as in: _flagHandler = FlagHandler::addFields(schema, prefix, flagDefs, {NO_PSF})
      */
     static FlagHandler addFields(
         afw::table::Schema & schema,
         std::string const & prefix,
         FlagDefinitionList const & flagDefs,
-        FlagDefinitionList const & skipDefs=FlagDefinitionList()
+        FlagDefinitionList const & exclDefs=FlagDefinitionList::getEmptyList()
     );
     /**
      *  Construct a FlagHandler to manage fields already added to a schema.
@@ -222,17 +227,17 @@ public:
      *  This is primarily intended for use by forced measurement algorithms that need to parse the flags
      *  of the single-frame measurement algorithms providing their reference parameters.
      *
-     *  @param[in] s      A SubSchema object that holds the fields to extract and their namespace.
-     *                    Obtainable from the arguments to addFields() as "schema[prefix]".
+     *  @param[in]   A SubSchema object that holds the fields to extract and their namespace.
+     *               Obtainable from the arguments to addFields() as "schema[prefix]".
      *  @param[in]   flagDefs  Reference to a FlagDefinitionList
-     *  @param[in]   skipDefs  Reference to a FlagDefinitionList of entries in flagDefs skip
+     *  @param[in]   exclDefs  optional FlagDefinitionList of flags to exclude
      *
      *  As with addFields(), pointers must be valid only for the duration of this constructor call.
      */
     FlagHandler(
         afw::table::SubSchema const & s,
         FlagDefinitionList const & flagDefs,
-        FlagDefinitionList const & skipDefs=FlagDefinitionList()
+        FlagDefinitionList const & exclDefs=FlagDefinitionList::getEmptyList()
     );
     /**
      *  Return the index of a flag with the given flag name
@@ -299,6 +304,11 @@ public:
         }
         throw FatalAlgorithmError("No FlagHandler entry for " + flagName);
     }
+    /**
+     *  Get the index of the General Failure flag, if one is defined.  This flag is defined
+     *  by most algorithms, and if defined, is set whenever an error is caught by the FlagHandler.
+     *  If no General Failure flag is defined, this routine will return FlagDefinition::number_undefined 
+     */
     std::size_t getFailureFlagNumber() const {
         return failureFlagNumber;
     }
@@ -308,13 +318,12 @@ public:
      *  If the exception is expected, it should inherit from MeasurementError and can be passed here;
      *  this allows handleFailure to extract the failure mode enum value from the exception and set
      *  the corresponding flag.  The general failure flag will be set regardless of whether the "error"
-     *  argument is null.
+     *  argument is NULL (which happens when an unexpected error occurs).
      */
     void handleFailure(afw::table::BaseRecord & record, MeasurementError const * error=NULL) const;
 
     std::size_t failureFlagNumber;
 private:
-
     typedef std::vector< std::pair<std::string, afw::table::Key<afw::table::Flag> > > Vector;
     Vector _vector;
 };
