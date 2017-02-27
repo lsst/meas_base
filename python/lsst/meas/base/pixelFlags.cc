@@ -35,8 +35,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_pixelFlags) {
-    py::module mod("_pixelFlags", "Python wrapper for afw _pixelFlags library");
+PYBIND11_PLUGIN(pixelFlags) {
+    py::module mod("pixelFlags", "Python wrapper for afw _pixelFlags library");
 
     /* Module level */
     py::class_<PixelFlagsAlgorithm, std::shared_ptr<PixelFlagsAlgorithm>, SimpleAlgorithm> clsPixelFlagsAlgorithm(mod, "PixelFlagsAlgorithm");

@@ -50,8 +50,8 @@ namespace {
     }
 }
 
-PYBIND11_PLUGIN(_sincCoeffs) {
-    py::module mod("_sincCoeffs", "Python wrapper for afw _sincCoeffs library");
+PYBIND11_PLUGIN(sincCoeffs) {
+    py::module mod("sincCoeffs", "Python wrapper for afw _sincCoeffs library");
 
     declareSincCoeffs<float>(mod, "F");
     declareSincCoeffs<double>(mod, "D");

@@ -37,8 +37,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_shapeUtilities) {
-    py::module mod("_shapeUtilities", "Python wrapper for afw _shapeUtilities library");
+PYBIND11_PLUGIN(shapeUtilities) {
+    py::module mod("shapeUtilities", "Python wrapper for afw _shapeUtilities library");
 
     if (_import_array() < 0) {
         PyErr_SetString(PyExc_ImportError, "numpy.core.multiarray failed to import");

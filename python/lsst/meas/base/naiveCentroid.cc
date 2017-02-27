@@ -35,8 +35,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_naiveCentroid) {
-    py::module mod("_naiveCentroid", "Python wrapper for afw _naiveCentroid library");
+PYBIND11_PLUGIN(naiveCentroid) {
+    py::module mod("naiveCentroid", "Python wrapper for afw _naiveCentroid library");
 
     /* Module level */
     py::class_<NaiveCentroidAlgorithm, std::shared_ptr<NaiveCentroidAlgorithm>, SimpleAlgorithm> clsNaiveCentroidAlgorithm(mod, "NaiveCentroidAlgorithm");

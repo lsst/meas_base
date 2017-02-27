@@ -33,8 +33,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_inputUtilities) {
-    py::module mod("_inputUtilities", "Python wrapper for afw _inputUtilities library");
+PYBIND11_PLUGIN(inputUtilities) {
+    py::module mod("inputUtilities", "Python wrapper for afw _inputUtilities library");
 
     /* Module level */
     py::class_<SafeCentroidExtractor> clsSafeCentroidExtractor(mod, "SafeCentroidExtractor");

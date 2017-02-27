@@ -7,8 +7,7 @@ import lsst.utils.tests
 import lsst.meas.base.catalogCalculation as catCalc
 import lsst.afw.table as afwTable
 from lsst.meas.base.pluginRegistry import register
-from lsst.meas.base.baseLib import MeasurementError
-from lsst.meas.base import FlagHandler
+from lsst.meas.base import FlagHandler, MeasurementError
 
 
 @register("FailcatalogCalculation")

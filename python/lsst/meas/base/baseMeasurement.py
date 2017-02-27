@@ -26,7 +26,7 @@ import lsst.pipe.base
 import lsst.pex.config
 
 from .pluginRegistry import PluginMap
-from .baseLib import FatalAlgorithmError, MeasurementError
+from . import FatalAlgorithmError, MeasurementError
 from .pluginsBase import BasePluginConfig, BasePlugin
 from .noiseReplacer import NoiseReplacerConfig
 

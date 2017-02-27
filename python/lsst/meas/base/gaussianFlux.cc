@@ -34,8 +34,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_gaussianFlux) {
-    py::module mod("_gaussianFlux", "Python wrapper for afw _gaussianFlux library");
+PYBIND11_PLUGIN(gaussianFlux) {
+    py::module mod("gaussianFlux", "Python wrapper for afw _gaussianFlux library");
 
     /* Module level */
     py::class_<GaussianFluxAlgorithm, std::shared_ptr<GaussianFluxAlgorithm>, SimpleAlgorithm> clsGaussianFluxAlgorithm(mod, "GaussianFluxAlgorithm");

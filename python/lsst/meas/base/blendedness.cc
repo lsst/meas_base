@@ -35,8 +35,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_blendedness) {
-    py::module mod("_blendedness", "Python wrapper for afw _blendedness library");
+PYBIND11_PLUGIN(blendedness) {
+    py::module mod("blendedness", "Python wrapper for afw _blendedness library");
 
     /* Module level */
 

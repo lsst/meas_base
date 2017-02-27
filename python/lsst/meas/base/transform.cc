@@ -32,8 +32,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_transform) {
-    py::module mod("_transform", "Python wrapper for afw _transform library");
+PYBIND11_PLUGIN(transform) {
+    py::module mod("transform", "Python wrapper for afw _transform library");
 
     /* Module level */
     py::class_<BaseTransform> cls(mod, "BaseTransform");

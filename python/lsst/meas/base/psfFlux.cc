@@ -35,8 +35,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_psfFlux) {
-    py::module mod("_psfFlux", "Python wrapper for afw _psfFlux library");
+PYBIND11_PLUGIN(psfFlux) {
+    py::module mod("psfFlux", "Python wrapper for afw _psfFlux library");
 
     /* Module level */
     py::class_<PsfFluxAlgorithm, std::shared_ptr<PsfFluxAlgorithm>, SimpleAlgorithm> clsPsfFluxAlgorithm(mod, "PsfFluxAlgorithm");

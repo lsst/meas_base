@@ -35,8 +35,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(_algorithm) {
-    py::module mod("_algorithm", "Python wrapper for afw _algorithm library");
+PYBIND11_PLUGIN(algorithm) {
+    py::module mod("algorithm", "Python wrapper for afw _algorithm library");
 
     /* Module level */
     py::class_<SingleFrameAlgorithm, std::shared_ptr<SingleFrameAlgorithm>> clsSingleFrameAlgorithm(mod, "SingleFrameAlgorithm");

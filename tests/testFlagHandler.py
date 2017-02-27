@@ -30,8 +30,7 @@ import lsst.utils.tests
 import lsst.meas.base
 import lsst.meas.base.tests
 import lsst.afw.table
-from lsst.meas.base.baseLib import MeasurementError
-from lsst.meas.base import FlagDefinition, FlagHandler
+from lsst.meas.base import FlagDefinition, FlagHandler, MeasurementError
 from lsst.meas.base.tests import (AlgorithmTestCase)
 
 import lsst.pex.exceptions
