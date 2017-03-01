@@ -21,12 +21,12 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_MEAS_BASE_PYBIND11_H
-#define LSST_MEAS_BASE_PYBIND11_H
+#ifndef LSST_MEAS_BASE_PYTHON_H
+#define LSST_MEAS_BASE_PYTHON_H
+
+#include "pybind11/pybind11.h"
 
 #include <string>
-
-#include <pybind11/pybind11.h>
 
 #include "lsst/afw/image/Calib.h"
 #include "lsst/afw/image/Wcs.h"
@@ -38,6 +38,7 @@ namespace lsst {
 namespace meas {
 namespace base {
 namespace python {
+
 namespace py = pybind11;
 using namespace pybind11::literals;
 

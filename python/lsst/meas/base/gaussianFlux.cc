@@ -23,7 +23,7 @@
 #include <pybind11/pybind11.h>
 //#include <pybind11/stl.h>
 
-#include "lsst/meas/base/pybind11.h"
+#include "lsst/meas/base/python.h"
 
 #include "lsst/meas/base/GaussianFlux.h"
 
