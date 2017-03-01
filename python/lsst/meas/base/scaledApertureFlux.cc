@@ -39,7 +39,7 @@ PYBIND11_PLUGIN(_scaledApertureFlux) {
     py::module mod("_scaledApertureFlux", "Python wrapper for afw _scaledApertureFlux library");
 
     /* Module level */
-    py::class_<ScaledApertureFluxAlgorithm, SimpleAlgorithm> clsScaledApertureFluxAlgorithm(
+    py::class_<ScaledApertureFluxAlgorithm, std::shared_ptr<ScaledApertureFluxAlgorithm>, SimpleAlgorithm> clsScaledApertureFluxAlgorithm(
         mod, "ScaledApertureFluxAlgorithm");
     py::class_<ScaledApertureFluxControl> clsScaledApertureFluxControl(mod, "ScaledApertureFluxControl");
     py::class_<ScaledApertureFluxTransform> clsScaledApertureFluxTransform(mod, "ScaledApertureFluxTransform");

@@ -39,7 +39,7 @@ PYBIND11_PLUGIN(_naiveCentroid) {
     py::module mod("_naiveCentroid", "Python wrapper for afw _naiveCentroid library");
 
     /* Module level */
-    py::class_<NaiveCentroidAlgorithm, SimpleAlgorithm> clsNaiveCentroidAlgorithm(mod, "NaiveCentroidAlgorithm");
+    py::class_<NaiveCentroidAlgorithm, std::shared_ptr<NaiveCentroidAlgorithm>, SimpleAlgorithm> clsNaiveCentroidAlgorithm(mod, "NaiveCentroidAlgorithm");
     py::class_<NaiveCentroidControl> clsNaiveCentroidControl(mod, "NaiveCentroidControl");
     py::class_<NaiveCentroidTransform> clsNaiveCentroidTransform(mod, "NaiveCentroidTransform");
 

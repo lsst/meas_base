@@ -39,8 +39,8 @@ PYBIND11_PLUGIN(_algorithm) {
     py::module mod("_algorithm", "Python wrapper for afw _algorithm library");
 
     /* Module level */
-    py::class_<SingleFrameAlgorithm> clsSingleFrameAlgorithm(mod, "SingleFrameAlgorithm");
-    py::class_<SimpleAlgorithm, SingleFrameAlgorithm> clsSimpleAlgorithm(mod, "SimpleAlgorithm");
+    py::class_<SingleFrameAlgorithm, std::shared_ptr<SingleFrameAlgorithm>> clsSingleFrameAlgorithm(mod, "SingleFrameAlgorithm");
+    py::class_<SimpleAlgorithm, std::shared_ptr<SimpleAlgorithm>, SingleFrameAlgorithm> clsSimpleAlgorithm(mod, "SimpleAlgorithm");
 
     /* Member types and enums */
 

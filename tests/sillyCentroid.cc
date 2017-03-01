@@ -39,7 +39,7 @@ PYBIND11_PLUGIN(_sillyCentroid) {
     py::module mod("_sillyCentroid", "Python wrapper for afw _SillyCentroid library");
 
     /* Module level */
-    py::class_<SillyCentroidAlgorithm, lsst::meas::base::SimpleAlgorithm> clsSillyCentroidAlgorithm(mod, "SillyCentroidAlgorithm");
+    py::class_<SillyCentroidAlgorithm, std::shared_ptr<SillyCentroidAlgorithm>, lsst::meas::base::SimpleAlgorithm> clsSillyCentroidAlgorithm(mod, "SillyCentroidAlgorithm");
     py::class_<SillyCentroidControl> clsSillyCentroidControl(mod, "SillyCentroidControl");
     py::class_<SillyTransform> clsSillyTransform(mod, "SillyTransform");
 
