@@ -25,7 +25,7 @@
 
 #include "lsst/afw/image/Wcs.h"
 #include "lsst/afw/table/Source.h"
-#include "lsst/meas/base/pybind11.h"
+#include "lsst/meas/base/python.h"
 #include "lsst/meas/base/Algorithm.h"
 
 namespace py = pybind11;

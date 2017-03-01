@@ -23,7 +23,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "lsst/pex/config/pybind11.h"
+#include "lsst/pex/config/python.h"
 
 #include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/PixelFlags.h"
