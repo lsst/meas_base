@@ -23,8 +23,8 @@
 #include <pybind11/pybind11.h>
 //#include <pybind11/stl.h>
 
-#include "lsst/pex/config/pybind11.h"
-#include "lsst/meas/base/pybind11.h"
+#include "lsst/pex/config/python.h"
+#include "lsst/meas/base/python.h"
 
 #include "lsst/meas/base/SdssCentroid.h"
 
