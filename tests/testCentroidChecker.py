@@ -30,11 +30,10 @@ import lsst.utils.tests
 import lsst.meas.base
 import lsst.meas.base.tests
 from lsst.meas.base.tests import (AlgorithmTestCase)
-from lsst.meas.base.flagDecorator import addFlagHandler
 import lsst.pex.config
 from lsst.meas.base.pluginRegistry import register
 from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin
-
+from lsst.meas.base import FlagDefinitionList, FlagDefinition, FlagHandler
 
 class CentroiderConfig(SingleFramePluginConfig):
 
@@ -47,7 +46,6 @@ class CentroiderConfig(SingleFramePluginConfig):
 
 
 @register("test_Centroider")
-@addFlagHandler(("flag", "General Failure error"), ("test_flag", "second flag"))
 class Centroider(SingleFramePlugin):
     '''
     This is a sample Python plugin.  The flag handler for this plugin is created
@@ -65,6 +63,10 @@ class Centroider(SingleFramePlugin):
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
 
+        flagDefs = FlagDefinitionList()
+        flagDefs.add("flag", "General Failure error")
+        flagDefs.add("test_flag", "second flag")
+        self.flagHandler = FlagHandler.addFields(schema, name, flagDefs)
         self.xKey = schema.addField(schema.join(name, "x"), type=np.float64)
         self.yKey = schema.addField(schema.join(name, "y"), type=np.float64)
         if self.config.dist is None:

@@ -86,16 +86,10 @@ public:
 class GaussianCentroidAlgorithm : public SimpleAlgorithm {
 public:
 
-    /**
-     *  @brief Flag bits to be used with the 'flags' data member of the Result object.
-     *
-     *  Inspect getFlagDefinitions() for more detailed explanations of each flag.
-     */
-    enum {
-        FAILURE=FlagHandler::FAILURE,
-        NO_PEAK,
-        N_FLAGS
-    };
+    // Structures and routines to manage flaghandler
+    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinition const FAILURE;
+    static FlagDefinition const NO_PEAK;
 
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.

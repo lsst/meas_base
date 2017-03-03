@@ -34,6 +34,18 @@
 #include "lsst/afw/geom/ellipses/GridTransform.h"
 
 namespace lsst { namespace meas { namespace base {
+namespace {
+FlagDefinitionList flagDefinitions;
+} // end anonymous
+
+FlagDefinition const BlendednessAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
+FlagDefinition const BlendednessAlgorithm::NO_CENTROID = flagDefinitions.add("flag_noCentroid", "Object has no centroid");
+FlagDefinition const BlendednessAlgorithm::NO_SHAPE = flagDefinitions.add("flag_noShape", "Object has no shape");
+
+FlagDefinitionList const & BlendednessAlgorithm::getFlagDefinitions() {
+    return flagDefinitions;
+}
+
 
 
 namespace {
@@ -212,14 +224,6 @@ void computeMoments(
 
 } // anonymous
 
-std::array<FlagDefinition,BlendednessAlgorithm::N_FLAGS> const & getFlagDefinitions() {
-    static std::array<FlagDefinition,BlendednessAlgorithm::N_FLAGS> const flagDefs = {{
-        {"flag", "general failure flag"},
-        {"flag_noCentroid", "Object has no centroid"},
-        {"flag_noShape", "Object has no shape"}
-    }};
-    return flagDefs;
-}
 
 BlendednessAlgorithm::BlendednessAlgorithm(Control const & ctrl,  std::string const & name, afw::table::Schema & schema) :
     _ctrl(ctrl)
@@ -276,7 +280,7 @@ BlendednessAlgorithm::BlendednessAlgorithm(Control const & ctrl,  std::string co
     }
     if (_ctrl.doShape || _ctrl.doFlux) {
         _flagHandler = FlagHandler::addFields(schema, name,
-                                              getFlagDefinitions().begin(), getFlagDefinitions().end());
+                                              getFlagDefinitions());
     }
 }
 
@@ -308,25 +312,25 @@ void BlendednessAlgorithm::_measureMoments(
                 // don't set general flag, because even a failed centroid should
                 // just fall back to the peak, and that should be fine for this
                 // measurement.
-                _flagHandler.setValue(child, NO_CENTROID, true);
+                _flagHandler.setValue(child, NO_CENTROID.number, true);
             }
         }
         if (child.getTable()->getShapeFlagKey().isValid()) {
             if (child.getShapeFlag()) {
-                _flagHandler.setValue(child, NO_SHAPE, true);
-                _flagHandler.setValue(child, FAILURE, true);
+                _flagHandler.setValue(child, NO_SHAPE.number, true);
+                _flagHandler.setValue(child, FAILURE.number, true);
             }
         }
         if (!(child.getShape().getDeterminant() >= 0.0)) {
             // shape flag should have been set already, but we're paranoid
-            _flagHandler.setValue(child, NO_SHAPE, true);
-            _flagHandler.setValue(child, FAILURE, true);
+            _flagHandler.setValue(child, NO_SHAPE.number, true);
+            _flagHandler.setValue(child, FAILURE.number, true);
             fatal = true;
         }
         if (!(std::isfinite(child.getX()) && std::isfinite(child.getY()))) {
             // shape flag should have been set already, but we're paranoid
-            _flagHandler.setValue(child, NO_CENTROID, true);
-            _flagHandler.setValue(child, FAILURE, true);
+            _flagHandler.setValue(child, NO_CENTROID.number, true);
+            _flagHandler.setValue(child, FAILURE.number, true);
             fatal = true;
         }
         if (fatal) return;
@@ -388,7 +392,7 @@ void BlendednessAlgorithm::measureParentPixels(
             // We can get NaNs in the absolute measure if both parent and child have only negative
             // biased-corrected fluxes (which we clip to zero).  We can't really recover from this,
             // so we should set the flag.
-            _flagHandler.setValue(child, FAILURE, true);
+            _flagHandler.setValue(child, FAILURE.number, true);
         }
     }
 }

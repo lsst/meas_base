@@ -1,5 +1,4 @@
-// -*- lsst-c++ -*-
-/*
+/*// -*- lsst-c++ -*-
  * LSST Data Management System
  * Copyright 2008-2014 LSST Corporation.
  *
@@ -31,14 +30,14 @@
 #include "lsst/meas/base/exceptions.h"
 
 namespace lsst { namespace meas { namespace base {
-
 /**
- *  @brief Simple POD struct used to define and document flags
- *
- *  When we switch to C++11, we can make the attributes std::strings, but at least for now we'll use
-    C-strings so we can create these arrays using initializer lists even in C++98.
- */
+ *  @brief Simple class used to define and document flags
+ *         The name and doc constitute the identity of the FlagDefinition
+ *         The number is used for indexing, but is assigned arbitrarily
+*/
 struct FlagDefinition {
+
+    static const std::size_t number_undefined = SIZE_MAX;
 
     FlagDefinition() {
     }
@@ -46,64 +45,160 @@ struct FlagDefinition {
     FlagDefinition(std::string _name, std::string _doc) {
         name = _name;
         doc = _doc;
+        number = number_undefined;
+    }
+
+    FlagDefinition(std::string _name, std::string _doc, std::size_t  _number) {
+        name = _name;
+        doc = _doc;
+        number = _number;
+    }
+
+    // equality of this type is based solely on the name key
+    bool operator==(FlagDefinition const & other) const {
+        return (other.name == name);
     }
 
     std::string name;
     std::string doc;
+    std::size_t number;
+};
+
+/**
+ *  @brief vector-type utility class to build a collection of FlagDefinitions
+ */
+class FlagDefinitionList {
+public:
+    /**
+     *  @brief initialize a FlagDefinition list with no entries.
+     */
+    FlagDefinitionList() {
+    };
+
+#ifndef SWIG
+    /**
+     *  @brief initialize a FlagDefinition list from initializer_list.
+     */
+    FlagDefinitionList(std::initializer_list<FlagDefinition> const & list) {
+        for (FlagDefinition const * iter = list.begin(); iter < list.end(); iter++) {
+            add(iter->name, iter->doc);
+        }
+    }
+#endif
+
+    static FlagDefinitionList const & getEmptyList() {
+        static FlagDefinitionList list;
+        return list;
+    }
+    /**
+     *  @brief get a reference to the FlagDefinition with specified index.
+     */
+    FlagDefinition getDefinition(size_t index) const {
+        return _vector[index];
+    }
+    /**
+     *  @brief get a reference to the FlagDefinition with specified array index
+     */
+    FlagDefinition operator[](size_t index) const {
+        return getDefinition(index);
+    }
+    /**
+     *  @brief get a reference to the FlagDefinition with specified name.
+     */
+    FlagDefinition getDefinition(std::string const & name) const {
+        for (std::size_t i = 0; i < size(); i++) {
+            if (_vector[i].name == name) return _vector[i];
+        }
+        throw FatalAlgorithmError("No Flag Definition for " + name);
+    }
+    /**
+     *  @brief See if there is a FlagDefinition with specified name.
+     */
+    bool hasDefinition(std::string const & name) const {
+        for (std::size_t i = 0; i < size(); i++) {
+            if (_vector[i].name == name) return true;
+        }
+        return false;
+    }
+    /**
+     *  @brief Add a Flag Defintion to act as a "General" failure flag
+     *  This flag will be set if a Measurement error is thrown
+     */
+    FlagDefinition addFailureFlag(std::string const & doc="General Failure Flag");
+
+    /**
+     *  @brief Add a new FlagDefinition to this list. Return a copy with the
+     *  FlagDefinition.number set corresponding to its index in the list.
+     */
+    FlagDefinition add(std::string const & name, std::string const & doc) {
+        FlagDefinition flagDef = FlagDefinition(name, doc, _vector.size());
+        _vector.push_back(flagDef);
+        return _vector.back();
+    }
+    /**
+     *  @brief return the current size (number of defined elements) of the collection
+     */
+
+    std::size_t size() const { return _vector.size(); }
+
+private:
+    mutable std::vector<FlagDefinition> _vector;
 };
 
 /**
  *  Utility class for handling flag fields that indicate the failure modes of an algorithm.
  *
  *  The typical pattern for using FlagHandler within an Algorithm is:
+ *
  *   - Add a FlagHandler object as a data member.
- *   - Create an old-style enum that defines all of the failure modes.  This must start with a
- *     "general" failure flag that is set on any fatal condition, set to the numeric value
- *     FlagHandler::FAILURE.
- *   - Create a static array of FlagDefinition to hold the field names for the error flags, with each
- *     entry corresponding to an entry in the enum.  Names here should not include the algorihtm name,
- *     and should generally have the form "flag_*", with the first entry (corresponding to the general
- *     failure flag) simply "flag".
- *   - Initialize the FlagHandler data member within the Algorithm's constructor, using the addFields
- *     static method to add fields to the schema at the same time the FlagHandler is constructed to
- *     manage them.
+ *
+ *   - Create a FlagDefinitionList to specify the name and doc for each flag
+ *     Add a "general" failure flag if one is needed (this indicates that some failure occurred).
+ *     Add specific error flags for each type of error (these indicate a specific failure).
+ *
+ *   - Initialize the FlagHandler data member within the Algorithm's constructor,
+ *     using the static addFields method to add the flags from the FlagDefinitionList
+ *     to the schema.
  *
  *  See PsfFluxAlgorithm for a complete example.
  */
 class FlagHandler {
 public:
-
     /**
-     *  Required enum values for all Algorithm failure mode enumerations.
+     *  Each error should have a corresponding static FlagDefinition object.
+     *  In the Algorithm header file, this will be defined like this:
      *
-     *  This should be considered logically to be a "base class" for all Algorithm failure enums;
-     *  enums can't actually have a base class in C/C++, but we can fake this with the following pattern:
-     *  @code
-     *  class MyAlgorithm : public Algorithm {
-     *  public:
-     *      enum {
-     *          FAILURE=FlagHandler::FAILURE,
-     *          SOME_OTHER_FAILURE_MODE,
+     *      static FlagDefinition const & FAILURE;
+     *      static FlagDefinition const & SOME_OTHER_FAILURE_MODE;
      *          ...
-     *      };
-     *      ...
-     *  };
+     *
+     *  A static FlagDefinitionList is created in the Algorithm .cc file, like this:
+     *
+     *      FlagDefinitionList flagDefinitions;
+     *      FlagDefinition const FAILURE = flagDefinitions.addFailureFlag();
+     *      FlagDefinition const FAILURE_MODE = flagDefinitions.add("flag_mode", "Specific failure flag");
      *  @endcode
      */
-    enum { FAILURE=0 };
 
     /**
      *  Default constructor for delayed initialization.
      *
-     *  This constructor creates an invalid, unusable FlagHandler in the same way an iterator
-     *  default constructor constructs an invalid iterator.  Its only purpose is to delay construction
+     *  This constructor creates an invalid, unusable FlagHandler in the same way a const_iterator
+     *  default constructor constructs an invalid const_iterator.  Its only purpose is to delay construction
      *  of the FlagHandler from an Algorithm constructor's initializer list to the constructor body,
      *  which can be necessary when the list of possible flags depends on the algorithm's configuration.
      *  To use this constructor to delay initialization, simply use it in the initializer list, and then
      *  assign the result of a call to addFields() to the FlagHandler data member later in the constructor.
      */
-    FlagHandler() {}
+    FlagHandler() : failureFlagNumber(FlagDefinition::number_undefined) {}
 
+    /**
+     *  Define the universal name of the general failure flag
+    */
+    static std::string const & getFailureFlagName() {
+        static std::string name = "flag";
+        return name;
+    }
     /**
      *  Add Flag fields to a schema, creating a FlagHandler object to manage them.
      *
@@ -113,97 +208,121 @@ public:
      *  @param[in]   prefix    String name of the algorithm or algorithm component.  Field names will
      *                         be constructed by using schema.join() on this and the flag name from the
      *                         FlagDefinition array.
-     *  @param[in]   begin     Iterator to the beginning of an array of FlagDefinition.
-     *  @param[in]   end       Iterator to one past the end of an array of FlagDefinition.
+     *  @param[in]   flagDefs  Reference to a FlagDefinitionList
+     *  @param[in]   exclDefs  optional FlagDefinitionList of flags to exclude
      *
-     *  We use pointers rather than an iterator type for the FlagDefinition array to allow the user
-     *  maximum flexibility in the array type - C arrays, std::array, std::array, and std::vector
-     *  (as well as any other container with contiguous memory) may be used.  The pointers must remain
-     *  valid only for the duration of the call to this function.
+     *  If the set of flags depends on the algorithm configuration, a flag may be excluded from the
+     *  schema using the optional exclDefs parameter.  This can be specified using an initializer_list,
+     *  as in: _flagHandler = FlagHandler::addFields(schema, prefix, flagDefs, {NO_PSF})
      */
     static FlagHandler addFields(
         afw::table::Schema & schema,
         std::string const & prefix,
-        FlagDefinition const * begin,
-        FlagDefinition const * end
+        FlagDefinitionList const & flagDefs,
+        FlagDefinitionList const & exclDefs=FlagDefinitionList::getEmptyList()
     );
-
-    /**
-     *  Add Flag fields to a schema, creating a FlagHandler object to manage them.
-     *
-     *  This is the way FlagHandlers will typically be constructed for new algorithms.
-     *
-     *  @param[out]  schema    Schema to which fields should be added.
-     *  @param[in]   prefix    String name of the algorithm or algorithm component.  Field names will
-     *                         be constructed by using schema.join() on this and the flag name from the
-     *                         FlagDefinition array.
-     *  @param[in]   flagDefs  std::vector of FlagDefinitions
-     *
-     *  This variation of addFields is for Python plugins
-     */
-    static FlagHandler addFields(
-        afw::table::Schema & schema,
-        std::string const & prefix,
-        std::vector<FlagDefinition> const * flagDefs
-    );
-
     /**
      *  Construct a FlagHandler to manage fields already added to a schema.
      *
      *  This is primarily intended for use by forced measurement algorithms that need to parse the flags
      *  of the single-frame measurement algorithms providing their reference parameters.
      *
-     *  @param[in] s      A SubSchema object that holds the fields to extract and their namespace.
-     *                    Obtainable from the arguments to addFields() as "schema[prefix]".
-     *  @param[in] begin  Iterator to the beginning of an array of FlagDefinition.
-     *  @param[in] end    Iterator to one past the end of an array of FlagDefinition.
+     *  @param[in]   A SubSchema object that holds the fields to extract and their namespace.
+     *               Obtainable from the arguments to addFields() as "schema[prefix]".
+     *  @param[in]   flagDefs  Reference to a FlagDefinitionList
+     *  @param[in]   exclDefs  optional FlagDefinitionList of flags to exclude
      *
      *  As with addFields(), pointers must be valid only for the duration of this constructor call.
      */
     FlagHandler(
         afw::table::SubSchema const & s,
-        FlagDefinition const * begin,
-        FlagDefinition const * end
+        FlagDefinitionList const & flagDefs,
+        FlagDefinitionList const & exclDefs=FlagDefinitionList::getEmptyList()
     );
-
     /**
-     *  Return the FlagDefinition object that corresponds to a particular enum value.
-     */
-    FlagDefinition getDefinition(std::size_t i) const {
-        assert(_vector.size() > i);  // Flag 'i' needs to be available
-        return _vector[i].first;
+     *  Return the index of a flag with the given flag name
+    */
+    unsigned int getFlagNumber(std::string const & flagName) const {
+        for (unsigned int i=0; i < _vector.size(); i++) {
+            if (_vector[i].first == flagName && _vector[i].second.isValid()) {
+                return i;
+            }
+        }
+        throw FatalAlgorithmError("No FlagHandler entry for " + flagName);
     }
-
     /**
-     *  Return the value of the flag field corresponding to the given enum value.
+     *  Return the value of the flag name corresponding to the given flag index.
+     */
+    std::string getFlagName(std::size_t i) const {
+        if (i < _vector.size() && _vector[i].second.isValid()) {
+            return _vector[i].first;
+        }
+        throw FatalAlgorithmError("No legal FlagHandler entry number " + std::to_string(i));
+    }
+    /**
+     *  Return the value of the flag field corresponding to the given flag index.
      */
     bool getValue(afw::table::BaseRecord const & record, std::size_t i) const {
-        assert(_vector.size() > i);  // Flag 'i' needs to be available
-        return record.get(_vector[i].second);
+        if (i < _vector.size() && _vector[i].second.isValid()) {
+            return record.get(_vector[i].second);
+        }
+        throw FatalAlgorithmError("No legal FlagHandler entry number " + std::to_string(i));
     }
-
     /**
-     *  Set the flag field corresponding to the given enum value.
+     *  Return the value of the flag field with the given flag name
+     */
+    bool getValue(afw::table::BaseRecord const & record, std::string flagName) const {
+        for (std::size_t i = 0; i < _vector.size(); i++) {
+            if (_vector[i].first == flagName && _vector[i].second.isValid()) {
+                return record.get(_vector[i].second);
+            }
+        }
+        throw FatalAlgorithmError("No FlagHandler entry for " + flagName);
+    }
+    /**
+     *  Set the flag field corresponding to the given flag index.
      */
     void setValue(afw::table::BaseRecord & record, std::size_t i, bool value) const {
-        assert(_vector.size() > i);  // Flag 'i' needs to be available
-        record.set(_vector[i].second, value);
+        if (i < _vector.size() && _vector[i].second.isValid()) {
+            record.set(_vector[i].second, value);
+            return;
+        }
+        throw FatalAlgorithmError("No legal FlagHandler entry number " + std::to_string(i));
     }
-
+    /**
+     *  Set the flag field corresponding to the given flag name.
+     */
+    void setValue(afw::table::BaseRecord & record, std::string flagName, bool value) const {
+        for (std::size_t i = 0; i < _vector.size(); i++) {
+            if (_vector[i].first == flagName && _vector[i].second.isValid()) {
+                record.set(_vector[i].second, value);
+                return;
+            }
+        }
+        throw FatalAlgorithmError("No FlagHandler entry for " + flagName);
+    }
+    /**
+     *  Get the index of the General Failure flag, if one is defined.  This flag is defined
+     *  by most algorithms, and if defined, is set whenever an error is caught by the FlagHandler.
+     *  If no General Failure flag is defined, this routine will return FlagDefinition::number_undefined 
+     */
+    std::size_t getFailureFlagNumber() const {
+        return failureFlagNumber;
+    }
     /**
      *  Handle an expected or unexpected Exception thrown by a measurement algorithm.
      *
      *  If the exception is expected, it should inherit from MeasurementError and can be passed here;
      *  this allows handleFailure to extract the failure mode enum value from the exception and set
      *  the corresponding flag.  The general failure flag will be set regardless of whether the "error"
-     *  argument is null.
+     *  argument is NULL (which happens when an unexpected error occurs).
      */
     void handleFailure(afw::table::BaseRecord & record, MeasurementError const * error=NULL) const;
 
+    std::size_t failureFlagNumber;
 private:
 
-    typedef std::vector< std::pair<FlagDefinition, afw::table::Key<afw::table::Flag> > > Vector;
-
+    typedef std::vector< std::pair<std::string, afw::table::Key<afw::table::Flag> > > Vector;
     Vector _vector;
 };
 

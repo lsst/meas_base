@@ -152,6 +152,16 @@ private:
 class SdssShapeAlgorithm : public SimpleAlgorithm {
 public:
 
+    // Structures and routines to manage flaghandler
+    static FlagDefinitionList const & getFlagDefinitions();
+    static unsigned int const N_FLAGS = 6;
+    static FlagDefinition const FAILURE;
+    static FlagDefinition const UNWEIGHTED_BAD;
+    static FlagDefinition const UNWEIGHTED;
+    static FlagDefinition const SHIFT;
+    static FlagDefinition const MAXITER;
+    static FlagDefinition const PSF_SHAPE_BAD;
+
     typedef SdssShapeControl Control;
     typedef SdssShapeResult Result;
     typedef SdssShapeResultKey ResultKey;
@@ -160,15 +170,6 @@ public:
     //       doMeasurePsf = true (do set extra fields) or false (do NOT set extra fields), all of
     //       the code in SdssShape assumes that PSF_SHAPE_BAD is the last entry in the enum list.
     //       If new flags are added, be sure to add them above the PSF_SHAPE_BAD entry.
-    enum {
-        FAILURE=FlagHandler::FAILURE,
-        UNWEIGHTED_BAD,
-        UNWEIGHTED,
-        SHIFT,
-        MAXITER,
-        PSF_SHAPE_BAD,  // NOTE: PSF_SHAPE_BAD must be the last entry in the enum list
-        N_FLAGS
-    };
 
     SdssShapeAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
 
@@ -245,7 +246,11 @@ public:
 #endif
 
     /// Flag getter for Swig, which doesn't understand std::bitset
-    bool getFlag(int index) const { return flags[index]; }
+    bool getFlag(unsigned int index) { return flags[index]; }
+
+    bool getFlag(std::string name) {
+       return flags[SdssShapeAlgorithm::getFlagDefinitions().getDefinition(name).number];
+    }
 
     SdssShapeResult(); ///< Constructor; initializes everything to NaN
 

@@ -77,12 +77,12 @@ public:
 class BlendednessAlgorithm : public SimpleAlgorithm {
 public:
 
-    enum {
-        FAILURE=FlagHandler::FAILURE,
-        NO_CENTROID,
-        NO_SHAPE,
-        N_FLAGS
-    };
+    // Structures and routines to manage flaghandler
+    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinition const FAILURE;
+    static FlagDefinition const NO_CENTROID;
+    static FlagDefinition const NO_SHAPE;
+
     typedef BlendednessControl Control;
 
     BlendednessAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);

@@ -25,7 +25,8 @@ class FailCC(catCalc.CatalogCalculationPlugin):
         self.failKey = schema.addField(name + "_fail", type="Flag", doc="Failure test")
 
     def calculate(self, measRecord):
-        raise MeasurementError("Supposed to fail", FlagHandler.FAILURE)
+        #  note: flagbit doesn't matter, since a FlagHandler isn't used
+        raise MeasurementError("Supposed to fail", 0)
 
     def fail(self, measRecord, error=None):
         measRecord.set(self.failKey, True)
