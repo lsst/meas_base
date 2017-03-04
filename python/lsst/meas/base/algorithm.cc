@@ -38,8 +38,10 @@ PYBIND11_PLUGIN(algorithm) {
     py::module mod("algorithm");
 
     /* Module level */
-    py::class_<SingleFrameAlgorithm, std::shared_ptr<SingleFrameAlgorithm>> clsSingleFrameAlgorithm(mod, "SingleFrameAlgorithm");
-    py::class_<SimpleAlgorithm, std::shared_ptr<SimpleAlgorithm>, SingleFrameAlgorithm> clsSimpleAlgorithm(mod, "SimpleAlgorithm");
+    py::class_<SingleFrameAlgorithm, std::shared_ptr<SingleFrameAlgorithm>> clsSingleFrameAlgorithm(
+            mod, "SingleFrameAlgorithm");
+    py::class_<SimpleAlgorithm, std::shared_ptr<SimpleAlgorithm>, SingleFrameAlgorithm> clsSimpleAlgorithm(
+            mod, "SimpleAlgorithm");
 
     /* Members */
     python::declareAlgorithm<SingleFrameAlgorithm>(clsSingleFrameAlgorithm);

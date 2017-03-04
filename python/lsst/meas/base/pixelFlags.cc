@@ -19,6 +19,7 @@
  * the GNU General Public License along with this program.  If not, 
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
+#include <memory>
 
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
@@ -38,11 +39,9 @@ namespace base {
 PYBIND11_PLUGIN(pixelFlags) {
     py::module mod("pixelFlags");
 
-    /* Module level */
     py::class_<PixelFlagsAlgorithm, std::shared_ptr<PixelFlagsAlgorithm>, SimpleAlgorithm> clsPixelFlagsAlgorithm(mod, "PixelFlagsAlgorithm");
     py::class_<PixelFlagsControl> clsPixelFlagsControl(mod, "PixelFlagsControl");
 
-    /* Constructors */
     clsPixelFlagsAlgorithm.def(py::init<PixelFlagsAlgorithm::Control const &,
                                         std::string const &,
                                         afw::table::Schema &>(),
@@ -50,9 +49,10 @@ PYBIND11_PLUGIN(pixelFlags) {
 
     clsPixelFlagsControl.def(py::init<>());
 
-    /* Members */
     clsPixelFlagsAlgorithm.def("measure", &PixelFlagsAlgorithm::measure,
         "measRecord"_a, "exposure"_a);
+    clsPixelFlagsAlgorithm.def("fail", &PixelFlagsAlgorithm::fail,
+        "measRecord"_a, "error"_a=nullptr);
 
     LSST_DECLARE_CONTROL_FIELD(clsPixelFlagsControl, PixelFlagsControl, masksFpAnywhere);
     LSST_DECLARE_CONTROL_FIELD(clsPixelFlagsControl, PixelFlagsControl, masksFpCenter);
@@ -60,4 +60,6 @@ PYBIND11_PLUGIN(pixelFlags) {
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}  // base
+}  // meas
+}  // lsst

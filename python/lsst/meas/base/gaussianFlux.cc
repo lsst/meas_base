@@ -19,9 +19,11 @@
  * the GNU General Public License along with this program.  If not, 
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
+#include <memory>
 
 #include "pybind11/pybind11.h"
 
+#include "lsst/pex/config/python.h"
 #include "lsst/meas/base/python.h"
 
 #include "lsst/meas/base/GaussianFlux.h"
@@ -33,22 +35,64 @@ namespace lsst {
 namespace meas {
 namespace base {
 
+namespace {
+
+using PyFluxAlgorithm =
+        py::class_<GaussianFluxAlgorithm, std::shared_ptr<GaussianFluxAlgorithm>, SimpleAlgorithm>;
+using PyFluxControl = py::class_<GaussianFluxControl>;
+using PyFluxTransform =
+        py::class_<GaussianFluxTransform, std::shared_ptr<GaussianFluxTransform>, BaseTransform>;
+
+PyFluxControl declareFluxControl(py::module &mod) {
+    PyFluxControl cls(mod, "GaussianFluxControl");
+
+    LSST_DECLARE_CONTROL_FIELD(cls, GaussianFluxControl, background);
+
+    return cls;
+}
+
+PyFluxAlgorithm declareFluxAlgorithm(py::module &mod) {
+    PyFluxAlgorithm cls(mod, "GaussianFluxAlgorithm");
+
+    cls.def(py::init<GaussianFluxAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
+            "ctrl"_a, "name"_a, "schema"_a);
+
+    cls.attr("FAILURE") = py::cast(GaussianFluxAlgorithm::FAILURE);
+
+    cls.def("measure", &GaussianFluxAlgorithm::measure, "measRecord"_a, "exposure"_a);
+    cls.def("fail", &GaussianFluxAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
+
+    return cls;
+}
+
+PyFluxTransform declareFluxTransform(py::module &mod) {
+    PyFluxTransform cls(mod, "GaussianFluxTransform");
+
+    cls.def(py::init<GaussianFluxTransform::Control const &, std::string const &,
+                     afw::table::SchemaMapper &>(),
+            "ctrl"_a, "name"_a, "mapper"_a);
+
+    return cls;
+}
+
+}  // <anonymous>
+
 PYBIND11_PLUGIN(gaussianFlux) {
     py::module mod("gaussianFlux");
 
-    /* Module level */
-    py::class_<GaussianFluxAlgorithm, std::shared_ptr<GaussianFluxAlgorithm>, SimpleAlgorithm> clsGaussianFluxAlgorithm(mod, "GaussianFluxAlgorithm");
-    py::class_<GaussianFluxControl> clsGaussianFluxControl(mod, "GaussianFluxControl");
-    py::class_<GaussianFluxTransform> clsGaussianFluxTransform(mod, "GaussianFluxTransform");
+    auto clsFluxControl = declareFluxControl(mod);
+    auto clsFluxAlgorithm = declareFluxAlgorithm(mod);
+    auto clsFluxTransform = declareFluxTransform(mod);
 
-    /* Members */
-    python::declareAlgorithm<GaussianFluxAlgorithm,
-                             GaussianFluxControl,
-                             GaussianFluxTransform>(clsGaussianFluxAlgorithm,
-                                                    clsGaussianFluxControl,
-                                                    clsGaussianFluxTransform);
+    clsFluxAlgorithm.attr("Control") = clsFluxControl;
+    clsFluxTransform.attr("Control") = clsFluxControl;
+
+    python::declareAlgorithm<GaussianFluxAlgorithm, GaussianFluxControl, GaussianFluxTransform>(
+            clsFluxAlgorithm, clsFluxControl, clsFluxTransform);
 
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}  // base
+}  // meas
+}  // lsst

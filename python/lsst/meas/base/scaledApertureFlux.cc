@@ -19,6 +19,7 @@
  * the GNU General Public License along with this program.  If not, 
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
+#include <memory>
 
 #include "pybind11/pybind11.h"
 
@@ -34,26 +35,66 @@ namespace lsst {
 namespace meas {
 namespace base {
 
+namespace {
+
+using PyFluxAlgorithm = py::class_<ScaledApertureFluxAlgorithm, std::shared_ptr<ScaledApertureFluxAlgorithm>,
+                                   SimpleAlgorithm>;
+using PyFluxControl = py::class_<ScaledApertureFluxControl>;
+using PyFluxTransform =
+        py::class_<ScaledApertureFluxTransform, std::shared_ptr<ScaledApertureFluxTransform>, BaseTransform>;
+
+PyFluxControl declareFluxControl(py::module &mod) {
+    PyFluxControl cls(mod, "ScaledApertureFluxControl");
+
+    LSST_DECLARE_CONTROL_FIELD(cls, ScaledApertureFluxControl, scale);
+    LSST_DECLARE_CONTROL_FIELD(cls, ScaledApertureFluxControl, shiftKernel);
+
+    cls.def(py::init<>());
+
+    return cls;
+}
+
+PyFluxAlgorithm declareFluxAlgorithm(py::module &mod) {
+    PyFluxAlgorithm cls(mod, "ScaledApertureFluxAlgorithm");
+
+    cls.def(py::init<ScaledApertureFluxAlgorithm::Control const &, std::string const &,
+                     afw::table::Schema &>(),
+            "ctrl"_a, "name"_a, "schema"_a);
+
+    cls.def("measure", &ScaledApertureFluxAlgorithm::measure, "measRecord"_a, "exposure"_a);
+    cls.def("fail", &ScaledApertureFluxAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
+
+    return cls;
+}
+
+PyFluxTransform declareFluxTransform(py::module &mod) {
+    PyFluxTransform cls(mod, "ScaledApertureFluxTransform");
+
+    cls.def(py::init<ScaledApertureFluxTransform::Control const &, std::string const &,
+                     afw::table::SchemaMapper &>(),
+            "ctrl"_a, "name"_a, "mapper"_a);
+
+    return cls;
+}
+
+}  // <anonymous>
+
 PYBIND11_PLUGIN(scaledApertureFlux) {
     py::module mod("scaledApertureFlux");
 
-    /* Module level */
-    py::class_<ScaledApertureFluxAlgorithm, std::shared_ptr<ScaledApertureFluxAlgorithm>, SimpleAlgorithm> clsScaledApertureFluxAlgorithm(
-        mod, "ScaledApertureFluxAlgorithm");
-    py::class_<ScaledApertureFluxControl> clsScaledApertureFluxControl(mod, "ScaledApertureFluxControl");
-    py::class_<ScaledApertureFluxTransform> clsScaledApertureFluxTransform(mod, "ScaledApertureFluxTransform");
+    auto clsFluxControl = declareFluxControl(mod);
+    auto clsFluxAlgorithm = declareFluxAlgorithm(mod);
+    auto clsFluxTransform = declareFluxTransform(mod);
 
-    /* Members */
-    python::declareAlgorithm<ScaledApertureFluxAlgorithm,
-                             ScaledApertureFluxControl,
-                             ScaledApertureFluxTransform>(clsScaledApertureFluxAlgorithm,
-                                                          clsScaledApertureFluxControl,
-                                                          clsScaledApertureFluxTransform);
+    clsFluxAlgorithm.attr("Control") = clsFluxControl;
+    clsFluxTransform.attr("Control") = clsFluxControl;
 
-    LSST_DECLARE_CONTROL_FIELD(clsScaledApertureFluxControl, ScaledApertureFluxControl, scale);
-    LSST_DECLARE_CONTROL_FIELD(clsScaledApertureFluxControl, ScaledApertureFluxControl, shiftKernel);
+    python::declareAlgorithm<ScaledApertureFluxAlgorithm, ScaledApertureFluxControl,
+                             ScaledApertureFluxTransform>(clsFluxAlgorithm, clsFluxControl, clsFluxTransform);
 
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}  // base
+}  // meas
+}  // lsst

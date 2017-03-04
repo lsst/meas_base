@@ -19,6 +19,7 @@
  * the GNU General Public License along with this program.  If not, 
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
+#include <memory>
 
 #include "pybind11/pybind11.h"
 
@@ -34,35 +35,59 @@ namespace lsst {
 namespace meas {
 namespace base {
 
+namespace {
+
+using PyBlendenessAlgorithm =
+        py::class_<BlendednessAlgorithm, std::shared_ptr<BlendednessAlgorithm>, SimpleAlgorithm>;
+using PyBlendenessControl = py::class_<BlendednessControl>;
+
+PyBlendenessControl declareBlendednessControl(py::module &mod) {
+    PyBlendenessControl cls(mod, "BlendednessControl");
+
+    LSST_DECLARE_CONTROL_FIELD(cls, BlendednessControl, doOld);
+    LSST_DECLARE_CONTROL_FIELD(cls, BlendednessControl, doFlux);
+    LSST_DECLARE_CONTROL_FIELD(cls, BlendednessControl, doShape);
+    LSST_DECLARE_CONTROL_FIELD(cls, BlendednessControl, nSigmaWeightMax);
+
+    cls.def(py::init<>());
+
+    return cls;
+}
+
+PyBlendenessAlgorithm declareBlendednessAlgorithm(py::module &mod) {
+    PyBlendenessAlgorithm cls(mod, "BlendednessAlgorithm");
+
+    cls.def(py::init<BlendednessAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
+            "ctrl"_a, "name"_a, "schema"_a);
+
+    cls.attr("FAILURE") = py::cast(BlendednessAlgorithm::FAILURE);
+    cls.attr("NO_CENTROID") = py::cast(BlendednessAlgorithm::NO_CENTROID);
+    cls.attr("NO_SHAPE") = py::cast(BlendednessAlgorithm::NO_SHAPE);
+
+    cls.def("measureChildPixels", &BlendednessAlgorithm::measureChildPixels, "image"_a, "child"_a);
+    cls.def("measureParentPixels", &BlendednessAlgorithm::measureParentPixels, "image"_a, "child"_a);
+    cls.def("measure", &BlendednessAlgorithm::measure, "measRecord"_a, "exposure"_a);
+    cls.def("fail", &BlendednessAlgorithm::measure, "measRecord"_a, "error"_a = nullptr);
+
+    return cls;
+}
+
+}  // <anonymous>
+
 PYBIND11_PLUGIN(blendedness) {
     py::module mod("blendedness");
 
-    /* Member types and enums */
-    py::class_<BlendednessAlgorithm, std::shared_ptr<BlendednessAlgorithm>, SimpleAlgorithm> clsBlendednessAlgorithm(mod, "BlendednessAlgorithm");
-    py::class_<BlendednessControl> clsBlendednessControl(mod, "BlendednessControl");
+    auto clsBlendednessControl = declareBlendednessControl(mod);
+    auto clsBlendednessAlgorithm = declareBlendednessAlgorithm(mod);
 
-    /* Constructors */
-    clsBlendednessAlgorithm.def(py::init<BlendednessAlgorithm::Control const &,
-                                         std::string const &,
-                                         afw::table::Schema &>(),
-                                "ctrl"_a, "name"_a, "schema"_a);
+    clsBlendednessAlgorithm.attr("Control") = clsBlendednessControl;
 
-    clsBlendednessControl.def(py::init<>());
-
-    /* Members */
-    python::declareAlgorithm<BlendednessAlgorithm, BlendednessControl>(
-        clsBlendednessAlgorithm, clsBlendednessControl);
-    clsBlendednessAlgorithm.def("measureChildPixels", &BlendednessAlgorithm::measureChildPixels,
-        "image"_a, "child"_a);
-    clsBlendednessAlgorithm.def("measureParentPixels", &BlendednessAlgorithm::measureParentPixels,
-        "image"_a, "child"_a);
-
-    LSST_DECLARE_CONTROL_FIELD(clsBlendednessControl, BlendednessControl, doFlux);
-    LSST_DECLARE_CONTROL_FIELD(clsBlendednessControl, BlendednessControl, doOld);
-    LSST_DECLARE_CONTROL_FIELD(clsBlendednessControl, BlendednessControl, doShape);
-    LSST_DECLARE_CONTROL_FIELD(clsBlendednessControl, BlendednessControl, nSigmaWeightMax);
+    python::declareAlgorithm<BlendednessAlgorithm, BlendednessControl>(clsBlendednessAlgorithm,
+                                                                       clsBlendednessControl);
 
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}  // base
+}  // meas
+}  // lsst

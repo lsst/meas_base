@@ -19,6 +19,7 @@
  * the GNU General Public License along with this program.  If not, 
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
+#include <memory>
 
 #include "pybind11/pybind11.h"
 
@@ -35,18 +36,14 @@ PYBIND11_PLUGIN(transform) {
     py::module mod("transform");
 
     /* Module level */
-    py::class_<BaseTransform> cls(mod, "BaseTransform");
+    py::class_<BaseTransform, std::shared_ptr<BaseTransform>> cls(mod, "BaseTransform");
 
     /* Operators */
-    cls.def("__call__", [](BaseTransform const & self,
-                           afw::table::SourceCatalog const & inputCatalog,
-                           afw::table::BaseCatalog & outputCatalog,
-                           afw::image::Wcs const & wcs,
-                           afw::image::Calib const & calib) {
-            return self(inputCatalog, outputCatalog, wcs, calib);
-        }, "inputCatalog"_a, "outputCatalog"_a, "wcs"_a, "calib"_a);
+    cls.def("__call__", &BaseTransform::operator(), "inputCatalog"_a, "outputCatalog"_a, "wcs"_a, "calib"_a);
 
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}  // base
+}  // meas
+}  // lsst

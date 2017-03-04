@@ -19,6 +19,7 @@
  * the GNU General Public License along with this program.  If not, 
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
+#include <memory>
 
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
@@ -27,6 +28,7 @@
 #include "lsst/meas/base/python.h"
 
 #include "lsst/meas/base/PsfFlux.h"
+#include "lsst/meas/base/FluxUtilities.h"
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -35,31 +37,62 @@ namespace lsst {
 namespace meas {
 namespace base {
 
+namespace {
+
+using PyFluxAlgorithm = py::class_<PsfFluxAlgorithm, std::shared_ptr<PsfFluxAlgorithm>, SimpleAlgorithm>;
+using PyFluxControl = py::class_<PsfFluxControl>;
+using PyFluxTransform = py::class_<PsfFluxTransform, std::shared_ptr<PsfFluxTransform>, BaseTransform>;
+
+PyFluxControl declareFluxControl(py::module &mod) {
+    PyFluxControl cls(mod, "PsfFluxControl");
+
+    LSST_DECLARE_CONTROL_FIELD(cls, PsfFluxControl, badMaskPlanes);
+
+    cls.def(py::init<>());
+
+    return cls;
+}
+
+PyFluxAlgorithm declareFluxAlgorithm(py::module &mod) {
+    PyFluxAlgorithm cls(mod, "PsfFluxAlgorithm");
+
+    cls.attr("FAILURE") = py::cast(PsfFluxAlgorithm::FAILURE);
+    cls.attr("NO_GOOD_PIXELS") = py::cast(PsfFluxAlgorithm::NO_GOOD_PIXELS);
+    cls.attr("EDGE") = py::cast(PsfFluxAlgorithm::EDGE);
+
+    cls.def(py::init<PsfFluxAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
+            "ctrl"_a, "name"_a, "schema"_a);
+
+    return cls;
+}
+
+PyFluxTransform declareFluxTransform(py::module &mod) {
+    PyFluxTransform cls(mod, "PsfFluxTransform");
+
+    cls.def(py::init<PsfFluxTransform::Control const &, std::string const &, afw::table::SchemaMapper &>(),
+            "ctrl"_a, "name"_a, "mapper"_a);
+
+    return cls;
+}
+
+}  // <anonymous>
+
 PYBIND11_PLUGIN(psfFlux) {
     py::module mod("psfFlux");
 
-    /* Module level */
-    py::class_<PsfFluxAlgorithm, std::shared_ptr<PsfFluxAlgorithm>, SimpleAlgorithm> clsPsfFluxAlgorithm(mod, "PsfFluxAlgorithm");
-    py::class_<PsfFluxControl> clsPsfFluxControl(mod, "PsfFluxControl");
-    py::class_<PsfFluxTransform> clsPsfFluxTransform(mod, "PsfFluxTransform");
+    auto clsFluxControl = declareFluxControl(mod);
+    auto clsFluxAlgorithm = declareFluxAlgorithm(mod);
+    auto clsFluxTransform = declareFluxTransform(mod);
 
-    /* Member types and enums */
-    // Anonymous enum cannot be represented directly
-    clsPsfFluxAlgorithm.attr("FAILURE") = py::cast(static_cast<int>(PsfFluxAlgorithm::FAILURE));
-    clsPsfFluxAlgorithm.attr("NO_GOOD_PIXELS") = py::cast(static_cast<int>(PsfFluxAlgorithm::NO_GOOD_PIXELS));
-    clsPsfFluxAlgorithm.attr("EDGE") = py::cast(static_cast<int>(PsfFluxAlgorithm::EDGE));
-    clsPsfFluxAlgorithm.attr("N_FLAGS") = py::cast(static_cast<int>(PsfFluxAlgorithm::N_FLAGS));
+    clsFluxAlgorithm.attr("Control") = clsFluxControl;
+    clsFluxTransform.attr("Control") = clsFluxControl;
 
-    /* Members */
-    python::declareAlgorithm<PsfFluxAlgorithm,
-                             PsfFluxControl,
-                             PsfFluxTransform>(clsPsfFluxAlgorithm,
-                                               clsPsfFluxControl,
-                                               clsPsfFluxTransform);
-
-    LSST_DECLARE_CONTROL_FIELD(clsPsfFluxControl, PsfFluxControl, badMaskPlanes);
+    python::declareAlgorithm<PsfFluxAlgorithm, PsfFluxControl, PsfFluxTransform>(
+            clsFluxAlgorithm, clsFluxControl, clsFluxTransform);
 
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}  // base
+}  // meas
+}  // lsst

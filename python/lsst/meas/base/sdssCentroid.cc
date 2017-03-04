@@ -19,6 +19,7 @@
  * the GNU General Public License along with this program.  If not, 
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
+#include <memory>
 
 #include "pybind11/pybind11.h"
 
@@ -34,30 +35,74 @@ namespace lsst {
 namespace meas {
 namespace base {
 
+namespace {
+
+using PyCentroidAlgorithm =
+        py::class_<SdssCentroidAlgorithm, std::shared_ptr<SdssCentroidAlgorithm>, SimpleAlgorithm>;
+using PyCentroidControl = py::class_<SdssCentroidControl>;
+using PyCentroidTransform =
+        py::class_<SdssCentroidTransform, std::shared_ptr<SdssCentroidTransform>, BaseTransform>;
+
+PyCentroidControl declareCentroidControl(py::module &mod) {
+    PyCentroidControl cls(mod, "SdssCentroidControl");
+
+    LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, binmax);
+    LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, peakMin);
+    LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, wfac);
+    LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, doFootprintCheck);
+    LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, maxDistToPeak);
+
+    cls.def(py::init<>());
+
+    return cls;
+}
+
+PyCentroidAlgorithm declareCentroidAlgorithm(py::module &mod) {
+    PyCentroidAlgorithm cls(mod, "SdssCentroidAlgorithm");
+
+    cls.attr("FAILURE") = py::cast(SdssCentroidAlgorithm::FAILURE);
+    cls.attr("EDGE") = py::cast(SdssCentroidAlgorithm::EDGE);
+    cls.attr("NO_SECOND_DERIVATIVE") = py::cast(SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE);
+    cls.attr("ALMOST_NO_SECOND_DERIVATIVE") = py::cast(SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE);
+    cls.attr("NOT_AT_MAXIMUM") = py::cast(SdssCentroidAlgorithm::NOT_AT_MAXIMUM);
+
+    cls.def(py::init<SdssCentroidAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
+            "ctrl"_a, "name"_a, "schema"_a);
+
+    cls.def("measure", &SdssCentroidAlgorithm::measure, "measRecord"_a, "exposure"_a);
+    cls.def("fail", &SdssCentroidAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
+
+    return cls;
+}
+
+PyCentroidTransform declareCentroidTransform(py::module &mod) {
+    PyCentroidTransform cls(mod, "SdssCentroidTransform");
+
+    cls.def(py::init<SdssCentroidTransform::Control const &, std::string const &,
+                     afw::table::SchemaMapper &>(),
+            "ctrl"_a, "name"_a, "mapper"_a);
+
+    return cls;
+}
+
+}  // <anonymous>
+
 PYBIND11_PLUGIN(sdssCentroid) {
     py::module mod("sdssCentroid");
 
-    /* Module level */
-    py::class_<SdssCentroidAlgorithm, std::shared_ptr<SdssCentroidAlgorithm>, SimpleAlgorithm> clsSdssCentroidAlgorithm(mod, "SdssCentroidAlgorithm");
-    py::class_<SdssCentroidControl> clsSdssCentroidControl(mod, "SdssCentroidControl");
-    py::class_<SdssCentroidTransform> clsSdssCentroidTransform(mod, "SdssCentroidTransform");
+    auto clsCentroidControl = declareCentroidControl(mod);
+    auto clsCentroidAlgorithm = declareCentroidAlgorithm(mod);
+    auto clsCentroidTransform = declareCentroidTransform(mod);
 
-    /* Member types and enums */
-    clsSdssCentroidAlgorithm.def(py::init<SdssCentroidAlgorithm::Control const &,
-                                          std::string const &,
-                                          afw::table::Schema &>(),
-                                 "ctrl"_a, "name"_a, "schema"_a);
+    clsCentroidAlgorithm.attr("Control") = clsCentroidControl;
+    clsCentroidTransform.attr("Control") = clsCentroidControl;
 
-    /* Members */
-    python::declareAlgorithm<SdssCentroidAlgorithm,
-                             SdssCentroidControl,
-                             SdssCentroidTransform>(clsSdssCentroidAlgorithm,
-                                                    clsSdssCentroidControl,
-                                                    clsSdssCentroidTransform);
-    LSST_DECLARE_CONTROL_FIELD(clsSdssCentroidControl, SdssCentroidControl, doFootprintCheck);
-    LSST_DECLARE_CONTROL_FIELD(clsSdssCentroidControl, SdssCentroidControl, maxDistToPeak);
+    python::declareAlgorithm<SdssCentroidAlgorithm, SdssCentroidControl, SdssCentroidTransform>(
+            clsCentroidAlgorithm, clsCentroidControl, clsCentroidTransform);
 
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}  // base
+}  // meas
+}  // lsst

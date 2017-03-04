@@ -19,6 +19,7 @@
  * the GNU General Public License along with this program.  If not, 
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
+#include <memory>
 
 #include "pybind11/pybind11.h"
 
@@ -34,25 +35,71 @@ namespace lsst {
 namespace meas {
 namespace base {
 
+namespace {
+
+using PyCentroidAlgorithm =
+        py::class_<NaiveCentroidAlgorithm, std::shared_ptr<NaiveCentroidAlgorithm>, SimpleAlgorithm>;
+using PyCentroidControl = py::class_<NaiveCentroidControl>;
+using PyCentroidTransform =
+        py::class_<NaiveCentroidTransform, std::shared_ptr<NaiveCentroidTransform>, CentroidTransform>;
+
+PyCentroidControl declareCentroidControl(py::module &mod) {
+    PyCentroidControl cls(mod, "NaiveCentroidControl");
+
+    cls.def(py::init<>());
+
+    LSST_DECLARE_CONTROL_FIELD(cls, NaiveCentroidControl, background);
+    LSST_DECLARE_CONTROL_FIELD(cls, NaiveCentroidControl, doFootprintCheck);
+    LSST_DECLARE_CONTROL_FIELD(cls, NaiveCentroidControl, maxDistToPeak);
+
+    return cls;
+}
+
+PyCentroidAlgorithm declareCentroidAlgorithm(py::module &mod) {
+    PyCentroidAlgorithm cls(mod, "NaiveCentroidAlgorithm");
+
+    cls.attr("FAILURE") = py::cast(NaiveCentroidAlgorithm::FAILURE);
+    cls.attr("NO_COUNTS") = py::cast(NaiveCentroidAlgorithm::NO_COUNTS);
+    cls.attr("EDGE") = py::cast(NaiveCentroidAlgorithm::EDGE);
+
+    cls.def(py::init<NaiveCentroidAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
+            "ctrl"_a, "name"_a, "schema"_a);
+
+    cls.def("measure", &NaiveCentroidAlgorithm::measure, "measRecord"_a, "exposure"_a);
+    cls.def("fail", &NaiveCentroidAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
+
+    return cls;
+}
+
+PyCentroidTransform declareCentroidTransform(py::module &mod) {
+    PyCentroidTransform cls(mod, "NaiveCentroidTransform");
+
+    cls.def(py::init<NaiveCentroidTransform::Control const &, std::string const &, afw::table::SchemaMapper &>(),
+            "ctrl"_a, "name"_a, "mapper"_a);
+
+    return cls;
+}
+
+}  // <anonymous>
+
 PYBIND11_PLUGIN(naiveCentroid) {
     py::module mod("naiveCentroid");
 
     /* Module level */
-    py::class_<NaiveCentroidAlgorithm, std::shared_ptr<NaiveCentroidAlgorithm>, SimpleAlgorithm> clsNaiveCentroidAlgorithm(mod, "NaiveCentroidAlgorithm");
-    py::class_<NaiveCentroidControl> clsNaiveCentroidControl(mod, "NaiveCentroidControl");
-    py::class_<NaiveCentroidTransform> clsNaiveCentroidTransform(mod, "NaiveCentroidTransform");
+    auto clsCentroidControl = declareCentroidControl(mod);
+    auto clsCentroidAlgorithm = declareCentroidAlgorithm(mod);
+    auto clsCentroidTransform = declareCentroidTransform(mod);
+
+    clsCentroidAlgorithm.attr("Control") = clsCentroidControl;
+    clsCentroidTransform.attr("Control") = clsCentroidControl;
 
     /* Members */
-    python::declareAlgorithm<NaiveCentroidAlgorithm,
-                             NaiveCentroidControl,
-                             NaiveCentroidTransform>(clsNaiveCentroidAlgorithm,
-                                                     clsNaiveCentroidControl,
-                                                     clsNaiveCentroidTransform);
-    LSST_DECLARE_CONTROL_FIELD(clsNaiveCentroidControl, NaiveCentroidControl, background);
-    LSST_DECLARE_CONTROL_FIELD(clsNaiveCentroidControl, NaiveCentroidControl, doFootprintCheck);
-    LSST_DECLARE_CONTROL_FIELD(clsNaiveCentroidControl, NaiveCentroidControl, maxDistToPeak);
+    python::declareAlgorithm<NaiveCentroidAlgorithm, NaiveCentroidControl, NaiveCentroidTransform>(
+            clsCentroidAlgorithm, clsCentroidControl, clsCentroidTransform);
 
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}  // base
+}  // meas
+}  // lsst
