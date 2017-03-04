@@ -88,6 +88,10 @@ PyCentroidTransform declareCentroidTransform(py::module &mod) {
 }  // <anonymous>
 
 PYBIND11_PLUGIN(sdssCentroid) {
+    py::module::import("lsst.meas.base.algorithm");
+    py::module::import("lsst.meas.base.flagHandler");
+    py::module::import("lsst.meas.base.transform");
+
     py::module mod("sdssCentroid");
 
     auto clsCentroidControl = declareCentroidControl(mod);

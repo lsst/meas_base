@@ -38,7 +38,7 @@ namespace base {
 namespace {
 
 using PyCentroidChecker = py::class_<CentroidChecker>;
-using PyCentroidResult = py::class_<CentroidResult>;
+using PyCentroidResult = py::class_<CentroidResult, std::shared_ptr<CentroidResult>>;
 using PyCentroidResultKey = py::class_<CentroidResultKey>;
 using PyCentroidTransform = py::class_<CentroidTransform, std::shared_ptr<CentroidTransform>, BaseTransform>;
 

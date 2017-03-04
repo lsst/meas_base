@@ -48,7 +48,8 @@ using PyShapeControl = py::class_<SdssShapeControl>;
 // TODO decide if we need to mention afw::table::FunctorKey<SdssShapeResult>
 // and if so, wrap it; if not, document that here
 using PyShapeResultKey = py::class_<SdssShapeResultKey, std::shared_ptr<SdssShapeResultKey>>;
-using PyShapeResult = py::class_<SdssShapeResult, std::shared_ptr<SdssShapeResult>, ShapeResult>;
+using PyShapeResult = py::class_<SdssShapeResult, std::shared_ptr<SdssShapeResult>, ShapeResult,
+                                 CentroidResult, FluxResult>;
 using PyShapeAlgorithm = py::class_<SdssShapeAlgorithm, std::shared_ptr<SdssShapeAlgorithm>, SimpleAlgorithm>;
 using PyShapeTransform = py::class_<SdssShapeTransform, std::shared_ptr<SdssShapeTransform>, BaseTransform>;
 
@@ -168,6 +169,13 @@ PyShapeTransform declareShapeTransform(py::module &mod) {
 }  // <anonymous>
 
 PYBIND11_PLUGIN(sdssShape) {
+    py::module::import("lsst.meas.base.algorithm");
+    py::module::import("lsst.meas.base.flagHandler");
+    py::module::import("lsst.meas.base.centroidUtilities");  // for CentroidResult
+    py::module::import("lsst.meas.base.fluxUtilities");  // for FluxResult
+    py::module::import("lsst.meas.base.shapeUtilities");
+    py::module::import("lsst.meas.base.transform");
+
     py::module mod("sdssShape");
 
     // Needed in order to return shape as a covariance matrix

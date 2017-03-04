@@ -78,6 +78,10 @@ PyFluxTransform declareFluxTransform(py::module &mod) {
 }  // <anonymous>
 
 PYBIND11_PLUGIN(peakLikelihoodFlux) {
+    py::module::import("lsst.meas.base.algorithm");
+    py::module::import("lsst.meas.base.flagHandler");
+    py::module::import("lsst.meas.base.transform");
+
     py::module mod("peakLikelihoodFlux");
 
     auto clsFluxControl = declareFluxControl(mod);
