@@ -37,26 +37,19 @@ namespace lsst { namespace meas { namespace base {
 */
 struct FlagDefinition {
 
-    static const std::size_t number_undefined = SIZE_MAX;
+    static constexpr std::size_t number_undefined = SIZE_MAX;
 
-    FlagDefinition() {
-    }
+    FlagDefinition() : name(), doc(), number() {}
 
-    FlagDefinition(std::string _name, std::string _doc) {
-        name = _name;
-        doc = _doc;
-        number = number_undefined;
-    }
+    FlagDefinition(std::string const& name, std::string const& doc, std::size_t number=number_undefined)
+            : name(name), doc(doc), number(number) {}
 
-    FlagDefinition(std::string _name, std::string _doc, std::size_t  _number) {
-        name = _name;
-        doc = _doc;
-        number = _number;
-    }
-
-    // equality of this type is based solely on the name key
+    // equality of this type is based solely on the name attribute
     bool operator==(FlagDefinition const & other) const {
         return (other.name == name);
+    }
+    bool operator!=(FlagDefinition const & other) const {
+        return (other.name != name);
     }
 
     std::string name;
@@ -75,7 +68,6 @@ public:
     FlagDefinitionList() {
     };
 
-#ifndef SWIG
     /**
      *  @brief initialize a FlagDefinition list from initializer_list.
      */
@@ -84,7 +76,6 @@ public:
             add(iter->name, iter->doc);
         }
     }
-#endif
 
     static FlagDefinitionList const & getEmptyList() {
         static FlagDefinitionList list;
@@ -93,14 +84,8 @@ public:
     /**
      *  @brief get a reference to the FlagDefinition with specified index.
      */
-    FlagDefinition getDefinition(size_t index) const {
+    FlagDefinition getDefinition(std::size_t index) const {
         return _vector[index];
-    }
-    /**
-     *  @brief get a reference to the FlagDefinition with specified array index
-     */
-    FlagDefinition operator[](size_t index) const {
-        return getDefinition(index);
     }
     /**
      *  @brief get a reference to the FlagDefinition with specified name.
@@ -110,6 +95,12 @@ public:
             if (_vector[i].name == name) return _vector[i];
         }
         throw FatalAlgorithmError("No Flag Definition for " + name);
+    }
+    /**
+     *  @brief get a reference to the FlagDefinition with specified array index
+     */
+    FlagDefinition operator[](std::size_t index) const {
+        return getDefinition(index);
     }
     /**
      *  @brief See if there is a FlagDefinition with specified name.
@@ -271,7 +262,7 @@ public:
     /**
      *  Return the value of the flag field with the given flag name
      */
-    bool getValue(afw::table::BaseRecord const & record, std::string flagName) const {
+    bool getValue(afw::table::BaseRecord const & record, std::string const & flagName) const {
         for (std::size_t i = 0; i < _vector.size(); i++) {
             if (_vector[i].first == flagName && _vector[i].second.isValid()) {
                 return record.get(_vector[i].second);
@@ -292,7 +283,7 @@ public:
     /**
      *  Set the flag field corresponding to the given flag name.
      */
-    void setValue(afw::table::BaseRecord & record, std::string flagName, bool value) const {
+    void setValue(afw::table::BaseRecord & record, std::string const & flagName, bool value) const {
         for (std::size_t i = 0; i < _vector.size(); i++) {
             if (_vector[i].first == flagName && _vector[i].second.isValid()) {
                 record.set(_vector[i].second, value);
@@ -315,9 +306,9 @@ public:
      *  If the exception is expected, it should inherit from MeasurementError and can be passed here;
      *  this allows handleFailure to extract the failure mode enum value from the exception and set
      *  the corresponding flag.  The general failure flag will be set regardless of whether the "error"
-     *  argument is NULL (which happens when an unexpected error occurs).
+     *  argument is nullptr (which happens when an unexpected error occurs).
      */
-    void handleFailure(afw::table::BaseRecord & record, MeasurementError const * error=NULL) const;
+    void handleFailure(afw::table::BaseRecord & record, MeasurementError const * error=nullptr) const;
 
     std::size_t failureFlagNumber;
 private:

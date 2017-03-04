@@ -93,7 +93,7 @@ void declareAlgorithm(PyAlg & clsAlgorithm) {
     /* Operators */
 
     /* Members */
-    clsAlgorithm.def("fail", &Algorithm::fail, "measRecord"_a, "error"_a=NULL);
+    clsAlgorithm.def("fail", &Algorithm::fail, "measRecord"_a, "error"_a=nullptr);
     clsAlgorithm.def("measure", &Algorithm::measure, "record"_a, "exposure"_a);
 }
 

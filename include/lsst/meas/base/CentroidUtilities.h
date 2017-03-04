@@ -44,21 +44,21 @@ struct CentroidResult {
     CentroidResult();
 
     /// Constructor; initializes everything from values.
-    explicit CentroidResult(CentroidElement _x, CentroidElement _y, CentroidCov const & matrix):
-        x(_x),
-        y(_y),
+    explicit CentroidResult(CentroidElement x, CentroidElement y, CentroidCov const & matrix):
+        x(x),
+        y(y),
         xSigma(std::sqrt(matrix(0, 0))),
         ySigma(std::sqrt(matrix(1, 1))),
         x_y_Cov(matrix(0,1))
     {}
 
     /// Constructor; initializes everything from values.
-    explicit CentroidResult(CentroidElement _x, CentroidElement _y,
-                            ErrElement _xSigma, ErrElement _ySigma) :
-        x(_x),
-        y(_y),
-        xSigma(_xSigma),
-        ySigma(_ySigma),
+    explicit CentroidResult(CentroidElement x, CentroidElement y,
+                            ErrElement xSigma, ErrElement ySigma) :
+        x(x),
+        y(y),
+        xSigma(xSigma),
+        ySigma(ySigma),
         x_y_Cov(0.0)
     {}
 
