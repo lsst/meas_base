@@ -23,9 +23,6 @@
 
 #include "pybind11/pybind11.h"
 
-#include "numpy/arrayobject.h"
-#include "ndarray/pybind11.h"
-
 #include "lsst/pex/config/python.h"
 #include "lsst/meas/base/python.h"
 
@@ -177,12 +174,6 @@ PYBIND11_PLUGIN(sdssShape) {
     py::module::import("lsst.meas.base.transform");
 
     py::module mod("sdssShape");
-
-    // Needed in order to return shape as a covariance matrix
-    if (_import_array() < 0) {
-        PyErr_SetString(PyExc_ImportError, "numpy.core.multiarray failed to import");
-        return nullptr;
-    }
 
     auto clsShapeControl = declareShapeControl(mod);
     declareShapeResultKey(mod);
