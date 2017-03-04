@@ -80,7 +80,7 @@ public:
         afw::image::Exposure<float> const & exposure
     ) const override;
 
-    virtual void fail(afw::table::SourceRecord & measRecord, MeasurementError * error=NULL) const override;
+    virtual void fail(afw::table::SourceRecord & measRecord, MeasurementError * error=nullptr) const override;
 
 private:
     Control _ctrl;

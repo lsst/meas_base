@@ -25,6 +25,9 @@
 
 namespace lsst { namespace meas { namespace base {
 
+// so pybind11 can get the address of number_undefined
+constexpr std::size_t FlagDefinition::number_undefined;
+
 FlagDefinition FlagDefinitionList::addFailureFlag(
     std::string const & doc
 ) {

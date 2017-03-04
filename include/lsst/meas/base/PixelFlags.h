@@ -75,7 +75,7 @@ public:
 
     virtual void fail(
         afw::table::SourceRecord & measRecord,
-        MeasurementError * error = NULL
+        MeasurementError * error = nullptr
     ) const;
 
     typedef std::map<std::string, afw::table::Key<afw::table::Flag>> KeyMap;
