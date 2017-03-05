@@ -89,7 +89,7 @@ public:
 
     virtual void fail(
         afw::table::SourceRecord & measRecord,
-        MeasurementError * error=NULL
+        MeasurementError * error=nullptr
     ) const;
 
 private:

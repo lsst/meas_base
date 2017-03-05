@@ -1,6 +1,6 @@
 /* 
  * LSST Data Management System
- * Copyright 2008-2016  AURA/LSST.
+ * Copyright 2008-2017  AURA/LSST.
  * 
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -19,6 +19,7 @@
  * the GNU General Public License along with this program.  If not, 
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
+#include <memory>
 
 #include "pybind11/pybind11.h"
 
@@ -31,20 +32,29 @@ namespace lsst {
 namespace meas {
 namespace base {
 
+namespace {
+
+using PyApertureFluxClass = py::class_<CircularApertureFluxAlgorithm,
+                                       std::shared_ptr<CircularApertureFluxAlgorithm>, ApertureFluxAlgorithm>;
+
+}  // <anonymous>
+
 PYBIND11_PLUGIN(circularApertureFlux) {
+    py::module::import("lsst.meas.base.algorithm");
+
     py::module mod("circularApertureFlux");
+    
+    PyApertureFluxClass cls(mod, "CircularApertureFluxAlgorithm");
 
-    /* Module level */
-    py::class_<CircularApertureFluxAlgorithm, std::shared_ptr<CircularApertureFluxAlgorithm>, ApertureFluxAlgorithm> cls(mod, "CircularApertureFluxAlgorithm");
-
-    /* Constructors */
-    cls.def(py::init<CircularApertureFluxAlgorithm::Control const &,
-                     std::string const &,
-                     afw::table::Schema &,
-                     daf::base::PropertySet &>(),
+    cls.def(py::init<CircularApertureFluxAlgorithm::Control const &, std::string const &,
+                     afw::table::Schema &, daf::base::PropertySet &>(),
             "ctrl"_a, "name"_a, "schema"_a, "metadata"_a);
+
+    cls.def("measure", &CircularApertureFluxAlgorithm::measure, "measRecord"_a, "exposure"_a);
 
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}  // base
+}  // meas
+}  // lsst

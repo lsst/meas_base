@@ -200,7 +200,7 @@ public:
     /// @copydoc BaseAlgorithm::fail
     virtual void fail(
         afw::table::SourceRecord & measRecord,
-        MeasurementError * error=NULL
+        MeasurementError * error=nullptr
     ) const;
 
     /**
@@ -254,7 +254,7 @@ struct ApertureFluxResult : public FluxResult {
     bool getFlag(unsigned int index) const { return _flags[index]; }
 
     /// Return the flag value associated with the given flag name
-    bool getFlag(std::string name) const {
+    bool getFlag(std::string const & name) const {
        return _flags[ApertureFluxAlgorithm::getFlagDefinitions().getDefinition(name).number];
     }
 

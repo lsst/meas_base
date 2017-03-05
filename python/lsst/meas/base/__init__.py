@@ -26,6 +26,7 @@ from __future__ import absolute_import
 # Needed for pybind11-generated docstrings
 from lsst.afw.image import Calib, Wcs
 
+from .flagHandler import *
 from .centroidUtilities import *
 from .fluxUtilities import *
 from .inputUtilities import *
@@ -35,7 +36,6 @@ from .apertureFlux import *
 from .blendedness import *
 from .circularApertureFlux import *
 from .exceptions import *
-from .flagHandler import *
 from .gaussianCentroid import *
 from .gaussianFlux import *
 from .naiveCentroid import *

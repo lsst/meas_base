@@ -214,7 +214,7 @@ public:
 
     virtual void fail(
         afw::table::SourceRecord & measRecord,
-        MeasurementError * error=NULL
+        MeasurementError * error=nullptr
     ) const;
 
 private:
@@ -241,14 +241,13 @@ public:
     ErrElement flux_yy_Cov; ///< flux, yy term in the uncertainty covariance matrix
     ErrElement flux_xy_Cov; ///< flux, xy term in the uncertainty covariance matrix
 
-#ifndef SWIG
     std::bitset<SdssShapeAlgorithm::N_FLAGS> flags; ///< Status flags (see SdssShapeAlgorithm).
-#endif
 
     /// Flag getter for Swig, which doesn't understand std::bitset
-    bool getFlag(unsigned int index) { return flags[index]; }
+    // TODO is this workaround still needed?
+    bool getFlag(unsigned int index) const { return flags[index]; }
 
-    bool getFlag(std::string name) {
+    bool getFlag(std::string const & name) const {
        return flags[SdssShapeAlgorithm::getFlagDefinitions().getDefinition(name).number];
     }
 
