@@ -52,10 +52,10 @@ struct ShapeResult {
     ShapeResult();
 
     /// Constructor; initializes everything from values.
-    explicit ShapeResult(ShapeElement xx, ShapeElement yy, ShapeElement xy, ShapeCov const & matrix):
-        xx(xx),
-        yy(yy),
-        xy(xy),
+    explicit ShapeResult(ShapeElement xx_, ShapeElement yy_, ShapeElement xy_, ShapeCov const & matrix):
+        xx(xx_),
+        yy(yy_),
+        xy(xy_),
         xxSigma(std::sqrt(matrix(0, 0))),
         yySigma(std::sqrt(matrix(1, 1))),
         xySigma(std::sqrt(matrix(2, 2))),
@@ -65,14 +65,14 @@ struct ShapeResult {
     {}
 
     /// Constructor; initializes everything from values.
-    explicit ShapeResult(ShapeElement xx, ShapeElement yy, ShapeElement xy,
-                            ErrElement xxSigma, ErrElement yySigma, ErrElement xySigma) :
-        xx(xx),
-        yy(yy),
-        xy(xy),
-        xxSigma(xxSigma),
-        yySigma(yySigma),
-        xySigma(xySigma),
+    explicit ShapeResult(ShapeElement xx_, ShapeElement yy_, ShapeElement xy_,
+                         ErrElement xxSigma_, ErrElement yySigma_, ErrElement xySigma_) :
+        xx(xx_),
+        yy(yy_),
+        xy(xy_),
+        xxSigma(xxSigma_),
+        yySigma(yySigma_),
+        xySigma(xySigma_),
         xx_yy_Cov(0.0),
         xx_xy_Cov(0.0),
         yy_xy_Cov(0.0)
