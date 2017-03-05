@@ -65,7 +65,7 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
         self.assertEqual(task.schema.getAliasMap().get("base_NaiveCentroid_flag_badInitialCentroid"),
                          "base_SdssCentroid_flag")
         # Test that there is no circular alias for the slot centroider itself.
-        self.assertRaises(KeyError, task.schema.find, "base_SdssCentroid_flag_badInitialCentroid")
+        self.assertRaises(LookupError, task.schema.find, "base_SdssCentroid_flag_badInitialCentroid")
 
     def testUnmetCentroidDependency(self):
         """Test that we throw an exception (LogicError) when initializing an algorithm

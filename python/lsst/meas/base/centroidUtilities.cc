@@ -1,7 +1,7 @@
-/* 
+/*
  * LSST Data Management System
- * Copyright 2008-2016  AURA/LSST.
- * 
+ * Copyright 2008-2017  AURA/LSST.
+ *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
  *
@@ -9,19 +9,20 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
- * You should have received a copy of the LSST License Statement and 
- * the GNU General Public License along with this program.  If not, 
+ *
+ * You should have received a copy of the LSST License Statement and
+ * the GNU General Public License along with this program.  If not,
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
-#include <memory>
 
 #include "pybind11/pybind11.h"
+
+#include <memory>
 
 #include "numpy/arrayobject.h"
 #include "ndarray/pybind11.h"
@@ -71,10 +72,9 @@ void declareCentroidResultKey(py::module & mod) {
     PyCentroidResultKey cls(mod, "CentroidResultKey");
 
     cls.def(py::init<>());
-    // TODO make this work or document it not being needed
-    // cls.def(py::init<afw::table::PointKey<CentroidElement> const &,
-    //                  afw::table::CovarianceMatrixKey<ErrElement, 2> const &>(),
-    //         "centroid"_a);
+    cls.def(py::init<afw::table::PointKey<CentroidElement> const &,
+                     afw::table::CovarianceMatrixKey<ErrElement, 2> const &>(),
+            "centroid"_a, "uncertainty"_a);
     cls.def(py::init<afw::table::SubSchema const &>(), "subSchema"_a);
 
     cls.def("__eq__", &CentroidResultKey::operator==, py::is_operator());

@@ -1,7 +1,7 @@
-/* 
+/*
  * LSST Data Management System
- * Copyright 2008-2016  AURA/LSST.
- * 
+ * Copyright 2008-2017  AURA/LSST.
+ *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
  *
@@ -9,20 +9,21 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
- * You should have received a copy of the LSST License Statement and 
- * the GNU General Public License along with this program.  If not, 
+ *
+ * You should have received a copy of the LSST License Statement and
+ * the GNU General Public License along with this program.  If not,
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
-#include <memory>
 
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+
+#include <memory>
 
 #include "lsst/utils/python.h"
 #include "lsst/meas/base/FlagHandler.h"
@@ -59,10 +60,15 @@ void declareFlagDefinitionList(py::module &mod) {
 
     cls.def("__getitem__",
             [](FlagDefinitionList const &self, int i) {
-                auto cind = lsst::utils::python::cppIndex(self.size(), i);
-                return self[cind];
-            },
-            py::is_operator());
+                try {
+                    auto cind = lsst::utils::python::cppIndex(self.size(), i);
+                    return self[cind];
+                } catch (pex::exceptions::OutOfRangeError & err) {
+                    // Python needs exception to be IndexError to generate __iter__; see DM-9715
+                    PyErr_SetString(PyExc_IndexError, err.what());
+                    throw py::error_already_set();
+                }
+            });
     cls.def("__len__", &FlagDefinitionList::size);
 
     cls.def("getEmptyList", &FlagDefinitionList::getEmptyList);
