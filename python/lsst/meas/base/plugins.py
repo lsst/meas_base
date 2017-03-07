@@ -31,12 +31,26 @@ import lsst.afw.detection
 import lsst.afw.geom
 
 from .pluginRegistry import register
-from . import baseLib as bl
 from .pluginsBase import BasePlugin
 from .sfm import SingleFramePluginConfig, SingleFramePlugin
 from .forcedMeasurement import ForcedPluginConfig, ForcedPlugin
-from .wrappers import wrapSimpleAlgorithm
+from .wrappers import wrapSimpleAlgorithm, wrapTransform
 from .transforms import SimpleCentroidTransform
+
+from .apertureFlux import ApertureFluxControl, ApertureFluxTransform
+from .transform import BaseTransform
+from .blendedness import BlendednessAlgorithm, BlendednessControl
+from .circularApertureFlux import CircularApertureFluxAlgorithm
+from .gaussianCentroid import GaussianCentroidAlgorithm, GaussianCentroidControl, GaussianCentroidTransform
+from .gaussianFlux import GaussianFluxAlgorithm, GaussianFluxControl, GaussianFluxTransform
+from .exceptions import MeasurementError
+from .naiveCentroid import NaiveCentroidAlgorithm, NaiveCentroidControl, NaiveCentroidTransform
+from .peakLikelihoodFlux import PeakLikelihoodFluxAlgorithm, PeakLikelihoodFluxControl, PeakLikelihoodFluxTransform
+from .pixelFlags import PixelFlagsAlgorithm, PixelFlagsControl
+from .psfFlux import PsfFluxAlgorithm, PsfFluxControl, PsfFluxTransform
+from .scaledApertureFlux import ScaledApertureFluxAlgorithm, ScaledApertureFluxControl, ScaledApertureFluxTransform
+from .sdssCentroid import SdssCentroidAlgorithm, SdssCentroidControl, SdssCentroidTransform
+from .sdssShape import SdssShapeAlgorithm, SdssShapeControl, SdssShapeTransform
 
 __all__ = (
     "SingleFrameFPPositionConfig", "SingleFrameFPPositionPlugin",
@@ -52,31 +66,41 @@ __all__ = (
 
 # --- Wrapped C++ Plugins ---
 
-wrapSimpleAlgorithm(bl.PsfFluxAlgorithm, Control=bl.PsfFluxControl,
-                    TransformClass=bl.PsfFluxTransform, executionOrder=BasePlugin.FLUX_ORDER,
+wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl,
+                    TransformClass=PsfFluxTransform, executionOrder=BasePlugin.FLUX_ORDER,
                     shouldApCorr=True)
-wrapSimpleAlgorithm(bl.PeakLikelihoodFluxAlgorithm, Control=bl.PeakLikelihoodFluxControl,
-                    TransformClass=bl.PeakLikelihoodFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
-wrapSimpleAlgorithm(bl.GaussianFluxAlgorithm, Control=bl.GaussianFluxControl,
-                    TransformClass=bl.GaussianFluxTransform, executionOrder=BasePlugin.FLUX_ORDER,
+wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxControl,
+                    TransformClass=PeakLikelihoodFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
+wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl,
+                    TransformClass=GaussianFluxTransform, executionOrder=BasePlugin.FLUX_ORDER,
                     shouldApCorr=True)
-wrapSimpleAlgorithm(bl.GaussianCentroidAlgorithm, Control=bl.GaussianCentroidControl,
-                    TransformClass=bl.GaussianCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
-wrapSimpleAlgorithm(bl.NaiveCentroidAlgorithm, Control=bl.NaiveCentroidControl,
-                    TransformClass=bl.NaiveCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
-wrapSimpleAlgorithm(bl.SdssCentroidAlgorithm, Control=bl.SdssCentroidControl,
-                    TransformClass=bl.SdssCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
-wrapSimpleAlgorithm(bl.PixelFlagsAlgorithm, Control=bl.PixelFlagsControl,
+wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl,
+                    TransformClass=GaussianCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
+wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl,
+                    TransformClass=NaiveCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
+wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl,
+                    TransformClass=SdssCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
+wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl,
                     executionOrder=BasePlugin.FLUX_ORDER)
-wrapSimpleAlgorithm(bl.SdssShapeAlgorithm, Control=bl.SdssShapeControl,
-                    TransformClass=bl.SdssShapeTransform, executionOrder=BasePlugin.SHAPE_ORDER)
-wrapSimpleAlgorithm(bl.ScaledApertureFluxAlgorithm, Control=bl.ScaledApertureFluxControl,
-                    TransformClass=bl.ScaledApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
+wrapSimpleAlgorithm(SdssShapeAlgorithm, Control=SdssShapeControl,
+                    TransformClass=SdssShapeTransform, executionOrder=BasePlugin.SHAPE_ORDER)
+wrapSimpleAlgorithm(ScaledApertureFluxAlgorithm, Control=ScaledApertureFluxControl,
+                    TransformClass=ScaledApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 
-wrapSimpleAlgorithm(bl.CircularApertureFluxAlgorithm, needsMetadata=True, Control=bl.ApertureFluxControl,
-                    TransformClass=bl.ApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
-wrapSimpleAlgorithm(bl.BlendednessAlgorithm, Control=bl.BlendednessControl,
-                    TransformClass=bl.BaseTransform, executionOrder=BasePlugin.SHAPE_ORDER)
+wrapSimpleAlgorithm(CircularApertureFluxAlgorithm, needsMetadata=True, Control=ApertureFluxControl,
+                    TransformClass=ApertureFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
+wrapSimpleAlgorithm(BlendednessAlgorithm, Control=BlendednessControl,
+                    TransformClass=BaseTransform, executionOrder=BasePlugin.SHAPE_ORDER)
+
+wrapTransform(PsfFluxTransform)
+wrapTransform(PeakLikelihoodFluxTransform)
+wrapTransform(GaussianFluxTransform)
+wrapTransform(GaussianCentroidTransform)
+wrapTransform(NaiveCentroidTransform)
+wrapTransform(SdssCentroidTransform)
+wrapTransform(SdssShapeTransform)
+wrapTransform(ScaledApertureFluxTransform)
+wrapTransform(ApertureFluxTransform)
 
 # --- Single-Frame Measurement Plugins ---
 
@@ -192,7 +216,7 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
 
     def measure(self, measRecord, exposure):
         if measRecord.getCentroidFlag():
-            raise bl.MeasurementError("Source record has a bad centroid.", self.FAILURE_BAD_CENTROID)
+            raise MeasurementError("Source record has a bad centroid.", self.FAILURE_BAD_CENTROID)
         # Create an aperture and grow it by scale value defined in config to ensure there are enough
         # pixels around the object to get decent statistics
         aperture = lsst.afw.geom.ellipses.Ellipse(measRecord.getShape(), measRecord.getCentroid())
@@ -212,12 +236,12 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
             medVar = numpy.median(pixels.getVarianceArray()[logicalMask])
             measRecord.set(self.varValue, medVar)
         else:
-            raise bl.MeasurementError("Footprint empty, or all pixels are masked, can't compute median",
+            raise MeasurementError("Footprint empty, or all pixels are masked, can't compute median",
                                       self.FAILURE_EMPTY_FOOTPRINT)
 
     def fail(self, measRecord, error=None):
         # Check that we have a error object and that it is of type MeasurementError
-        if isinstance(error, bl.MeasurementError):
+        if isinstance(error, MeasurementError):
             assert error.getFlagBit() in (self.FAILURE_BAD_CENTROID, self.FAILURE_EMPTY_FOOTPRINT)
             # FAILURE_BAD_CENTROID handled by alias to centroid record.
             if error.getFlagBit() == self.FAILURE_EMPTY_FOOTPRINT:
@@ -262,9 +286,9 @@ class SingleFrameInputCountPlugin(SingleFramePlugin):
 
     def measure(self, measRecord, exposure):
         if not exposure.getInfo().getCoaddInputs():
-            raise bl.MeasurementError("No coadd inputs defined.", self.FAILURE_NO_INPUTS)
+            raise MeasurementError("No coadd inputs defined.", self.FAILURE_NO_INPUTS)
         if measRecord.getCentroidFlag():
-            raise bl.MeasurementError("Source has a bad centroid.", self.FAILURE_BAD_CENTROID)
+            raise MeasurementError("Source has a bad centroid.", self.FAILURE_BAD_CENTROID)
 
         center = measRecord.getCentroid()
         ccds = exposure.getInfo().getCoaddInputs().ccds

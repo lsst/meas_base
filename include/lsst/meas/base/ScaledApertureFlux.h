@@ -27,6 +27,7 @@
 #include "lsst/afw/table.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Algorithm.h"
+#include "lsst/meas/base/ApertureFlux.h"
 #include "lsst/meas/base/FluxUtilities.h"
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"
@@ -80,7 +81,7 @@ public:
         afw::image::Exposure<float> const & exposure
     ) const override;
 
-    virtual void fail(afw::table::SourceRecord & measRecord, MeasurementError * error=NULL) const override;
+    virtual void fail(afw::table::SourceRecord & measRecord, MeasurementError * error=nullptr) const override;
 
 private:
     Control _ctrl;

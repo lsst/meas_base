@@ -1,8 +1,6 @@
-
-// -*- lsst-c++ -*-
 /*
  * LSST Data Management System
- * Copyright 2008-2013 LSST Corporation.
+ * Copyright 2008-2017  AURA/LSST.
  *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
@@ -19,21 +17,34 @@
  *
  * You should have received a copy of the LSST License Statement and
  * the GNU General Public License along with this program.  If not,
- * see <http://www.lsstcorp.org/LegalNotices/>.
+ * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
-%{
-#include "lsst/pex/exceptions.h"
-#include "lsst/meas/base/exceptions.h"
-%}
+#include "pybind11/pybind11.h"
 
-%import "lsst/pex/exceptions/exceptionsLib.i"
+#include <memory>
 
-%include "lsst/meas/base/exceptions.h"
+#include "lsst/meas/base/Transform.h"
 
-%declareException(MeasurementError, lsst.pex.exceptions.RuntimeError,
-                  lsst::meas::base::MeasurementError)
-%declareException(FatalAlgorithmError, lsst.pex.exceptions.RuntimeError,
-                  lsst::meas::base::FatalAlgorithmError)
-%declareException(PixelValueError, lsst.pex.exceptions.DomainError,
-                  lsst::meas::base::PixelValueError)
+namespace py = pybind11;
+using namespace pybind11::literals;
+
+namespace lsst {
+namespace meas {
+namespace base {
+
+PYBIND11_PLUGIN(transform) {
+    py::module mod("transform");
+
+    /* Module level */
+    py::class_<BaseTransform, std::shared_ptr<BaseTransform>> cls(mod, "BaseTransform");
+
+    /* Operators */
+    cls.def("__call__", &BaseTransform::operator(), "inputCatalog"_a, "outputCatalog"_a, "wcs"_a, "calib"_a);
+
+    return mod.ptr();
+}
+
+}  // base
+}  // meas
+}  // lsst

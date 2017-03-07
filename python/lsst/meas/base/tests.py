@@ -35,7 +35,7 @@ import lsst.pex.exceptions
 
 from .sfm import SingleFrameMeasurementTask
 from .forcedMeasurement import ForcedMeasurementTask
-from .baseLib import CentroidResultKey
+from . import CentroidResultKey
 
 __all__ = ("BlendContext", "TestDataset", "AlgorithmTestCase", "TransformTestCase",
            "SingleFramePluginTransformSetupHelper", "ForcedPluginTransformSetupHelper",
@@ -156,15 +156,15 @@ class TestDataset(object):
             schema = lsst.afw.table.SourceTable.makeMinimalSchema()
             cls.keys = {}
             cls.keys["parent"] = schema.find("parent").key
-            cls.keys["nChild"] = schema.addField("deblend_nChild", type=int)
-            cls.keys["flux"] = schema.addField("truth_flux", type=float, doc="true flux", units="count")
+            cls.keys["nChild"] = schema.addField("deblend_nChild", type=np.int32)
+            cls.keys["flux"] = schema.addField("truth_flux", type=np.float64, doc="true flux", units="count")
             cls.keys["centroid"] = lsst.afw.table.Point2DKey.addFields(
                 schema, "truth", "true simulated centroid", "pixel"
             )
             cls.keys["centroid_flag"] = schema.addField("truth_flag", type="Flag",
                                                         doc="set if the object is a star")
             cls.keys["shape"] = lsst.afw.table.QuadrupoleKey.addFields(
-                schema, "truth", "true shape after PSF convolution", lsst.afw.table.CoordinateType_PIXEL
+                schema, "truth", "true shape after PSF convolution", lsst.afw.table.CoordinateType.PIXEL
             )
             cls.keys["isStar"] = schema.addField("truth_isStar", type="Flag",
                                                  doc="set if the object is a star")
@@ -459,7 +459,7 @@ class TestDataset(object):
                 parentFluxArrayNoisy,
                 exposure.getXY0()
             )
-            oldHeavy = lsst.afw.detection.HeavyFootprintF.cast(record.getFootprint())
+            oldHeavy = record.getFootprint()
             fraction = (oldHeavy.getImageArray() / parentFluxArrayNoNoise)
             # n.b. this isn't a copy ctor - it's a copy from a vanilla Footprint, so it doesn't copy
             # the arrays we don't want to change, and hence we have to do that ourselves below.

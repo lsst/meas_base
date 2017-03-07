@@ -30,9 +30,8 @@ import lsst.utils.tests
 import lsst.meas.base
 import lsst.meas.base.tests
 import lsst.afw.table
-from lsst.meas.base.baseLib import MeasurementError
-from lsst.meas.base import FlagDefinition, FlagDefinitionList, FlagHandler
-from lsst.meas.base.tests import (AlgorithmTestCase)
+from lsst.meas.base import FlagDefinition, FlagDefinitionList, FlagHandler, MeasurementError
+from lsst.meas.base.tests import AlgorithmTestCase
 
 import lsst.pex.exceptions
 from lsst.meas.base.pluginRegistry import register
@@ -175,7 +174,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         SECOND = flagDefs.add("2nd error", "this is the second failure type")
         fh = FlagHandler.addFields(schema, "test", flagDefs)
         # Check to be sure that the FlagHandler was correctly initialized
-        for index in range(flagDefs.size()):
+        for index in range(len(flagDefs)):
             self.assertEqual(flagDefs.getDefinition(index).name, fh.getFlagName(index))
 
 
@@ -223,7 +222,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         SECOND = flagDefs.add("2nd error", "this is the second failure type")
         fh = FlagHandler.addFields(schema, "test", flagDefs)
         # Check to be sure that the FlagHandler was correctly initialized
-        for index in range(flagDefs.size()):
+        for index in range(len(flagDefs)):
             self.assertEqual(flagDefs.getDefinition(index).name, fh.getFlagName(index))
 
         catalog = lsst.afw.table.SourceCatalog(schema)

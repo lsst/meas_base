@@ -52,10 +52,10 @@ struct ShapeResult {
     ShapeResult();
 
     /// Constructor; initializes everything from values.
-    explicit ShapeResult(ShapeElement _xx, ShapeElement _yy, ShapeElement _xy, ShapeCov const & matrix):
-        xx(_xx),
-        yy(_yy),
-        xy(_xy),
+    explicit ShapeResult(ShapeElement xx_, ShapeElement yy_, ShapeElement xy_, ShapeCov const & matrix):
+        xx(xx_),
+        yy(yy_),
+        xy(xy_),
         xxSigma(std::sqrt(matrix(0, 0))),
         yySigma(std::sqrt(matrix(1, 1))),
         xySigma(std::sqrt(matrix(2, 2))),
@@ -65,14 +65,14 @@ struct ShapeResult {
     {}
 
     /// Constructor; initializes everything from values.
-    explicit ShapeResult(ShapeElement _xx, ShapeElement _yy, ShapeElement _xy,
-                            ErrElement _xxSigma, ErrElement _yySigma, ErrElement _xySigma) :
-        xx(_xx),
-        yy(_yy),
-        xy(_xy),
-        xxSigma(_xxSigma),
-        yySigma(_yySigma),
-        xySigma(_xySigma),
+    explicit ShapeResult(ShapeElement xx_, ShapeElement yy_, ShapeElement xy_,
+                         ErrElement xxSigma_, ErrElement yySigma_, ErrElement xySigma_) :
+        xx(xx_),
+        yy(yy_),
+        xy(xy_),
+        xxSigma(xxSigma_),
+        yySigma(yySigma_),
+        xySigma(xySigma_),
         xx_yy_Cov(0.0),
         xx_xy_Cov(0.0),
         yy_xy_Cov(0.0)
@@ -102,7 +102,7 @@ struct ShapeResult {
     void setShapeErr(ShapeCov const & matrix);
 
     /// Set the struct uncertainty elements from the given values
-    void setShapeErr(ErrElement _xxSigma, ErrElement _yySigma, ErrElement _xySigma);
+    void setShapeErr(ErrElement xxSigma, ErrElement yySigma, ErrElement xySigma);
 
 };
 
