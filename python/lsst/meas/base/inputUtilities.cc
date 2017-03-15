@@ -54,4 +54,6 @@ PYBIND11_PLUGIN(inputUtilities) {
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}  // base
+}  // meas
+}  // lsst

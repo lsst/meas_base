@@ -52,4 +52,6 @@ PYBIND11_PLUGIN(sincCoeffs) {
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}  // base
+}  // meas
+}  // lsst

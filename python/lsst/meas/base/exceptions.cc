@@ -59,4 +59,6 @@ PYBIND11_PLUGIN(exceptions) {
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}  // base
+}  // meas
+}  // lsst

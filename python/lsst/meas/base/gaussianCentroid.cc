@@ -100,7 +100,6 @@ PYBIND11_PLUGIN(gaussianCentroid) {
     return mod.ptr();
 }
 
-
 }  // base
 }  // meas
 }  // lsst
