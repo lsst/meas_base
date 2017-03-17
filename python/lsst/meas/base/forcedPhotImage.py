@@ -205,7 +205,7 @@ class ForcedPhotImageTask(lsst.pipe.base.CmdLineTask):
                         is all that will be modified.
         @param sources  SourceCatalog to save
         """
-        dataRef.put(sources, self.dataPrefix + "forced_src", flags=int(lsst.afw.table.SOURCE_IO_NO_FOOTPRINTS))
+        dataRef.put(sources, self.dataPrefix + "forced_src", flags=lsst.afw.table.SOURCE_IO_NO_FOOTPRINTS)
 
     def getSchemaCatalogs(self):
         """!Get a dict of Schema catalogs that will be used by this Task.
