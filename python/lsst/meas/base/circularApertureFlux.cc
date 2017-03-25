@@ -40,6 +40,8 @@ using PyApertureFluxClass = py::class_<CircularApertureFluxAlgorithm,
 }  // <anonymous>
 
 PYBIND11_PLUGIN(circularApertureFlux) {
+    py::module::import("lsst.daf.base");
+    py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.algorithm");
 
     py::module mod("circularApertureFlux");

@@ -90,6 +90,8 @@ void declareMagResultKey(py::module &mod) {
 }  // <anonymous>
 
 PYBIND11_PLUGIN(fluxUtilities) {
+    py::module::import("lsst.afw.table");
+
     py::module mod("fluxUtilities");
 
     declareFluxResult(mod);

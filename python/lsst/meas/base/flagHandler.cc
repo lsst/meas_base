@@ -115,6 +115,8 @@ void declareFlagHandler(py::module &mod) {
 }  // <anonymous>
 
 PYBIND11_PLUGIN(flagHandler) {
+    py::module::import("lsst.afw.table");
+
     py::module mod("flagHandler");
 
     declareFlagDefinition(mod);

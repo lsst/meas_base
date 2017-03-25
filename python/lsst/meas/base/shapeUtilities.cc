@@ -100,6 +100,8 @@ void declareShapeResultKey(py::module &mod) {
 }  // <anonymous>
 
 PYBIND11_PLUGIN(shapeUtilities) {
+    py::module::import("lsst.afw.table");
+
     py::module mod("shapeUtilities");
 
     if (_import_array() < 0) {

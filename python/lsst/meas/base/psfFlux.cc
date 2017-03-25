@@ -79,6 +79,7 @@ PyFluxTransform declareFluxTransform(py::module &mod) {
 }  // <anonymous>
 
 PYBIND11_PLUGIN(psfFlux) {
+    py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.algorithm");
     py::module::import("lsst.meas.base.flagHandler");
     py::module::import("lsst.meas.base.fluxUtilities");

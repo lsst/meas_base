@@ -22,7 +22,7 @@
 
 """lsst..meas.base
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 # Needed for pybind11-generated docstrings
 from lsst.afw.image import Calib, Wcs
 

@@ -81,6 +81,7 @@ PyFluxTransform declareFluxTransform(py::module &mod) {
 }  // <anonymous>
 
 PYBIND11_PLUGIN(scaledApertureFlux) {
+    py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.algorithm");
     py::module::import("lsst.meas.base.fluxUtilities");
     py::module::import("lsst.meas.base.transform");

@@ -44,7 +44,10 @@ namespace {
 }
 
 PYBIND11_PLUGIN(sincCoeffs) {
-    py::module mod("sincCoeffs", "Python wrapper for afw _sincCoeffs library");
+    py::module::import("lsst.afw.geom");
+    py::module::import("lsst.afw.image");
+
+    py::module mod("sincCoeffs");
 
     declareSincCoeffs<float>(mod, "F");
     declareSincCoeffs<double>(mod, "D");

@@ -33,6 +33,8 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(inputUtilities) {
+    py::module::import("lsst.afw.table");
+
     py::module mod("inputUtilities");
 
     /* Module level */

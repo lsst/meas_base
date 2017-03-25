@@ -110,6 +110,7 @@ void declareCentroidChecker(py::module &mod) {
 }  // <anonymous>
 
 PYBIND11_PLUGIN(centroidUtilities) {
+    py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.transform");
 
     py::module mod("centroidUtilities");
