@@ -41,16 +41,19 @@ PYBIND11_PLUGIN(algorithm) {
     py::module mod("algorithm");
 
     /* Module level */
-    py::class_<SingleFrameAlgorithm, std::shared_ptr<SingleFrameAlgorithm>> clsSingleFrameAlgorithm(
+    py::class_<BaseAlgorithm, std::shared_ptr<BaseAlgorithm>> clsBaseAlgorithm(
+            mod, "BaseAlgorithm");
+    py::class_<SingleFrameAlgorithm, std::shared_ptr<SingleFrameAlgorithm>, BaseAlgorithm> clsSingleFrameAlgorithm(
             mod, "SingleFrameAlgorithm");
     py::class_<SimpleAlgorithm, std::shared_ptr<SimpleAlgorithm>, SingleFrameAlgorithm> clsSimpleAlgorithm(
-            mod, "SimpleAlgorithm");
+            mod, "SimpleAlgorithm", py::multiple_inheritance());
 
     /* Members */
     python::declareAlgorithm<SingleFrameAlgorithm>(clsSingleFrameAlgorithm);
 
     clsSimpleAlgorithm.def("measureForced", &SimpleAlgorithm::measureForced,
         "measRecord"_a, "exposure"_a, "refRecord"_a, "refWcs"_a);
+    clsBaseAlgorithm.def("getLogName", &SimpleAlgorithm::getLogName);
 
     return mod.ptr();
 }

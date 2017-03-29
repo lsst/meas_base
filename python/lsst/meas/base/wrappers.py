@@ -9,9 +9,12 @@ __all__ = ("wrapSingleFrameAlgorithm", "wrapForcedAlgorithm", "wrapSimpleAlgorit
 
 class WrappedSingleFramePlugin(SingleFramePlugin):
 
-    def __init__(self, config, name, schema, metadata):
-        SingleFramePlugin.__init__(self, config, name, schema, metadata)
-        self.cpp = self.factory(config, name, schema, metadata)
+    def __init__(self, config, name, schema, metadata, logName=None):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata, logName=logName)
+        if hasattr(self, "hasLogName") and self.hasLogName and not logName is None:
+            self.cpp = self.factory(config, name, schema, metadata, logName=logName)
+        else:
+            self.cpp = self.factory(config, name, schema, metadata)
 
     def measure(self, measRecord, exposure):
         self.cpp.measure(measRecord, exposure)
@@ -25,9 +28,12 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
 
 class WrappedForcedPlugin(ForcedPlugin):
 
-    def __init__(self, config, name, schemaMapper, metadata):
-        ForcedPlugin.__init__(self, config, name, schemaMapper, metadata)
-        self.cpp = self.factory(config, name, schemaMapper, metadata)
+    def __init__(self, config, name, schemaMapper, metadata, logName=None):
+        ForcedPlugin.__init__(self, config, name, schemaMapper, metadata, logName=logName)
+        if hasattr(self, "hasLogName") and self.hasLogName and not logName is None:
+            self.cpp = self.factory(config, name, schemaMapper, metadata, logName=logName)
+        else:
+            self.cpp = self.factory(config, name, schemaMapper, metadata)
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
         self.cpp.measureForced(measRecord, exposure, refRecord, refWcs)
@@ -81,7 +87,7 @@ def wrapAlgorithmControl(Base, Control, module=2, hasMeasureN=False):
 
 def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=None,
                   ConfigClass=None, TransformClass=None, doRegister=True, shouldApCorr=False,
-                  apCorrList=(), **kwds):
+                  apCorrList=(), hasLogName=False, **kwds):
     """!
     Wrap a C++ Algorithm class into a Python Plugin class.
 
@@ -119,6 +125,7 @@ def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=No
                                If apCorrList is non-empty then shouldApCorr is ignored.
                                If non-empty and doRegister is True then the names are added to the set
                                retrieved by getApCorrNameSet
+    @param[in] hasLogName      Plugin supports a logName as a constructor argument
 
 
     @param[in] **kwds          Additional keyword arguments passed to generateAlgorithmControl, including:
@@ -150,11 +157,12 @@ def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=No
         Base.registry.register(name, PluginClass)
         if shouldApCorr:
             addApCorrName(name)
+    PluginClass.hasLogName = hasLogName
     return PluginClass
 
 
 def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False, hasMeasureN=False,
-                             **kwds):
+                             hasLogName=False, **kwds):
     """!
     Wrap a C++ SingleFrameAlgorithm class into a Python SingleFramePlugin class.
 
@@ -171,6 +179,7 @@ def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=
                                If True, a bool doMeasureN field will be added to the generated Config class,
                                and its value will be passed as the last argument when calling the AlgClass
                                constructor.
+    @param[in] hasLogName      Plugin supports a logName as a constructor argument
     @param[in] **kwds          Additional keyword arguments passed to the lower-level wrapAlgorithm and
                                wrapAlgorithmControl classes.  These include:
                                - Control: Swigged C++ Control class for the algorithm; AlgClass.Control
@@ -211,28 +220,34 @@ def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=
     @verbatim
     bool doMeasureN
     @endverbatim
-    If both are True, the metadata PropertySet precedes the doMeasureN bool.
+    If hasLogName, we also append:
+    @verbatim
+    std::string logName
+    @endverbatim
+    If more than one is True, the metadata PropertySet precedes the doMeasureN bool
+    and the logName comes last of the three
     """
     if hasMeasureN:
         if needsMetadata:
-            def factory(config, name, schema, metadata):
-                return AlgClass(config.makeControl(), name, schema, metadata, config.doMeasureN)
+            def factory(config, name, schema, metadata, **kwargs):
+                return AlgClass(config.makeControl(), name, schema, metadata, config.doMeasureN, **kwargs)
         else:
-            def factory(config, name, schema, metadata):
-                return AlgClass(config.makeControl(), name, schema, config.doMeasureN)
+            def factory(config, name, schema, metadata, **kwargs):
+                return AlgClass(config.makeControl(), name, schema, config.doMeasureN, **kwargs)
     else:
         if needsMetadata:
-            def factory(config, name, schema, metadata):
-                return AlgClass(config.makeControl(), name, schema, metadata)
+            def factory(config, name, schema, metadata, **kwargs):
+                return AlgClass(config.makeControl(), name, schema, metadata, **kwargs)
         else:
-            def factory(config, name, schema, metadata):
-                return AlgClass(config.makeControl(), name, schema)
+            def factory(config, name, schema, metadata, **kwargs):
+                return AlgClass(config.makeControl(), name, schema, **kwargs)
+
     return wrapAlgorithm(WrappedSingleFramePlugin, AlgClass, executionOrder=executionOrder, name=name,
-                         factory=factory, hasMeasureN=hasMeasureN, **kwds)
+                         factory=factory, hasMeasureN=hasMeasureN, hasLogName=hasLogName, **kwds)
 
 
 def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False,
-                        hasMeasureN=False, needsSchemaOnly=False, **kwds):
+                        hasMeasureN=False, needsSchemaOnly=False, hasLogName=False, **kwds):
     """!
     Wrap a C++ ForcedAlgorithm class into a Python ForcedPlugin class.
 
@@ -249,6 +264,7 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
                                If True, a bool doMeasureN field will be added to the generated Config class,
                                and its value will be passed as the last argument when calling the AlgClass
                                constructor.
+    @param[in] hasLogName      Plugin supports a logName as a constructor argument
     @param[in] needsSchemaOnly Whether the algorithm constructor expects a Schema argument (representing the
                                output Schema) rather than the full SchemaMapper (which provides access to
                                both the reference Schema and the output Schema).
@@ -299,7 +315,12 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
     @verbatim
     bool doMeasureN
     @endverbatim
-    If both are True, the metadata PropertySet precedes the doMeasureN bool.
+    If hasLogName, we also append:
+    @verbatim
+    std::string logName
+    @endverbatim
+    If more than one is True, the metadata PropertySet precedes the doMeasureN bool
+    and the logName comes last of the three
     """
     if needsSchemaOnly:
         extractSchemaArg = lambda m: m.editOutputSchema()
@@ -307,26 +328,28 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
         extractSchemaArg = lambda m: m
     if hasMeasureN:
         if needsMetadata:
-            def factory(config, name, schemaMapper, metadata):
+            def factory(config, name, schemaMapper, metadata, **kwargs):
                 return AlgClass(config.makeControl(), name, extractSchemaArg(schemaMapper),
-                                metadata, config.doMeasureN)
+                                metadata, config.doMeasureN, **kwargs)
         else:
-            def factory(config, name, schemaMapper, metadata):
+            def factory(config, name, schemaMapper, metadata, **kwargs):
                 return AlgClass(config.makeControl(), name, extractSchemaArg(schemaMapper),
-                                config.doMeasureN)
+                                config.doMeasureN, **kwargs)
     else:
         if needsMetadata:
-            def factory(config, name, schemaMapper, metadata):
+            def factory(config, name, schemaMapper, metadata, **kwargs):
                 return AlgClass(config.makeControl(), name, extractSchemaArg(schemaMapper),
-                                metadata)
+                                metadata, **kwargs)
         else:
-            def factory(config, name, schemaMapper, metadata):
-                return AlgClass(config.makeControl(), name, extractSchemaArg(schemaMapper))
+            def factory(config, name, schemaMapper, metadata, **kwargs):
+                return AlgClass(config.makeControl(), name, extractSchemaArg(schemaMapper), **kwargs)
+
     return wrapAlgorithm(WrappedForcedPlugin, AlgClass, executionOrder=executionOrder, name=name,
-                         factory=factory, **kwds)
+                         factory=factory, hasLogName=hasLogName, **kwds)
 
 
-def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False, hasMeasureN=False, **kwds):
+def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False, hasMeasureN=False,
+                        hasLogName=False, **kwds):
     """!
     Wrap a C++ SimpleAlgorithm class into both a Python SingleFramePlugin and ForcedPlugin classes
 
@@ -343,6 +366,7 @@ def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
                                If True, a bool doMeasureN field will be added to the generated Config class,
                                and its value will be passed as the last argument when calling the AlgClass
                                constructor.
+    @param[in] hasLogName      Plugin supports a logName as a constructor argument
     @param[in] **kwds          Additional keyword arguments passed to the lower-level wrapAlgorithm and
                                wrapAlgorithmControl classes.  These include:
                                - Control: Swigged C++ Control class for the algorithm; AlgClass.Control
@@ -382,15 +406,20 @@ def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
     @verbatim
     bool doMeasureN
     @endverbatim
-    If both are True, the metadata PropertySet precedes the doMeasureN bool.
+    If hasLogName, we also append:
+    @verbatim
+    std::string logName
+    @endverbatim
+    If more than one is True, the metadata PropertySet precedes the doMeasureN bool
+    and the logName comes last of the three
     """
     return (wrapSingleFrameAlgorithm(AlgClass, executionOrder=executionOrder, name=name,
-                                     needsMetadata=needsMetadata, **kwds),
+                                     needsMetadata=needsMetadata, hasLogName=hasLogName, **kwds),
             wrapForcedAlgorithm(AlgClass, executionOrder=executionOrder, name=name,
-                                needsMetadata=needsMetadata, needsSchemaOnly=True, **kwds))
+                                needsMetadata=needsMetadata, hasLogName=hasLogName, needsSchemaOnly=True, **kwds))
 
 
-def wrapTransform(transformClass):
+def wrapTransform(transformClass, hasLogName=False):
     """Modify a C++ Transform class so that it can be configured with either a Config or a Control.
 
     Parameters
@@ -401,9 +430,10 @@ def wrapTransform(transformClass):
     """
     oldInit = transformClass.__init__
 
-    def _init(self, ctrl, name, mapper):
+    def _init(self, ctrl, name, mapper, logName=None):
         if hasattr(ctrl, "makeControl"):
             ctrl = ctrl.makeControl()
+        #  logName signature needs to be on this Class __init__, but is not needed by the C++ plugin
         oldInit(self, ctrl, name, mapper)
 
     transformClass.__init__ = _init

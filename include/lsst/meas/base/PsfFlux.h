@@ -78,7 +78,8 @@ public:
     /// The control object contains the configuration parameters for this algorithm.
     typedef PsfFluxControl Control;
 
-    PsfFluxAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
+    PsfFluxAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema,
+                     std::string const & logName = "");
 
     virtual void measure(
         afw::table::SourceRecord & measRecord,

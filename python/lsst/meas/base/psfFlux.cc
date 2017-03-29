@@ -64,6 +64,9 @@ PyFluxAlgorithm declareFluxAlgorithm(py::module &mod) {
     cls.def(py::init<PsfFluxAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
             "ctrl"_a, "name"_a, "schema"_a);
 
+    cls.def(py::init<PsfFluxAlgorithm::Control const &, std::string const &, afw::table::Schema &,
+            std::string const &>(),
+            "ctrl"_a, "name"_a, "schema"_a, "logName"_a);
     return cls;
 }
 

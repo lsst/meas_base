@@ -68,7 +68,7 @@ __all__ = (
 
 wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl,
                     TransformClass=PsfFluxTransform, executionOrder=BasePlugin.FLUX_ORDER,
-                    shouldApCorr=True)
+                    shouldApCorr=True, hasLogName=True)
 wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxControl,
                     TransformClass=PeakLikelihoodFluxTransform, executionOrder=BasePlugin.FLUX_ORDER)
 wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl,
