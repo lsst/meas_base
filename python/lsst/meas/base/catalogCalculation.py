@@ -103,9 +103,9 @@ class CCContext(object):
 
 class CatalogCalculationConfig(lsst.pex.config.Config):
     '''
-    Default CatalogCalculationConfig. Currently this is an empty list, meaning that there are no default
-    plugins run. The config object for each plugin must use this variable to specify the names of all
-    plugins to be run.
+    Config class for catalog calculation driver task.
+
+    Specifies which plugins our catalog calculation will use.
     '''
     plugins = CatalogCalculationPlugin.registry.makeField(
         multi=True,
