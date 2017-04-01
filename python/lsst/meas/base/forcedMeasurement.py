@@ -163,7 +163,8 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
 
     copyColumns = lsst.pex.config.DictField(
         keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
-        default={"id": "objectId", "parent": "parentObjectId"}
+        default={"id": "objectId", "parent": "parentObjectId", "deblend_nChild": "deblend_nChild",
+                 "coord_ra": "coord_ra", "coord_dec": "coord_dec"}
     )
 
     checkUnitsParseStrict = lsst.pex.config.Field(
