@@ -76,13 +76,15 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         algorithm, schema = self.makeAlgorithm(ctrl)
         algorithm.measure(record, exposure)
         # rng dependent
-        self.assertClose(record.get("base_PsfFlux_flux"), record.get("truth_flux"),
-                         atol=3*record.get("base_PsfFlux_fluxSigma"))
+        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_flux"),
+                                     record.get("truth_flux"),
+                                     atol=3*record.get("base_PsfFlux_fluxSigma"))
         # If we mask the whole image, we should get a MeasurementError
         maskArray[:, :] |= badMask
         with self.assertRaises(lsst.meas.base.MeasurementError) as context:
             algorithm.measure(record, exposure)
-        self.assertEqual(context.exception.getFlagBit(), lsst.meas.base.PsfFluxAlgorithm.NO_GOOD_PIXELS.number)
+        self.assertEqual(context.exception.getFlagBit(),
+                         lsst.meas.base.PsfFluxAlgorithm.NO_GOOD_PIXELS.number)
 
     def testSubImage(self):
         """Test that we don't get confused by images with nonzero xy0, and that the EDGE flag is set
@@ -96,8 +98,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         bbox.grow(-1)
         subExposure = exposure.Factory(exposure, bbox, lsst.afw.image.LOCAL)
         algorithm.measure(record, subExposure)
-        self.assertClose(record.get("base_PsfFlux_flux"), record.get("truth_flux"),
-                         atol=3*record.get("base_PsfFlux_fluxSigma"))
+        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_flux"), record.get("truth_flux"),
+                                     atol=3*record.get("base_PsfFlux_fluxSigma"))
         self.assertTrue(record.get("base_PsfFlux_flag_edge"))
 
     def testNoPsf(self):
@@ -117,8 +119,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         record = catalog[0]
         flux = record.get("truth_flux")
         algorithm.measure(record, exposure)
-        self.assertClose(record.get("base_PsfFlux_flux"), flux, rtol=1E-3)
-        self.assertClose(record.get("base_PsfFlux_fluxSigma"), 0.0, rtol=1E-3)
+        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_flux"), flux, rtol=1E-3)
+        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_fluxSigma"), 0.0, rtol=1E-3)
         for noise in (0.001, 0.01, 0.1):
             fluxes = []
             fluxSigmas = []
@@ -132,7 +134,7 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             fluxMean = np.mean(fluxes)
             fluxSigmaMean = np.mean(fluxSigmas)
             fluxStandardDeviation = np.std(fluxes)
-            self.assertClose(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)   # rng dependent
+            self.assertFloatsAlmostEqual(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)   # rng dependent
             self.assertLess(fluxMean - flux, 2.0*fluxSigmaMean / nSamples**0.5)   # rng dependent
 
     def testSingleFramePlugin(self):
@@ -143,8 +145,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFalse(record.get("base_PsfFlux_flag"))
         self.assertFalse(record.get("base_PsfFlux_flag_noGoodPixels"))
         self.assertFalse(record.get("base_PsfFlux_flag_edge"))
-        self.assertClose(record.get("base_PsfFlux_flux"), record.get("truth_flux"),
-                         atol=3*record.get("base_PsfFlux_fluxSigma"))
+        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_flux"), record.get("truth_flux"),
+                                     atol=3*record.get("base_PsfFlux_fluxSigma"))
 
     def testForcedPlugin(self):
         task = self.makeForcedMeasurementTask("base_PsfFlux")
@@ -159,13 +161,15 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         measRecord = measCat[0]
         truthRecord = truthCatalog[0]
         # Centroid tolerances set to ~ single precision epsilon
-        self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-7)
-        self.assertClose(measRecord.get("slot_Centroid_y"), truthRecord.get("truth_y"), rtol=1E-7)
+        self.assertFloatsAlmostEqual(measRecord.get("slot_Centroid_x"),
+                                     truthRecord.get("truth_x"), rtol=1E-7)
+        self.assertFloatsAlmostEqual(measRecord.get("slot_Centroid_y"),
+                                     truthRecord.get("truth_y"), rtol=1E-7)
         self.assertFalse(measRecord.get("base_PsfFlux_flag"))
         self.assertFalse(measRecord.get("base_PsfFlux_flag_noGoodPixels"))
         self.assertFalse(measRecord.get("base_PsfFlux_flag_edge"))
-        self.assertClose(measRecord.get("base_PsfFlux_flux"), truthCatalog.get("truth_flux"),
-                         rtol=1E-3)
+        self.assertFloatsAlmostEqual(measRecord.get("base_PsfFlux_flux"),
+                                     truthCatalog.get("truth_flux"), rtol=1E-3)
         self.assertLess(measRecord.get("base_PsfFlux_fluxSigma"), 500.0)
 
 

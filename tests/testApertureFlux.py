@@ -79,11 +79,11 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                     produce the expected result
                     """
                     result = method(image, ellipse, self.ctrl)
-                    self.assertClose(result.flux, area)
+                    self.assertFloatsAlmostEqual(result.flux, area)
                     self.assertFalse(result.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
                     self.assertFalse(result.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
                     if hasattr(image, "getVariance"):
-                        self.assertClose(result.fluxSigma, (area*0.25)**0.5)
+                        self.assertFloatsAlmostEqual(result.fluxSigma, (area*0.25)**0.5)
                     else:
                         self.assertTrue(np.isnan(result.fluxSigma))
                 check(ApertureFluxAlgorithm.computeNaiveFlux, self.exposure.getMaskedImage())
@@ -119,7 +119,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                 def check(method, image):
                     # test that all the ways we could invoke sinc flux measurement produce the expected result
                     result = method(image, ellipse, self.ctrl)
-                    self.assertClose(result.flux, area, rtol=1E-3)
+                    self.assertFloatsAlmostEqual(result.flux, area, rtol=1E-3)
                     self.assertFalse(result.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
                     self.assertFalse(result.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
                     if hasattr(image, "getVariance"):
@@ -214,8 +214,8 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
             # When measuring an isolated point source with a sufficiently large aperture, we should
             # recover the known input flux.
             if record.get("truth_isStar") and record.get("parent") == 0:
-                self.assertClose(record.get("base_CircularApertureFlux_25_0_flux"), record.get("truth_flux"),
-                                 rtol=0.02)
+                self.assertFloatsAlmostEqual(record.get("base_CircularApertureFlux_25_0_flux"),
+                                             record.get("truth_flux"), rtol=0.02)
 
     def testForcedPlugin(self):
         baseName = "base_CircularApertureFlux"
@@ -232,16 +232,18 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
         task.run(measCat, exposure, refCat, refWcs)
         for measRecord, truthRecord in zip(measCat, truthCatalog):
             # Centroid tolerances set to ~ single precision epsilon
-            self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-7)
-            self.assertClose(measRecord.get("slot_Centroid_y"), truthRecord.get("truth_y"), rtol=1E-7)
+            self.assertFloatsAlmostEqual(measRecord.get("slot_Centroid_x"),
+                                         truthRecord.get("truth_x"), rtol=1E-7)
+            self.assertFloatsAlmostEqual(measRecord.get("slot_Centroid_y"),
+                                         truthRecord.get("truth_y"), rtol=1E-7)
             for n, radius in enumerate(radii):
                 prefix = ApertureFluxAlgorithm.makeFieldPrefix(baseName, radius)
                 self.assertFalse(measRecord.get(measRecord.schema.join(prefix, "flag")))
                 # CircularApertureFlux isn't designed to do a good job in forced mode, because it doesn't
                 # account for changes in the PSF or changes in the WCS.  Hence, this is really just a
                 # test to make sure the values are reasonable and that it runs with no unexpected errors.
-                self.assertClose(measRecord.get(measRecord.schema.join(prefix, "flux")),
-                                 truthCatalog.get("truth_flux"), rtol=1.0)
+                self.assertFloatsAlmostEqual(measRecord.get(measRecord.schema.join(prefix, "flux")),
+                                             truthCatalog.get("truth_flux"), rtol=1.0)
                 self.assertLess(measRecord.get(measRecord.schema.join(prefix, "fluxSigma")), (n+1)*150.0)
 
 

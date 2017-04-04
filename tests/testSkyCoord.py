@@ -47,8 +47,8 @@ class SkyCoordTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.
         task.run(catalog, exposure)
         record = catalog[0]
         position = exposure.getWcs().skyToPixel(record.getCoord())
-        self.assertClose(position.getX(), record.get("truth_x"), rtol=1E-8)
-        self.assertClose(position.getY(), record.get("truth_y"), rtol=1E-8)
+        self.assertFloatsAlmostEqual(position.getX(), record.get("truth_x"), rtol=1E-8)
+        self.assertFloatsAlmostEqual(position.getY(), record.get("truth_y"), rtol=1E-8)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):

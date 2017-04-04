@@ -52,8 +52,8 @@ class GaussianCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         y = record.get("base_GaussianCentroid_y")
         self.assertFalse(record.get("base_GaussianCentroid_flag"))
         self.assertFalse(record.get("base_GaussianCentroid_flag_noPeak"))
-        self.assertClose(x, self.center.getX(), atol=None, rtol=.01)
-        self.assertClose(y, self.center.getY(), atol=None, rtol=.01)
+        self.assertFloatsAlmostEqual(x, self.center.getX(), atol=None, rtol=.01)
+        self.assertFloatsAlmostEqual(y, self.center.getY(), atol=None, rtol=.01)
 
 
 class GaussianCentroidTransformTestCase(CentroidTransformTestCase, SingleFramePluginTransformSetupHelper,

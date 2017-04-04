@@ -86,8 +86,8 @@ class CentroidTestCase(utilsTests.TestCase):
             source.setFootprint(foot)
             centroider.measure(source, exp)
 
-            self.assertClose(x + x0, source.getX(), rtol=.00001)
-            self.assertClose(y + y0, source.getY(), rtol=.00001)
+            self.assertFloatsAlmostEqual(x + x0, source.getX(), rtol=.00001)
+            self.assertFloatsAlmostEqual(y + y0, source.getY(), rtol=.00001)
             self.assertFalse(source.get("test_flag"))
 
             im.set(bkgd)
@@ -101,8 +101,8 @@ class CentroidTestCase(utilsTests.TestCase):
             source.set('test_x', x)
             source.set('test_y', y)
             centroider.measure(source, exp)
-            self.assertClose(x, source.getX(), rtol=.00001)
-            self.assertClose(y, source.getY(), rtol=.00001)
+            self.assertFloatsAlmostEqual(x, source.getX(), rtol=.00001)
+            self.assertFloatsAlmostEqual(y, source.getY(), rtol=.00001)
             self.assertFalse(source.get("test_flag"))
 
     def testGaussianMeasureCentroid(self):
@@ -173,7 +173,7 @@ class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
         s = self.mySetup()
 
         # this does not match exactly, and it used to
-        self.assertClose(s.getCentroid(), afwGeom.PointD(self.xcen, self.ycen), rtol=.01)
+        self.assertFloatsAlmostEqual(s.getCentroid(), afwGeom.PointD(self.xcen, self.ycen), rtol=.01)
 
 
 class MonetTestCase(unittest.TestCase):

@@ -75,8 +75,8 @@ class SingleFramePeakCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCa
         x = self.catalog[0].get("base_PeakCentroid_x")
         y = self.catalog[0].get("base_PeakCentroid_y")
         self.assertFalse(self.catalog[0].get("base_PeakCentroid_flag"))
-        self.assertClose(x, self.center.getX(), atol=None, rtol=.02)
-        self.assertClose(y, self.center.getY(), atol=None, rtol=.02)
+        self.assertFloatsAlmostEqual(x, self.center.getX(), atol=None, rtol=.02)
+        self.assertFloatsAlmostEqual(y, self.center.getY(), atol=None, rtol=.02)
 
     def testFlags(self):
         """

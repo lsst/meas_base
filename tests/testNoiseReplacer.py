@@ -42,7 +42,8 @@ class NoiseReplacerTestPlugin(lsst.meas.base.SingleFramePlugin):
     def __init__(self, config, name, schema, metadata):
         lsst.meas.base.SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.insideKey = schema.addField("%s_inside" % (name,), type=np.float64, doc="flux inside footprint")
-        self.outsideKey = schema.addField("%s_outside" % (name,), type=np.float64, doc="flux outside footprint")
+        self.outsideKey = schema.addField("%s_outside" % (name,), type=np.float64,
+                                          doc="flux outside footprint")
 
     def measure(self, measRecord, exposure):
         footprint = measRecord.getFootprint()
@@ -80,7 +81,8 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.t
         task.run(catalog, exposure)
         sumVariance = exposure.getMaskedImage().getVariance().getArray().sum()
         for record in catalog:
-            self.assertClose(record.get("test_NoiseReplacer_inside"), record.get("truth_flux"), rtol=1E-3)
+            self.assertFloatsAlmostEqual(record.get("test_NoiseReplacer_inside"),
+                                         record.get("truth_flux"), rtol=1E-3)
             # n.b. Next line checks that a random value is correct to a statistical 1-sigma prediction;
             # some RNG seeds may cause it to fail (indeed, 67% should)
             self.assertLess(record.get("test_NoiseReplacer_outside"), np.sqrt(sumVariance))
