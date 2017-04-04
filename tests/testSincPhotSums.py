@@ -1,8 +1,6 @@
-#!/usr/bin/env python
-
 #
 # LSST Data Management System
-# Copyright 2008-2015 Aura/LSST
+# Copyright 2008-2017 Aura/LSST
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
