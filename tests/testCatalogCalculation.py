@@ -7,7 +7,7 @@ import lsst.utils.tests
 import lsst.meas.base.catalogCalculation as catCalc
 import lsst.afw.table as afwTable
 from lsst.meas.base.pluginRegistry import register
-from lsst.meas.base import FlagHandler, MeasurementError
+from lsst.meas.base import MeasurementError
 
 
 @register("FailcatalogCalculation")
@@ -150,8 +150,6 @@ class CatalogCalculationTest(unittest.TestCase):
     def tearDown(self):
         del self.catalog, self.numObjects,
 
-##########################################################################
-
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass
@@ -159,6 +157,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

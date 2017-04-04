@@ -169,6 +169,7 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                          rtol=1E-3)
         self.assertLess(measRecord.get("base_PsfFlux_fluxSigma"), 500.0)
 
+
 class PsfFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,
                                lsst.utils.tests.TestCase):
     controlClass = lsst.meas.base.PsfFluxControl
@@ -178,12 +179,14 @@ class PsfFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransform
     singleFramePlugins = ('base_PsfFlux',)
     forcedPlugins = ('base_PsfFlux',)
 
+
 class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass
 
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

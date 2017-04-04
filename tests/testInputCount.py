@@ -253,8 +253,6 @@ class InputCountTest(lsst.utils.tests.TestCase):
         self.assertTrue(record.get("inputCount_flag"))
         self.assertTrue(record.get("inputCount_flag_noInputs"))
 
-##############################################################################################################
-
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass
@@ -262,6 +260,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

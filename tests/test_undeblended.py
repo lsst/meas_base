@@ -40,6 +40,7 @@ import lsst.afw.math as afwMath
 import lsst.meas.base as measBase
 import lsst.utils.tests
 
+
 class UndeblendedTestCase(lsst.utils.tests.TestCase):
     def testUndeblendedMeasurement(self):
         """Check undeblended measurement and aperture correction"""

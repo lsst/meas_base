@@ -27,7 +27,6 @@ Tests for measuring sources using the meas_base framework
 from __future__ import absolute_import, division, print_function
 from builtins import zip
 from builtins import range
-import itertools
 import math
 import unittest
 
@@ -64,8 +63,6 @@ def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
         plugin = alg(control, name, schema)
     cat = afwTable.SourceCatalog(schema)
     return plugin, cat
-
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 
 class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
@@ -300,6 +297,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         plugin.measure(source, exp)
         self.assertTrue(source.get("test_flag_clipped"), "The clipped flag should be set True")
 
+
 def addStar(image, center, flux, fwhm):
     """Add a perfect single Gaussian star to an image
 
@@ -354,14 +352,13 @@ def makeFakeImage(bbox, centerList, fluxList, fwhm, var):
     return maskedImage
 
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
 class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass
 
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

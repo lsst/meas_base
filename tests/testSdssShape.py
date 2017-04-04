@@ -153,6 +153,7 @@ class SdssShapeTransformTestCase(lsst.meas.base.tests.FluxTransformTestCase,
             for field in ('xx', 'yy', 'xy', 'xxSigma', 'yySigma', 'xySigma', 'psf_xx', 'psf_yy', 'psf_xy'):
                 if record.schema.join(name, field) in record.schema:
                     record[record.schema.join(name, field)] = np.random.random()
+
     def _compareFieldsInRecords(self, inSrc, outSrc, name):
         lsst.meas.base.tests.FluxTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
         lsst.meas.base.tests.CentroidTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
@@ -205,6 +206,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()
