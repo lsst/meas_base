@@ -35,6 +35,9 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(algorithm) {
+    py::module::import("lsst.afw.image");
+    py::module::import("lsst.afw.table");
+
     py::module mod("algorithm");
 
     /* Module level */
@@ -52,4 +55,6 @@ PYBIND11_PLUGIN(algorithm) {
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}  // base
+}  // meas
+}  // lsst

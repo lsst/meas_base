@@ -19,9 +19,9 @@
  * the GNU General Public License along with this program.  If not, 
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
-#include <memory>
-
 #include "pybind11/pybind11.h"
+
+#include <memory>
 
 #include "lsst/meas/base/CircularApertureFlux.h"
 
@@ -40,6 +40,8 @@ using PyApertureFluxClass = py::class_<CircularApertureFluxAlgorithm,
 }  // <anonymous>
 
 PYBIND11_PLUGIN(circularApertureFlux) {
+    py::module::import("lsst.daf.base");
+    py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.algorithm");
 
     py::module mod("circularApertureFlux");

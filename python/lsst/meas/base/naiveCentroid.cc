@@ -84,6 +84,7 @@ PyCentroidTransform declareCentroidTransform(py::module &mod) {
 }  // <anonymous>
 
 PYBIND11_PLUGIN(naiveCentroid) {
+    py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.algorithm");
     py::module::import("lsst.meas.base.flagHandler");
     py::module::import("lsst.meas.base.transform");

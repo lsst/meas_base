@@ -76,6 +76,7 @@ PyBlendenessAlgorithm declareBlendednessAlgorithm(py::module &mod) {
 }  // <anonymous>
 
 PYBIND11_PLUGIN(blendedness) {
+    py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.algorithm");
     py::module::import("lsst.meas.base.flagHandler");
 

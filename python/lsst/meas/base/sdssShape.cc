@@ -34,8 +34,6 @@
 namespace py = pybind11;
 using namespace pybind11::literals;
 
-namespace afwGeom = lsst::afw::geom;
-
 namespace lsst {
 namespace meas {
 namespace base {
@@ -167,6 +165,8 @@ PyShapeTransform declareShapeTransform(py::module &mod) {
 }  // <anonymous>
 
 PYBIND11_PLUGIN(sdssShape) {
+    py::module::import("lsst.afw.geom");
+    py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.algorithm");
     py::module::import("lsst.meas.base.flagHandler");
     py::module::import("lsst.meas.base.centroidUtilities");  // for CentroidResult

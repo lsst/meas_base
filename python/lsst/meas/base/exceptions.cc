@@ -38,6 +38,8 @@ PYBIND11_PLUGIN(exceptions) {
     using lsst::pex::exceptions::DomainError;
     using lsst::pex::exceptions::RuntimeError;
 
+    py::module::import("lsst.pex.exceptions");
+
     py::module mod("exceptions");
 
     /* Module level */
@@ -59,4 +61,6 @@ PYBIND11_PLUGIN(exceptions) {
     return mod.ptr();
 }
 
-}}}     // lsst::meas::base
+}  // base
+}  // meas
+}  // lsst
