@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2013 LSST Corporation.
+# Copyright 2008-2017 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -33,7 +32,8 @@ from lsst.meas.base.tests import (AlgorithmTestCase)
 import lsst.pex.config
 from lsst.meas.base.pluginRegistry import register
 from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin
-from lsst.meas.base import FlagDefinitionList, FlagDefinition, FlagHandler
+from lsst.meas.base import FlagDefinitionList, FlagHandler
+
 
 class CentroiderConfig(SingleFramePluginConfig):
 
@@ -218,6 +218,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

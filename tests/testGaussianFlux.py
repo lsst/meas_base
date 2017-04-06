@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2015 AURA/LSST.
+# Copyright 2008-2017 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -64,8 +63,8 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         exposure, catalog = self.dataset.realize(10.0, task.schema)
         task.run(catalog, exposure)
         for measRecord in catalog:
-            self.assertClose(measRecord.get("base_GaussianFlux_flux"),
-                             measRecord.get("truth_flux"), rtol=3E-3)
+            self.assertFloatsAlmostEqual(measRecord.get("base_GaussianFlux_flux"),
+                                         measRecord.get("truth_flux"), rtol=3E-3)
 
     def testMonteCarlo(self):
         """Test that we get exactly the right answer on an ideal sim with no noise, and that
@@ -76,7 +75,7 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         record = catalog[0]
         flux = record.get("truth_flux")
         algorithm.measure(record, exposure)
-        self.assertClose(record.get("base_GaussianFlux_flux"), flux, rtol=1E-3)
+        self.assertFloatsAlmostEqual(record.get("base_GaussianFlux_flux"), flux, rtol=1E-3)
         self.assertLess(record.get("base_GaussianFlux_fluxSigma"), 1E-3)
         for noise in (0.001, 0.01, 0.1):
             fluxes = []
@@ -91,7 +90,7 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             fluxMean = np.mean(fluxes)
             fluxSigmaMean = np.mean(fluxSigmas)
             fluxStandardDeviation = np.std(fluxes)
-            self.assertClose(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)   # rng dependent
+            self.assertFloatsAlmostEqual(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)   # rng dependent
             self.assertLess(fluxMean - flux, 2.0*fluxSigmaMean / nSamples**0.5)   # rng dependent
 
     def testForcedPlugin(self):
@@ -106,15 +105,17 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         task.run(measCat, exposure, refCat, refWcs)
         for measRecord, truthRecord in zip(measCat, truthCatalog):
             # Centroid tolerances set to ~ single precision epsilon
-            self.assertClose(measRecord.get("slot_Centroid_x"), truthRecord.get("truth_x"), rtol=1E-7)
-            self.assertClose(measRecord.get("slot_Centroid_y"), truthRecord.get("truth_y"), rtol=1E-7)
+            self.assertFloatsAlmostEqual(measRecord.get("slot_Centroid_x"),
+                                         truthRecord.get("truth_x"), rtol=1E-7)
+            self.assertFloatsAlmostEqual(measRecord.get("slot_Centroid_y"),
+                                         truthRecord.get("truth_y"), rtol=1E-7)
             self.assertFalse(measRecord.get("base_GaussianFlux_flag"))
             # GaussianFlux isn't designed to do a good job in forced mode, because it doesn't account
             # for changes in the PSF (and in fact confuses them with changes in the WCS).  Hence, this
             # is really just a regression test, with the initial threshold set to just a bit more than
             # what it was found to be at one point.
-            self.assertClose(measRecord.get("base_GaussianFlux_flux"), truthCatalog.get("truth_flux"),
-                             rtol=0.3)
+            self.assertFloatsAlmostEqual(measRecord.get("base_GaussianFlux_flux"),
+                                         truthCatalog.get("truth_flux"), rtol=0.3)
             self.assertLess(measRecord.get("base_GaussianFlux_fluxSigma"), 500.0)
 
 
@@ -133,6 +134,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

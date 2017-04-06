@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2014 AURA/LSST.
+# Copyright 2008-2017 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -46,8 +45,6 @@ lsst.meas.base.wrapSimpleAlgorithm(
     Control=testLib.SillyCentroidControl,
     executionOrder=lsst.meas.base.BasePlugin.CENTROID_ORDER,
 )
-
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 
 class CentroidTestCase(lsst.utils.tests.TestCase):
@@ -124,8 +121,6 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
         self.assertEqual(measCat[0].getY(), y + 5)
         self.assertEqual(measCat[0].getX(), x + 5)
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass
@@ -133,6 +128,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

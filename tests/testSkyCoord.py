@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2013 LSST Corporation.
+# Copyright 2008-2017 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -48,8 +47,8 @@ class SkyCoordTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.
         task.run(catalog, exposure)
         record = catalog[0]
         position = exposure.getWcs().skyToPixel(record.getCoord())
-        self.assertClose(position.getX(), record.get("truth_x"), rtol=1E-8)
-        self.assertClose(position.getY(), record.get("truth_y"), rtol=1E-8)
+        self.assertFloatsAlmostEqual(position.getX(), record.get("truth_x"), rtol=1E-8)
+        self.assertFloatsAlmostEqual(position.getY(), record.get("truth_y"), rtol=1E-8)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
@@ -58,6 +57,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

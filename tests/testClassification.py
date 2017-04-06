@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2015 LSST Corporation.
+# Copyright 2008-2017 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -28,6 +27,7 @@ import lsst.utils.tests
 import lsst.meas.base.tests
 import lsst.meas.base as measBase
 import lsst.meas.base.catalogCalculation as catCalc
+
 
 class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
@@ -124,6 +124,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

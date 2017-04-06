@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2016 AURA/LSST.
+# Copyright 2008-2017 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -60,11 +59,11 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         return exposure, catalog
 
     def _checkShape(self, result, record):
-        self.assertClose(result.x, record.get("truth_x"), rtol=1E-2)
-        self.assertClose(result.y, record.get("truth_y"), rtol=1E-2)
-        self.assertClose(result.xx, record.get("truth_xx"), rtol=1E-2)
-        self.assertClose(result.yy, record.get("truth_yy"), rtol=1E-2)
-        self.assertClose(result.xy, record.get("truth_xy"), rtol=1E-1, atol=2E-1)
+        self.assertFloatsAlmostEqual(result.x, record.get("truth_x"), rtol=1E-2)
+        self.assertFloatsAlmostEqual(result.y, record.get("truth_y"), rtol=1E-2)
+        self.assertFloatsAlmostEqual(result.xx, record.get("truth_xx"), rtol=1E-2)
+        self.assertFloatsAlmostEqual(result.yy, record.get("truth_yy"), rtol=1E-2)
+        self.assertFloatsAlmostEqual(result.xy, record.get("truth_xy"), rtol=1E-1, atol=2E-1)
         self.assertFinite(result.xxSigma)
         self.assertFinite(result.yySigma)
         self.assertFinite(result.xySigma)
@@ -81,9 +80,9 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.MAXITER.number))
 
     def _checkPsfShape(self, result, psfResult, psfTruth):
-        self.assertClose(psfResult.getIxx(), psfTruth.getIxx(), rtol=1E-4)
-        self.assertClose(psfResult.getIyy(), psfTruth.getIyy(), rtol=1E-4)
-        self.assertClose(psfResult.getIxy(), psfTruth.getIxy(), rtol=1E-4)
+        self.assertFloatsAlmostEqual(psfResult.getIxx(), psfTruth.getIxx(), rtol=1E-4)
+        self.assertFloatsAlmostEqual(psfResult.getIyy(), psfTruth.getIyy(), rtol=1E-4)
+        self.assertFloatsAlmostEqual(psfResult.getIxy(), psfTruth.getIxy(), rtol=1E-4)
         self.assertFalse(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.PSF_SHAPE_BAD.number))
 
     def testMeasureGoodPsf(self):
@@ -153,6 +152,7 @@ class SdssShapeTransformTestCase(lsst.meas.base.tests.FluxTransformTestCase,
             for field in ('xx', 'yy', 'xy', 'xxSigma', 'yySigma', 'xySigma', 'psf_xx', 'psf_yy', 'psf_xy'):
                 if record.schema.join(name, field) in record.schema:
                     record[record.schema.join(name, field)] = np.random.random()
+
     def _compareFieldsInRecords(self, inSrc, outSrc, name):
         lsst.meas.base.tests.FluxTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
         lsst.meas.base.tests.CentroidTransformTestCase._compareFieldsInRecords(self, inSrc, outSrc, name)
@@ -205,6 +205,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

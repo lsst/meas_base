@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2016 AURA/LSST.
+# Copyright 2008-2017 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -39,6 +38,7 @@ import lsst.afw.detection as afwDetection
 import lsst.afw.math as afwMath
 import lsst.meas.base as measBase
 import lsst.utils.tests
+
 
 class UndeblendedTestCase(lsst.utils.tests.TestCase):
     def testUndeblendedMeasurement(self):

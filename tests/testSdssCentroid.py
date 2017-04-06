@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2013 LSST Corporation.
+# Copyright 2008-2017 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -73,8 +72,8 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         record = catalog[0]
         self.assertFalse(record.get("base_SdssCentroid_flag"))
         self.assertFalse(record.get("base_SdssCentroid_flag_edge"))
-        self.assertClose(record.get("base_SdssCentroid_x"), record.get("truth_x"), rtol=0.005)
-        self.assertClose(record.get("base_SdssCentroid_y"), record.get("truth_y"), rtol=0.005)
+        self.assertFloatsAlmostEqual(record.get("base_SdssCentroid_x"), record.get("truth_x"), rtol=0.005)
+        self.assertFloatsAlmostEqual(record.get("base_SdssCentroid_y"), record.get("truth_y"), rtol=0.005)
 
     def testMonteCarlo(self):
         """Test that we get exactly the right answer on an ideal sim with no noise, and that
@@ -87,8 +86,8 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         y = record.get("truth_y")
         flux = record.get("truth_flux")
         algorithm.measure(record, exposure)
-        self.assertClose(record.get("base_SdssCentroid_x"), x, rtol=1E-4)
-        self.assertClose(record.get("base_SdssCentroid_y"), y, rtol=1E-4)
+        self.assertFloatsAlmostEqual(record.get("base_SdssCentroid_x"), x, rtol=1E-4)
+        self.assertFloatsAlmostEqual(record.get("base_SdssCentroid_y"), y, rtol=1E-4)
         for noise in (0.001, 0.01):
             xList = []
             yList = []
@@ -109,8 +108,8 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             ySigmaMean = np.mean(ySigmaList)
             xStandardDeviation = np.std(xList)
             yStandardDeviation = np.std(yList)
-            self.assertClose(xSigmaMean, xStandardDeviation, rtol=0.2)   # rng dependent
-            self.assertClose(ySigmaMean, yStandardDeviation, rtol=0.2)   # rng dependent
+            self.assertFloatsAlmostEqual(xSigmaMean, xStandardDeviation, rtol=0.2)   # rng dependent
+            self.assertFloatsAlmostEqual(ySigmaMean, yStandardDeviation, rtol=0.2)   # rng dependent
             self.assertLess(xMean - x, 3.0*xSigmaMean / nSamples**0.5)   # rng dependent
             self.assertLess(yMean - y, 3.0*ySigmaMean / nSamples**0.5)   # rng dependent
 
@@ -178,6 +177,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

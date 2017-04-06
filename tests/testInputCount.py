@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2016 LSST/AURA
+# Copyright 2008-2017 LSST/AURA
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -253,8 +252,6 @@ class InputCountTest(lsst.utils.tests.TestCase):
         self.assertTrue(record.get("inputCount_flag"))
         self.assertTrue(record.get("inputCount_flag_noInputs"))
 
-##############################################################################################################
-
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass
@@ -262,6 +259,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

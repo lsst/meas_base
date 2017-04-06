@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2013 LSST Corporation.
+# Copyright 2008-2017 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -30,7 +29,7 @@ import lsst.utils.tests
 import lsst.meas.base
 import lsst.meas.base.tests
 import lsst.afw.table
-from lsst.meas.base import FlagDefinition, FlagDefinitionList, FlagHandler, MeasurementError
+from lsst.meas.base import FlagDefinitionList, FlagHandler, MeasurementError
 from lsst.meas.base.tests import AlgorithmTestCase
 
 import lsst.pex.exceptions
@@ -176,7 +175,6 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         # Check to be sure that the FlagHandler was correctly initialized
         for index in range(len(flagDefs)):
             self.assertEqual(flagDefs.getDefinition(index).name, fh.getFlagName(index))
-
 
         catalog = lsst.afw.table.SourceCatalog(schema)
 
@@ -352,6 +350,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

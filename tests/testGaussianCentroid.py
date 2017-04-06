@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2013 LSST Corporation.
+# Copyright 2008-2017 LSST Corporation.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -53,8 +52,8 @@ class GaussianCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         y = record.get("base_GaussianCentroid_y")
         self.assertFalse(record.get("base_GaussianCentroid_flag"))
         self.assertFalse(record.get("base_GaussianCentroid_flag_noPeak"))
-        self.assertClose(x, self.center.getX(), atol=None, rtol=.01)
-        self.assertClose(y, self.center.getY(), atol=None, rtol=.01)
+        self.assertFloatsAlmostEqual(x, self.center.getX(), atol=None, rtol=.01)
+        self.assertFloatsAlmostEqual(y, self.center.getY(), atol=None, rtol=.01)
 
 
 class GaussianCentroidTransformTestCase(CentroidTransformTestCase, SingleFramePluginTransformSetupHelper,
@@ -73,6 +72,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

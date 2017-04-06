@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 #
 # LSST Data Management System
-# Copyright 2008-2016 AURA/LSST.
+# Copyright 2008-2017 AURA/LSST.
 #
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
@@ -76,8 +75,8 @@ class SingleFramePeakCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCa
         x = self.catalog[0].get("base_PeakCentroid_x")
         y = self.catalog[0].get("base_PeakCentroid_y")
         self.assertFalse(self.catalog[0].get("base_PeakCentroid_flag"))
-        self.assertClose(x, self.center.getX(), atol=None, rtol=.02)
-        self.assertClose(y, self.center.getY(), atol=None, rtol=.02)
+        self.assertFloatsAlmostEqual(x, self.center.getX(), atol=None, rtol=.02)
+        self.assertFloatsAlmostEqual(y, self.center.getY(), atol=None, rtol=.02)
 
     def testFlags(self):
         """
@@ -128,6 +127,7 @@ class TestMemory(lsst.utils.tests.MemoryTestCase):
 
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()
