@@ -320,45 +320,41 @@ where logger can either be the logName string itself, or a Log object returned f
 
 @section measBaseFlagHandlerInPython Using a FlagHandler with Python Plugins
 
-Review the SingleFramePlugin requirements for the measure() and fail() methods which a plugin must implement.
+Review the SingleFramePlugin requirements for the measure() and fail() methods, which a plugin must implement.
 When the plugin detects an error, it should raise a MeasurementError exception, which triggers a call to fail().
-A FlagHandler is a convenient way for a plugin to define error flags for different errors, and to set those
-error flags in fail() method when they occur.
+The fail() method should set the appropriate failure flags in the output catalog.
+
+A FlagHandler is a convenient way for a plugin to define flags for different error conditions, and to automatically
+set the correct flags when they occur.
 
 <B>
 How to Define a FlagHandler in Python:
 </B>
 
 The meas_base plugins implemented in C++ use lsst::meas::base::FlagHander to handle measurement exceptions.
-In Python, measurement plugins may use the addFlagHandler decorator to create an an instance of this class.
-This section describes how to use the addFlagHandler decorator and the FlagHandler.
+In Python, measurement plugins may use a FlagDefinitionList to create an instance of this class.
 
 First examine the code testFlagHandler.py in the meas_base tests directory. This unit test defines a
-plugin written in Python which illustrates several useful techniques about using the FlagHander.
-Note first the line decorating the class definition, which reads like this:
+PythonPlugin which illustrates the use of the FlagHander. The __init__ method shown below defines a list
+of 3 failure flags. As each flag is added, a FlagDefinition is returned which can be used to identify
+the error later.
 
+When the list is complete, a FlagHandler is created, which initializes the flag fields in the output
+catalog:
 @code{.py}
-@addFlagHandler(("flag", "General Failure error"),
-                ("flag_containsNan","Measurement area contains a nan"),
-                ("flag_edge", "Measurement area over edge"))
-class PythonPlugin(SingleFramePlugin):
 
-    ConfigClass = PythonPluginConfig
+        flagDefs = FlagDefinitionList()
+        FAILURE = flagDefs.add("flag", "General Failure error")
+        CONTAINS_NAN = flagDefs.add("flag_containsNan", "Measurement area contains a nan")
+        EDGE = flagDefs.add("flag_edge", "Measurement area over edge")
+        self.flagHandler = FlagHandler.addFields(schema, name, flagDefs)
 
-    def __init__(self, config, name, schema, metadata):
-        ...
-
-    def measure(self, measRecord, exposure):
-        ...
-
-    def fail(self, measRecord, error=None):
-        ...
 @endcode
-This class decorator modifies your plugin class to add a <B>flagHandler</B> attribute, an instance of
-lsst.meas.base.FlagHandler. This instance defines error flags for your plugin:
+
+This code defines the following error flags for your plugin:
 
 - a general failure flag which indicates that something has gone wrong during measure().
-- a specific failure flag which indicates a source which contain nans.
+- a specific failure flag to indicate a source which contain nans.
 - a specific failure flag which indicates that the source is too close to the edge to be measured.
 
 The FlagHander is also used to implement your fail() method in Python. Recall that you must implement
@@ -376,29 +372,19 @@ The following addition to your class will correctly implement the error handling
 
 When the error is one which your plugin code expects, your code will raise a MeasurementError exception.
 The error is sent to the fail() method in the "error" argument. The error will indicate which flag should
-be set in addition to the general failure flag. If the error argument is not supplied, only the general
-failure flag will be set.
+be set in addition to the general failure flag. If the error argument is not supplied, as when the failure
+is not expected, only the general failure flag will be set.
 
-<B>
-Using the ErrEnum to raise a MeasurementError exception:
-</B>
-
-In addition to the flagHander attribute, the addFlagHandler class decorator also adds an "ErrEnum"
-member to your plugin.  This enumeration provides a unique name for each error type. For example,
-to raise a MeasurementError when the measured source is too near the edge of the exposure:
+The PythonPlugin has example code. It is a toy plugin which measures flux inside a square box drawn about
+the center of a detected source. The plugin raises a MeasurementError when the box lies outside the
+exposure being measured.
 
 @code{.py}
-        #   If the measurement box falls outside the exposure, raise the edge MeasurementError
         if not exposure.getBBox().contains(bbox):
-            raise MeasurementError(self.flagHandler.getDefinition(self.ErrEnum.flag_edge).doc,
-                PythonPlugin.ErrEnum.flag_edge)
+            raise MeasurementError(self.EDGE.doc, self.EDGE.number)
 @endcode
 
-The PythonPlugin measures the flux inside a square box drawn around the center
-of a detected source.  This aperture is "size" pixels square, where "size" is a configurable value.
-The requested aperture could lie partly outside the exposure being measured, which would constitute
-an error condition for this plugin. When the MeasurementError is raised, both the general flag 
-and the flag_edge flag will be set to True.
+When the MeasurementError is raised, both the general flag and the flag_edge flag will be set to True.
 
 <B>
 Using the SafeCentroidExtractor:
