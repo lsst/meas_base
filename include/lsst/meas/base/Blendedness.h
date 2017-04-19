@@ -87,6 +87,24 @@ public:
 
     BlendednessAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
 
+    /**
+     *  Compute the posterior expectation value of the true flux in a pixel
+     *  from its (Gaussian) likelihood and a flat nonnegative prior.
+     *
+     *  This computes
+     *  @f[
+     *       \frac{\int_0^\infty f \frac{1}{\sqrt{2\pi}\sigma} e^{-\frac{(f-z)^2}{2\sigma^2}} df}
+                  {\int_0^\infty \frac{1}{\sqrt{2\pi}\sigma} e^{-\frac{(f-z)^2}{2\sigma^2}} df}
+     *  @f]
+     *  where @f$z@f$ is the (noisy) pixel value and @f$\sigma^2@f$ is the pixel variance.  This
+     *  approaches @f$z@f$ when @f$z \gg \sigma@f$ and @f$0@f$ when @f$z \ll -\sigma@f$.
+     *
+     *  We use single precision here for performance reasons; this function is called in a loop
+     *  over single-precision pixels, and relies on a number of calls to exp and erfc, which are
+     *  much faster in single precision.
+     */
+    static float computeAbsExpectation(float data, float variance);
+
     void measureChildPixels(
         afw::image::MaskedImage<float> const & image,
         afw::table::SourceRecord & child

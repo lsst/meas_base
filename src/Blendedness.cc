@@ -154,7 +154,6 @@ private:
     double _wdxy;
 };
 
-
 template <typename Accumulator>
 void computeMoments(
     afw::image::MaskedImage<float> const & image,
@@ -209,9 +208,7 @@ void computeMoments(
             float data = pixelIter.image();
             accumulatorRaw(d.getX(), d.getY(), weight, data);
             float variance = pixelIter.variance();
-            float mu = (std::sqrt(variance/(2.0f/boost::math::constants::pi<float>()))*
-                        std::exp(-0.5f*(data*data)/variance)) +
-                0.5f*data*boost::math::erfc(-data/std::sqrt(2.0f*variance));
+            float mu = BlendednessAlgorithm::computeAbsExpectation(data, variance);
             float bias = (std::sqrt(2.0f*variance/boost::math::constants::pi<float>())*
                           std::exp(-0.5f*(mu*mu)/variance)) -
                 mu*boost::math::erfc(mu/std::sqrt(2.0f*variance));
@@ -282,6 +279,17 @@ BlendednessAlgorithm::BlendednessAlgorithm(Control const & ctrl,  std::string co
         _flagHandler = FlagHandler::addFields(schema, name,
                                               getFlagDefinitions());
     }
+}
+
+float BlendednessAlgorithm::computeAbsExpectation(float data, float variance) {
+    float normalization = 0.5f*boost::math::erfc(-data/std::sqrt(2.0f*variance));
+    if (!(normalization > 0)) {
+        // avoid division by zero; we know the limit at data << -sigma -> 0.
+        return 0.0;
+    }
+    return data + (std::sqrt(0.5f*variance/boost::math::constants::pi<float>()) *
+                   std::exp(-0.5f*(data*data)/variance) / normalization);
+}
 }
 
 void BlendednessAlgorithm::_measureMoments(
