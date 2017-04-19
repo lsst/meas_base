@@ -391,7 +391,7 @@ smoothAndBinImage(CONST_PTR(lsst::afw::detection::Psf) psf,
     double const nEffective = 4*M_PI*smoothingSigma*smoothingSigma; // correct for a Gaussian
 #endif
 
-    lsst::afw::math::Kernel::ConstPtr kernel = psf->getLocalKernel(center);
+    std::shared_ptr<lsst::afw::math::Kernel const> kernel = psf->getLocalKernel(center);
     int const kWidth = kernel->getWidth();
     int const kHeight = kernel->getHeight();
 

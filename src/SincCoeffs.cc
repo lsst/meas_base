@@ -219,7 +219,7 @@ std::pair<double, double> computeGaussLeakage(double const sigma) {
 }
 
 template<typename PixelT>
-typename afw::image::Image<PixelT>::Ptr
+std::shared_ptr<afw::image::Image<PixelT>>
 calcImageRealSpace(double const rad1, double const rad2, double const taperwidth) {
 
     PixelT initweight = 0.0; // initialize the coeff values
@@ -236,7 +236,7 @@ calcImageRealSpace(double const rad1, double const rad2, double const taperwidth
     int const y0 = -ywidth/2;
 
     // create an image to hold the coefficient image
-    typename afw::image::Image<PixelT>::Ptr coeffImage =
+    auto coeffImage =
         std::make_shared<afw::image::Image<PixelT> >(afw::geom::ExtentI(xwidth, ywidth), initweight);
     coeffImage->setXY0(x0, y0);
 
@@ -343,7 +343,7 @@ std::pair<double, double> rotate(double x, double y, double angle) {
  */
 
 template<typename PixelT>
-typename afw::image::Image<PixelT>::Ptr calcImageKSpaceCplx(double const rad1, double const rad2,
+std::shared_ptr<afw::image::Image<PixelT>> calcImageKSpaceCplx(double const rad1, double const rad2,
                                                           double const posAng, double const ellipticity
                                                          ) {
 
@@ -399,7 +399,7 @@ typename afw::image::Image<PixelT>::Ptr calcImageKSpaceCplx(double const rad1, d
     fftw_destroy_plan(plan);
 
     // put the coefficients into an image
-    typename afw::image::Image<PixelT>::Ptr coeffImage =
+    auto coeffImage =
         std::make_shared<afw::image::Image<PixelT> >(afw::geom::ExtentI(wid, wid), 0.0);
 
     for (int iY = 0; iY != coeffImage->getHeight(); ++iY) {
@@ -429,7 +429,7 @@ typename afw::image::Image<PixelT>::Ptr calcImageKSpaceCplx(double const rad1, d
 // but I have to do it as real-to-halfcplx (R2HC) to get the correct numbers.
 
 template<typename PixelT>
-typename afw::image::Image<PixelT>::Ptr calcImageKSpaceReal(double const rad1, double const rad2) {
+std::shared_ptr<afw::image::Image<PixelT>> calcImageKSpaceReal(double const rad1, double const rad2) {
 
     // we only need a half-width due to symmertry
     // make the hwid 2*rad2 so we have some buffer space and round up to the next power of 2
@@ -477,7 +477,7 @@ typename afw::image::Image<PixelT>::Ptr calcImageKSpaceReal(double const rad1, d
     fftw_destroy_plan(plan);
 
     // put the coefficients into an image
-    typename afw::image::Image<PixelT>::Ptr coeffImage =
+    auto coeffImage =
         std::make_shared<afw::image::Image<PixelT> >(afw::geom::ExtentI(wid, wid), 0.0);
 
     for (int iY = 0; iY != coeffImage->getHeight(); ++iY) {
