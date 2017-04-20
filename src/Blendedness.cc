@@ -23,8 +23,7 @@
 
 #include <cmath>
 
-#include "boost/math/special_functions/erf.hpp"
-#include <boost/math/constants/constants.hpp>
+#include "boost/math/constants/constants.hpp"
 
 #include "lsst/meas/base/Blendedness.h"
 #include "lsst/afw/detection/HeavyFootprint.h"
@@ -280,7 +279,7 @@ BlendednessAlgorithm::BlendednessAlgorithm(Control const & ctrl,  std::string co
 }
 
 float BlendednessAlgorithm::computeAbsExpectation(float data, float variance) {
-    float normalization = 0.5f*boost::math::erfc(-data/std::sqrt(2.0f*variance));
+    float normalization = 0.5f*std::erfc(-data/std::sqrt(2.0f*variance));
     if (!(normalization > 0)) {
         // avoid division by zero; we know the limit at data << -sigma -> 0.
         return 0.0;
@@ -292,7 +291,7 @@ float BlendednessAlgorithm::computeAbsExpectation(float data, float variance) {
 float BlendednessAlgorithm::computeAbsBias(float mu, float variance) {
     return (std::sqrt(2.0f*variance/boost::math::constants::pi<float>()) *
                       std::exp(-0.5f*(mu*mu)/variance)) -
-            mu*boost::math::erfc(mu/std::sqrt(2.0f*variance));
+            mu*std::erfc(mu/std::sqrt(2.0f*variance));
 }
 
 void BlendednessAlgorithm::_measureMoments(
