@@ -210,7 +210,7 @@ void computeMoments(
             float variance = pixelIter.variance();
             float mu = BlendednessAlgorithm::computeAbsExpectation(data, variance);
             float bias = BlendednessAlgorithm::computeAbsBias(mu, variance);
-            accumulatorAbs(d.getX(), d.getY(), weight, std::max(std::abs(data) - bias, 0.0f));
+            accumulatorAbs(d.getX(), d.getY(), weight, std::abs(data) - bias);
         }
     }
 }
@@ -360,7 +360,7 @@ void BlendednessAlgorithm::_measureMoments(
             );
         if (_ctrl.doFlux) {
             child.set(fluxRawKey, accumulatorRaw.getFlux());
-            child.set(fluxAbsKey, accumulatorAbs.getFlux());
+            child.set(fluxAbsKey, std::max(accumulatorAbs.getFlux(), 0.0));
         }
         _shapeRawKey.set(child, accumulatorRaw.getShape());
         _shapeAbsKey.set(child, accumulatorAbs.getShape());
@@ -376,7 +376,7 @@ void BlendednessAlgorithm::_measureMoments(
             accumulatorAbs
         );
         child.set(fluxRawKey, accumulatorRaw.getFlux());
-        child.set(fluxAbsKey, accumulatorAbs.getFlux());
+        child.set(fluxAbsKey, std::max(accumulatorAbs.getFlux(), 0.0));
     }
 }
 
