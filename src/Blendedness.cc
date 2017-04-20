@@ -209,9 +209,7 @@ void computeMoments(
             accumulatorRaw(d.getX(), d.getY(), weight, data);
             float variance = pixelIter.variance();
             float mu = BlendednessAlgorithm::computeAbsExpectation(data, variance);
-            float bias = (std::sqrt(2.0f*variance/boost::math::constants::pi<float>())*
-                          std::exp(-0.5f*(mu*mu)/variance)) -
-                mu*boost::math::erfc(mu/std::sqrt(2.0f*variance));
+            float bias = BlendednessAlgorithm::computeAbsBias(mu, variance);
             accumulatorAbs(d.getX(), d.getY(), weight, std::max(std::abs(data) - bias, 0.0f));
         }
     }
@@ -290,6 +288,11 @@ float BlendednessAlgorithm::computeAbsExpectation(float data, float variance) {
     return data + (std::sqrt(0.5f*variance/boost::math::constants::pi<float>()) *
                    std::exp(-0.5f*(data*data)/variance) / normalization);
 }
+
+float BlendednessAlgorithm::computeAbsBias(float mu, float variance) {
+    return (std::sqrt(2.0f*variance/boost::math::constants::pi<float>()) *
+                      std::exp(-0.5f*(mu*mu)/variance)) -
+            mu*boost::math::erfc(mu/std::sqrt(2.0f*variance));
 }
 
 void BlendednessAlgorithm::_measureMoments(

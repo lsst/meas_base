@@ -105,6 +105,23 @@ public:
      */
     static float computeAbsExpectation(float data, float variance);
 
+    /**
+     *  Compute the bias induced by using the absolute value of a pixel instead of its value.
+     *
+     *  The computation assumes the true distribution for the pixel is a Gaussian
+     *  with mean mu and the given variance.  To compute mu from the data, use
+     *  computeAbsExpectation.
+     *
+     *  This computes
+     *  @f[
+     *      \sqrt{\frac{2}{\pi}}\sigma e^{-\frac{\mu^2}{2\sigma^2}}
+     *          - \mu\,\mathrm{erfc}\left(\frac{\mu}{\sqrt{2}\sigma}\right)
+     *  @f]
+     *  where @f$\mu@f$ is the mean of the underlying distribution and @f$\sigma^2@f$
+     *  is its variance.
+     */
+    static float computeAbsBias(float mu, float variance);
+
     void measureChildPixels(
         afw::image::MaskedImage<float> const & image,
         afw::table::SourceRecord & child

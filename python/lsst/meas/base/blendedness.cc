@@ -67,6 +67,8 @@ PyBlendenessAlgorithm declareBlendednessAlgorithm(py::module &mod) {
 
     cls.def_static("computeAbsExpectation", &BlendednessAlgorithm::computeAbsExpectation,
                    "data"_a, "variance"_a);
+    cls.def_static("computeAbsBias", &BlendednessAlgorithm::computeAbsBias,
+                   "mu"_a, "variance"_a);
     cls.def("measureChildPixels", &BlendednessAlgorithm::measureChildPixels, "image"_a, "child"_a);
     cls.def("measureParentPixels", &BlendednessAlgorithm::measureParentPixels, "image"_a, "child"_a);
     cls.def("measure", &BlendednessAlgorithm::measure, "measRecord"_a, "exposure"_a);
