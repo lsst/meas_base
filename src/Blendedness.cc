@@ -23,8 +23,7 @@
 
 #include <cmath>
 
-#include "boost/math/special_functions/erf.hpp"
-#include <boost/math/constants/constants.hpp>
+#include "boost/math/constants/constants.hpp"
 
 #include "lsst/meas/base/Blendedness.h"
 #include "lsst/afw/detection/HeavyFootprint.h"
@@ -154,7 +153,6 @@ private:
     double _wdxy;
 };
 
-
 template <typename Accumulator>
 void computeMoments(
     afw::image::MaskedImage<float> const & image,
@@ -209,13 +207,9 @@ void computeMoments(
             float data = pixelIter.image();
             accumulatorRaw(d.getX(), d.getY(), weight, data);
             float variance = pixelIter.variance();
-            float mu = (std::sqrt(variance/(2.0f/boost::math::constants::pi<float>()))*
-                        std::exp(-0.5f*(data*data)/variance)) +
-                0.5f*data*boost::math::erfc(-data/std::sqrt(2.0f*variance));
-            float bias = (std::sqrt(2.0f*variance/boost::math::constants::pi<float>())*
-                          std::exp(-0.5f*(mu*mu)/variance)) -
-                mu*boost::math::erfc(mu/std::sqrt(2.0f*variance));
-            accumulatorAbs(d.getX(), d.getY(), weight, std::max(std::abs(data) - bias, 0.0f));
+            float mu = BlendednessAlgorithm::computeAbsExpectation(data, variance);
+            float bias = BlendednessAlgorithm::computeAbsBias(mu, variance);
+            accumulatorAbs(d.getX(), d.getY(), weight, std::abs(data) - bias);
         }
     }
 }
@@ -284,6 +278,22 @@ BlendednessAlgorithm::BlendednessAlgorithm(Control const & ctrl,  std::string co
     }
 }
 
+float BlendednessAlgorithm::computeAbsExpectation(float data, float variance) {
+    float normalization = 0.5f*std::erfc(-data/std::sqrt(2.0f*variance));
+    if (!(normalization > 0)) {
+        // avoid division by zero; we know the limit at data << -sigma -> 0.
+        return 0.0;
+    }
+    return data + (std::sqrt(0.5f*variance/boost::math::constants::pi<float>()) *
+                   std::exp(-0.5f*(data*data)/variance) / normalization);
+}
+
+float BlendednessAlgorithm::computeAbsBias(float mu, float variance) {
+    return (std::sqrt(2.0f*variance/boost::math::constants::pi<float>()) *
+                      std::exp(-0.5f*(mu*mu)/variance)) -
+            mu*std::erfc(mu/std::sqrt(2.0f*variance));
+}
+
 void BlendednessAlgorithm::_measureMoments(
     afw::image::MaskedImage<float> const & image,
     afw::table::SourceRecord & child,
@@ -349,7 +359,7 @@ void BlendednessAlgorithm::_measureMoments(
             );
         if (_ctrl.doFlux) {
             child.set(fluxRawKey, accumulatorRaw.getFlux());
-            child.set(fluxAbsKey, accumulatorAbs.getFlux());
+            child.set(fluxAbsKey, std::max(accumulatorAbs.getFlux(), 0.0));
         }
         _shapeRawKey.set(child, accumulatorRaw.getShape());
         _shapeAbsKey.set(child, accumulatorAbs.getShape());
@@ -365,7 +375,7 @@ void BlendednessAlgorithm::_measureMoments(
             accumulatorAbs
         );
         child.set(fluxRawKey, accumulatorRaw.getFlux());
-        child.set(fluxAbsKey, accumulatorAbs.getFlux());
+        child.set(fluxAbsKey, std::max(accumulatorAbs.getFlux(), 0.0));
     }
 }
 

@@ -64,6 +64,26 @@ class BlendednessTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         del self.bbox
         del self.dataset
 
+    def testAbsExpectation(self):
+        f = lsst.meas.base.BlendednessAlgorithm.computeAbsExpectation
+        # comparison values computed with Mathematica
+        self.assertFloatsAlmostEqual(f(-1.0, 1.5**2), 0.897767011, rtol=1E-5)
+        self.assertFloatsAlmostEqual(f(0.0, 1.5**2), 1.19682684, rtol=1E-5)
+        self.assertFloatsAlmostEqual(f(1.0, 1.5**2), 1.64102639, rtol=1E-5)
+        self.assertFloatsAlmostEqual(f(-1.0, 0.3**2), 0.0783651228, rtol=1E-5)
+        self.assertFloatsAlmostEqual(f(0.0, 0.3**2), 0.239365368, rtol=1E-5)
+        self.assertFloatsAlmostEqual(f(1.0, 0.3**2), 1.00046288, rtol=1E-5)
+
+    def testAbsBias(self):
+        f = lsst.meas.base.BlendednessAlgorithm.computeAbsBias
+        # comparison values computed with Mathematica
+        self.assertFloatsAlmostEqual(f(0.0, 1.5**2), 1.19682684, rtol=1E-5)
+        self.assertFloatsAlmostEqual(f(0.5, 1.5**2), 0.762708343, rtol=1E-5)
+        self.assertFloatsAlmostEqual(f(1.0, 1.5**2), 0.453358941, rtol=1E-5)
+        self.assertFloatsAlmostEqual(f(0.0, 0.3**2), 0.239365368, rtol=1E-5)
+        self.assertFloatsAlmostEqual(f(0.5, 0.3**2), 0.011895931, rtol=1E-5)
+        self.assertFloatsAlmostEqual(f(1.0, 0.3**2), 0.0000672467314, rtol=1E-5)
+
     def testBlendedness(self):
         """
         Check that we measure a positive blendedness for two overlapping sources
