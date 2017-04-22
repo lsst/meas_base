@@ -65,3 +65,4 @@ from .transforms import *
 from .applyApCorr import *
 from .wrappers import *
 from .catalogCalculation import *
+from .footprintArea import *
