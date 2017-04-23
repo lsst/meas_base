@@ -223,6 +223,101 @@ before the measurement framework or in a particular Plugin/Algorithm not knowing
 failure modes.  This means that Plugin/Algorithm implementations should generally have a global try/catch
 block that re-throwns lower-level exceptions corresponding to known failure modes as @ref MeasurementErrors.
 
+@section measBaseLogging How Plugin Errors are Logged
+
+A Plugin is usually not run by itself, but as a component of a measurement task.  The measurement task may also be
+a component or "subTask" of another task, and so on.  When a Plugin is run, the measurement task which is running
+the plugin logs any error which the plugin throws to a log location within the task hierarchy.  For eaxample, when
+the PsfFlux plugin from meas_base is run within processCcd, its errors are logged to:
+
+        processCcd.charImage.measurement.base_PsfFlux
+
+This log hierarchy allows the log for the PsfFlux plugin to be controlled independently of the other plugins,
+and also independently of the measurement task log. Measurement errors are typically logged at the DEBUG level.
+When processCcd is launched, you may selectively modify the log level of any level of the hierarchy.
+
+        processCcd.py -L processCcd.charImage.measurement=WARN
+
+will set the logging level of the MeasurementTask and all the plugins under the MeasurementTask to WARN, whereas:
+
+        processCCd.py -L=processCcd.charImage.measurement.base_PsfFlux=DEBUG
+
+will selectively set just the PsfFlux algorithm running under the MeasurementTask to DEBUG, leaving the task and
+the other plugins at their default log levels.
+
+@section PluginLoggingSetup How a Plugin can get its Logname
+
+Plugins which do not log internally do not need to know the name of their log.
+However, if you are writing a plugin and wish to have the plugin log messages to the log level described
+in the previous section, you must add the following to your plugin class (the class, not the instance):
+
+ - The plugin class must have a class attribute named "hasLogName".
+ - The class attribute hasLogName must be set to True.
+ - The class initializer must have a logName parameter.
+
+When all of these conditions are satisfied, the measurement task will initialize the plugin with the logName
+it uses to log error messages, to allow the plugin to log to the same location.  The plugin may then use one
+of its base class methods, getLogName(), to get the name of its log.  The plugin may then get the logger:
+
+        logger = lsst.log.Log.getLogger(self.getLogName())
+
+<b>Setup for Python Plugins which log:</b>
+
+Here is an example of how a Python plugin which logs internally can be constructed.  Note the class attribute
+"hasLogName" and the initialization with an optional logName parameter.
+
+    class SingleFrameTestPlugin(SingleFramePlugin):
+
+        ConfigClass = SingleFrameTestConfig
+        hasLogName = True
+
+        def __init__(self, config, name, schema, metadata, logName=None):
+            SingleFramePlugin.__init__(self, config, name, schema, metadata, logName=logName)
+
+With this configuration, the running task will set the logName parameter when the plugin is initialized,
+and the plugin getLogName() method may subsequently be used to fetch it.
+
+Though it might be overly verbose, a plugin could log at the INFO level each time its measure method
+is run, using the same logger as the MeasurementTask:
+
+        lsst.log.Log.getLogger(self.getLogName()).info("Staring a measurement.")
+
+<b>Setup for C++ Algorithms which log:</b>
+
+C++ Algorithms which are called from Python tasks can also get the logName.  To do so, they must have an optional
+logName argument in their constructor.  Here is an example from PsfFluxAlgorithm:
+
+        PsfFluxAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema,
+                         std::string const & logName = "");
+
+The constructor should include the line:
+
+        _logName = logName.size() ? logName : name;
+
+which sets the name to be used for the logger of this plugin to either logName, or to the name of the base
+name of the plugin if the optional logName argument has not been specified.
+
+The following line in psfFlux.cc must also be added to allow this constructor to be accessed from Python.
+
+        cls.def(py::init<PsfFluxAlgorithm::Control const &, std::string const &, afw::table::Schema &,
+            std::string const &>(),
+            "ctrl"_a, "name"_a, "schema"_a, "logName"_a);
+
+And finally, the hasLogName=True must be added to the Python wrapper:
+
+        wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl,
+                    TransformClass=PsfFluxTransform, executionOrder=BasePlugin.FLUX_ORDER,
+                    shouldApCorr=True, hasLogName=True)
+
+This constructor allows the Algorithm to receive the logName as an optional string, which can later be accessed by its
+getLogName method.  In C++, an Algorithm may then log to this logName as follows:
+
+        LOGL_INFO(logger, message...)
+
+where logger can either be the logName string itself, or a Log object returned form
+
+        logger = lsst.log.Log.getLogger(getLogName());
+
 @section measBaseFlagHandlerInPython Using a FlagHandler with Python Plugins
 
 Review the SingleFramePlugin requirements for the measure() and fail() methods which a plugin must implement.
