@@ -299,12 +299,12 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         except FATAL_EXCEPTIONS:
             raise
         except MeasurementError as error:
-            lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).warn(
+            lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).debug(
                           "MeasurementError in %s.measure on record %s: %s"
                           % (plugin.name, measRecord.getId(), error))
             plugin.fail(measRecord, error)
         except Exception as error:
-            lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).warn(
+            lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).debug(
                           "Exception in %s.measure on record %s: %s"
                           % (plugin.name, measRecord.getId(), error))
             plugin.fail(measRecord)
@@ -367,13 +367,13 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
 
         except MeasurementError as error:
             for measRecord in measCat:
-                lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).warn(
+                lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).debug(
                           "MeasurementError in %s.measureN on records %s-%s: %s"
                           % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
                 plugin.fail(measRecord, error)
         except Exception as error:
             for measRecord in measCat:
                 plugin.fail(measRecord)
-                lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).warn(
+                lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).debug(
                           "Exception in %s.measureN on records %s-%s: %s"
                           % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))

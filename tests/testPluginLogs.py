@@ -261,7 +261,7 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(1000000.0, self.center)
         self.task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
-        self.log = lsst.log.Log.getLogger(self.task.log.getName() + "." + "base_SdssCentroid")
+        self.log = lsst.log.Log.getLogger(self.task.getPluginLogName("base_SdssCentroid"))
         self.exposure, self.catalog = self.dataset.realize(10.0, self.task.schema)
 
     def tearDown(self):
@@ -280,6 +280,7 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.task.log.info("Testing")
         pluginLogName = os.path.join(lsst.utils.getPackageDir('meas_base'), 'tests', 'plugin.log')
         directLog(self.log, pluginLogName)
+        self.log.setLevel(lsst.log.DEBUG)
         self.task.run(self.catalog, self.exposure)
         # direct back to console, closing log files
         directLog(self.log, None)
@@ -320,7 +321,7 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(1000000.0, self.center)
         self.task = self.makeForcedMeasurementTask("base_SdssCentroid")
-        self.log = lsst.log.Log.getLogger(self.task.log.getName() + "." + "base_SdssCentroid")
+        self.log = lsst.log.Log.getLogger(self.task.getPluginLogName("base_SdssCentroid"))
         measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs())
         measDataset = self.dataset.transform(measWcs)
         self.exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
@@ -347,6 +348,7 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.task.log.info("Testing")
         pluginLogName = os.path.join(lsst.utils.getPackageDir('meas_base'), 'tests', 'plugin.log')
         directLog(self.log, pluginLogName)
+        self.log.setLevel(lsst.log.DEBUG)
         self.task.run(self.measCat, self.exposure, self.refCat, self.refWcs)
         # direct back to console, closing log files
         directLog(self.log, None)
