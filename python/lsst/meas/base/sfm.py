@@ -61,7 +61,7 @@ class SingleFramePlugin(BaseMeasurementPlugin):
     registry = PluginRegistry(SingleFramePluginConfig)
     ConfigClass = SingleFramePluginConfig
 
-    def __init__(self, config, name, schema, metadata):
+    def __init__(self, config, name, schema, metadata, logName=None, **kwds):
         """!
         Initialize the measurement object.
 
@@ -70,8 +70,9 @@ class SingleFramePlugin(BaseMeasurementPlugin):
         @param[in,out]  schema   The Source schema.  New fields should be added here to
                                  hold measurements produced by this plugin.
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
+        @param[in]  logName      May include logName to use for this plugin
         """
-        BaseMeasurementPlugin.__init__(self, config, name)
+        BaseMeasurementPlugin.__init__(self, config, name, logName=logName)
 
     def measure(self, measRecord, exposure):
         """!

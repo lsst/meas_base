@@ -77,7 +77,7 @@ class BasePlugin(object):
         """
         raise NotImplementedError("All plugins must implement getExecutionOrder()")
 
-    def __init__(self, config, name):
+    def __init__(self, config, name, logName=None):
         """!
         Initialize the plugin object.
 
@@ -87,6 +87,10 @@ class BasePlugin(object):
         object.__init__(self)
         self.config = config
         self.name = name
+	self.logName = logName
+
+    def getLogName(self):
+        return self.logName
 
     def fail(self, measRecord, error=None):
         """!

@@ -24,6 +24,8 @@
 #ifndef LSST_MEAS_BASE_Algorithm_h_INCLUDED
 #define LSST_MEAS_BASE_Algorithm_h_INCLUDED
 
+#include "lsst/log/Log.h"
+
 #include "lsst/afw/table/fwd.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/exceptions.h"
@@ -62,6 +64,11 @@ public:
 
     virtual ~BaseAlgorithm() {}
 
+    std::string getLogName() const {
+        return _logName;
+    }
+protected:
+    std::string _logName;
 };
 
 /**

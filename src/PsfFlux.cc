@@ -30,6 +30,7 @@
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/detection/FootprintArray.h"
 #include "lsst/afw/detection/FootprintArray.cc"
+#include "lsst/log/Log.h"
 #include "lsst/meas/base/PsfFlux.h"
 
 namespace lsst { namespace meas { namespace base {
@@ -54,13 +55,15 @@ namespace {
 PsfFluxAlgorithm::PsfFluxAlgorithm(
     Control const & ctrl,
     std::string const & name,
-    afw::table::Schema & schema
+    afw::table::Schema & schema,
+    std::string const & logName
 ) : _ctrl(ctrl),
     _fluxResultKey(
         FluxResultKey::addFields(schema, name, "flux derived from linear least-squares fit of PSF model")
     ),
     _centroidExtractor(schema, name)
 {
+    _logName = logName.size() ? logName : name;
     _flagHandler = FlagHandler::addFields(schema, name,
                                           getFlagDefinitions());
 }
@@ -71,6 +74,7 @@ void PsfFluxAlgorithm::measure(
 ) const {
     PTR(afw::detection::Psf const) psf = exposure.getPsf();
     if (!psf) {
+        LOGL_ERROR(getLogName(), "PsfFlux: no psf attached to exposure");
         throw LSST_EXCEPT(
             FatalAlgorithmError,
             "PsfFlux algorithm requires a Psf with every exposure"

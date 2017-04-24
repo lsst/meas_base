@@ -72,7 +72,7 @@ class ForcedPlugin(BaseMeasurementPlugin):
 
     ConfigClass = ForcedPluginConfig
 
-    def __init__(self, config, name, schemaMapper, metadata):
+    def __init__(self, config, name, schemaMapper, metadata, logName=None):
         """Initialize the measurement object.
 
         @param[in]  config       An instance of this class's ConfigClass.
@@ -84,7 +84,7 @@ class ForcedPlugin(BaseMeasurementPlugin):
                                       will be transferred before any plugins are run.
         @param[in]  metadata     Plugin metadata that will be attached to the output catalog
         """
-        BaseMeasurementPlugin.__init__(self, config, name)
+        BaseMeasurementPlugin.__init__(self, config, name, logName=logName)
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
         """Measure the properties of a source on a single image, given data from a

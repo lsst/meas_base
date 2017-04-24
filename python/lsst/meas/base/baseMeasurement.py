@@ -22,6 +22,7 @@
 #
 """Base measurement task, which subclassed by the single frame and forced measurement tasks.
 """
+from lsst.log import Log
 import lsst.pipe.base
 import lsst.pex.config
 
@@ -207,6 +208,9 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
             algMetadata = lsst.daf.base.PropertyList()
         self.algMetadata = algMetadata
 
+    def getPluginLogName(self, pluginName):
+        return self.log.getName() + '.' + pluginName
+
     def initializePlugins(self, **kwds):
         """Initialize the plugins (and slots) according to the configuration.
 
@@ -226,7 +230,14 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
             self.plugins[self.config.slots.centroid] = None
         # Init the plugins, sorted by execution order.  At the same time add to the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
-            self.plugins[name] = PluginClass(config, name, metadata=self.algMetadata, **kwds)
+            #   Pass logName to the plugin if the plugin is marked as using it
+            #   The task will use this name to log plugin errors, regardless.
+            if hasattr(PluginClass, "hasLogName") and PluginClass.hasLogName:
+                self.plugins[name] = PluginClass(config, name, metadata=self.algMetadata,
+                   logName=self.getPluginLogName(name), **kwds)
+            else:
+                self.plugins[name] = PluginClass(config, name, metadata=self.algMetadata, **kwds)
+
         # In rare circumstances (usually tests), the centroid slot not be coming from an algorithm,
         # which means we'll have added something we don't want to the plugins map, and we should
         # remove it.
@@ -288,9 +299,13 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         except FATAL_EXCEPTIONS:
             raise
         except MeasurementError as error:
+            lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).warn(
+                          "MeasurementError in %s.measure on record %s: %s"
+                          % (plugin.name, measRecord.getId(), error))
             plugin.fail(measRecord, error)
         except Exception as error:
-            self.log.warn("Error in %s.measure on record %s: %s"
+            lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).warn(
+                          "Exception in %s.measure on record %s: %s"
                           % (plugin.name, measRecord.getId(), error))
             plugin.fail(measRecord)
 
@@ -349,11 +364,16 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
             plugin.measureN(measCat, *args, **kwds)
         except FATAL_EXCEPTIONS:
             raise
+
         except MeasurementError as error:
             for measRecord in measCat:
+                lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).warn(
+                          "MeasurementError in %s.measureN on records %s-%s: %s"
+                          % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
                 plugin.fail(measRecord, error)
         except Exception as error:
             for measRecord in measCat:
                 plugin.fail(measRecord)
-            self.log.warn("Error in %s.measureN on records %s-%s: %s"
+                lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).warn(
+                          "Exception in %s.measureN on records %s-%s: %s"
                           % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
