@@ -87,7 +87,7 @@ class BasePlugin(object):
         object.__init__(self)
         self.config = config
         self.name = name
-	self.logName = logName
+        self.logName = logName
 
     def getLogName(self):
         return self.logName
