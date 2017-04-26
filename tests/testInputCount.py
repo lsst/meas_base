@@ -170,7 +170,9 @@ class InputCountTest(lsst.utils.tests.TestCase):
 
         # Add simulated sources to the measurement catalog.
         for src in sources:
-            foot = afwDetection.Footprint(afwGeom.Point2I(src.pos), 1.0)
+            spans = afwGeom.SpanSet.fromShape(1)
+            spans = spans.shiftedBy(int(src.pos.getX()), int(src.pos.getY()))
+            foot = afwDetection.Footprint(spans)
             peak = foot.getPeaks().addNew()
             peak.setFx(src.pos[0])
             peak.setFy(src.pos[1])

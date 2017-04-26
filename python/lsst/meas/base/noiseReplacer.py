@@ -178,7 +178,7 @@ class NoiseReplacer(object):
             # the Image, not the MaskedImage.
             noiseFp.insert(im)
             # Also set the OTHERDET bit
-            afwDet.setMaskFromFootprint(mask, fp, self.otherbitmask)
+            fp.spans.setMask(mask, self.otherbitmask)
 
     def insertSource(self, id):
         """!
@@ -200,8 +200,8 @@ class NoiseReplacer(object):
             usedid = self.footprints[usedid][0]
         fp = self.heavies[usedid]
         fp.insert(im)
-        afwDet.setMaskFromFootprint(mask, fp, self.thisbitmask)
-        afwDet.clearMaskFromFootprint(mask, fp, self.otherbitmask)
+        fp.spans.setMask(mask, self.thisbitmask)
+        fp.spans.clearMask(mask, self.otherbitmask)
 
     def removeSource(self, id):
         """!
@@ -227,8 +227,8 @@ class NoiseReplacer(object):
         fp = self.heavyNoise[usedid]
         fp.insert(im)
         # Clear the THISDET mask plane.
-        afwDet.clearMaskFromFootprint(mask, fp, self.thisbitmask)
-        afwDet.setMaskFromFootprint(mask, fp, self.otherbitmask)
+        fp.spans.clearMask(mask, self.thisbitmask)
+        fp.spans.setMask(mask, self.otherbitmask)
 
     def end(self):
         """!

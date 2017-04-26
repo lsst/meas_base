@@ -1,3 +1,4 @@
+
 #
 # LSST Data Management System
 # Copyright 2008-2017 LSST Corporation.
@@ -49,7 +50,7 @@ class NoiseReplacerTestPlugin(lsst.meas.base.SingleFramePlugin):
         footprint = measRecord.getFootprint()
         fullArray = exposure.getMaskedImage().getImage().getArray()
         insideArray = np.zeros(footprint.getArea(), dtype=fullArray.dtype)
-        lsst.afw.detection.flattenArray(footprint, fullArray, insideArray, exposure.getXY0())
+        footprint.spans.flatten(insideArray, fullArray, exposure.getXY0())
         insideFlux = float(insideArray.sum())
         outsideFlux = float(fullArray.sum()) - insideFlux
         measRecord.set(self.insideKey, insideFlux)

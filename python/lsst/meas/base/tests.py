@@ -446,19 +446,13 @@ class TestDataset(object):
             parent = catalog.find(record.getParent())
             footprint = parent.getFootprint()
             parentFluxArrayNoNoise = np.zeros(footprint.getArea(), dtype=np.float32)
-            lsst.afw.detection.flattenArray(
-                footprint,
-                self.exposure.getMaskedImage().getImage().getArray(),
-                parentFluxArrayNoNoise,
-                self.exposure.getXY0()
-            )
+            footprint.spans.flatten(parentFluxArrayNoNoise,
+                                    self.exposure.getMaskedImage().getImage().getArray(),
+                                    self.exposure.getXY0())
             parentFluxArrayNoisy = np.zeros(footprint.getArea(), dtype=np.float32)
-            lsst.afw.detection.flattenArray(
-                footprint,
-                exposure.getMaskedImage().getImage().getArray(),
-                parentFluxArrayNoisy,
-                exposure.getXY0()
-            )
+            footprint.spans.flatten(parentFluxArrayNoisy,
+                                    exposure.getMaskedImage().getImage().getArray(),
+                                    exposure.getXY0())
             oldHeavy = record.getFootprint()
             fraction = (oldHeavy.getImageArray() / parentFluxArrayNoNoise)
             # n.b. this isn't a copy ctor - it's a copy from a vanilla Footprint, so it doesn't copy
