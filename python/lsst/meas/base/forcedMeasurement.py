@@ -146,7 +146,8 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
 
     plugins = ForcedPlugin.registry.makeField(
         multi=True,
-        default=["base_TransformedCentroid",
+        default=["base_PixelFlags",
+                 "base_TransformedCentroid",
                  "base_TransformedShape",
                  "base_GaussianFlux",
                  "base_CircularApertureFlux",
