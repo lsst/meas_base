@@ -183,7 +183,7 @@ class MonetTestCase(unittest.TestCase):
 
     def setUp(self):
         im = afwImage.ImageF(self.monetFile("small.fits"))
-        self.mi = afwImage.MaskedImageF(im, afwImage.MaskU(im.getDimensions()),
+        self.mi = afwImage.MaskedImageF(im, afwImage.Mask(im.getDimensions()),
                                         afwImage.ImageF(im.getDimensions()))
         self.ds = afwDetection.FootprintSet(self.mi, afwDetection.Threshold(100))
 
