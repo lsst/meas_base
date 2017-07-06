@@ -218,7 +218,7 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
         tract = dataRef.dataId["tract"]
         butler = dataRef.butlerSubset.butler
         for patch in patchList:
-            dataId = {'tract': tract, 'patch': "%d,%d" % patch.getIndex()}
+            dataId = {'tract': tract, 'patch': "%d_%d" % patch.getIndex()}
             if self.config.filter is not None:
                 dataId['filter'] = self.config.filter
 

@@ -142,7 +142,7 @@ class ForcedPhotCoaddTask(ForcedPhotImageTask):
         """
         skyMap = dataRef.get(self.dataPrefix + "skyMap", immediate=True)
         tractInfo = skyMap[dataRef.dataId["tract"]]
-        patch = tuple(int(v) for v in dataRef.dataId["patch"].split(","))
+        patch = tuple(int(v) for v in dataRef.dataId["patch"].split("_"))
         patchInfo = tractInfo.getPatchInfo(patch)
         references = lsst.afw.table.SourceCatalog(self.references.schema)
         references.extend(self.references.fetchInPatches(dataRef, patchList=[patchInfo]))
