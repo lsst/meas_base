@@ -85,7 +85,7 @@ def plantSources(bbox, kwid, sky, coordList, addPoissonNoise=True):
         imgArr[:] = np.random.poisson(imgArr)
 
     # bundle into a maskedimage and an exposure
-    mask = afwImage.MaskU(bbox)
+    mask = afwImage.Mask(bbox)
     var = img.convertFloat()
     img -= sky
     mimg = afwImage.MaskedImageF(img.convertFloat(), mask, var)

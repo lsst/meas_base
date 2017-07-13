@@ -155,7 +155,7 @@ def main():
         kernel.computeImage(kimg, False)
         kimg *= 100.0
         mimg = afwImage.MaskedImageF(kimg.convertFloat(),
-                                     afwImage.MaskU(kimg.getDimensions(), 0x0),
+                                     afwImage.Mask(kimg.getDimensions(), 0x0),
                                      afwImage.ImageF(kimg.getDimensions(), 0.0))
         exposure = afwImage.ExposureF(mimg)
 
