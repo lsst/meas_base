@@ -243,6 +243,11 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
 
     ConfigClass = SingleFrameMeasurementConfig
 
+    NOISE_SEED_MULTIPLIER = "NOISE_SEED_MULTIPLIER"
+    NOISE_SOURCE = "NOISE_SOURCE"
+    NOISE_OFFSET = "NOISE_OFFSET"
+    NOISE_EXPOSURE_ID = "NOISE_EXPOSURE_ID"
+
     def __init__(self, schema, algMetadata=None, **kwds):
         """!
         Initialize the task. Set up the execution order of the plugins and initialize
@@ -255,6 +260,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
                                    each algorithm.  An empty PropertyList will be created if None.
         @param[in]     **kwds      Keyword arguments forwarded to lsst.pipe.base.Task.__init__
         """
+
         super(SingleFrameMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
         self.schema = schema
         self.config.slots.setupSchema(self.schema)
@@ -299,14 +305,39 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
                                           noiseImage=noiseImage, log=self.log, exposureId=exposureId)
             algMetadata = measCat.getMetadata()
             if algMetadata is not None:
-                algMetadata.addInt("NOISE_SEED_MULTIPLIER", self.config.noiseReplacer.noiseSeedMultiplier)
-                algMetadata.addString("NOISE_SOURCE", self.config.noiseReplacer.noiseSource)
-                algMetadata.addDouble("NOISE_OFFSET", self.config.noiseReplacer.noiseOffset)
+                algMetadata.addInt(self.NOISE_SEED_MULTIPLIER, self.config.noiseReplacer.noiseSeedMultiplier)
+                algMetadata.addString(self.NOISE_SOURCE, self.config.noiseReplacer.noiseSource)
+                algMetadata.addDouble(self.NOISE_OFFSET, self.config.noiseReplacer.noiseOffset)
                 if exposureId is not None:
-                    algMetadata.addLong("NOISE_EXPOSURE_ID", exposureId)
+                    algMetadata.addLong(self.NOISE_EXPOSURE_ID, exposureId)
         else:
             noiseReplacer = DummyNoiseReplacer()
 
+        self.runPlugins(noiseReplacer, measCat, exposure, beginOrder, endOrder)
+
+    def runPlugins(self, noiseReplacer, measCat, exposure, beginOrder=None, endOrder=None):
+        """Function which calls the defined measument plugins on an exposure
+
+        Parameters
+        ----------
+        noiseReplacer : lsst.meas.base.NoiseReplacer
+            noiseReplacer to fill sources not being measured with noise.
+
+        measCat : lsst.afw.table.SourceCatalog
+            SourceCatalog to be filled with outputs. Must contain all the SourceRecords to be measured (with
+            Footprints attached), and have a schema that is a superset of self.schema.
+
+        exposure : lsst.afw.image.ExposureF
+            Exposure contaning the pixel data to be measured and the associated PSF, WCS, etc.
+
+        beginOrder : float
+            beginning execution order (inclusive): measurements with executionOrder < beginOrder are not
+            executed. None for no limit.
+
+        endOrder : float
+            ending execution order (exclusive): measurements with executionOrder >= endOrder are not
+            executed. None for no limit.
+        """
         # First, create a catalog of all parentless sources
         # Loop through all the parent sources, first processing the children, then the parent
         measParentCat = measCat.getChildren(0)
