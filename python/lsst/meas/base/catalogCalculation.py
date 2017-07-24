@@ -154,7 +154,7 @@ class CatalogCalculationTask(lsst.pipe.base.Task):
         # the plugins are above the minimum run level for an catalogCalculation plugin. For each run level,
         # the plugins are sorted into either single record, or multi record groups to later be run
         # appropriately
-        for executionOrder, name, config, PluginClass in self.config.plugins.apply():
+        for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
             if executionOrder not in self.executionDict:
                 self.executionDict[executionOrder] = pluginType(single=[], multi=[])
             if PluginClass.getExecutionOrder() >= BasePlugin.DEFAULT_CATALOGCALCULATION:
