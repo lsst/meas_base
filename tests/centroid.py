@@ -292,7 +292,7 @@ class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass
 
 
-def setup_modul(module):
+def setup_module(module):
     lsst.utils.tests.init()
 
 
