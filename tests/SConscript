@@ -2,9 +2,10 @@
 from lsst.sconsUtils import scripts
 
 pybind11_test_modules = ['sillyCentroid',]
+noBuildList = [name + '.cc' for name in pybind11_test_modules]
 ignoreList = [name + '.py' for name in pybind11_test_modules]
 ignoreList.append('testLib.py')
 
 scripts.BasicSConscript.pybind11(pybind11_test_modules)
-scripts.BasicSConscript.tests(noBuildList=[name + '.cc' for name in pybind11_test_modules],
+scripts.BasicSConscript.tests(noBuildList=noBuildList,
                               ignoreList=ignoreList)
