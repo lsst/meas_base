@@ -70,7 +70,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                                                          position)
                 area = self.computeNaiveArea(position, radius)
                 # test that this isn't the same as the sinc flux
-                self.assertNotClose(
+                self.assertFloatsNotEqual(
                     ApertureFluxAlgorithm.computeSincFlux(self.exposure.getMaskedImage().getImage(),
                                                           ellipse, self.ctrl).flux, area)
 
@@ -112,7 +112,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                                                          position)
                 area = ellipse.getCore().getArea()
                 # test that this isn't the same as the naive flux
-                self.assertNotClose(
+                self.assertFloatsNotEqual(
                     ApertureFluxAlgorithm.computeNaiveFlux(self.exposure.getMaskedImage().getImage(),
                                                            ellipse, self.ctrl).flux, area)
 
