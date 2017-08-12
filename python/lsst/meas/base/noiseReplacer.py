@@ -1,5 +1,3 @@
-from builtins import str
-from builtins import object
 #!/usr/bin/env python
 #
 # LSST Data Management System
@@ -22,6 +20,9 @@ from builtins import object
 # the GNU General Public License along with this program.  If not,
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
+from builtins import str
+from builtins import object
+
 import math
 
 import lsst.afw.detection as afwDet

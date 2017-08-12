@@ -11,7 +11,7 @@ class WrappedSingleFramePlugin(SingleFramePlugin):
 
     def __init__(self, config, name, schema, metadata, logName=None):
         SingleFramePlugin.__init__(self, config, name, schema, metadata, logName=logName)
-        if hasattr(self, "hasLogName") and self.hasLogName and not logName is None:
+        if hasattr(self, "hasLogName") and self.hasLogName and logName is not None:
             self.cpp = self.factory(config, name, schema, metadata, logName=logName)
         else:
             self.cpp = self.factory(config, name, schema, metadata)
@@ -30,7 +30,7 @@ class WrappedForcedPlugin(ForcedPlugin):
 
     def __init__(self, config, name, schemaMapper, metadata, logName=None):
         ForcedPlugin.__init__(self, config, name, schemaMapper, metadata, logName=logName)
-        if hasattr(self, "hasLogName") and self.hasLogName and not logName is None:
+        if hasattr(self, "hasLogName") and self.hasLogName and logName is not None:
             self.cpp = self.factory(config, name, schemaMapper, metadata, logName=logName)
         else:
             self.cpp = self.factory(config, name, schemaMapper, metadata)
@@ -323,9 +323,11 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
     and the logName comes last of the three
     """
     if needsSchemaOnly:
-        extractSchemaArg = lambda m: m.editOutputSchema()
+        def extractSchemaArg(m):
+            return m.editOutputSchema()
     else:
-        extractSchemaArg = lambda m: m
+        def extractSchemaArg(m):
+            return m
     if hasMeasureN:
         if needsMetadata:
             def factory(config, name, schemaMapper, metadata, **kwargs):
@@ -416,7 +418,8 @@ def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
     return (wrapSingleFrameAlgorithm(AlgClass, executionOrder=executionOrder, name=name,
                                      needsMetadata=needsMetadata, hasLogName=hasLogName, **kwds),
             wrapForcedAlgorithm(AlgClass, executionOrder=executionOrder, name=name,
-                                needsMetadata=needsMetadata, hasLogName=hasLogName, needsSchemaOnly=True, **kwds))
+                                needsMetadata=needsMetadata, hasLogName=hasLogName,
+                                needsSchemaOnly=True, **kwds))
 
 
 def wrapTransform(transformClass, hasLogName=False):

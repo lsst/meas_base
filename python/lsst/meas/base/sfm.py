@@ -29,9 +29,7 @@ slot-eligible fields must be), but non-slot fields may be recorded in other coor
 to avoid information loss (this should, of course, be indicated in the field documentation).
 """
 
-from lsst.pex.config import Field, ListField
-
-from .pluginRegistry import PluginRegistry, PluginMap
+from .pluginRegistry import PluginRegistry
 from .baseMeasurement import (BaseMeasurementPluginConfig, BaseMeasurementPlugin,
                               BaseMeasurementConfig, BaseMeasurementTask)
 from .noiseReplacer import NoiseReplacer, DummyNoiseReplacer

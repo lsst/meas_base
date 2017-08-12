@@ -176,7 +176,6 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                 continue
             self.apCorrInfoDict[name] = ApCorrInfo(schema=schema, model=model, name=name)
 
-
     def run(self, catalog, apCorrMap):
         """Apply aperture corrections to a catalog of sources
 

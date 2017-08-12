@@ -1,4 +1,3 @@
-from builtins import zip
 #!/usr/bin/env python
 #
 # LSST Data Management System
@@ -21,6 +20,8 @@ from builtins import zip
 # the GNU General Public License along with this program.  If not,
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
+from builtins import zip
+
 import lsst.pex.config
 import lsst.pipe.base
 import lsst.coadd.utils
