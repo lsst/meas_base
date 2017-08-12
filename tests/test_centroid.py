@@ -240,14 +240,15 @@ class MonetTestCase(unittest.TestCase):
 
     def readTruth(self, filename):
         """Read Dave Monet's truth table"""
-        for line in open(filename).readlines():
-            if re.search(r"^\s*#", line):
-                continue
-            status, ID, xSex, xDGM, ySex, yDGM, sky = [float(el) for el in line.split()]
-            s = self.ssTruth.addNew()
-            s.setId(int(ID))
-            s.set(self.ssTruth.table.getCentroidKey().getX(), xDGM)
-            s.set(self.ssTruth.table.getCentroidKey().getY(), yDGM)
+        with open(filename) as fd:
+            for line in fd.readlines():
+                if re.match(r"\s*#", line):
+                    continue
+                status, ID, xSex, xDGM, ySex, yDGM, sky = [float(el) for el in line.split()]
+                s = self.ssTruth.addNew()
+                s.setId(int(ID))
+                s.set(self.ssTruth.table.getCentroidKey().getX(), xDGM)
+                s.set(self.ssTruth.table.getCentroidKey().getY(), yDGM)
 
     def testMeasureCentroid(self):
         """Test that we can instantiate and play with a measureCentroid"""
