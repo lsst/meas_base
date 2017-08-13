@@ -27,6 +27,19 @@ import lsst.utils.tests
 import lsst.meas.base
 
 
+class MinimalistTestPlugin(lsst.meas.base.SingleFramePlugin):
+    """This class is used below to test registration. It is set up as the
+    minimal class that still has a valid implementation. Whilst these
+    methods are not needed in this test file, the class registered here
+    might appear in other tests that scan the registry."""
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.CENTROID_ORDER
+
+    def fail(self, measRecord, error=None):
+        pass
+
+
 class ApCorrNameTestCase(lsst.utils.tests.TestCase):
 
     def testDefaultNames(self):
@@ -60,11 +73,11 @@ class ApCorrNameTestCase(lsst.utils.tests.TestCase):
     def testRegisterDecorator(self):
         """Test the shouldApCorr argument of the register decorator for measurement plugins."""
         @lsst.meas.base.register("test_ApCorrPlugin", shouldApCorr=True)
-        class ApCorrPlugin(lsst.meas.base.SingleFramePlugin):
+        class ApCorrPlugin(MinimalistTestPlugin):
             pass
 
         @lsst.meas.base.register("test_NonApCorrPlugin")
-        class NonApCorrPlugin(lsst.meas.base.SingleFramePlugin):
+        class NonApCorrPlugin(MinimalistTestPlugin):
             pass
 
         apCorrSet = lsst.meas.base.getApCorrNameSet()

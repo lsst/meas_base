@@ -45,10 +45,12 @@ from .gaussianCentroid import GaussianCentroidAlgorithm, GaussianCentroidControl
 from .gaussianFlux import GaussianFluxAlgorithm, GaussianFluxControl, GaussianFluxTransform
 from .exceptions import MeasurementError
 from .naiveCentroid import NaiveCentroidAlgorithm, NaiveCentroidControl, NaiveCentroidTransform
-from .peakLikelihoodFlux import PeakLikelihoodFluxAlgorithm, PeakLikelihoodFluxControl, PeakLikelihoodFluxTransform
+from .peakLikelihoodFlux import PeakLikelihoodFluxAlgorithm, PeakLikelihoodFluxControl, \
+    PeakLikelihoodFluxTransform
 from .pixelFlags import PixelFlagsAlgorithm, PixelFlagsControl
 from .psfFlux import PsfFluxAlgorithm, PsfFluxControl, PsfFluxTransform
-from .scaledApertureFlux import ScaledApertureFluxAlgorithm, ScaledApertureFluxControl, ScaledApertureFluxTransform
+from .scaledApertureFlux import ScaledApertureFluxAlgorithm, ScaledApertureFluxControl, \
+    ScaledApertureFluxTransform
 from .sdssCentroid import SdssCentroidAlgorithm, SdssCentroidControl, SdssCentroidTransform
 from .sdssShape import SdssShapeAlgorithm, SdssShapeControl, SdssShapeTransform
 
@@ -238,7 +240,7 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
             measRecord.set(self.varValue, medVar)
         else:
             raise MeasurementError("Footprint empty, or all pixels are masked, can't compute median",
-                                      self.FAILURE_EMPTY_FOOTPRINT)
+                                   self.FAILURE_EMPTY_FOOTPRINT)
 
     def fail(self, measRecord, error=None):
         # Check that we have a error object and that it is of type MeasurementError

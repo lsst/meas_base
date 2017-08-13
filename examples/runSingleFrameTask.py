@@ -111,7 +111,6 @@ def run(display=False):
                 ds9.dot('o', *xy, size=config.plugins["base_CircularApertureFlux"].radii[0],
                         ctype=ds9.YELLOW, frame=frame)
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 if __name__ == "__main__":
     import argparse
@@ -124,7 +123,7 @@ if __name__ == "__main__":
 
     if args.debug:
         try:
-            import debug
+            import debug  # noqa F401
         except ImportError as e:
             print(e, file=sys.stderr)
 

@@ -22,8 +22,6 @@
 #
 
 from __future__ import absolute_import, division, print_function
-from builtins import object
-from contextlib import contextmanager
 import unittest
 import os
 import numpy
@@ -31,19 +29,19 @@ import lsst.afw.table
 import lsst.daf.base
 import lsst.meas.base
 import lsst.utils.tests
-from lsst.meas.base import (SingleFrameMeasurementTask, SingleFrameMeasurementConfig)
 from lsst.meas.base.tests import (AlgorithmTestCase, )
-from lsst.meas.base.apCorrRegistry import addApCorrName
 from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin
 from lsst.meas.base.forcedMeasurement import ForcedPlugin
 from lsst.meas.base.pluginRegistry import register
 from lsst.meas.base import FlagDefinitionList, FlagHandler, MeasurementError
+
 
 class LoggingPluginConfig(SingleFramePluginConfig):
     """
     Configuration for Sample Plugin with a FlagHandler.
     """
     pass
+
 
 @register("test_LoggingPlugin")
 class LoggingPlugin(SingleFramePlugin):
@@ -98,10 +96,11 @@ class LoggingPlugin(SingleFramePlugin):
         else:
             self.flagHandler.handleFailure(measRecord, error.cpp)
 
-#   Direct the log given to a file, or to the console if no file is specified
+
 def directLog(log, file=None):
+    """Direct the log given to a file, or to the console if no file is specified"""
     props = "log4j.rootLogger=INFO, FA\n"
-    if file == None:
+    if file is None:
         props += "log4j.appender.FA=ConsoleAppender\n"
     else:
         props += "log4j.appender.FA=FileAppender\n"
@@ -112,6 +111,7 @@ def directLog(log, file=None):
     props += "log4j.appender.FA.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss.SSS} %p %c %m %X%n\n"
     props += "log4j.logger.main.a=DEBUG\n"
     log.configure_prop(props)
+
 
 class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     """
@@ -124,7 +124,7 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     def testSingleFramePlugins(self):
         center = lsst.afw.geom.Point2D(50, 50)
         bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0),
-                                        lsst.afw.geom.Extent2I(100,100))
+                                   lsst.afw.geom.Extent2I(100, 100))
         dataset = lsst.meas.base.tests.TestDataset(bbox)
         dataset.addSource(1000000.0, center)
         registry = SingleFramePlugin.registry
@@ -147,7 +147,7 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         #   Test all the ForcedPlugins registered to see if their logName is set as expected.
         center = lsst.afw.geom.Point2D(50, 50)
         bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0),
-                                        lsst.afw.geom.Extent2I(100,100))
+                                   lsst.afw.geom.Extent2I(100, 100))
         dataset = lsst.meas.base.tests.TestDataset(bbox)
         dataset.addSource(1000000.0, center)
         registry = ForcedPlugin.registry
@@ -208,7 +208,6 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         pluginLogName = os.path.join(lsst.utils.getPackageDir('meas_base'), 'tests', 'plugin.log')
         directLog(log, pluginLogName)
         exposure, cat = self.dataset.realize(noise=0.0, schema=schema)
-        source = cat[0]
         task.run(cat, exposure)
         directLog(log, None)
         # direct back to console, closing log files
@@ -235,7 +234,6 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         pluginLogName = os.path.join(lsst.utils.getPackageDir('meas_base'), 'tests', 'plugin.log')
         directLog(log, pluginLogName)
         exposure, cat = self.dataset.realize(noise=0.0, schema=schema)
-        source = cat[0]
         exposure.setPsf(None)
         # This call throws an error, so be prepared for it
         try:
@@ -251,13 +249,14 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         #  test that the sample plugin has correctly logged to where we expected it to.
         self.assertTrue(lines.find("ERROR") >= 0)
 
+
 class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         #   object in corner to trigger EDGE error
         self.center = lsst.afw.geom.Point2D(5, 5)
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0),
-                                        lsst.afw.geom.Extent2I(100,100))
+                                        lsst.afw.geom.Extent2I(100, 100))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(1000000.0, self.center)
         self.task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
@@ -311,13 +310,14 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         os.unlink(pluginLogName)
         self.assertTrue(lines.find("MeasurementError") < 0)
 
+
 class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         #   object in corner to trigger EDGE error
         self.center = lsst.afw.geom.Point2D(0, 0)
         self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0),
-                                        lsst.afw.geom.Extent2I(100,100))
+                                        lsst.afw.geom.Extent2I(100, 100))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(1000000.0, self.center)
         self.task = self.makeForcedMeasurementTask("base_SdssCentroid")
@@ -378,6 +378,7 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         fin.close()
         os.unlink(pluginLogName)
         self.assertTrue(lines.find("MeasurementError") < 0)
+
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass

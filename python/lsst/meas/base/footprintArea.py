@@ -65,4 +65,3 @@ class CatalogCalculationFootprintAreaPlugin(CatalogCalculationPlugin):
         # Should be impossible for this algorithm to fail unless there is no
         # Footprint (and that's a precondition for measurement).
         pass
-
