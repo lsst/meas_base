@@ -35,6 +35,8 @@ from lsst.meas.base.forcedMeasurement import ForcedPlugin
 from lsst.meas.base.pluginRegistry import register
 from lsst.meas.base import FlagDefinitionList, FlagHandler, MeasurementError
 
+ROOT = os.path.abspath(os.path.dirname(__file__))
+
 
 class LoggingPluginConfig(SingleFramePluginConfig):
     """
@@ -270,8 +272,7 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testSeparatePluginLogs(self):
         """Check that the task log and the plugin log are truly separate."""
-        taskLogName = os.path.join(lsst.utils.getPackageDir('meas_base'), 'tests',
-                                   'testSeparatePluginLogs-task.log')
+        taskLogName = os.path.join(ROOT, 'testSeparatePluginLogs-task.log')
         directLog(self.task.log, taskLogName)
         self.task.log.info("Testing")
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
@@ -335,8 +336,7 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testSeparatePluginLog(self):
         """Check that the task log and the plugin log are truly separate."""
-        taskLogName = os.path.join(lsst.utils.getPackageDir('meas_base'), 'tests',
-                                   'testSeparatePluginLog-task.log')
+        taskLogName = os.path.join(ROOT, 'testSeparatePluginLog-task.log')
         directLog(self.task.log, taskLogName)
         self.task.log.info("Testing")
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
