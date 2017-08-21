@@ -35,6 +35,8 @@ from lsst.meas.base.forcedMeasurement import ForcedPlugin
 from lsst.meas.base.pluginRegistry import register
 from lsst.meas.base import FlagDefinitionList, FlagHandler, MeasurementError
 
+ROOT = os.path.abspath(os.path.dirname(__file__))
+
 
 class LoggingPluginConfig(SingleFramePluginConfig):
     """
@@ -205,16 +207,14 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         #  test that the plugin's logName has been propagated to the plugin
         self.assertTrue(task.plugins[algName].getLogName(), task.getPluginLogName(algName))
         log = lsst.log.Log.getLogger(task.getPluginLogName(algName))
-        pluginLogName = os.path.join(lsst.utils.getPackageDir('meas_base'), 'tests', 'plugin.log')
-        directLog(log, pluginLogName)
-        exposure, cat = self.dataset.realize(noise=0.0, schema=schema)
-        task.run(cat, exposure)
-        directLog(log, None)
-        # direct back to console, closing log files
-        fin = open(pluginLogName)
-        lines = fin.read()
-        fin.close()
-        os.unlink(pluginLogName)
+        with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
+            directLog(log, pluginLogName)
+            exposure, cat = self.dataset.realize(noise=0.0, schema=schema)
+            task.run(cat, exposure)
+            directLog(log, None)
+            # direct back to console, closing log files
+            with open(pluginLogName) as fin:
+                lines = fin.read()
         #  test that the sample plugin has correctly logged to where we expected it to.
         self.assertTrue(lines.find("measuring") >= 0)
 
@@ -231,21 +231,19 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         #  test that the plugin's logName has been propagated to the plugin
         self.assertTrue(task.plugins[algName].getLogName(), task.getPluginLogName(algName))
         self.assertTrue(task.plugins[algName].cpp.getLogName(), task.getPluginLogName(algName))
-        pluginLogName = os.path.join(lsst.utils.getPackageDir('meas_base'), 'tests', 'plugin.log')
-        directLog(log, pluginLogName)
-        exposure, cat = self.dataset.realize(noise=0.0, schema=schema)
-        exposure.setPsf(None)
-        # This call throws an error, so be prepared for it
-        try:
-            task.run(cat, exposure)
-        except:
-            pass
-        directLog(log, None)
-        # direct back to console, closing log files
-        fin = open(pluginLogName)
-        lines = fin.read()
-        fin.close()
-        os.unlink(pluginLogName)
+        with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
+            directLog(log, pluginLogName)
+            exposure, cat = self.dataset.realize(noise=0.0, schema=schema)
+            exposure.setPsf(None)
+            # This call throws an error, so be prepared for it
+            try:
+                task.run(cat, exposure)
+            except:
+                pass
+            directLog(log, None)
+            # direct back to console, closing log files
+            with open(pluginLogName) as fin:
+                lines = fin.read()
         #  test that the sample plugin has correctly logged to where we expected it to.
         self.assertTrue(lines.find("ERROR") >= 0)
 
@@ -274,40 +272,35 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testSeparatePluginLogs(self):
         """Check that the task log and the plugin log are truly separate."""
-        taskLogName = os.path.join(lsst.utils.getPackageDir('meas_base'), 'tests', 'task.log')
+        taskLogName = os.path.join(ROOT, 'testSeparatePluginLogs-task.log')
         directLog(self.task.log, taskLogName)
         self.task.log.info("Testing")
-        pluginLogName = os.path.join(lsst.utils.getPackageDir('meas_base'), 'tests', 'plugin.log')
-        directLog(self.log, pluginLogName)
-        self.log.setLevel(lsst.log.DEBUG)
-        self.task.run(self.catalog, self.exposure)
-        # direct back to console, closing log files
-        directLog(self.log, None)
-        directLog(self.task.log, None)
-        fin = open(taskLogName)
-        lines = fin.read()
-        fin.close()
-        os.unlink(taskLogName)
-        self.assertTrue(lines.find("Testing") >= 0)
-        fin = open(pluginLogName)
-        lines = fin.read()
-        fin.close()
-        os.unlink(pluginLogName)
+        with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
+            directLog(self.log, pluginLogName)
+            self.log.setLevel(lsst.log.DEBUG)
+            self.task.run(self.catalog, self.exposure)
+            # direct back to console, closing log files
+            directLog(self.log, None)
+            directLog(self.task.log, None)
+            with open(taskLogName) as fin:
+                lines = fin.read()
+            os.unlink(taskLogName)
+            self.assertTrue(lines.find("Testing") >= 0)
+            with open(pluginLogName) as fin:
+                lines = fin.read()
         self.assertTrue(lines.find("MeasurementError") >= 0)
 
         """Check that plugin log can be set to ERROR level, where Measurement Error doesn't show."""
     def testSetPluginLevel(self):
         """Check that we recover the correct location of the centroid."""
-        pluginLogName = os.path.join(lsst.utils.getPackageDir('meas_base'), 'tests', 'plugin.log')
-        directLog(self.log, pluginLogName)
-        self.log.setLevel(lsst.log.ERROR)
-        self.task.run(self.catalog, self.exposure)
-        # direct back to console, closing log files
-        directLog(self.log, None)
-        fin = open(pluginLogName)
-        lines = fin.read()
-        fin.close()
-        os.unlink(pluginLogName)
+        with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
+            directLog(self.log, pluginLogName)
+            self.log.setLevel(lsst.log.ERROR)
+            self.task.run(self.catalog, self.exposure)
+            # direct back to console, closing log files
+            directLog(self.log, None)
+            with open(pluginLogName) as fin:
+                lines = fin.read()
         self.assertTrue(lines.find("MeasurementError") < 0)
 
 
@@ -343,40 +336,35 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testSeparatePluginLog(self):
         """Check that the task log and the plugin log are truly separate."""
-        taskLogName = os.path.join(lsst.utils.getPackageDir('meas_base'), 'tests', 'task.log')
+        taskLogName = os.path.join(ROOT, 'testSeparatePluginLog-task.log')
         directLog(self.task.log, taskLogName)
         self.task.log.info("Testing")
-        pluginLogName = os.path.join(lsst.utils.getPackageDir('meas_base'), 'tests', 'plugin.log')
-        directLog(self.log, pluginLogName)
-        self.log.setLevel(lsst.log.DEBUG)
-        self.task.run(self.measCat, self.exposure, self.refCat, self.refWcs)
-        # direct back to console, closing log files
-        directLog(self.log, None)
-        directLog(self.task.log, None)
-        fin = open(taskLogName)
-        lines = fin.read()
-        fin.close()
-        os.unlink(taskLogName)
-        self.assertTrue(lines.find("Testing") >= 0)
-        fin = open(pluginLogName)
-        lines = fin.read()
-        fin.close()
-        os.unlink(pluginLogName)
+        with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
+            directLog(self.log, pluginLogName)
+            self.log.setLevel(lsst.log.DEBUG)
+            self.task.run(self.measCat, self.exposure, self.refCat, self.refWcs)
+            # direct back to console, closing log files
+            directLog(self.log, None)
+            directLog(self.task.log, None)
+            with open(taskLogName) as fin:
+                lines = fin.read()
+            os.unlink(taskLogName)
+            self.assertTrue(lines.find("Testing") >= 0)
+            with open(pluginLogName) as fin:
+                lines = fin.read()
         self.assertTrue(lines.find("MeasurementError") >= 0)
 
         """Check that plugin log can be set to ERROR level, where Measurement Error doesn't show."""
     def testSetPluginLevel(self):
         """Check that we recover the correct location of the centroid."""
-        pluginLogName = os.path.join(lsst.utils.getPackageDir('meas_base'), 'tests', 'plugin.log')
-        directLog(self.log, pluginLogName)
-        self.log.setLevel(lsst.log.ERROR)
-        self.task.run(self.measCat, self.exposure, self.refCat, self.refWcs)
-        # direct back to console, closing log files
-        directLog(self.log, None)
-        fin = open(pluginLogName)
-        lines = fin.read()
-        fin.close()
-        os.unlink(pluginLogName)
+        with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
+            directLog(self.log, pluginLogName)
+            self.log.setLevel(lsst.log.ERROR)
+            self.task.run(self.measCat, self.exposure, self.refCat, self.refWcs)
+            # direct back to console, closing log files
+            directLog(self.log, None)
+            with open(pluginLogName) as fin:
+                lines = fin.read()
         self.assertTrue(lines.find("MeasurementError") < 0)
 
 
