@@ -181,7 +181,7 @@ class TestDataset(object):
     def makePerturbedWcs(oldWcs, minScaleFactor=1.2, maxScaleFactor=1.5,
                          minRotation=None, maxRotation=None,
                          minRefShift=None, maxRefShift=None,
-                         minPixShift=2.0, maxPixShift=4.0):
+                         minPixShift=2.0, maxPixShift=4.0, randomSeed=None):
         """!
         Create a new undistorted TanWcs that is similar but not identical to another, with random
         scaling, rotation, and offset (in both pixel position and reference position).
@@ -196,6 +196,7 @@ class TestDataset(object):
         is 0.5-1.0 arcseconds (these cannot be safely included directly as default values because Angle
         objects are mutable).
         """
+        random_state = np.random.RandomState(randomSeed)
         if minRotation is None:
             minRotation = 30.0*lsst.afw.geom.degrees
         if maxRotation is None:
@@ -210,10 +211,10 @@ class TestDataset(object):
                 min2 = -max1
             if max2 is None:
                 max2 = -min1
-            if np.random.uniform() > 0.5:
-                return float(np.random.uniform(min1, max1))
+            if random_state.uniform() > 0.5:
+                return float(random_state.uniform(min1, max1))
             else:
-                return float(np.random.uniform(min2, max2))
+                return float(random_state.uniform(min2, max2))
         # Generate random perturbations
         scaleFactor = splitRandom(minScaleFactor, maxScaleFactor, 1.0/maxScaleFactor, 1.0/minScaleFactor)
         rotation = splitRandom(minRotation.asRadians(), maxRotation.asRadians())*lsst.afw.geom.radians
