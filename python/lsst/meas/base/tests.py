@@ -195,6 +195,9 @@ class TestDataset(object):
         The default range for rotation is 30-60 degrees, and the default range for reference shift
         is 0.5-1.0 arcseconds (these cannot be safely included directly as default values because Angle
         objects are mutable).
+
+        The random number generator is primed with the seed given. If ``None``, a seed is
+        automatically chosen.
         """
         random_state = np.random.RandomState(randomSeed)
         if minRotation is None:
@@ -416,7 +419,7 @@ class TestDataset(object):
             result.addSource(newFlux, newCentroid, newDeconvolvedShape)
         return result
 
-    def realize(self, noise, schema):
+    def realize(self, noise, schema, randomSeed=None):
         """!
         Create a simulated with noise and a simulated post-detection catalog with (Heavy)Footprints.
 
@@ -425,16 +428,18 @@ class TestDataset(object):
         @param[in]   schema     Schema of the new catalog to be created.  Must start with self.schema (i.e.
                                 schema.contains(self.schema) must be True), but typically contains fields for
                                 already-configured measurement algorithms as well.
+        @param[in]   randomSeed Seed for the random number generator. If None, a seed is chosen automatically.
 
         @return a tuple of (exposure, catalog)
         """
+        random_state = np.random.RandomState(randomSeed)
         assert schema.contains(self.schema)
         mapper = lsst.afw.table.SchemaMapper(self.schema)
         mapper.addMinimalSchema(self.schema, True)
         exposure = self.exposure.clone()
         exposure.getMaskedImage().getVariance().getArray()[:, :] = noise**2
         exposure.getMaskedImage().getImage().getArray()[:, :] \
-            += np.random.randn(exposure.getHeight(), exposure.getWidth())*noise
+            += random_state.randn(exposure.getHeight(), exposure.getWidth())*noise
         catalog = lsst.afw.table.SourceCatalog(schema)
         catalog.extend(self.catalog, mapper=mapper)
         # Loop over sources and generate new HeavyFootprints that divide up the noisy pixels, not the
