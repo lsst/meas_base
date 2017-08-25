@@ -29,7 +29,8 @@ import lsst.afw.image as afwImage
 import lsst.afw.coord as afwCoord
 import lsst.utils.tests as utilsTests
 
-from lsst.meas.base.tests import TestDataset
+# Rename the class on import so it does not confuse the test scanner
+from lsst.meas.base.tests import TestDataset as DatasetTester
 
 
 class TestDatasetTestCase(utilsTests.TestCase):
@@ -47,16 +48,16 @@ class TestDatasetTestCase(utilsTests.TestCase):
     def test_perturb(self):
         """Test that perturbing a WCS gives us back something different."""
         # We should always get something different from our starting point.
-        self.assertNotEqual(self.wcs, TestDataset.makePerturbedWcs(self.wcs))
+        self.assertNotEqual(self.wcs, DatasetTester.makePerturbedWcs(self.wcs))
 
         # If we use the same random seed, the results should be reproducible.
-        self.assertEqual(TestDataset.makePerturbedWcs(self.wcs, randomSeed=0),
-                         TestDataset.makePerturbedWcs(self.wcs, randomSeed=0))
+        self.assertEqual(DatasetTester.makePerturbedWcs(self.wcs, randomSeed=0),
+                         DatasetTester.makePerturbedWcs(self.wcs, randomSeed=0))
 
         # If we don't specify a seed, we should always get something
         # different.
-        self.assertNotEqual(TestDataset.makePerturbedWcs(self.wcs),
-                            TestDataset.makePerturbedWcs(self.wcs))
+        self.assertNotEqual(DatasetTester.makePerturbedWcs(self.wcs),
+                            DatasetTester.makePerturbedWcs(self.wcs))
 
     def test_randomState(self):
         """Test that we do not alter global state when perturbing the WCS."""
@@ -66,7 +67,7 @@ class TestDatasetTestCase(utilsTests.TestCase):
         # However, since pytest doesn't using multi-threading, it should be
         # safe in practice.
         init_state = np.random.get_state()
-        TestDataset.makePerturbedWcs(self.wcs)
+        DatasetTester.makePerturbedWcs(self.wcs)
         for init, final in zip(init_state, np.random.get_state()):
             self.assertTrue(np.array_equal(init, final))
 
