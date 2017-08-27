@@ -1,4 +1,4 @@
-## -*- python -*-
+# -*- python -*-
 from lsst.sconsUtils import scripts
 scripts.BasicSConscript.pybind11(['algorithm',
                                   'apertureFlux',
@@ -20,4 +20,4 @@ scripts.BasicSConscript.pybind11(['algorithm',
                                   'sdssShape',
                                   'sincCoeffs',
                                   'shapeUtilities',
-                                  'transform',], addUnderscore=False)
+                                  'transform', ], addUnderscore=False)

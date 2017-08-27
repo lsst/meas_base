@@ -1,7 +1,7 @@
 # -*- python -*-
 from lsst.sconsUtils import scripts
 
-pybind11_test_modules = ['sillyCentroid',]
+pybind11_test_modules = ['sillyCentroid']
 noBuildList = [name + '.cc' for name in pybind11_test_modules]
 ignoreList = [name + '.py' for name in pybind11_test_modules]
 ignoreList.append('testLib.py')
