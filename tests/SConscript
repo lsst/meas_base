@@ -8,4 +8,4 @@ ignoreList.append('testLib.py')
 
 scripts.BasicSConscript.pybind11(pybind11_test_modules)
 scripts.BasicSConscript.tests(noBuildList=noBuildList,
-                              ignoreList=ignoreList)
+                              ignoreList=ignoreList, pyList=[])
