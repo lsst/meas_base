@@ -472,20 +472,6 @@ class TestDataset(object):
 
 
 class AlgorithmTestCase(object):
-    # Some tests depend on the noise realization in the test data or from the
-    # np.random number generator. In most cases, they are testing that the
-    # measured flux lies within 2 sigma of the correct value, which we should
-    # expect to fail sometimes. Some -- but sadly not all -- of these cases
-    # have been marked with an "rng dependent" comment.
-    #
-    # We ensure these tests are provided with data which causes them to pass
-    # by seeding the np.RNG with this value. It can be over-ridden as
-    # necessary in subclasses.
-    randomSeed = 1234
-
-    @classmethod
-    def setUpClass(cls):
-        np.random.seed(cls.randomSeed)
 
     def makeSingleFrameMeasurementConfig(self, plugin=None, dependencies=()):
         """Convenience function to create a Config instance for SingleFrameMeasurementTask
