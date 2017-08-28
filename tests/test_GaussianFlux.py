@@ -73,7 +73,7 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """
         algorithm, schema = self.makeAlgorithm()
         # Results are RNG dependent; we choose a seed that is known to pass.
-        exposure, catalog = self.dataset.realize(1E-8, schema, randomSeed=self.randomSeed)
+        exposure, catalog = self.dataset.realize(1E-8, schema, randomSeed=1)
         record = catalog[0]
         flux = record.get("truth_flux")
         algorithm.measure(record, exposure)
@@ -98,12 +98,11 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             self.assertLess(fluxMean - flux, 2.0*fluxSigmaMean / nSamples**0.5)
 
     def testForcedPlugin(self):
-        # Results of this test are RNG dependent: we choose seeds that are known to pass.
         task = self.makeForcedMeasurementTask("base_GaussianFlux")
-        measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs(), randomSeed=self.randomSeed)
+        # Results of this test are RNG dependent: we choose seeds that are known to pass.
+        measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs(), randomSeed=2)
         measDataset = self.dataset.transform(measWcs)
-        exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema(),
-                                                     randomSeed=self.randomSeed)
+        exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema(), randomSeed=2)
         refWcs = self.dataset.exposure.getWcs()
         refCat = self.dataset.catalog
         measCat = task.generateMeasCat(exposure, refCat, refWcs)

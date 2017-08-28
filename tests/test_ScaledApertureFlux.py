@@ -61,7 +61,7 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """Check that we recover the source flux."""
         ctrl = lsst.meas.base.ScaledApertureFluxControl()
         algorithm, schema = self.makeAlgorithm(ctrl)
-        exposure, catalog = self.dataset.realize(10.0, schema)
+        exposure, catalog = self.dataset.realize(10.0, schema, randomSeed=0)
 
         # Default aperture should collect ~all source flux.
         algorithm.measure(catalog[0], exposure)
@@ -87,7 +87,7 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         ctrl = lsst.meas.base.ScaledApertureFluxControl()
         ctrl.scale = 100
         algorithm, schema = self.makeAlgorithm(ctrl)
-        exposure, catalog = self.dataset.realize(10.0, schema)
+        exposure, catalog = self.dataset.realize(10.0, schema, randomSeed=1)
 
         algorithm.measure(catalog[0], exposure)
         self.assertTrue(math.isnan(catalog[0].get("base_ScaledApertureFlux_flux")))
@@ -104,7 +104,7 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         ctrl = lsst.meas.base.ScaledApertureFluxControl()
         ctrl.scale = 10
         algorithm, schema = self.makeAlgorithm(ctrl)
-        exposure, catalog = self.dataset.realize(10.0, schema)
+        exposure, catalog = self.dataset.realize(10.0, schema, randomSeed=2)
 
         algorithm.measure(catalog[0], exposure)
         self.assertFalse(math.isnan(catalog[0].get("base_ScaledApertureFlux_flux")))

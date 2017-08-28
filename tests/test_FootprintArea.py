@@ -48,7 +48,7 @@ class FootprintAreaTestCase(lsst.meas.base.tests.AlgorithmTestCase,
         config.plugins.names = set(["base_FootprintArea"])
         task = lsst.meas.base.CatalogCalculationTask(config=config,
                                                      schema=schema)
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         task.run(catalog)
         record = catalog[0]
         self.assertEqual(record.getFootprint().getArea(),

@@ -128,7 +128,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         config = self.makeConfig()
         config.slots.centroid = "truth"
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
+        exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=0)
         task.run(cat, exposure)
         source = cat[0]
         self.assertFalse(source.get("test_Centroider_flag"))
@@ -145,7 +145,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         config.plugins[self.algName].moveX = -2
         config.plugins[self.algName].dist = 1
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
+        exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=1)
         source = cat[0]
         task.run(cat, exposure)
         self.assertTrue(source.get("test_Centroider_flag"))
@@ -162,7 +162,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         config.slots.centroid = "truth"
         config.plugins[self.algName].moveX = -30
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
+        exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=2)
         source = cat[0]
         task.run(cat, exposure)
         self.assertTrue(source.get("test_Centroider_flag"))
@@ -177,7 +177,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         config = self.makeConfig("base_NaiveCentroid")
         config.plugins["base_NaiveCentroid"].maxDistToPeak = .0001
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
+        exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=3)
         source = cat[0]
         task.run(cat, exposure)
         self.assertTrue(source.get("base_NaiveCentroid_flag"))
@@ -191,7 +191,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         config = self.makeConfig("base_SdssCentroid")
         config.plugins["base_SdssCentroid"].maxDistToPeak = .0001
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
+        exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=4)
         source = cat[0]
         task.run(cat, exposure)
         self.assertTrue(source.get("base_SdssCentroid_flag"))
@@ -205,7 +205,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         config = self.makeConfig("base_GaussianCentroid")
         config.plugins["base_GaussianCentroid"].maxDistToPeak = .0001
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
+        exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=5)
         source = cat[0]
         task.run(cat, exposure)
         self.assertTrue(source.get("base_GaussianCentroid_flag"))

@@ -1,4 +1,3 @@
-
 #
 # LSST Data Management System
 # Copyright 2008-2017 LSST Corporation.
@@ -77,9 +76,9 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.t
     def testSingleFrameMeasurement(self):
         """Test that replacing sources with noise works as used in SingleFrameMeasurementTask,
         by comparing flux inside and outside source Footprints on an extremely high S/N image."""
-        task = self.makeSingleFrameMeasurementTask("test_NoiseReplacer")
         # We choose a random seed which causes the test to pass.
-        exposure, catalog = self.dataset.realize(1.0, task.schema, randomSeed=self.randomSeed)
+        task = self.makeSingleFrameMeasurementTask("test_NoiseReplacer")
+        exposure, catalog = self.dataset.realize(1.0, task.schema, randomSeed=0)
         task.run(catalog, exposure)
         sumVariance = exposure.getMaskedImage().getVariance().getArray().sum()
         for record in catalog:

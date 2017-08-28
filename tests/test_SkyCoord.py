@@ -43,7 +43,7 @@ class SkyCoordTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.
 
     def testSingleFramePlugin(self):
         task = self.makeSingleFrameMeasurementTask("base_SkyCoord")
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         task.run(catalog, exposure)
         record = catalog[0]
         position = exposure.getWcs().skyToPixel(record.getCoord())

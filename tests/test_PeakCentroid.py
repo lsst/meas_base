@@ -59,7 +59,7 @@ class SingleFramePeakCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCa
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(1000000.0, self.center)
         self.task = self.makeSingleFrameMeasurementTask("base_PeakCentroid")
-        self.exposure, self.catalog = self.dataset.realize(10.0, self.task.schema)
+        self.exposure, self.catalog = self.dataset.realize(10.0, self.task.schema, randomSeed=0)
 
     def tearDown(self):
         del self.center

@@ -26,7 +26,6 @@ import unittest
 
 import numpy as np
 
-
 from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 import lsst.afw.geom as afwGeom
@@ -68,7 +67,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     def testSingleFramePlugin(self):
         """Test that we can call the algorithm through the SFM plugin interface."""
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         task.run(catalog, exposure)
         record = catalog[0]
         self.assertFalse(record.get("base_SdssCentroid_flag"))
@@ -81,7 +80,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         the reported uncertainty agrees with a Monte Carlo test of the noise.
         """
         algorithm, schema = self.makeAlgorithm()
-        exposure, catalog = self.dataset.realize(0.0, schema)
+        exposure, catalog = self.dataset.realize(0.0, schema, randomSeed=1)
         record = catalog[0]
         x = record.get("truth_x")
         y = record.get("truth_y")
@@ -96,7 +95,9 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             ySigmaList = []
             nSamples = 1000
             for repeat in range(nSamples):
-                exposure, catalog = self.dataset.realize(noise*flux, schema)
+                # By using ``repeat`` to seed the RNG, we get results which fall within the tolerances
+                # defined below. If we allow this test to be truly random, passing becomes RNG-dependent.
+                exposure, catalog = self.dataset.realize(noise*flux, schema, randomSeed=repeat)
                 record = catalog[0]
                 algorithm.measure(record, exposure)
                 xList.append(record.get("base_SdssCentroid_x"))
@@ -116,7 +117,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testEdge(self):
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=2)
         psfImage = exposure.getPsf().computeImage(self.center)
         # construct a box that won't fit the full PSF model
         bbox = psfImage.getBBox()
@@ -137,7 +138,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testNo2ndDerivative(self):
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=3)
         # cutout a subimage around object in the test image
         bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(self.center), lsst.afw.geom.Extent2I(1, 1))
         bbox.grow(20)
@@ -150,7 +151,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testNotAtMaximum(self):
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=4)
         # cutout a subimage around the object in the test image
         bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(self.center), lsst.afw.geom.Extent2I(1, 1))
         bbox.grow(20)

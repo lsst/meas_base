@@ -54,7 +54,7 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
 
     def _runMeasurementTask(self):
         task = self.makeSingleFrameMeasurementTask("base_SdssShape", config=self.config)
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         task.run(catalog, exposure)
         return exposure, catalog
 
@@ -121,7 +121,7 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         """Test that we measure shapes correctly and set a flag with the PSF is unavailable."""
         self.config.plugins["base_SdssShape"].doMeasurePsf = True
         task = self.makeSingleFrameMeasurementTask("base_SdssShape", config=self.config)
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=1)
         exposure.setPsf(None)  # Set PSF to None to test no PSF case
         task.run(catalog, exposure)
         key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])

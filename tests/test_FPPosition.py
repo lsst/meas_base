@@ -53,7 +53,7 @@ class FPPositionTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testFPPosition(self):
         task = self.makeSingleFrameMeasurementTask("base_FPPosition")
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         exposure.setDetector(self.dw.detector)
         task.run(catalog, exposure)
         pointKey = lsst.afw.table.Point2DKey(catalog.schema["base_FPPosition"])
