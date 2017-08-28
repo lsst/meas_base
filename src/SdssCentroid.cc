@@ -53,7 +53,7 @@ namespace {
 
 /************************************************************************************************************/
 
-float const AMPAST4 = 1.33;           // amplitude of `4th order' corr compared to theory
+double const AMPAST4 = 1.33;           // amplitude of `4th order' corr compared to theory
 
 /*
  * Do the Gaussian quartic interpolation for the position
@@ -62,11 +62,11 @@ float const AMPAST4 = 1.33;           // amplitude of `4th order' corr compared 
  *
  * Return 0 is all is well, otherwise 1
  */
-static int inter4(float vm, float v0, float vp, float *cen, bool negative=false) {
-    float const sp = v0 - vp;
-    float const sm = v0 - vm;
-    float const d2 = sp + sm;
-    float const s = 0.5*(vp - vm);
+static int inter4(double vm, double v0, double vp, double *cen, bool negative=false) {
+    double const sp = v0 - vp;
+    double const sm = v0 - vm;
+    double const d2 = sp + sm;
+    double const s = 0.5*(vp - vm);
 
     if ((!negative && (d2 <= 0.0f || v0 <= 0.0f)) ||
         ( negative && (d2 >= 0.0f || v0 >= 0.0f))) {
@@ -82,23 +82,23 @@ static int inter4(float vm, float v0, float vp, float *cen, bool negative=false)
 /*
  * Calculate error in centroid
  */
-float astrom_errors(float skyVar,       // variance of pixels at the sky level
-                    float sourceVar,    // variance in peak due to excess counts over sky
-                    float A,            // abs(peak value in raw image)
-                    float tau2,         // Object is N(0,tau2)
-                    float As,           // abs(peak value in smoothed image)
-                    float s,            // slope across central pixel
-                    float d,            // curvature at central pixel
-                    float sigma,        // width of smoothing filter
+double astrom_errors(double skyVar,       // variance of pixels at the sky level
+                    double sourceVar,    // variance in peak due to excess counts over sky
+                    double A,            // abs(peak value in raw image)
+                    double tau2,         // Object is N(0,tau2)
+                    double As,           // abs(peak value in smoothed image)
+                    double s,            // slope across central pixel
+                    double d,            // curvature at central pixel
+                    double sigma,        // width of smoothing filter
                     int quarticBad) {   // was quartic estimate bad?
 
-    float const k = quarticBad ? 0 : AMPAST4; /* quartic correction coeff */
-    float const sigma2 = sigma*sigma;   /* == sigma^2 */
-    float sVar, dVar;                   /* variances of s and d */
-    float xVar;                         /* variance of centroid, x */
+    double const k = quarticBad ? 0 : AMPAST4; /* quartic correction coeff */
+    double const sigma2 = sigma*sigma;   /* == sigma^2 */
+    double sVar, dVar;                   /* variances of s and d */
+    double xVar;                         /* variance of centroid, x */
 
-    if (fabs(As) < std::numeric_limits<float>::min() ||
-        fabs(d)  < std::numeric_limits<float>::min()) {
+    if (fabs(As) < std::numeric_limits<double>::min() ||
+        fabs(d)  < std::numeric_limits<double>::min()) {
         return(1e3);
     }
 
@@ -182,8 +182,8 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
 /*
  * now evaluate maxima on stripes
  */
-    float m0x = 0, m1x = 0, m2x = 0;
-    float m0y = 0, m1y = 0, m2y = 0;
+    double m0x = 0, m1x = 0, m2x = 0;
+    double m0y = 0, m1y = 0, m2y = 0;
 
     int quarticBad = 0;
     quarticBad += inter4(im(-1, -1), im( 0, -1), im( 1, -1), &m0x);
@@ -220,8 +220,8 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     /*
      * Now for the errors.
      */
-    float tauX2 = sigmaX2;              // width^2 of _un_ smoothed object
-    float tauY2 = sigmaY2;
+    double tauX2 = sigmaX2;              // width^2 of _un_ smoothed object
+    double tauY2 = sigmaY2;
     tauX2 -= smoothingSigma*smoothingSigma;              // correct for smoothing
     tauY2 -= smoothingSigma*smoothingSigma;
 
@@ -232,11 +232,11 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
         tauY2 = smoothingSigma*smoothingSigma;
     }
 
-    float const skyVar = (vim(-1, -1) + vim( 0, -1) + vim( 1, -1) +
+    double const skyVar = (vim(-1, -1) + vim( 0, -1) + vim( 1, -1) +
                           vim(-1,  0)               + vim( 1,  0) +
                           vim(-1,  1) + vim( 0,  1) + vim( 1,  1))/8.0; // Variance in sky
-    float const sourceVar = vim(0, 0);                         // extra variance of peak due to its photons
-    float const A = vpk*sqrt((sigmaX2/tauX2)*(sigmaY2/tauY2)); // peak of Unsmoothed object
+    double const sourceVar = vim(0, 0);                         // extra variance of peak due to its photons
+    double const A = vpk*sqrt((sigmaX2/tauX2)*(sigmaY2/tauY2)); // peak of Unsmoothed object
 
     *xCenter = xc;
     *yCenter = yc;
@@ -305,8 +305,8 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
 /*
  * now evaluate maxima on stripes
  */
-    float m0x = 0, m1x = 0, m2x = 0;
-    float m0y = 0, m1y = 0, m2y = 0;
+    double m0x = 0, m1x = 0, m2x = 0;
+    double m0y = 0, m1y = 0, m2y = 0;
 
     int quarticBad = 0;
     quarticBad += inter4(mim.image(-1, -1), mim.image( 0, -1), mim.image( 1, -1), &m0x, negative);
@@ -343,8 +343,8 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
     /*
      * Now for the errors.
      */
-    float tauX2 = sigmaX2;              // width^2 of _un_ smoothed object
-    float tauY2 = sigmaY2;
+    double tauX2 = sigmaX2;              // width^2 of _un_ smoothed object
+    double tauY2 = sigmaY2;
     tauX2 -= smoothingSigma*smoothingSigma;              // correct for smoothing
     tauY2 -= smoothingSigma*smoothingSigma;
 
@@ -355,12 +355,12 @@ void doMeasureCentroidImpl(double *xCenter, // output; x-position of object
         tauY2 = smoothingSigma*smoothingSigma;
     }
 
-    float const skyVar = (mim.variance(-1, -1) + mim.variance( 0, -1) + mim.variance( 1, -1) +
+    double const skyVar = (mim.variance(-1, -1) + mim.variance( 0, -1) + mim.variance( 1, -1) +
                           mim.variance(-1,  0)                        + mim.variance( 1,  0) +
                           mim.variance(-1,  1) + mim.variance( 0,  1) + mim.variance( 1,  1)
                          )/8.0; // Variance in sky
-    float const sourceVar = mim.variance(0, 0);                // extra variance of peak due to its photons
-    float const A = vpk*sqrt((sigmaX2/tauX2)*(sigmaY2/tauY2)); // peak of Unsmoothed object
+    double const sourceVar = mim.variance(0, 0);                // extra variance of peak due to its photons
+    double const A = vpk*sqrt((sigmaX2/tauX2)*(sigmaY2/tauY2)); // peak of Unsmoothed object
 
     *xCenter = xc;
     *yCenter = yc;
