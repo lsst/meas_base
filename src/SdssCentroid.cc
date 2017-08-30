@@ -92,10 +92,10 @@ float astrom_errors(float skyVar,       // variance of pixels at the sky level
                     float sigma,        // width of smoothing filter
                     int quarticBad) {   // was quartic estimate bad?
 
-    float const k = quarticBad ? 0 : AMPAST4; /* quartic correction coeff */
-    float const sigma2 = sigma*sigma;   /* == sigma^2 */
-    float sVar, dVar;                   /* variances of s and d */
-    float xVar;                         /* variance of centroid, x */
+    double const k = quarticBad ? 0 : AMPAST4; /* quartic correction coeff */
+    double const sigma2 = sigma*sigma;   /* == sigma^2 */
+    double sVar, dVar;                   /* variances of s and d */
+    double xVar;                         /* variance of centroid, x */
 
     if (fabs(As) < std::numeric_limits<float>::min() ||
         fabs(d)  < std::numeric_limits<float>::min()) {
