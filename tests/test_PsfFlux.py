@@ -59,7 +59,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testMasking(self):
         algorithm, schema = self.makeAlgorithm()
-        exposure, catalog = self.dataset.realize(10.0, schema)
+        # Results are RNG dependent; we choose a seed that is known to pass.
+        exposure, catalog = self.dataset.realize(10.0, schema, randomSeed=0)
         record = catalog[0]
         badPoint = lsst.afw.geom.Point2I(self.center) + lsst.afw.geom.Extent2I(3, 4)
         imageArray = exposure.getMaskedImage().getImage().getArray()
@@ -75,7 +76,6 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         ctrl.badMaskPlanes = ["BAD"]
         algorithm, schema = self.makeAlgorithm(ctrl)
         algorithm.measure(record, exposure)
-        # rng dependent
         self.assertFloatsAlmostEqual(record.get("base_PsfFlux_flux"),
                                      record.get("truth_flux"),
                                      atol=3*record.get("base_PsfFlux_fluxSigma"))
@@ -91,7 +91,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         when it should be.
         """
         algorithm, schema = self.makeAlgorithm()
-        exposure, catalog = self.dataset.realize(10.0, schema)
+        # Results are RNG dependent; we choose a seed that is known to pass.
+        exposure, catalog = self.dataset.realize(10.0, schema, randomSeed=1)
         record = catalog[0]
         psfImage = exposure.getPsf().computeImage(record.getCentroid())
         bbox = psfImage.getBBox()
@@ -105,7 +106,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     def testNoPsf(self):
         """Test that we raise FatalAlgorithmError when there's no PSF."""
         algorithm, schema = self.makeAlgorithm()
-        exposure, catalog = self.dataset.realize(10.0, schema)
+        # Results are RNG dependent; we choose a seed that is known to pass.
+        exposure, catalog = self.dataset.realize(10.0, schema, randomSeed=2)
         exposure.setPsf(None)
         with self.assertRaises(lsst.meas.base.FatalAlgorithmError):
             algorithm.measure(catalog[0], exposure)
@@ -115,7 +117,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         the reported uncertainty agrees with a Monte Carlo test of the noise.
         """
         algorithm, schema = self.makeAlgorithm()
-        exposure, catalog = self.dataset.realize(0.0, schema)
+        # Results are RNG dependent; we choose a seed that is known to pass.
+        exposure, catalog = self.dataset.realize(0.0, schema, randomSeed=3)
         record = catalog[0]
         flux = record.get("truth_flux")
         algorithm.measure(record, exposure)
@@ -126,7 +129,9 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             fluxSigmas = []
             nSamples = 1000
             for repeat in range(nSamples):
-                exposure, catalog = self.dataset.realize(noise*flux, schema)
+                # By using ``repeat`` to seed the RNG, we get results which fall within the tolerances
+                # defined below. If we allow this test to be truly random, passing becomes RNG-dependent.
+                exposure, catalog = self.dataset.realize(noise*flux, schema, randomSeed=repeat)
                 record = catalog[0]
                 algorithm.measure(record, exposure)
                 fluxes.append(record.get("base_PsfFlux_flux"))
@@ -134,12 +139,13 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             fluxMean = np.mean(fluxes)
             fluxSigmaMean = np.mean(fluxSigmas)
             fluxStandardDeviation = np.std(fluxes)
-            self.assertFloatsAlmostEqual(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)   # rng dependent
-            self.assertLess(fluxMean - flux, 2.0*fluxSigmaMean / nSamples**0.5)   # rng dependent
+            self.assertFloatsAlmostEqual(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)
+            self.assertLess(fluxMean - flux, 2.0*fluxSigmaMean / nSamples**0.5)
 
     def testSingleFramePlugin(self):
         task = self.makeSingleFrameMeasurementTask("base_PsfFlux")
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        # Results are RNG dependent; we choose a seed that is known to pass.
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=4)
         task.run(catalog, exposure)
         record = catalog[0]
         self.assertFalse(record.get("base_PsfFlux_flag"))
@@ -150,9 +156,10 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testForcedPlugin(self):
         task = self.makeForcedMeasurementTask("base_PsfFlux")
-        measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs())
+        # Results of this test are RNG dependent: we choose seeds that are known to pass.
+        measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs(), randomSeed=5)
         measDataset = self.dataset.transform(measWcs)
-        exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
+        exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema(), randomSeed=5)
         refCat = self.dataset.catalog
         refWcs = self.dataset.exposure.getWcs()
         measCat = task.generateMeasCat(exposure, refCat, refWcs)

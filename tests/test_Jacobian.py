@@ -77,7 +77,7 @@ class JacobianTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         # Pixel scale chosen to approximately match the scale defined in the above WCS
         config.plugins['base_Jacobian'].pixelScale = 0.2
         task = self.makeSingleFrameMeasurementTask(config=config)
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         exposure.setWcs(self.wcs)
         task.run(catalog, exposure)
         record = catalog[0]

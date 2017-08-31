@@ -89,7 +89,7 @@ class BlendednessTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         Check that we measure a positive blendedness for two overlapping sources
         """
         task = self.makeSingleFrameMeasurementTask("base_Blendedness")
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         task.run(catalog, exposure)
         self.assertGreater(catalog[1].get('base_Blendedness_abs_flux'), 0)
         self.assertGreater(catalog[2].get('base_Blendedness_abs_flux'), 0)

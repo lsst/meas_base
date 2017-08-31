@@ -181,7 +181,7 @@ class TestDataset(object):
     def makePerturbedWcs(oldWcs, minScaleFactor=1.2, maxScaleFactor=1.5,
                          minRotation=None, maxRotation=None,
                          minRefShift=None, maxRefShift=None,
-                         minPixShift=2.0, maxPixShift=4.0):
+                         minPixShift=2.0, maxPixShift=4.0, randomSeed=None):
         """!
         Create a new undistorted TanWcs that is similar but not identical to another, with random
         scaling, rotation, and offset (in both pixel position and reference position).
@@ -195,7 +195,11 @@ class TestDataset(object):
         The default range for rotation is 30-60 degrees, and the default range for reference shift
         is 0.5-1.0 arcseconds (these cannot be safely included directly as default values because Angle
         objects are mutable).
+
+        The random number generator is primed with the seed given. If ``None``, a seed is
+        automatically chosen.
         """
+        random_state = np.random.RandomState(randomSeed)
         if minRotation is None:
             minRotation = 30.0*lsst.afw.geom.degrees
         if maxRotation is None:
@@ -210,10 +214,10 @@ class TestDataset(object):
                 min2 = -max1
             if max2 is None:
                 max2 = -min1
-            if np.random.uniform() > 0.5:
-                return float(np.random.uniform(min1, max1))
+            if random_state.uniform() > 0.5:
+                return float(random_state.uniform(min1, max1))
             else:
-                return float(np.random.uniform(min2, max2))
+                return float(random_state.uniform(min2, max2))
         # Generate random perturbations
         scaleFactor = splitRandom(minScaleFactor, maxScaleFactor, 1.0/maxScaleFactor, 1.0/minScaleFactor)
         rotation = splitRandom(minRotation.asRadians(), maxRotation.asRadians())*lsst.afw.geom.radians
@@ -415,7 +419,7 @@ class TestDataset(object):
             result.addSource(newFlux, newCentroid, newDeconvolvedShape)
         return result
 
-    def realize(self, noise, schema):
+    def realize(self, noise, schema, randomSeed=None):
         """!
         Create a simulated with noise and a simulated post-detection catalog with (Heavy)Footprints.
 
@@ -424,16 +428,18 @@ class TestDataset(object):
         @param[in]   schema     Schema of the new catalog to be created.  Must start with self.schema (i.e.
                                 schema.contains(self.schema) must be True), but typically contains fields for
                                 already-configured measurement algorithms as well.
+        @param[in]   randomSeed Seed for the random number generator. If None, a seed is chosen automatically.
 
         @return a tuple of (exposure, catalog)
         """
+        random_state = np.random.RandomState(randomSeed)
         assert schema.contains(self.schema)
         mapper = lsst.afw.table.SchemaMapper(self.schema)
         mapper.addMinimalSchema(self.schema, True)
         exposure = self.exposure.clone()
         exposure.getMaskedImage().getVariance().getArray()[:, :] = noise**2
         exposure.getMaskedImage().getImage().getArray()[:, :] \
-            += np.random.randn(exposure.getHeight(), exposure.getWidth())*noise
+            += random_state.randn(exposure.getHeight(), exposure.getWidth())*noise
         catalog = lsst.afw.table.SourceCatalog(schema)
         catalog.extend(self.catalog, mapper=mapper)
         # Loop over sources and generate new HeavyFootprints that divide up the noisy pixels, not the
@@ -466,20 +472,6 @@ class TestDataset(object):
 
 
 class AlgorithmTestCase(object):
-    # Some tests depend on the noise realization in the test data or from the
-    # np.random number generator. In most cases, they are testing that the
-    # measured flux lies within 2 sigma of the correct value, which we should
-    # expect to fail sometimes. Some -- but sadly not all -- of these cases
-    # have been marked with an "rng dependent" comment.
-    #
-    # We ensure these tests are provided with data which causes them to pass
-    # by seeding the np.RNG with this value. It can be over-ridden as
-    # necessary in subclasses.
-    randomSeed = 1234
-
-    @classmethod
-    def setUpClass(cls):
-        np.random.seed(cls.randomSeed)
 
     def makeSingleFrameMeasurementConfig(self, plugin=None, dependencies=()):
         """Convenience function to create a Config instance for SingleFrameMeasurementTask

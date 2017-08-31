@@ -52,7 +52,7 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
         config.slots.modelFlux = "truth"
         task = self.makeSingleFrameMeasurementTask(config=config)
         abTask = catCalc.CatalogCalculationTask(schema=task.schema)
-        exposure, catalog = self.dataset.realize(10.0, task.schema)
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         task.run(catalog, exposure)
         abTask.run(catalog)
         self.assertLess(catalog[0].get("base_ClassificationExtendedness_value"), 0.5)
@@ -79,7 +79,7 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
                         psfFluxFlag=False, modelFluxFlag=False):
             task = self.makeSingleFrameMeasurementTask(config=config)
             abTask = catCalc.CatalogCalculationTask(schema=task.schema, config=abConfig)
-            exposure, catalog = self.dataset.realize(10.0, task.schema)
+            exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=1)
             source = catalog[0]
             source.set("base_PsfFlux_flux", psfFlux)
             source.set("base_PsfFlux_fluxSigma", psfFluxSigma)

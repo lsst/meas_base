@@ -132,7 +132,7 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         registry = SingleFramePlugin.registry
         dependencies = registry.keys()
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid", dependencies=dependencies)
-        exposure, catalog = dataset.realize(noise=100.0, schema=task.schema)
+        exposure, catalog = dataset.realize(noise=100.0, schema=task.schema, randomSeed=0)
         task.log.setLevel(lsst.log.ERROR)
         task.run(catalog, exposure)
         for pluginName in dependencies:
@@ -156,9 +156,9 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         dependencies = registry.keys()
 
         task = self.makeForcedMeasurementTask("base_SdssCentroid", dependencies=dependencies)
-        measWcs = dataset.makePerturbedWcs(dataset.exposure.getWcs())
+        measWcs = dataset.makePerturbedWcs(dataset.exposure.getWcs(), randomSeed=1)
         measDataset = dataset.transform(measWcs)
-        exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
+        exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema(), randomSeed=1)
         refCat = dataset.catalog
         refWcs = dataset.exposure.getWcs()
         measCat = task.generateMeasCat(exposure, refCat, refWcs)
@@ -209,7 +209,7 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         log = lsst.log.Log.getLogger(task.getPluginLogName(algName))
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(log, pluginLogName)
-            exposure, cat = self.dataset.realize(noise=0.0, schema=schema)
+            exposure, cat = self.dataset.realize(noise=0.0, schema=schema, randomSeed=2)
             task.run(cat, exposure)
             directLog(log, None)
             # direct back to console, closing log files
@@ -233,7 +233,7 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertTrue(task.plugins[algName].cpp.getLogName(), task.getPluginLogName(algName))
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(log, pluginLogName)
-            exposure, cat = self.dataset.realize(noise=0.0, schema=schema)
+            exposure, cat = self.dataset.realize(noise=0.0, schema=schema, randomSeed=3)
             exposure.setPsf(None)
             # This call throws an error, so be prepared for it
             try:
@@ -259,7 +259,7 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.dataset.addSource(1000000.0, self.center)
         self.task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
         self.log = lsst.log.Log.getLogger(self.task.getPluginLogName("base_SdssCentroid"))
-        self.exposure, self.catalog = self.dataset.realize(10.0, self.task.schema)
+        self.exposure, self.catalog = self.dataset.realize(10.0, self.task.schema, randomSeed=4)
 
     def tearDown(self):
         del self.center
@@ -315,9 +315,9 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.dataset.addSource(1000000.0, self.center)
         self.task = self.makeForcedMeasurementTask("base_SdssCentroid")
         self.log = lsst.log.Log.getLogger(self.task.getPluginLogName("base_SdssCentroid"))
-        measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs())
+        measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs(), randomSeed=5)
         measDataset = self.dataset.transform(measWcs)
-        self.exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema())
+        self.exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema(), randomSeed=5)
         self.refCat = self.dataset.catalog
         self.refWcs = self.dataset.exposure.getWcs()
         self.measCat = self.task.generateMeasCat(self.exposure, self.refCat, self.refWcs)

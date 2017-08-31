@@ -253,7 +253,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
+        exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=0)
         task.run(cat, exposure)
         source = cat[0]
         self.assertFalse(source.get(self.algName + "_flag"))
@@ -269,7 +269,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.config.plugins[self.algName].flux0 = 0.0     # this causes a divide by zero
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
+        exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=1)
         task.log.setLevel(task.log.FATAL)
         task.run(cat, exposure)
         source = cat[0]
@@ -283,7 +283,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
+        exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=2)
         source = cat[0]
         exposure.getMaskedImage().getImage().getArray()[int(source.getY()), int(source.getX())] = np.nan
         task.run(cat, exposure)
@@ -297,7 +297,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema)
+        exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=3)
         # Set the size large enough to trigger the edge error
         self.config.plugins[self.algName].size = exposure.getDimensions()[1]//2
         task.log.setLevel(task.log.FATAL)
@@ -315,7 +315,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
         task.log.setLevel(task.log.FATAL)
-        exposure, cat = self.dataset.realize(noise=0.0, schema=schema)
+        exposure, cat = self.dataset.realize(noise=0.0, schema=schema, randomSeed=4)
         source = cat[0]
         task.run(cat, exposure)
         self.assertFalse(source.get(self.algName + "_flag"))
