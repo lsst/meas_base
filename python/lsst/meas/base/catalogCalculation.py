@@ -170,6 +170,7 @@ class CatalogCalculationTask(lsst.pipe.base.Task):
                 raise ValueError("{} has an execution order less than the minimum for an catalogCalculation "
                                  "plugin. Value {} : Minimum {}".format(*errorTuple))
 
+    @lsst.pipe.base.timeMethod
     def run(self, measCat):
         '''
         The entry point for the catalogCalculation task. This method should be called with a reference to a
