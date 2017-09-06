@@ -29,6 +29,8 @@ slot-eligible fields must be), but non-slot fields may be recorded in other coor
 to avoid information loss (this should, of course, be indicated in the field documentation).
 """
 
+import lsst.pipe.base as pipeBase
+
 from .pluginRegistry import PluginRegistry
 from .baseMeasurement import (BaseMeasurementPluginConfig, BaseMeasurementPlugin,
                               BaseMeasurementConfig, BaseMeasurementTask)
@@ -271,6 +273,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         else:
             self.doBlendedness = False
 
+    @pipeBase.timeMethod
     def run(self, measCat, exposure, noiseImage=None, exposureId=None, beginOrder=None, endOrder=None):
         """!
         Run single frame measurement over an exposure and source catalog
