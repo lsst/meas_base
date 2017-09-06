@@ -30,7 +30,7 @@ import lsst.meas.base
 import lsst.utils.tests
 
 
-class shapeTransformMatrixTestCase(lsst.utils.tests.TestCase):
+class ShapeTransformMatrixTestCase(lsst.utils.tests.TestCase):
 
     def testIdentity(self):
         # A no-op coordinate transform translates to a no-op shape transform

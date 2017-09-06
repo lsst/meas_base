@@ -250,7 +250,7 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
 class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,
                                     lsst.utils.tests.TestCase):
 
-    class circApFluxAlgorithmFactory(object):
+    class CircApFluxAlgorithmFactory(object):
         """
         Helper class to sub in an empty PropertyList as the final argument to
         CircularApertureFluxAlgorithm.
@@ -261,7 +261,7 @@ class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTran
                                                                 lsst.daf.base.PropertyList())
 
     controlClass = lsst.meas.base.ApertureFluxAlgorithm.Control
-    algorithmClass = circApFluxAlgorithmFactory()
+    algorithmClass = CircApFluxAlgorithmFactory()
     transformClass = lsst.meas.base.ApertureFluxTransform
     flagNames = ('flag', 'flag_apertureTruncated', 'flag_sincCoeffsTruncated')
     singleFramePlugins = ('base_CircularApertureFlux',)

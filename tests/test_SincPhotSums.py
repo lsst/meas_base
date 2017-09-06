@@ -98,7 +98,7 @@ def plantSources(bbox, kwid, sky, coordList, addPoissonNoise=True):
     return exposure
 
 
-class sincPhotSums(lsst.utils.tests.TestCase):
+class SincPhotSums(lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.nx = 64
