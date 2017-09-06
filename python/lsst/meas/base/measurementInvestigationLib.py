@@ -25,7 +25,7 @@ from collections import Iterable
 
 from lsst.afw.table import SourceCatalog
 from lsst.meas.base import NoiseReplacer, NoiseReplacerConfig
-from lsst.meas.base import SingleFrameMeasurementTask as SFMT
+from lsst.meas.base import SingleFrameMeasurementTask as SFMT  # noqa N814
 
 
 def rebuildNoiseReplacer(exposure, measCat):
