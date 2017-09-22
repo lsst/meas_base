@@ -100,6 +100,7 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
         sfm_config.plugins["testLib_SillyCentroid"].param = 5
         sfm_config.slots.centroid = "testLib_SillyCentroid"
         sfm_config.slots.shape = None
+        sfm_config.slots.psfShape = None
         sfm_config.slots.psfFlux = None
         sfm_config.slots.instFlux = None
         sfm_config.slots.calibFlux = None

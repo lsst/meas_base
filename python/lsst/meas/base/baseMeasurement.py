@@ -79,6 +79,8 @@ class SourceSlotConfig(lsst.pex.config.Config):
                                      doc="the name of the centroiding algorithm used to set source x,y")
     shape = lsst.pex.config.Field(dtype=str, default="base_SdssShape", optional=True,
                                   doc="the name of the algorithm used to set source moments parameters")
+    psfShape = lsst.pex.config.Field(dtype=str, default="base_SdssShape_psf", optional=True,
+                                     doc="the name of the algorithm used to set PSF moments parameters")
     apFlux = lsst.pex.config.Field(dtype=str, default="base_CircularApertureFlux_12_0", optional=True,
                                    doc="the name of the algorithm used to set the source aperture flux slot")
     modelFlux = lsst.pex.config.Field(dtype=str, default="base_GaussianFlux", optional=True,
@@ -101,6 +103,8 @@ class SourceSlotConfig(lsst.pex.config.Config):
             aliases.set("slot_Centroid", self.centroid)
         if self.shape is not None:
             aliases.set("slot_Shape", self.shape)
+        if self.psfShape is not None:
+            aliases.set("slot_PsfShape", self.psfShape)
         if self.apFlux is not None:
             aliases.set("slot_ApFlux", self.apFlux)
         if self.modelFlux is not None:

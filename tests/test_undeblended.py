@@ -71,6 +71,7 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         slots = sfmConfig.slots
         slots.centroid = "centroid"
         slots.shape = None
+        slots.psfShape = None
         slots.apFlux = None
         slots.modelFlux = None
         slots.psfFlux = None

@@ -136,6 +136,7 @@ class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
         msConfig.algorithms.names = ["base_SdssCentroid"]
         msConfig.slots.centroid = "base_SdssCentroid"
         msConfig.slots.shape = None
+        msConfig.slots.psfShape = None
         msConfig.slots.apFlux = None
         msConfig.slots.modelFlux = None
         msConfig.slots.psfFlux = None
@@ -213,6 +214,7 @@ class MonetTestCase(unittest.TestCase):
         msConfig.plugins["base_GaussianCentroid"].doFootprintCheck = False
         msConfig.slots.centroid = "base_GaussianCentroid"
         msConfig.slots.shape = None
+        msConfig.slots.psfShape = None
         msConfig.slots.apFlux = None
         msConfig.slots.modelFlux = None
         msConfig.slots.psfFlux = None

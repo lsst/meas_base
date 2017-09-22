@@ -56,6 +56,7 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
         config = self.makeSingleFrameMeasurementConfig("base_NaiveCentroid", ["base_SdssCentroid"])
         config.slots.centroid = "base_SdssCentroid"
         config.slots.shape = None
+        config.slots.psfShape = None
         task = self.makeSingleFrameMeasurementTask(config=config)
         # Test that the alias resolves to the correct field.
         self.assertEqual(task.schema.find("base_NaiveCentroid_flag_badInitialCentroid").key,
@@ -74,6 +75,7 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
                                                        ["base_SdssCentroid", "base_SdssShape"])
         config.slots.centroid = None
         config.slots.shape = "base_SdssShape"
+        config.slots.psfShape = "base_SdssShape_psf"
         with self.assertRaises(lsst.pex.exceptions.LogicError):
             self.makeSingleFrameMeasurementTask(config=config)
 
@@ -85,6 +87,7 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
                                                        ["base_SdssCentroid", "base_SdssShape"])
         config.slots.centroid = "base_SdssCentroid"
         config.slots.shape = None
+        config.slots.psfShape = None
         with self.assertRaises(lsst.pex.exceptions.LogicError):
             self.makeSingleFrameMeasurementTask(config=config)
 
