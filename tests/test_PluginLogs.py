@@ -193,6 +193,7 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         config.slots.modelFlux = None
         config.slots.psfFlux = None
         config.slots.shape = None
+        config.slots.psfShape = None
         self.config = config
 
     def tearDown(self):

@@ -115,6 +115,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         config.slots.modelFlux = None
         config.slots.psfFlux = None
         config.slots.shape = None
+        config.slots.psfShape = None
         return config
 
     def tearDown(self):
