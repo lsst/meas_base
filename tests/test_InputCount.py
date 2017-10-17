@@ -25,7 +25,6 @@ Tests for InputCounts measurement algorithm
 """
 from __future__ import absolute_import, division, print_function
 from builtins import zip
-from builtins import range
 import numpy as np
 import itertools
 from collections import namedtuple
@@ -187,20 +186,29 @@ class InputCountTest(lsst.utils.tests.TestCase):
         if display:
             ccdVennDiagram(exp)
 
-    def _preparePlugin(self, numCoaddInputs):
+    def _preparePlugin(self, addCoaddInputs):
         """
         Prepare a SingleFrameInputCountPlugin for running.
 
         Sets up an InputCount plugin to run on an empty catalog together with a synthetic, content-free
         Exposure.
 
-        @param[in] numCoaddInputs  Number of coadd inputs for use in synthetic exposure.
+        @param[in] addCoaddInputs  Should we add the coadd inputs?
         @returns   tuple of (initialized plugin, empty catalog, synthetic exposure)
         """
-        exp = afwImage.ExposureF()
-        if numCoaddInputs > 0:
-            exp.getInfo().setCoaddInputs(afwImage.CoaddInputs(*[afwTable.ExposureTable.makeMinimalSchema()
-                                                                for _ in range(numCoaddInputs)]))
+        exp = afwImage.ExposureF(20, 20)
+        wcs = afwImage.makeWcs(afwCoord.Coord(0.0*afwGeom.degrees, 0.0*afwGeom.degrees),
+                               afwGeom.Point2D(0, 0), 1.0e-5, 0.0, 0.0, 1.0e-5)
+        exp.setWcs(wcs)
+        if addCoaddInputs:
+            exp.getInfo().setCoaddInputs(afwImage.CoaddInputs(afwTable.ExposureTable.makeMinimalSchema(),
+                                                              afwTable.ExposureTable.makeMinimalSchema()))
+            ccds = exp.getInfo().getCoaddInputs().ccds
+            record = ccds.addNew()
+            record.setWcs(wcs)
+            record.setBBox(exp.getBBox())
+            record.setValidPolygon(Polygon(afwGeom.Box2D(exp.getBBox())))
+
         schema = afwTable.SourceTable.makeMinimalSchema()
         measBase.SingleFramePeakCentroidPlugin(measBase.SingleFramePeakCentroidConfig(),
                                                "centroid", schema, None)
@@ -213,9 +221,10 @@ class InputCountTest(lsst.utils.tests.TestCase):
     def testBadCentroid(self):
         """
         The flag from the centroid slot should propagate to the badCentroid
-        flag on InputCount and the algorithm should throw a MeasurementError.
+        flag on InputCount and the algorithm should throw a MeasurementError
+        when it encounters a NAN position.
         """
-        inputCount, catalog, exp = self._preparePlugin(numCoaddInputs=2)
+        inputCount, catalog, exp = self._preparePlugin(True)
         record = catalog.addNew()
 
         # The inputCount's badCentroid flag is an alias to the centroid's global flag,
@@ -223,12 +232,25 @@ class InputCountTest(lsst.utils.tests.TestCase):
         record.set("centroid_flag", True)
         self.assertTrue(record.get("inputCount_flag_badCentroid"))
 
-        # The centroid is flagged as bad, so we should get a MeasurementError indicating
-        # an expected failure.
+        # Even though the source is flagged as bad, if the position is good we should still get a measurement.
+        record.set("slot_Centroid_x", 10)
+        record.set("slot_Centroid_y", 10)
+        inputCount.measure(record, exp)
+        self.assertTrue(record.get("inputCount_flag_badCentroid"))
+        self.assertEqual(record.get("inputCount_value"), 1)
+
+        # The centroid is bad (with a NAN) even though the centroid isn't flagged, so we should get a
+        # MeasurementError indicating an expected failure.
+        record = catalog.addNew()
+        record.set("slot_Centroid_x", float("nan"))
+        record.set("slot_Centroid_y", 12.345)
+        record.set("centroid_flag", False)
         with self.assertRaises(measBase.MeasurementError) as measErr:
             inputCount.measure(record, exp)
 
         # Calling the fail() method should set the global flag.
+        record = catalog.addNew()
+        record.set("inputCount_flag", False)
         inputCount.fail(record, measErr.exception)
         self.assertTrue(record.get("inputCount_flag"))
 
@@ -237,7 +259,7 @@ class InputCountTest(lsst.utils.tests.TestCase):
         When there are no coadd inputs on the input exposure we should throw a MeasurementError
         and set both the global flag and flag_noInputs.
         """
-        inputCount, catalog, exp = self._preparePlugin(numCoaddInputs=0)
+        inputCount, catalog, exp = self._preparePlugin(False)
         record = catalog.addNew()
 
         # Initially, the record is not flagged.

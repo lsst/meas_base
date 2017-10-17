@@ -290,10 +290,11 @@ class SingleFrameInputCountPlugin(SingleFramePlugin):
     def measure(self, measRecord, exposure):
         if not exposure.getInfo().getCoaddInputs():
             raise MeasurementError("No coadd inputs defined.", self.FAILURE_NO_INPUTS)
-        if measRecord.getCentroidFlag():
-            raise MeasurementError("Source has a bad centroid.", self.FAILURE_BAD_CENTROID)
 
         center = measRecord.getCentroid()
+        if not numpy.all(numpy.isfinite(center)):
+            raise MeasurementError("Source has a bad centroid.", self.FAILURE_BAD_CENTROID)
+
         ccds = exposure.getInfo().getCoaddInputs().ccds
         measRecord.set(self.numberKey, len(ccds.subsetContaining(center, exposure.getWcs())))
 
