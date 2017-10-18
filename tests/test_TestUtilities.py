@@ -25,7 +25,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import unittest
 import lsst.afw.geom as afwGeom
-import lsst.afw.image as afwImage
 import lsst.afw.coord as afwCoord
 import lsst.utils.tests as utilsTests
 
@@ -38,9 +37,10 @@ class TestDatasetTestCase(utilsTests.TestCase):
     def setUp(self):
         # Construct an arbitrary WCS for testing.
         crval = afwCoord.IcrsCoord(45.0*afwGeom.degrees, 45.0*afwGeom.degrees)
-        cdelt = 0.2*afwGeom.arcseconds
+        scale = 0.2*afwGeom.arcseconds
         crpix = afwGeom.PointD(100, 100)
-        self.wcs = afwImage.makeWcs(crval, crpix, cdelt.asDegrees(), 0.0, 0.0, cdelt.asDegrees())
+        self.wcs = afwGeom.makeSkyWcs(crpix=crpix, crval=crval,
+                                      cdMatrix=afwGeom.makeCdMatrix(scale=scale))
 
     def tearDown(self):
         del self.wcs

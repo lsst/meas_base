@@ -31,6 +31,7 @@ import numpy
 import lsst.pex.exceptions
 import lsst.afw.detection
 import lsst.afw.geom
+from lsst.afw.geom.skyWcs import makeWcsPairTransform
 
 from .pluginRegistry import register
 from .pluginsBase import BasePlugin
@@ -504,8 +505,8 @@ class ForcedTransformedShapePlugin(ForcedPlugin):
     def measure(self, measRecord, exposure, refRecord, refWcs):
         targetWcs = exposure.getWcs()
         if not refWcs == targetWcs:
-            fullTransform = lsst.afw.image.XYTransformFromWcsPair(targetWcs, refWcs)
-            localTransform = fullTransform.linearizeForwardTransform(refRecord.getCentroid())
+            fullTransform = makeWcsPairTransform(refWcs, targetWcs)
+            localTransform = lsst.afw.geom.linearizeTransform(fullTransform, refRecord.getCentroid())
             measRecord.set(self.shapeKey, refRecord.getShape().transform(localTransform.getLinear()))
         else:
             measRecord.set(self.shapeKey, refRecord.getShape())

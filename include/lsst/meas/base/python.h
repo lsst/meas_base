@@ -29,8 +29,8 @@
 #include <string>
 
 #include "ndarray.h"
+#include "lsst/afw/geom/SkyWcs.h"
 #include "lsst/afw/image/Calib.h"
-#include "lsst/afw/image/Wcs.h"
 #include "lsst/afw/table/fwd.h"
 #include "lsst/afw/table/Schema.h"
 #include "lsst/afw/table/SchemaMapper.h"
@@ -161,7 +161,7 @@ void declareAlgorithm(PyAlg & clsAlgorithm, PyCtrl & clsControl, PyXform & clsTr
     clsTransform.def("__call__", [](Transform const & self,
                                     afw::table::SourceCatalog const & inputCatalog,
                                     afw::table::BaseCatalog & outputCatalog,
-                                    afw::image::Wcs const & wcs,
+                                    afw::geom::SkyWcs const & wcs,
                                     afw::image::Calib const &calib) {
             return self(inputCatalog, outputCatalog, wcs, calib);
         }, "inputCatalog"_a, "outputCatalog"_a, "wcs"_a, "calib"_a);

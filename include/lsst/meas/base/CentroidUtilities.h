@@ -194,7 +194,7 @@ public:
      */
     virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
                             afw::table::BaseCatalog & outputCatalog,
-                            afw::image::Wcs const & wcs,
+                            afw::geom::SkyWcs const & wcs,
                             afw::image::Calib const & calib) const;
 private:
     afw::table::CoordKey _coordKey;

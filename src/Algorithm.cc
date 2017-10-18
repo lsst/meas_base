@@ -40,7 +40,7 @@ void ForcedAlgorithm::measureNForced(
     afw::table::SourceCatalog const & measCat,
     afw::image::Exposure<float> const & exposure,
     afw::table::SourceCatalog const & refRecord,
-    afw::image::Wcs const & refWcs
+    afw::geom::SkyWcs const & refWcs
 ) const {
     throw LSST_EXCEPT(
         pex::exceptions::LogicError,

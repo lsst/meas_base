@@ -186,7 +186,7 @@ class TestDataset(object):
                          minRefShift=None, maxRefShift=None,
                          minPixShift=2.0, maxPixShift=4.0, randomSeed=None):
         """!
-        Create a new undistorted TanWcs that is similar but not identical to another, with random
+        Create a new undistorted TAN WCS that is similar but not identical to another, with random
         scaling, rotation, and offset (in both pixel position and reference position).
 
         The maximum and minimum arguments are interpreted as absolute values for a split
@@ -229,21 +229,20 @@ class TestDataset(object):
         pixShiftX = splitRandom(minPixShift, maxPixShift)
         pixShiftY = splitRandom(minPixShift, maxPixShift)
         # Compute new CD matrix
-        oldTransform = lsst.afw.geom.LinearTransform(oldWcs.getCDMatrix())
+        oldTransform = lsst.afw.geom.LinearTransform(oldWcs.getCdMatrix())
         rTransform = lsst.afw.geom.LinearTransform.makeRotation(rotation)
         sTransform = lsst.afw.geom.LinearTransform.makeScaling(scaleFactor)
         newTransform = oldTransform*rTransform*sTransform
         matrix = newTransform.getMatrix()
         # Compute new coordinate reference pixel (CRVAL)
-        oldSkyOrigin = oldWcs.getSkyOrigin().toIcrs()
+        oldSkyOrigin = oldWcs.getSkyOrigin()
         newSkyOrigin = lsst.afw.coord.IcrsCoord(oldSkyOrigin.getRa() + refShiftRa,
                                                 oldSkyOrigin.getDec() + refShiftDec)
         # Compute new pixel reference pixel (CRPIX)
         oldPixOrigin = oldWcs.getPixelOrigin()
         newPixOrigin = lsst.afw.geom.Point2D(oldPixOrigin.getX() + pixShiftX,
                                              oldPixOrigin.getY() + pixShiftY)
-        return lsst.afw.image.makeWcs(newSkyOrigin, newPixOrigin,
-                                      matrix[0, 0], matrix[0, 1], matrix[1, 0], matrix[1, 1])
+        return lsst.afw.geom.makeSkyWcs(crpix=newPixOrigin, crval=newSkyOrigin, cdMatrix=matrix)
 
     @staticmethod
     def makeEmptyExposure(bbox, wcs=None, crval=None, cdelt=None, psfSigma=2.0, psfDim=17, fluxMag0=1E12):
@@ -252,7 +251,7 @@ class TestDataset(object):
 
         @param[in]    bbox        Bounding box of the image (image coordinates) as returned by makeCatalog.
         @param[in]    wcs         New Wcs for the exposure (created from crval and cdelt if None).
-        @param[in]    crval       afw.coord.Coord: center of the TAN WCS attached to the image.
+        @param[in]    crval       afw.coord.IcrsCoord: center of the TAN WCS attached to the image.
         @param[in]    cdelt       afw.geom.Angle: pixel scale of the image
         @param[in]    psfSigma    Radius (sigma) of the Gaussian PSF attached to the image
         @param[in]    psfDim      Width and height of the image's Gaussian PSF attached to the image
@@ -264,7 +263,8 @@ class TestDataset(object):
             if cdelt is None:
                 cdelt = 0.2*lsst.afw.geom.arcseconds
             crpix = lsst.afw.geom.Box2D(bbox).getCenter()
-            wcs = lsst.afw.image.makeWcs(crval, crpix, cdelt.asDegrees(), 0.0, 0.0, cdelt.asDegrees())
+            wcs = lsst.afw.geom.makeSkyWcs(crpix=crpix, crval=crval,
+                                           cdMatrix=lsst.afw.geom.makeCdMatrix(scale=cdelt))
         exposure = lsst.afw.image.ExposureF(bbox)
         psf = lsst.afw.detection.GaussianPsf(psfDim, psfDim, psfSigma)
         calib = lsst.afw.image.Calib()
@@ -395,9 +395,9 @@ class TestDataset(object):
                              values in the current dataset.
         """
         bboxD = lsst.afw.geom.Box2D()
-        xyt = lsst.afw.image.XYTransformFromWcsPair(wcs, self.exposure.getWcs())
+        xyt = lsst.afw.geom.makeWcsPairTransform(self.exposure.getWcs(), wcs)
         for corner in lsst.afw.geom.Box2D(self.exposure.getBBox()).getCorners():
-            bboxD.include(xyt.forwardTransform(lsst.afw.geom.Point2D(corner)))
+            bboxD.include(xyt.applyForward(lsst.afw.geom.Point2D(corner)))
         bboxI = lsst.afw.geom.Box2I(bboxD)
         result = TestDataset(bbox=bboxI, wcs=wcs, **kwds)
         oldCalib = self.exposure.getCalib()
@@ -409,11 +409,11 @@ class TestDataset(object):
             magnitude = oldCalib.getMagnitude(record.get(self.keys["flux"]))
             newFlux = newCalib.getFlux(magnitude)
             oldCentroid = record.get(self.keys["centroid"])
-            newCentroid = xyt.forwardTransform(oldCentroid)
+            newCentroid = xyt.applyForward(oldCentroid)
             if record.get(self.keys["isStar"]):
                 newDeconvolvedShape = None
             else:
-                affine = xyt.linearizeForwardTransform(oldCentroid)
+                affine = lsst.afw.geom.linearizeTransform(xyt, oldCentroid)
                 oldFullShape = record.get(self.keys["shape"])
                 oldDeconvolvedShape = lsst.afw.geom.ellipses.Quadrupole(
                     oldFullShape.getIxx() - oldPsfShape.getIxx(),

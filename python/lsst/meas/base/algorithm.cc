@@ -22,7 +22,6 @@
 
 #include "pybind11/pybind11.h"
 
-#include "lsst/afw/image/Wcs.h"
 #include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/python.h"
 #include "lsst/meas/base/Algorithm.h"

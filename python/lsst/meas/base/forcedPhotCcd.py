@@ -26,6 +26,7 @@ import lsst.pex.config
 import lsst.pex.exceptions
 from lsst.log import Log
 import lsst.pipe.base
+import lsst.afw.geom
 import lsst.afw.image
 import lsst.afw.table
 from lsst.geom import convexHull
@@ -78,7 +79,7 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
                     visitRefs[visit].append(ref)
 
                     md = ref.get("calexp_md", immediate=True)
-                    wcs = lsst.afw.image.makeWcs(md)
+                    wcs = lsst.afw.geom.makeSkyWcs(md)
                     box = lsst.afw.geom.Box2D(lsst.afw.image.bboxFromMetadata(md))
                     # Going with just the nearest tract.  Since we're throwing all tracts for the visit
                     # together, this shouldn't be a problem unless the tracts are much smaller than a CCD.

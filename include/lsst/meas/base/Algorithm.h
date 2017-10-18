@@ -147,7 +147,7 @@ public:
         afw::table::SourceRecord & measRecord,
         afw::image::Exposure<float> const & exposure,
         afw::table::SourceRecord const & refRecord,
-        afw::image::Wcs const & refWcs
+        afw::geom::SkyWcs const & refWcs
     ) const = 0;
 
     /**
@@ -164,7 +164,7 @@ public:
         afw::table::SourceCatalog const & measCat,
         afw::image::Exposure<float> const & exposure,
         afw::table::SourceCatalog const & refRecord,
-        afw::image::Wcs const & refWcs
+        afw::geom::SkyWcs const & refWcs
     ) const;
 
 };
@@ -188,7 +188,7 @@ public:
         afw::table::SourceRecord & measRecord,
         afw::image::Exposure<float> const & exposure,
         afw::table::SourceRecord const & refRecord,
-        afw::image::Wcs const & refWcs
+        afw::geom::SkyWcs const & refWcs
     ) const {
         measure(measRecord, exposure);
     }
@@ -197,7 +197,7 @@ public:
         afw::table::SourceCatalog const & measCat,
         afw::image::Exposure<float> const & exposure,
         afw::table::SourceCatalog const & refRecord,
-        afw::image::Wcs const & refWcs
+        afw::geom::SkyWcs const & refWcs
     ) const {
         measureN(measCat, exposure);
     }

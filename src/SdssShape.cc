@@ -30,8 +30,8 @@
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/geom/Angle.h"
 #include "lsst/afw/geom/ellipses.h"
+#include "lsst/afw/geom/LinearTransform.h"
 #include "lsst/afw/table/Source.h"
-
 #include "lsst/meas/base/exceptions.h"
 #include "lsst/meas/base/SdssShape.h"
 
@@ -598,7 +598,7 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
         w11 = w22 = w12 = 0;
         if (calcmom<false>(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22,
                            &I0, &sum, &sumx, &sumy, &sumxx, &sumxy, &sumyy, NULL, negative) < 0 ||
-	    (!negative && sum <= 0) || (negative && sum >= 0)) {
+            (!negative && sum <= 0) || (negative && sum >= 0)) {
             shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number] = false;
             shape->flags[SdssShapeAlgorithm::UNWEIGHTED_BAD.number] = true;
 
@@ -1026,7 +1026,7 @@ SdssShapeTransform::SdssShapeTransform(
 void SdssShapeTransform::operator()(
     afw::table::SourceCatalog const & inputCatalog,
     afw::table::BaseCatalog & outputCatalog,
-    afw::image::Wcs const & wcs,
+    afw::geom::SkyWcs const & wcs,
     afw::image::Calib const & calib
 ) const {
     // The flux and cetroid transforms will check that the catalog lengths

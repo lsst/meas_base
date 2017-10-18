@@ -25,6 +25,7 @@ import unittest
 
 import numpy as np
 
+from lsst.afw.geom import makeSkyWcs
 import lsst.afw.image as afwImage
 import lsst.afw.table as afwTable
 import lsst.daf.base as dafBase
@@ -54,7 +55,7 @@ def makeWcs():
     md.set("CRVAL2", 0)
     md.set("RADECSYS", "FK5")
     md.set("EQUINOX", 2000.0)
-    return afwImage.makeWcs(md)
+    return makeSkyWcs(md)
 
 
 @pexConfig.wrap(testLib.SillyCentroidControl)
