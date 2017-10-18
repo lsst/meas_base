@@ -1,12 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
 import lsst.pex.config
-from .pluginRegistry import generateAlgorithmName
+from .pluginsBase import BasePlugin
+from .pluginRegistry import generateAlgorithmName, register
 from .apCorrRegistry import addApCorrName
-from .sfm import SingleFramePlugin
-from .forcedMeasurement import ForcedPlugin
+from .sfm import SingleFramePlugin, SingleFramePluginConfig
+from .forcedMeasurement import ForcedPlugin, ForcedPluginConfig
 
-__all__ = ("wrapSingleFrameAlgorithm", "wrapForcedAlgorithm", "wrapSimpleAlgorithm", "wrapTransform")
+__all__ = ("wrapSingleFrameAlgorithm", "wrapForcedAlgorithm", "wrapSimpleAlgorithm", "wrapTransform",
+           "GenericPlugin")
 
 
 class WrappedSingleFramePlugin(SingleFramePlugin):
@@ -442,3 +444,197 @@ def wrapTransform(transformClass, hasLogName=False):
         oldInit(self, ctrl, name, mapper)
 
     transformClass.__init__ = _init
+
+
+class GenericPlugin(BasePlugin):
+    """Abstract base class for a generic plugin
+
+    A generic plugin can be used with the `singleFramePluginFromGeneric`
+    and/or `forcedPluginFromGeneric` wrappers to create classes that can
+    be used for single frame measurement and/or forced measurement (as
+    appropriate). The only real difference between `SingleFramePlugin`
+    and `ForcedPlugin` is the `measure` method; this class introduces
+    a shared signature for the `measure` method that, in combination
+    with the afore-mentioned wrappers, allows both plugin styles to
+    share a single implementation.
+
+    This doesn't use abc.ABCMeta because I couldn't get it to work
+    with a superclass.
+
+    Sub-classes should set `ConfigClass` and implement the `measure`
+    and `measureN` methods. They may optionally provide alternative
+    implementations for the `__init__`, `fail` and `getExecutionOrder`
+    methods.
+
+    Constructor parameters
+    ----------------------
+    config : `lsst.pex.config.Config`
+        An instance of this class' ConfigClass.
+    name : `str`
+        Name of this measurement plguin, for registering.
+    schema : `lsst.afw.table.Schema`
+        The catalog schema. New fields should be added here to
+        hold measurements produced by this plugin.
+    metadata : `lsst.daf.base.PropertySet`
+        Metadata that will be attached to the output catalog.
+    logName : `str`
+        Name of log component.
+    """
+    ConfigClass = None
+
+    @classmethod
+    def getExecutionOrder(cls):
+        return 0
+
+    def __init__(self, config, name, schema, metadata, logName=None):
+        """Constructor
+
+        This default implementation simply adds a field for recording
+        a fatal failure of the measurement plugin.
+        """
+        BasePlugin.__init__(self, config, name, logName=logName)
+        self._failKey = schema.addField(name + '_flag', type="Flag", doc="Set for any fatal failure")
+
+    def measure(self, measRecord, exposure, center):
+        """Measure source
+
+        It is the responsibility of this method to perform the desired
+        measurement and record the result in the `measRecord`.
+
+        Parameters
+        ----------
+        measRecord : `lsst.afw.table.SourceRecord`
+            Catalog record for the source being measured.
+        exposure : `lsst.afw.image.Exposure`
+            Exposure on which the source is being measured.
+        center : `lsst.afw.geom.Point2D`
+            Pixel coordinates of the object.
+
+        Raises
+        ------
+        `MeasurementError`
+            If the measurement fails for a known/justifiable reason.
+        """
+        raise NotImplementedError()
+
+    def measureN(self, measCat, exposure, refCat, refWcs):
+        """Measure multiple sources
+
+        It is the responsibility of this method to perform the desired
+        measurement and record the result in the `measCat`.
+
+        Parameters
+        ----------
+        measCat : `lsst.afw.table.SourceCatalog`
+            Catalog for the sources being measured.
+        exposure : `lsst.afw.image.Exposure`
+            Exposure on which the source is being measured.
+        refCat : `lsst.afw.table.SourceCatalog`
+            Reference catalog.
+        refWcs : `lsst.afw.image.Wcs`
+            Astrometric solution for the reference image.
+
+        Raises
+        ------
+        `MeasurementError`
+            If the measurement fails for a known/justifiable reason.
+        """
+        raise NotImplementedError()
+
+    def fail(self, measRecord, error=None):
+        """Record failure
+
+        This default implementation simply records the failure
+        in the source record.
+
+        Parameters
+        ----------
+        measRecord : `lsst.afw.table.SourceRecord`
+            Catalog record for the source being measured.
+        error : `Exception`
+            Error causing failure, or `None`.
+        """
+        measRecord.set(self._failKey, True)
+
+    @classmethod
+    def makeSingleFramePlugin(cls, name):
+        """Produce a SingleFramePlugin sub-class from this GenericPlugin class
+
+        The class is also registered.
+
+        Parameters
+        ----------
+        name : `str`
+            Name of plugin to register.
+        """
+        class SingleFrameFromGenericConfig(cls.ConfigClass, SingleFramePluginConfig):
+            pass
+
+        @register(name)
+        class SingleFrameFromGenericPlugin(SingleFramePlugin):
+            ConfigClass = SingleFrameFromGenericConfig
+
+            def __init__(self, config, name, schema, metadata, logName=None):
+                SingleFramePlugin.__init__(self, config, name, schema, metadata, logName=logName)
+                self._generic = cls(config, name, schema, metadata)
+
+            def measure(self, measRecord, exposure):
+                center = measRecord.getCentroid()
+                return self._generic.measure(measRecord, exposure, center)
+
+            def measureN(self, measCat, exposure, refCat, refWcs):
+                return self._generic.measureN(measCat, exposure, refCat, refWcs)
+
+            def fail(self, measRecord, error=None):
+                self._generic.fail(measRecord, error if error is not None else None)
+
+            @staticmethod
+            def getExecutionOrder():
+                return cls.getExecutionOrder()
+
+            def getTransformClass(self):
+                return self._generic.getTransformClass()
+
+        return SingleFrameFromGenericPlugin
+
+    @classmethod
+    def makeForcedPlugin(cls, name):
+        """Produce a ForcedPlugin sub-class from this GenericPlugin class
+
+        The class is also registered.
+
+        Parameters
+        ----------
+        name : `str`
+            Name of plugin to register.
+        """
+        class ForcedFromGenericConfig(cls.ConfigClass, ForcedPluginConfig):
+            pass
+
+        @register(name)
+        class ForcedFromGenericPlugin(ForcedPlugin):
+            ConfigClass = ForcedFromGenericConfig
+
+            def __init__(self, config, name, schemaMapper, metadata, logName=None):
+                ForcedPlugin.__init__(self, config, name, schemaMapper, metadata, logName=logName)
+                schema = schemaMapper.editOutputSchema()
+                self._generic = cls(config, name, schema, metadata)
+
+            def measure(self, measRecord, exposure, refRecord, refWcs):
+                center = exposure.getWcs().skyToPixel(refWcs.pixelToSky(refRecord.getCentroid()))
+                return self._generic.measure(measRecord, exposure, center)
+
+            def measureN(self, measCat, exposure, refCat, refWcs):
+                return self._generic.measureN(measCat, exposure, refCat, refWcs)
+
+            def fail(self, measRecord, error=None):
+                self._generic.fail(measRecord, error if error is not None else None)
+
+            @staticmethod
+            def getExecutionOrder():
+                return cls.getExecutionOrder()
+
+            def getTransformClass(self):
+                return self._generic.getTransformClass()
+
+        return ForcedFromGenericPlugin
