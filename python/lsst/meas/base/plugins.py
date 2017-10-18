@@ -34,9 +34,10 @@ import lsst.afw.geom
 
 from .pluginRegistry import register
 from .pluginsBase import BasePlugin
+from .baseMeasurement import BaseMeasurementPluginConfig
 from .sfm import SingleFramePluginConfig, SingleFramePlugin
 from .forcedMeasurement import ForcedPluginConfig, ForcedPlugin
-from .wrappers import wrapSimpleAlgorithm, wrapTransform
+from .wrappers import wrapSimpleAlgorithm, wrapTransform, GenericPlugin
 from .transforms import SimpleCentroidTransform
 
 from .apertureFlux import ApertureFluxControl, ApertureFluxTransform
@@ -59,8 +60,8 @@ from .sdssShape import SdssShapeAlgorithm, SdssShapeControl, SdssShapeTransform
 __all__ = (
     "SingleFrameFPPositionConfig", "SingleFrameFPPositionPlugin",
     "SingleFrameJacobianConfig", "SingleFrameJacobianPlugin",
-    "SingleFrameVarianceConfig", "SingleFrameVariancePlugin",
-    "SingleFrameInputCountConfig", "SingleFrameInputCountPlugin",
+    "VarianceConfig", "SingleFrameVariancePlugin", "ForcedVariancePlugin",
+    "InputCountConfig", "SingleFrameInputCountPlugin", "ForcedInputCountPlugin",
     "SingleFramePeakCentroidConfig", "SingleFramePeakCentroidPlugin",
     "SingleFrameSkyCoordConfig", "SingleFrameSkyCoordPlugin",
     "ForcedPeakCentroidConfig", "ForcedPeakCentroidPlugin",
@@ -185,32 +186,30 @@ class SingleFrameJacobianPlugin(SingleFramePlugin):
         measRecord.set(self.jacFlag, True)
 
 
-class SingleFrameVarianceConfig(SingleFramePluginConfig):
+class VarianceConfig(BaseMeasurementPluginConfig):
     scale = lsst.pex.config.Field(dtype=float, default=5.0, optional=True,
                                   doc="Scale factor to apply to shape for aperture")
     mask = lsst.pex.config.ListField(doc="Mask planes to ignore", dtype=str,
                                      default=["DETECTED", "DETECTED_NEGATIVE", "BAD", "SAT"])
 
 
-@register("base_Variance")
-class SingleFrameVariancePlugin(SingleFramePlugin):
+class VariancePlugin(GenericPlugin):
     '''
     Calculate the median variance within a Footprint scaled from the object shape so
     the value is not terribly influenced by the object and instead represents the
     variance in the background near the object.
     '''
-    ConfigClass = SingleFrameVarianceConfig
+    ConfigClass = VarianceConfig
     FAILURE_BAD_CENTROID = 1
     FAILURE_EMPTY_FOOTPRINT = 2
 
     @classmethod
     def getExecutionOrder(cls):
-        return cls.FLUX_ORDER
+        return BasePlugin.FLUX_ORDER
 
     def __init__(self, config, name, schema, metadata):
-        SingleFramePlugin.__init__(self, config, name, schema, metadata)
+        GenericPlugin.__init__(self, config, name, schema, metadata)
         self.varValue = schema.addField(name + '_value', type="D", doc="Variance at object position")
-        self.varFlag = schema.addField(name + '_flag', type="Flag", doc="Set to True for any fatal failure")
         self.emptyFootprintFlag = schema.addField(name + '_flag_emptyFootprint', type="Flag",
                                                   doc="Set to True when the footprint has no usable pixels")
 
@@ -218,11 +217,11 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
         # We do not simply rely on the alias because that could be changed post-measurement.
         schema.getAliasMap().set(name + '_flag_badCentroid', schema.getAliasMap().apply("slot_Centroid_flag"))
 
-    def measure(self, measRecord, exposure):
-        if measRecord.getCentroidFlag():
-            raise MeasurementError("Source record has a bad centroid.", self.FAILURE_BAD_CENTROID)
+    def measure(self, measRecord, exposure, center):
         # Create an aperture and grow it by scale value defined in config to ensure there are enough
         # pixels around the object to get decent statistics
+        if not numpy.all(numpy.isfinite(measRecord.getCentroid())):
+            raise MeasurementError("Bad centroid and/or shape", self.FAILURE_BAD_CENTROID)
         aperture = lsst.afw.geom.ellipses.Ellipse(measRecord.getShape(), measRecord.getCentroid())
         aperture.scale(self.config.scale)
         ellipse = lsst.afw.geom.SpanSet.fromShape(aperture)
@@ -252,15 +251,18 @@ class SingleFrameVariancePlugin(SingleFramePlugin):
             if error.getFlagBit() == self.FAILURE_EMPTY_FOOTPRINT:
                 measRecord.set(self.emptyFootprintFlag, True)
         measRecord.set(self.varValue, numpy.nan)
-        measRecord.set(self.varFlag, True)
+        GenericPlugin.fail(self, measRecord, error)
 
 
-class SingleFrameInputCountConfig(SingleFramePluginConfig):
+SingleFrameVariancePlugin = VariancePlugin.makeSingleFramePlugin("base_Variance")
+ForcedVariancePlugin = VariancePlugin.makeForcedPlugin("base_Variance")
+
+
+class InputCountConfig(BaseMeasurementPluginConfig):
     pass
 
 
-@register("base_InputCount")
-class SingleFrameInputCountPlugin(SingleFramePlugin):
+class InputCountPlugin(GenericPlugin):
     """
     Plugin to count how many input images contributed to each source. This information
     is in the exposure's coaddInputs. Some limitations:
@@ -269,31 +271,28 @@ class SingleFrameInputCountPlugin(SingleFramePlugin):
     * This does not account for any clipping in the coadd
     """
 
-    ConfigClass = SingleFrameInputCountConfig
+    ConfigClass = InputCountConfig
     FAILURE_BAD_CENTROID = 1
     FAILURE_NO_INPUTS = 2
 
     @classmethod
     def getExecutionOrder(cls):
-        return cls.SHAPE_ORDER
+        return BasePlugin.SHAPE_ORDER
 
     def __init__(self, config, name, schema, metadata):
-        SingleFramePlugin.__init__(self, config, name, schema, metadata)
+        GenericPlugin.__init__(self, config, name, schema, metadata)
         self.numberKey = schema.addField(name + '_value', type="I",
                                          doc="Number of images contributing at center, not including any"
                                              "clipping")
-        self.numberFlag = schema.addField(name + '_flag', type="Flag", doc="Set to True for fatal failure")
         self.noInputsFlag = schema.addField(name + '_flag_noInputs', type="Flag",
                                             doc="No coadd inputs available")
         # Alias the badCentroid flag to that which is defined for the target of the centroid slot.
         # We do not simply rely on the alias because that could be changed post-measurement.
         schema.getAliasMap().set(name + '_flag_badCentroid', schema.getAliasMap().apply("slot_Centroid_flag"))
 
-    def measure(self, measRecord, exposure):
+    def measure(self, measRecord, exposure, center):
         if not exposure.getInfo().getCoaddInputs():
             raise MeasurementError("No coadd inputs defined.", self.FAILURE_NO_INPUTS)
-
-        center = measRecord.getCentroid()
         if not numpy.all(numpy.isfinite(center)):
             raise MeasurementError("Source has a bad centroid.", self.FAILURE_BAD_CENTROID)
 
@@ -301,12 +300,16 @@ class SingleFrameInputCountPlugin(SingleFramePlugin):
         measRecord.set(self.numberKey, len(ccds.subsetContaining(center, exposure.getWcs())))
 
     def fail(self, measRecord, error=None):
-        measRecord.set(self.numberFlag, True)
         if error is not None:
             assert error.getFlagBit() in (self.FAILURE_BAD_CENTROID, self.FAILURE_NO_INPUTS)
             # FAILURE_BAD_CENTROID handled by alias to centroid record.
             if error.getFlagBit() == self.FAILURE_NO_INPUTS:
                 measRecord.set(self.noInputsFlag, True)
+        GenericPlugin.fail(self, measRecord, error)
+
+
+SingleFrameInputCountPlugin = InputCountPlugin.makeSingleFramePlugin("base_InputCount")
+ForcedInputCountPlugin = InputCountPlugin.makeForcedPlugin("base_InputCount")
 
 
 class SingleFramePeakCentroidConfig(SingleFramePluginConfig):

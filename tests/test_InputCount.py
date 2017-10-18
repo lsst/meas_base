@@ -213,7 +213,7 @@ class InputCountTest(lsst.utils.tests.TestCase):
         measBase.SingleFramePeakCentroidPlugin(measBase.SingleFramePeakCentroidConfig(),
                                                "centroid", schema, None)
         schema.getAliasMap().set("slot_Centroid", "centroid")
-        inputCount = measBase.SingleFrameInputCountPlugin(measBase.SingleFrameInputCountConfig(),
+        inputCount = measBase.SingleFrameInputCountPlugin(measBase.InputCountConfig(),
                                                           "inputCount", schema, None)
         catalog = afwTable.SourceCatalog(schema)
         return inputCount, catalog, exp
