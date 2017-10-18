@@ -167,12 +167,12 @@ class SingleFrameJacobianPlugin(SingleFramePlugin):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.jacValue = schema.addField(name + '_value', type="D", doc="Jacobian correction")
         self.jacFlag = schema.addField(name + '_flag', type="Flag", doc="Set to 1 for any fatal failure")
-        # Calculate one over the area of a nominal reference pixel
+        # Calculate one over the area of a nominal reference pixel, where area is in arcsec^2
         self.scale = pow(self.config.pixelScale, -2)
 
     def measure(self, measRecord, exposure):
         center = measRecord.getCentroid()
-        # Compute the area of a pixel at the center of a source records centroid, and take the
+        # Compute the area of a pixel at a source record's centroid, and take the
         # ratio of that with the defined reference pixel area.
         result = numpy.abs(self.scale*exposure.getWcs().linearizePixelToSky(
             center,
