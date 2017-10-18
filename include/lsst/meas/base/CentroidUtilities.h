@@ -25,6 +25,8 @@
 #define LSST_MEAS_BASE_CentroidUtilities_h_INCLUDED
 
 #include "lsst/meas/base/constants.h"
+#include "lsst/afw/geom/SkyWcs.h"
+#include "lsst/afw/image/Calib.h"
 #include "lsst/afw/table/aggregates.h"
 #include "lsst/meas/base/Transform.h"
 

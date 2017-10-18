@@ -27,6 +27,7 @@
 #include "lsst/log/Log.h"
 
 #include "lsst/afw/table/fwd.h"
+#include "lsst/afw/geom/SkyWcs.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/exceptions.h"
 #include "lsst/meas/base/FlagHandler.h"

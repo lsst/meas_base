@@ -26,6 +26,8 @@
 
 #include "lsst/meas/base/constants.h"
 #include "lsst/meas/base/Transform.h"
+#include "lsst/afw/geom/SkyWcs.h"
+#include "lsst/afw/image/Calib.h"
 #include "lsst/afw/table/FunctorKey.h"
 #include "lsst/afw/table/Schema.h"
 

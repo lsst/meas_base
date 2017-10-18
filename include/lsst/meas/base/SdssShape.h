@@ -27,6 +27,8 @@
 #include <bitset>
 
 #include "lsst/pex/config.h"
+#include "lsst/afw/geom/SkyWcs.h"
+#include "lsst/afw/image/Calib.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/afw/geom/ellipses/Quadrupole.h"
 #include "lsst/afw/table/aggregates.h"
