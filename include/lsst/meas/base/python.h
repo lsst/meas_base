@@ -28,6 +28,7 @@
 
 #include <string>
 
+#include "ndarray.h"
 #include "lsst/afw/image/Calib.h"
 #include "lsst/afw/image/Wcs.h"
 #include "lsst/afw/table/fwd.h"
