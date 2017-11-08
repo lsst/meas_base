@@ -33,7 +33,6 @@ import lsst.afw.table as afwTable
 import lsst.afw.image as afwImage
 import lsst.afw.detection as afwDetection
 import lsst.meas.base as measBase
-import lsst.pex.exceptions as pexExcept
 import lsst.utils.tests
 
 try:
@@ -170,7 +169,7 @@ class BadCentroidTest(lsst.utils.tests.TestCase):
         measBase.SingleFramePeakCentroidPlugin(measBase.SingleFramePeakCentroidConfig(),
                                                "centroid", schema, None)
         schema.getAliasMap().set("slot_Centroid", "centroid")
-        variance = measBase.SingleFrameVariancePlugin(measBase.SingleFrameVarianceConfig(),
+        variance = measBase.SingleFrameVariancePlugin(measBase.VarianceConfig(),
                                                       "variance", schema, None)
         catalog = afwTable.SourceCatalog(schema)
 
@@ -178,7 +177,7 @@ class BadCentroidTest(lsst.utils.tests.TestCase):
         # valid data in the SourceRecord and Exposure: this should throw a logic error.
         record = catalog.addNew()
         record.set("centroid_flag", False)
-        with self.assertRaises(pexExcept.LogicError) as measErr:
+        with self.assertRaises(measBase.MeasurementError) as measErr:
             variance.measure(record, None)
         variance.fail(record, measErr.exception)
         self.assertTrue(record.get("variance_flag"))

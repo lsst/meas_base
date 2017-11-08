@@ -50,6 +50,7 @@ class ForcedPhotCoaddConfig(ForcedPhotImageConfig):
         self.measurement.copyColumns["id"] = "id"
         self.measurement.copyColumns["parent"] = "parent"
         self.references.removePatchOverlaps = False  # see validate() for why
+        self.measurement.plugins.names |= ['base_InputCount', 'base_Variance']
 
     def validate(self):
         ForcedPhotImageTask.ConfigClass.validate(self)
