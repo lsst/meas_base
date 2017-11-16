@@ -127,7 +127,7 @@ class NoiseReplacer(object):
                 plane = mask.getMaskPlane(maskname)
                 if self.log:
                     self.log.debug('Mask plane "%s" already existed', maskname)
-            except:
+            except Exception:
                 # if not, add it; we should delete it when done.
                 plane = mask.addMaskPlane(maskname)
                 self.removeplanes.append(maskname)
@@ -281,7 +281,7 @@ class NoiseReplacer(object):
                     self.log.debug('Using passed-in noise mean = %g, variance = %g -> stdev %g',
                                    noiseMean, noiseVar, noiseStd)
                 return FixedGaussianNoiseGenerator(noiseMean, noiseStd, rand=rand)
-            except:
+            except Exception:
                 if self.log:
                     self.log.debug('Failed to cast passed-in noiseMeanVar to floats: %s',
                                    str(noiseMeanVar))
@@ -300,7 +300,7 @@ class NoiseReplacer(object):
                     self.log.debug('Using noise variance = (BGMEAN = %g) from exposure metadata',
                                    bgMean)
                 return FixedGaussianNoiseGenerator(offset, noiseStd, rand=rand)
-            except:
+            except Exception:
                 if self.log:
                     self.log.debug('Failed to get BGMEAN from exposure metadata')
 
