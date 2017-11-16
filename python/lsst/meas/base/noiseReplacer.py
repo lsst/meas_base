@@ -155,11 +155,11 @@ class NoiseReplacer(object):
             elif fp[0] == 0:
                 self.heavies[id] = afwDet.makeHeavyFootprint(fp[1], mi)
 
-        ### FIXME: the heavy footprint includes the mask
-        ### and variance planes, which we shouldn't need
-        ### (I don't think we ever want to modify them in
-        ### the input image).  Copying them around is
-        ### wasteful.
+        # ## FIXME: the heavy footprint includes the mask
+        # ## and variance planes, which we shouldn't need
+        # ## (I don't think we ever want to modify them in
+        # ## the input image).  Copying them around is
+        # ## wasteful.
 
         # We now create a noise HeavyFootprint for each source with has a heavy footprint.
         # We'll put the noise footprints in a dict heavyNoise = {id:heavyNoiseFootprint}
