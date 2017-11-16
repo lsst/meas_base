@@ -42,29 +42,29 @@ class ShapeTransformMatrixTestCase(lsst.utils.tests.TestCase):
     def testVsTransform(self):
         # Transforming an ellipse by multiplying by the matrix should be
         # equivalent to calling its transform() method.
-        l = lsst.afw.geom.LinearTransform.makeRotation(lsst.afw.geom.Angle(numpy.random.random()))
+        lt = lsst.afw.geom.LinearTransform.makeRotation(lsst.afw.geom.Angle(numpy.random.random()))
         e = lsst.afw.geom.ellipses.Quadrupole(numpy.random.random(), numpy.random.random(),
                                               numpy.random.random())
-        numpy.testing.assert_array_almost_equal(numpy.dot(lsst.meas.base.makeShapeTransformMatrix(l),
+        numpy.testing.assert_array_almost_equal(numpy.dot(lsst.meas.base.makeShapeTransformMatrix(lt),
                                                           e.getParameterVector()),
-                                                e.transform(l).getParameterVector())
+                                                e.transform(lt).getParameterVector())
 
     def testVales(self):
         # Test that the analytically-derived correct values are computed
-        l = lsst.afw.geom.LinearTransform(numpy.random.random((2, 2)))
-        m = lsst.meas.base.makeShapeTransformMatrix(l)
+        lt = lsst.afw.geom.LinearTransform(numpy.random.random((2, 2)))
+        m = lsst.meas.base.makeShapeTransformMatrix(lt)
 
-        self.assertEqual(m[0, 0], l[0, 0]*l[0, 0])
-        self.assertEqual(m[0, 1], l[0, 1]*l[0, 1])
-        self.assertEqual(m[0, 2], 2*l[0, 0]*l[0, 1])
+        self.assertEqual(m[0, 0], lt[0, 0]*lt[0, 0])
+        self.assertEqual(m[0, 1], lt[0, 1]*lt[0, 1])
+        self.assertEqual(m[0, 2], 2*lt[0, 0]*lt[0, 1])
 
-        self.assertEqual(m[1, 0], l[1, 0]*l[1, 0])
-        self.assertEqual(m[1, 1], l[1, 1]*l[1, 1])
-        self.assertEqual(m[1, 2], 2*l[1, 0]*l[1, 1])
+        self.assertEqual(m[1, 0], lt[1, 0]*lt[1, 0])
+        self.assertEqual(m[1, 1], lt[1, 1]*lt[1, 1])
+        self.assertEqual(m[1, 2], 2*lt[1, 0]*lt[1, 1])
 
-        self.assertEqual(m[2, 0], l[0, 0]*l[1, 0])
-        self.assertEqual(m[2, 1], l[0, 1]*l[1, 1])
-        self.assertEqual(m[2, 2], l[0, 0]*l[1, 1] + l[0, 1]*l[1, 0])
+        self.assertEqual(m[2, 0], lt[0, 0]*lt[1, 0])
+        self.assertEqual(m[2, 1], lt[0, 1]*lt[1, 1])
+        self.assertEqual(m[2, 2], lt[0, 0]*lt[1, 1] + lt[0, 1]*lt[1, 0])
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
