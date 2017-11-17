@@ -239,7 +239,7 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             # This call throws an error, so be prepared for it
             try:
                 task.run(cat, exposure)
-            except:
+            except Exception:
                 pass
             directLog(log, None)
             # direct back to console, closing log files

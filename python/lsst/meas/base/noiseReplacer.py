@@ -127,7 +127,7 @@ class NoiseReplacer(object):
                 plane = mask.getMaskPlane(maskname)
                 if self.log:
                     self.log.debug('Mask plane "%s" already existed', maskname)
-            except:
+            except Exception:
                 # if not, add it; we should delete it when done.
                 plane = mask.addMaskPlane(maskname)
                 self.removeplanes.append(maskname)
@@ -155,11 +155,11 @@ class NoiseReplacer(object):
             elif fp[0] == 0:
                 self.heavies[id] = afwDet.makeHeavyFootprint(fp[1], mi)
 
-        ### FIXME: the heavy footprint includes the mask
-        ### and variance planes, which we shouldn't need
-        ### (I don't think we ever want to modify them in
-        ### the input image).  Copying them around is
-        ### wasteful.
+        # ## FIXME: the heavy footprint includes the mask
+        # ## and variance planes, which we shouldn't need
+        # ## (I don't think we ever want to modify them in
+        # ## the input image).  Copying them around is
+        # ## wasteful.
 
         # We now create a noise HeavyFootprint for each source with has a heavy footprint.
         # We'll put the noise footprints in a dict heavyNoise = {id:heavyNoiseFootprint}
@@ -281,7 +281,7 @@ class NoiseReplacer(object):
                     self.log.debug('Using passed-in noise mean = %g, variance = %g -> stdev %g',
                                    noiseMean, noiseVar, noiseStd)
                 return FixedGaussianNoiseGenerator(noiseMean, noiseStd, rand=rand)
-            except:
+            except Exception:
                 if self.log:
                     self.log.debug('Failed to cast passed-in noiseMeanVar to floats: %s',
                                    str(noiseMeanVar))
@@ -300,7 +300,7 @@ class NoiseReplacer(object):
                     self.log.debug('Using noise variance = (BGMEAN = %g) from exposure metadata',
                                    bgMean)
                 return FixedGaussianNoiseGenerator(offset, noiseStd, rand=rand)
-            except:
+            except Exception:
                 if self.log:
                     self.log.debug('Failed to get BGMEAN from exposure metadata')
 
