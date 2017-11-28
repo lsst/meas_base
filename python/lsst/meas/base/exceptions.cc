@@ -54,6 +54,8 @@ PYBIND11_PLUGIN(exceptions) {
     clsMeasurementError.def(py::init<std::string const &,
                                      std::size_t>(),
                             "message"_a, "flagBit"_a);
+    clsFatalAlgorithmError.def(py::init<std::string const &>(), "message"_a);
+    clsPixelValueError.def(py::init<std::string const &>(), "message"_a);
 
     /* Members */
     clsMeasurementError.def("getFlagBit", &MeasurementError::getFlagBit);
