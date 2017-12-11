@@ -184,11 +184,11 @@ class SincPhotSums(lsst.utils.tests.TestCase):
             # we will calculate the two and subtract.
 
             axes = afwGeom.ellipses.Axes(r2, r2*(1-b/a), math.radians(theta))
-            ellipse = afwGeom.ellipses.Ellipse(axes, center)
+            ellipse = afwGeom.Ellipse(axes, center)
             result2 = measBase.ApertureFluxAlgorithm.computeSincFlux(objImg.getMaskedImage(), ellipse)
 
             axes = afwGeom.ellipses.Axes(r1, r1*(1-b/a), math.radians(theta))
-            ellipse = afwGeom.ellipses.Ellipse(axes, center)
+            ellipse = afwGeom.Ellipse(axes, center)
             result1 = measBase.ApertureFluxAlgorithm.computeSincFlux(objImg.getMaskedImage(), ellipse)
 
             self.assertAlmostEqual(math.exp(-0.5*(r1/a)**2) - math.exp(-0.5*(r2/a)**2),

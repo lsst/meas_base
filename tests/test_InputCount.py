@@ -35,7 +35,6 @@ import lsst.utils.tests
 import lsst.afw.coord as afwCoord
 import lsst.afw.detection as afwDetection
 import lsst.afw.geom as afwGeom
-from lsst.afw.geom.polygon import Polygon
 import lsst.afw.image as afwImage
 import lsst.afw.table as afwTable
 import lsst.meas.base as measBase
@@ -151,7 +150,7 @@ class InputCountTest(lsst.utils.tests.TestCase):
             record = ccds.addNew()
             record.setWcs(afwGeom.makeSkyWcs(crpix=pos, crval=crval, cdMatrix=cdMatrix))
             record.setBBox(imageBox)
-            record.setValidPolygon(Polygon(afwGeom.Box2D(imageBox)))
+            record.setValidPolygon(afwGeom.Polygon(afwGeom.Box2D(imageBox)))
 
         # Configure a SingleFrameMeasurementTask to run InputCounts.
         measureSourcesConfig = measBase.SingleFrameMeasurementConfig()
@@ -210,7 +209,7 @@ class InputCountTest(lsst.utils.tests.TestCase):
             record = ccds.addNew()
             record.setWcs(wcs)
             record.setBBox(exp.getBBox())
-            record.setValidPolygon(Polygon(afwGeom.Box2D(exp.getBBox())))
+            record.setValidPolygon(afwGeom.Polygon(afwGeom.Box2D(exp.getBBox())))
 
         schema = afwTable.SourceTable.makeMinimalSchema()
         measBase.SingleFramePeakCentroidPlugin(measBase.SingleFramePeakCentroidConfig(),

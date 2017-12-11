@@ -66,10 +66,10 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.t
         self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(50.1, 49.8))
         # second source is extended
         self.dataset.addSource(120000.0, lsst.afw.geom.Point2D(149.9, 50.3),
-                               lsst.afw.geom.ellipses.Quadrupole(8, 9, 3))
+                               lsst.afw.geom.Quadrupole(8, 9, 3))
         with self.dataset.addBlend() as family:
             family.addChild(110000.0, lsst.afw.geom.Point2D(65.2, 150.7),
-                            lsst.afw.geom.ellipses.Quadrupole(7, 5, -1))
+                            lsst.afw.geom.Quadrupole(7, 5, -1))
             family.addChild(140000.0, lsst.afw.geom.Point2D(72.3, 149.1))
             family.addChild(90000.0, lsst.afw.geom.Point2D(68.5, 156.9))
 

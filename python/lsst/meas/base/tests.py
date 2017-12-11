@@ -29,7 +29,6 @@ import lsst.afw.table
 import lsst.afw.image
 import lsst.afw.detection
 import lsst.afw.geom
-import lsst.afw.geom.ellipses
 import lsst.afw.coord
 import lsst.pex.exceptions
 
@@ -68,7 +67,7 @@ class BlendContext(object):
         @param[in]  flux      Total flux of the source to be added.
         @param[in]  centroid  Position of the source to be added (lsst.afw.geom.Point2D).
         @param[in]  shape     2nd moments of the source before PSF convolution
-                              (lsst.afw.geom.ellipses.Quadrupole).  Note that the truth catalog
+                              (lsst.afw.geom.Quadrupole).  Note that the truth catalog
                               records post-convolution moments)
         """
         record, image = self.owner.addSource(flux, centroid, shape)
@@ -108,7 +107,7 @@ class BlendContext(object):
             xx += (record.get(self.owner.keys["shape"].getIxx()) + dx**2)*w
             yy += (record.get(self.owner.keys["shape"].getIyy()) + dy**2)*w
             xy += (record.get(self.owner.keys["shape"].getIxy()) + dx*dy)*w
-        self.parentRecord.set(self.owner.keys["shape"], lsst.afw.geom.ellipses.Quadrupole(xx, yy, xy))
+        self.parentRecord.set(self.owner.keys["shape"], lsst.afw.geom.Quadrupole(xx, yy, xy))
         # Run detection on the parent image to get the parent Footprint.
         self.owner._installFootprint(self.parentRecord, self.parentImage)
         # Create perfect HeavyFootprints for all children; these will need to be modified later to account
@@ -135,7 +134,7 @@ class TestDataset(object):
     dataset = TestDataset(bbox)
     dataset.addSource(flux=1E5, centroid=lsst.afw.geom.Point2D(25, 26))
     dataset.addSource(flux=2E5, centroid=lsst.afw.geom.Point2D(75, 24),
-                      shape=lsst.afw.geom.ellipses.Quadrupole(8, 7, 2))
+                      shape=lsst.afw.geom.Quadrupole(8, 7, 2))
     with dataset.addBlend() as family:
         family.addChild(flux=2E5, centroid=lsst.afw.geom.Point2D(50, 72))
         family.addChild(flux=1.5E5, centroid=lsst.afw.geom.Point2D(51, 74))
@@ -282,7 +281,7 @@ class TestDataset(object):
         @param[in,out] bbox        Bounding box of image to create.
         @param[in]     flux        Total flux of the Gaussian (normalized analytically, not using pixel
                                    values)
-        @param[in]     ellipse     lsst.afw.geom.ellipses.Ellipse holding the centroid and shape.
+        @param[in]     ellipse     lsst.afw.geom.Ellipse holding the centroid and shape.
         """
         x, y = np.meshgrid(np.arange(bbox.getBeginX(), bbox.getEndX()),
                            np.arange(bbox.getBeginY(), bbox.getEndY()))
@@ -338,7 +337,7 @@ class TestDataset(object):
         @param[in]  flux      Total flux of the source to be added.
         @param[in]  centroid  Position of the source to be added (lsst.afw.geom.Point2D).
         @param[in]  shape     2nd moments of the source before PSF convolution
-                              (lsst.afw.geom.ellipses.Quadrupole).  Note that the truth catalog
+                              (lsst.afw.geom.Quadrupole).  Note that the truth catalog
                               records post-convolution moments).  If None, a point source
                               will be added.
 
@@ -360,7 +359,7 @@ class TestDataset(object):
         record.set(self.keys["shape"], fullShape)
         # Create an image containing just this source
         image = self.drawGaussian(self.exposure.getBBox(), flux,
-                                  lsst.afw.geom.ellipses.Ellipse(fullShape, centroid))
+                                  lsst.afw.geom.Ellipse(fullShape, centroid))
         # Generate a footprint for this source
         self._installFootprint(record, image)
         # Actually add the source to the full exposure
@@ -415,7 +414,7 @@ class TestDataset(object):
             else:
                 affine = lsst.afw.geom.linearizeTransform(xyt, oldCentroid)
                 oldFullShape = record.get(self.keys["shape"])
-                oldDeconvolvedShape = lsst.afw.geom.ellipses.Quadrupole(
+                oldDeconvolvedShape = lsst.afw.geom.Quadrupole(
                     oldFullShape.getIxx() - oldPsfShape.getIxx(),
                     oldFullShape.getIyy() - oldPsfShape.getIyy(),
                     oldFullShape.getIxy() - oldPsfShape.getIxy(),

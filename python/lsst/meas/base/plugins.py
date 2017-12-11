@@ -219,7 +219,7 @@ class VariancePlugin(GenericPlugin):
         # pixels around the object to get decent statistics
         if not numpy.all(numpy.isfinite(measRecord.getCentroid())):
             raise MeasurementError("Bad centroid and/or shape", self.FAILURE_BAD_CENTROID)
-        aperture = lsst.afw.geom.ellipses.Ellipse(measRecord.getShape(), measRecord.getCentroid())
+        aperture = lsst.afw.geom.Ellipse(measRecord.getShape(), measRecord.getCentroid())
         aperture.scale(self.config.scale)
         ellipse = lsst.afw.geom.SpanSet.fromShape(aperture)
         foot = lsst.afw.detection.Footprint(ellipse)

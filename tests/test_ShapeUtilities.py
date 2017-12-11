@@ -43,8 +43,8 @@ class ShapeTransformMatrixTestCase(lsst.utils.tests.TestCase):
         # Transforming an ellipse by multiplying by the matrix should be
         # equivalent to calling its transform() method.
         lt = lsst.afw.geom.LinearTransform.makeRotation(lsst.afw.geom.Angle(numpy.random.random()))
-        e = lsst.afw.geom.ellipses.Quadrupole(numpy.random.random(), numpy.random.random(),
-                                              numpy.random.random())
+        e = lsst.afw.geom.Quadrupole(numpy.random.random(), numpy.random.random(),
+                                     numpy.random.random())
         numpy.testing.assert_array_almost_equal(numpy.dot(lsst.meas.base.makeShapeTransformMatrix(lt),
                                                           e.getParameterVector()),
                                                 e.transform(lt).getParameterVector())

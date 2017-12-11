@@ -43,7 +43,7 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(50.1, 49.8))
         # second source is extended
         self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(149.9, 50.3),
-                               lsst.afw.geom.ellipses.Quadrupole(8, 9, 3))
+                               lsst.afw.geom.Quadrupole(8, 9, 3))
 
     def tearDown(self):
         del self.bbox
