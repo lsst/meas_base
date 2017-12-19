@@ -161,6 +161,9 @@ class TestDataset(object):
             cls.keys["centroid"] = lsst.afw.table.Point2DKey.addFields(
                 schema, "truth", "true simulated centroid", "pixel"
             )
+            cls.keys["centroid_sigma"] = lsst.afw.table.CovarianceMatrix2fKey.addFields(
+                schema, "truth", ['x', 'y'], "pixel"
+            )
             cls.keys["centroid_flag"] = schema.addField("truth_flag", type="Flag",
                                                         doc="set if the object is a star")
             cls.keys["shape"] = lsst.afw.table.QuadrupoleKey.addFields(
@@ -345,6 +348,9 @@ class TestDataset(object):
         record = self.catalog.addNew()
         record.set(self.keys["flux"], flux)
         record.set(self.keys["centroid"], centroid)
+        covariance = np.random.normal(0, 0.1, 4).reshape(2, 2)
+        covariance[0, 1] = covariance[1, 0]  # CovarianceMatrixKey assumes symmetric x_y_Cov
+        record.set(self.keys["centroid_sigma"], covariance.astype(np.float32))
         if shape is None:
             record.set(self.keys["isStar"], True)
             fullShape = self.psfShape
