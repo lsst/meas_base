@@ -152,6 +152,7 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
                  "base_GaussianFlux",
                  "base_CircularApertureFlux",
                  "base_PsfFlux",
+                 "base_SdssCentroid",
                  ],
         doc="Plugins to be run and their configuration"
     )
