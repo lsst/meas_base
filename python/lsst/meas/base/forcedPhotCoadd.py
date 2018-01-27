@@ -53,6 +53,8 @@ class ForcedPhotCoaddConfig(ForcedPhotImageConfig):
         self.measurement.plugins.names |= ['base_InputCount', 'base_Variance']
         self.measurement.plugins['base_PixelFlags'].masksFpAnywhere = ['CLIPPED', 'SENSOR_EDGE',
                                                                        'INEXACT_PSF']
+        self.measurement.plugins['base_PixelFlags'].masksFpCenter = ['CLIPPED', 'SENSOR_EDGE',
+                                                                     'INEXACT_PSF']
 
     def validate(self):
         ForcedPhotImageTask.ConfigClass.validate(self)
