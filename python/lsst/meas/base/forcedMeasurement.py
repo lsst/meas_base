@@ -148,7 +148,9 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         multi=True,
         default=["base_PixelFlags",
                  "base_TransformedCentroid",
+                 "base_SdssCentroid",
                  "base_TransformedShape",
+                 "base_SdssShape",
                  "base_GaussianFlux",
                  "base_CircularApertureFlux",
                  "base_PsfFlux",
@@ -216,6 +218,20 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
     ForcedMeasurementTask has only three methods: __init__(), run(), and generateMeasCat().
     For configuration options, see SingleFrameMeasurementConfig.
+
+    Notes
+    -----
+
+    *Forced* measurement means that the plugins are provided with a reference
+    source containing centroid and/or shape measurements that they may use
+    however they see fit. Some plugins can use these to set the location and
+    size of apertures, but others may choose to ignore this information,
+    essentially performing an unforced measurement starting at the position
+    of the reference source (which may nevertheless be useful for certain
+    investigations). Knowing how the plugin uses the reference information is
+    essential to interpreting its resulting measurements. Typically, centroid
+    and shape measurement plugins (e.g., ``SdssCentroid`` and ``SdssShape``)
+    are performing unforced measurements.
     """
 
     ConfigClass = ForcedMeasurementConfig
