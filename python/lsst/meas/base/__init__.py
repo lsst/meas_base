@@ -37,7 +37,6 @@ from .apertureFlux import *
 from .blendedness import *
 from .circularApertureFlux import *
 from .exceptions import *
-from .gaussianCentroid import *
 from .gaussianFlux import *
 from .naiveCentroid import *
 from .peakLikelihoodFlux import *

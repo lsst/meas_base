@@ -44,7 +44,6 @@ from .apertureFlux import ApertureFluxControl, ApertureFluxTransform
 from .transform import BaseTransform
 from .blendedness import BlendednessAlgorithm, BlendednessControl
 from .circularApertureFlux import CircularApertureFluxAlgorithm
-from .gaussianCentroid import GaussianCentroidAlgorithm, GaussianCentroidControl, GaussianCentroidTransform
 from .gaussianFlux import GaussianFluxAlgorithm, GaussianFluxControl, GaussianFluxTransform
 from .exceptions import MeasurementError
 from .naiveCentroid import NaiveCentroidAlgorithm, NaiveCentroidControl, NaiveCentroidTransform
@@ -79,8 +78,6 @@ wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxContr
 wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl,
                     TransformClass=GaussianFluxTransform, executionOrder=BasePlugin.FLUX_ORDER,
                     shouldApCorr=True)
-wrapSimpleAlgorithm(GaussianCentroidAlgorithm, Control=GaussianCentroidControl,
-                    TransformClass=GaussianCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
 wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl,
                     TransformClass=NaiveCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
 wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl,
@@ -100,7 +97,6 @@ wrapSimpleAlgorithm(BlendednessAlgorithm, Control=BlendednessControl,
 wrapTransform(PsfFluxTransform)
 wrapTransform(PeakLikelihoodFluxTransform)
 wrapTransform(GaussianFluxTransform)
-wrapTransform(GaussianCentroidTransform)
 wrapTransform(NaiveCentroidTransform)
 wrapTransform(SdssCentroidTransform)
 wrapTransform(SdssShapeTransform)

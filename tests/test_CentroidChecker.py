@@ -198,20 +198,6 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertTrue(source.get("base_SdssCentroid_flag"))
         self.assertTrue(source.get("base_SdssCentroid_flag_resetToPeak"))
 
-    def testGaussianCentroid(self):
-        """
-        Test to be sure that GaussianCentroid centroid checker works with maxDistance check
-        """
-        schema = self.dataset.makeMinimalSchema()
-        config = self.makeConfig("base_GaussianCentroid")
-        config.plugins["base_GaussianCentroid"].maxDistToPeak = .0001
-        task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=5)
-        source = cat[0]
-        task.run(cat, exposure)
-        self.assertTrue(source.get("base_GaussianCentroid_flag"))
-        self.assertTrue(source.get("base_GaussianCentroid_flag_resetToPeak"))
-
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass

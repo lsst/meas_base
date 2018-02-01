@@ -21,8 +21,6 @@
 #
 
 from __future__ import absolute_import, division, print_function
-import os
-import re
 import math
 import unittest
 
@@ -33,8 +31,6 @@ import lsst.meas.base as measBase
 import lsst.utils.tests as utilsTests
 import lsst.afw.detection.detectionLib as afwDetection
 import lsst.afw.detection
-
-import lsst.afw.display.ds9 as ds9
 
 try:
     type(verbose)
@@ -106,12 +102,6 @@ class CentroidTestCase(utilsTests.TestCase):
             self.assertFloatsAlmostEqual(y, source.getY(), rtol=.00001)
             self.assertFalse(source.get("test_flag"))
 
-    def testGaussianMeasureCentroid(self):
-        """Test that we can instantiate and play with GAUSSIAN centroids"""
-        control = measBase.GaussianCentroidControl()
-        control.doFootprintCheck = False
-        self.do_testAstrometry(measBase.GaussianCentroidAlgorithm, 10.0, control)
-
     def testNaiveMeasureCentroid(self):
         """Test that we can instantiate and play with NAIVE centroids"""
         bkgd = 10.0
@@ -177,118 +167,6 @@ class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
 
         # this does not match exactly, and it used to
         self.assertFloatsAlmostEqual(s.getCentroid(), afwGeom.PointD(self.xcen, self.ycen), rtol=.01)
-
-
-class MonetTestCase(unittest.TestCase):
-    """A test case for centroiding using Dave Monet's 2-D Gaussian fitter"""
-
-    def setUp(self):
-        im = afwImage.ImageF(self.monetFile("small.fits"))
-        self.mi = afwImage.MaskedImageF(im, afwImage.Mask(im.getDimensions()),
-                                        afwImage.ImageF(im.getDimensions()))
-        self.ds = afwDetection.FootprintSet(self.mi, afwDetection.Threshold(100))
-
-        if display:
-            ds9.mtv(self.mi.getImage())
-            ds9.erase()
-
-        for foot in self.ds.getFootprints():
-            bbox = foot.getBBox()
-            x0, y0 = bbox.getMinX(), bbox.getMinY()
-            x1, y1 = bbox.getMaxX(), bbox.getMaxY()
-            xc = (x0 + x1)/2.0
-            yc = (y0 + y1)/2.0
-
-            if display:
-                ds9.dot("+", xc, yc, ctype=ds9.BLUE)
-
-                if False:
-                    x0 -= 0.5
-                    y0 -= 0.5
-                    x1 += 0.5
-                    y1 += 0.5
-
-                    ds9.line([(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)], ctype=ds9.RED)
-        msConfig = measBase.SingleFrameMeasurementConfig()
-        msConfig.algorithms.names = ["base_GaussianCentroid"]
-        msConfig.plugins["base_GaussianCentroid"].doFootprintCheck = False
-        msConfig.slots.centroid = "base_GaussianCentroid"
-        msConfig.slots.shape = None
-        msConfig.slots.psfShape = None
-        msConfig.slots.apFlux = None
-        msConfig.slots.modelFlux = None
-        msConfig.slots.psfFlux = None
-        msConfig.slots.instFlux = None
-        msConfig.slots.calibFlux = None
-        schema = afwTable.SourceTable.makeMinimalSchema()
-        self.task = measBase.SingleFrameMeasurementTask(schema, config=msConfig)
-        self.ssMeasured = afwTable.SourceCatalog(schema)
-        self.ssMeasured.table.defineCentroid("base_GaussianCentroid")
-        self.ssTruth = afwTable.SourceCatalog(schema)
-        self.ssTruth.table.defineCentroid("base_GaussianCentroid")
-
-        self.readTruth(self.monetFile("positions.dat-original"))
-
-    def tearDown(self):
-        del self.mi
-        del self.ds
-        del self.task
-        del self.ssMeasured
-        del self.ssTruth
-
-    def monetFile(self, file):
-        """Return a Monet file used for regression testing"""
-        return os.path.join(os.path.dirname(__file__), "Monet", file)
-
-    def readTruth(self, filename):
-        """Read Dave Monet's truth table"""
-        with open(filename) as fd:
-            for line in fd.readlines():
-                if re.match(r"\s*#", line):
-                    continue
-                status, ID, xSex, xDGM, ySex, yDGM, sky = [float(el) for el in line.split()]
-                s = self.ssTruth.addNew()
-                s.setId(int(ID))
-                s.set(self.ssTruth.table.getCentroidKey().getX(), xDGM)
-                s.set(self.ssTruth.table.getCentroidKey().getY(), yDGM)
-
-    def testMeasureCentroid(self):
-        """Test that we can instantiate and play with a measureCentroid"""
-        exposure = afwImage.makeExposure(self.mi)
-        self.ds.makeSources(self.ssMeasured)
-        ID = 1
-        self.task.run(self.ssMeasured, exposure)
-        for s in self.ssMeasured:
-            s.setId(ID)
-            ID += 1
-            foot = s.getFootprint()
-            bbox = foot.getBBox()
-            xc = (bbox.getMinX() + bbox.getMaxX())//2
-            yc = (bbox.getMinY() + bbox.getMaxY())//2
-
-            if display:
-                ds9.dot("x", xc, yc, ctype=ds9.GREEN)
-        #
-        # OK, we've measured all the sources.  Compare positions with Dave Monet's values
-        #
-
-        mat = afwTable.matchXy(self.ssTruth, self.ssMeasured, 1.0)
-        self.assertEqual(ID, len(mat))  # we matched all the input sources
-
-        # offset in pixels between measured centroid and the Truth
-        eps = 6e-6
-        for match in mat:
-            dx = match[0].getX() - match[1].getX()
-            dy = match[0].getY() - match[1].getY()
-
-            good = True if math.hypot(dx, dy) < eps else False
-            if not good:
-                msg = "Star at (%.1f, %.1f): (dx, dy) = %g, %g)" % \
-                    (match[0].getXAstrom(), match[0].getYAstrom(), dx, dy)
-                if True:
-                    print(msg)
-                else:
-                    self.assertTrue(good, msg)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
