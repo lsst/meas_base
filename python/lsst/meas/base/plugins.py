@@ -407,8 +407,7 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
         targetWcs = exposure.getWcs()
         peak = refRecord.getFootprint().getPeaks()[0]
         result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
-        if not refWcs == targetWcs:
-            result = targetWcs.skyToPixel(refWcs.pixelToSky(result))
+        result = targetWcs.skyToPixel(refWcs.pixelToSky(result))
         measRecord.set(self.keyX, result.getX())
         measRecord.set(self.keyY, result.getY())
 
