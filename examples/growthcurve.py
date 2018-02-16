@@ -172,7 +172,7 @@ def main():
 
             axes = afwGeom.ellipses.Axes(radius[iR], radius[iR], math.radians(0))
             center = afwGeom.Point2D(0, 0)
-            ellipse = afwGeom.ellipses.Ellipse(axes, center)
+            ellipse = afwGeom.Ellipse(axes, center)
             resultSinc = measBase.ApertureFluxAlgorithm.computeSincFlux(mimg.getImage(), ellipse)
             resultNaive = measBase.ApertureFluxAlgorithm.computeNaiveFlux(mimg.getImage(), ellipse)
             source = cat.addNew()

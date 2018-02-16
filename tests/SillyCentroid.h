@@ -134,7 +134,7 @@ public:
 
     virtual void operator()(lsst::afw::table::SourceCatalog const & inputCatalog,
                             lsst::afw::table::BaseCatalog & outputCatalog,
-                            lsst::afw::image::Wcs const & wcs,
+                            lsst::afw::geom::SkyWcs const & wcs,
                             lsst::afw::image::Calib const & calib) const {
         checkCatalogSize(inputCatalog, outputCatalog);
         lsst::afw::table::Key<double> xkey = inputCatalog.getSchema()[_name + "_x"];

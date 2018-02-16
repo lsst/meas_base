@@ -41,7 +41,7 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(50.1, 49.8))
         # second source is extended
         self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(149.9, 50.3),
-                               lsst.afw.geom.ellipses.Quadrupole(8, 9, 3))
+                               lsst.afw.geom.Quadrupole(8, 9, 3))
         self.config = self.makeSingleFrameMeasurementConfig("base_SdssShape")
 
     def tearDown(self):

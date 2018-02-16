@@ -31,6 +31,7 @@ import numpy
 import lsst.pex.exceptions
 import lsst.afw.detection
 import lsst.afw.geom
+from lsst.afw.geom.skyWcs import makeWcsPairTransform
 
 from .pluginRegistry import register
 from .pluginsBase import BasePlugin
@@ -166,12 +167,12 @@ class SingleFrameJacobianPlugin(SingleFramePlugin):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.jacValue = schema.addField(name + '_value', type="D", doc="Jacobian correction")
         self.jacFlag = schema.addField(name + '_flag', type="Flag", doc="Set to 1 for any fatal failure")
-        # Calculate one over the area of a nominal reference pixel
+        # Calculate one over the area of a nominal reference pixel, where area is in arcsec^2
         self.scale = pow(self.config.pixelScale, -2)
 
     def measure(self, measRecord, exposure):
         center = measRecord.getCentroid()
-        # Compute the area of a pixel at the center of a source records centroid, and take the
+        # Compute the area of a pixel at a source record's centroid, and take the
         # ratio of that with the defined reference pixel area.
         result = numpy.abs(self.scale*exposure.getWcs().linearizePixelToSky(
             center,
@@ -218,7 +219,7 @@ class VariancePlugin(GenericPlugin):
         # pixels around the object to get decent statistics
         if not numpy.all(numpy.isfinite(measRecord.getCentroid())):
             raise MeasurementError("Bad centroid and/or shape", self.FAILURE_BAD_CENTROID)
-        aperture = lsst.afw.geom.ellipses.Ellipse(measRecord.getShape(), measRecord.getCentroid())
+        aperture = lsst.afw.geom.Ellipse(measRecord.getShape(), measRecord.getCentroid())
         aperture.scale(self.config.scale)
         ellipse = lsst.afw.geom.SpanSet.fromShape(aperture)
         foot = lsst.afw.detection.Footprint(ellipse)
@@ -406,8 +407,7 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
         targetWcs = exposure.getWcs()
         peak = refRecord.getFootprint().getPeaks()[0]
         result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
-        if not refWcs == targetWcs:
-            result = targetWcs.skyToPixel(refWcs.pixelToSky(result))
+        result = targetWcs.skyToPixel(refWcs.pixelToSky(result))
         measRecord.set(self.keyX, result.getX())
         measRecord.set(self.keyY, result.getY())
 
@@ -504,8 +504,8 @@ class ForcedTransformedShapePlugin(ForcedPlugin):
     def measure(self, measRecord, exposure, refRecord, refWcs):
         targetWcs = exposure.getWcs()
         if not refWcs == targetWcs:
-            fullTransform = lsst.afw.image.XYTransformFromWcsPair(targetWcs, refWcs)
-            localTransform = fullTransform.linearizeForwardTransform(refRecord.getCentroid())
+            fullTransform = makeWcsPairTransform(refWcs, targetWcs)
+            localTransform = lsst.afw.geom.linearizeTransform(fullTransform, refRecord.getCentroid())
             measRecord.set(self.shapeKey, refRecord.getShape().transform(localTransform.getLinear()))
         else:
             measRecord.set(self.shapeKey, refRecord.getShape())

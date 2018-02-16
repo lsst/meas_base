@@ -35,7 +35,6 @@ import lsst.utils.tests
 import lsst.afw.coord as afwCoord
 import lsst.afw.detection as afwDetection
 import lsst.afw.geom as afwGeom
-from lsst.afw.geom.polygon import Polygon
 import lsst.afw.image as afwImage
 import lsst.afw.table as afwTable
 import lsst.meas.base as measBase
@@ -130,12 +129,13 @@ class InputCountTest(lsst.utils.tests.TestCase):
         ]
 
         # These lines are used in the creation of WCS information
-        cdMatrix = (1.0e-5, 0.0, 0.0, 1.0e-5)
-        crval = afwCoord.Coord(0.0*afwGeom.degrees, 0.0*afwGeom.degrees)
+        scale = 1.0e-5 * afwGeom.degrees
+        cdMatrix = afwGeom.makeCdMatrix(scale=scale)
+        crval = afwCoord.IcrsCoord(0.0*afwGeom.degrees, 0.0*afwGeom.degrees)
 
         # Construct the info needed to set the exposure object
         imageBox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.Extent2I(size, size))
-        wcsRef = afwImage.makeWcs(crval, afwGeom.Point2D(0, 0), *cdMatrix)
+        wcsRef = afwGeom.makeSkyWcs(crpix=afwGeom.Point2D(0, 0), crval=crval, cdMatrix=cdMatrix)
 
         # Create the exposure object, and set it up to be the output of a coadd
         exp = afwImage.ExposureF(size, size)
@@ -148,9 +148,9 @@ class InputCountTest(lsst.utils.tests.TestCase):
         ccds = exp.getInfo().getCoaddInputs().ccds
         for pos in ccdPositions:
             record = ccds.addNew()
-            record.setWcs(afwImage.makeWcs(crval, pos, *cdMatrix))
+            record.setWcs(afwGeom.makeSkyWcs(crpix=pos, crval=crval, cdMatrix=cdMatrix))
             record.setBBox(imageBox)
-            record.setValidPolygon(Polygon(afwGeom.Box2D(imageBox)))
+            record.setValidPolygon(afwGeom.Polygon(afwGeom.Box2D(imageBox)))
 
         # Configure a SingleFrameMeasurementTask to run InputCounts.
         measureSourcesConfig = measBase.SingleFrameMeasurementConfig()
@@ -197,8 +197,10 @@ class InputCountTest(lsst.utils.tests.TestCase):
         @returns   tuple of (initialized plugin, empty catalog, synthetic exposure)
         """
         exp = afwImage.ExposureF(20, 20)
-        wcs = afwImage.makeWcs(afwCoord.Coord(0.0*afwGeom.degrees, 0.0*afwGeom.degrees),
-                               afwGeom.Point2D(0, 0), 1.0e-5, 0.0, 0.0, 1.0e-5)
+        scale = 1.0e-5*afwGeom.degrees
+        wcs = afwGeom.makeSkyWcs(crpix=afwGeom.Point2D(0, 0),
+                                 crval=afwCoord.IcrsCoord(0.0*afwGeom.degrees, 0.0*afwGeom.degrees),
+                                 cdMatrix=afwGeom.makeCdMatrix(scale=scale))
         exp.setWcs(wcs)
         if addCoaddInputs:
             exp.getInfo().setCoaddInputs(afwImage.CoaddInputs(afwTable.ExposureTable.makeMinimalSchema(),
@@ -207,7 +209,7 @@ class InputCountTest(lsst.utils.tests.TestCase):
             record = ccds.addNew()
             record.setWcs(wcs)
             record.setBBox(exp.getBBox())
-            record.setValidPolygon(Polygon(afwGeom.Box2D(exp.getBBox())))
+            record.setValidPolygon(afwGeom.Polygon(afwGeom.Box2D(exp.getBBox())))
 
         schema = afwTable.SourceTable.makeMinimalSchema()
         measBase.SingleFramePeakCentroidPlugin(measBase.SingleFramePeakCentroidConfig(),

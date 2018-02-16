@@ -26,6 +26,8 @@
 
 #include "lsst/meas/base/constants.h"
 #include "lsst/meas/base/Transform.h"
+#include "lsst/afw/geom/SkyWcs.h"
+#include "lsst/afw/image/Calib.h"
 #include "lsst/afw/table/FunctorKey.h"
 #include "lsst/afw/table/Schema.h"
 
@@ -203,7 +205,7 @@ public:
      */
     virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
                             afw::table::BaseCatalog & outputCatalog,
-                            afw::image::Wcs const & wcs,
+                            afw::geom::SkyWcs const & wcs,
                             afw::image::Calib const & calib) const;
 private:
     MagResultKey _magKey;

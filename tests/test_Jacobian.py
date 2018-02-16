@@ -24,7 +24,7 @@ from __future__ import absolute_import, division, print_function
 import unittest
 
 import lsst.daf.base as dafBase
-import lsst.afw.image as afwImage
+from lsst.afw.geom import makeSkyWcs
 import lsst.utils.tests
 
 from lsst.meas.base.tests import AlgorithmTestCase
@@ -63,7 +63,7 @@ class JacobianTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         ):
             md.set(k, v)
 
-        self.wcs = afwImage.makeWcs(md)
+        self.wcs = makeSkyWcs(md)
 
     def tearDown(self):
         del self.center

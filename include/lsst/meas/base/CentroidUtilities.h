@@ -25,6 +25,8 @@
 #define LSST_MEAS_BASE_CentroidUtilities_h_INCLUDED
 
 #include "lsst/meas/base/constants.h"
+#include "lsst/afw/geom/SkyWcs.h"
+#include "lsst/afw/image/Calib.h"
 #include "lsst/afw/table/aggregates.h"
 #include "lsst/meas/base/Transform.h"
 
@@ -194,7 +196,7 @@ public:
      */
     virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
                             afw::table::BaseCatalog & outputCatalog,
-                            afw::image::Wcs const & wcs,
+                            afw::geom::SkyWcs const & wcs,
                             afw::image::Calib const & calib) const;
 private:
     afw::table::CoordKey _coordKey;

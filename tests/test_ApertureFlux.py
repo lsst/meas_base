@@ -66,8 +66,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         radii = [12.0, 17.0]
         for position in positions:
             for radius in radii:
-                ellipse = lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(radius, radius, 0.0),
-                                                         position)
+                ellipse = lsst.afw.geom.Ellipse(lsst.afw.geom.ellipses.Axes(radius, radius, 0.0), position)
                 area = self.computeNaiveArea(position, radius)
                 # test that this isn't the same as the sinc flux
                 self.assertFloatsNotEqual(
@@ -93,8 +92,8 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         # test failure conditions when the aperture itself is truncated
         invalid = ApertureFluxAlgorithm.computeNaiveFlux(
             self.exposure.getMaskedImage().getImage(),
-            lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(12.0, 12.0),
-                                           lsst.afw.geom.Point2D(25.0, -60.0)),
+            lsst.afw.geom.Ellipse(lsst.afw.geom.ellipses.Axes(12.0, 12.0),
+                                  lsst.afw.geom.Point2D(25.0, -60.0)),
             self.ctrl)
         self.assertTrue(invalid.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
         self.assertFalse(invalid.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
@@ -108,8 +107,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         radii = [7.0, 9.0]
         for position in positions:
             for radius in radii:
-                ellipse = lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(radius, radius, 0.0),
-                                                         position)
+                ellipse = lsst.afw.geom.Ellipse(lsst.afw.geom.ellipses.Axes(radius, radius, 0.0), position)
                 area = ellipse.getCore().getArea()
                 # test that this isn't the same as the naive flux
                 self.assertFloatsNotEqual(
@@ -133,8 +131,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         # test failure conditions when the aperture itself is truncated
         invalid1 = ApertureFluxAlgorithm.computeSincFlux(
             self.exposure.getMaskedImage().getImage(),
-            lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0),
-                                           lsst.afw.geom.Point2D(25.0, -60.0)),
+            lsst.afw.geom.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0), lsst.afw.geom.Point2D(25.0, -60.0)),
             self.ctrl)
         self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
         self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
@@ -142,8 +139,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         # test failure conditions when the aperture is not truncated, but the sinc coeffs are
         invalid2 = ApertureFluxAlgorithm.computeSincFlux(
             self.exposure.getMaskedImage().getImage(),
-            lsst.afw.geom.ellipses.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0),
-                                           lsst.afw.geom.Point2D(30.0, -60.0)),
+            lsst.afw.geom.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0), lsst.afw.geom.Point2D(30.0, -60.0)),
             self.ctrl)
         self.assertFalse(invalid2.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
         self.assertTrue(invalid2.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))

@@ -162,7 +162,7 @@ CentroidTransform::CentroidTransform(
 void CentroidTransform::operator()(
     afw::table::SourceCatalog const & inputCatalog,
     afw::table::BaseCatalog & outputCatalog,
-    afw::image::Wcs const & wcs,
+    afw::geom::SkyWcs const & wcs,
     afw::image::Calib const & calib
 ) const {
     checkCatalogSize(inputCatalog, outputCatalog);
@@ -174,7 +174,7 @@ void CentroidTransform::operator()(
     for (; inSrc != inputCatalog.end() && outSrc != outputCatalog.end(); ++inSrc, ++outSrc) {
         CentroidResult centroidResult = centroidResultKey.get(*inSrc);
 
-        _coordKey.set(*outSrc, *wcs.pixelToSky(centroidResult.getCentroid()));
+        _coordKey.set(*outSrc, wcs.pixelToSky(centroidResult.getCentroid()));
 
         if (centroidResultKey.getCentroidErr().isValid()) {
             CentroidCov centroidCov = centroidResult.getCentroidErr();

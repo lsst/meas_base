@@ -27,6 +27,8 @@
 #include <bitset>
 
 #include "lsst/pex/config.h"
+#include "lsst/afw/geom/SkyWcs.h"
+#include "lsst/afw/image/Calib.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/afw/geom/ellipses/Quadrupole.h"
 #include "lsst/afw/table/aggregates.h"
@@ -279,7 +281,7 @@ public:
      */
     virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
                             afw::table::BaseCatalog & outputCatalog,
-                            afw::image::Wcs const & wcs,
+                            afw::geom::SkyWcs const & wcs,
                             afw::image::Calib const & calib) const;
 private:
     FluxTransform _fluxTransform;

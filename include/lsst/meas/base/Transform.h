@@ -30,6 +30,7 @@
  */
 
 #include <string>
+#include "lsst/afw/geom.h"
 #include "lsst/afw/image.h"
 #include "lsst/afw/table.h"
 #include "lsst/pex/exceptions.h"
@@ -86,7 +87,7 @@ public:
     virtual ~BaseTransform() {}
     virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
                             afw::table::BaseCatalog & outputCatalog,
-                            afw::image::Wcs const & wcs,
+                            afw::geom::SkyWcs const & wcs,
                             afw::image::Calib const & calib) const = 0;
 
 protected:
