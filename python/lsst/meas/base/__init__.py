@@ -39,6 +39,7 @@ from .blendedness import *
 from .circularApertureFlux import *
 from .exceptions import *
 from .gaussianFlux import *
+from .localBackground import *
 from .naiveCentroid import *
 from .peakLikelihoodFlux import *
 from .pixelFlags import *

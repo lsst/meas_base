@@ -95,6 +95,7 @@ private:
 
     Control _ctrl;
     FluxResultKey _fluxResultKey;
+    afw::table::Key<float> _areaKey;
     FlagHandler _flagHandler;
     SafeCentroidExtractor _centroidExtractor;
 };

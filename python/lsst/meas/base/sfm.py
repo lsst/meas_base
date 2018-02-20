@@ -130,6 +130,7 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
                  "base_SkyCoord",
                  "base_Variance",
                  "base_Blendedness",
+                 "base_LocalBackground",
                  ],
         doc="Plugins to be run and their configuration"
     )

@@ -61,6 +61,7 @@ PsfFluxAlgorithm::PsfFluxAlgorithm(
     _fluxResultKey(
         FluxResultKey::addFields(schema, name, "flux derived from linear least-squares fit of PSF model")
     ),
+    _areaKey(schema.addField<float>(name + "_area", "effective area of PSF", "pixel")),
     _centroidExtractor(schema, name)
 {
     _logName = logName.size() ? logName : name;
@@ -128,6 +129,7 @@ void PsfFluxAlgorithm::measure(
     // variance as if we had, so we'll apply the weights to the model vector now, and update alpha.
     result.fluxSigma = std::sqrt(model.square().matrix().dot(variance.matrix().cast<PsfPixel>()))
         / alpha;
+    measRecord.set(_areaKey, model.matrix().sum() / alpha);
     if (!std::isfinite(result.flux) || !std::isfinite(result.fluxSigma)) {
         throw LSST_EXCEPT(PixelValueError, "Invalid pixel value detected in image.");
     }
