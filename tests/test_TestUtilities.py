@@ -54,10 +54,10 @@ class TestDatasetTestCase(utilsTests.TestCase):
         self.assertEqual(DatasetTester.makePerturbedWcs(self.wcs, randomSeed=0),
                          DatasetTester.makePerturbedWcs(self.wcs, randomSeed=0))
 
-        # If we don't specify a seed, we should always get something
+        # If we specify different seeds, we should always get something
         # different.
-        self.assertNotEqual(DatasetTester.makePerturbedWcs(self.wcs),
-                            DatasetTester.makePerturbedWcs(self.wcs))
+        self.assertNotEqual(DatasetTester.makePerturbedWcs(self.wcs, randomSeed=1),
+                            DatasetTester.makePerturbedWcs(self.wcs, randomSeed=2))
 
     def test_randomState(self):
         """Test that we do not alter global state when perturbing the WCS."""

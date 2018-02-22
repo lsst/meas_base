@@ -183,7 +183,7 @@ class TestDataset(object):
     def makePerturbedWcs(oldWcs, minScaleFactor=1.2, maxScaleFactor=1.5,
                          minRotation=None, maxRotation=None,
                          minRefShift=None, maxRefShift=None,
-                         minPixShift=2.0, maxPixShift=4.0, randomSeed=None):
+                         minPixShift=2.0, maxPixShift=4.0, randomSeed=1):
         """!
         Create a new undistorted TAN WCS that is similar but not identical to another, with random
         scaling, rotation, and offset (in both pixel position and reference position).
@@ -424,7 +424,7 @@ class TestDataset(object):
             result.addSource(newFlux, newCentroid, newDeconvolvedShape)
         return result
 
-    def realize(self, noise, schema, randomSeed=None):
+    def realize(self, noise, schema, randomSeed=1):
         """!
         Create a simulated with noise and a simulated post-detection catalog with (Heavy)Footprints.
 
