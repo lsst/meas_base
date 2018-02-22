@@ -93,7 +93,7 @@ class LocalBackgroundTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         config = self.makeForcedMeasurementConfig(self.algName)
         self.setConfig(config)
         task = self.makeForcedMeasurementTask(self.algName, config=config)
-        measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs())
+        measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs(), randomSeed=12345)
         measDataset = self.dataset.transform(measWcs)
         exposure, truthCatalog = measDataset.realize(self.bgStdev, measDataset.makeMinimalSchema(),
                                                      randomSeed=12345)
