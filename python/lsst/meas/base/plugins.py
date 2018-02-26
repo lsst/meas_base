@@ -143,8 +143,7 @@ class SingleFrameFPPositionPlugin(SingleFramePlugin):
             fp = lsst.afw.geom.Point2D(numpy.nan, numpy.nan)
         else:
             center = measRecord.getCentroid()
-            posInPix = det.makeCameraPoint(center, lsst.afw.cameraGeom.PIXELS)
-            fp = det.transform(posInPix, lsst.afw.cameraGeom.FOCAL_PLANE).getPoint()
+            fp = det.transform(center, lsst.afw.cameraGeom.PIXELS, lsst.afw.cameraGeom.FOCAL_PLANE)
         measRecord.set(self.focalValue, fp)
 
     def fail(self, measRecord, error=None):
