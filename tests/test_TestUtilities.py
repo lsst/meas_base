@@ -25,7 +25,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import unittest
 import lsst.afw.geom as afwGeom
-import lsst.afw.coord as afwCoord
 import lsst.utils.tests as utilsTests
 
 # Rename the class on import so it does not confuse the test scanner
@@ -36,7 +35,7 @@ class TestDatasetTestCase(utilsTests.TestCase):
 
     def setUp(self):
         # Construct an arbitrary WCS for testing.
-        crval = afwCoord.IcrsCoord(45.0*afwGeom.degrees, 45.0*afwGeom.degrees)
+        crval = afwGeom.SpherePoint(45.0, 45.0, afwGeom.degrees)
         scale = 0.2*afwGeom.arcseconds
         crpix = afwGeom.PointD(100, 100)
         self.wcs = afwGeom.makeSkyWcs(crpix=crpix, crval=crval,

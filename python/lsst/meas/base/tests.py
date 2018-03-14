@@ -29,7 +29,6 @@ import lsst.afw.table
 import lsst.afw.image
 import lsst.afw.detection
 import lsst.afw.geom
-import lsst.afw.coord
 import lsst.pex.exceptions
 
 from .sfm import SingleFrameMeasurementTask
@@ -235,8 +234,8 @@ class TestDataset(object):
         matrix = newTransform.getMatrix()
         # Compute new coordinate reference pixel (CRVAL)
         oldSkyOrigin = oldWcs.getSkyOrigin()
-        newSkyOrigin = lsst.afw.coord.IcrsCoord(oldSkyOrigin.getRa() + refShiftRa,
-                                                oldSkyOrigin.getDec() + refShiftDec)
+        newSkyOrigin = lsst.afw.geom.SpherePoint(oldSkyOrigin.getRa() + refShiftRa,
+                                                 oldSkyOrigin.getDec() + refShiftDec)
         # Compute new pixel reference pixel (CRPIX)
         oldPixOrigin = oldWcs.getPixelOrigin()
         newPixOrigin = lsst.afw.geom.Point2D(oldPixOrigin.getX() + pixShiftX,
@@ -250,7 +249,7 @@ class TestDataset(object):
 
         @param[in]    bbox        Bounding box of the image (image coordinates) as returned by makeCatalog.
         @param[in]    wcs         New Wcs for the exposure (created from crval and cdelt if None).
-        @param[in]    crval       afw.coord.IcrsCoord: center of the TAN WCS attached to the image.
+        @param[in]    crval       afw.geom.SpherePoint: ICRS center of the TAN WCS attached to the image.
         @param[in]    cdelt       afw.geom.Angle: pixel scale of the image
         @param[in]    psfSigma    Radius (sigma) of the Gaussian PSF attached to the image
         @param[in]    psfDim      Width and height of the image's Gaussian PSF attached to the image
@@ -258,7 +257,7 @@ class TestDataset(object):
         """
         if wcs is None:
             if crval is None:
-                crval = lsst.afw.coord.IcrsCoord(45.0*lsst.afw.geom.degrees, 45.0*lsst.afw.geom.degrees)
+                crval = lsst.afw.geom.SpherePoint(45.0, 45.0, lsst.afw.geom.degrees)
             if cdelt is None:
                 cdelt = 0.2*lsst.afw.geom.arcseconds
             crpix = lsst.afw.geom.Box2D(bbox).getCenter()

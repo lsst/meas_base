@@ -32,7 +32,6 @@ from collections import namedtuple
 import unittest
 import lsst.utils.tests
 
-import lsst.afw.coord as afwCoord
 import lsst.afw.detection as afwDetection
 import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
@@ -131,7 +130,7 @@ class InputCountTest(lsst.utils.tests.TestCase):
         # These lines are used in the creation of WCS information
         scale = 1.0e-5 * afwGeom.degrees
         cdMatrix = afwGeom.makeCdMatrix(scale=scale)
-        crval = afwCoord.IcrsCoord(0.0*afwGeom.degrees, 0.0*afwGeom.degrees)
+        crval = afwGeom.SpherePoint(0.0, 0.0, afwGeom.degrees)
 
         # Construct the info needed to set the exposure object
         imageBox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.Extent2I(size, size))
@@ -199,7 +198,7 @@ class InputCountTest(lsst.utils.tests.TestCase):
         exp = afwImage.ExposureF(20, 20)
         scale = 1.0e-5*afwGeom.degrees
         wcs = afwGeom.makeSkyWcs(crpix=afwGeom.Point2D(0, 0),
-                                 crval=afwCoord.IcrsCoord(0.0*afwGeom.degrees, 0.0*afwGeom.degrees),
+                                 crval=afwGeom.SpherePoint(0.0, 0.0, afwGeom.degrees),
                                  cdMatrix=afwGeom.makeCdMatrix(scale=scale))
         exp.setWcs(wcs)
         if addCoaddInputs:
