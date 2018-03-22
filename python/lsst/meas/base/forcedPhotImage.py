@@ -120,7 +120,7 @@ class ForcedPhotImageTask(lsst.pipe.base.CmdLineTask):
             self.makeSubtask("applyApCorr", schema=self.measurement.schema)
         self.makeSubtask('catalogCalculation', schema=self.measurement.schema)
 
-    def run(self, dataRef):
+    def run(self, dataRef, psfCache=None):
         """!Measure a single exposure using forced detection for a reference catalog.
 
         @param[in]  dataRef   An lsst.daf.persistence.ButlerDataRef. It is passed to the
@@ -135,9 +135,13 @@ class ForcedPhotImageTask(lsst.pipe.base.CmdLineTask):
                               passed to the writeOutputs() method (implemented by derived classes)
                               which writes the outputs.  See derived class documentation for which
                               datasets and data ID keys are used.
+        @param[in]  psfCache  Size of PSF cache, or None. The size of the PSF cache can have
+                              a significant effect upon the runtime for complicated PSF models.
         """
         refWcs = self.references.getWcs(dataRef)
         exposure = self.getExposure(dataRef)
+        if psfCache is not None:
+            exposure.getPsf().setCacheSize(psfCache)
         refCat = self.fetchReferences(dataRef, exposure)
         measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
                                                    idFactory=self.makeIdFactory(dataRef))

@@ -71,6 +71,14 @@ class ForcedPhotCoaddConfig(ForcedPhotImageConfig):
 ## @}
 
 
+class ForcedPhotCoaddRunner(lsst.pipe.base.ButlerInitializedTaskRunner):
+    """Get the psfCache setting into ForcedPhotCoaddTask"""
+    @staticmethod
+    def getTargetList(parsedCmd, **kwargs):
+        return lsst.pipe.base.ButlerInitializedTaskRunner.getTargetList(parsedCmd,
+                                                                        psfCache=parsedCmd.psfCache)
+
+
 class ForcedPhotCoaddTask(ForcedPhotImageTask):
     """!
     A command-line driver for performing forced measurement on coadd images
@@ -169,4 +177,5 @@ class ForcedPhotCoaddTask(ForcedPhotImageTask):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "deepCoadd_forced_src", help="data ID, with raw CCD keys + tract",
                                ContainerClass=lsst.coadd.utils.CoaddDataIdContainer)
+        parser.add_argument("--psfCache", type=int, default=100, help="Size of CoaddPsf cache")
         return parser
