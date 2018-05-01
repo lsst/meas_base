@@ -24,7 +24,6 @@
 
 #include <memory>
 
-#include "numpy/arrayobject.h"
 #include "ndarray/pybind11.h"
 
 #include "lsst/afw/table/BaseRecord.h"
@@ -103,11 +102,6 @@ PYBIND11_PLUGIN(shapeUtilities) {
     py::module::import("lsst.afw.table");
 
     py::module mod("shapeUtilities");
-
-    if (_import_array() < 0) {
-        PyErr_SetString(PyExc_ImportError, "numpy.core.multiarray failed to import");
-        return nullptr;
-    }
 
     declareShapeResult(mod);
     declareShapeResultKey(mod);
