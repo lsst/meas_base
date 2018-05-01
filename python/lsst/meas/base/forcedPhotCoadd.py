@@ -57,8 +57,8 @@ class ForcedPhotCoaddConfig(ForcedPhotImageConfig):
 
     def validate(self):
         ForcedPhotImageTask.ConfigClass.validate(self)
-        if (self.measurement.doReplaceWithNoise and self.footprintDatasetName is not None
-                and self.references.removePatchOverlaps):
+        if (self.measurement.doReplaceWithNoise and self.footprintDatasetName is not None and
+                self.references.removePatchOverlaps):
             raise ValueError("Cannot use removePatchOverlaps=True with deblended footprints, as parent "
                              "sources may be rejected while their children are not.")
 
