@@ -35,14 +35,10 @@
 """
 %prog [options] arg
 """
-from __future__ import absolute_import, division, print_function
 import sys
 import optparse
 import math
 
-from builtins import map
-from builtins import range
-from builtins import object
 import numpy
 
 import lsst.afw.image as afwImage
@@ -57,7 +53,7 @@ import lsst.meas.base as measBase
 #
 
 
-class Gaussian(object):  # public std::binary_function<double, double, double> {
+class Gaussian:  # public std::binary_function<double, double, double> {
 
     def __init__(self, xcen, ycen, sigma, a):
         self.xcen = xcen
@@ -79,7 +75,7 @@ class Gaussian(object):  # public std::binary_function<double, double, double> {
 #
 # This functor isn't currently used in the routine
 # I'll leave it here in case I (someday) figure out how to integrate a python functor
-class RGaussian(object):  # public std::unary_function<double, double> {
+class RGaussian:  # public std::unary_function<double, double> {
 
     def __init__(self, sigma, a, apradius, aptaper):
         self.sigma = sigma

@@ -24,7 +24,6 @@
 Definitions and registration of pure-Python plugins with trivial implementations,
 and automatic plugin-from-algorithm calls for those implemented in C++.
 """
-from __future__ import absolute_import, division, print_function
 
 import numpy
 

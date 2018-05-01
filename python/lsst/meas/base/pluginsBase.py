@@ -22,7 +22,6 @@
 #
 import traceback
 
-from builtins import object
 
 import lsst.pex.config
 from .transforms import PassThroughTransform
@@ -39,7 +38,7 @@ class BasePluginConfig(lsst.pex.config.Config):
     pass
 
 
-class BasePlugin(object):
+class BasePlugin:
     """!
     Base class for measurement plugins.
 

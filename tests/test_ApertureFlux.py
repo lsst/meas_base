@@ -20,9 +20,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-from __future__ import absolute_import, division, print_function
-from builtins import zip
-from builtins import object
 import unittest
 
 import numpy as np
@@ -246,7 +243,7 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
 class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,
                                     lsst.utils.tests.TestCase):
 
-    class CircApFluxAlgorithmFactory(object):
+    class CircApFluxAlgorithmFactory:
         """
         Helper class to sub in an empty PropertyList as the final argument to
         CircularApertureFluxAlgorithm.

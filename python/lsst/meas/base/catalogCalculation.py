@@ -1,6 +1,5 @@
 from collections import namedtuple
 
-from builtins import object
 
 import lsst.pipe.base
 import lsst.pex.config
@@ -71,7 +70,7 @@ class CatalogCalculationPlugin(BasePlugin):
         raise NotImplementedError()
 
 
-class CCContext(object):
+class CCContext:
     '''
     Context manager to handle catching errors that may have been thrown in a catalogCalculation plugin
     @param[in] plugin   The plugin that is to be run

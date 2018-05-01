@@ -24,7 +24,6 @@
 """
 import collections
 
-from builtins import object
 
 import lsst.pipe.base
 import lsst.pex.config
@@ -68,7 +67,7 @@ class PluginRegistry(lsst.pex.config.Registry):
     Single-frame and forced plugins have different registries.
     """
 
-    class Configurable(object):
+    class Configurable:
         """!
         Class used as the actual element in the registry
 
