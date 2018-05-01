@@ -1,6 +1,5 @@
 from collections import namedtuple
 
-
 import lsst.pipe.base
 import lsst.pex.config
 import lsst.daf.base

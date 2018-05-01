@@ -24,7 +24,8 @@
 
 import os
 import sys
-import numpy
+
+import numpy as np
 
 from lsst.utils import getProductDir
 import lsst.afw.table as afwTable
@@ -51,7 +52,7 @@ def loadData():
     exposure.setPsf(psf)
 
     im = exposure.getMaskedImage().getImage()
-    im -= float(numpy.median(im.getArray()))
+    im -= float(np.median(im.getArray()))
 
     return exposure
 

@@ -24,7 +24,6 @@
 """
 import collections
 
-
 import lsst.pipe.base
 import lsst.pex.config
 from .apCorrRegistry import addApCorrName

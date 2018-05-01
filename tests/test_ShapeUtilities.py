@@ -22,7 +22,7 @@
 
 import unittest
 
-import numpy
+import numpy as np
 
 import lsst.afw.geom
 import lsst.meas.base
@@ -34,23 +34,23 @@ class ShapeTransformMatrixTestCase(lsst.utils.tests.TestCase):
     def testIdentity(self):
         # A no-op coordinate transform translates to a no-op shape transform
         a = lsst.afw.geom.AffineTransform()
-        numpy.testing.assert_array_equal(a.getMatrix(), numpy.identity(3))
+        np.testing.assert_array_equal(a.getMatrix(), np.identity(3))
         m = lsst.meas.base.makeShapeTransformMatrix(a.getLinear())
-        numpy.testing.assert_array_equal(m, numpy.identity(3))
+        np.testing.assert_array_equal(m, np.identity(3))
 
     def testVsTransform(self):
         # Transforming an ellipse by multiplying by the matrix should be
         # equivalent to calling its transform() method.
-        lt = lsst.afw.geom.LinearTransform.makeRotation(lsst.afw.geom.Angle(numpy.random.random()))
-        e = lsst.afw.geom.Quadrupole(numpy.random.random(), numpy.random.random(),
-                                     numpy.random.random())
-        numpy.testing.assert_array_almost_equal(numpy.dot(lsst.meas.base.makeShapeTransformMatrix(lt),
-                                                          e.getParameterVector()),
-                                                e.transform(lt).getParameterVector())
+        lt = lsst.afw.geom.LinearTransform.makeRotation(lsst.afw.geom.Angle(np.random.random()))
+        e = lsst.afw.geom.Quadrupole(np.random.random(), np.random.random(),
+                                     np.random.random())
+        np.testing.assert_array_almost_equal(np.dot(lsst.meas.base.makeShapeTransformMatrix(lt),
+                                                    e.getParameterVector()),
+                                             e.transform(lt).getParameterVector())
 
     def testVales(self):
         # Test that the analytically-derived correct values are computed
-        lt = lsst.afw.geom.LinearTransform(numpy.random.random((2, 2)))
+        lt = lsst.afw.geom.LinearTransform(np.random.random((2, 2)))
         m = lsst.meas.base.makeShapeTransformMatrix(lt)
 
         self.assertEqual(m[0, 0], lt[0, 0]*lt[0, 0])

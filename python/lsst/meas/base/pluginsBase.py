@@ -22,7 +22,6 @@
 #
 import traceback
 
-
 import lsst.pex.config
 from .transforms import PassThroughTransform
 

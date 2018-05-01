@@ -23,8 +23,9 @@
 """
 Tests for Variance measurement algorithm
 """
-import numpy as np
 import unittest
+
+import numpy as np
 
 import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
