@@ -185,19 +185,19 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         self.slots.instFlux = None
         self.slots.calibFlux = None
 
-## \addtogroup LSST_task_documentation
-## \{
-## \page ForcedMeasurementTask
-## \ref ForcedMeasurementTask_ "ForcedMeasurementTask"
-## \copybrief ForcedMeasurementTask
-## \}
+## @addtogroup LSST_task_documentation
+## @{
+## @page ForcedMeasurementTask
+## @ref ForcedMeasurementTask_ "ForcedMeasurementTask"
+## @copybrief ForcedMeasurementTask
+## @}
 
 
 class ForcedMeasurementTask(BaseMeasurementTask):
     """!
-    \anchor ForcedMeasurementTask_
+    @anchor ForcedMeasurementTask_
 
-    \brief A subtask for measuring the properties of sources on a single
+    @brief A subtask for measuring the properties of sources on a single
     exposure, using an existing "reference" catalog to constrain some aspects
     of the measurement.
 
