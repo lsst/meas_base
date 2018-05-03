@@ -24,7 +24,7 @@
 Definition and registration of classification plugins
 """
 
-import numpy
+import numpy as np
 
 import lsst.pex.config
 from .catalogCalculation import CatalogCalculationPluginConfig, CatalogCalculationPlugin
@@ -89,7 +89,7 @@ class CatalogCalculationClassificationPlugin(CatalogCalculationPlugin):
         # A generic failure also occurs if either calculated flux value is NAN:
         #     this can occur if the Flux field itself is NAN,
         #     or the ErrFactor != 0 and the FluxErr is NAN
-        if numpy.isnan(flux1) or numpy.isnan(flux2) or modelFluxFlag or psfFluxFlag:
+        if np.isnan(flux1) or np.isnan(flux2) or modelFluxFlag or psfFluxFlag:
             self.fail(measRecord)
         else:
             measRecord.set(self.keyProbability, 0.0 if flux1 < flux2 else 1.0)

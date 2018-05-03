@@ -35,15 +35,11 @@
 """
 %prog [options] arg
 """
-from __future__ import absolute_import, division, print_function
 import sys
 import optparse
 import math
 
-from builtins import map
-from builtins import range
-from builtins import object
-import numpy
+import numpy as np
 
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
@@ -57,7 +53,7 @@ import lsst.meas.base as measBase
 #
 
 
-class Gaussian(object):  # public std::binary_function<double, double, double> {
+class Gaussian:  # public std::binary_function<double, double, double> {
 
     def __init__(self, xcen, ycen, sigma, a):
         self.xcen = xcen
@@ -69,8 +65,8 @@ class Gaussian(object):  # public std::binary_function<double, double, double> {
         xx = x - self.xcen
         yy = y - self.ycen
         ss = self.sigma*self.sigma
-        coeff = self.a * (1.0/(2.0*numpy.pi*ss))
-        expon = numpy.exp(-(xx*xx + yy*yy) / (2.0*ss))
+        coeff = self.a * (1.0/(2.0*np.pi*ss))
+        expon = np.exp(-(xx*xx + yy*yy) / (2.0*ss))
         return coeff*expon
 
 
@@ -79,7 +75,7 @@ class Gaussian(object):  # public std::binary_function<double, double, double> {
 #
 # This functor isn't currently used in the routine
 # I'll leave it here in case I (someday) figure out how to integrate a python functor
-class RGaussian(object):  # public std::unary_function<double, double> {
+class RGaussian:  # public std::unary_function<double, double> {
 
     def __init__(self, sigma, a, apradius, aptaper):
         self.sigma = sigma
@@ -89,13 +85,13 @@ class RGaussian(object):  # public std::unary_function<double, double> {
 
     def __call__(self, r):
         ss = self.sigma*self.sigma
-        gauss = self.a * (1.0/(2.0*numpy.pi*ss)) * numpy.exp(-(r*r)/(2.0*ss))
+        gauss = self.a * (1.0/(2.0*np.pi*ss)) * np.exp(-(r*r)/(2.0*ss))
         aperture = 0.0
         if (r <= self.apradius):
             aperture = 1.0
         elif (r > self.apradius and r < self.apradius + self.aptaper):
-            aperture = 0.5*(1.0 + math.cos(numpy.pi*(r - self.apradius)/self.aptaper))
-        return aperture*gauss*(r*2.0*numpy.pi)
+            aperture = 0.5*(1.0 + math.cos(np.pi*(r - self.apradius)/self.aptaper))
+        return aperture*gauss*(r*2.0*np.pi)
 
 
 #############################################################

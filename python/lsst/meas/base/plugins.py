@@ -24,9 +24,8 @@
 Definitions and registration of pure-Python plugins with trivial implementations,
 and automatic plugin-from-algorithm calls for those implemented in C++.
 """
-from __future__ import absolute_import, division, print_function
 
-import numpy
+import numpy as np
 
 import lsst.pex.exceptions
 import lsst.afw.detection
@@ -140,7 +139,7 @@ class SingleFrameFPPositionPlugin(SingleFramePlugin):
         det = exposure.getDetector()
         if not det:
             measRecord.set(self.detectorFlag, True)
-            fp = lsst.afw.geom.Point2D(numpy.nan, numpy.nan)
+            fp = lsst.afw.geom.Point2D(np.nan, np.nan)
         else:
             center = measRecord.getCentroid()
             fp = det.transform(center, lsst.afw.cameraGeom.PIXELS, lsst.afw.cameraGeom.FOCAL_PLANE)
@@ -178,7 +177,7 @@ class SingleFrameJacobianPlugin(SingleFramePlugin):
         center = measRecord.getCentroid()
         # Compute the area of a pixel at a source record's centroid, and take the
         # ratio of that with the defined reference pixel area.
-        result = numpy.abs(self.scale*exposure.getWcs().linearizePixelToSky(
+        result = np.abs(self.scale*exposure.getWcs().linearizePixelToSky(
             center,
             lsst.afw.geom.arcseconds).getLinear().computeDeterminant())
         measRecord.set(self.jacValue, result)
@@ -221,7 +220,7 @@ class VariancePlugin(GenericPlugin):
     def measure(self, measRecord, exposure, center):
         # Create an aperture and grow it by scale value defined in config to ensure there are enough
         # pixels around the object to get decent statistics
-        if not numpy.all(numpy.isfinite(measRecord.getCentroid())):
+        if not np.all(np.isfinite(measRecord.getCentroid())):
             raise MeasurementError("Bad centroid and/or shape", self.FAILURE_BAD_CENTROID)
         aperture = lsst.afw.geom.Ellipse(measRecord.getShape(), measRecord.getCentroid())
         aperture.scale(self.config.scale)
@@ -233,12 +232,12 @@ class VariancePlugin(GenericPlugin):
         maskedImage = exposure.getMaskedImage()
         pixels = lsst.afw.detection.makeHeavyFootprint(foot, maskedImage)
         maskBits = maskedImage.getMask().getPlaneBitMask(self.config.mask)
-        logicalMask = numpy.logical_not(pixels.getMaskArray() & maskBits)
+        logicalMask = np.logical_not(pixels.getMaskArray() & maskBits)
         # Compute the median variance value for each pixel not excluded by the mask and write the record.
         # Numpy median is used here instead of afw.math makeStatistics because of an issue with data types
         # being passed into the C++ layer (DM-2379).
-        if numpy.any(logicalMask):
-            medVar = numpy.median(pixels.getVarianceArray()[logicalMask])
+        if np.any(logicalMask):
+            medVar = np.median(pixels.getVarianceArray()[logicalMask])
             measRecord.set(self.varValue, medVar)
         else:
             raise MeasurementError("Footprint empty, or all pixels are masked, can't compute median",
@@ -251,7 +250,7 @@ class VariancePlugin(GenericPlugin):
             # FAILURE_BAD_CENTROID handled by alias to centroid record.
             if error.getFlagBit() == self.FAILURE_EMPTY_FOOTPRINT:
                 measRecord.set(self.emptyFootprintFlag, True)
-        measRecord.set(self.varValue, numpy.nan)
+        measRecord.set(self.varValue, np.nan)
         GenericPlugin.fail(self, measRecord, error)
 
 
@@ -294,7 +293,7 @@ class InputCountPlugin(GenericPlugin):
     def measure(self, measRecord, exposure, center):
         if not exposure.getInfo().getCoaddInputs():
             raise MeasurementError("No coadd inputs defined.", self.FAILURE_NO_INPUTS)
-        if not numpy.all(numpy.isfinite(center)):
+        if not np.all(np.isfinite(center)):
             raise MeasurementError("Source has a bad centroid.", self.FAILURE_BAD_CENTROID)
 
         ccds = exposure.getInfo().getCoaddInputs().ccds

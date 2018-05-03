@@ -21,8 +21,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-from builtins import zip
-from builtins import object
 import numpy as np
 
 import lsst.afw.table
@@ -40,7 +38,7 @@ __all__ = ("BlendContext", "TestDataset", "AlgorithmTestCase", "TransformTestCas
            "FluxTransformTestCase", "CentroidTransformTestCase")
 
 
-class BlendContext(object):
+class BlendContext:
     """!
     A Python context manager used to add multiple overlapping sources along with a parent source
     that represents all of them together.
@@ -118,7 +116,7 @@ class BlendContext(object):
             record.setFootprint(heavyFootprint)
 
 
-class TestDataset(object):
+class TestDataset:
     """!
     A simulated dataset consisting of a test image and an associated truth catalog.
 
@@ -475,7 +473,7 @@ class TestDataset(object):
         return exposure, catalog
 
 
-class AlgorithmTestCase(object):
+class AlgorithmTestCase:
 
     def makeSingleFrameMeasurementConfig(self, plugin=None, dependencies=()):
         """Convenience function to create a Config instance for SingleFrameMeasurementTask
@@ -544,7 +542,7 @@ class AlgorithmTestCase(object):
         return ForcedMeasurementTask(refSchema=refSchema, algMetadata=algMetadata, config=config)
 
 
-class TransformTestCase(object):
+class TransformTestCase:
     """!
     Base class for testing measurement transformations.
 
@@ -656,7 +654,7 @@ class TransformTestCase(object):
             self._checkRegisteredTransform(lsst.meas.base.ForcedPlugin.registry, pluginName)
 
 
-class SingleFramePluginTransformSetupHelper(object):
+class SingleFramePluginTransformSetupHelper:
 
     def _setupTransform(self):
         self.control = self.controlClass()
@@ -675,7 +673,7 @@ class SingleFramePluginTransformSetupHelper(object):
         self.outputCat = lsst.afw.table.BaseCatalog(self.mapper.getOutputSchema())
 
 
-class ForcedPluginTransformSetupHelper(object):
+class ForcedPluginTransformSetupHelper:
 
     def _setupTransform(self):
         self.control = self.controlClass()

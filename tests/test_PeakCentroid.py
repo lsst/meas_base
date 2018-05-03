@@ -20,8 +20,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-from __future__ import absolute_import, division, print_function
-from builtins import object
 from contextlib import contextmanager
 import unittest
 
@@ -95,7 +93,7 @@ class SingleFramePeakCentroidTransformTestCase(CentroidTransformTestCase,
                                                SingleFramePluginTransformSetupHelper,
                                                lsst.utils.tests.TestCase):
 
-    class SingleFramePeakCentroidPluginFactory(object):
+    class SingleFramePeakCentroidPluginFactory:
         """
         Helper class to sub in an empty PropertyList as the final argument to
         lsst.meas.base.SingleFramePeakCentroidPlugin.

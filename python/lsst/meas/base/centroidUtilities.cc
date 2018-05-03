@@ -24,7 +24,6 @@
 
 #include <memory>
 
-#include "numpy/arrayobject.h"
 #include "ndarray/pybind11.h"
 
 #include "lsst/meas/base/CentroidUtilities.h"
@@ -114,11 +113,6 @@ PYBIND11_PLUGIN(centroidUtilities) {
     py::module::import("lsst.meas.base.transform");
 
     py::module mod("centroidUtilities");
-
-    if (_import_array() < 0) {
-        PyErr_SetString(PyExc_ImportError, "numpy.core.multiarray failed to import");
-        return nullptr;
-    }
 
     declareCentroidResult(mod);
     declareCentroidResultKey(mod);

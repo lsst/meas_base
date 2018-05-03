@@ -19,11 +19,9 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-from __future__ import absolute_import, division, print_function
 import math
 
-from builtins import object
-import numpy
+import numpy as np
 
 import lsst.pex.config
 import lsst.pex.exceptions
@@ -40,7 +38,7 @@ UseNaiveFluxSigma = True
 __all__ = ("ApplyApCorrConfig", "ApplyApCorrTask")
 
 
-class ApCorrInfo(object):
+class ApCorrInfo:
     """!Catalog field names and keys needed to aperture correct a particular flux
     """
 
@@ -99,12 +97,12 @@ class ApCorrInfo(object):
             self.apCorrKey = schema.addField(
                 name + "_apCorr",
                 doc="aperture correction applied to %s" % (name,),
-                type=numpy.float64,
+                type=np.float64,
             )
             self.apCorrSigmaKey = schema.addField(
                 name + "_apCorrSigma",
                 doc="aperture correction applied to %s" % (name,),
-                type=numpy.float64,
+                type=np.float64,
             )
         else:
             aliases = schema.getAliasMap()
@@ -243,8 +241,8 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
 
             if self.log.getLevel() <= self.log.DEBUG:
                 # log statistics on the effects of aperture correction
-                apCorrArr = numpy.array([s.get(apCorrInfo.apCorrKey) for s in catalog])
-                apCorrSigmaArr = numpy.array([s.get(apCorrInfo.apCorrSigmaKey) for s in catalog])
+                apCorrArr = np.array([s.get(apCorrInfo.apCorrKey) for s in catalog])
+                apCorrSigmaArr = np.array([s.get(apCorrInfo.apCorrSigmaKey) for s in catalog])
                 self.log.debug("For flux field %r: mean apCorr=%s, stdDev apCorr=%s, "
                                "mean apCorrSigma=%s, stdDev apCorrSigma=%s for %s sources",
                                apCorrInfo.name, apCorrArr.mean(), apCorrArr.std(),

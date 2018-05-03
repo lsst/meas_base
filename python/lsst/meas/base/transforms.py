@@ -44,8 +44,6 @@ assume that the contents of the output catalog are inconsistent.
 Transformations can be defined in Python or in C++. Python code should inherit
 from `MeasurementTransform`, following its interface.
 """
-from builtins import zip
-from builtins import object
 
 from lsst.afw.table import CoordKey
 from lsst.pex.exceptions import LengthError
@@ -54,7 +52,7 @@ from . import CentroidResultKey
 __all__ = ("NullTransform", "PassThroughTransform", "SimpleCentroidTransform")
 
 
-class MeasurementTransform(object):
+class MeasurementTransform:
     """!
     Base class for measurement transformations.
 

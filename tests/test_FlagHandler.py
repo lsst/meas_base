@@ -20,7 +20,6 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 """ Unit tests for Python Plugin FlagHandlers and Sample Plugin Example."""
-from __future__ import absolute_import, division, print_function
 import unittest
 
 import numpy as np

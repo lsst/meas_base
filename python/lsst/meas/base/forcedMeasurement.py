@@ -46,7 +46,6 @@ run, and hence avoid using the reference catalog at all.
 Command-line driver tasks for forced measurement can be found in forcedPhotImage.py, including
 ForcedPhotImageTask, ForcedPhotCcdTask, and ForcedPhotCoaddTask.
 """
-from builtins import zip
 
 import lsst.pex.config
 import lsst.pipe.base
@@ -186,19 +185,19 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         self.slots.instFlux = None
         self.slots.calibFlux = None
 
-## \addtogroup LSST_task_documentation
-## \{
-## \page ForcedMeasurementTask
-## \ref ForcedMeasurementTask_ "ForcedMeasurementTask"
-## \copybrief ForcedMeasurementTask
-## \}
+## @addtogroup LSST_task_documentation
+## @{
+## @page ForcedMeasurementTask
+## @ref ForcedMeasurementTask_ "ForcedMeasurementTask"
+## @copybrief ForcedMeasurementTask
+## @}
 
 
 class ForcedMeasurementTask(BaseMeasurementTask):
     """!
-    \anchor ForcedMeasurementTask_
+    @anchor ForcedMeasurementTask_
 
-    \brief A subtask for measuring the properties of sources on a single
+    @brief A subtask for measuring the properties of sources on a single
     exposure, using an existing "reference" catalog to constrain some aspects
     of the measurement.
 

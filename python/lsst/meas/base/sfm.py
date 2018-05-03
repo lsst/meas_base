@@ -141,19 +141,19 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
         doc="Plugins to run on undeblended image"
     )
 
-## \addtogroup LSST_task_documentation
-## \{
-## \page SingleFrameMeasurementTask
-## \ref SingleFrameMeasurementTask_ "SingleFrameMeasurementTask"
-## \copybrief SingleFrameMeasurementTask
-## \}
+## @addtogroup LSST_task_documentation
+## @{
+## @page SingleFrameMeasurementTask
+## @ref SingleFrameMeasurementTask_ "SingleFrameMeasurementTask"
+## @copybrief SingleFrameMeasurementTask
+## @}
 
 
 class SingleFrameMeasurementTask(BaseMeasurementTask):
     """!
-    \anchor SingleFrameMeasurementTask_
+    @anchor SingleFrameMeasurementTask_
 
-    \brief A subtask for measuring the properties of sources on a single exposure.
+    @brief A subtask for measuring the properties of sources on a single exposure.
 
     The task is configured with a list of "plugins": each plugin defines the values it
     measures (i.e. the columns in a table it will fill) and conducts that measurement

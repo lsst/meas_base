@@ -20,8 +20,6 @@
 # the GNU General Public License along with this program.  If not,
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
-from builtins import str
-from builtins import object
 
 import math
 
@@ -56,7 +54,7 @@ class NoiseReplacerConfig(lsst.pex.config.Config):
     )
 
 
-class NoiseReplacer(object):
+class NoiseReplacer:
     """!
     Class that handles replacing sources with noise during measurement.
 
@@ -355,7 +353,7 @@ class NoiseReplacerList(list):
             self.end()
 
 
-class NoiseGenerator(object):
+class NoiseGenerator:
     """!
     Base class for noise generators used by the "doReplaceWithNoise" routine:
     these produce HeavyFootprints filled with noise generated in various ways.
@@ -463,7 +461,7 @@ class VariancePlaneNoiseGenerator(GaussianNoiseGenerator):
         return rim
 
 
-class DummyNoiseReplacer(object):
+class DummyNoiseReplacer:
     """!
     A do-nothing standin for NoiseReplacer, used when we want to disable NoiseReplacer
 
