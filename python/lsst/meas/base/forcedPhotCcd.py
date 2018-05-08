@@ -29,7 +29,7 @@ import lsst.pipe.base
 import lsst.afw.geom
 import lsst.afw.image
 import lsst.afw.table
-from lsst.geom import convexHull
+import lsst.sphgeom
 
 from .forcedPhotImage import ForcedPhotImageTask, ForcedPhotImageConfig
 
@@ -110,13 +110,11 @@ def overlapsTract(tract, imageWcs, imageBox):
     @param imageBox: Bounding box for image
     @return bool
     """
-    tractWcs = tract.getWcs()
-    tractCorners = [tractWcs.pixelToSky(lsst.afw.geom.Point2D(coord)).getVector() for
-                    coord in tract.getBBox().getCorners()]
-    tractPoly = convexHull(tractCorners)
+    tractPoly = tract.getOuterSkyPolygon()
 
+    imagePixelCorners = lsst.afw.geom.Box2D(imageBox).getCorners()
     try:
-        imageCorners = [imageWcs.pixelToSky(lsst.afw.geom.Point2D(pix)) for pix in imageBox.getCorners()]
+        imageSkyCorners = imageWcs.pixelToSky(imagePixelCorners)
     except lsst.pex.exceptions.LsstCppException as e:
         # Protecting ourselves from awful Wcs solutions in input images
         if (not isinstance(e.message, lsst.pex.exceptions.DomainErrorException) and
@@ -124,9 +122,7 @@ def overlapsTract(tract, imageWcs, imageBox):
             raise
         return False
 
-    imagePoly = convexHull([coord.getVector() for coord in imageCorners])
-    if imagePoly is None:
-        return False
+    imagePoly = lsst.sphgeom.ConvexPolygon.convexHull([coord.getVector() for coord in imageSkyCorners])
     return tractPoly.intersects(imagePoly)  # "intersects" also covers "contains" or "is contained by"
 
 
