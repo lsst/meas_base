@@ -38,7 +38,7 @@ try:
 except ImportError:
     applyMosaicResults = None
 
-__all__ = ("PerTractCcdDataIdContainer", "ForcedPhotCcdConfig", "ForcedPhotCcdTask")
+__all__ = ("PerTractCcdDataIdContainer", "ForcedPhotCcdConfig", "ForcedPhotCcdTask", "imageOverlapsTract")
 
 
 class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
@@ -84,7 +84,7 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
                     # Going with just the nearest tract.  Since we're throwing all tracts for the visit
                     # together, this shouldn't be a problem unless the tracts are much smaller than a CCD.
                     tract = skymap.findTract(wcs.pixelToSky(box.getCenter()))
-                    if overlapsTract(tract, wcs, box):
+                    if imageOverlapsTract(tract, wcs, box):
                         visitTract[visit].add(tract.getId())
             else:
                 self.refList.extend(ref for ref in namespace.butler.subset(self.datasetType, dataId=dataId))
@@ -102,7 +102,7 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
             log.info("Number of visits for each tract: %s", dict(tractCounter))
 
 
-def overlapsTract(tract, imageWcs, imageBox):
+def imageOverlapsTract(tract, imageWcs, imageBox):
     """Return whether the image (specified by Wcs and bounding box) overlaps the tract
 
     @param tract: TractInfo specifying a tract
