@@ -29,6 +29,7 @@
 
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/table/Source.h"
+#include "lsst/afw/geom/Box.h"
 #include "lsst/afw/geom/Point.h"
 #include "lsst/afw/geom/SpanSet.h"
 #include "lsst/meas/base/PixelFlags.h"

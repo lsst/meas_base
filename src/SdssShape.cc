@@ -29,6 +29,7 @@
 #include "lsst/afw/image.h"
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/geom/Angle.h"
+#include "lsst/afw/geom/Box.h"
 #include "lsst/afw/geom/ellipses.h"
 #include "lsst/afw/geom/LinearTransform.h"
 #include "lsst/afw/table/Source.h"

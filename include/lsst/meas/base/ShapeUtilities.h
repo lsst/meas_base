@@ -25,6 +25,7 @@
 #define LSST_MEAS_BASE_ShapeUtilities_h_INCLUDED
 
 #include "lsst/meas/base/constants.h"
+#include "lsst/afw/geom/LinearTransform.h"
 #include "lsst/afw/table/aggregates.h"
 
 namespace lsst { namespace meas { namespace base {

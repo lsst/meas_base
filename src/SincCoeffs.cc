@@ -28,6 +28,8 @@
 #include "fftw3.h"
 
 #include "lsst/meas/base/SincCoeffs.h"
+#include "lsst/afw/geom/Angle.h"
+#include "lsst/afw/geom/Extent.h"
 #include "lsst/afw/image/Image.h"
 #include "lsst/afw/math/Integrate.h"
 
