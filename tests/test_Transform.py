@@ -51,7 +51,7 @@ def makeWcs():
     md.set("CRPIX2", 0)
     md.set("CRVAL1", 0)
     md.set("CRVAL2", 0)
-    md.set("RADECSYS", "FK5")
+    md.set("RADESYS", "FK5")
     md.set("EQUINOX", 2000.0)
     return makeSkyWcs(md)
 
