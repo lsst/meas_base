@@ -1,5 +1,6 @@
 _build.*
 .cache
+.pytest_cache
 *.dylib
 *.o
 *.so
