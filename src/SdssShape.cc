@@ -26,12 +26,12 @@
 
 #include "boost/tuple/tuple.hpp"
 #include "Eigen/LU"
+#include "lsst/geom/Angle.h"
+#include "lsst/geom/Box.h"
+#include "lsst/geom/LinearTransform.h"
 #include "lsst/afw/image.h"
 #include "lsst/afw/detection/Psf.h"
-#include "lsst/afw/geom/Angle.h"
-#include "lsst/afw/geom/Box.h"
 #include "lsst/afw/geom/ellipses.h"
-#include "lsst/afw/geom/LinearTransform.h"
 #include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/exceptions.h"
 #include "lsst/meas/base/SdssShape.h"
@@ -81,7 +81,7 @@ double computeFluxScale(SdssShapeResult const & result) {
     double const Muu = 0.5*(Muu_p_Mvv + Muu_m_Mvv);
     double const Mvv = 0.5*(Muu_p_Mvv - Muu_m_Mvv);
 
-    return lsst::afw::geom::TWOPI * ::sqrt(Muu*Mvv);
+    return geom::TWOPI * ::sqrt(Muu*Mvv);
 }
 
 /*****************************************************************************/
@@ -118,10 +118,10 @@ calc_fisher(SdssShapeResult const& shape, // the Shape that we want the the Fish
         throw LSST_EXCEPT(lsst::pex::exceptions::DomainError,
                           (boost::format("Background variance must be positive (saw %g)") % bkgd_var).str());
     }
-    double const F = afwGeom::PI*sqrt(D)/bkgd_var;
-/*
- * Calculate the 10 independent elements of the 4x4 Fisher matrix
- */
+    double const F = geom::PI*sqrt(D)/bkgd_var;
+    /*
+     * Calculate the 10 independent elements of the 4x4 Fisher matrix
+     */
     Matrix4d fisher;
 
     double fac = F*A/(4.0*D);
@@ -203,17 +203,17 @@ bool shouldInterp(double sigma11, double sigma22, double det) {
 // Decide on the bounding box for the region to examine while calculating the adaptive moments
 // This routine will work in either LOCAL or PARENT coordinates (but of course which you pass
 // determine which you will get back).
-afw::geom::Box2I computeAdaptiveMomentsBBox(
-    afw::geom::Box2I const & bbox,  // full image bbox
-    afw::geom::Point2D const & center, // centre of object
+geom::Box2I computeAdaptiveMomentsBBox(
+    geom::Box2I const & bbox,  // full image bbox
+    geom::Point2D const & center, // centre of object
     double sigma11_w,              // quadratic moments of the
     double ,                       //         weighting function
     double sigma22_w,              //                    xx, xy, and yy
     double maxRadius = 1000        // Maximum radius of area to use
 ) {
     double radius = std::min(4*std::sqrt(std::max(sigma11_w, sigma22_w)), maxRadius);
-    afw::geom::Extent2D offset(radius, radius);
-    afw::geom::Box2I result(afw::geom::Box2D(center - offset, center + offset));
+    geom::Extent2D offset(radius, radius);
+    geom::Box2I result(geom::Box2D(center - offset, center + offset));
     result.clip(bbox);
     return result;
 }
@@ -226,7 +226,7 @@ template<bool fluxOnly, typename ImageT>
 static int
 calcmom(ImageT const& image,            // the image data
         float xcen, float ycen,         // centre of object
-        lsst::afw::geom::BoxI bbox,    // bounding box to consider
+        geom::BoxI bbox,                // bounding box to consider
         float bkgd,                     // data's background level
         bool interpflag,                // interpolate within pixels?
         double w11, double w12, double w22, // weights
@@ -367,8 +367,8 @@ calcmom(ImageT const& image,            // the image data
 
 
     std::tuple<std::pair<bool, double>, double, double, double> const weights = getWeights(w11, w12, w22);
-    double const detW = std::get<1>(weights)*std::get<3>(weights) - std::pow(std::get<2>(weights), 2);
-    *pI0 = sum/(afwGeom::PI*sqrt(detW));
+    double const detW = std::get<1>(weights) * std::get<3>(weights) - std::pow(std::get<2>(weights), 2);
+    *pI0 = sum/(geom::PI*sqrt(detW));
     if (psum) {
         *psum = sum;
     }
@@ -434,10 +434,10 @@ bool getAdaptiveMoments(ImageT const& mimage, double bkgd, double xcen, double y
     }
 
     bool interpflag = false;            // interpolate finer than a pixel?
-    lsst::afw::geom::BoxI bbox;
+    geom::BoxI bbox;
     int iter = 0;                       // iteration number
     for (; iter < maxIter; iter++) {
-        bbox = computeAdaptiveMomentsBBox(image.getBBox(afw::image::LOCAL), afw::geom::Point2D(xcen, ycen),
+        bbox = computeAdaptiveMomentsBBox(image.getBBox(afw::image::LOCAL), geom::Point2D(xcen, ycen),
                                           sigma11W, sigma12W, sigma22W);
         std::tuple<std::pair<bool, double>, double, double, double> weights =
             getWeights(sigma11W, sigma12W, sigma22W);
@@ -808,7 +808,7 @@ SdssShapeAlgorithm::SdssShapeAlgorithm(
 template <typename ImageT>
 SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(
     ImageT const & image,
-    afw::geom::Point2D const & center,
+    geom::Point2D const & center,
     bool negative,
     Control const & control
 ) {
@@ -875,14 +875,13 @@ template <typename ImageT>
 FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(
     ImageT const & image,
     afw::geom::ellipses::Quadrupole const & shape,
-    afw::geom::Point2D const & center
+    geom::Point2D const & center
 ) {
     // while arguments to computeFixedMomentsFlux are in PARENT coordinates, the implementation is LOCAL.
-    afw::geom::Point2D localCenter = center - afw::geom::Extent2D(image.getXY0());
+    geom::Point2D localCenter = center - geom::Extent2D(image.getXY0());
 
-    afwGeom::BoxI const bbox = computeAdaptiveMomentsBBox(image.getBBox(afw::image::LOCAL),
-                                                          localCenter,
-                                                          shape.getIxx(), shape.getIxy(), shape.getIyy());
+    geom::BoxI const bbox = computeAdaptiveMomentsBBox(image.getBBox(afw::image::LOCAL), localCenter,
+                                                       shape.getIxx(), shape.getIxy(), shape.getIyy());
 
     std::tuple<std::pair<bool, double>, double, double, double> weights =
         getWeights(shape.getIxx(), shape.getIxy(), shape.getIyy());
@@ -904,14 +903,14 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(
         throw LSST_EXCEPT(pex::exceptions::RuntimeError, "Error from calcmom");
     }
 
-    double const wArea = afw::geom::PI*std::sqrt(shape.getDeterminant());
+    double const wArea = geom::PI*std::sqrt(shape.getDeterminant());
 
     result.flux = i0*2*wArea;
 
     if (ImageAdaptor<ImageT>::hasVariance) {
         int ix = static_cast<int>(center.getX() - image.getX0());
         int iy = static_cast<int>(center.getY() - image.getY0());
-        if (!image.getBBox(afw::image::LOCAL).contains(afw::geom::Point2I(ix, iy))) {
+        if (!image.getBBox(afw::image::LOCAL).contains(geom::Point2I(ix, iy))) {
             throw LSST_EXCEPT(pex::exceptions::RuntimeError,
                               (boost::format("Center (%d,%d) not in image (%dx%d)") %
                                ix % iy % image.getWidth() % image.getHeight()).str());
@@ -954,7 +953,7 @@ void SdssShapeAlgorithm::measure(
             if (!psf) {
                 result.flags[PSF_SHAPE_BAD.number] = true;
             } else {
-                _resultKey.setPsfShape(measRecord, psf->computeShape(afw::geom::Point2D(result.x, result.y)));
+                _resultKey.setPsfShape(measRecord, psf->computeShape(geom::Point2D(result.x, result.y)));
             }
         } catch (pex::exceptions::Exception & err) {
             result.flags[PSF_SHAPE_BAD.number] = true;
@@ -974,14 +973,14 @@ void SdssShapeAlgorithm::fail(
 #define INSTANTIATE_IMAGE(IMAGE) \
     template SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments( \
         IMAGE const &,                                                  \
-        afw::geom::Point2D const &,                                     \
+        geom::Point2D const &,                                     \
         bool,                                                           \
         Control const &                                                 \
     );                                                                  \
     template FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux( \
         IMAGE const &,                                                  \
         afw::geom::ellipses::Quadrupole const &,                        \
-        afw::geom::Point2D const &                                      \
+        geom::Point2D const &                                      \
     )
 
 #define INSTANTIATE_PIXEL(PIXEL) \
@@ -1050,8 +1049,8 @@ void SdssShapeTransform::operator()(
         ShapeResult outShape;
 
         // The transformation from the (x, y) to the (Ra, Dec) basis.
-        afw::geom::AffineTransform crdTr = wcs.linearizePixelToSky(centroidKey.get(*inSrc).getCentroid(),
-                                                                   afw::geom::radians);
+        geom::AffineTransform crdTr = wcs.linearizePixelToSky(centroidKey.get(*inSrc).getCentroid(),
+                                                                   geom::radians);
         outShape.setShape(inShape.getShape().transform(crdTr.getLinear()));
 
         // Transformation matrix from pixel to celestial basis.

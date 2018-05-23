@@ -155,13 +155,13 @@ private:
 template <typename Accumulator>
 void computeMoments(
     afw::image::MaskedImage<float> const & image,
-    afw::geom::Point2D const & centroid,
+    geom::Point2D const & centroid,
     afw::geom::ellipses::Quadrupole const & shape,
     double nSigmaWeightMax,
     Accumulator & accumulatorRaw,
     Accumulator & accumulatorAbs
 ) {
-    afw::geom::Box2I bbox = image.getBBox(lsst::afw::image::PARENT);
+    geom::Box2I bbox = image.getBBox(lsst::afw::image::PARENT);
 
     afw::geom::ellipses::Ellipse ellipse(shape, centroid);
     ellipse.getCore().scale(nSigmaWeightMax);
@@ -169,7 +169,7 @@ void computeMoments(
     // To evaluate an elliptically-symmetric function, we transform points
     // by the following transform, then evaluate a circularly-symmetric function
     // at the transformed positions.
-    afw::geom::LinearTransform transform = shape.getGridTransform();
+    geom::LinearTransform transform = shape.getGridTransform();
 
     typedef afw::geom::ellipses::PixelRegion::Iterator SpanIter;    // yields Spans
     typedef afw::geom::Span::Iterator PointIter;                    // yields Point2I positions
@@ -199,8 +199,8 @@ void computeMoments(
         );
         PointIter const pointEnd = span.end();
         for (PointIter pointIter = span.begin(); pointIter != pointEnd; ++pointIter, ++pixelIter) {
-            afw::geom::Extent2D d = afw::geom::Point2D(*pointIter) - centroid;
-            afw::geom::Extent2D td = transform(d);
+            geom::Extent2D d = geom::Point2D(*pointIter) - centroid;
+            geom::Extent2D td = transform(d);
             // use single precision for faster exp, erf
             float weight = std::exp(static_cast<float>(-0.5*td.computeSquaredNorm()));
             float data = pixelIter.image();

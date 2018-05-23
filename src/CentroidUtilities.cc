@@ -21,6 +21,9 @@
  */
 
 #include <cmath>
+
+#include "lsst/geom/Angle.h"
+#include "lsst/geom/Point.h"
 #include "lsst/meas/base/CentroidUtilities.h"
 #include "lsst/afw/table/BaseRecord.h"
 
@@ -180,7 +183,7 @@ void CentroidTransform::operator()(
             CentroidCov centroidCov = centroidResult.getCentroidErr();
             if (!(std::isnan(centroidCov(0,0)) || std::isnan(centroidCov(1,1)))) {
                 auto transform = wcs.linearizePixelToSky(centroidResult.getCentroid(),
-                                                         afw::geom::radians).getLinear().getMatrix();
+                                                         geom::radians).getLinear().getMatrix();
                 _coordErrKey.set(*outSrc, (transform * centroidResult.getCentroidErr().cast<double>() *
                                            transform.transpose()).cast<ErrElement>());
             }
@@ -230,7 +233,7 @@ bool CentroidChecker::operator()(
     CentroidElement footX = footprint->getPeaks().front().getFx();
     CentroidElement footY = footprint->getPeaks().front().getFy();
     double distsq = (x - footX) * (x - footX) + (y - footY) * (y - footY);
-    if ((_doFootprintCheck && !footprint->contains(lsst::afw::geom::Point2I(lsst::afw::geom::Point2D(x, y)))) || 
+    if ((_doFootprintCheck && !footprint->contains(geom::Point2I(geom::Point2D(x, y)))) || 
         ((_maxDistFromPeak > 0) && (distsq > _maxDistFromPeak*_maxDistFromPeak))) {
         record.set(_xKey, footX);
         record.set(_yKey, footY);

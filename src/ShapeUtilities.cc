@@ -163,8 +163,8 @@ void ShapeResultKey::set(afw::table::BaseRecord & record, ShapeResult const & va
     }
 }
 
-ShapeTrMatrix makeShapeTransformMatrix(afw::geom::LinearTransform const & xform) {
-    typedef afw::geom::LinearTransform LT;
+ShapeTrMatrix makeShapeTransformMatrix(geom::LinearTransform const & xform) {
+    typedef geom::LinearTransform LT;
     Eigen::Matrix<ShapeElement,3,3,Eigen::DontAlign> m;
     m << xform[LT::XX]*xform[LT::XX], xform[LT::XY]*xform[LT::XY], 2*xform[LT::XX]*xform[LT::XY],
          xform[LT::YX]*xform[LT::YX], xform[LT::YY]*xform[LT::YY], 2*xform[LT::YX]*xform[LT::YY],

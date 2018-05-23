@@ -24,7 +24,7 @@
 #ifndef LSST_MEAS_BASE_InputUtilities_h_INCLUDED
 #define LSST_MEAS_BASE_InputUtilities_h_INCLUDED
 
-#include "lsst/afw/geom/Point.h"
+#include "lsst/geom/Point.h"
 #include "lsst/afw/geom/ellipses/Quadrupole.h"
 #include "lsst/meas/base/FlagHandler.h"
 
@@ -75,7 +75,7 @@ public:
      *  algorithm's general failure flag, but return the position as well, allowing it to continue while
      *  indicating that the result may not be reliable.
      */
-    afw::geom::Point2D operator()(
+    geom::Point2D operator()(
         afw::table::SourceRecord & record,
         FlagHandler const & flags
     ) const;

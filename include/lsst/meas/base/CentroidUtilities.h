@@ -25,6 +25,7 @@
 #define LSST_MEAS_BASE_CentroidUtilities_h_INCLUDED
 
 #include "lsst/meas/base/constants.h"
+#include "lsst/geom/Point.h"
 #include "lsst/afw/geom/SkyWcs.h"
 #include "lsst/afw/image/Calib.h"
 #include "lsst/afw/table/aggregates.h"
@@ -71,9 +72,9 @@ struct CentroidResult {
     void setCentroid(Centroid const & centroid);
 
     /// Return the 2D point type corresponding to this result
-    afw::geom::Point<CentroidElement> getPoint()
+    geom::Point<CentroidElement> getPoint()
     {
-        return afw::geom::Point<CentroidElement>(x, y);
+        return geom::Point<CentroidElement>(x, y);
     }
 
     /// Return the 2x2 symmetric covariance matrix, with rows and columns ordered (x, y)

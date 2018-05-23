@@ -81,9 +81,9 @@ void PsfFluxAlgorithm::measure(
             "PsfFlux algorithm requires a Psf with every exposure"
         );
     }
-    afw::geom::Point2D position = _centroidExtractor(measRecord, _flagHandler);
+    geom::Point2D position = _centroidExtractor(measRecord, _flagHandler);
     PTR(afw::detection::Psf::Image) psfImage = psf->computeImage(position);
-    afw::geom::Box2I fitBBox = psfImage->getBBox();
+    geom::Box2I fitBBox = psfImage->getBBox();
     fitBBox.clip(exposure.getBBox());
     if (fitBBox != psfImage->getBBox()) {
         _flagHandler.setValue(measRecord, FAILURE.number, true);  // if we had a suspect flag, we'd set that instead

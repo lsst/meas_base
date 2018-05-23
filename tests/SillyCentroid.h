@@ -24,6 +24,7 @@
 #ifndef LSST_MEAS_BASE_SillyCentroid_h_INCLUDED
 #define LSST_MEAS_BASE_SillyCentroid_h_INCLUDED
 
+#include "lsst/geom/Point.h"
 #include "lsst/afw/table.h"
 #include "lsst/meas/base.h"
 #include "lsst/pex/config.h"
@@ -86,7 +87,7 @@ public:
         lsst::afw::image::Exposure<float> const & exposure
     ) const {
         
-        lsst::afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
+        lsst::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
         lsst::meas::base::CentroidResult result;
         result.x = center.getX() + _ctrl.param;
         result.y = center.getY() + _ctrl.param; 

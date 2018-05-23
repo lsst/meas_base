@@ -188,7 +188,7 @@ public:
     template <typename ImageT>
     static Result computeAdaptiveMoments(
         ImageT const & image,
-        afw::geom::Point2D const & position,
+        geom::Point2D const & position,
         bool negative=false,
         Control const & ctrl=Control()
     );
@@ -206,7 +206,7 @@ public:
     static FluxResult computeFixedMomentsFlux(
         ImageT const & image,
         afw::geom::ellipses::Quadrupole const & shape,
-        afw::geom::Point2D const & position
+        geom::Point2D const & position
     );
 
     virtual void measure(

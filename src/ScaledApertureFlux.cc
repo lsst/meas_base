@@ -47,7 +47,7 @@ void ScaledApertureFluxAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
 ) const {
-    afw::geom::Point2D const center = _centroidExtractor(measRecord, _flagHandler);
+    geom::Point2D const center = _centroidExtractor(measRecord, _flagHandler);
     double const radius = exposure.getPsf()->computeShape(center).getDeterminantRadius();
     double const fwhm = 2.0*std::sqrt(2.0*std::log(2))*radius;
     double const size = _ctrl.scale*fwhm;

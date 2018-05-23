@@ -25,7 +25,7 @@
 #define LSST_MEAS_BASE_ShapeUtilities_h_INCLUDED
 
 #include "lsst/meas/base/constants.h"
-#include "lsst/afw/geom/LinearTransform.h"
+#include "lsst/geom/LinearTransform.h"
 #include "lsst/afw/table/aggregates.h"
 
 namespace lsst { namespace meas { namespace base {
@@ -214,7 +214,7 @@ private:
  *  @param[in]  xform  LinearTransform describing the coordinate mapping
  *  @returns    A 3-by-3 transformation matrix for the second order moments
  */
-ShapeTrMatrix makeShapeTransformMatrix(afw::geom::LinearTransform const & xform);
+ShapeTrMatrix makeShapeTransformMatrix(geom::LinearTransform const & xform);
 
 }}} // lsst::meas::base
 

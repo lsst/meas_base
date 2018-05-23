@@ -24,7 +24,7 @@
 #include "ndarray/eigen.h"
 
 #include "lsst/afw/detection/Psf.h"
-#include "lsst/afw/geom/Box.h"
+#include "lsst/geom/Box.h"
 #include "lsst/afw/geom/ellipses/Ellipse.h"
 #include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/GaussianFlux.h"
@@ -60,7 +60,7 @@ void GaussianFluxAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
 ) const {
-    afw::geom::Point2D centroid = _centroidExtractor(measRecord, _flagHandler);
+    geom::Point2D centroid = _centroidExtractor(measRecord, _flagHandler);
     afw::geom::ellipses::Quadrupole shape = _shapeExtractor(measRecord, _flagHandler);
 
     FluxResult result = SdssShapeAlgorithm::computeFixedMomentsFlux(

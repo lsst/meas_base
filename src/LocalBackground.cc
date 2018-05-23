@@ -67,7 +67,7 @@ LocalBackgroundAlgorithm::measure(
     afw::table::SourceRecord & measRecord,
     afw::image::Exposure<float> const & exposure
 ) const {
-    afw::geom::Point2D const center = _centroidExtractor(measRecord, _flagHandler);
+    geom::Point2D const center = _centroidExtractor(measRecord, _flagHandler);
     afw::image::MaskedImage<float> const& image = exposure.getMaskedImage();
     afw::image::Mask<afw::image::MaskPixel> const& mask = *image.getMask();
     afw::image::MaskPixel const badMask = mask.getPlaneBitMask(_ctrl.badMaskPlanes);

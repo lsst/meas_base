@@ -125,7 +125,7 @@ namespace {
 // image needs to be clipped to fit in the measurement image
 template <typename T>
 CONST_PTR(afw::image::Image<T>) getSincCoeffs(
-    afw::geom::Box2I const & bbox,                // measurement image bbox we need to fit inside
+    geom::Box2I const & bbox,                // measurement image bbox we need to fit inside
     afw::geom::ellipses::Ellipse const & ellipse, // ellipse that defines the aperture
     ApertureFluxAlgorithm::Result & result,       // result object where we set flags if we do clip
     ApertureFluxAlgorithm::Control const & ctrl   // configuration
@@ -143,9 +143,9 @@ CONST_PTR(afw::image::Image<T>) getSincCoeffs(
         // to zero outside the aperture), it may not be a serious
         // problem.
         result.setFlag(ApertureFluxAlgorithm::SINC_COEFFS_TRUNCATED.number);
-        afw::geom::Box2I overlap = cImage->getBBox();
+        geom::Box2I overlap = cImage->getBBox();
         overlap.clip(bbox);
-        if (!overlap.contains(afw::geom::Box2I(ellipse.computeBBox()))) {
+        if (!overlap.contains(geom::Box2I(ellipse.computeBBox()))) {
             // The clipping was indeed serious, as we we did have to clip within
             // the aperture; can't expect any decent answer at this point.
             result.setFlag(ApertureFluxAlgorithm::APERTURE_TRUNCATED.number);

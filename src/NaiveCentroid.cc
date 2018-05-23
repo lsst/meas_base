@@ -58,7 +58,7 @@ void NaiveCentroidAlgorithm::measure(
     afw::image::Exposure<float> const & exposure
 ) const {
     
-    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
+    geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
     CentroidResult result;
     result.x = center.getX();
     result.y = center.getY(); 

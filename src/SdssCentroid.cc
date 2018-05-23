@@ -24,11 +24,11 @@
 #include <cmath>
 #include <numeric>
 #include "ndarray/eigen.h"
+#include "lsst/geom/Angle.h"
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/pex/exceptions.h"
 #include "lsst/afw/math/ConvolveImage.h"
 #include "lsst/afw/math/offsetImage.h"
-#include "lsst/afw/geom/Angle.h"
 #include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/SdssCentroid.h"
 
@@ -109,11 +109,11 @@ float astrom_errors(float skyVar,       // variance of pixels at the sky level
         sVar += 0.5*sourceVar*exp(-1/(2*tau2));
         dVar += sourceVar*(4*exp(-1/(2*tau2)) + 2*exp(-1/(2*tau2)));
     } else {                            /* smoothed */
-        sVar = skyVar/(8*lsst::afw::geom::PI*sigma2)*(1 - exp(-1/sigma2));
-        dVar = skyVar/(2*lsst::afw::geom::PI*sigma2)*(3 - 4*exp(-1/(4*sigma2)) + exp(-1/sigma2));
+        sVar = skyVar/(8*geom::PI*sigma2)*(1 - exp(-1/sigma2));
+        dVar = skyVar/(2*geom::PI*sigma2)*(3 - 4*exp(-1/(4*sigma2)) + exp(-1/sigma2));
 
-        sVar += sourceVar/(12*lsst::afw::geom::PI*sigma2)*(exp(-1/(3*sigma2)) - exp(-1/sigma2));
-        dVar += sourceVar/(3*lsst::afw::geom::PI*sigma2)*(2 - 3*exp(-1/(3*sigma2)) + exp(-1/sigma2));
+        sVar += sourceVar/(12*geom::PI*sigma2)*(exp(-1/(3*sigma2)) - exp(-1/sigma2));
+        dVar += sourceVar/(3*geom::PI*sigma2)*(2 - 3*exp(-1/(3*sigma2)) + exp(-1/sigma2));
     }
 
     xVar = sVar*pow(1/d + k/(4*As)*(1 - 12*s*s/(d*d)), 2) +
@@ -382,7 +382,7 @@ smoothAndBinImage(CONST_PTR(lsst::afw::detection::Psf) psf,
             int binX, int binY,
             FlagHandler _flagHandler)
 {
-    lsst::afw::geom::Point2D const center(x + mimage.getX0(), y + mimage.getY0());
+    geom::Point2D const center(x + mimage.getX0(), y + mimage.getY0());
     lsst::afw::geom::ellipses::Quadrupole const& shape = psf->computeShape(center);
     double const smoothingSigma = shape.getDeterminantRadius();
 #if 0
@@ -395,8 +395,8 @@ smoothAndBinImage(CONST_PTR(lsst::afw::detection::Psf) psf,
     int const kWidth = kernel->getWidth();
     int const kHeight = kernel->getHeight();
 
-    lsst::afw::geom::BoxI bbox(lsst::afw::geom::Point2I(x - binX*(2 + kWidth/2), y - binY*(2 + kHeight/2)),
-                       lsst::afw::geom::ExtentI(binX*(3 + kWidth + 1), binY*(3 + kHeight + 1)));
+    geom::BoxI bbox(geom::Point2I(x - binX*(2 + kWidth/2), y - binY*(2 + kHeight/2)),
+                    geom::ExtentI(binX*(3 + kWidth + 1), binY*(3 + kHeight + 1)));
 
     // image to smooth, a shallow copy
     PTR(MaskedImageT) subImage;
@@ -446,7 +446,7 @@ void SdssCentroidAlgorithm::measure(
 ) const {
 
     // get our current best guess about the centroid: either a centroider measurement or peak.
-    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
+    geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
     CentroidResult result;
     result.x = center.getX();
     result.y = center.getY();
@@ -467,7 +467,7 @@ void SdssCentroidAlgorithm::measure(
     int const x = image.positionToIndex(center.getX(), lsst::afw::image::X).first;
     int const y = image.positionToIndex(center.getY(), lsst::afw::image::Y).first;
 
-    if (!image.getBBox().contains(lsst::afw::geom::Extent2I(x,y) + image.getXY0())) {
+    if (!image.getBBox().contains(geom::Extent2I(x,y) + image.getXY0())) {
             throw LSST_EXCEPT(
             lsst::meas::base::MeasurementError,
             EDGE.doc,

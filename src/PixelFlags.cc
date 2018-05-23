@@ -27,10 +27,10 @@
 
 #include "ndarray/eigen.h"
 
+#include "lsst/geom/Box.h"
+#include "lsst/geom/Point.h"
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/afw/table/Source.h"
-#include "lsst/afw/geom/Box.h"
-#include "lsst/afw/geom/Point.h"
 #include "lsst/afw/geom/SpanSet.h"
 #include "lsst/meas/base/PixelFlags.h"
 
@@ -46,7 +46,7 @@ public:
         _bits = 0x0;
     }
 
-    void operator()(lsst::afw::geom::Point2I const & point,
+    void operator()(geom::Point2I const & point,
                     typename MaskedImageT::Mask::Pixel const & value) {
         _bits |= value;
     }
@@ -132,7 +132,7 @@ void PixelFlagsAlgorithm::measure(
     FootprintBits<MaskedImageF> func;
 
     // Check if the measRecord has a valid centroid key, i.e. it was centroided
-    afw::geom::Point2D center;
+    geom::Point2D center;
     if (measRecord.getTable()->getCentroidKey().isValid()) {
         center = measRecord.getCentroid();
         //  Catch NAN in centroid estimate
@@ -163,7 +163,7 @@ void PixelFlagsAlgorithm::measure(
     }
 
     //  Catch centroids off the image
-    if (!mimage.getBBox().contains(afw::geom::Point2I(center))) {
+    if (!mimage.getBBox().contains(geom::Point2I(center))) {
         measRecord.set(_offImageKey, true);
         measRecord.set(_anyKeys.at("EDGE"), true);
     }
@@ -185,11 +185,11 @@ void PixelFlagsAlgorithm::measure(
     updateFlags(_anyKeys, func, measRecord);
 
     // Check for bits set in the 3x3 box around the center
-    afw::geom::Point2I llc(afw::image::positionToIndex(center.getX()) - 1,
+    geom::Point2I llc(afw::image::positionToIndex(center.getX()) - 1,
                            afw::image::positionToIndex(center.getY()) - 1);
 
     func.reset();
-    auto spans = std::make_shared<afw::geom::SpanSet>(afw::geom::Box2I(llc, afw::geom::ExtentI(3)));
+    auto spans = std::make_shared<afw::geom::SpanSet>(geom::Box2I(llc, geom::ExtentI(3)));
     afw::detection::Footprint const middle(spans); // central 3x3
     middle.getSpans()->clippedTo(mimage.getBBox())->applyFunctor(func, *(mimage.getMask()));
 

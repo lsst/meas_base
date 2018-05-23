@@ -28,8 +28,8 @@
 #include "fftw3.h"
 
 #include "lsst/meas/base/SincCoeffs.h"
-#include "lsst/afw/geom/Angle.h"
-#include "lsst/afw/geom/Extent.h"
+#include "lsst/geom/Angle.h"
+#include "lsst/geom/Extent.h"
 #include "lsst/afw/image/Image.h"
 #include "lsst/afw/math/Integrate.h"
 
@@ -124,11 +124,11 @@ public:
         if ( xyrad < _taperLo1 ) {
             return 0.0;
         } else if (xyrad >= _taperLo1 && xyrad <= _taperHi1 ) {
-            return 0.5*(1.0 + std::cos(  (afw::geom::TWOPI*_k1)*(xyrad - _taperHi1)));
+            return 0.5*(1.0 + std::cos(  (geom::TWOPI*_k1)*(xyrad - _taperHi1)));
         } else if (xyrad > _taperHi1 && xyrad <= _taperLo2 ) {
             return 1.0;
         } else if (xyrad > _taperLo2 && xyrad <= _taperHi2 ) {
-            return 0.5*(1.0 + std::cos(  (afw::geom::TWOPI*_k2)*(xyrad - _taperLo2)));
+            return 0.5*(1.0 + std::cos(  (geom::TWOPI*_k2)*(xyrad - _taperLo2)));
         } else {
             return 0.0;
         }
@@ -172,7 +172,7 @@ public:
         : _ap(ap), _ix(ix), _iy(iy) {}
 
     IntegrandT operator() (IntegrandT const x, IntegrandT const y) const {
-        double const fourierConvention = afw::geom::PI;
+        double const fourierConvention = geom::PI;
         double const dx = fourierConvention*(x - _ix);
         double const dy = fourierConvention*(y - _iy);
         double const fx = sinc<double>(dx);
@@ -202,10 +202,10 @@ std::pair<double, double> computeGaussLeakage(double const sigma) {
 
     GaussPowerFunctor gaussPower(sigma);
 
-    double lim = afw::geom::PI;
+    double lim = geom::PI;
 
     // total power: integrate GaussPowerFunctor -inf<x<inf, -inf<y<inf (can be done analytically)
-    double powerInf = afw::geom::PI/(sigma*sigma);
+    double powerInf = geom::PI/(sigma*sigma);
 
     // true power: integrate GaussPowerFunctor -lim<x<lim, -lim<y<lim (must be done numerically)
     double truePower = afw::math::integrate2d(gaussPower, -lim, lim, -lim, lim, 1.0e-8);
@@ -214,7 +214,7 @@ std::pair<double, double> computeGaussLeakage(double const sigma) {
     // estimated power: function is circular, but coords are cartesian
     // - true power does the actual integral numerically, but we can estimate it by integrating
     //   in polar coords over lim <= radius < infinity.  The integral is analytic.
-    double estLeak = ::exp(-sigma*sigma*afw::geom::PI*afw::geom::PI)/powerInf;
+    double estLeak = ::exp(-sigma*sigma*geom::PI*geom::PI)/powerInf;
 
     return std::pair<double, double>(trueLeak, estLeak);
 
@@ -239,7 +239,7 @@ calcImageRealSpace(double const rad1, double const rad2, double const taperwidth
 
     // create an image to hold the coefficient image
     auto coeffImage =
-        std::make_shared<afw::image::Image<PixelT> >(afw::geom::ExtentI(xwidth, ywidth), initweight);
+        std::make_shared<afw::image::Image<PixelT> >(geom::ExtentI(xwidth, ywidth), initweight);
     coeffImage->setXY0(x0, y0);
 
     // create the aperture function object
@@ -247,15 +247,15 @@ calcImageRealSpace(double const rad1, double const rad2, double const taperwidth
     double tolerance = 1.0e-12;
     double dr = 1.0e-6;
     double err = 2.0*tolerance;
-    double apEff = afw::geom::PI*rad2*rad2;
+    double apEff = geom::PI*rad2*rad2;
     double radIn = rad2;
     int maxIt = 20;
     int i = 0;
     while (err > tolerance && i < maxIt) {
         CircApPolar<double> apPolar1(radIn, taperwidth);
         CircApPolar<double> apPolar2(radIn+dr, taperwidth);
-        double a1 = afw::geom::TWOPI * afw::math::integrate(apPolar1, 0.0, radIn+taperwidth, tolerance);
-        double a2 = afw::geom::TWOPI * afw::math::integrate(apPolar2, 0.0, radIn+dr+taperwidth, tolerance);
+        double a1 = geom::TWOPI * afw::math::integrate(apPolar1, 0.0, radIn+taperwidth, tolerance);
+        double a2 = geom::TWOPI * afw::math::integrate(apPolar2, 0.0, radIn+dr+taperwidth, tolerance);
         double dadr = (a2 - a1)/dr;
         double radNew = radIn - (a1 - apEff)/dadr;
         err = (a1 - apEff)/apEff;
@@ -368,8 +368,8 @@ std::shared_ptr<afw::image::Image<PixelT>> calcImageKSpaceCplx(double const rad1
                                       FFTW_BACKWARD, FFTW_ESTIMATE);
 
     // compute the k-space values and put them in the cimg array
-    double const twoPiRad1 = afw::geom::TWOPI*rad1;
-    double const twoPiRad2 = afw::geom::TWOPI*rad2;
+    double const twoPiRad1 = geom::TWOPI*rad1;
+    double const twoPiRad2 = geom::TWOPI*rad2;
     double const scale = (1.0 - ellipticity);
     for (int iY = 0; iY < wid; ++iY) {
         int const fY = fftshift.shift(iY);
@@ -394,7 +394,7 @@ std::shared_ptr<afw::image::Image<PixelT>> calcImageKSpaceCplx(double const rad1
             c[fY*wid + fX] = std::complex<double>(scale*airy, 0.0);
         }
     }
-    c[0] = scale*afw::geom::PI*(rad2*rad2 - rad1*rad1);
+    c[0] = scale*geom::PI*(rad2*rad2 - rad1*rad1);
 
     // perform the fft and clean up after ourselves
     fftw_execute(plan);
@@ -402,7 +402,7 @@ std::shared_ptr<afw::image::Image<PixelT>> calcImageKSpaceCplx(double const rad1
 
     // put the coefficients into an image
     auto coeffImage =
-        std::make_shared<afw::image::Image<PixelT> >(afw::geom::ExtentI(wid, wid), 0.0);
+        std::make_shared<afw::image::Image<PixelT> >(geom::ExtentI(wid, wid), 0.0);
 
     for (int iY = 0; iY != coeffImage->getHeight(); ++iY) {
         int iX = 0;
@@ -449,8 +449,8 @@ std::shared_ptr<afw::image::Image<PixelT>> calcImageKSpaceReal(double const rad1
     fftw_plan plan = fftw_plan_r2r_2d(wid, wid, c, c, FFTW_R2HC, FFTW_R2HC, FFTW_ESTIMATE);
 
     // compute the k-space values and put them in the cimg array
-    double const twoPiRad1 = afw::geom::TWOPI*rad1;
-    double const twoPiRad2 = afw::geom::TWOPI*rad2;
+    double const twoPiRad1 = geom::TWOPI*rad1;
+    double const twoPiRad2 = geom::TWOPI*rad2;
     for (int iY = 0; iY < wid; ++iY) {
 
         int const fY = fftshift.shift(iY);
@@ -472,7 +472,7 @@ std::shared_ptr<afw::image::Image<PixelT>> calcImageKSpaceReal(double const rad1
         }
     }
     int fxy = fftshift.shift(wid/2);
-    c[fxy*wid + fxy] = afw::geom::PI*(rad2*rad2 - rad1*rad1);
+    c[fxy*wid + fxy] = geom::PI*(rad2*rad2 - rad1*rad1);
 
     // perform the fft and clean up after ourselves
     fftw_execute(plan);
@@ -480,7 +480,7 @@ std::shared_ptr<afw::image::Image<PixelT>> calcImageKSpaceReal(double const rad1
 
     // put the coefficients into an image
     auto coeffImage =
-        std::make_shared<afw::image::Image<PixelT> >(afw::geom::ExtentI(wid, wid), 0.0);
+        std::make_shared<afw::image::Image<PixelT> >(geom::ExtentI(wid, wid), 0.0);
 
     for (int iY = 0; iY != coeffImage->getHeight(); ++iY) {
         int iX = 0;

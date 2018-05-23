@@ -24,7 +24,7 @@
 #include "ndarray/eigen.h"
 
 #include "lsst/afw/detection/Psf.h"
-#include "lsst/afw/geom/Box.h"
+#include "lsst/geom/Box.h"
 #include "lsst/pex/exceptions.h"
 #include "lsst/afw/geom.h"
 #include "lsst/afw/image.h"
@@ -74,7 +74,7 @@ public:
     };
 
     PsfAttributes(CONST_PTR(lsst::afw::detection::Psf) psf, int const iX, int const iY);
-    PsfAttributes(CONST_PTR(lsst::afw::detection::Psf) psf, lsst::afw::geom::Point2I const& cen);
+    PsfAttributes(CONST_PTR(lsst::afw::detection::Psf) psf, geom::Point2I const& cen);
 
     double computeGaussianWidth(Method how=ADAPTIVE_MOMENT) const;
     double computeEffectiveArea() const;
@@ -93,7 +93,7 @@ PsfAttributes::PsfAttributes(
                             )
 {
     // N.b. (iX, iY) are ints so that we know this image is centered in the central pixel of _psfImage
-    _psfImage = psf->computeImage(afw::geom::PointD(iX, iY));
+    _psfImage = psf->computeImage(geom::PointD(iX, iY));
 }
 
 /**
@@ -101,10 +101,10 @@ PsfAttributes::PsfAttributes(
  */
 PsfAttributes::PsfAttributes(
         CONST_PTR(lsst::afw::detection::Psf) psf, ///< The psf whose attributes we want
-        lsst::afw::geom::Point2I const& cen       ///< the position in the frame we want the attributes at
+        geom::Point2I const& cen       ///< the position in the frame we want the attributes at
                             ) :
     // N.b. cen is a PointI so that we know this image is centered in the central pixel of _psfImage
-    _psfImage(psf->computeImage(afw::geom::PointD(cen)))
+    _psfImage(psf->computeImage(geom::PointD(cen)))
 {
 }
 
@@ -139,8 +139,8 @@ template<typename T>
 typename afw::image::MaskedImage<T>::SinglePixel computeShiftedValue(
     afw::image::MaskedImage<T> const &maskedImage, ///< masked image
     std::string const &warpingKernelName,   ///< warping kernel name
-    afw::geom::Point2D const &fracShift,    ///< amount of sub-pixel shift (pixels)
-    afw::geom::Point2I const &parentInd     ///< parent index at which to compute pixel
+    geom::Point2D const &fracShift,    ///< amount of sub-pixel shift (pixels)
+    geom::Point2I const &parentInd     ///< parent index at which to compute pixel
 ) {
     typedef typename afw::image::Exposure<T>::MaskedImageT MaskedImageT;
     typedef typename afw::image::Image<double> KernelImageT;
@@ -160,8 +160,8 @@ typename afw::image::MaskedImage<T>::SinglePixel computeShiftedValue(
     if (fracShift[1] < 0) {
         warpingKernelPtr->setCtrY(warpingKernelPtr->getCtrY() + 1);
     }
-    afw::geom::Box2I warpingOverlapBBox(
-        parentInd - afw::geom::Extent2I(warpingKernelPtr->getCtr()),
+    geom::Box2I warpingOverlapBBox(
+        parentInd - geom::Extent2I(warpingKernelPtr->getCtr()),
         warpingKernelPtr->getDimensions());
     if (!maskedImage.getBBox().contains(warpingOverlapBBox)) {
         std::ostringstream os;
@@ -177,7 +177,7 @@ typename afw::image::MaskedImage<T>::SinglePixel computeShiftedValue(
 
     // Compute imLoc: an image locator that matches kernel locator (0,0) such that
     // image ctrPix overlaps center of warping kernel
-    afw::geom::Point2I subimMin = warpingOverlapBBox.getMin();
+    geom::Point2I subimMin = warpingOverlapBBox.getMin();
     typename MaskedImageT::const_xy_locator const mimageLoc = maskedImage.xy_at(subimMin.getX(), subimMin.getY());
     return afw::math::convolveAtAPoint<MaskedImageT, MaskedImageT>(
         mimageLoc, warpingKernelLoc, warpingKernelPtr->getWidth(), warpingKernelPtr->getHeight());
@@ -200,7 +200,7 @@ void PeakLikelihoodFluxAlgorithm::measure(
     afw::image::Exposure<float> const & exposure
 ) const {
     // get the value from the centroid slot only
-    afw::geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
+    geom::Point2D center = _centroidExtractor(measRecord, _flagHandler);
     FluxResult result;
     typedef afw::image::Exposure<float>::MaskedImageT MaskedImageT;
     MaskedImageT const& mimage = exposure.getMaskedImage();
@@ -219,7 +219,7 @@ void PeakLikelihoodFluxAlgorithm::measure(
         throw LSST_EXCEPT(pex::exceptions::InvalidParameterError, "exposure has no PSF");
     }
     PTR(afw::detection::Psf const) psfPtr = exposure.getPsf();
-    if (!afw::geom::Box2D(mimage.getBBox()).contains(center)) {
+    if (!geom::Box2D(mimage.getBBox()).contains(center)) {
         std::ostringstream os;
         os << "Center = " << center << " not in exposure bbox" << mimage.getBBox();
         throw LSST_EXCEPT(pex::exceptions::RangeError, os.str());
@@ -230,8 +230,8 @@ void PeakLikelihoodFluxAlgorithm::measure(
     std::pair<int, double> const xCtrPixParentIndFrac = afw::image::positionToIndex(center.getX(), true);
     std::pair<int, double> const yCtrPixParentIndFrac = afw::image::positionToIndex(center.getY(), true);
 
-    afw::geom::Point2I ctrPixParentInd(xCtrPixParentIndFrac.first, yCtrPixParentIndFrac.first);
-    afw::geom::Point2D ctrPixPos(
+    geom::Point2I ctrPixParentInd(xCtrPixParentIndFrac.first, yCtrPixParentIndFrac.first);
+    geom::Point2D ctrPixPos(
         afw::image::indexToPosition(ctrPixParentInd[0]),
         afw::image::indexToPosition(ctrPixParentInd[1])
     );
@@ -247,7 +247,7 @@ void PeakLikelihoodFluxAlgorithm::measure(
     MaskedImageT::SinglePixel mimageCtrPix = computeShiftedValue(
         mimage,
         _ctrl.warpingKernelName,
-        afw::geom::Point2D(xCtrPixParentIndFrac.second, yCtrPixParentIndFrac.second),
+        geom::Point2D(xCtrPixParentIndFrac.second, yCtrPixParentIndFrac.second),
         ctrPixParentInd
     );
     double flux = mimageCtrPix.image()*weight;

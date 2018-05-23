@@ -63,8 +63,8 @@ SafeCentroidExtractor::SafeCentroidExtractor(
 
 namespace {
 
-afw::geom::Point2D extractPeak(afw::table::SourceRecord const & record, std::string const & name) {
-    afw::geom::Point2D result;
+geom::Point2D extractPeak(afw::table::SourceRecord const & record, std::string const & name) {
+    geom::Point2D result;
     PTR(afw::detection::Footprint) footprint = record.getFootprint();
     if (!footprint) {
         throw LSST_EXCEPT(
@@ -87,7 +87,7 @@ afw::geom::Point2D extractPeak(afw::table::SourceRecord const & record, std::str
 
 } // anonymous
 
-afw::geom::Point2D SafeCentroidExtractor::operator()(
+geom::Point2D SafeCentroidExtractor::operator()(
     afw::table::SourceRecord & record,
     FlagHandler const & flags
 ) const {
@@ -101,7 +101,7 @@ afw::geom::Point2D SafeCentroidExtractor::operator()(
             );
         }
     }
-    afw::geom::Point2D result = record.getCentroid();
+    geom::Point2D result = record.getCentroid();
     if (std::isnan(result.getX()) || std::isnan(result.getY())) {
         if (!record.getTable()->getCentroidFlagKey().isValid()) {
             if (_isCentroider) {

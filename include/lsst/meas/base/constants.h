@@ -27,7 +27,7 @@
 #include "Eigen/Core"
 
 #include "lsst/pex/exceptions.h"
-#include "lsst/afw/geom/Point.h"
+#include "lsst/geom/Point.h"
 #include "lsst/afw/geom/ellipses/Quadrupole.h"
 
 namespace lsst { namespace meas { namespace base {
@@ -53,7 +53,7 @@ typedef double MagErrElement;
 typedef float ErrElement;
 typedef double CentroidElement;
 typedef double ShapeElement;
-typedef afw::geom::Point<CentroidElement,2> Centroid;
+typedef geom::Point<CentroidElement,2> Centroid;
 typedef Eigen::Matrix<ErrElement,2,2,Eigen::DontAlign> CentroidCov;
 typedef afw::geom::ellipses::Quadrupole Shape;
 typedef Eigen::Matrix<ErrElement,3,3,Eigen::DontAlign> ShapeCov;
