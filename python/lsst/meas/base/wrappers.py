@@ -506,7 +506,7 @@ class GenericPlugin(BasePlugin):
             Catalog record for the source being measured.
         exposure : `lsst.afw.image.Exposure`
             Exposure on which the source is being measured.
-        center : `lsst.afw.geom.Point2D`
+        center : `lsst.geom.Point2D`
             Pixel coordinates of the object.
 
         Raises

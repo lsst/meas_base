@@ -24,7 +24,7 @@
 Subtasks for creating the reference catalogs used in forced measurement.
 """
 
-import lsst.afw.geom
+import lsst.geom
 import lsst.pex.config
 import lsst.pipe.base
 
@@ -90,7 +90,7 @@ class BaseReferencesTask(lsst.pipe.base.Task):
         and corresponding Wcs.
 
         @param[in] dataRef    ButlerDataRef; the implied data ID must contain the 'tract' key.
-        @param[in] bbox       a afw.geom.Box2I or Box2D that defines the region in pixel coordinates
+        @param[in] bbox       a geom.Box2I or Box2D that defines the region in pixel coordinates
         @param[in] wcs        afw.image.Wcs that maps the bbox to sky coordinates
 
         @return an iterable of reference sources
@@ -139,7 +139,7 @@ class BaseReferencesTask(lsst.pipe.base.Task):
         This is not a part of the required BaseReferencesTask interface; it's a convenience function
         used in implementing fetchInBox that may be of use to subclasses.
         """
-        boxD = lsst.afw.geom.Box2D(bbox)
+        boxD = lsst.geom.Box2D(bbox)
         # We're passed an arbitrary iterable, but we need a catalog so we can iterate
         # over parents and then children.
         catalog = lsst.afw.table.SourceCatalog(self.schema)
@@ -229,7 +229,7 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
             self.log.info("Getting references in %s" % (dataId,))
             catalog = butler.get(dataset, dataId, immediate=True)
             if self.config.removePatchOverlaps:
-                bbox = lsst.afw.geom.Box2D(patch.getInnerBBox())
+                bbox = lsst.geom.Box2D(patch.getInnerBBox())
                 for source in catalog:
                     if bbox.contains(source.getCentroid()):
                         yield source
@@ -243,7 +243,7 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
         and corresponding Wcs.
 
         @param[in] dataRef    ButlerDataRef; the implied data ID must contain the 'tract' key.
-        @param[in] bbox       a afw.geom.Box2I or Box2D that defines the region in pixel coordinates
+        @param[in] bbox       a geom.Box2I or Box2D that defines the region in pixel coordinates
         @param[in] wcs        afw.image.Wcs that maps the bbox to sky coordinates
         @param[in] pad        a buffer to grow the bounding box by after catalogs have been loaded, but
                               before filtering them to include just the given bounding box.
@@ -252,9 +252,9 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
         """
         skyMap = dataRef.get(self.config.coaddName + "Coadd_skyMap", immediate=True)
         tract = skyMap[dataRef.dataId["tract"]]
-        coordList = [wcs.pixelToSky(corner) for corner in lsst.afw.geom.Box2D(bbox).getCorners()]
+        coordList = [wcs.pixelToSky(corner) for corner in lsst.geom.Box2D(bbox).getCorners()]
         self.log.info("Getting references in region with corners %s [degrees]" %
-                      ", ".join("(%s)" % (coord.getPosition(lsst.afw.geom.degrees),) for coord in coordList))
+                      ", ".join("(%s)" % (coord.getPosition(lsst.geom.degrees),) for coord in coordList))
         patchList = tract.findPatchList(coordList)
         # After figuring out which patch catalogs to read from the bbox, pad out the bbox if desired
         # But don't add any new patches while padding

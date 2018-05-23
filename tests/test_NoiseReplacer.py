@@ -24,6 +24,8 @@ import unittest
 
 import numpy as np
 
+import lsst.geom
+import lsst.afw.geom
 import lsst.afw.detection
 import lsst.afw.table
 import lsst.meas.base.tests
@@ -58,19 +60,19 @@ class NoiseReplacerTestPlugin(lsst.meas.base.SingleFramePlugin):
 class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
-        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
-                                        lsst.afw.geom.Extent2I(240, 260))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30),
+                                    lsst.geom.Extent2I(240, 260))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         # first source is a point
-        self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(50.1, 49.8))
+        self.dataset.addSource(100000.0, lsst.geom.Point2D(50.1, 49.8))
         # second source is extended
-        self.dataset.addSource(120000.0, lsst.afw.geom.Point2D(149.9, 50.3),
+        self.dataset.addSource(120000.0, lsst.geom.Point2D(149.9, 50.3),
                                lsst.afw.geom.Quadrupole(8, 9, 3))
         with self.dataset.addBlend() as family:
-            family.addChild(110000.0, lsst.afw.geom.Point2D(65.2, 150.7),
+            family.addChild(110000.0, lsst.geom.Point2D(65.2, 150.7),
                             lsst.afw.geom.Quadrupole(7, 5, -1))
-            family.addChild(140000.0, lsst.afw.geom.Point2D(72.3, 149.1))
-            family.addChild(90000.0, lsst.afw.geom.Point2D(68.5, 156.9))
+            family.addChild(140000.0, lsst.geom.Point2D(72.3, 149.1))
+            family.addChild(90000.0, lsst.geom.Point2D(68.5, 156.9))
 
     def testSingleFrameMeasurement(self):
         """Test that replacing sources with noise works as used in SingleFrameMeasurementTask,

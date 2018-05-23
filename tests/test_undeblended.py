@@ -30,6 +30,7 @@ import unittest
 
 import numpy as np
 
+import lsst.geom
 import lsst.afw.image as afwImage
 import lsst.afw.table as afwTable
 import lsst.afw.geom as afwGeom
@@ -50,7 +51,7 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         flux1, flux2 = 1000, 1  # Flux of sources
         apCorrValue = 3.21  # Aperture correction value to apply
 
-        image = afwImage.MaskedImageF(afwGeom.ExtentI(width, height))
+        image = afwImage.MaskedImageF(lsst.geom.ExtentI(width, height))
         image.setXY0(x0, y0)
         image.getVariance().set(1.0)
 
@@ -118,7 +119,7 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         child2.setFootprint(afwDetection.HeavyFootprintF(foot2, image))
 
         spans = foot1.spans.union(foot2.spans)
-        bbox = afwGeom.Box2I()
+        bbox = lsst.geom.Box2I()
         bbox.include(foot1.getBBox())
         bbox.include(foot2.getBBox())
         parent.setFootprint(afwDetection.Footprint(spans, bbox))

@@ -23,7 +23,7 @@
 import unittest
 import math
 
-import lsst.afw.geom
+import lsst.geom
 import lsst.afw.image
 import lsst.afw.table
 from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
@@ -34,9 +34,9 @@ import lsst.utils.tests
 class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
-        self.center = lsst.afw.geom.Point2D(50.1, 49.8)
-        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0),
-                                        lsst.afw.geom.Extent2I(100, 100))
+        self.center = lsst.geom.Point2D(50.1, 49.8)
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
+                                    lsst.geom.Extent2I(100, 100))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.sourceFlux = 100000.0
         self.dataset.addSource(self.sourceFlux, self.center)

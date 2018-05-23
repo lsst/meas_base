@@ -24,8 +24,8 @@ import unittest
 
 import numpy as np
 
+import lsst.geom
 import lsst.afw.image as afwImage
-import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
 import lsst.meas.base
 import lsst.utils.tests
@@ -61,7 +61,7 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
         for imageFactory in (
             afwImage.MaskedImageF,
         ):
-            im = imageFactory(afwGeom.ExtentI(100, 100))
+            im = imageFactory(lsst.geom.ExtentI(100, 100))
             exp = afwImage.makeExposure(im)
             for offset in (0, 1, 2):
                 control = testLib.SillyCentroidControl()
@@ -85,7 +85,7 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
         testLib.SillyCentroidControl()
         x, y = 10, 20
 
-        im = afwImage.MaskedImageF(afwGeom.ExtentI(512, 512))
+        im = afwImage.MaskedImageF(lsst.geom.ExtentI(512, 512))
         im.set(0)
         arr = im.getImage().getArray()
         arr[y, x] = 1000

@@ -26,6 +26,7 @@ import lsst.pex.config
 import lsst.pex.exceptions
 from lsst.log import Log
 import lsst.pipe.base
+import lsst.geom
 import lsst.afw.geom
 import lsst.afw.image
 import lsst.afw.table
@@ -80,7 +81,7 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
 
                     md = ref.get("calexp_md", immediate=True)
                     wcs = lsst.afw.geom.makeSkyWcs(md)
-                    box = lsst.afw.geom.Box2D(lsst.afw.image.bboxFromMetadata(md))
+                    box = lsst.geom.Box2D(lsst.afw.image.bboxFromMetadata(md))
                     # Going with just the nearest tract.  Since we're throwing all tracts for the visit
                     # together, this shouldn't be a problem unless the tracts are much smaller than a CCD.
                     tract = skymap.findTract(wcs.pixelToSky(box.getCenter()))
@@ -112,7 +113,7 @@ def imageOverlapsTract(tract, imageWcs, imageBox):
     """
     tractPoly = tract.getOuterSkyPolygon()
 
-    imagePixelCorners = lsst.afw.geom.Box2D(imageBox).getCorners()
+    imagePixelCorners = lsst.geom.Box2D(imageBox).getCorners()
     try:
         imageSkyCorners = imageWcs.pixelToSky(imagePixelCorners)
     except lsst.pex.exceptions.LsstCppException as e:

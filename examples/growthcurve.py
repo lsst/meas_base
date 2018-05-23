@@ -41,6 +41,7 @@ import math
 
 import numpy as np
 
+import lsst.geom
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.table as afwTable
@@ -167,7 +168,7 @@ def main():
             # get the aperture fluxes for Naive and Sinc methods
 
             axes = afwGeom.ellipses.Axes(radius[iR], radius[iR], math.radians(0))
-            center = afwGeom.Point2D(0, 0)
+            center = lsst.geom.Point2D(0, 0)
             ellipse = afwGeom.Ellipse(axes, center)
             resultSinc = measBase.ApertureFluxAlgorithm.computeSincFlux(mimg.getImage(), ellipse)
             resultNaive = measBase.ApertureFluxAlgorithm.computeNaiveFlux(mimg.getImage(), ellipse)

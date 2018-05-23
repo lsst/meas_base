@@ -24,6 +24,7 @@ import unittest
 
 import numpy as np
 
+import lsst.geom
 import lsst.afw.geom
 import lsst.meas.base
 import lsst.utils.tests
@@ -33,7 +34,7 @@ class ShapeTransformMatrixTestCase(lsst.utils.tests.TestCase):
 
     def testIdentity(self):
         # A no-op coordinate transform translates to a no-op shape transform
-        a = lsst.afw.geom.AffineTransform()
+        a = lsst.geom.AffineTransform()
         np.testing.assert_array_equal(a.getMatrix(), np.identity(3))
         m = lsst.meas.base.makeShapeTransformMatrix(a.getLinear())
         np.testing.assert_array_equal(m, np.identity(3))
@@ -41,7 +42,7 @@ class ShapeTransformMatrixTestCase(lsst.utils.tests.TestCase):
     def testVsTransform(self):
         # Transforming an ellipse by multiplying by the matrix should be
         # equivalent to calling its transform() method.
-        lt = lsst.afw.geom.LinearTransform.makeRotation(lsst.afw.geom.Angle(np.random.random()))
+        lt = lsst.geom.LinearTransform.makeRotation(lsst.geom.Angle(np.random.random()))
         e = lsst.afw.geom.Quadrupole(np.random.random(), np.random.random(),
                                      np.random.random())
         np.testing.assert_array_almost_equal(np.dot(lsst.meas.base.makeShapeTransformMatrix(lt),
@@ -50,7 +51,7 @@ class ShapeTransformMatrixTestCase(lsst.utils.tests.TestCase):
 
     def testVales(self):
         # Test that the analytically-derived correct values are computed
-        lt = lsst.afw.geom.LinearTransform(np.random.random((2, 2)))
+        lt = lsst.geom.LinearTransform(np.random.random((2, 2)))
         m = lsst.meas.base.makeShapeTransformMatrix(lt)
 
         self.assertEqual(m[0, 0], lt[0, 0]*lt[0, 0])

@@ -25,10 +25,10 @@ import unittest
 import numpy as np
 
 import lsst.utils.tests
+import lsst.geom
 import lsst.meas.base.tests
 import lsst.afw.image as afwImage
 import lsst.afw.table as afwTable
-import lsst.afw.geom as afwGeom
 import lsst.meas.base.applyApCorr as applyApCorr
 from lsst.afw.math import ChebyshevBoundedField
 from lsst.meas.base.apCorrRegistry import addApCorrName
@@ -78,14 +78,14 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         flagName = self.name + "_flag_apCorr"
         flagKey = self.schema.find(flagName).key
         source_test_flux = 5.1
-        source_test_centroid = afwGeom.Point2D(5, 7.1)
+        source_test_centroid = lsst.geom.Point2D(5, 7.1)
         sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, flux=source_test_flux,
                                             sigma=0, centroid=source_test_centroid)
         fluxName = self.name + "_flux"
         fluxSigmaName = self.name + "_fluxSigma"
 
         apCorrMap = afwImage.ApCorrMap()
-        bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.ExtentI(10, 10))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.ExtentI(10, 10))
         coefficients = np.ones((1, 1), dtype=np.float64)
         coefficients_sigma = np.zeros((1, 1), dtype=np.float64)
         apCorrMap[fluxName] = ChebyshevBoundedField(bbox, coefficients)
@@ -98,14 +98,14 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         flagName = self.name + "_flag_apCorr"
         flagKey = self.schema.find(flagName).key
         source_test_flux = 5.2
-        source_test_centroid = afwGeom.Point2D(5, 7.1)
+        source_test_centroid = lsst.geom.Point2D(5, 7.1)
         sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, flux=source_test_flux,
                                             sigma=0, centroid=source_test_centroid)
         fluxName = self.name + "_flux"
         fluxSigmaName = self.name + "_fluxSigma"
 
         apCorrMap = afwImage.ApCorrMap()
-        bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.ExtentI(10, 10))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.ExtentI(10, 10))
         coefficients = -(np.ones((1, 1), dtype=np.float64))
         coefficients_sigma = np.zeros((1, 1), dtype=np.float64)
         apCorrMap[fluxName] = ChebyshevBoundedField(bbox, coefficients)
@@ -116,7 +116,7 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
     def testCatFluxUnchanged(self):
         # Pick arbitrary but unique values for the test case
         source_test_flux = 5.3
-        source_test_centroid = afwGeom.Point2D(5, 7.1)
+        source_test_centroid = lsst.geom.Point2D(5, 7.1)
         sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, flux=source_test_flux,
                                             sigma=0, centroid=source_test_centroid)
         fluxName = self.name + "_flux"
@@ -124,7 +124,7 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         fluxKey = self.schema.find(fluxName).key
 
         apCorrMap = afwImage.ApCorrMap()
-        bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.ExtentI(10, 10))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.ExtentI(10, 10))
         coefficients = np.ones((1, 1), dtype=np.float64)
         coefficients_sigma = np.zeros((1, 1), dtype=np.float64)
         apCorrMap[fluxName] = ChebyshevBoundedField(bbox, coefficients)
@@ -136,7 +136,7 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
     def testCatFluxHalf(self):
         # Pick arbitrary but unique values for the test case
         source_test_flux = 5.4
-        source_test_centroid = afwGeom.Point2D(5, 7.1)
+        source_test_centroid = lsst.geom.Point2D(5, 7.1)
         sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, flux=source_test_flux,
                                             sigma=0, centroid=source_test_centroid)
         fluxName = self.name + "_flux"
@@ -144,7 +144,7 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         fluxKey = self.schema.find(fluxName).key
 
         apCorrMap = afwImage.ApCorrMap()
-        bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.ExtentI(10, 10))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.ExtentI(10, 10))
         coefficients = np.ones((1, 1), dtype=np.float64)
         coefficients /= 2.
         coefficients_sigma = np.zeros((1, 1), dtype=np.float64)
@@ -163,7 +163,7 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         # Pick arbitrary but unique values for the test case
         source_test_flux = 5.5
         source_test_sigma = 0.23
-        source_test_centroid = afwGeom.Point2D(5, 7.3)
+        source_test_centroid = lsst.geom.Point2D(5, 7.3)
         sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, flux=source_test_flux,
                                             sigma=source_test_sigma, centroid=source_test_centroid)
 
@@ -172,7 +172,7 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         fluxSigmaKey = self.schema.find(fluxSigmaName).key
 
         apCorrMap = afwImage.ApCorrMap()
-        bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.ExtentI(10, 10))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.ExtentI(10, 10))
         coefficients = np.ones((1, 1), dtype=np.float64)
         coefficients_sigma = np.ones((1, 1), dtype=np.float64)
         apCorrMap[fluxName] = ChebyshevBoundedField(bbox, coefficients)
