@@ -176,7 +176,7 @@ CentroidChecker::CentroidChecker(afw::table::Schema &schema, std::string const &
         : _doFootprintCheck(doFootprintCheck), _maxDistFromPeak(maxDistFromPeak) {
     _resetKey = schema.addField<afw::table::Flag>(schema.join(name, "flag_resetToPeak"),
                                                   "set if CentroidChecker reset the centroid");
-    _failureKey = schema.find<lsst::afw::table::Flag>(schema.join(name, "flag")).key;
+    _failureKey = schema.find<afw::table::Flag>(schema.join(name, "flag")).key;
     _xKey = schema.find<CentroidElement>(schema.join(name, "x")).key;
     _yKey = schema.find<CentroidElement>(schema.join(name, "y")).key;
 }

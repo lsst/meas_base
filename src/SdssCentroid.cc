@@ -357,11 +357,11 @@ void doMeasureCentroidImpl(double *xCenter,                 // output; x-positio
 }
 
 template <typename MaskedImageT>
-std::pair<MaskedImageT, double> smoothAndBinImage(CONST_PTR(lsst::afw::detection::Psf) psf, int const x,
+std::pair<MaskedImageT, double> smoothAndBinImage(CONST_PTR(afw::detection::Psf) psf, int const x,
                                                   const int y, MaskedImageT const &mimage, int binX, int binY,
                                                   FlagHandler _flagHandler) {
     geom::Point2D const center(x + mimage.getX0(), y + mimage.getY0());
-    lsst::afw::geom::ellipses::Quadrupole const &shape = psf->computeShape(center);
+    afw::geom::ellipses::Quadrupole const &shape = psf->computeShape(center);
     double const smoothingSigma = shape.getDeterminantRadius();
 #if 0
     double const nEffective = psf->computeEffectiveArea(); // not implemented yet (#2821)
@@ -369,7 +369,7 @@ std::pair<MaskedImageT, double> smoothAndBinImage(CONST_PTR(lsst::afw::detection
     double const nEffective = 4 * M_PI * smoothingSigma * smoothingSigma;  // correct for a Gaussian
 #endif
 
-    std::shared_ptr<lsst::afw::math::Kernel const> kernel = psf->getLocalKernel(center);
+    std::shared_ptr<afw::math::Kernel const> kernel = psf->getLocalKernel(center);
     int const kWidth = kernel->getWidth();
     int const kHeight = kernel->getHeight();
 
@@ -379,19 +379,19 @@ std::pair<MaskedImageT, double> smoothAndBinImage(CONST_PTR(lsst::afw::detection
     // image to smooth, a shallow copy
     PTR(MaskedImageT) subImage;
     try {
-        subImage.reset(new MaskedImageT(mimage, bbox, lsst::afw::image::LOCAL));
+        subImage.reset(new MaskedImageT(mimage, bbox, afw::image::LOCAL));
     } catch (pex::exceptions::LengthError &err) {
         throw LSST_EXCEPT(MeasurementError, SdssCentroidAlgorithm::EDGE.doc,
                           SdssCentroidAlgorithm::EDGE.number);
     }
-    PTR(MaskedImageT) binnedImage = lsst::afw::math::binImage(*subImage, binX, binY, lsst::afw::math::MEAN);
+    PTR(MaskedImageT) binnedImage = afw::math::binImage(*subImage, binX, binY, afw::math::MEAN);
     binnedImage->setXY0(subImage->getXY0());
     // image to smooth into, a deep copy.
     MaskedImageT smoothedImage = MaskedImageT(*binnedImage, true);
     assert(smoothedImage.getWidth() / 2 == kWidth / 2 + 2);  // assumed by the code that uses smoothedImage
     assert(smoothedImage.getHeight() / 2 == kHeight / 2 + 2);
 
-    lsst::afw::math::convolve(smoothedImage, *binnedImage, *kernel, lsst::afw::math::ConvolutionControl());
+    afw::math::convolve(smoothedImage, *binnedImage, *kernel, afw::math::ConvolutionControl());
     *smoothedImage.getVariance() *= binX * binY * nEffective;  // We want the per-pixel variance, so undo the
                                                                // effects of binning and smoothing
 
@@ -428,13 +428,13 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
 
     MaskedImageT const &mimage = exposure.getMaskedImage();
     ImageT const &image = *mimage.getImage();
-    CONST_PTR(lsst::afw::detection::Psf) psf = exposure.getPsf();
+    CONST_PTR(afw::detection::Psf) psf = exposure.getPsf();
 
-    int const x = image.positionToIndex(center.getX(), lsst::afw::image::X).first;
-    int const y = image.positionToIndex(center.getY(), lsst::afw::image::Y).first;
+    int const x = image.positionToIndex(center.getX(), afw::image::X).first;
+    int const y = image.positionToIndex(center.getY(), afw::image::Y).first;
 
     if (!image.getBBox().contains(geom::Extent2I(x, y) + image.getXY0())) {
-        throw LSST_EXCEPT(lsst::meas::base::MeasurementError, EDGE.doc, EDGE.number);
+        throw LSST_EXCEPT(meas::base::MeasurementError, EDGE.doc, EDGE.number);
     }
 
     // Algorithm uses a least-squares fit (implemented via a convolution) to a symmetrized PSF model.
@@ -492,8 +492,8 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
             binY *= 2;
         }
     }
-    result.x = lsst::afw::image::indexToPosition(xc + image.getX0());
-    result.y = lsst::afw::image::indexToPosition(yc + image.getY0());
+    result.x = afw::image::indexToPosition(xc + image.getX0());
+    result.y = afw::image::indexToPosition(yc + image.getY0());
 
     result.xSigma = sqrt(dxc * dxc);
     result.ySigma = sqrt(dyc * dyc);

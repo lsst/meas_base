@@ -36,13 +36,6 @@
 #include "lsst/meas/base/exceptions.h"
 #include "lsst/meas/base/SdssShape.h"
 
-namespace pexPolicy = lsst::pex::policy;
-namespace pexExceptions = lsst::pex::exceptions;
-namespace afwDet = lsst::afw::detection;
-namespace afwImage = lsst::afw::image;
-namespace afwGeom = lsst::afw::geom;
-namespace afwTable = lsst::afw::table;
-
 namespace lsst {
 namespace meas {
 namespace base {
@@ -111,14 +104,13 @@ Matrix4d calc_fisher(SdssShapeResult const &shape,  // the Shape that we want th
     double const D = sigma11W * sigma22W - sigma12W * sigma12W;
 
     if (D <= std::numeric_limits<double>::epsilon()) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::DomainError,
-                          "Determinant is too small calculating Fisher matrix");
+        throw LSST_EXCEPT(pex::exceptions::DomainError, "Determinant is too small calculating Fisher matrix");
     }
     /*
      * a normalization factor
      */
     if (bkgd_var <= 0.0) {
-        throw LSST_EXCEPT(lsst::pex::exceptions::DomainError,
+        throw LSST_EXCEPT(pex::exceptions::DomainError,
                           (boost::format("Background variance must be positive (saw %g)") % bkgd_var).str());
     }
     double const F = geom::PI * sqrt(D) / bkgd_var;
@@ -165,14 +157,14 @@ struct ImageAdaptor {
 };
 
 template <typename T>  // specialise to a MaskedImage
-struct ImageAdaptor<afwImage::MaskedImage<T> > {
-    typedef typename afwImage::MaskedImage<T>::Image Image;
+struct ImageAdaptor<afw::image::MaskedImage<T> > {
+    typedef typename afw::image::MaskedImage<T>::Image Image;
 
     static bool const hasVariance = true;
 
-    Image const &getImage(afwImage::MaskedImage<T> const &mimage) const { return *mimage.getImage(); }
+    Image const &getImage(afw::image::MaskedImage<T> const &mimage) const { return *mimage.getImage(); }
 
-    double getVariance(afwImage::MaskedImage<T> const &mimage, int ix, int iy) {
+    double getVariance(afw::image::MaskedImage<T> const &mimage, int ix, int iy) {
         return mimage.at(ix, iy).variance();
     }
 };
@@ -612,8 +604,8 @@ bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double y
     shape->yy = sigma22W;
 
     if (shape->xx + shape->yy != 0.0) {
-        int const ix = lsst::afw::image::positionToIndex(xcen);
-        int const iy = lsst::afw::image::positionToIndex(ycen);
+        int const ix = afw::image::positionToIndex(xcen);
+        int const iy = afw::image::positionToIndex(ycen);
 
         if (ix >= 0 && ix < mimage.getWidth() && iy >= 0 && iy < mimage.getHeight()) {
             float const bkgd_var = ImageAdaptor<ImageT>().getVariance(
@@ -663,7 +655,7 @@ SdssShapeResultKey SdssShapeResultKey::addFields(afw::table::Schema &schema, std
     // Only include PSF shape fields if doMeasurePsf = True
     if (doMeasurePsf) {
         r._includePsf = true;
-        r._psfShapeResult = afwTable::QuadrupoleKey::addFields(
+        r._psfShapeResult = afw::table::QuadrupoleKey::addFields(
                 schema, schema.join(name, "psf"), "adaptive moments of the PSF model at the object position");
     } else {
         r._includePsf = false;
@@ -704,7 +696,7 @@ SdssShapeResultKey::SdssShapeResultKey(afw::table::SubSchema const &s)
           _flux_xy_Cov(s["flux"]["xy"]["Cov"]) {
     // The input SubSchema may optionally provide for a PSF.
     try {
-        _psfShapeResult = afwTable::QuadrupoleKey(s["psf"]);
+        _psfShapeResult = afw::table::QuadrupoleKey(s["psf"]);
         _flagHandler = FlagHandler(s, SdssShapeAlgorithm::getFlagDefinitions());
         _includePsf = true;
     } catch (pex::exceptions::NotFoundError &e) {
@@ -729,7 +721,7 @@ SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const &record) co
     return result;
 }
 
-afwGeom::ellipses::Quadrupole SdssShapeResultKey::getPsfShape(afw::table::BaseRecord const &record) const {
+afw::geom::ellipses::Quadrupole SdssShapeResultKey::getPsfShape(afw::table::BaseRecord const &record) const {
     return record.get(_psfShapeResult);
 }
 
@@ -747,7 +739,7 @@ void SdssShapeResultKey::set(afw::table::BaseRecord &record, SdssShapeResult con
 }
 
 void SdssShapeResultKey::setPsfShape(afw::table::BaseRecord &record,
-                                     afwGeom::ellipses::Quadrupole const &value) const {
+                                     afw::geom::ellipses::Quadrupole const &value) const {
     record.set(_psfShapeResult, value);
 }
 
@@ -928,9 +920,9 @@ void SdssShapeAlgorithm::fail(afw::table::SourceRecord &measRecord, MeasurementE
     template FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(      \
             IMAGE const &, afw::geom::ellipses::Quadrupole const &, geom::Point2D const &)
 
-#define INSTANTIATE_PIXEL(PIXEL)                       \
-    INSTANTIATE_IMAGE(lsst::afw::image::Image<PIXEL>); \
-    INSTANTIATE_IMAGE(lsst::afw::image::MaskedImage<PIXEL>);
+#define INSTANTIATE_PIXEL(PIXEL)                 \
+    INSTANTIATE_IMAGE(afw::image::Image<PIXEL>); \
+    INSTANTIATE_IMAGE(afw::image::MaskedImage<PIXEL>);
 
 INSTANTIATE_PIXEL(int);
 INSTANTIATE_PIXEL(float);
@@ -956,9 +948,9 @@ SdssShapeTransform::SdssShapeTransform(Control const &ctrl, std::string const &n
     _outShapeKey = ShapeResultKey::addFields(mapper.editOutputSchema(), name, "Shape in celestial moments",
                                              FULL_COVARIANCE, afw::table::CoordinateType::CELESTIAL);
     if (_transformPsf) {
-        _outPsfShapeKey = afwTable::QuadrupoleKey::addFields(mapper.editOutputSchema(), name + "_psf",
-                                                             "PSF shape in celestial moments",
-                                                             afw::table::CoordinateType::CELESTIAL);
+        _outPsfShapeKey = afw::table::QuadrupoleKey::addFields(mapper.editOutputSchema(), name + "_psf",
+                                                               "PSF shape in celestial moments",
+                                                               afw::table::CoordinateType::CELESTIAL);
     }
 }
 
@@ -972,9 +964,9 @@ void SdssShapeTransform::operator()(afw::table::SourceCatalog const &inputCatalo
 
     CentroidResultKey centroidKey(inputCatalog.getSchema()[_name]);
     ShapeResultKey inShapeKey(inputCatalog.getSchema()[_name]);
-    afwTable::QuadrupoleKey inPsfShapeKey;
+    afw::table::QuadrupoleKey inPsfShapeKey;
     if (_transformPsf) {
-        inPsfShapeKey = afwTable::QuadrupoleKey(
+        inPsfShapeKey = afw::table::QuadrupoleKey(
                 inputCatalog.getSchema()[inputCatalog.getSchema().join(_name, "psf")]);
     }
 

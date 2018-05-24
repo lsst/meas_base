@@ -82,8 +82,8 @@ void NaiveCentroidAlgorithm::measure(afw::table::SourceRecord& measRecord,
     double const sum_x = -im(-1, 1) + im(1, 1) + -im(-1, 0) + im(1, 0) + -im(-1, -1) + im(1, -1);
     double const sum_y = (im(-1, 1) + im(0, 1) + im(1, 1)) - (im(-1, -1) + im(0, -1) + im(1, -1));
 
-    result.x = lsst::afw::image::indexToPosition(x + image.getX0()) + sum_x / sum;
-    result.y = lsst::afw::image::indexToPosition(y + image.getY0()) + sum_y / sum;
+    result.x = afw::image::indexToPosition(x + image.getX0()) + sum_x / sum;
+    result.y = afw::image::indexToPosition(y + image.getY0()) + sum_y / sum;
     measRecord.set(_centroidKey, result);
     _centroidChecker(measRecord);
 }

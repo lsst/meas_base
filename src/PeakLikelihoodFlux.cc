@@ -59,7 +59,7 @@ namespace {
  *
  * An example of the new API is:
  * \code
- * afwGeom::ellipses::Quadrupole shape = psf->computeShape();
+ * afw::geom::ellipses::Quadrupole shape = psf->computeShape();
  * double const smoothingSigma = shape.getDeterminantRadius();
  * \endcode
  */
@@ -73,20 +73,20 @@ public:
         BICKERTON          ///< Weight \<r^2> by I^2 to avoid negative fluxes
     };
 
-    PsfAttributes(CONST_PTR(lsst::afw::detection::Psf) psf, int const iX, int const iY);
-    PsfAttributes(CONST_PTR(lsst::afw::detection::Psf) psf, geom::Point2I const &cen);
+    PsfAttributes(CONST_PTR(afw::detection::Psf) psf, int const iX, int const iY);
+    PsfAttributes(CONST_PTR(afw::detection::Psf) psf, geom::Point2I const &cen);
 
     double computeGaussianWidth(Method how = ADAPTIVE_MOMENT) const;
     double computeEffectiveArea() const;
 
 private:
-    PTR(lsst::afw::image::Image<double>) _psfImage;
+    PTR(afw::image::Image<double>) _psfImage;
 };
 
 /**
  * @brief Constructor for PsfAttributes
  */
-PsfAttributes::PsfAttributes(CONST_PTR(lsst::afw::detection::Psf) psf,  ///< The psf whose attributes we want
+PsfAttributes::PsfAttributes(CONST_PTR(afw::detection::Psf) psf,  ///< The psf whose attributes we want
                              int const iX,  ///< the x position in the frame we want the attributes at
                              int const iY   ///< the y position in the frame we want the attributes at
 ) {
@@ -98,8 +98,8 @@ PsfAttributes::PsfAttributes(CONST_PTR(lsst::afw::detection::Psf) psf,  ///< The
  * @brief Constructor for PsfAttributes
  */
 PsfAttributes::PsfAttributes(
-        CONST_PTR(lsst::afw::detection::Psf) psf,  ///< The psf whose attributes we want
-        geom::Point2I const &cen                   ///< the position in the frame we want the attributes at
+        CONST_PTR(afw::detection::Psf) psf,  ///< The psf whose attributes we want
+        geom::Point2I const &cen             ///< the position in the frame we want the attributes at
         )
         :  // N.b. cen is a PointI so that we know this image is centered in the central pixel of _psfImage
           _psfImage(psf->computeImage(geom::PointD(cen))) {}
@@ -195,10 +195,10 @@ void PeakLikelihoodFluxAlgorithm::measure(afw::table::SourceRecord &measRecord,
     /**
      * Given an image and a pixel position, return a Flux
      *
-     * @throw lsst::pex::exceptions::InvalidParameterError if the exposure has no PSF.
-     * @throw lsst::pex::exceptions::RangeError if the warping (centering) kernel
+     * @throw pex::exceptions::InvalidParameterError if the exposure has no PSF.
+     * @throw pex::exceptions::RangeError if the warping (centering) kernel
      *      is not fully contained within the exposure.
-     * @throw lsst::pex::exceptions::RangeError if the center not within exposure.
+     * @throw pex::exceptions::RangeError if the center not within exposure.
      *      (This avoids insane center values from confusing the test for warping kernel within exposure).
      */
 

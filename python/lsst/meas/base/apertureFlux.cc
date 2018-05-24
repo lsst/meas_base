@@ -61,20 +61,20 @@ PyFluxControl declareFluxControl(py::module &mod) {
 
 template <typename Image, class PyClass>
 void declareComputeFluxes(PyClass &cls) {
-    namespace afwEllipses = lsst::afw::geom::ellipses;
     using Control = ApertureFluxAlgorithm::Control;
     using Result = ApertureFluxAlgorithm::Result;
 
     cls.def_static("computeSincFlux",
-                   (Result(*)(Image const &, afwEllipses::Ellipse const &, Control const &)) &
+                   (Result(*)(Image const &, afw::geom::ellipses::Ellipse const &, Control const &)) &
                            ApertureFluxAlgorithm::computeSincFlux,
                    "image"_a, "ellipse"_a, "ctrl"_a = Control());
     cls.def_static("computeNaiveFlux",
-                   (Result(*)(Image const &, afwEllipses::Ellipse const &, Control const &)) &
+                   (Result(*)(Image const &, afw::geom::ellipses::Ellipse const &, Control const &)) &
                            ApertureFluxAlgorithm::computeNaiveFlux,
                    "image"_a, "ellipse"_a, "ctrl"_a = Control());
-    cls.def_static("computeFlux", (Result(*)(Image const &, afwEllipses::Ellipse const &, Control const &)) &
-                                          ApertureFluxAlgorithm::computeFlux,
+    cls.def_static("computeFlux",
+                   (Result(*)(Image const &, afw::geom::ellipses::Ellipse const &, Control const &)) &
+                           ApertureFluxAlgorithm::computeFlux,
                    "image"_a, "ellipse"_a, "ctrl"_a = Control());
 }
 
@@ -87,10 +87,10 @@ PyFluxAlgorithm declareFluxAlgorithm(py::module &mod) {
 
     // constructor not wrapped because class is abstract
 
-    declareComputeFluxes<lsst::afw::image::Image<double>>(cls);
-    declareComputeFluxes<lsst::afw::image::MaskedImage<double>>(cls);
-    declareComputeFluxes<lsst::afw::image::Image<float>>(cls);
-    declareComputeFluxes<lsst::afw::image::MaskedImage<float>>(cls);
+    declareComputeFluxes<afw::image::Image<double>>(cls);
+    declareComputeFluxes<afw::image::MaskedImage<double>>(cls);
+    declareComputeFluxes<afw::image::Image<float>>(cls);
+    declareComputeFluxes<afw::image::MaskedImage<float>>(cls);
 
     cls.def("measure", &ApertureFluxAlgorithm::measure, "measRecord"_a, "exposure"_a);
     cls.def("fail", &ApertureFluxAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
@@ -124,7 +124,7 @@ PyFluxTransform declareFluxTransform(py::module &mod) {
     return cls;
 }
 
-}  // <anonymous>
+}  // namespace
 
 PYBIND11_PLUGIN(apertureFlux) {
     py::module::import("lsst.afw.geom");
@@ -152,6 +152,6 @@ PYBIND11_PLUGIN(apertureFlux) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

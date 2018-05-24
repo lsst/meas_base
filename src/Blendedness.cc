@@ -143,7 +143,7 @@ template <typename Accumulator>
 void computeMoments(afw::image::MaskedImage<float> const& image, geom::Point2D const& centroid,
                     afw::geom::ellipses::Quadrupole const& shape, double nSigmaWeightMax,
                     Accumulator& accumulatorRaw, Accumulator& accumulatorAbs) {
-    geom::Box2I bbox = image.getBBox(lsst::afw::image::PARENT);
+    geom::Box2I bbox = image.getBBox(afw::image::PARENT);
 
     afw::geom::ellipses::Ellipse ellipse(shape, centroid);
     ellipse.getCore().scale(nSigmaWeightMax);
