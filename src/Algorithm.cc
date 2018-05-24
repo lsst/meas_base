@@ -24,28 +24,22 @@
 #include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/Algorithm.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
-void SingleFrameAlgorithm::measureN(
-    afw::table::SourceCatalog const & measCat,
-    afw::image::Exposure<float> const & exposure
-) const {
-    throw LSST_EXCEPT(
-        pex::exceptions::LogicError,
-        "measureN not implemented for this algorithm"
-    );
+void SingleFrameAlgorithm::measureN(afw::table::SourceCatalog const& measCat,
+                                    afw::image::Exposure<float> const& exposure) const {
+    throw LSST_EXCEPT(pex::exceptions::LogicError, "measureN not implemented for this algorithm");
 }
 
-void ForcedAlgorithm::measureNForced(
-    afw::table::SourceCatalog const & measCat,
-    afw::image::Exposure<float> const & exposure,
-    afw::table::SourceCatalog const & refRecord,
-    afw::geom::SkyWcs const & refWcs
-) const {
-    throw LSST_EXCEPT(
-        pex::exceptions::LogicError,
-        "measureN not implemented for this algorithm"
-    );
+void ForcedAlgorithm::measureNForced(afw::table::SourceCatalog const& measCat,
+                                     afw::image::Exposure<float> const& exposure,
+                                     afw::table::SourceCatalog const& refRecord,
+                                     afw::geom::SkyWcs const& refWcs) const {
+    throw LSST_EXCEPT(pex::exceptions::LogicError, "measureN not implemented for this algorithm");
 }
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

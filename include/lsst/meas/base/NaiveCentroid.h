@@ -35,15 +35,16 @@
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 /**
  *  @brief A C++ control class to handle NaiveCentroidAlgorithm's configuration
  */
 class NaiveCentroidControl {
 public:
     LSST_CONTROL_FIELD(background, double, "Value to subtract from the image pixel values");
-    LSST_CONTROL_FIELD(doFootprintCheck, bool,
-                       "Do check that the centroid is contained in footprint.");
+    LSST_CONTROL_FIELD(doFootprintCheck, bool, "Do check that the centroid is contained in footprint.");
     LSST_CONTROL_FIELD(maxDistToPeak, double,
                        "If set > 0, Centroid Check also checks distance from footprint peak.");
 
@@ -65,29 +66,22 @@ public:
 
 class NaiveCentroidAlgorithm : public SimpleAlgorithm {
 public:
-
     // Structures and routines to manage flaghandler
-    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinitionList const& getFlagDefinitions();
     static FlagDefinition const FAILURE;
     static FlagDefinition const NO_COUNTS;
     static FlagDefinition const EDGE;
 
     typedef NaiveCentroidControl Control;
 
-    NaiveCentroidAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
+    NaiveCentroidAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema);
 
-    virtual void measure(
-        afw::table::SourceRecord & measRecord,
-        afw::image::Exposure<float> const & exposure
-    ) const;
+    virtual void measure(afw::table::SourceRecord& measRecord,
+                         afw::image::Exposure<float> const& exposure) const;
 
-    virtual void fail(
-        afw::table::SourceRecord & measRecord,
-        MeasurementError * error=nullptr
-    ) const;
+    virtual void fail(afw::table::SourceRecord& measRecord, MeasurementError* error = nullptr) const;
 
 private:
-
     Control _ctrl;
     CentroidResultKey _centroidKey;
     FlagHandler _flagHandler;
@@ -99,9 +93,11 @@ class NaiveCentroidTransform : public CentroidTransform {
 public:
     typedef NaiveCentroidControl Control;
 
-    NaiveCentroidTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper);
+    NaiveCentroidTransform(Control const& ctrl, std::string const& name, afw::table::SchemaMapper& mapper);
 };
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_NaiveCentroid_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_NaiveCentroid_h_INCLUDED

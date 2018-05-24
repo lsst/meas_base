@@ -30,50 +30,42 @@
 #include "lsst/meas/base/GaussianFlux.h"
 #include "lsst/meas/base/SdssShape.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 namespace {
 FlagDefinitionList flagDefinitions;
-} // end anonymous
+}  // namespace
 
 FlagDefinition const GaussianFluxAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
 
-FlagDefinitionList const & GaussianFluxAlgorithm::getFlagDefinitions() {
-    return flagDefinitions;
-}
+FlagDefinitionList const& GaussianFluxAlgorithm::getFlagDefinitions() { return flagDefinitions; }
 
-
-GaussianFluxAlgorithm::GaussianFluxAlgorithm(
-    Control const & ctrl,
-    std::string const & name,
-    afw::table::Schema & schema
-) : _ctrl(ctrl),
-    _fluxResultKey(
-        FluxResultKey::addFields(schema, name, "flux from Gaussian Flux algorithm")
-    ),
-    _centroidExtractor(schema, name),
-    _shapeExtractor(schema, name)
-{
+GaussianFluxAlgorithm::GaussianFluxAlgorithm(Control const& ctrl, std::string const& name,
+                                             afw::table::Schema& schema)
+        : _ctrl(ctrl),
+          _fluxResultKey(FluxResultKey::addFields(schema, name, "flux from Gaussian Flux algorithm")),
+          _centroidExtractor(schema, name),
+          _shapeExtractor(schema, name) {
     _flagHandler = FlagHandler::addFields(schema, name, getFlagDefinitions());
 }
 
-void GaussianFluxAlgorithm::measure(
-    afw::table::SourceRecord & measRecord,
-    afw::image::Exposure<float> const & exposure
-) const {
+void GaussianFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
+                                    afw::image::Exposure<float> const& exposure) const {
     geom::Point2D centroid = _centroidExtractor(measRecord, _flagHandler);
     afw::geom::ellipses::Quadrupole shape = _shapeExtractor(measRecord, _flagHandler);
 
-    FluxResult result = SdssShapeAlgorithm::computeFixedMomentsFlux(
-        exposure.getMaskedImage(), shape, centroid
-    );
+    FluxResult result =
+            SdssShapeAlgorithm::computeFixedMomentsFlux(exposure.getMaskedImage(), shape, centroid);
 
     measRecord.set(_fluxResultKey, result);
     _flagHandler.setValue(measRecord, FAILURE.number, false);
 }
 
-
-void GaussianFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+void GaussianFluxAlgorithm::fail(afw::table::SourceRecord& measRecord, MeasurementError* error) const {
     _flagHandler.handleFailure(measRecord, error);
 }
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

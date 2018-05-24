@@ -27,30 +27,24 @@
 #include "lsst/meas/base/SincCoeffs.h"
 #include "lsst/afw/detection/Psf.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
-ScaledApertureFluxAlgorithm::ScaledApertureFluxAlgorithm(
-    Control const & ctrl,
-    std::string const & name,
-    afw::table::Schema & schema
-) : _ctrl(ctrl),
-    _fluxResultKey(
-        FluxResultKey::addFields(schema, name, "flux derived from PSF-scaled aperture")
-    ),
-    _centroidExtractor(schema, name)
-{
-    _flagHandler = FlagHandler::addFields(schema, name,
-                                          ApertureFluxAlgorithm::getFlagDefinitions());
+ScaledApertureFluxAlgorithm::ScaledApertureFluxAlgorithm(Control const& ctrl, std::string const& name,
+                                                         afw::table::Schema& schema)
+        : _ctrl(ctrl),
+          _fluxResultKey(FluxResultKey::addFields(schema, name, "flux derived from PSF-scaled aperture")),
+          _centroidExtractor(schema, name) {
+    _flagHandler = FlagHandler::addFields(schema, name, ApertureFluxAlgorithm::getFlagDefinitions());
 }
 
-void ScaledApertureFluxAlgorithm::measure(
-    afw::table::SourceRecord & measRecord,
-    afw::image::Exposure<float> const & exposure
-) const {
+void ScaledApertureFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
+                                          afw::image::Exposure<float> const& exposure) const {
     geom::Point2D const center = _centroidExtractor(measRecord, _flagHandler);
     double const radius = exposure.getPsf()->computeShape(center).getDeterminantRadius();
-    double const fwhm = 2.0*std::sqrt(2.0*std::log(2))*radius;
-    double const size = _ctrl.scale*fwhm;
+    double const fwhm = 2.0 * std::sqrt(2.0 * std::log(2)) * radius;
+    double const size = _ctrl.scale * fwhm;
     afw::geom::ellipses::Axes const axes(size, size);
 
     // ApertureFluxAlgorithm::computeSincFlux requires an ApertureFluxControl as an
@@ -58,38 +52,35 @@ void ScaledApertureFluxAlgorithm::measure(
     ApertureFluxControl apCtrl;
     apCtrl.shiftKernel = _ctrl.shiftKernel;
 
-    Result result = ApertureFluxAlgorithm::computeSincFlux(exposure.getMaskedImage(),
-                                                           afw::geom::ellipses::Ellipse(axes, center),
-                                                           apCtrl);
+    Result result = ApertureFluxAlgorithm::computeSincFlux(
+            exposure.getMaskedImage(), afw::geom::ellipses::Ellipse(axes, center), apCtrl);
     measRecord.set(_fluxResultKey, result);
 
     for (std::size_t i = 0; i < ApertureFluxAlgorithm::getFlagDefinitions().size(); i++) {
-        FlagDefinition const & iter = ApertureFluxAlgorithm::getFlagDefinitions()[i];
+        FlagDefinition const& iter = ApertureFluxAlgorithm::getFlagDefinitions()[i];
         if (result.getFlag(iter.number)) {
             _flagHandler.setValue(measRecord, iter.number, true);
         }
     }
 }
 
-void ScaledApertureFluxAlgorithm::fail(afw::table::SourceRecord & measRecord,
-                                       MeasurementError * error) const {
+void ScaledApertureFluxAlgorithm::fail(afw::table::SourceRecord& measRecord, MeasurementError* error) const {
     _flagHandler.handleFailure(measRecord, error);
 }
 
-ScaledApertureFluxTransform::ScaledApertureFluxTransform(
-    Control const & ctrl,
-    std::string const & name,
-    afw::table::SchemaMapper & mapper
-) :
-    FluxTransform{name, mapper}
-{
+ScaledApertureFluxTransform::ScaledApertureFluxTransform(Control const& ctrl, std::string const& name,
+                                                         afw::table::SchemaMapper& mapper)
+        : FluxTransform{name, mapper} {
     for (std::size_t i = 0; i < ApertureFluxAlgorithm::getFlagDefinitions().size(); i++) {
         std::string flagName = ApertureFluxAlgorithm::getFlagDefinitions()[i].name;
-        afw::table::Key<afw::table::Flag> key = mapper.getInputSchema().find<afw::table::Flag>(name + "_" + flagName).key;
+        afw::table::Key<afw::table::Flag> key =
+                mapper.getInputSchema().find<afw::table::Flag>(name + "_" + flagName).key;
         if (key.isValid()) {
             mapper.addMapping(key);
         }
     }
 }
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

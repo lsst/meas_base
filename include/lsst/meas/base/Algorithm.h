@@ -32,7 +32,9 @@
 #include "lsst/meas/base/exceptions.h"
 #include "lsst/meas/base/FlagHandler.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 /**
  *  Ultimate abstract base class for all C++ measurement algorithms
@@ -41,7 +43,6 @@ namespace lsst { namespace meas { namespace base {
  */
 class BaseAlgorithm {
 public:
-
     /**
      *  Handle an exception thrown by the current algorithm by setting flags in the given
      *  record.
@@ -58,16 +59,12 @@ public:
      *  implemented even when all known failure modes do not throw exceptions, to ensure
      *  that unexpected exceptions thrown in lower-level code are properly handled.
      */
-    virtual void fail(
-        afw::table::SourceRecord & measRecord,
-        MeasurementError * error=nullptr
-    ) const = 0;
+    virtual void fail(afw::table::SourceRecord& measRecord, MeasurementError* error = nullptr) const = 0;
 
     virtual ~BaseAlgorithm() {}
 
-    std::string getLogName() const {
-        return _logName;
-    }
+    std::string getLogName() const { return _logName; }
+
 protected:
     std::string _logName;
 };
@@ -84,7 +81,6 @@ protected:
  */
 class SingleFrameAlgorithm : public virtual BaseAlgorithm {
 public:
-
     /**
      *  Called to measure a single child source in an image.
      *
@@ -93,10 +89,8 @@ public:
      *  which can also be used to obtain centroid (see SafeCentroidExtractor) and shape
      *  (see SafeShapeExtractor) information.
      */
-    virtual void measure(
-        afw::table::SourceRecord & measRecord,
-        afw::image::Exposure<float> const & exposure
-    ) const = 0;
+    virtual void measure(afw::table::SourceRecord& measRecord,
+                         afw::image::Exposure<float> const& exposure) const = 0;
 
     /**
      *  Called to simultaneously measure all children in a deblend family, in a single image.
@@ -108,11 +102,8 @@ public:
      *  The default implementation simply throws an exception, indicating that simultaneous
      *  measurement is not supported.
      */
-    virtual void measureN(
-        afw::table::SourceCatalog const & measCat,
-        afw::image::Exposure<float> const & exposure
-    ) const;
-
+    virtual void measureN(afw::table::SourceCatalog const& measCat,
+                          afw::image::Exposure<float> const& exposure) const;
 };
 
 /**
@@ -135,7 +126,6 @@ public:
  */
 class ForcedAlgorithm : public virtual BaseAlgorithm {
 public:
-
     /**
      *  Called to measure a single child source in an image.
      *
@@ -144,12 +134,10 @@ public:
      *  which can also be used to obtain centroid (see SafeCentroidExtractor) and shape
      *  (see SafeShapeExtractor) information.
      */
-    virtual void measureForced(
-        afw::table::SourceRecord & measRecord,
-        afw::image::Exposure<float> const & exposure,
-        afw::table::SourceRecord const & refRecord,
-        afw::geom::SkyWcs const & refWcs
-    ) const = 0;
+    virtual void measureForced(afw::table::SourceRecord& measRecord,
+                               afw::image::Exposure<float> const& exposure,
+                               afw::table::SourceRecord const& refRecord,
+                               afw::geom::SkyWcs const& refWcs) const = 0;
 
     /**
      *  Called to simultaneously measure all children in a deblend family, in a single image.
@@ -161,13 +149,10 @@ public:
      *  The default implementation simply throws an exception, indicating that simultaneous
      *  measurement is not supported.
      */
-    virtual void measureNForced(
-        afw::table::SourceCatalog const & measCat,
-        afw::image::Exposure<float> const & exposure,
-        afw::table::SourceCatalog const & refRecord,
-        afw::geom::SkyWcs const & refWcs
-    ) const;
-
+    virtual void measureNForced(afw::table::SourceCatalog const& measCat,
+                                afw::image::Exposure<float> const& exposure,
+                                afw::table::SourceCatalog const& refRecord,
+                                afw::geom::SkyWcs const& refWcs) const;
 };
 
 /**
@@ -184,27 +169,23 @@ public:
  */
 class SimpleAlgorithm : public SingleFrameAlgorithm, public ForcedAlgorithm {
 public:
-
-    virtual void measureForced(
-        afw::table::SourceRecord & measRecord,
-        afw::image::Exposure<float> const & exposure,
-        afw::table::SourceRecord const & refRecord,
-        afw::geom::SkyWcs const & refWcs
-    ) const {
+    virtual void measureForced(afw::table::SourceRecord& measRecord,
+                               afw::image::Exposure<float> const& exposure,
+                               afw::table::SourceRecord const& refRecord,
+                               afw::geom::SkyWcs const& refWcs) const {
         measure(measRecord, exposure);
     }
 
-    virtual void measureNForced(
-        afw::table::SourceCatalog const & measCat,
-        afw::image::Exposure<float> const & exposure,
-        afw::table::SourceCatalog const & refRecord,
-        afw::geom::SkyWcs const & refWcs
-    ) const {
+    virtual void measureNForced(afw::table::SourceCatalog const& measCat,
+                                afw::image::Exposure<float> const& exposure,
+                                afw::table::SourceCatalog const& refRecord,
+                                afw::geom::SkyWcs const& refWcs) const {
         measureN(measCat, exposure);
     }
-
 };
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_Algorithm_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_Algorithm_h_INCLUDED

@@ -59,8 +59,8 @@ public:
     LSST_CONTROL_FIELD(doMeasurePsf, bool, "Whether to also compute the shape of the PSF model");
 
     /// @copydoc SdssShapeControl::SdssShapeControl
-    SdssShapeControl() : background(0.0), maxIter(100), maxShift(), tol1(1E-5), tol2(1E-4),
-                         doMeasurePsf(true) {}
+    SdssShapeControl()
+            : background(0.0), maxIter(100), maxShift(), tol1(1E-5), tol2(1E-4), doMeasurePsf(true) {}
 };
 
 /**
@@ -72,7 +72,6 @@ public:
  */
 class SdssShapeResultKey : public afw::table::FunctorKey<SdssShapeResult> {
 public:
-
     /**
      *  @brief Add the appropriate fields to a Schema, and return a SdssShapeResultKey that manages them
      *
@@ -84,11 +83,8 @@ public:
      *  @param[in]     doMeasurePsf  Boolean indicating whether or not the Psf is being measured (as
      *                               set in the SdssShapeControl class).
      */
-    static SdssShapeResultKey addFields(
-        afw::table::Schema & schema,
-        std::string const & name,
-        bool doMeasurePsf
-    );
+    static SdssShapeResultKey addFields(afw::table::Schema& schema, std::string const& name,
+                                        bool doMeasurePsf);
 
     /// Default constructor; instance will not be usuable unless subsequently assigned to.
     SdssShapeResultKey() {}
@@ -102,31 +98,31 @@ public:
      *  SdssShapeResultKey k(schema["a"]);
      *  @endcode
      */
-    SdssShapeResultKey(afw::table::SubSchema const & s);
+    SdssShapeResultKey(afw::table::SubSchema const& s);
 
     /// Get an SdssShapeResult from the given record
-    virtual SdssShapeResult get(afw::table::BaseRecord const & record) const;
+    virtual SdssShapeResult get(afw::table::BaseRecord const& record) const;
 
     /// Set an SdssShapeResult in the given record
-    virtual void set(afw::table::BaseRecord & record, SdssShapeResult const & value) const;
+    virtual void set(afw::table::BaseRecord& record, SdssShapeResult const& value) const;
 
     /// Get a Quadrupole for the Psf from the given record
-    virtual afw::geom::ellipses::Quadrupole getPsfShape(afw::table::BaseRecord const & record) const;
+    virtual afw::geom::ellipses::Quadrupole getPsfShape(afw::table::BaseRecord const& record) const;
 
     /// Set a Quadrupole for the Psf at the position of the given record
-    virtual void setPsfShape(afw::table::BaseRecord & record,
-                             afw::geom::ellipses::Quadrupole const & value) const;
+    virtual void setPsfShape(afw::table::BaseRecord& record,
+                             afw::geom::ellipses::Quadrupole const& value) const;
 
     //@{
     /// Compare the FunctorKey for equality with another, using the underlying Keys
-    bool operator==(SdssShapeResultKey const & other) const;
-    bool operator!=(SdssShapeResultKey const & other) const { return !(*this == other); }
+    bool operator==(SdssShapeResultKey const& other) const;
+    bool operator!=(SdssShapeResultKey const& other) const { return !(*this == other); }
     //@}
 
     /// Return True if the key is valid.
     bool isValid() const;
 
-    FlagHandler const & getFlagHandler() const { return _flagHandler; }
+    FlagHandler const& getFlagHandler() const { return _flagHandler; }
 
 private:
     bool _includePsf;
@@ -153,9 +149,8 @@ private:
  */
 class SdssShapeAlgorithm : public SimpleAlgorithm {
 public:
-
     // Structures and routines to manage flaghandler
-    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinitionList const& getFlagDefinitions();
     static unsigned int const N_FLAGS = 6;
     static FlagDefinition const FAILURE;
     static FlagDefinition const UNWEIGHTED_BAD;
@@ -173,7 +168,7 @@ public:
     //       the code in SdssShape assumes that PSF_SHAPE_BAD is the last entry in the enum list.
     //       If new flags are added, be sure to add them above the PSF_SHAPE_BAD entry.
 
-    SdssShapeAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
+    SdssShapeAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema);
 
     /**
      *  Compute the adaptive Gaussian-weighted moments of an image.
@@ -186,12 +181,8 @@ public:
      *  @param[in] ctrl      Control object specifying the details of how the object is to be measured.
      */
     template <typename ImageT>
-    static Result computeAdaptiveMoments(
-        ImageT const & image,
-        geom::Point2D const & position,
-        bool negative=false,
-        Control const & ctrl=Control()
-    );
+    static Result computeAdaptiveMoments(ImageT const& image, geom::Point2D const& position,
+                                         bool negative = false, Control const& ctrl = Control());
 
     /**
      *  Compute the flux within a fixed Gaussian aperture.
@@ -203,21 +194,14 @@ public:
      *  @param[in] position  Center position of the object to be measured, in the image's PARENT coordinates.
      */
     template <typename ImageT>
-    static FluxResult computeFixedMomentsFlux(
-        ImageT const & image,
-        afw::geom::ellipses::Quadrupole const & shape,
-        geom::Point2D const & position
-    );
+    static FluxResult computeFixedMomentsFlux(ImageT const& image,
+                                              afw::geom::ellipses::Quadrupole const& shape,
+                                              geom::Point2D const& position);
 
-    virtual void measure(
-        afw::table::SourceRecord & measRecord,
-        afw::image::Exposure<float> const & exposure
-    ) const;
+    virtual void measure(afw::table::SourceRecord& measRecord,
+                         afw::image::Exposure<float> const& exposure) const;
 
-    virtual void fail(
-        afw::table::SourceRecord & measRecord,
-        MeasurementError * error=nullptr
-    ) const;
+    virtual void fail(afw::table::SourceRecord& measRecord, MeasurementError* error = nullptr) const;
 
 private:
     Control _ctrl;
@@ -239,22 +223,21 @@ private:
  */
 class SdssShapeResult : public ShapeResult, public CentroidResult, public FluxResult {
 public:
-    ErrElement flux_xx_Cov; ///< flux, xx term in the uncertainty covariance matrix
-    ErrElement flux_yy_Cov; ///< flux, yy term in the uncertainty covariance matrix
-    ErrElement flux_xy_Cov; ///< flux, xy term in the uncertainty covariance matrix
+    ErrElement flux_xx_Cov;  ///< flux, xx term in the uncertainty covariance matrix
+    ErrElement flux_yy_Cov;  ///< flux, yy term in the uncertainty covariance matrix
+    ErrElement flux_xy_Cov;  ///< flux, xy term in the uncertainty covariance matrix
 
-    std::bitset<SdssShapeAlgorithm::N_FLAGS> flags; ///< Status flags (see SdssShapeAlgorithm).
+    std::bitset<SdssShapeAlgorithm::N_FLAGS> flags;  ///< Status flags (see SdssShapeAlgorithm).
 
     /// Flag getter for Swig, which doesn't understand std::bitset
     // TODO is this workaround still needed?
     bool getFlag(unsigned int index) const { return flags[index]; }
 
-    bool getFlag(std::string const & name) const {
-       return flags[SdssShapeAlgorithm::getFlagDefinitions().getDefinition(name).number];
+    bool getFlag(std::string const& name) const {
+        return flags[SdssShapeAlgorithm::getFlagDefinitions().getDefinition(name).number];
     }
 
-    SdssShapeResult(); ///< Constructor; initializes everything to NaN
-
+    SdssShapeResult();  ///< Constructor; initializes everything to NaN
 };
 
 /**
@@ -268,7 +251,7 @@ class SdssShapeTransform : public BaseTransform {
 public:
     typedef SdssShapeControl Control;
 
-    SdssShapeTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper);
+    SdssShapeTransform(Control const& ctrl, std::string const& name, afw::table::SchemaMapper& mapper);
 
     /*
      * @brief Perform transformation from inputCatalog to outputCatalog.
@@ -279,10 +262,10 @@ public:
      * @param[in]     calib          Photometric calibration under which transformation will take place
      * @throws        LengthError    Catalog sizes do not match
      */
-    virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
-                            afw::table::BaseCatalog & outputCatalog,
-                            afw::geom::SkyWcs const & wcs,
-                            afw::image::Calib const & calib) const;
+    virtual void operator()(afw::table::SourceCatalog const& inputCatalog,
+                            afw::table::BaseCatalog& outputCatalog, afw::geom::SkyWcs const& wcs,
+                            afw::image::Calib const& calib) const;
+
 private:
     FluxTransform _fluxTransform;
     CentroidTransform _centroidTransform;
@@ -291,6 +274,8 @@ private:
     bool _transformPsf;
 };
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_SdssShape_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_SdssShape_h_INCLUDED

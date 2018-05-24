@@ -37,7 +37,9 @@
 #include "lsst/meas/base/FlagHandler.h"
 #include "lsst/meas/base/InputUtilities.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 /**
  *  @brief A C++ control class to handle SdssCentroidAlgorithm's configuration
@@ -45,12 +47,10 @@ namespace lsst { namespace meas { namespace base {
  */
 class SdssCentroidControl {
 public:
-
     LSST_CONTROL_FIELD(binmax, int, "maximum allowed binning");
     LSST_CONTROL_FIELD(peakMin, double, "if the peak's less than this insist on binning at least once");
     LSST_CONTROL_FIELD(wfac, double, "fiddle factor for adjusting the binning");
-    LSST_CONTROL_FIELD(doFootprintCheck, bool,
-                       "Do check that the centroid is contained in footprint.");
+    LSST_CONTROL_FIELD(doFootprintCheck, bool, "Do check that the centroid is contained in footprint.");
     LSST_CONTROL_FIELD(maxDistToPeak, double,
                        "If set > 0, Centroid Check also checks distance from footprint peak.");
     /**
@@ -59,7 +59,8 @@ public:
      *  All control classes should define a default constructor that sets all fields to their default values.
      */
 
-    SdssCentroidControl() : binmax(16), peakMin(-1.0), wfac(1.5), doFootprintCheck(true), maxDistToPeak(-1.0) {}
+    SdssCentroidControl()
+            : binmax(16), peakMin(-1.0), wfac(1.5), doFootprintCheck(true), maxDistToPeak(-1.0) {}
 };
 
 /**
@@ -67,9 +68,8 @@ public:
  */
 class SdssCentroidAlgorithm : public SimpleAlgorithm {
 public:
-
     // Structures and routines to manage flaghandler
-    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinitionList const& getFlagDefinitions();
     static FlagDefinition const FAILURE;
     static FlagDefinition const EDGE;
     static FlagDefinition const NO_SECOND_DERIVATIVE;
@@ -80,20 +80,14 @@ public:
     /// The control object contains the configuration parameters for this algorithm.
     typedef SdssCentroidControl Control;
 
-    SdssCentroidAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
+    SdssCentroidAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema);
 
-    virtual void measure(
-        afw::table::SourceRecord & measRecord,
-        afw::image::Exposure<float> const & exposure
-    ) const;
+    virtual void measure(afw::table::SourceRecord& measRecord,
+                         afw::image::Exposure<float> const& exposure) const;
 
-    virtual void fail(
-        afw::table::SourceRecord & measRecord,
-        MeasurementError * error=nullptr
-    ) const;
+    virtual void fail(afw::table::SourceRecord& measRecord, MeasurementError* error = nullptr) const;
 
 private:
-
     Control _ctrl;
     CentroidResultKey _centroidKey;
     FlagHandler _flagHandler;
@@ -105,9 +99,11 @@ class SdssCentroidTransform : public CentroidTransform {
 public:
     typedef SdssCentroidControl Control;
 
-    SdssCentroidTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper);
+    SdssCentroidTransform(Control const& ctrl, std::string const& name, afw::table::SchemaMapper& mapper);
 };
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_SdssCentroid_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_SdssCentroid_h_INCLUDED

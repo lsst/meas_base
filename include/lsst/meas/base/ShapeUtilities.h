@@ -28,7 +28,9 @@
 #include "lsst/geom/LinearTransform.h"
 #include "lsst/afw/table/aggregates.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 /**
  *  @brief A reusable struct for moments-based shape measurements.
@@ -39,45 +41,43 @@ namespace lsst { namespace meas { namespace base {
  *  obfuscate the results of the measurement (i.e. use this one unless you have a good reason not to).
  */
 struct ShapeResult {
-    ShapeElement xx; // image or model second moment for x^2
-    ShapeElement yy; // image or model second moment for y^2
-    ShapeElement xy; // image or model second moment for xy^2
-    ErrElement xxSigma; ///< 1-Sigma uncertainty on xx (sqrt of variance)
-    ErrElement yySigma; ///< 1-Sigma uncertainty on yy (sqrt of variance)
-    ErrElement xySigma; ///< 1-Sigma uncertainty on xy (sqrt of variance)
-    ErrElement xx_yy_Cov; ///< xx,yy term in the uncertainty convariance matrix
-    ErrElement xx_xy_Cov; ///< xx,xy term in the uncertainty convariance matrix
-    ErrElement yy_xy_Cov; ///< yy,xy term in the uncertainty convariance matrix
+    ShapeElement xx;       // image or model second moment for x^2
+    ShapeElement yy;       // image or model second moment for y^2
+    ShapeElement xy;       // image or model second moment for xy^2
+    ErrElement xxSigma;    ///< 1-Sigma uncertainty on xx (sqrt of variance)
+    ErrElement yySigma;    ///< 1-Sigma uncertainty on yy (sqrt of variance)
+    ErrElement xySigma;    ///< 1-Sigma uncertainty on xy (sqrt of variance)
+    ErrElement xx_yy_Cov;  ///< xx,yy term in the uncertainty convariance matrix
+    ErrElement xx_xy_Cov;  ///< xx,xy term in the uncertainty convariance matrix
+    ErrElement yy_xy_Cov;  ///< yy,xy term in the uncertainty convariance matrix
 
     /// Constructor; initializes everything to NaN.
     ShapeResult();
 
     /// Constructor; initializes everything from values.
-    explicit ShapeResult(ShapeElement xx_, ShapeElement yy_, ShapeElement xy_, ShapeCov const & matrix):
-        xx(xx_),
-        yy(yy_),
-        xy(xy_),
-        xxSigma(std::sqrt(matrix(0, 0))),
-        yySigma(std::sqrt(matrix(1, 1))),
-        xySigma(std::sqrt(matrix(2, 2))),
-        xx_yy_Cov(matrix(0, 1)),
-        xx_xy_Cov(matrix(0, 2)),
-        yy_xy_Cov(matrix(1, 2))
-    {}
+    explicit ShapeResult(ShapeElement xx_, ShapeElement yy_, ShapeElement xy_, ShapeCov const& matrix)
+            : xx(xx_),
+              yy(yy_),
+              xy(xy_),
+              xxSigma(std::sqrt(matrix(0, 0))),
+              yySigma(std::sqrt(matrix(1, 1))),
+              xySigma(std::sqrt(matrix(2, 2))),
+              xx_yy_Cov(matrix(0, 1)),
+              xx_xy_Cov(matrix(0, 2)),
+              yy_xy_Cov(matrix(1, 2)) {}
 
     /// Constructor; initializes everything from values.
-    explicit ShapeResult(ShapeElement xx_, ShapeElement yy_, ShapeElement xy_,
-                         ErrElement xxSigma_, ErrElement yySigma_, ErrElement xySigma_) :
-        xx(xx_),
-        yy(yy_),
-        xy(xy_),
-        xxSigma(xxSigma_),
-        yySigma(yySigma_),
-        xySigma(xySigma_),
-        xx_yy_Cov(0.0),
-        xx_xy_Cov(0.0),
-        yy_xy_Cov(0.0)
-    {}
+    explicit ShapeResult(ShapeElement xx_, ShapeElement yy_, ShapeElement xy_, ErrElement xxSigma_,
+                         ErrElement yySigma_, ErrElement xySigma_)
+            : xx(xx_),
+              yy(yy_),
+              xy(xy_),
+              xxSigma(xxSigma_),
+              yySigma(yySigma_),
+              xySigma(xySigma_),
+              xx_yy_Cov(0.0),
+              xx_xy_Cov(0.0),
+              yy_xy_Cov(0.0) {}
 
     /**
      *  @brief Return an afw::geom::ellipses object corresponding to xx, yy, xy.
@@ -88,23 +88,19 @@ struct ShapeResult {
     Shape const getShape() const;
 
     // get the Quadrupole corresponding to this ShapeResult
-    afw::geom::ellipses::Quadrupole getQuadrupole()
-    {
-        return afw::geom::ellipses::Quadrupole(xx, yy, xy);
-    }
+    afw::geom::ellipses::Quadrupole getQuadrupole() { return afw::geom::ellipses::Quadrupole(xx, yy, xy); }
 
     /// Set struct elements from the given Quadrupole object
-    void setShape(Shape const & shape);
+    void setShape(Shape const& shape);
 
     /// Return the 3x3 symmetric covariance matrix, with rows and columns ordered (xx, yy, xy)
     ShapeCov const getShapeErr() const;
 
     /// Set the struct uncertainty elements from the given matrix, with rows and columns ordered (xx, yy, xy)
-    void setShapeErr(ShapeCov const & matrix);
+    void setShapeErr(ShapeCov const& matrix);
 
     /// Set the struct uncertainty elements from the given values
     void setShapeErr(ErrElement xxSigma, ErrElement yySigma, ErrElement xySigma);
-
 };
 
 /**
@@ -113,9 +109,8 @@ struct ShapeResult {
  *  This class makes it easy to copy shapes and their uncertainties to and from records, and provides
  *  a method to add the appropriate fields to a Schema.
  */
-class ShapeResultKey : public afw::table::FunctorKey<ShapeResult>  {
+class ShapeResultKey : public afw::table::FunctorKey<ShapeResult> {
 public:
-
     /**
      *  @brief Add the appropriate fields to a Schema, and return a ShapeResultKey that manages them
      *
@@ -127,24 +122,17 @@ public:
      *
      *  The unit for all fields will be pixels^2 (pixels^4 for covariances).
      */
-    static ShapeResultKey addFields(
-        afw::table::Schema & schema,
-        std::string const & name,
-        std::string const & doc,
-        UncertaintyEnum uncertainty,
-        afw::table::CoordinateType coordType=afw::table::CoordinateType::PIXEL
-    );
+    static ShapeResultKey addFields(afw::table::Schema& schema, std::string const& name,
+                                    std::string const& doc, UncertaintyEnum uncertainty,
+                                    afw::table::CoordinateType coordType = afw::table::CoordinateType::PIXEL);
 
     /// Default constructor; instance will not be usuable unless subsequently assigned to.
     ShapeResultKey() : _shape(), _shapeErr() {}
 
     /// Construct from a pair of Keys
-    ShapeResultKey(
-        afw::table::QuadrupoleKey const & shape,
-        afw::table::CovarianceMatrixKey<ErrElement,3> const & shapeErr
-    ) :
-        _shape(shape), _shapeErr(shapeErr)
-    {}
+    ShapeResultKey(afw::table::QuadrupoleKey const& shape,
+                   afw::table::CovarianceMatrixKey<ErrElement, 3> const& shapeErr)
+            : _shape(shape), _shapeErr(shapeErr) {}
 
     /**
      *  @brief Construct from a subschema, assuming _xx, _yy, etc. subfields
@@ -155,20 +143,20 @@ public:
      *  ShapeResultKey k(schema["a"]);
      *  @endcode
      */
-    ShapeResultKey(afw::table::SubSchema const & s);
+    ShapeResultKey(afw::table::SubSchema const& s);
 
     /// Get a ShapeResult from the given record
-    virtual ShapeResult get(afw::table::BaseRecord const & record) const;
+    virtual ShapeResult get(afw::table::BaseRecord const& record) const;
 
     /// Set a ShapeResult in the given record
-    virtual void set(afw::table::BaseRecord & record, ShapeResult const & value) const;
+    virtual void set(afw::table::BaseRecord& record, ShapeResult const& value) const;
 
     //@{
     /// Compare the FunctorKey for equality with another, using the underlying Keys
-    bool operator==(ShapeResultKey const & other) const {
+    bool operator==(ShapeResultKey const& other) const {
         return _shape == other._shape && _shapeErr == other._shapeErr;
     }
-    bool operator!=(ShapeResultKey const & other) const { return !(*this == other); }
+    bool operator!=(ShapeResultKey const& other) const { return !(*this == other); }
     //@}
 
     /// Return True if the shape key is valid.
@@ -178,7 +166,7 @@ public:
     afw::table::QuadrupoleKey getShape() const { return _shape; }
 
     /// Return a FunctorKey to just the uncertainty matrix
-    afw::table::CovarianceMatrixKey<ErrElement,3> getShapeErr() const { return _shapeErr; }
+    afw::table::CovarianceMatrixKey<ErrElement, 3> getShapeErr() const { return _shapeErr; }
 
     /// Return a Key for the xx moment
     afw::table::Key<ShapeElement> getIxx() const { return _shape.getIxx(); }
@@ -191,7 +179,7 @@ public:
 
 private:
     afw::table::QuadrupoleKey _shape;
-    afw::table::CovarianceMatrixKey<ErrElement,3> _shapeErr;
+    afw::table::CovarianceMatrixKey<ErrElement, 3> _shapeErr;
 };
 
 /**
@@ -214,8 +202,10 @@ private:
  *  @param[in]  xform  LinearTransform describing the coordinate mapping
  *  @returns    A 3-by-3 transformation matrix for the second order moments
  */
-ShapeTrMatrix makeShapeTransformMatrix(geom::LinearTransform const & xform);
+ShapeTrMatrix makeShapeTransformMatrix(geom::LinearTransform const& xform);
 
-}}} // lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_ShapeUtilities_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_ShapeUtilities_h_INCLUDED

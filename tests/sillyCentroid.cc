@@ -1,7 +1,7 @@
-/* 
+/*
  * LSST Data Management System
  * Copyright 2008-2016  AURA/LSST.
- * 
+ *
  * This product includes software developed by the
  * LSST Project (http://www.lsst.org/).
  *
@@ -9,14 +9,14 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
- * You should have received a copy of the LSST License Statement and 
- * the GNU General Public License along with this program.  If not, 
+ *
+ * You should have received a copy of the LSST License Statement and
+ * the GNU General Public License along with this program.  If not,
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 
@@ -39,7 +39,9 @@ PYBIND11_PLUGIN(_sillyCentroid) {
     py::module mod("_sillyCentroid", "Python wrapper for afw _SillyCentroid library");
 
     /* Module level */
-    py::class_<SillyCentroidAlgorithm, std::shared_ptr<SillyCentroidAlgorithm>, lsst::meas::base::SimpleAlgorithm> clsSillyCentroidAlgorithm(mod, "SillyCentroidAlgorithm");
+    py::class_<SillyCentroidAlgorithm, std::shared_ptr<SillyCentroidAlgorithm>,
+               lsst::meas::base::SimpleAlgorithm>
+            clsSillyCentroidAlgorithm(mod, "SillyCentroidAlgorithm");
     py::class_<SillyCentroidControl> clsSillyCentroidControl(mod, "SillyCentroidControl");
     py::class_<SillyTransform> clsSillyTransform(mod, "SillyTransform");
 
@@ -50,14 +52,13 @@ PYBIND11_PLUGIN(_sillyCentroid) {
     /* Operators */
 
     /* Members */
-    lsst::meas::base::python::declareAlgorithm<SillyCentroidAlgorithm,
-                                               SillyCentroidControl,
-                                               SillyTransform>(clsSillyCentroidAlgorithm,
-                                                               clsSillyCentroidControl,
-                                                               clsSillyTransform);
+    lsst::meas::base::python::declareAlgorithm<SillyCentroidAlgorithm, SillyCentroidControl, SillyTransform>(
+            clsSillyCentroidAlgorithm, clsSillyCentroidControl, clsSillyTransform);
     LSST_DECLARE_CONTROL_FIELD(clsSillyCentroidControl, SillyCentroidControl, param);
 
     return mod.ptr();
 }
 
-}}}     // test::foo::bar
+}  // namespace bar
+}  // namespace foo
+}  // namespace test

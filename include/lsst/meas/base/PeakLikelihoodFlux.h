@@ -33,7 +33,9 @@
 #include "lsst/meas/base/InputUtilities.h"
 #include "lsst/meas/base/Transform.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 /**
  *  @brief C++ control object for peak likelihood flux.
@@ -56,13 +58,11 @@ namespace lsst { namespace meas { namespace base {
  */
 class PeakLikelihoodFluxControl {
 public:
-
     LSST_CONTROL_FIELD(warpingKernelName, std::string,
-        "Name of warping kernel (e.g. \"lanczos4\") used to compute the peak");
+                       "Name of warping kernel (e.g. \"lanczos4\") used to compute the peak");
 
     PeakLikelihoodFluxControl() : warpingKernelName("lanczos4") {}
 };
-
 
 /**
  *  @brief A measurement algorithm that estimates the peak flux, using a filtered image
@@ -70,29 +70,22 @@ public:
  */
 class PeakLikelihoodFluxAlgorithm : public SimpleAlgorithm {
 public:
-
     // Structures and routines to manage flaghandler
-    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinitionList const& getFlagDefinitions();
     static FlagDefinition const FAILURE;
 
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.
     typedef PeakLikelihoodFluxControl Control;
 
-    PeakLikelihoodFluxAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
+    PeakLikelihoodFluxAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema);
 
-    virtual void measure(
-        afw::table::SourceRecord & measRecord,
-        afw::image::Exposure<float> const & exposure
-    ) const;
+    virtual void measure(afw::table::SourceRecord& measRecord,
+                         afw::image::Exposure<float> const& exposure) const;
 
-    virtual void fail(
-        afw::table::SourceRecord & measRecord,
-        MeasurementError * error=nullptr
-    ) const;
+    virtual void fail(afw::table::SourceRecord& measRecord, MeasurementError* error = nullptr) const;
 
 private:
-
     Control _ctrl;
     FluxResultKey _fluxResultKey;
     FlagHandler _flagHandler;
@@ -102,10 +95,13 @@ private:
 class PeakLikelihoodFluxTransform : public FluxTransform {
 public:
     typedef PeakLikelihoodFluxControl Control;
-    PeakLikelihoodFluxTransform(Control const & ctrl, std::string const & name,
-                                afw::table::SchemaMapper & mapper) : FluxTransform{name, mapper} { }
+    PeakLikelihoodFluxTransform(Control const& ctrl, std::string const& name,
+                                afw::table::SchemaMapper& mapper)
+            : FluxTransform{name, mapper} {}
 };
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_PeakLikelihoodFlux_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_PeakLikelihoodFlux_h_INCLUDED

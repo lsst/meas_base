@@ -31,42 +31,32 @@
 #include "lsst/afw/detection/Psf.h"
 #include "lsst/meas/base/LocalBackground.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 namespace {
 FlagDefinitionList flagDefinitions;
-} // end anonymous
+}  // namespace
 
 FlagDefinition const LocalBackgroundAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
-FlagDefinition const LocalBackgroundAlgorithm::NO_GOOD_PIXELS = flagDefinitions.add("flag_noGoodPixels",
-    "no good pixels in the annulus");
-FlagDefinition const LocalBackgroundAlgorithm::NO_PSF = flagDefinitions.add("flag_noPsf",
-    "no PSF provided");
+FlagDefinition const LocalBackgroundAlgorithm::NO_GOOD_PIXELS =
+        flagDefinitions.add("flag_noGoodPixels", "no good pixels in the annulus");
+FlagDefinition const LocalBackgroundAlgorithm::NO_PSF = flagDefinitions.add("flag_noPsf", "no PSF provided");
 
-FlagDefinitionList const & LocalBackgroundAlgorithm::getFlagDefinitions() {
-    return flagDefinitions;
-}
+FlagDefinitionList const& LocalBackgroundAlgorithm::getFlagDefinitions() { return flagDefinitions; }
 
-
-LocalBackgroundAlgorithm::LocalBackgroundAlgorithm(
-    Control const & ctrl,
-    std::string const & name,
-    afw::table::Schema & schema,
-    std::string const & logName
-) : _ctrl(ctrl),
-    _resultKey(FluxResultKey::addFields(schema, name, "background in annulus around source")),
-    _flagHandler(FlagHandler::addFields(schema, name, getFlagDefinitions())),
-    _centroidExtractor(schema, name),
-    _stats(ctrl.bgRej, ctrl.bgIter)
-{
+LocalBackgroundAlgorithm::LocalBackgroundAlgorithm(Control const& ctrl, std::string const& name,
+                                                   afw::table::Schema& schema, std::string const& logName)
+        : _ctrl(ctrl),
+          _resultKey(FluxResultKey::addFields(schema, name, "background in annulus around source")),
+          _flagHandler(FlagHandler::addFields(schema, name, getFlagDefinitions())),
+          _centroidExtractor(schema, name),
+          _stats(ctrl.bgRej, ctrl.bgIter) {
     _logName = logName.size() ? logName : name;
 }
 
-
-void
-LocalBackgroundAlgorithm::measure(
-    afw::table::SourceRecord & measRecord,
-    afw::image::Exposure<float> const & exposure
-) const {
+void LocalBackgroundAlgorithm::measure(afw::table::SourceRecord& measRecord,
+                                       afw::image::Exposure<float> const& exposure) const {
     geom::Point2D const center = _centroidExtractor(measRecord, _flagHandler);
     afw::image::MaskedImage<float> const& image = exposure.getMaskedImage();
     afw::image::Mask<afw::image::MaskPixel> const& mask = *image.getMask();
@@ -79,11 +69,11 @@ LocalBackgroundAlgorithm::measure(
     }
     float const psfSigma = psf->computeShape().getDeterminantRadius();
 
-    float const innerRadius = _ctrl.annulusInner*psfSigma;
+    float const innerRadius = _ctrl.annulusInner * psfSigma;
     afw::geom::ellipses::Axes const innerCircle{innerRadius, innerRadius};
     auto const& inner = afw::geom::SpanSet::fromShape(afw::geom::ellipses::Ellipse(innerCircle, center));
 
-    float const outerRadius = _ctrl.annulusOuter*psfSigma;
+    float const outerRadius = _ctrl.annulusOuter * psfSigma;
     afw::geom::ellipses::Axes const outerCircle{outerRadius, outerRadius};
     auto const& outer = afw::geom::SpanSet::fromShape(afw::geom::ellipses::Ellipse(outerCircle, center));
 
@@ -112,29 +102,24 @@ LocalBackgroundAlgorithm::measure(
     measRecord.set(_resultKey, result);
 }
 
-
-void LocalBackgroundAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+void LocalBackgroundAlgorithm::fail(afw::table::SourceRecord& measRecord, MeasurementError* error) const {
     _flagHandler.handleFailure(measRecord, error);
 }
 
-
-LocalBackgroundTransform::LocalBackgroundTransform(
-    Control const & ctrl,
-    std::string const & name,
-    afw::table::SchemaMapper & mapper
-) :
-    FluxTransform{name, mapper}
-{
+LocalBackgroundTransform::LocalBackgroundTransform(Control const& ctrl, std::string const& name,
+                                                   afw::table::SchemaMapper& mapper)
+        : FluxTransform{name, mapper} {
     for (std::size_t i = 0; i < LocalBackgroundAlgorithm::getFlagDefinitions().size(); i++) {
-        FlagDefinition const & flag = LocalBackgroundAlgorithm::getFlagDefinitions()[i];
+        FlagDefinition const& flag = LocalBackgroundAlgorithm::getFlagDefinitions()[i];
         if (flag == LocalBackgroundAlgorithm::FAILURE) continue;
-        if (mapper.getInputSchema().getNames().count(
-            mapper.getInputSchema().join(name, flag.name)) == 0) continue;
-        afw::table::Key<afw::table::Flag> key = mapper.getInputSchema().find<afw::table::Flag>(
-            name + "_" + flag.name).key;
+        if (mapper.getInputSchema().getNames().count(mapper.getInputSchema().join(name, flag.name)) == 0)
+            continue;
+        afw::table::Key<afw::table::Flag> key =
+                mapper.getInputSchema().find<afw::table::Flag>(name + "_" + flag.name).key;
         mapper.addMapping(key);
     }
 }
 
-
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

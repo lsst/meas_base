@@ -26,28 +26,25 @@
 #include "lsst/meas/base/CircularApertureFlux.h"
 #include "lsst/meas/base/SincCoeffs.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
-CircularApertureFluxAlgorithm::CircularApertureFluxAlgorithm(
-    Control const & ctrl,
-    std::string const & name,
-    afw::table::Schema & schema,
-    daf::base::PropertySet & metadata
-) : ApertureFluxAlgorithm(ctrl, name, schema, metadata)
-{
+CircularApertureFluxAlgorithm::CircularApertureFluxAlgorithm(Control const& ctrl, std::string const& name,
+                                                             afw::table::Schema& schema,
+                                                             daf::base::PropertySet& metadata)
+        : ApertureFluxAlgorithm(ctrl, name, schema, metadata) {
     for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
         if (ctrl.radii[i] > ctrl.maxSincRadius) break;
         SincCoeffs<float>::cache(0.0, ctrl.radii[i]);
     }
 }
 
-void CircularApertureFluxAlgorithm::measure(
-    afw::table::SourceRecord & measRecord,
-    afw::image::Exposure<float> const & exposure
-) const {
+void CircularApertureFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
+                                            afw::image::Exposure<float> const& exposure) const {
     afw::geom::ellipses::Ellipse ellipse(afw::geom::ellipses::Axes(1.0, 1.0, 0.0));
-    PTR(afw::geom::ellipses::Axes) axes
-        = std::static_pointer_cast<afw::geom::ellipses::Axes>(ellipse.getCorePtr());
+    PTR(afw::geom::ellipses::Axes)
+    axes = std::static_pointer_cast<afw::geom::ellipses::Axes>(ellipse.getCorePtr());
     for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
         // Each call to _centroidExtractor within this loop goes through exactly the same error-checking
         // logic and returns the same result, but it's not expensive logic, so we just call it repeatedly
@@ -60,4 +57,6 @@ void CircularApertureFluxAlgorithm::measure(
     }
 }
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

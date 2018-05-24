@@ -33,102 +33,79 @@
 #include "lsst/afw/geom/SpanSet.h"
 #include "lsst/meas/base/PsfFlux.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 namespace {
 FlagDefinitionList flagDefinitions;
-} // end anonymous
+}  // namespace
 
 FlagDefinition const PsfFluxAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
-FlagDefinition const PsfFluxAlgorithm::NO_GOOD_PIXELS = flagDefinitions.add("flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit");
-FlagDefinition const PsfFluxAlgorithm::EDGE = flagDefinitions.add("flag_edge", "object was too close to the edge of the image to use the full PSF model");
+FlagDefinition const PsfFluxAlgorithm::NO_GOOD_PIXELS =
+        flagDefinitions.add("flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit");
+FlagDefinition const PsfFluxAlgorithm::EDGE = flagDefinitions.add(
+        "flag_edge", "object was too close to the edge of the image to use the full PSF model");
 
-FlagDefinitionList const & PsfFluxAlgorithm::getFlagDefinitions() {
-    return flagDefinitions;
-}
+FlagDefinitionList const& PsfFluxAlgorithm::getFlagDefinitions() { return flagDefinitions; }
 
+namespace {}  // namespace
 
-namespace {
-
-
-} // anonymous
-
-PsfFluxAlgorithm::PsfFluxAlgorithm(
-    Control const & ctrl,
-    std::string const & name,
-    afw::table::Schema & schema,
-    std::string const & logName
-) : _ctrl(ctrl),
-    _fluxResultKey(
-        FluxResultKey::addFields(schema, name, "flux derived from linear least-squares fit of PSF model")
-    ),
-    _areaKey(schema.addField<float>(name + "_area", "effective area of PSF", "pixel")),
-    _centroidExtractor(schema, name)
-{
+PsfFluxAlgorithm::PsfFluxAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema,
+                                   std::string const& logName)
+        : _ctrl(ctrl),
+          _fluxResultKey(FluxResultKey::addFields(schema, name,
+                                                  "flux derived from linear least-squares fit of PSF model")),
+          _areaKey(schema.addField<float>(name + "_area", "effective area of PSF", "pixel")),
+          _centroidExtractor(schema, name) {
     _logName = logName.size() ? logName : name;
-    _flagHandler = FlagHandler::addFields(schema, name,
-                                          getFlagDefinitions());
+    _flagHandler = FlagHandler::addFields(schema, name, getFlagDefinitions());
 }
 
-void PsfFluxAlgorithm::measure(
-    afw::table::SourceRecord & measRecord,
-    afw::image::Exposure<float> const & exposure
-) const {
+void PsfFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
+                               afw::image::Exposure<float> const& exposure) const {
     PTR(afw::detection::Psf const) psf = exposure.getPsf();
     if (!psf) {
         LOGL_ERROR(getLogName(), "PsfFlux: no psf attached to exposure");
-        throw LSST_EXCEPT(
-            FatalAlgorithmError,
-            "PsfFlux algorithm requires a Psf with every exposure"
-        );
+        throw LSST_EXCEPT(FatalAlgorithmError, "PsfFlux algorithm requires a Psf with every exposure");
     }
     geom::Point2D position = _centroidExtractor(measRecord, _flagHandler);
     PTR(afw::detection::Psf::Image) psfImage = psf->computeImage(position);
     geom::Box2I fitBBox = psfImage->getBBox();
     fitBBox.clip(exposure.getBBox());
     if (fitBBox != psfImage->getBBox()) {
-        _flagHandler.setValue(measRecord, FAILURE.number, true);  // if we had a suspect flag, we'd set that instead
+        _flagHandler.setValue(measRecord, FAILURE.number,
+                              true);  // if we had a suspect flag, we'd set that instead
         _flagHandler.setValue(measRecord, EDGE.number, true);
     }
     auto fitRegionSpans = std::make_shared<afw::geom::SpanSet>(fitBBox);
     afw::detection::Footprint fitRegion(fitRegionSpans);
     if (!_ctrl.badMaskPlanes.empty()) {
         afw::image::MaskPixel badBits = 0x0;
-        for (
-            std::vector<std::string>::const_iterator i = _ctrl.badMaskPlanes.begin();
-            i != _ctrl.badMaskPlanes.end();
-            ++i
-        ) {
+        for (std::vector<std::string>::const_iterator i = _ctrl.badMaskPlanes.begin();
+             i != _ctrl.badMaskPlanes.end(); ++i) {
             badBits |= exposure.getMaskedImage().getMask()->getPlaneBitMask(*i);
         }
-        fitRegion.setSpans(fitRegion.getSpans()->intersectNot(*exposure.getMaskedImage().getMask(),
-            badBits)->clippedTo(exposure.getMaskedImage().getMask()->getBBox()));
+        fitRegion.setSpans(fitRegion.getSpans()
+                                   ->intersectNot(*exposure.getMaskedImage().getMask(), badBits)
+                                   ->clippedTo(exposure.getMaskedImage().getMask()->getBBox()));
     }
     if (fitRegion.getArea() == 0) {
-        throw LSST_EXCEPT(
-            MeasurementError,
-            NO_GOOD_PIXELS.doc,
-            NO_GOOD_PIXELS.number
-        );
+        throw LSST_EXCEPT(MeasurementError, NO_GOOD_PIXELS.doc, NO_GOOD_PIXELS.number);
     }
     typedef afw::detection::Psf::Pixel PsfPixel;
     typedef afw::image::MaskedImage<float>::Variance::Pixel VarPixel;
-    ndarray::EigenView<PsfPixel,1,1,Eigen::ArrayXpr> model(
-        fitRegion.getSpans()->flatten(psfImage->getArray(), psfImage->getXY0())
-    );
-    ndarray::EigenView<float,1,1,Eigen::ArrayXpr> data(
-        fitRegion.getSpans()->flatten(exposure.getMaskedImage().getImage()->getArray(), exposure.getXY0())
-    );
-    ndarray::EigenView<VarPixel,1,1,Eigen::ArrayXpr> variance(
-        fitRegion.getSpans()->flatten(exposure.getMaskedImage().getVariance()->getArray(),
-                                      exposure.getXY0())
-    );
+    ndarray::EigenView<PsfPixel, 1, 1, Eigen::ArrayXpr> model(
+            fitRegion.getSpans()->flatten(psfImage->getArray(), psfImage->getXY0()));
+    ndarray::EigenView<float, 1, 1, Eigen::ArrayXpr> data(fitRegion.getSpans()->flatten(
+            exposure.getMaskedImage().getImage()->getArray(), exposure.getXY0()));
+    ndarray::EigenView<VarPixel, 1, 1, Eigen::ArrayXpr> variance(fitRegion.getSpans()->flatten(
+            exposure.getMaskedImage().getVariance()->getArray(), exposure.getXY0()));
     PsfPixel alpha = model.matrix().squaredNorm();
     FluxResult result;
     result.flux = model.matrix().dot(data.matrix().cast<PsfPixel>()) / alpha;
     // If we're not using per-pixel weights to compute the flux, we'll still want to compute the
     // variance as if we had, so we'll apply the weights to the model vector now, and update alpha.
-    result.fluxSigma = std::sqrt(model.square().matrix().dot(variance.matrix().cast<PsfPixel>()))
-        / alpha;
+    result.fluxSigma = std::sqrt(model.square().matrix().dot(variance.matrix().cast<PsfPixel>())) / alpha;
     measRecord.set(_areaKey, model.matrix().sum() / alpha);
     if (!std::isfinite(result.flux) || !std::isfinite(result.fluxSigma)) {
         throw LSST_EXCEPT(PixelValueError, "Invalid pixel value detected in image.");
@@ -136,26 +113,24 @@ void PsfFluxAlgorithm::measure(
     measRecord.set(_fluxResultKey, result);
 }
 
-void PsfFluxAlgorithm::fail(afw::table::SourceRecord & measRecord, MeasurementError * error) const {
+void PsfFluxAlgorithm::fail(afw::table::SourceRecord& measRecord, MeasurementError* error) const {
     _flagHandler.handleFailure(measRecord, error);
 }
 
-PsfFluxTransform::PsfFluxTransform(
-    Control const & ctrl,
-    std::string const & name,
-    afw::table::SchemaMapper & mapper
-) :
-    FluxTransform{name, mapper}
-{
+PsfFluxTransform::PsfFluxTransform(Control const& ctrl, std::string const& name,
+                                   afw::table::SchemaMapper& mapper)
+        : FluxTransform{name, mapper} {
     for (std::size_t i = 0; i < PsfFluxAlgorithm::getFlagDefinitions().size(); i++) {
-        FlagDefinition const & flag = PsfFluxAlgorithm::getFlagDefinitions()[i];
+        FlagDefinition const& flag = PsfFluxAlgorithm::getFlagDefinitions()[i];
         if (flag == PsfFluxAlgorithm::FAILURE) continue;
-        if (mapper.getInputSchema().getNames().count(
-            mapper.getInputSchema().join(name, flag.name)) == 0) continue;
-        afw::table::Key<afw::table::Flag> key = mapper.getInputSchema().find<afw::table::Flag>(
-            name + "_" + flag.name).key;
+        if (mapper.getInputSchema().getNames().count(mapper.getInputSchema().join(name, flag.name)) == 0)
+            continue;
+        afw::table::Key<afw::table::Flag> key =
+                mapper.getInputSchema().find<afw::table::Flag>(name + "_" + flag.name).key;
         mapper.addMapping(key);
     }
 }
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

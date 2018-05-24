@@ -29,7 +29,9 @@
 #include "lsst/afw/image/Image.h"
 #include "lsst/afw/geom/ellipses/Axes.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 /**
  * A singleton to calculate and cache the coefficients for sinc photometry
@@ -39,10 +41,9 @@ namespace lsst { namespace meas { namespace base {
  * to recur).  Caching must be explicitly requested for a particular circular
  * aperture (using the 'cache' method).
  */
-template<typename PixelT>
+template <typename PixelT>
 class SincCoeffs {
 public:
-
     typedef afw::image::Image<PixelT> CoeffT;
 
     /**
@@ -58,14 +59,13 @@ public:
      * Coefficients are retrieved from the cache, if available; otherwise they will be generated.
      */
     static PTR(CoeffT const)
-    get(afw::geom::ellipses::Axes const & outerEllipse, float const innerRadiusFactor=0.0);
+            get(afw::geom::ellipses::Axes const& outerEllipse, float const innerRadiusFactor = 0.0);
 
     /// Calculate the coefficients for an aperture
     static PTR(CoeffT)
-    calculate(afw::geom::ellipses::Axes const& outerEllipse, double const innerFactor=0.0);
+            calculate(afw::geom::ellipses::Axes const& outerEllipse, double const innerFactor = 0.0);
 
 private:
-
     // A comparison function that doesn't require equality closer than machine epsilon
     template <typename T>
     struct FuzzyCompare {
@@ -75,16 +75,14 @@ private:
             }
             return (x - y < 0) ? true : false;
         }
-        bool isEqual(T x, T y) const {
-            return ::fabs(x - y) < std::numeric_limits<T>::epsilon();
-        }
+        bool isEqual(T x, T y) const { return ::fabs(x - y) < std::numeric_limits<T>::epsilon(); }
     };
 
     typedef std::map<float, PTR(CoeffT), FuzzyCompare<float> > CoeffMap;
     typedef std::map<float, CoeffMap, FuzzyCompare<float> > CoeffMapMap;
-    SincCoeffs() : _cache() {};
-    SincCoeffs(SincCoeffs const&); // unimplemented: singleton
-    void operator=(SincCoeffs const&); // unimplemented: singleton
+    SincCoeffs() : _cache(){};
+    SincCoeffs(SincCoeffs const&);      // unimplemented: singleton
+    void operator=(SincCoeffs const&);  // unimplemented: singleton
 
     static SincCoeffs& getInstance();
 
@@ -94,11 +92,13 @@ private:
      * If the coefficients are not cached, a null shared_ptr will be returned.
      */
     PTR(CoeffT const)
-    _lookup(afw::geom::ellipses::Axes const & outerEllipse, double const innerRadiusFactor=0.0) const;
+    _lookup(afw::geom::ellipses::Axes const& outerEllipse, double const innerRadiusFactor = 0.0) const;
 
-    CoeffMapMap _cache;                 //< Cache of coefficients
+    CoeffMapMap _cache;  //< Cache of coefficients
 };
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_SincCoeffs_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_SincCoeffs_h_INCLUDED

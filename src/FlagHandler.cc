@@ -23,66 +23,49 @@
 
 #include "lsst/meas/base/FlagHandler.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 // so pybind11 can get the address of number_undefined
 constexpr std::size_t FlagDefinition::number_undefined;
 
-FlagDefinition FlagDefinitionList::addFailureFlag(
-    std::string const & doc
-) {
-        return add(FlagHandler::getFailureFlagName(), doc);
+FlagDefinition FlagDefinitionList::addFailureFlag(std::string const& doc) {
+    return add(FlagHandler::getFailureFlagName(), doc);
 }
 
-FlagHandler FlagHandler::addFields(
-    afw::table::Schema & schema,
-    std::string const & prefix,
-    FlagDefinitionList const & flagDefs,
-    FlagDefinitionList const & exclDefs
-) {
+FlagHandler FlagHandler::addFields(afw::table::Schema& schema, std::string const& prefix,
+                                   FlagDefinitionList const& flagDefs, FlagDefinitionList const& exclDefs) {
     FlagHandler r;
     r._vector.reserve(flagDefs.size());
     for (std::size_t i = 0; i < flagDefs.size(); i++) {
-        FlagDefinition const & flagDef = flagDefs[i];
+        FlagDefinition const& flagDef = flagDefs[i];
         if (exclDefs.hasDefinition(flagDef.name)) {
             afw::table::Key<afw::table::Flag> key;
-            r._vector.push_back( std::make_pair( flagDef.name, key));
-        }
-        else {
-            afw::table::Key<afw::table::Flag> key(schema.addField<afw::table::Flag>(schema.join(prefix, flagDef.name), flagDef.doc));
-            r._vector.push_back( std::make_pair( flagDef.name, key));
+            r._vector.push_back(std::make_pair(flagDef.name, key));
+        } else {
+            afw::table::Key<afw::table::Flag> key(
+                    schema.addField<afw::table::Flag>(schema.join(prefix, flagDef.name), flagDef.doc));
+            r._vector.push_back(std::make_pair(flagDef.name, key));
             if (flagDef.name == FlagHandler::getFailureFlagName()) {
                 r.failureFlagNumber = i;
-     }
+            }
         }
     }
     return r;
 }
 
-FlagHandler::FlagHandler(
-    afw::table::SubSchema const & s,
-    FlagDefinitionList const & flagDefs,
-    FlagDefinitionList const & exclDefs
-) : failureFlagNumber(FlagDefinition::number_undefined) {
+FlagHandler::FlagHandler(afw::table::SubSchema const& s, FlagDefinitionList const& flagDefs,
+                         FlagDefinitionList const& exclDefs)
+        : failureFlagNumber(FlagDefinition::number_undefined) {
     _vector.reserve(flagDefs.size());
-    for (std::size_t i = 0; i < flagDefs.size(); i++ ) {
-        FlagDefinition const & flagDef = flagDefs[i];
+    for (std::size_t i = 0; i < flagDefs.size(); i++) {
+        FlagDefinition const& flagDef = flagDefs[i];
         if (exclDefs.hasDefinition(flagDef.name)) {
             afw::table::Key<afw::table::Flag> key;
-            _vector.push_back(
-                std::make_pair(
-                    flagDef.name,
-                    key
-                )
-            );
-        }
-        else {
-            _vector.push_back(
-                std::make_pair(
-                    flagDef.name,
-                    s[flagDef.name]
-                )
-            );
+            _vector.push_back(std::make_pair(flagDef.name, key));
+        } else {
+            _vector.push_back(std::make_pair(flagDef.name, s[flagDef.name]));
             if (flagDef.name == FlagHandler::getFailureFlagName()) {
                 failureFlagNumber = i;
             }
@@ -90,7 +73,7 @@ FlagHandler::FlagHandler(
     }
 }
 
-void FlagHandler::handleFailure(afw::table::BaseRecord & record, MeasurementError const * error) const {
+void FlagHandler::handleFailure(afw::table::BaseRecord& record, MeasurementError const* error) const {
     std::size_t const numFlags = _vector.size();
     if (failureFlagNumber != FlagDefinition::number_undefined) {
         record.set(_vector[failureFlagNumber].second, true);
@@ -101,4 +84,6 @@ void FlagHandler::handleFailure(afw::table::BaseRecord & record, MeasurementErro
     }
 }
 
-}}} // lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
