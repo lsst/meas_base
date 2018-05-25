@@ -23,7 +23,7 @@
 
 from collections import Iterable
 
-from lsst.afw.table import SourceCatalog
+from lsst.afw.table import Schema, SourceCatalog
 from lsst.meas.base import NoiseReplacer, NoiseReplacerConfig
 from lsst.meas.base import SingleFrameMeasurementTask as SFMT  # noqa N814
 
@@ -70,7 +70,8 @@ def rebuildNoiseReplacer(exposure, measCat):
     return noiseReplacer
 
 
-def makeRerunCatalog(schema, oldCatalog, idList, fields=None):
+def makeRerunCatalog(schema, oldCatalog, idList, fields=None,
+                     resetParents=True, addParents=False):
     """ Creates a catalog prepopulated with ids
 
     This function is used to generate a SourceCatalog containing blank records
@@ -79,6 +80,10 @@ def makeRerunCatalog(schema, oldCatalog, idList, fields=None):
     This function is primarily used when rerunning measurements on a footprint.
     Specifying ids in a new measurement catalog which correspond to ids in an
     old catalog makes comparing results much easier.
+
+    The resetParents and addParents options are needed because
+    lsst.meas.base.SingleFrameMeasurementTask.runPlugins() will skip child
+    objects whose parents are not in the catalog.
 
     Parameters
     ----------
@@ -97,12 +102,28 @@ def makeRerunCatalog(schema, oldCatalog, idList, fields=None):
         keys that exist in both the old catalog and input schema. Fields listed
         will be copied from the old catalog into the new catalog.
 
+    resetParents: boolean
+        Flag to toggle whether child objects whose parents are not in the
+        idList should have their parents reset to zero.
+
+    addParents: boolean
+        Flag to toggle whether parents of child objects will be added to the
+        idList (if not already present).
+
     Returns
     -------
     measCat : lsst.afw.table.SourceCatalog
         SourceCatalog prepopulated with entries corresponding to the ids
         specified
     """
+
+    if not isinstance(schema, Schema):
+        raise RuntimeError("schema must be an instance of "
+                           "lsst.afw.table.Schema")
+
+    if not isinstance(oldCatalog, SourceCatalog):
+        raise RuntimeError("oldCatalog must be an instance of "
+                           "lsst.afw.table.SourceCatalogiterable")
 
     if fields is None:
         fields = []
@@ -113,13 +134,26 @@ def makeRerunCatalog(schema, oldCatalog, idList, fields=None):
         if entry not in schema:
             schema.addField(oldCatalog.schema.find(entry).field)
 
+    if addParents:
+        newIdList = set()
+        for srcId in idList:
+            newIdList.add(srcId)
+            parentId = oldCatalog.find(srcId).getParent()
+            if parentId:
+                newIdList.add(parentId)
+        idList = newIdList
+    idList = sorted(idList)
+
     measCat = SourceCatalog(schema)
     for srcId in idList:
         oldSrc = oldCatalog.find(srcId)
         src = measCat.addNew()
         src.setId(srcId)
         src.setFootprint(oldSrc.getFootprint())
-        src.setParent(oldSrc.getParent())
+        parent = oldSrc.getParent()
+        if resetParents and parent and parent not in idList:
+            parent = 0
+        src.setParent(parent)
         src.setCoord(oldSrc.getCoord())
         for entry in fields:
             src[entry] = oldSrc[entry]
