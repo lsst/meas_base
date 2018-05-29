@@ -147,7 +147,7 @@ class SincPhotSums(lsst.utils.tests.TestCase):
                 val = I0*math.exp(-0.5*((u/a)**2 + (v/b)**2))
                 if val < 0:
                     val = 0
-                gal.set(x, y, val)
+                gal[x, y, afwImage.LOCAL] = val
 
         objImg = afwImage.makeExposure(afwImage.makeMaskedImage(gal))
         del gal
