@@ -24,6 +24,7 @@ import unittest
 
 import numpy as np
 
+import lsst.geom
 import lsst.afw.geom
 import lsst.meas.base
 import lsst.meas.base.tests
@@ -33,13 +34,13 @@ import lsst.utils.tests
 class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
-        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
-                                        lsst.afw.geom.Extent2I(240, 160))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30),
+                                    lsst.geom.Extent2I(240, 160))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         # first source is a point
-        self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(50.1, 49.8))
+        self.dataset.addSource(100000.0, lsst.geom.Point2D(50.1, 49.8))
         # second source is extended
-        self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(149.9, 50.3),
+        self.dataset.addSource(100000.0, lsst.geom.Point2D(149.9, 50.3),
                                lsst.afw.geom.Quadrupole(8, 9, 3))
         self.config = self.makeSingleFrameMeasurementConfig("base_SdssShape")
 
@@ -160,7 +161,7 @@ class SdssShapeTransformTestCase(lsst.meas.base.tests.FluxTransformTestCase,
         outShape = lsst.meas.base.ShapeResultKey(outSrc.schema[name]).get(outSrc)
 
         centroid = lsst.meas.base.CentroidResultKey(inSrc.schema[name]).get(inSrc).getCentroid()
-        xform = self.calexp.getWcs().linearizePixelToSky(centroid, lsst.afw.geom.radians)
+        xform = self.calexp.getWcs().linearizePixelToSky(centroid, lsst.geom.radians)
 
         trInShape = inShape.getShape().transform(xform.getLinear())
         self.assertEqual(trInShape.getIxx(), outShape.getShape().getIxx())

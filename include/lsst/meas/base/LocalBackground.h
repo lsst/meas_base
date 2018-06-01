@@ -32,12 +32,13 @@
 #include "lsst/meas/base/InputUtilities.h"
 #include "lsst/meas/base/Transform.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 /// Configuration of LocalBackgroundAlgorithm
 class LocalBackgroundControl {
 public:
-
     LSST_CONTROL_FIELD(badMaskPlanes, std::vector<std::string>,
                        "Mask planes that indicate pixels that should be excluded from the measurement");
     LSST_CONTROL_FIELD(annulusInner, float,
@@ -46,44 +47,37 @@ public:
                        "Outer radius for background annulus as a multiple of the PSF sigma");
     LSST_CONTROL_FIELD(bgRej, float,
                        "Rejection threshold (in standard deviations) for background measurement");
-    LSST_CONTROL_FIELD(bgIter, int,
-                       "Number of sigma-clipping iterations for background measurement");
+    LSST_CONTROL_FIELD(bgIter, int, "Number of sigma-clipping iterations for background measurement");
 
-    LocalBackgroundControl() :
-        // deliberately omitting DETECTED: objects shouldn't be present if we're deblending, and by
-        // including DETECTED we wouldn't get any pixels for the background if we're on something
-        // extended and over threshold which is exactly the case when we do want to measure the background.
-        badMaskPlanes({"BAD", "SAT", "NO_DATA"}),
-        annulusInner(7.0),
-        annulusOuter(15.0),
-        bgRej(3.0),
-        bgIter(3)
-    {}
+    LocalBackgroundControl()
+            :  // deliberately omitting DETECTED: objects shouldn't be present if we're deblending, and by
+               // including DETECTED we wouldn't get any pixels for the background if we're on something
+               // extended and over threshold which is exactly the case when we do want to measure the
+               // background.
+              badMaskPlanes({"BAD", "SAT", "NO_DATA"}),
+              annulusInner(7.0),
+              annulusOuter(15.0),
+              bgRej(3.0),
+              bgIter(3) {}
 };
 
 /// A measurement algorithm that estimates the local background value per pixel
 class LocalBackgroundAlgorithm : public SimpleAlgorithm {
 public:
-
-    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinitionList const& getFlagDefinitions();
     static FlagDefinition const FAILURE;
     static FlagDefinition const NO_GOOD_PIXELS;
     static FlagDefinition const NO_PSF;
 
     typedef LocalBackgroundControl Control;
 
-    LocalBackgroundAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema,
-                             std::string const & logName="");
+    LocalBackgroundAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema,
+                             std::string const& logName = "");
 
-    virtual void measure(
-        afw::table::SourceRecord & measRecord,
-        afw::image::Exposure<float> const & exposure
-    ) const;
+    virtual void measure(afw::table::SourceRecord& measRecord,
+                         afw::image::Exposure<float> const& exposure) const;
 
-    virtual void fail(
-        afw::table::SourceRecord & measRecord,
-        MeasurementError * error=nullptr
-    ) const;
+    virtual void fail(afw::table::SourceRecord& measRecord, MeasurementError* error = nullptr) const;
 
 private:
     Control _ctrl;
@@ -93,15 +87,14 @@ private:
     afw::math::StatisticsControl _stats;
 };
 
-
 class LocalBackgroundTransform : public FluxTransform {
 public:
     typedef LocalBackgroundControl Control;
-    LocalBackgroundTransform(Control const & ctrl, std::string const & name,
-                             afw::table::SchemaMapper & mapper);
+    LocalBackgroundTransform(Control const& ctrl, std::string const& name, afw::table::SchemaMapper& mapper);
 };
 
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-}}} // namespace lsst::meas::base
-
-#endif // !LSST_MEAS_BASE_LocalBackground_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_LocalBackground_h_INCLUDED

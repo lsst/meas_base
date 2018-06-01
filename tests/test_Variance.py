@@ -27,6 +27,7 @@ import unittest
 
 import numpy as np
 
+import lsst.geom
 import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
 import lsst.afw.image as afwImage
@@ -44,7 +45,7 @@ class VarianceTest(lsst.utils.tests.TestCase):
 
     def setUp(self):
         size = 128  # size of image (pixels)
-        center = afwGeom.Point2D(size//2, size//2)  # object center
+        center = lsst.geom.Point2D(size//2, size//2)  # object center
         width = 2  # PSF width
         flux = 10.0  # Flux of object
         variance = 1.0  # Mean variance value

@@ -24,9 +24,10 @@ import unittest
 
 import numpy as np
 
+import lsst.geom
 from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
-import lsst.afw.geom as afwGeom
+import lsst.afw.geom
 import lsst.utils.tests
 
 # n.b. Some tests here depend on the noise realization in the test data
@@ -41,9 +42,9 @@ import lsst.utils.tests
 class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
-        self.center = lsst.afw.geom.Point2D(50.1, 49.8)
-        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(-20, -30),
-                                        lsst.afw.geom.Extent2I(140, 160))
+        self.center = lsst.geom.Point2D(50.1, 49.8)
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30),
+                                    lsst.geom.Extent2I(140, 160))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(100000.0, self.center)
 
@@ -124,7 +125,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         # we also need to install a smaller footprint, or NoiseReplacer complains before we even get to
         # measuring the centriod
         record = catalog[0]
-        spanSet = afwGeom.SpanSet(bbox)
+        spanSet = lsst.afw.geom.SpanSet(bbox)
         newFootprint = lsst.afw.detection.Footprint(spanSet)
         peak = record.getFootprint().getPeaks()[0]
         newFootprint.addPeak(peak.getFx(), peak.getFy(), peak.getPeakValue())
@@ -138,7 +139,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=3)
         # cutout a subimage around object in the test image
-        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(self.center), lsst.afw.geom.Extent2I(1, 1))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(self.center), lsst.geom.Extent2I(1, 1))
         bbox.grow(20)
         subImage = lsst.afw.image.ExposureF(exposure, bbox)
         # A completely flat image will trigger the no 2nd derivative error
@@ -151,7 +152,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=4)
         # cutout a subimage around the object in the test image
-        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(self.center), lsst.afw.geom.Extent2I(1, 1))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(self.center), lsst.geom.Extent2I(1, 1))
         bbox.grow(20)
         subImage = lsst.afw.image.ExposureF(exposure, bbox)
         # zero out the central region, which will destroy the maximum

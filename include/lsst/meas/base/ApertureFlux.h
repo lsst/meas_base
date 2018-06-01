@@ -35,37 +35,30 @@
 #include "lsst/meas/base/InputUtilities.h"
 #include "lsst/meas/base/Transform.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 /**
  *  Configuration object for multiple-aperture flux algorithms
  */
 class ApertureFluxControl {
 public:
-
     ApertureFluxControl();
 
-    LSST_CONTROL_FIELD(
-        radii, std::vector<double>,
-        "Radius (in pixels) of apertures."
-    );
+    LSST_CONTROL_FIELD(radii, std::vector<double>, "Radius (in pixels) of apertures.");
 
     LSST_CONTROL_FIELD(
-        maxSincRadius, double,
-        "Maximum radius (in pixels) for which the sinc algorithm should be used instead of the "
-        "faster naive algorithm.  For elliptical apertures, this is the minor axis radius."
-    );
+            maxSincRadius, double,
+            "Maximum radius (in pixels) for which the sinc algorithm should be used instead of the "
+            "faster naive algorithm.  For elliptical apertures, this is the minor axis radius.");
 
     LSST_CONTROL_FIELD(
-        shiftKernel, std::string,
-        "Warping kernel used to shift Sinc photometry coefficients to different center positions"
-    );
-
+            shiftKernel, std::string,
+            "Warping kernel used to shift Sinc photometry coefficients to different center positions");
 };
 
-
 struct ApertureFluxResult;
-
 
 /**
  *  Base class for multiple-aperture photometry algorithms
@@ -82,9 +75,8 @@ struct ApertureFluxResult;
  */
 class ApertureFluxAlgorithm : public SimpleAlgorithm {
 public:
-
     // Structures and routines to manage flaghandler
-    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinitionList const& getFlagDefinitions();
     static unsigned int const N_FLAGS = 3;
     static FlagDefinition const FAILURE;
     static FlagDefinition const APERTURE_TRUNCATED;
@@ -108,17 +100,13 @@ public:
      *   @param[in]   ctrl                  Control object.
      */
     template <typename T>
-    static Result computeSincFlux(
-        afw::image::Image<T> const & image,
-        afw::geom::ellipses::Ellipse const & ellipse,
-        Control const & ctrl=Control()
-    );
+    static Result computeSincFlux(afw::image::Image<T> const& image,
+                                  afw::geom::ellipses::Ellipse const& ellipse,
+                                  Control const& ctrl = Control());
     template <typename T>
-    static Result computeSincFlux(
-        afw::image::MaskedImage<T> const & image,
-        afw::geom::ellipses::Ellipse const & ellipse,
-        Control const & ctrl=Control()
-    );
+    static Result computeSincFlux(afw::image::MaskedImage<T> const& image,
+                                  afw::geom::ellipses::Ellipse const& ellipse,
+                                  Control const& ctrl = Control());
     //@}
 
     //@{
@@ -132,17 +120,13 @@ public:
      *   @param[in]   ellipse               Ellipse that defines the outer boundary of the aperture.
      */
     template <typename T>
-    static Result computeNaiveFlux(
-        afw::image::Image<T> const & image,
-        afw::geom::ellipses::Ellipse const & ellipse,
-        Control const & ctrl=Control()
-    );
+    static Result computeNaiveFlux(afw::image::Image<T> const& image,
+                                   afw::geom::ellipses::Ellipse const& ellipse,
+                                   Control const& ctrl = Control());
     template <typename T>
-    static Result computeNaiveFlux(
-        afw::image::MaskedImage<T> const & image,
-        afw::geom::ellipses::Ellipse const & ellipse,
-        Control const & ctrl=Control()
-    );
+    static Result computeNaiveFlux(afw::image::MaskedImage<T> const& image,
+                                   afw::geom::ellipses::Ellipse const& ellipse,
+                                   Control const& ctrl = Control());
     //@}
 
     //@{
@@ -158,29 +142,19 @@ public:
      *   @param[in]   ctrl                  Control object.
      */
     template <typename T>
-    static Result computeFlux(
-        afw::image::Image<T> const & image,
-        afw::geom::ellipses::Ellipse const & ellipse,
-        Control const & ctrl=Control()
-    );
+    static Result computeFlux(afw::image::Image<T> const& image, afw::geom::ellipses::Ellipse const& ellipse,
+                              Control const& ctrl = Control());
 
     template <typename T>
-    static Result computeFlux(
-        afw::image::MaskedImage<T> const & image,
-        afw::geom::ellipses::Ellipse const & ellipse,
-        Control const & ctrl=Control()
-    );
+    static Result computeFlux(afw::image::MaskedImage<T> const& image,
+                              afw::geom::ellipses::Ellipse const& ellipse, Control const& ctrl = Control());
     //@}
 
     /**
      *  Construct the algorithm and add its fields to the given Schema.
      */
-    explicit ApertureFluxAlgorithm(
-        Control const & ctrl,
-        std::string const & name,
-        afw::table::Schema & schema,
-        daf::base::PropertySet & metadata
-    );
+    explicit ApertureFluxAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema,
+                                   daf::base::PropertySet& metadata);
 
     virtual ~ApertureFluxAlgorithm() {}
 
@@ -192,16 +166,11 @@ public:
      *  @param[in,out] record      Record used to save outputs and retrieve positions.
      *  @param[in]     exposure    Image to be measured.
      */
-    virtual void measure(
-        afw::table::SourceRecord & record,
-        afw::image::Exposure<float> const & exposure
-    ) const = 0;
+    virtual void measure(afw::table::SourceRecord& record,
+                         afw::image::Exposure<float> const& exposure) const = 0;
 
     /// @copydoc BaseAlgorithm::fail
-    virtual void fail(
-        afw::table::SourceRecord & measRecord,
-        MeasurementError * error=nullptr
-    ) const;
+    virtual void fail(afw::table::SourceRecord& measRecord, MeasurementError* error = nullptr) const;
 
     /**
      *  Construct an appropriate prefix for table fields.
@@ -215,33 +184,30 @@ public:
      * @param[in] radius          Aperture radius (pixels).
      * @returns   Table field name prefix.
      */
-    static std::string makeFieldPrefix(std::string const & name, double radius);
+    static std::string makeFieldPrefix(std::string const& name, double radius);
 
     /**
      *  Return the flag definitions which apply to aperture flux measurements.
      */
 
 protected:
+    void copyResultToRecord(Result const& result, afw::table::SourceRecord& record, int index) const;
 
-    void copyResultToRecord(Result const & result, afw::table::SourceRecord & record, int index) const;
-
-    FlagHandler const & getFlagHandler(int index) const { return _keys[index].flags; }
+    FlagHandler const& getFlagHandler(int index) const { return _keys[index].flags; }
 
     Control const _ctrl;
     SafeCentroidExtractor _centroidExtractor;
 
 private:
-
     struct Keys {
         FluxResultKey fluxKey;
         FlagHandler flags;
 
-        Keys(afw::table::Schema & schema, std::string const & prefix, std::string const & doc, bool isSinc);
+        Keys(afw::table::Schema& schema, std::string const& prefix, std::string const& doc, bool isSinc);
     };
 
     std::vector<Keys> _keys;
 };
-
 
 /**
  *  A Result struct for running an aperture flux algorithm with a single radius.
@@ -249,17 +215,16 @@ private:
  *  This simply extends FluxResult to add the appropriate error flags for aperture fluxes.
  */
 struct ApertureFluxResult : public FluxResult {
-
     /// Return the flag value associated with the given bit
     bool getFlag(unsigned int index) const { return _flags[index]; }
 
     /// Return the flag value associated with the given flag name
-    bool getFlag(std::string const & name) const {
-       return _flags[ApertureFluxAlgorithm::getFlagDefinitions().getDefinition(name).number];
+    bool getFlag(std::string const& name) const {
+        return _flags[ApertureFluxAlgorithm::getFlagDefinitions().getDefinition(name).number];
     }
 
     /// Set the flag value associated with the given bit
-    void setFlag(unsigned int index, bool value=true) { _flags[index] = value; }
+    void setFlag(unsigned int index, bool value = true) { _flags[index] = value; }
 
     /// Clear (i.e. set to false) the flag associated with the given bit
     void unsetFlag(unsigned int index) { _flags[index] = false; }
@@ -277,7 +242,7 @@ private:
 class ApertureFluxTransform : public BaseTransform {
 public:
     typedef ApertureFluxControl Control;
-    ApertureFluxTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper);
+    ApertureFluxTransform(Control const& ctrl, std::string const& name, afw::table::SchemaMapper& mapper);
 
     /*
      * @brief Perform transformation from inputCatalog to outputCatalog.
@@ -288,15 +253,17 @@ public:
      * @param[in]     calib          Photometric calibration under which transformation will take place
      * @throws        LengthError    Catalog sizes do not match
      */
-    virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
-                            afw::table::BaseCatalog & outputCatalog,
-                            afw::geom::SkyWcs const & wcs,
-                            afw::image::Calib const & calib) const;
+    virtual void operator()(afw::table::SourceCatalog const& inputCatalog,
+                            afw::table::BaseCatalog& outputCatalog, afw::geom::SkyWcs const& wcs,
+                            afw::image::Calib const& calib) const;
+
 private:
     std::vector<MagResultKey> _magKeys;
     Control _ctrl;
 };
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_ApertureFlux_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_ApertureFlux_h_INCLUDED

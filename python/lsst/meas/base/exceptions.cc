@@ -34,26 +34,24 @@ namespace meas {
 namespace base {
 
 PYBIND11_PLUGIN(exceptions) {
-    using lsst::pex::exceptions::python::declareException;
-    using lsst::pex::exceptions::DomainError;
-    using lsst::pex::exceptions::RuntimeError;
+    using pex::exceptions::python::declareException;
+    using pex::exceptions::DomainError;
+    using pex::exceptions::RuntimeError;
 
     py::module::import("lsst.pex.exceptions");
 
     py::module mod("exceptions");
 
     /* Module level */
-    auto clsFatalAlgorithmError = declareException<FatalAlgorithmError, RuntimeError>(
-        mod, "FatalAlgorithmError", "RuntimeError");
-    auto clsMeasurementError = declareException<MeasurementError, RuntimeError>(
-        mod, "MeasurementError", "RuntimeError");
-    auto clsPixelValueError = declareException<PixelValueError, DomainError>(
-        mod, "PixelValueError", "DomainError");
+    auto clsFatalAlgorithmError =
+            declareException<FatalAlgorithmError, RuntimeError>(mod, "FatalAlgorithmError", "RuntimeError");
+    auto clsMeasurementError =
+            declareException<MeasurementError, RuntimeError>(mod, "MeasurementError", "RuntimeError");
+    auto clsPixelValueError =
+            declareException<PixelValueError, DomainError>(mod, "PixelValueError", "DomainError");
 
     /* Constructors */
-    clsMeasurementError.def(py::init<std::string const &,
-                                     std::size_t>(),
-                            "message"_a, "flagBit"_a);
+    clsMeasurementError.def(py::init<std::string const &, std::size_t>(), "message"_a, "flagBit"_a);
     clsFatalAlgorithmError.def(py::init<std::string const &>(), "message"_a);
     clsPixelValueError.def(py::init<std::string const &>(), "message"_a);
 
@@ -63,6 +61,6 @@ PYBIND11_PLUGIN(exceptions) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

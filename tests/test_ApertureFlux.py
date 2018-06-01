@@ -24,6 +24,7 @@ import unittest
 
 import numpy as np
 
+import lsst.geom
 import lsst.afw.geom
 import lsst.afw.image
 import lsst.utils.tests
@@ -36,7 +37,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
     """Test case for the ApertureFlux algorithm base class."""
 
     def setUp(self):
-        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(20, -100), lsst.afw.geom.Point2I(100, -20))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(20, -100), lsst.geom.Point2I(100, -20))
         self.exposure = lsst.afw.image.ExposureF(self.bbox)
         self.exposure.getMaskedImage().getImage().set(1.0)
         self.exposure.getMaskedImage().getVariance().set(0.25)
@@ -56,10 +57,10 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         return ((x - position.getX())**2 + (y - position.getY())**2 <= radius**2).sum()
 
     def testNaive(self):
-        positions = [lsst.afw.geom.Point2D(60.0, -60.0),
-                     lsst.afw.geom.Point2D(60.5, -60.0),
-                     lsst.afw.geom.Point2D(60.0, -60.5),
-                     lsst.afw.geom.Point2D(60.5, -60.5)]
+        positions = [lsst.geom.Point2D(60.0, -60.0),
+                     lsst.geom.Point2D(60.5, -60.0),
+                     lsst.geom.Point2D(60.0, -60.5),
+                     lsst.geom.Point2D(60.5, -60.5)]
         radii = [12.0, 17.0]
         for position in positions:
             for radius in radii:
@@ -90,17 +91,17 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         invalid = ApertureFluxAlgorithm.computeNaiveFlux(
             self.exposure.getMaskedImage().getImage(),
             lsst.afw.geom.Ellipse(lsst.afw.geom.ellipses.Axes(12.0, 12.0),
-                                  lsst.afw.geom.Point2D(25.0, -60.0)),
+                                  lsst.geom.Point2D(25.0, -60.0)),
             self.ctrl)
         self.assertTrue(invalid.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
         self.assertFalse(invalid.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
         self.assertTrue(np.isnan(invalid.flux))
 
     def testSinc(self):
-        positions = [lsst.afw.geom.Point2D(60.0, -60.0),
-                     lsst.afw.geom.Point2D(60.5, -60.0),
-                     lsst.afw.geom.Point2D(60.0, -60.5),
-                     lsst.afw.geom.Point2D(60.5, -60.5)]
+        positions = [lsst.geom.Point2D(60.0, -60.0),
+                     lsst.geom.Point2D(60.5, -60.0),
+                     lsst.geom.Point2D(60.0, -60.5),
+                     lsst.geom.Point2D(60.5, -60.5)]
         radii = [7.0, 9.0]
         for position in positions:
             for radius in radii:
@@ -128,7 +129,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         # test failure conditions when the aperture itself is truncated
         invalid1 = ApertureFluxAlgorithm.computeSincFlux(
             self.exposure.getMaskedImage().getImage(),
-            lsst.afw.geom.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0), lsst.afw.geom.Point2D(25.0, -60.0)),
+            lsst.afw.geom.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0), lsst.geom.Point2D(25.0, -60.0)),
             self.ctrl)
         self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
         self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
@@ -136,7 +137,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         # test failure conditions when the aperture is not truncated, but the sinc coeffs are
         invalid2 = ApertureFluxAlgorithm.computeSincFlux(
             self.exposure.getMaskedImage().getImage(),
-            lsst.afw.geom.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0), lsst.afw.geom.Point2D(30.0, -60.0)),
+            lsst.afw.geom.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0), lsst.geom.Point2D(30.0, -60.0)),
             self.ctrl)
         self.assertFalse(invalid2.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
         self.assertTrue(invalid2.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
@@ -147,11 +148,11 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
     """Test case for the CircularApertureFlux algorithm/plugin."""
 
     def setUp(self):
-        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0),
-                                        lsst.afw.geom.Extent2I(100, 100))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
+                                    lsst.geom.Extent2I(100, 100))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         # first source is a point
-        self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(49.5, 49.5))
+        self.dataset.addSource(100000.0, lsst.geom.Point2D(49.5, 49.5))
 
     def tearDown(self):
         del self.bbox

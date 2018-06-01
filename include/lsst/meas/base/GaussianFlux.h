@@ -33,7 +33,9 @@
 #include "lsst/meas/base/InputUtilities.h"
 #include "lsst/meas/base/Transform.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 /**
  *  @brief A C++ control class to handle GaussianFluxAlgorithm's configuration
@@ -47,9 +49,7 @@ public:
      *
      *  All control classes should define a default constructor that sets all fields to their default values.
      */
-    GaussianFluxControl() :
-        background(0.0)
-    {}
+    GaussianFluxControl() : background(0.0) {}
 };
 
 /**
@@ -61,29 +61,22 @@ public:
  */
 class GaussianFluxAlgorithm : public SimpleAlgorithm {
 public:
-
     // Structures and routines to manage flaghandler
-    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinitionList const& getFlagDefinitions();
     static FlagDefinition const FAILURE;
 
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.
     typedef GaussianFluxControl Control;
 
-    GaussianFluxAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
+    GaussianFluxAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema);
 
-    virtual void measure(
-        afw::table::SourceRecord & measRecord,
-        afw::image::Exposure<float> const & exposure
-    ) const;
+    virtual void measure(afw::table::SourceRecord& measRecord,
+                         afw::image::Exposure<float> const& exposure) const;
 
-    virtual void fail(
-        afw::table::SourceRecord & measRecord,
-        MeasurementError * error=nullptr
-    ) const;
+    virtual void fail(afw::table::SourceRecord& measRecord, MeasurementError* error = nullptr) const;
 
 private:
-
     Control _ctrl;
     FluxResultKey _fluxResultKey;
     FlagHandler _flagHandler;
@@ -94,10 +87,12 @@ private:
 class GaussianFluxTransform : public FluxTransform {
 public:
     typedef GaussianFluxControl Control;
-    GaussianFluxTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper) :
-                          FluxTransform{name, mapper} { }
+    GaussianFluxTransform(Control const& ctrl, std::string const& name, afw::table::SchemaMapper& mapper)
+            : FluxTransform{name, mapper} {}
 };
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_GaussianFlux_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_GaussianFlux_h_INCLUDED

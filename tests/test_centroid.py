@@ -23,6 +23,7 @@
 import math
 import unittest
 
+import lsst.geom
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
@@ -62,8 +63,8 @@ class CentroidTestCase(utilsTests.TestCase):
         x0, y0 = 12345, 54321
         for imageFactory in (afwImage.MaskedImageF,):
 
-            im = imageFactory(afwGeom.ExtentI(100, 100))
-            im.setXY0(afwGeom.Point2I(x0, y0))
+            im = imageFactory(lsst.geom.ExtentI(100, 100))
+            im.setXY0(lsst.geom.Point2I(x0, y0))
 
             # This fixed DoubleGaussianPsf replaces a computer generated one.
             # The values are not anything in particular, just a reasonable size.
@@ -165,7 +166,7 @@ class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
         s = self.mySetup()
 
         # this does not match exactly, and it used to
-        self.assertFloatsAlmostEqual(s.getCentroid(), afwGeom.PointD(self.xcen, self.ycen), rtol=.01)
+        self.assertFloatsAlmostEqual(s.getCentroid(), lsst.geom.PointD(self.xcen, self.ycen), rtol=.01)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

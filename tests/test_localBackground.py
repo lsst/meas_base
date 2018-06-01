@@ -24,7 +24,7 @@ import unittest
 
 import numpy as np
 
-import lsst.afw.geom
+import lsst.geom
 import lsst.afw.image
 import lsst.utils.tests
 from lsst.meas.base import LocalBackgroundAlgorithm
@@ -37,10 +37,10 @@ class LocalBackgroundTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.algName = "base_LocalBackground"
-        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0),
-                                        lsst.afw.geom.Extent2I(100, 100))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
+                                    lsst.geom.Extent2I(100, 100))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
-        self.dataset.addSource(100000.0, lsst.afw.geom.Point2D(49.5, 49.5))
+        self.dataset.addSource(100000.0, lsst.geom.Point2D(49.5, 49.5))
 
         self.bgValue = 1234.56789
         self.bgStdev = 12.3456789

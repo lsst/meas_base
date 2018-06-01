@@ -52,10 +52,9 @@ using namespace pybind11::literals;
  * @param[in,out] cls The pybind11 wrapper for `Algorithm`.
  */
 template <class Algorithm, class PyAlg>
-typename std::enable_if<!std::is_abstract<Algorithm>::value, void>::type declareAlgorithmConstructor(PyAlg & cls) {
-    cls.def(py::init<typename Algorithm::Control const &,
-                     std::string const &,
-                     afw::table::Schema &>(),
+typename std::enable_if<!std::is_abstract<Algorithm>::value, void>::type declareAlgorithmConstructor(
+        PyAlg &cls) {
+    cls.def(py::init<typename Algorithm::Control const &, std::string const &, afw::table::Schema &>(),
             "ctrl"_a, "name"_a, "schema"_a);
 }
 /**
@@ -70,8 +69,8 @@ typename std::enable_if<!std::is_abstract<Algorithm>::value, void>::type declare
  * @param[in,out] cls The pybind11 wrapper for `Algorithm`.
  */
 template <class Algorithm, class PyAlg>
-typename std::enable_if<std::is_abstract<Algorithm>::value, void>::type declareAlgorithmConstructor(PyAlg & cls) {
-}
+typename std::enable_if<std::is_abstract<Algorithm>::value, void>::type declareAlgorithmConstructor(
+        PyAlg &cls) {}
 
 /**
  * Wrap the implicit API used by meas_base's algorithms.
@@ -85,7 +84,7 @@ typename std::enable_if<std::is_abstract<Algorithm>::value, void>::type declareA
  * @param[in,out] clsAlgorithm The pybind11 wrapper for `Algorithm`.
  */
 template <class Algorithm, class PyAlg>
-void declareAlgorithm(PyAlg & clsAlgorithm) {
+void declareAlgorithm(PyAlg &clsAlgorithm) {
     /* Member types and enums */
 
     /* Constructors */
@@ -94,7 +93,7 @@ void declareAlgorithm(PyAlg & clsAlgorithm) {
     /* Operators */
 
     /* Members */
-    clsAlgorithm.def("fail", &Algorithm::fail, "measRecord"_a, "error"_a=NULL);
+    clsAlgorithm.def("fail", &Algorithm::fail, "measRecord"_a, "error"_a = NULL);
     clsAlgorithm.def("measure", &Algorithm::measure, "record"_a, "exposure"_a);
 }
 
@@ -114,7 +113,7 @@ void declareAlgorithm(PyAlg & clsAlgorithm) {
  *                             for the respective C++ classes.
  */
 template <class Algorithm, class Control, class PyAlg, class PyCtrl>
-void declareAlgorithm(PyAlg & clsAlgorithm, PyCtrl & clsControl) {
+void declareAlgorithm(PyAlg &clsAlgorithm, PyCtrl &clsControl) {
     declareAlgorithm<Algorithm>(clsAlgorithm);
 
     /* Member types and enums */
@@ -146,30 +145,30 @@ void declareAlgorithm(PyAlg & clsAlgorithm, PyCtrl & clsControl) {
  *                             for the respective C++ classes.
  */
 template <class Algorithm, class Control, class Transform, class PyAlg, class PyCtrl, class PyXform>
-void declareAlgorithm(PyAlg & clsAlgorithm, PyCtrl & clsControl, PyXform & clsTransform) {
+void declareAlgorithm(PyAlg &clsAlgorithm, PyCtrl &clsControl, PyXform &clsTransform) {
     declareAlgorithm<Algorithm, Control>(clsAlgorithm, clsControl);
 
     /* Member types and enums */
 
     /* Constructors */
-    clsTransform.def(py::init<typename Transform::Control const &,
-                              std::string const &,
-                              afw::table::SchemaMapper &>(),
-                     "ctrl"_a, "name"_a, "mapper"_a);
+    clsTransform.def(
+            py::init<typename Transform::Control const &, std::string const &, afw::table::SchemaMapper &>(),
+            "ctrl"_a, "name"_a, "mapper"_a);
 
     /* Operators */
-    clsTransform.def("__call__", [](Transform const & self,
-                                    afw::table::SourceCatalog const & inputCatalog,
-                                    afw::table::BaseCatalog & outputCatalog,
-                                    afw::geom::SkyWcs const & wcs,
-                                    afw::image::Calib const &calib) {
-            return self(inputCatalog, outputCatalog, wcs, calib);
-        }, "inputCatalog"_a, "outputCatalog"_a, "wcs"_a, "calib"_a);
+    clsTransform.def(
+            "__call__",
+            [](Transform const &self, afw::table::SourceCatalog const &inputCatalog,
+               afw::table::BaseCatalog &outputCatalog, afw::geom::SkyWcs const &wcs,
+               afw::image::Calib const &calib) { return self(inputCatalog, outputCatalog, wcs, calib); },
+            "inputCatalog"_a, "outputCatalog"_a, "wcs"_a, "calib"_a);
 
     /* Members */
 }
 
-}}}}     // lsst::meas::base::
+}  // namespace python
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
 #endif
-

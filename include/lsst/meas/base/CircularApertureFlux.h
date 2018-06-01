@@ -33,13 +33,14 @@
 #include "lsst/meas/base/InputUtilities.h"
 #include "lsst/meas/base/ApertureFlux.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 class CircularApertureFluxAlgorithm : public ApertureFluxAlgorithm {
 public:
-
-    CircularApertureFluxAlgorithm(Control const & ctrl, std::string const & name, 
-        afw::table::Schema & schema, daf::base::PropertySet & metadata);
+    CircularApertureFluxAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema,
+                                  daf::base::PropertySet& metadata);
 
     /**
      *  Measure the configured apertures on the given image.
@@ -49,12 +50,11 @@ public:
      *  @param[in,out] record      Record used to save outputs and retrieve positions.
      *  @param[in]     exposure    Image to be measured.
      */
-    virtual void measure(
-        afw::table::SourceRecord & record,
-        afw::image::Exposure<float> const & exposure
-    ) const;
+    virtual void measure(afw::table::SourceRecord& record, afw::image::Exposure<float> const& exposure) const;
 };
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_CircularApertureFlux_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_CircularApertureFlux_h_INCLUDED

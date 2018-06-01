@@ -27,10 +27,12 @@
 #include "Eigen/Core"
 
 #include "lsst/pex/exceptions.h"
-#include "lsst/afw/geom/Point.h"
+#include "lsst/geom/Point.h"
 #include "lsst/afw/geom/ellipses/Quadrupole.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 /**
  *  @brief An enum used to specify how much uncertainty information measurement algorithms provide.
@@ -39,9 +41,9 @@ namespace lsst { namespace meas { namespace base {
  *  have data members that could hold the full-covariance, but may set some of these to NaN.
  */
 enum UncertaintyEnum {
-    NO_UNCERTAINTY = 0, ///< Algorithm provides no uncertainy information at all
-    SIGMA_ONLY = 1,     ///< Only the diagonal elements of the covariance matrix are provided
-    FULL_COVARIANCE = 2 ///< The full covariance matrix is provided
+    NO_UNCERTAINTY = 0,  ///< Algorithm provides no uncertainy information at all
+    SIGMA_ONLY = 1,      ///< Only the diagonal elements of the covariance matrix are provided
+    FULL_COVARIANCE = 2  ///< The full covariance matrix is provided
 };
 
 //@{ Typedefs that define the C++ types we typically use for common measurements
@@ -53,13 +55,15 @@ typedef double MagErrElement;
 typedef float ErrElement;
 typedef double CentroidElement;
 typedef double ShapeElement;
-typedef afw::geom::Point<CentroidElement,2> Centroid;
-typedef Eigen::Matrix<ErrElement,2,2,Eigen::DontAlign> CentroidCov;
+typedef geom::Point<CentroidElement, 2> Centroid;
+typedef Eigen::Matrix<ErrElement, 2, 2, Eigen::DontAlign> CentroidCov;
 typedef afw::geom::ellipses::Quadrupole Shape;
-typedef Eigen::Matrix<ErrElement,3,3,Eigen::DontAlign> ShapeCov;
-typedef Eigen::Matrix<ShapeElement,3,3,Eigen::DontAlign> ShapeTrMatrix;
+typedef Eigen::Matrix<ErrElement, 3, 3, Eigen::DontAlign> ShapeCov;
+typedef Eigen::Matrix<ShapeElement, 3, 3, Eigen::DontAlign> ShapeTrMatrix;
 //@}
 
-}}} // lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_constants_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_constants_h_INCLUDED

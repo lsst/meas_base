@@ -28,9 +28,9 @@ and automatic plugin-from-algorithm calls for those implemented in C++.
 import numpy as np
 
 import lsst.pex.exceptions
+import lsst.geom
 import lsst.afw.detection
 import lsst.afw.geom
-from lsst.afw.geom.skyWcs import makeWcsPairTransform
 
 from .pluginRegistry import register
 from .pluginsBase import BasePlugin
@@ -139,7 +139,7 @@ class SingleFrameFPPositionPlugin(SingleFramePlugin):
         det = exposure.getDetector()
         if not det:
             measRecord.set(self.detectorFlag, True)
-            fp = lsst.afw.geom.Point2D(np.nan, np.nan)
+            fp = lsst.geom.Point2D(np.nan, np.nan)
         else:
             center = measRecord.getCentroid()
             fp = det.transform(center, lsst.afw.cameraGeom.PIXELS, lsst.afw.cameraGeom.FOCAL_PLANE)
@@ -179,7 +179,7 @@ class SingleFrameJacobianPlugin(SingleFramePlugin):
         # ratio of that with the defined reference pixel area.
         result = np.abs(self.scale*exposure.getWcs().linearizePixelToSky(
             center,
-            lsst.afw.geom.arcseconds).getLinear().computeDeterminant())
+            lsst.geom.arcseconds).getLinear().computeDeterminant())
         measRecord.set(self.jacValue, result)
 
     def fail(self, measRecord, error=None):
@@ -409,7 +409,7 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
     def measure(self, measRecord, exposure, refRecord, refWcs):
         targetWcs = exposure.getWcs()
         peak = refRecord.getFootprint().getPeaks()[0]
-        result = lsst.afw.geom.Point2D(peak.getFx(), peak.getFy())
+        result = lsst.geom.Point2D(peak.getFx(), peak.getFy())
         result = targetWcs.skyToPixel(refWcs.pixelToSky(result))
         measRecord.set(self.keyX, result.getX())
         measRecord.set(self.keyY, result.getY())
@@ -507,7 +507,7 @@ class ForcedTransformedShapePlugin(ForcedPlugin):
     def measure(self, measRecord, exposure, refRecord, refWcs):
         targetWcs = exposure.getWcs()
         if not refWcs == targetWcs:
-            fullTransform = makeWcsPairTransform(refWcs, targetWcs)
+            fullTransform = lsst.afw.geom.makeWcsPairTransform(refWcs, targetWcs)
             localTransform = lsst.afw.geom.linearizeTransform(fullTransform, refRecord.getCentroid())
             measRecord.set(self.shapeKey, refRecord.getShape().transform(localTransform.getLinear()))
         else:

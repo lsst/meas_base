@@ -99,7 +99,7 @@ class ForcedPlugin(BaseMeasurementPlugin):
         @param[in] refRecord      lsst.afw.table.SimpleRecord that contains additional
                                   parameters to define the fit, as measured elsewhere.
         @param[in] refWcs         The coordinate system for the reference catalog values.
-                                  An afw.geom.Angle may be passed, indicating that a
+                                  An lsst.geom.Angle may be passed, indicating that a
                                   local tangent Wcs should be created for each object
                                   using afw.image.makeLocalWcs and the given angle as
                                   a pixel scale.
@@ -127,7 +127,7 @@ class ForcedPlugin(BaseMeasurementPlugin):
                                  parameters to define the fit, as measured elsewhere.
                                  Ordered such that zip(sources, references) may be used.
         @param[in] refWcs        The coordinate system for the reference catalog values.
-                                 An afw.geom.Angle may be passed, indicating that a
+                                 An lsst.geom.Angle may be passed, indicating that a
                                  local tangent Wcs should be created for each object
                                  using afw.image.makeLocalWcs and the given Angle as
                                  a pixel scale.

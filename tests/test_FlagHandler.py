@@ -25,6 +25,7 @@ import unittest
 import numpy as np
 
 import lsst.utils.tests
+import lsst.geom
 import lsst.meas.base
 import lsst.meas.base.tests
 import lsst.afw.table
@@ -99,8 +100,8 @@ class PythonPlugin(SingleFramePlugin):
         center = self.centroidExtractor(measRecord, self.flagHandler)
 
         # create a square bounding box of size = config.size around the center
-        centerPoint = lsst.afw.geom.Point2I(int(center.getX()), int(center.getY()))
-        bbox = lsst.afw.geom.Box2I(centerPoint, lsst.afw.geom.Extent2I(1, 1))
+        centerPoint = lsst.geom.Point2I(int(center.getX()), int(center.getY()))
+        bbox = lsst.geom.Box2I(centerPoint, lsst.geom.Extent2I(1, 1))
         bbox.grow(self.config.size)
 
         # If the measurement box falls outside the exposure, raise the edge MeasurementError
@@ -140,9 +141,9 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.algName = "test_PythonPlugin"
-        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0), lsst.afw.geom.Point2I(100, 100))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(100, 100))
         self.dataset = lsst.meas.base.tests.TestDataset(bbox)
-        self.dataset.addSource(flux=1E5, centroid=lsst.afw.geom.Point2D(25, 26))
+        self.dataset.addSource(flux=1E5, centroid=lsst.geom.Point2D(25, 26))
         config = lsst.meas.base.SingleFrameMeasurementConfig()
         config.plugins = [self.algName]
         config.slots.centroid = None

@@ -27,6 +27,7 @@ import unittest
 
 import numpy as np
 
+import lsst.geom
 import lsst.afw.image as afwImage
 import lsst.afw.detection as afwDetection
 import lsst.afw.math as afwMath
@@ -66,7 +67,7 @@ def plantSources(bbox, kwid, sky, coordList, addPoissonNoise=True):
         psf = afwDetection.GaussianPsf(kwid, kwid, sigma)
 
         # make an image of it and scale to the desired number of counts
-        thisPsfImg = psf.computeImage(afwGeom.PointD(int(x), int(y)))
+        thisPsfImg = psf.computeImage(lsst.geom.PointD(int(x), int(y)))
         thisPsfImg *= counts
 
         # bbox a window in our image and add the fake star image
@@ -108,11 +109,11 @@ class SincPhotSums(lsst.utils.tests.TestCase):
         coordList = [[self.nx/2, self.ny/2, self.val, self.sigma]]
 
         # exposure with gaussian
-        bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.Extent2I(self.nx, self.ny))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(self.nx, self.ny))
         self.expGaussPsf = plantSources(bbox, self.kwid, self.sky, coordList, addPoissonNoise=False)
 
         # just plain sky (ie. a constant)
-        self.mimg = afwImage.MaskedImageF(afwGeom.ExtentI(self.nx, self.ny))
+        self.mimg = afwImage.MaskedImageF(lsst.geom.ExtentI(self.nx, self.ny))
         self.mimg.set(self.sky, 0x0, self.sky)
         self.expSky = afwImage.makeExposure(self.mimg)
 
@@ -132,7 +133,7 @@ class SincPhotSums(lsst.utils.tests.TestCase):
         #
         # Make the object
         #
-        gal = afwImage.ImageF(afwGeom.ExtentI(width, height))
+        gal = afwImage.ImageF(lsst.geom.ExtentI(width, height))
         a, b, theta = float(10), float(5), 20
         flux = 1e4
         I0 = flux/(2*math.pi*a*b)
@@ -175,7 +176,7 @@ class SincPhotSums(lsst.utils.tests.TestCase):
                 for r in (r1, r2):
                     ds9.dot("@:%g,%g,%g" % (r**2*mxx, r**2*mxy, r**2*myy), xcen, ycen, frame=frame)
 
-            center = afwGeom.Point2D(xcen, ycen)
+            center = lsst.geom.Point2D(xcen, ycen)
 
             # this tests tests a sync algorithm with an inner and outer radius
             # since that is no longer available from the ApertureFluxAlgorithm,

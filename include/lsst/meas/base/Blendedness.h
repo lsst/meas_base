@@ -32,37 +32,25 @@
 #include "lsst/meas/base/Transform.h"
 #include "lsst/meas/base/FlagHandler.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 class BlendednessControl {
 public:
     LSST_CONTROL_FIELD(
-        doOld, bool,
-        "Whether to compute HeavyFootprint dot products (the old deblend.blendedness parameter)"
-    );
+            doOld, bool,
+            "Whether to compute HeavyFootprint dot products (the old deblend.blendedness parameter)");
 
-    LSST_CONTROL_FIELD(
-        doFlux, bool,
-        "Whether to compute quantities related to the Gaussian-weighted flux"
-    );
+    LSST_CONTROL_FIELD(doFlux, bool, "Whether to compute quantities related to the Gaussian-weighted flux");
 
-    LSST_CONTROL_FIELD(
-        doShape, bool,
-        "Whether to compute quantities related to the Gaussian-weighted shape"
-    );
+    LSST_CONTROL_FIELD(doShape, bool, "Whether to compute quantities related to the Gaussian-weighted shape");
 
-    LSST_CONTROL_FIELD(
-        nSigmaWeightMax, double,
-        "Radius factor that sets the maximum extent of the weight function (and hence the flux measurements)"
-    );
+    LSST_CONTROL_FIELD(nSigmaWeightMax, double,
+                       "Radius factor that sets the maximum extent of the weight function (and hence the "
+                       "flux measurements)");
 
-    BlendednessControl() :
-        doOld(true),
-        doFlux(true),
-        doShape(true),
-        nSigmaWeightMax(3.0)
-    {}
-
+    BlendednessControl() : doOld(true), doFlux(true), doShape(true), nSigmaWeightMax(3.0) {}
 };
 
 /**
@@ -76,16 +64,15 @@ public:
  */
 class BlendednessAlgorithm : public SimpleAlgorithm {
 public:
-
     // Structures and routines to manage flaghandler
-    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinitionList const& getFlagDefinitions();
     static FlagDefinition const FAILURE;
     static FlagDefinition const NO_CENTROID;
     static FlagDefinition const NO_SHAPE;
 
     typedef BlendednessControl Control;
 
-    BlendednessAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
+    BlendednessAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema);
 
     /**
      *  Compute the posterior expectation value of the true flux in a pixel
@@ -122,37 +109,21 @@ public:
      */
     static float computeAbsBias(float mu, float variance);
 
-    void measureChildPixels(
-        afw::image::MaskedImage<float> const & image,
-        afw::table::SourceRecord & child
-    ) const;
+    void measureChildPixels(afw::image::MaskedImage<float> const& image,
+                            afw::table::SourceRecord& child) const;
 
-    void measureParentPixels(
-        afw::image::MaskedImage<float> const & image,
-        afw::table::SourceRecord & child
-    ) const;
+    void measureParentPixels(afw::image::MaskedImage<float> const& image,
+                             afw::table::SourceRecord& child) const;
 
-    virtual void measure(
-        afw::table::SourceRecord & measRecord,
-        afw::image::Exposure<float> const & exposure
-    ) const {}
+    virtual void measure(afw::table::SourceRecord& measRecord,
+                         afw::image::Exposure<float> const& exposure) const {}
 
-    virtual void fail(
-        afw::table::SourceRecord & measRecord,
-        MeasurementError * error=nullptr
-    ) const {}
-
+    virtual void fail(afw::table::SourceRecord& measRecord, MeasurementError* error = nullptr) const {}
 
 private:
-
-    void _measureMoments(
-        afw::image::MaskedImage<float> const & image,
-        afw::table::SourceRecord & child,
-        afw::table::Key<double> const & fluxRawKey,
-        afw::table::Key<double> const & fluxAbsKey,
-        ShapeResultKey const & _shapeRawKey,
-        ShapeResultKey const & _shapeAbsKey
-      ) const;
+    void _measureMoments(afw::image::MaskedImage<float> const& image, afw::table::SourceRecord& child,
+                         afw::table::Key<double> const& fluxRawKey, afw::table::Key<double> const& fluxAbsKey,
+                         ShapeResultKey const& _shapeRawKey, ShapeResultKey const& _shapeAbsKey) const;
 
     Control const _ctrl;
     afw::table::Key<double> _old;
@@ -169,6 +140,8 @@ private:
     FlagHandler _flagHandler;
 };
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // LSST_MEAS_BASE_Blendedness_h_INCLUDED
+#endif  // LSST_MEAS_BASE_Blendedness_h_INCLUDED

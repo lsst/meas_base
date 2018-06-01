@@ -35,7 +35,9 @@
 #include "lsst/afw/table.h"
 #include "lsst/pex/exceptions.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 /**
  *  Abstract base class for all C++ measurement transformations
@@ -82,25 +84,21 @@ namespace lsst { namespace meas { namespace base {
  */
 class BaseTransform {
 public:
-
-    explicit BaseTransform(std::string const & name) : _name(name) {}
+    explicit BaseTransform(std::string const& name) : _name(name) {}
     virtual ~BaseTransform() {}
-    virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
-                            afw::table::BaseCatalog & outputCatalog,
-                            afw::geom::SkyWcs const & wcs,
-                            afw::image::Calib const & calib) const = 0;
+    virtual void operator()(afw::table::SourceCatalog const& inputCatalog,
+                            afw::table::BaseCatalog& outputCatalog, afw::geom::SkyWcs const& wcs,
+                            afw::image::Calib const& calib) const = 0;
 
 protected:
-
     /**
-      *  @brief Ensure that catalogs have the same size.
-      *
-      *  @param[in]  cat1         Catalog for comparison
-      *  @param[in]  cat2         Catalog for comparison
-      *  @throws     LengthError  Catalog sizes do not match
-      */
-    void checkCatalogSize(afw::table::BaseCatalog const & cat1,
-                          afw::table::BaseCatalog const & cat2) const {
+     *  @brief Ensure that catalogs have the same size.
+     *
+     *  @param[in]  cat1         Catalog for comparison
+     *  @param[in]  cat2         Catalog for comparison
+     *  @throws     LengthError  Catalog sizes do not match
+     */
+    void checkCatalogSize(afw::table::BaseCatalog const& cat1, afw::table::BaseCatalog const& cat2) const {
         if (cat1.size() != cat2.size()) {
             throw LSST_EXCEPT(pex::exceptions::LengthError, "Catalog size mismatch");
         }
@@ -108,6 +106,8 @@ protected:
     std::string _name;
 };
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_Transform_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_Transform_h_INCLUDED

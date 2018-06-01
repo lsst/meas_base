@@ -33,14 +33,15 @@
 #include "lsst/meas/base/InputUtilities.h"
 #include "lsst/pex/config.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 class ScaledApertureFluxControl {
 public:
     LSST_CONTROL_FIELD(
-        shiftKernel, std::string,
-        "Warping kernel used to shift Sinc photometry coefficients to different center positions"
-    );
+            shiftKernel, std::string,
+            "Warping kernel used to shift Sinc photometry coefficients to different center positions");
     LSST_CONTROL_FIELD(scale, double, "Scaling factor of PSF FWHM for aperture radius.");
 
     // The default scaling factor is chosen such that scaled aperture
@@ -51,7 +52,6 @@ public:
     ScaledApertureFluxControl() : shiftKernel("lanczos5"), scale(3.14) {}
 };
 
-
 /**
  *  @brief Measure the flux in an aperture scaled to the PSF.
  *
@@ -61,12 +61,10 @@ public:
  */
 class ScaledApertureFluxAlgorithm : public SimpleAlgorithm {
 public:
-
     typedef ScaledApertureFluxControl Control;
     typedef ApertureFluxResult Result;
 
-    ScaledApertureFluxAlgorithm(Control const & control, std::string const & name,
-                                afw::table::Schema & schema);
+    ScaledApertureFluxAlgorithm(Control const& control, std::string const& name, afw::table::Schema& schema);
 
     /**
      *  Measure the scaled aperture flux on the given image.
@@ -76,12 +74,10 @@ public:
      *  @param[in,out] record      Record used to save outputs and retrieve positions.
      *  @param[in]     exposure    Image to be measured.
      */
-    virtual void measure(
-        afw::table::SourceRecord & measRecord,
-        afw::image::Exposure<float> const & exposure
-    ) const override;
+    virtual void measure(afw::table::SourceRecord& measRecord,
+                         afw::image::Exposure<float> const& exposure) const override;
 
-    virtual void fail(afw::table::SourceRecord & measRecord, MeasurementError * error=nullptr) const override;
+    virtual void fail(afw::table::SourceRecord& measRecord, MeasurementError* error = nullptr) const override;
 
 private:
     Control _ctrl;
@@ -93,10 +89,12 @@ private:
 class ScaledApertureFluxTransform : public FluxTransform {
 public:
     typedef ScaledApertureFluxControl Control;
-    ScaledApertureFluxTransform(Control const & ctrl, std::string const & name,
-                                afw::table::SchemaMapper & mapper);
+    ScaledApertureFluxTransform(Control const& ctrl, std::string const& name,
+                                afw::table::SchemaMapper& mapper);
 };
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_ScaledApertureFlux_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_ScaledApertureFlux_h_INCLUDED

@@ -31,22 +31,22 @@
 #include "lsst/afw/table/FunctorKey.h"
 #include "lsst/afw/table/Schema.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 /**
  *  @brief A reusable result struct for flux measurements.
  */
 struct FluxResult {
-    Flux flux; ///< Measured flux in DN.
-    FluxErrElement fluxSigma; ///< 1-Sigma error (sqrt of variance) on flux in DN.
+    Flux flux;                 ///< Measured flux in DN.
+    FluxErrElement fluxSigma;  ///< 1-Sigma error (sqrt of variance) on flux in DN.
 
     /// Default constructor; initializes everything to NaN.
     FluxResult();
 
     /// Constructor from flux and its uncertainty
-    explicit FluxResult(Flux flux_, FluxErrElement fluxSigma_) :
-        flux(flux_), fluxSigma(fluxSigma_)
-    {}
+    explicit FluxResult(Flux flux_, FluxErrElement fluxSigma_) : flux(flux_), fluxSigma(fluxSigma_) {}
 };
 
 /**
@@ -57,7 +57,6 @@ struct FluxResult {
  */
 class FluxResultKey : public afw::table::FunctorKey<FluxResult> {
 public:
-
     /**
      *  Add a pair of _flux, _fluxSigma fields to a Schema, and return a FluxResultKey that points to them.
      *
@@ -68,22 +67,16 @@ public:
      *
      *  The unit for both fields will be "count".
      */
-    static FluxResultKey addFields(
-        afw::table::Schema & schema,
-        std::string const & name,
-        std::string const & doc
-    );
+    static FluxResultKey addFields(afw::table::Schema& schema, std::string const& name,
+                                   std::string const& doc);
 
     /// Default constructor; instance will not be usuable unless subsequently assigned to.
     FluxResultKey() : _flux(), _fluxSigma() {}
 
     /// Construct from a pair of Keys
-    FluxResultKey(
-        afw::table::Key<meas::base::Flux> const & flux,  // namespace qualification to unconfuse swig
-        afw::table::Key<FluxErrElement> const & fluxSigma
-    ) :
-        _flux(flux), _fluxSigma(fluxSigma)
-    {}
+    FluxResultKey(afw::table::Key<meas::base::Flux> const& flux,  // namespace qualification to unconfuse swig
+                  afw::table::Key<FluxErrElement> const& fluxSigma)
+            : _flux(flux), _fluxSigma(fluxSigma) {}
 
     /**
      *  @brief Construct from a subschema, assuming flux and fluxSigma subfields
@@ -94,20 +87,20 @@ public:
      *  FluxResultKey k(schema["a"]);
      *  @endcode
      */
-    FluxResultKey(afw::table::SubSchema const & s) : _flux(s["flux"]), _fluxSigma(s["fluxSigma"]) {}
+    FluxResultKey(afw::table::SubSchema const& s) : _flux(s["flux"]), _fluxSigma(s["fluxSigma"]) {}
 
     /// Get a FluxResult from the given record
-    virtual FluxResult get(afw::table::BaseRecord const & record) const;
+    virtual FluxResult get(afw::table::BaseRecord const& record) const;
 
     /// Set a FluxResult in the given record
-    virtual void set(afw::table::BaseRecord & record, FluxResult const & other) const;
+    virtual void set(afw::table::BaseRecord& record, FluxResult const& other) const;
 
     //@{
     /// Compare the FunctorKey for equality with another, using the underlying flux and fluxSigma Keys
-    bool operator==(FluxResultKey const & other) const {
+    bool operator==(FluxResultKey const& other) const {
         return _flux == other._flux && _fluxSigma == other._fluxSigma;
     }
-    bool operator!=(FluxResultKey const & other) const { return !(*this == other); }
+    bool operator!=(FluxResultKey const& other) const { return !(*this == other); }
     //@}
 
     /// Return True if both the flux and fluxSigma Keys are valid.
@@ -147,10 +140,7 @@ public:
      *  @param[in]     name    Name prefix for all fields; "_mag", "_magErr" will be appended to this
      *                         to form the full field names.
      */
-    static MagResultKey addFields(
-        afw::table::Schema & schema,
-        std::string const & name
-    );
+    static MagResultKey addFields(afw::table::Schema& schema, std::string const& name);
 
     /// Default constructor; instance will not be usuable unless subsequently assigned to.
     MagResultKey() : _magKey(), _magErrKey() {}
@@ -163,16 +153,16 @@ public:
      *  MagResultKey k(schema["a"]);
      *  @endcode
      */
-    MagResultKey(afw::table::SubSchema const & s) : _magKey(s["mag"]), _magErrKey(s["magErr"]) {}
+    MagResultKey(afw::table::SubSchema const& s) : _magKey(s["mag"]), _magErrKey(s["magErr"]) {}
 
     /// Get a MagResult from the given record.
-    virtual MagResult get(afw::table::BaseRecord const & record) const;
+    virtual MagResult get(afw::table::BaseRecord const& record) const;
 
     /// Set a MagResult in the given record.
-    virtual void set(afw::table::BaseRecord & record, MagResult const & magResult) const;
+    virtual void set(afw::table::BaseRecord& record, MagResult const& magResult) const;
 
     /// Set a MagResult in the record given the result of `afw::image::Calib::getMagnitude(double, double)`.
-    virtual void set(afw::table::BaseRecord & record, std::pair<double,double> const & magPair) const;
+    virtual void set(afw::table::BaseRecord& record, std::pair<double, double> const& magPair) const;
 
 private:
     afw::table::Key<Mag> _magKey;
@@ -192,7 +182,7 @@ private:
  */
 class FluxTransform : public BaseTransform {
 public:
-    FluxTransform(std::string const & name, afw::table::SchemaMapper & mapper);
+    FluxTransform(std::string const& name, afw::table::SchemaMapper& mapper);
 
     /*
      * @brief Perform transformation from inputCatalog to outputCatalog.
@@ -203,10 +193,10 @@ public:
      * @param[in]     calib          Photometric calibration under which transformation will take place
      * @throws        LengthError    Catalog sizes do not match
      */
-    virtual void operator()(afw::table::SourceCatalog const & inputCatalog,
-                            afw::table::BaseCatalog & outputCatalog,
-                            afw::geom::SkyWcs const & wcs,
-                            afw::image::Calib const & calib) const;
+    virtual void operator()(afw::table::SourceCatalog const& inputCatalog,
+                            afw::table::BaseCatalog& outputCatalog, afw::geom::SkyWcs const& wcs,
+                            afw::image::Calib const& calib) const;
+
 private:
     MagResultKey _magKey;
 };
@@ -222,10 +212,13 @@ class NoThrowOnNegativeFluxContext {
 public:
     NoThrowOnNegativeFluxContext();
     ~NoThrowOnNegativeFluxContext();
+
 private:
     bool _throwOnNegative;
 };
 
-}}} // lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_FluxUtilities_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_FluxUtilities_h_INCLUDED

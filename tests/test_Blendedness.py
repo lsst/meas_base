@@ -23,6 +23,7 @@
 from contextlib import contextmanager
 import unittest
 
+import lsst.geom
 import lsst.daf.base
 import lsst.meas.base
 import lsst.utils.tests
@@ -50,13 +51,13 @@ def onlyLogFatal(log):
 class BlendednessTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
-        self.center = lsst.afw.geom.Point2D(50.1, 49.8)
-        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(1, 4),
-                                        lsst.afw.geom.Extent2I(110, 160))
+        self.center = lsst.geom.Point2D(50.1, 49.8)
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(1, 4),
+                                    lsst.geom.Extent2I(110, 160))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         with self.dataset.addBlend() as family:
-            family.addChild(flux=2E5, centroid=lsst.afw.geom.Point2D(47, 33))
-            family.addChild(flux=1.5E5, centroid=lsst.afw.geom.Point2D(53, 31))
+            family.addChild(flux=2E5, centroid=lsst.geom.Point2D(47, 33))
+            family.addChild(flux=1.5E5, centroid=lsst.geom.Point2D(53, 31))
 
     def tearDown(self):
         del self.center

@@ -29,28 +29,25 @@
 #include "lsst/afw/table/BaseRecord.h"
 #include "lsst/meas/base/exceptions.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 /**
  *  @brief Simple class used to define and document flags
  *         The name and doc constitute the identity of the FlagDefinition
  *         The number is used for indexing, but is assigned arbitrarily
-*/
+ */
 struct FlagDefinition {
-
     static constexpr std::size_t number_undefined = SIZE_MAX;
 
     FlagDefinition() : name(), doc(), number() {}
 
-    FlagDefinition(std::string const& name, std::string const& doc, std::size_t number=number_undefined)
+    FlagDefinition(std::string const& name, std::string const& doc, std::size_t number = number_undefined)
             : name(name), doc(doc), number(number) {}
 
     // equality of this type is based solely on the name attribute
-    bool operator==(FlagDefinition const & other) const {
-        return (other.name == name);
-    }
-    bool operator!=(FlagDefinition const & other) const {
-        return (other.name != name);
-    }
+    bool operator==(FlagDefinition const& other) const { return (other.name == name); }
+    bool operator!=(FlagDefinition const& other) const { return (other.name != name); }
 
     std::string name;
     std::string doc;
@@ -65,32 +62,29 @@ public:
     /**
      *  @brief initialize a FlagDefinition list with no entries.
      */
-    FlagDefinitionList() {
-    };
+    FlagDefinitionList(){};
 
     /**
      *  @brief initialize a FlagDefinition list from initializer_list.
      */
-    FlagDefinitionList(std::initializer_list<FlagDefinition> const & list) {
-        for (FlagDefinition const * iter = list.begin(); iter < list.end(); iter++) {
+    FlagDefinitionList(std::initializer_list<FlagDefinition> const& list) {
+        for (FlagDefinition const* iter = list.begin(); iter < list.end(); iter++) {
             add(iter->name, iter->doc);
         }
     }
 
-    static FlagDefinitionList const & getEmptyList() {
+    static FlagDefinitionList const& getEmptyList() {
         static FlagDefinitionList list;
         return list;
     }
     /**
      *  @brief get a reference to the FlagDefinition with specified index.
      */
-    FlagDefinition getDefinition(std::size_t index) const {
-        return _vector[index];
-    }
+    FlagDefinition getDefinition(std::size_t index) const { return _vector[index]; }
     /**
      *  @brief get a reference to the FlagDefinition with specified name.
      */
-    FlagDefinition getDefinition(std::string const & name) const {
+    FlagDefinition getDefinition(std::string const& name) const {
         for (std::size_t i = 0; i < size(); i++) {
             if (_vector[i].name == name) return _vector[i];
         }
@@ -99,13 +93,11 @@ public:
     /**
      *  @brief get a reference to the FlagDefinition with specified array index
      */
-    FlagDefinition operator[](std::size_t index) const {
-        return getDefinition(index);
-    }
+    FlagDefinition operator[](std::size_t index) const { return getDefinition(index); }
     /**
      *  @brief See if there is a FlagDefinition with specified name.
      */
-    bool hasDefinition(std::string const & name) const {
+    bool hasDefinition(std::string const& name) const {
         for (std::size_t i = 0; i < size(); i++) {
             if (_vector[i].name == name) return true;
         }
@@ -115,13 +107,13 @@ public:
      *  @brief Add a Flag Defintion to act as a "General" failure flag
      *  This flag will be set if a Measurement error is thrown
      */
-    FlagDefinition addFailureFlag(std::string const & doc="General Failure Flag");
+    FlagDefinition addFailureFlag(std::string const& doc = "General Failure Flag");
 
     /**
      *  @brief Add a new FlagDefinition to this list. Return a copy with the
      *  FlagDefinition.number set corresponding to its index in the list.
      */
-    FlagDefinition add(std::string const & name, std::string const & doc) {
+    FlagDefinition add(std::string const& name, std::string const& doc) {
         FlagDefinition flagDef = FlagDefinition(name, doc, _vector.size());
         _vector.push_back(flagDef);
         return _vector.back();
@@ -185,8 +177,8 @@ public:
 
     /**
      *  Define the universal name of the general failure flag
-    */
-    static std::string const & getFailureFlagName() {
+     */
+    static std::string const& getFailureFlagName() {
         static std::string name = "flag";
         return name;
     }
@@ -206,12 +198,9 @@ public:
      *  schema using the optional exclDefs parameter.  This can be specified using an initializer_list,
      *  as in: _flagHandler = FlagHandler::addFields(schema, prefix, flagDefs, {NO_PSF})
      */
-    static FlagHandler addFields(
-        afw::table::Schema & schema,
-        std::string const & prefix,
-        FlagDefinitionList const & flagDefs,
-        FlagDefinitionList const & exclDefs=FlagDefinitionList::getEmptyList()
-    );
+    static FlagHandler addFields(afw::table::Schema& schema, std::string const& prefix,
+                                 FlagDefinitionList const& flagDefs,
+                                 FlagDefinitionList const& exclDefs = FlagDefinitionList::getEmptyList());
     /**
      *  Construct a FlagHandler to manage fields already added to a schema.
      *
@@ -225,16 +214,13 @@ public:
      *
      *  As with addFields(), pointers must be valid only for the duration of this constructor call.
      */
-    FlagHandler(
-        afw::table::SubSchema const & s,
-        FlagDefinitionList const & flagDefs,
-        FlagDefinitionList const & exclDefs=FlagDefinitionList::getEmptyList()
-    );
+    FlagHandler(afw::table::SubSchema const& s, FlagDefinitionList const& flagDefs,
+                FlagDefinitionList const& exclDefs = FlagDefinitionList::getEmptyList());
     /**
      *  Return the index of a flag with the given flag name
-    */
-    unsigned int getFlagNumber(std::string const & flagName) const {
-        for (unsigned int i=0; i < _vector.size(); i++) {
+     */
+    unsigned int getFlagNumber(std::string const& flagName) const {
+        for (unsigned int i = 0; i < _vector.size(); i++) {
             if (_vector[i].first == flagName && _vector[i].second.isValid()) {
                 return i;
             }
@@ -253,7 +239,7 @@ public:
     /**
      *  Return the value of the flag field corresponding to the given flag index.
      */
-    bool getValue(afw::table::BaseRecord const & record, std::size_t i) const {
+    bool getValue(afw::table::BaseRecord const& record, std::size_t i) const {
         if (i < _vector.size() && _vector[i].second.isValid()) {
             return record.get(_vector[i].second);
         }
@@ -262,7 +248,7 @@ public:
     /**
      *  Return the value of the flag field with the given flag name
      */
-    bool getValue(afw::table::BaseRecord const & record, std::string const & flagName) const {
+    bool getValue(afw::table::BaseRecord const& record, std::string const& flagName) const {
         for (std::size_t i = 0; i < _vector.size(); i++) {
             if (_vector[i].first == flagName && _vector[i].second.isValid()) {
                 return record.get(_vector[i].second);
@@ -273,7 +259,7 @@ public:
     /**
      *  Set the flag field corresponding to the given flag index.
      */
-    void setValue(afw::table::BaseRecord & record, std::size_t i, bool value) const {
+    void setValue(afw::table::BaseRecord& record, std::size_t i, bool value) const {
         if (i < _vector.size() && _vector[i].second.isValid()) {
             record.set(_vector[i].second, value);
             return;
@@ -283,7 +269,7 @@ public:
     /**
      *  Set the flag field corresponding to the given flag name.
      */
-    void setValue(afw::table::BaseRecord & record, std::string const & flagName, bool value) const {
+    void setValue(afw::table::BaseRecord& record, std::string const& flagName, bool value) const {
         for (std::size_t i = 0; i < _vector.size(); i++) {
             if (_vector[i].first == flagName && _vector[i].second.isValid()) {
                 record.set(_vector[i].second, value);
@@ -295,11 +281,9 @@ public:
     /**
      *  Get the index of the General Failure flag, if one is defined.  This flag is defined
      *  by most algorithms, and if defined, is set whenever an error is caught by the FlagHandler.
-     *  If no General Failure flag is defined, this routine will return FlagDefinition::number_undefined 
+     *  If no General Failure flag is defined, this routine will return FlagDefinition::number_undefined
      */
-    std::size_t getFailureFlagNumber() const {
-        return failureFlagNumber;
-    }
+    std::size_t getFailureFlagNumber() const { return failureFlagNumber; }
     /**
      *  Handle an expected or unexpected Exception thrown by a measurement algorithm.
      *
@@ -308,15 +292,17 @@ public:
      *  the corresponding flag.  The general failure flag will be set regardless of whether the "error"
      *  argument is nullptr (which happens when an unexpected error occurs).
      */
-    void handleFailure(afw::table::BaseRecord & record, MeasurementError const * error=nullptr) const;
+    void handleFailure(afw::table::BaseRecord& record, MeasurementError const* error = nullptr) const;
 
     std::size_t failureFlagNumber;
-private:
 
-    typedef std::vector< std::pair<std::string, afw::table::Key<afw::table::Flag> > > Vector;
+private:
+    typedef std::vector<std::pair<std::string, afw::table::Key<afw::table::Flag> > > Vector;
     Vector _vector;
 };
 
-}}} // lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_FlagHandler_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_FlagHandler_h_INCLUDED

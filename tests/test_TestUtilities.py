@@ -23,6 +23,7 @@ import unittest
 
 import numpy as np
 
+import lsst.geom
 import lsst.afw.geom as afwGeom
 import lsst.utils.tests as utilsTests
 
@@ -34,9 +35,9 @@ class TestDatasetTestCase(utilsTests.TestCase):
 
     def setUp(self):
         # Construct an arbitrary WCS for testing.
-        crval = afwGeom.SpherePoint(45.0, 45.0, afwGeom.degrees)
-        scale = 0.2*afwGeom.arcseconds
-        crpix = afwGeom.PointD(100, 100)
+        crval = lsst.geom.SpherePoint(45.0, 45.0, lsst.geom.degrees)
+        scale = 0.2*lsst.geom.arcseconds
+        crpix = lsst.geom.PointD(100, 100)
         self.wcs = afwGeom.makeSkyWcs(crpix=crpix, crval=crval,
                                       cdMatrix=afwGeom.makeCdMatrix(scale=scale))
 

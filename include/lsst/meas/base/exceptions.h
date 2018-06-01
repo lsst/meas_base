@@ -26,9 +26,9 @@
 
 #include "lsst/pex/exceptions.h"
 
-namespace lsst { namespace meas { namespace base {
-
-
+namespace lsst {
+namespace meas {
+namespace base {
 
 /**
  *  @brief Exception to be thrown when a measurement algorithm experiences a known failure mode.
@@ -47,27 +47,20 @@ namespace lsst { namespace meas { namespace base {
  */
 class MeasurementError : public pex::exceptions::RuntimeError {
 public:
-
     /// Constructor; should only be invoked from Python macro
-    MeasurementError(std::string const & message, std::size_t flagBit) :
-        pex::exceptions::RuntimeError(message),
-        _flagBit(flagBit)
-    {}
+    MeasurementError(std::string const& message, std::size_t flagBit)
+            : pex::exceptions::RuntimeError(message), _flagBit(flagBit) {}
 
     /// Constructor; should only be invoked by the LSST_EXCEPT macro (see class docs)
-    MeasurementError(LSST_EARGS_TYPED, std::size_t flagBit) :
-        pex::exceptions::RuntimeError(LSST_EARGS_UNTYPED),
-        _flagBit(flagBit)
-    {}
+    MeasurementError(LSST_EARGS_TYPED, std::size_t flagBit)
+            : pex::exceptions::RuntimeError(LSST_EARGS_UNTYPED), _flagBit(flagBit) {}
 
     /// Return the flag bit associated with the error.
     std::size_t getFlagBit() const { return _flagBit; }
 
     virtual char const* getType(void) const throw() { return "lsst::meas::base::MeasurementError *"; };
 
-    virtual lsst::pex::exceptions::Exception* clone(void) const {
-        return new MeasurementError(*this);
-    };
+    virtual lsst::pex::exceptions::Exception* clone(void) const { return new MeasurementError(*this); };
 
 private:
     std::size_t _flagBit;
@@ -87,8 +80,9 @@ LSST_EXCEPTION_TYPE(FatalAlgorithmError, lsst::pex::exceptions::RuntimeError,
  *
  *  When caught by the plugin framework, this exception will generate a log message.
  */
-LSST_EXCEPTION_TYPE(PixelValueError, lsst::pex::exceptions::DomainError,
-                    lsst::meas::base::PixelValueError);
-}}} // lsst::meas::base
+LSST_EXCEPTION_TYPE(PixelValueError, lsst::pex::exceptions::DomainError, lsst::meas::base::PixelValueError);
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_exceptions_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_exceptions_h_INCLUDED

@@ -30,6 +30,7 @@ import numpy as np
 
 import lsst.pex.exceptions
 import lsst.daf.base as dafBase
+import lsst.geom
 import lsst.afw.detection as afwDetection
 import lsst.afw.math as afwMath
 import lsst.afw.geom as afwGeom
@@ -71,7 +72,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         pass
 
     def testCircularApertureMeasure(self):
-        mi = afwImage.MaskedImageF(afwGeom.ExtentI(100, 200))
+        mi = afwImage.MaskedImageF(lsst.geom.ExtentI(100, 200))
         mi.set(10)
         #
         # Create our measuring engine
@@ -84,7 +85,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
 
         exp = afwImage.makeExposure(mi)
         x0, y0 = 1234, 5678
-        exp.setXY0(afwGeom.Point2I(x0, y0))
+        exp.setXY0(lsst.geom.Point2I(x0, y0))
 
         plugin, cat = makePluginAndCat(measBase.CircularApertureFluxAlgorithm,
                                        "test", control, True, centroid="centroid")
@@ -101,7 +102,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
     def testPeakLikelihoodFlux(self):
         """Test measurement with PeakLikelihoodFlux."""
         # make and measure a series of exposures containing just one star, approximately centered
-        bbox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.Extent2I(100, 101))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(100, 101))
         kernelWidth = 35
         var = 100
         fwhm = 3.0
@@ -114,11 +115,11 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         psfSqArr = psfImage.getArray()**2
 
         for flux in (1000, 10000):
-            ctrInd = afwGeom.Point2I(50, 51)
-            ctrPos = afwGeom.Point2D(ctrInd)
+            ctrInd = lsst.geom.Point2I(50, 51)
+            ctrPos = lsst.geom.Point2D(ctrInd)
 
             kernelBBox = psfImage.getBBox()
-            kernelBBox.shift(afwGeom.Extent2I(ctrInd))
+            kernelBBox.shift(lsst.geom.Extent2I(ctrInd))
 
             # compute predicted flux error
             unshMImage = makeFakeImage(bbox, [ctrPos], [flux], fwhm, var)
@@ -145,9 +146,9 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
             unfiltPredFluxErr = math.sqrt(np.sum(varArr*psfSqArr)) / sumPsfSq
             self.assertLess(abs(unfiltPredFluxErr - predFluxErr), predFluxErr * 0.01)
 
-            for fracOffset in (afwGeom.Extent2D(0, 0), afwGeom.Extent2D(0.2, -0.3)):
+            for fracOffset in (lsst.geom.Extent2D(0, 0), lsst.geom.Extent2D(0.2, -0.3)):
                 adjCenter = ctrPos + fracOffset
-                if fracOffset == afwGeom.Extent2D(0, 0):
+                if fracOffset == lsst.geom.Extent2D(0, 0):
                     maskedImage = unshMImage
                     filteredImage = unshFiltMImage
                 else:
@@ -177,7 +178,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
                     for dy in (-0.2, 0, 0.2):
                         if dx == dy == 0:
                             continue
-                        offsetCtr = afwGeom.Point2D(adjCenter[0] + dx, adjCenter[1] + dy)
+                        offsetCtr = lsst.geom.Point2D(adjCenter[0] + dx, adjCenter[1] + dy)
                         source = cat.makeRecord()
                         source.set("centroid_x", offsetCtr.getX())
                         source.set("centroid_y", offsetCtr.getY())
@@ -224,9 +225,9 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         mask.set(40, 20, bad)
         mask.set(20, 80, nodata)
         mask.set(30, 30, clipped)
-        mask.Factory(mask, afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.Extent2I(3, height))).set(edge)
+        mask.Factory(mask, lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(3, height))).set(edge)
         x0, y0 = 1234, 5678
-        exp.setXY0(afwGeom.Point2I(x0, y0))
+        exp.setXY0(lsst.geom.Point2I(x0, y0))
         control = measBase.PixelFlagsControl()
         # Change the configuration of control to test for clipped mask
         control.masksFpAnywhere = ['CLIPPED']

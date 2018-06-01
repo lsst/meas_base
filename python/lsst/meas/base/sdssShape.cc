@@ -89,7 +89,7 @@ static void declareComputeMethods(PyShapeAlgorithm & cls) {
         "computeAdaptiveMoments",
         (SdssShapeResult (*)(
             ImageT const &,
-            afw::geom::Point2D const &,
+            geom::Point2D const &,
             bool,
             SdssShapeControl const &
         )) &SdssShapeAlgorithm::computeAdaptiveMoments,
@@ -100,7 +100,7 @@ static void declareComputeMethods(PyShapeAlgorithm & cls) {
         (FluxResult (*)(
             ImageT const &,
             afw::geom::ellipses::Quadrupole const &,
-            afw::geom::Point2D const &
+            geom::Point2D const &
         )) &SdssShapeAlgorithm::computeFixedMomentsFlux,
         "image"_a, "shape"_a, "position"_a
     );

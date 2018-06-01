@@ -34,7 +34,9 @@
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/meas/base/Algorithm.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 /**
  *  @brief A C++ control class to handle PixelFlagsAlgorithm's configuration
@@ -55,7 +57,6 @@ public:
     PixelFlagsControl() : masksFpCenter(), masksFpAnywhere() {}
 };
 
-
 /**
  *  @brief A measurement algorithm that gets mask bits from the exposure and sets flag bits to summarize which
  *         bits are set within a source's footprint.
@@ -66,17 +67,12 @@ public:
     /// The control object contains the configuration parameters for this algorithm.
     typedef PixelFlagsControl Control;
 
-    PixelFlagsAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema);
+    PixelFlagsAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema);
 
-    virtual void measure(
-        afw::table::SourceRecord & measRecord,
-        afw::image::Exposure<float> const & exposure
-    ) const;
+    virtual void measure(afw::table::SourceRecord& measRecord,
+                         afw::image::Exposure<float> const& exposure) const;
 
-    virtual void fail(
-        afw::table::SourceRecord & measRecord,
-        MeasurementError * error = nullptr
-    ) const;
+    virtual void fail(afw::table::SourceRecord& measRecord, MeasurementError* error = nullptr) const;
 
     typedef std::map<std::string, afw::table::Key<afw::table::Flag>> KeyMap;
 
@@ -88,6 +84,8 @@ private:
     afw::table::Key<afw::table::Flag> _offImageKey;
 };
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_PixelFlags_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_PixelFlags_h_INCLUDED

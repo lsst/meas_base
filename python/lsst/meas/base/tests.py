@@ -23,6 +23,7 @@
 
 import numpy as np
 
+import lsst.geom
 import lsst.afw.table
 import lsst.afw.image
 import lsst.afw.detection
@@ -62,7 +63,7 @@ class BlendContext:
         Add a child source to the blend, and return the truth catalog record that corresponds to it.
 
         @param[in]  flux      Total flux of the source to be added.
-        @param[in]  centroid  Position of the source to be added (lsst.afw.geom.Point2D).
+        @param[in]  centroid  Position of the source to be added (lsst.geom.Point2D).
         @param[in]  shape     2nd moments of the source before PSF convolution
                               (lsst.afw.geom.Quadrupole).  Note that the truth catalog
                               records post-convolution moments)
@@ -92,7 +93,7 @@ class BlendContext:
             w = record.get(self.owner.keys["flux"])/flux
             x += record.get(self.owner.keys["centroid"].getX())*w
             y += record.get(self.owner.keys["centroid"].getY())*w
-        self.parentRecord.set(self.owner.keys["centroid"], lsst.afw.geom.Point2D(x, y))
+        self.parentRecord.set(self.owner.keys["centroid"], lsst.geom.Point2D(x, y))
         # Compute shape from flux-weighted mean of offset component shapes
         xx = 0.0
         yy = 0.0
@@ -127,14 +128,14 @@ class TestDataset:
 
     Typical usage:
     @code
-    bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0,0), lsst.afw.geom.Point2I(100, 100))
+    bbox = lsst.geom.Box2I(lsst.geom.Point2I(0,0), lsst.geom.Point2I(100, 100))
     dataset = TestDataset(bbox)
-    dataset.addSource(flux=1E5, centroid=lsst.afw.geom.Point2D(25, 26))
-    dataset.addSource(flux=2E5, centroid=lsst.afw.geom.Point2D(75, 24),
+    dataset.addSource(flux=1E5, centroid=lsst.geom.Point2D(25, 26))
+    dataset.addSource(flux=2E5, centroid=lsst.geom.Point2D(75, 24),
                       shape=lsst.afw.geom.Quadrupole(8, 7, 2))
     with dataset.addBlend() as family:
-        family.addChild(flux=2E5, centroid=lsst.afw.geom.Point2D(50, 72))
-        family.addChild(flux=1.5E5, centroid=lsst.afw.geom.Point2D(51, 74))
+        family.addChild(flux=2E5, centroid=lsst.geom.Point2D(50, 72))
+        family.addChild(flux=1.5E5, centroid=lsst.geom.Point2D(51, 74))
     exposure, catalog = dataset.realize(noise=100.0, schema=TestDataset.makeMinimalSchema())
     @endcode
     """
@@ -200,13 +201,13 @@ class TestDataset:
         """
         random_state = np.random.RandomState(randomSeed)
         if minRotation is None:
-            minRotation = 30.0*lsst.afw.geom.degrees
+            minRotation = 30.0*lsst.geom.degrees
         if maxRotation is None:
-            maxRotation = 60.0*lsst.afw.geom.degrees
+            maxRotation = 60.0*lsst.geom.degrees
         if minRefShift is None:
-            minRefShift = 0.5*lsst.afw.geom.arcseconds
+            minRefShift = 0.5*lsst.geom.arcseconds
         if maxRefShift is None:
-            maxRefShift = 1.0*lsst.afw.geom.arcseconds
+            maxRefShift = 1.0*lsst.geom.arcseconds
 
         def splitRandom(min1, max1, min2=None, max2=None):
             if min2 is None:
@@ -219,25 +220,25 @@ class TestDataset:
                 return float(random_state.uniform(min2, max2))
         # Generate random perturbations
         scaleFactor = splitRandom(minScaleFactor, maxScaleFactor, 1.0/maxScaleFactor, 1.0/minScaleFactor)
-        rotation = splitRandom(minRotation.asRadians(), maxRotation.asRadians())*lsst.afw.geom.radians
-        refShiftRa = splitRandom(minRefShift.asRadians(), maxRefShift.asRadians())*lsst.afw.geom.radians
-        refShiftDec = splitRandom(minRefShift.asRadians(), maxRefShift.asRadians())*lsst.afw.geom.radians
+        rotation = splitRandom(minRotation.asRadians(), maxRotation.asRadians())*lsst.geom.radians
+        refShiftRa = splitRandom(minRefShift.asRadians(), maxRefShift.asRadians())*lsst.geom.radians
+        refShiftDec = splitRandom(minRefShift.asRadians(), maxRefShift.asRadians())*lsst.geom.radians
         pixShiftX = splitRandom(minPixShift, maxPixShift)
         pixShiftY = splitRandom(minPixShift, maxPixShift)
         # Compute new CD matrix
-        oldTransform = lsst.afw.geom.LinearTransform(oldWcs.getCdMatrix())
-        rTransform = lsst.afw.geom.LinearTransform.makeRotation(rotation)
-        sTransform = lsst.afw.geom.LinearTransform.makeScaling(scaleFactor)
+        oldTransform = lsst.geom.LinearTransform(oldWcs.getCdMatrix())
+        rTransform = lsst.geom.LinearTransform.makeRotation(rotation)
+        sTransform = lsst.geom.LinearTransform.makeScaling(scaleFactor)
         newTransform = oldTransform*rTransform*sTransform
         matrix = newTransform.getMatrix()
         # Compute new coordinate reference pixel (CRVAL)
         oldSkyOrigin = oldWcs.getSkyOrigin()
-        newSkyOrigin = lsst.afw.geom.SpherePoint(oldSkyOrigin.getRa() + refShiftRa,
-                                                 oldSkyOrigin.getDec() + refShiftDec)
+        newSkyOrigin = lsst.geom.SpherePoint(oldSkyOrigin.getRa() + refShiftRa,
+                                             oldSkyOrigin.getDec() + refShiftDec)
         # Compute new pixel reference pixel (CRPIX)
         oldPixOrigin = oldWcs.getPixelOrigin()
-        newPixOrigin = lsst.afw.geom.Point2D(oldPixOrigin.getX() + pixShiftX,
-                                             oldPixOrigin.getY() + pixShiftY)
+        newPixOrigin = lsst.geom.Point2D(oldPixOrigin.getX() + pixShiftX,
+                                         oldPixOrigin.getY() + pixShiftY)
         return lsst.afw.geom.makeSkyWcs(crpix=newPixOrigin, crval=newSkyOrigin, cdMatrix=matrix)
 
     @staticmethod
@@ -255,10 +256,10 @@ class TestDataset:
         """
         if wcs is None:
             if crval is None:
-                crval = lsst.afw.geom.SpherePoint(45.0, 45.0, lsst.afw.geom.degrees)
+                crval = lsst.geom.SpherePoint(45.0, 45.0, lsst.geom.degrees)
             if cdelt is None:
-                cdelt = 0.2*lsst.afw.geom.arcseconds
-            crpix = lsst.afw.geom.Box2D(bbox).getCenter()
+                cdelt = 0.2*lsst.geom.arcseconds
+            crpix = lsst.geom.Box2D(bbox).getCenter()
             wcs = lsst.afw.geom.makeSkyWcs(crpix=crpix, crval=crval,
                                            cdMatrix=lsst.afw.geom.makeCdMatrix(scale=cdelt))
         exposure = lsst.afw.image.ExposureF(bbox)
@@ -332,7 +333,7 @@ class TestDataset:
         Add a source to the simulation
 
         @param[in]  flux      Total flux of the source to be added.
-        @param[in]  centroid  Position of the source to be added (lsst.afw.geom.Point2D).
+        @param[in]  centroid  Position of the source to be added (lsst.geom.Point2D).
         @param[in]  shape     2nd moments of the source before PSF convolution
                               (lsst.afw.geom.Quadrupole).  Note that the truth catalog
                               records post-convolution moments).  If None, a point source
@@ -390,11 +391,11 @@ class TestDataset:
                              specified, these revert to the defaults for makeEmptyExposure, not the
                              values in the current dataset.
         """
-        bboxD = lsst.afw.geom.Box2D()
+        bboxD = lsst.geom.Box2D()
         xyt = lsst.afw.geom.makeWcsPairTransform(self.exposure.getWcs(), wcs)
-        for corner in lsst.afw.geom.Box2D(self.exposure.getBBox()).getCorners():
-            bboxD.include(xyt.applyForward(lsst.afw.geom.Point2D(corner)))
-        bboxI = lsst.afw.geom.Box2I(bboxD)
+        for corner in lsst.geom.Box2D(self.exposure.getBBox()).getCorners():
+            bboxD.include(xyt.applyForward(lsst.geom.Point2D(corner)))
+        bboxI = lsst.geom.Box2I(bboxD)
         result = TestDataset(bbox=bboxI, wcs=wcs, **kwds)
         oldCalib = self.exposure.getCalib()
         newCalib = result.exposure.getCalib()
@@ -577,7 +578,7 @@ class TransformTestCase:
     forcedPlugins = ()
 
     def setUp(self):
-        bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0), lsst.afw.geom.Point2I(200, 200))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(200, 200))
         self.calexp = TestDataset.makeEmptyExposure(bbox)
         self._setupTransform()
 
@@ -744,7 +745,7 @@ class CentroidTransformTestCase(TransformTestCase):
         except lsst.pex.exceptions.NotFoundError:
             self.assertFalse(centroidResultKey.getCentroidErr().isValid())
         else:
-            transform = self.calexp.getWcs().linearizePixelToSky(coordTruth, lsst.afw.geom.radians)
+            transform = self.calexp.getWcs().linearizePixelToSky(coordTruth, lsst.geom.radians)
             coordErrTruth = np.dot(np.dot(transform.getLinear().getMatrix(),
                                           centroidResult.getCentroidErr()),
                                    transform.getLinear().getMatrix().transpose())

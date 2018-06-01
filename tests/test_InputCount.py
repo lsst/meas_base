@@ -30,6 +30,7 @@ from collections import namedtuple
 import unittest
 import lsst.utils.tests
 
+import lsst.geom
 import lsst.afw.detection as afwDetection
 import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
@@ -67,7 +68,7 @@ def ccdVennDiagram(exp, showImage=True, legendLocation='best'):
     # Filter out a black solid box, as that will be the style of the given exp object
     pcomb = pcomb[((pcomb[:, 0] == 'k') * (pcomb[:, 1] == 'solid')) is False]
     # Get the image properties
-    origin = afwGeom.PointD(exp.getXY0())
+    origin = lsst.geom.PointD(exp.getXY0())
     mainBox = exp.getBBox().getCorners()
     # Plot the exposure
     plt.gca().add_patch(patches.Rectangle((0, 0), *list(mainBox[2]-mainBox[0]), fill=False, label="exposure"))
@@ -75,10 +76,10 @@ def ccdVennDiagram(exp, showImage=True, legendLocation='best'):
     ccds = exp.getInfo().getCoaddInputs().ccds
     # Loop over and plot the extents of each ccd
     for i, ccd in enumerate(ccds):
-        ccdBox = afwGeom.Box2D(ccd.getBBox())
+        ccdBox = lsst.geom.Box2D(ccd.getBBox())
         ccdCorners = ccdBox.getCorners()
         coaddCorners = [exp.getWcs().skyToPixel(ccd.getWcs().pixelToSky(point)) +
-                        (afwGeom.PointD() - origin) for point in ccdCorners]
+                        (lsst.geom.PointD() - origin) for point in ccdCorners]
         plt.gca().add_patch(patches.Rectangle(coaddCorners[0], *list(coaddCorners[2]-coaddCorners[0]),
                                               fill=False, color=pcomb[i][0], ls=pcomb[i][1],
                                               label="CCD{}".format(i)))
@@ -110,29 +111,29 @@ class InputCountTest(lsst.utils.tests.TestCase):
         value = 100.0  # Source flux
 
         ccdPositions = [
-            afwGeom.Point2D(8, 0),
-            afwGeom.Point2D(10, 10),
-            afwGeom.Point2D(-8, -8),
-            afwGeom.Point2D(-8, 8)
+            lsst.geom.Point2D(8, 0),
+            lsst.geom.Point2D(10, 10),
+            lsst.geom.Point2D(-8, -8),
+            lsst.geom.Point2D(-8, 8)
         ]
 
         # Represent sources by a tuple of position and expected number of
         # contributing CCDs (based on the size/positions given above).
         Source = namedtuple("Source", ["pos", "count"])
         sources = [
-            Source(pos=afwGeom.Point2D(6, 6), count=2),
-            Source(pos=afwGeom.Point2D(10, 10), count=3),
-            Source(pos=afwGeom.Point2D(14, 14), count=1)
+            Source(pos=lsst.geom.Point2D(6, 6), count=2),
+            Source(pos=lsst.geom.Point2D(10, 10), count=3),
+            Source(pos=lsst.geom.Point2D(14, 14), count=1)
         ]
 
         # These lines are used in the creation of WCS information
-        scale = 1.0e-5 * afwGeom.degrees
+        scale = 1.0e-5 * lsst.geom.degrees
         cdMatrix = afwGeom.makeCdMatrix(scale=scale)
-        crval = afwGeom.SpherePoint(0.0, 0.0, afwGeom.degrees)
+        crval = lsst.geom.SpherePoint(0.0, 0.0, lsst.geom.degrees)
 
         # Construct the info needed to set the exposure object
-        imageBox = afwGeom.Box2I(afwGeom.Point2I(0, 0), afwGeom.Extent2I(size, size))
-        wcsRef = afwGeom.makeSkyWcs(crpix=afwGeom.Point2D(0, 0), crval=crval, cdMatrix=cdMatrix)
+        imageBox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(size, size))
+        wcsRef = afwGeom.makeSkyWcs(crpix=lsst.geom.Point2D(0, 0), crval=crval, cdMatrix=cdMatrix)
 
         # Create the exposure object, and set it up to be the output of a coadd
         exp = afwImage.ExposureF(size, size)
@@ -147,7 +148,7 @@ class InputCountTest(lsst.utils.tests.TestCase):
             record = ccds.addNew()
             record.setWcs(afwGeom.makeSkyWcs(crpix=pos, crval=crval, cdMatrix=cdMatrix))
             record.setBBox(imageBox)
-            record.setValidPolygon(afwGeom.Polygon(afwGeom.Box2D(imageBox)))
+            record.setValidPolygon(afwGeom.Polygon(lsst.geom.Box2D(imageBox)))
 
         # Configure a SingleFrameMeasurementTask to run InputCounts.
         measureSourcesConfig = measBase.SingleFrameMeasurementConfig()
@@ -194,9 +195,9 @@ class InputCountTest(lsst.utils.tests.TestCase):
         @returns   tuple of (initialized plugin, empty catalog, synthetic exposure)
         """
         exp = afwImage.ExposureF(20, 20)
-        scale = 1.0e-5*afwGeom.degrees
-        wcs = afwGeom.makeSkyWcs(crpix=afwGeom.Point2D(0, 0),
-                                 crval=afwGeom.SpherePoint(0.0, 0.0, afwGeom.degrees),
+        scale = 1.0e-5*lsst.geom.degrees
+        wcs = afwGeom.makeSkyWcs(crpix=lsst.geom.Point2D(0, 0),
+                                 crval=lsst.geom.SpherePoint(0.0, 0.0, lsst.geom.degrees),
                                  cdMatrix=afwGeom.makeCdMatrix(scale=scale))
         exp.setWcs(wcs)
         if addCoaddInputs:
@@ -206,7 +207,7 @@ class InputCountTest(lsst.utils.tests.TestCase):
             record = ccds.addNew()
             record.setWcs(wcs)
             record.setBBox(exp.getBBox())
-            record.setValidPolygon(afwGeom.Polygon(afwGeom.Box2D(exp.getBBox())))
+            record.setValidPolygon(afwGeom.Polygon(lsst.geom.Box2D(exp.getBBox())))
 
         schema = afwTable.SourceTable.makeMinimalSchema()
         measBase.SingleFramePeakCentroidPlugin(measBase.SingleFramePeakCentroidConfig(),

@@ -24,7 +24,7 @@ import unittest
 
 import numpy as np
 
-import lsst.afw.geom
+import lsst.geom
 import lsst.afw.image
 import lsst.afw.table
 import lsst.utils.tests
@@ -36,9 +36,9 @@ from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
 class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
-        self.center = lsst.afw.geom.Point2D(50.1, 49.8)
-        self.bbox = lsst.afw.geom.Box2I(lsst.afw.geom.Point2I(0, 0),
-                                        lsst.afw.geom.Extent2I(100, 100))
+        self.center = lsst.geom.Point2D(50.1, 49.8)
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
+                                    lsst.geom.Extent2I(100, 100))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(100000.0, self.center)
 
@@ -60,7 +60,7 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         # Results are RNG dependent; we choose a seed that is known to pass.
         exposure, catalog = self.dataset.realize(10.0, schema, randomSeed=0)
         record = catalog[0]
-        badPoint = lsst.afw.geom.Point2I(self.center) + lsst.afw.geom.Extent2I(3, 4)
+        badPoint = lsst.geom.Point2I(self.center) + lsst.geom.Extent2I(3, 4)
         imageArray = exposure.getMaskedImage().getImage().getArray()
         maskArray = exposure.getMaskedImage().getMask().getArray()
         badMask = exposure.getMaskedImage().getMask().getPlaneBitMask("BAD")

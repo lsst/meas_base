@@ -31,7 +31,9 @@
 #include "lsst/meas/base/InputUtilities.h"
 #include "lsst/meas/base/Transform.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 /**
  *  @brief A C++ control class to handle PsfFluxAlgorithm's configuration
@@ -45,7 +47,6 @@ namespace lsst { namespace meas { namespace base {
  */
 class PsfFluxControl {
 public:
-
     LSST_CONTROL_FIELD(badMaskPlanes, std::vector<std::string>,
                        "Mask planes that indicate pixels that should be excluded from the fit");
 
@@ -67,9 +68,8 @@ public:
  */
 class PsfFluxAlgorithm : public SimpleAlgorithm {
 public:
-
     // Structures and routines to manage flaghandler
-    static FlagDefinitionList const & getFlagDefinitions();
+    static FlagDefinitionList const& getFlagDefinitions();
     static FlagDefinition const FAILURE;
     static FlagDefinition const NO_GOOD_PIXELS;
     static FlagDefinition const EDGE;
@@ -78,21 +78,15 @@ public:
     /// The control object contains the configuration parameters for this algorithm.
     typedef PsfFluxControl Control;
 
-    PsfFluxAlgorithm(Control const & ctrl, std::string const & name, afw::table::Schema & schema,
-                     std::string const & logName = "");
+    PsfFluxAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema,
+                     std::string const& logName = "");
 
-    virtual void measure(
-        afw::table::SourceRecord & measRecord,
-        afw::image::Exposure<float> const & exposure
-    ) const;
+    virtual void measure(afw::table::SourceRecord& measRecord,
+                         afw::image::Exposure<float> const& exposure) const;
 
-    virtual void fail(
-        afw::table::SourceRecord & measRecord,
-        MeasurementError * error=nullptr
-    ) const;
+    virtual void fail(afw::table::SourceRecord& measRecord, MeasurementError* error = nullptr) const;
 
 private:
-
     Control _ctrl;
     FluxResultKey _fluxResultKey;
     afw::table::Key<float> _areaKey;
@@ -103,9 +97,11 @@ private:
 class PsfFluxTransform : public FluxTransform {
 public:
     typedef PsfFluxControl Control;
-    PsfFluxTransform(Control const & ctrl, std::string const & name, afw::table::SchemaMapper & mapper);
+    PsfFluxTransform(Control const& ctrl, std::string const& name, afw::table::SchemaMapper& mapper);
 };
 
-}}} // namespace lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_PsfFlux_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_PsfFlux_h_INCLUDED

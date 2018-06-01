@@ -50,5 +50,4 @@
 #include "lsst/afw/detection.h"
 #include "lsst/afw/math.h"
 
-
-#endif // !LSST_MEAS_base_h_INCLUDED
+#endif  // !LSST_MEAS_base_h_INCLUDED

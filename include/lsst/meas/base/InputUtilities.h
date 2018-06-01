@@ -24,11 +24,13 @@
 #ifndef LSST_MEAS_BASE_InputUtilities_h_INCLUDED
 #define LSST_MEAS_BASE_InputUtilities_h_INCLUDED
 
-#include "lsst/afw/geom/Point.h"
+#include "lsst/geom/Point.h"
 #include "lsst/afw/geom/ellipses/Quadrupole.h"
 #include "lsst/meas/base/FlagHandler.h"
 
-namespace lsst { namespace meas { namespace base {
+namespace lsst {
+namespace meas {
+namespace base {
 
 /**
  *  Utility class for measurement algorithms that extracts a position from the Centroid slot and handles
@@ -36,7 +38,6 @@ namespace lsst { namespace meas { namespace base {
  */
 class SafeCentroidExtractor {
 public:
-
     /**
      *  Construct the extractor, creating a flag alias that indicates failure in the input centroid
      *  by linking to the slot centroid flag.
@@ -52,7 +53,7 @@ public:
      *                              failed will not cause the general failure flag of the current
      *                              algorithm to be set.
      */
-    SafeCentroidExtractor(afw::table::Schema & schema, std::string const & name, bool isCentroider=false);
+    SafeCentroidExtractor(afw::table::Schema& schema, std::string const& name, bool isCentroider = false);
 
     /**
      *  Extract a position from the given record.
@@ -75,10 +76,7 @@ public:
      *  algorithm's general failure flag, but return the position as well, allowing it to continue while
      *  indicating that the result may not be reliable.
      */
-    afw::geom::Point2D operator()(
-        afw::table::SourceRecord & record,
-        FlagHandler const & flags
-    ) const;
+    geom::Point2D operator()(afw::table::SourceRecord& record, FlagHandler const& flags) const;
 
 private:
     std::string _name;
@@ -91,7 +89,6 @@ private:
  */
 class SafeShapeExtractor {
 public:
-
     /**
      *  Construct the extractor, creating a flag alias that indicates failure in the input centroid
      *  by linking to the slot shape flag.
@@ -101,7 +98,7 @@ public:
      *  @param[in]  name     The name of the algorithm; the flag alias added will be
      *                       "<name>_flag_badShape".
      */
-    SafeShapeExtractor(afw::table::Schema & schema, std::string const & name);
+    SafeShapeExtractor(afw::table::Schema& schema, std::string const& name);
 
     /**
      *  Extract a shape from the given record.
@@ -121,15 +118,15 @@ public:
      *  indicating that the result may not be reliable.  A singular ellipse (i.e. one with a non-positive
      *  quadrupole matrix determinant) is treated the same as a NaN ellipse; it is not considered usable.
      */
-    afw::geom::ellipses::Quadrupole operator()(
-        afw::table::SourceRecord & record,
-        FlagHandler const & flags
-    ) const;
+    afw::geom::ellipses::Quadrupole operator()(afw::table::SourceRecord& record,
+                                               FlagHandler const& flags) const;
 
 private:
     std::string _name;
 };
 
-}}} // lsst::meas::base
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
 
-#endif // !LSST_MEAS_BASE_InputUtilities_h_INCLUDED
+#endif  // !LSST_MEAS_BASE_InputUtilities_h_INCLUDED
