@@ -93,7 +93,6 @@ void PsfFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
         throw LSST_EXCEPT(MeasurementError, NO_GOOD_PIXELS.doc, NO_GOOD_PIXELS.number);
     }
     typedef afw::detection::Psf::Pixel PsfPixel;
-    typedef afw::image::MaskedImage<float>::Variance::Pixel VarPixel;
     auto model = fitRegion.getSpans()
                          ->flatten(psfImage->getArray(), psfImage->getXY0())
                          .asEigen<Eigen::ArrayXpr>();
