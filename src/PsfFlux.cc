@@ -93,15 +93,16 @@ void PsfFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
         throw LSST_EXCEPT(MeasurementError, NO_GOOD_PIXELS.doc, NO_GOOD_PIXELS.number);
     }
     typedef afw::detection::Psf::Pixel PsfPixel;
-    auto model = fitRegion.getSpans()
-                         ->flatten(psfImage->getArray(), psfImage->getXY0())
-                         .asEigen<Eigen::ArrayXpr>();
-    auto data = fitRegion.getSpans()
-                        ->flatten(exposure.getMaskedImage().getImage()->getArray(), exposure.getXY0())
-                        .asEigen<Eigen::ArrayXpr>();
-    auto variance = fitRegion.getSpans()
-                            ->flatten(exposure.getMaskedImage().getVariance()->getArray(), exposure.getXY0())
-                            .asEigen<Eigen::ArrayXpr>();
+    // SpanSet::flatten returns a new ndarray::Array, which must stay in scope
+    // while we use an Eigen::Map view of it
+    auto modelNd = fitRegion.getSpans()->flatten(psfImage->getArray(), psfImage->getXY0());
+    auto dataNd = fitRegion.getSpans()->flatten(exposure.getMaskedImage().getImage()->getArray(),
+                                                exposure.getXY0());
+    auto varianceNd = fitRegion.getSpans()->flatten(exposure.getMaskedImage().getVariance()->getArray(),
+                                                    exposure.getXY0());
+    auto model = ndarray::asEigenArray(modelNd);
+    auto data = ndarray::asEigenArray(dataNd);
+    auto variance = ndarray::asEigenArray(varianceNd);
     PsfPixel alpha = model.matrix().squaredNorm();
     FluxResult result;
     result.flux = model.matrix().dot(data.matrix().cast<PsfPixel>()) / alpha;
