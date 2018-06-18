@@ -93,22 +93,23 @@ void PsfFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
         throw LSST_EXCEPT(MeasurementError, NO_GOOD_PIXELS.doc, NO_GOOD_PIXELS.number);
     }
     typedef afw::detection::Psf::Pixel PsfPixel;
-    auto model = fitRegion.getSpans()
-                         ->flatten(psfImage->getArray(), psfImage->getXY0())
-                         .asEigen<Eigen::ArrayXpr>();
-    auto data = fitRegion.getSpans()
-                        ->flatten(exposure.getMaskedImage().getImage()->getArray(), exposure.getXY0())
-                        .asEigen<Eigen::ArrayXpr>();
-    auto variance = fitRegion.getSpans()
-                            ->flatten(exposure.getMaskedImage().getVariance()->getArray(), exposure.getXY0())
-                            .asEigen<Eigen::ArrayXpr>();
-    PsfPixel alpha = model.matrix().squaredNorm();
+    // SpanSet::flatten returns a new ndarray::Array, which must stay in scope
+    // while we use an Eigen::Map view of it
+    auto modelNdArray = fitRegion.getSpans()->flatten(psfImage->getArray(), psfImage->getXY0());
+    auto dataNdArray = fitRegion.getSpans()->flatten(exposure.getMaskedImage().getImage()->getArray(),
+                                                     exposure.getXY0());
+    auto varianceNdArray = fitRegion.getSpans()->flatten(exposure.getMaskedImage().getVariance()->getArray(),
+                                                         exposure.getXY0());
+    auto model = ndarray::asEigenMatrix(modelNdArray);
+    auto data = ndarray::asEigenMatrix(dataNdArray);
+    auto variance = ndarray::asEigenMatrix(varianceNdArray);
+    PsfPixel alpha = model.squaredNorm();
     FluxResult result;
-    result.flux = model.matrix().dot(data.matrix().cast<PsfPixel>()) / alpha;
+    result.flux = model.dot(data.cast<PsfPixel>()) / alpha;
     // If we're not using per-pixel weights to compute the flux, we'll still want to compute the
-    // variance as if we had, so we'll apply the weights to the model vector now, and update alpha.
-    result.fluxSigma = std::sqrt(model.square().matrix().dot(variance.matrix().cast<PsfPixel>())) / alpha;
-    measRecord.set(_areaKey, model.matrix().sum() / alpha);
+    // variance as if we had, so we'll apply the weights to the model now, and update alpha.
+    result.fluxSigma = std::sqrt(model.array().square().matrix().dot(variance.cast<PsfPixel>())) / alpha;
+    measRecord.set(_areaKey, model.sum() / alpha);
     if (!std::isfinite(result.flux) || !std::isfinite(result.fluxSigma)) {
         throw LSST_EXCEPT(PixelValueError, "Invalid pixel value detected in image.");
     }
