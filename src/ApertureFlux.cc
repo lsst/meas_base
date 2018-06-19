@@ -147,9 +147,8 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux(
     CONST_PTR(afw::image::Image<T>) cImage = getSincCoeffs<T>(image.getBBox(), ellipse, result, ctrl);
     if (result.getFlag(APERTURE_TRUNCATED.number)) return result;
     afw::image::Image<T> subImage(image, cImage->getBBox());
-    result.flux = (subImage.getArray().template asEigen<Eigen::ArrayXpr>() *
-                   cImage->getArray().template asEigen<Eigen::ArrayXpr>())
-                          .sum();
+    result.flux =
+            (ndarray::asEigenArray(subImage.getArray()) * ndarray::asEigenArray(cImage->getArray())).sum();
     return result;
 }
 
@@ -161,13 +160,13 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux(
     CONST_PTR(afw::image::Image<T>) cImage = getSincCoeffs<T>(image.getBBox(), ellipse, result, ctrl);
     if (result.getFlag(APERTURE_TRUNCATED.number)) return result;
     afw::image::MaskedImage<T> subImage(image, cImage->getBBox(afw::image::PARENT), afw::image::PARENT);
-    result.flux = (subImage.getImage()->getArray().template asEigen<Eigen::ArrayXpr>() *
-                   cImage->getArray().template asEigen<Eigen::ArrayXpr>())
+    result.flux = (ndarray::asEigenArray(subImage.getImage()->getArray()) *
+                   ndarray::asEigenArray(cImage->getArray()))
                           .sum();
-    result.fluxSigma = std::sqrt(
-            (subImage.getVariance()->getArray().template asEigen<Eigen::ArrayXpr>().template cast<T>() *
-             cImage->getArray().template asEigen<Eigen::ArrayXpr>().square())
-                    .sum());
+    result.fluxSigma =
+            std::sqrt((ndarray::asEigenArray(subImage.getVariance()->getArray()).template cast<T>() *
+                       ndarray::asEigenArray(cImage->getArray()).square())
+                              .sum());
     return result;
 }
 
