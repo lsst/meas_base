@@ -53,15 +53,15 @@ def rebuildNoiseReplacer(exposure, measCat):
     algMetadata = measCat.getMetadata()
     noiseReplacerConf = NoiseReplacerConfig()
     noiseReplacerConf.noiseSeedMultiplier = \
-        algMetadata.get(SFMT.NOISE_SEED_MULTIPLIER)
-    noiseReplacerConf.noiseSource = algMetadata.get(SFMT.NOISE_SOURCE)
-    noiseReplacerConf.noiseOffset = algMetadata.get(SFMT.NOISE_OFFSET)
+        algMetadata.getScalar(SFMT.NOISE_SEED_MULTIPLIER)
+    noiseReplacerConf.noiseSource = algMetadata.getScalar(SFMT.NOISE_SOURCE)
+    noiseReplacerConf.noiseOffset = algMetadata.getScalar(SFMT.NOISE_OFFSET)
 
     footprints = {src.getId(): (src.getParent(), src.getFootprint())
                   for src in measCat}
 
     try:
-        exposureId = algMetadata.get(SFMT.NOISE_EXPOSURE_ID)
+        exposureId = algMetadata.getScalar(SFMT.NOISE_EXPOSURE_ID)
     except Exception:
         exposureId = None
 
