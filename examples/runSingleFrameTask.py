@@ -27,11 +27,12 @@ import sys
 
 import numpy as np
 
-from lsst.utils import getProductDir
+from lsst.utils import getPackageDir
 import lsst.afw.table as afwTable
 import lsst.afw.image as afwImage
 import lsst.afw.display.ds9 as ds9
 import lsst.meas.algorithms as measAlg
+import lsst.pex.exceptions as pexExcept
 from lsst.meas.algorithms.detection import SourceDetectionTask
 from lsst.meas.base import SingleFrameMeasurementTask
 
@@ -40,8 +41,9 @@ def loadData():
     """Prepare the data we need to run the example"""
 
     # Load sample input from disk
-    mypath = getProductDir("afwdata")
-    if not mypath:
+    try:
+        mypath = getPackageDir("afwdata")
+    except pexExcept.NotFoundError:
         print("Please setup afwdata and try again", file=sys.stderr)
         sys.exit(1)
 
