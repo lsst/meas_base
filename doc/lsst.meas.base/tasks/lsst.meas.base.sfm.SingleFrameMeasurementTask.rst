@@ -112,20 +112,21 @@ Then measure them:
 
     measureTask.run(sources, exposure)
 
-We then might plot the results (e.g. if you set ``--ds9`` on the command line)
+We then might plot the results (e.g. if you set ``--doDisplay`` on the command line)
 
 .. code-block:: py
 
     if display:
-        # display on ds9 (see also --debug argparse option)
+        # display image (see also --debug argparse option)
         frame = 1
-        ds9.mtv(exposure, frame=frame)
+        disp = afwDisplay.Display(frame=frame)
+        disp.mtv(exposure)
 
-        with ds9.Buffering():
+        with disp.Buffering():
             for s in sources:
                 xy = s.getCentroid()
-                ds9.dot('+', *xy, ctype=ds9.CYAN if s.get("flags_negative") else ds9.GREEN, frame=frame)
-                ds9.dot(s.getShape(), *xy, ctype=ds9.RED, frame=frame)
+                disp.dot('+', *xy, ctype=afwDisplay.CYAN if s.get("flags_negative") else afwDisplay.GREEN)
+                disp.dot(s.getShape(), *xy, ctype=afwDisplay.RED)
 
 and end up with something like
 
