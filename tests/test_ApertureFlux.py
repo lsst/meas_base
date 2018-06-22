@@ -167,7 +167,7 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
         task = self.makeSingleFrameMeasurementTask(config=config, algMetadata=algMetadata)
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         task.run(catalog, exposure)
-        radii = algMetadata.get("%s_radii" % (baseName,))
+        radii = algMetadata.getArray("%s_radii" % (baseName,))
         self.assertEqual(list(radii), list(ctrl.radii))
         for record in catalog:
             lastFlux = 0.0
@@ -215,7 +215,7 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
         baseName = "base_CircularApertureFlux"
         algMetadata = lsst.daf.base.PropertyList()
         task = self.makeForcedMeasurementTask(baseName, algMetadata=algMetadata)
-        radii = algMetadata.get("%s_radii" % (baseName,))
+        radii = algMetadata.getArray("%s_radii" % (baseName,))
         measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs(), randomSeed=1)
         measDataset = self.dataset.transform(measWcs)
         exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema(), randomSeed=1)
