@@ -83,4 +83,43 @@ id for each object.
 
     # Re-run measure on the sources selected above, using the reconstructed
     # noise replacer.
-    measTask.runPlugins(noiseReplacer, newSrcCatalog, exposure)
+    measTask.runPlugins(rebuildNoiseReplacer(exposure, srcCat), newSrcCatalog, exposure)
+
+
+At the time of writing, measTask.runPlugins will not run on any child
+objects if their parents are not also in the catalog. The makeRerunCatalog
+function has two options to resolve this issue. The ``resetParents`` flag (True
+ by default) will reset the parent keys of any children whose parents are not
+  included in the idList, effectively turning them into parents. The
+``addParents`` flag (False by default) will add these parents to the idList.
+
+.. code-block:: python
+
+    import numpy as np
+    # Get only the child ids
+    idsToRerun = srcCat["id"][srcCat[srcCat.getParentKey()] != 0]
+
+    # Previously, it would skip all children - only the noiseReplacer takes time
+    newSrcCatalog = makeRerunCatalog(
+        schema, srcCat, idsToRerun, fields=fields, resetParents=False
+    )
+    measTask.runPlugins(rebuildNoiseReplacer(exposure, srcCat), newSrcCatalog, exposure)
+    # None of these objects have centroids
+    print(len(newSrcCatalog), np.sum(np.isnan(newSrcCatalog["base_NaiveCentroid_x"])))
+
+    # resetParents=True (default) resets parents and takes a few seconds longer
+    newSrcCatalog = makeRerunCatalog(
+        schema, srcCat, idsToRerun, fields=fields, resetParents=True
+    )
+    measTask.runPlugins(rebuildNoiseReplacer(exposure, srcCat), newSrcCatalog, exposure)
+    # Now none of the objects have nan centroids
+    print(len(newSrcCatalog), np.sum(np.isnan(newSrcCatalog["base_NaiveCentroid_x"])))
+
+    # Setting addParents=True adds all parents and takes a little longer still
+    newSrcCatalog = makeRerunCatalog(
+        schema, srcCat, idsToRerun, fields=fields, addParents=True
+    )
+    measTask.runPlugins(rebuildNoiseReplacer(exposure, srcCat), newSrcCatalog, exposure)
+    # None of the objects have nan centroids and the catalog is larger than above
+    print(len(newSrcCatalog), np.sum(np.isnan(newSrcCatalog["base_NaiveCentroid_x"])))
+
