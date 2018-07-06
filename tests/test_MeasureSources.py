@@ -130,12 +130,12 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
 
             # compute predicted flux = value of image at peak / sum(PSF^2)
             # this is a sanity check of the algorithm, as much as anything
-            predFlux = unshFiltMImage.getImage().get(ctrInd[0], ctrInd[1]) / sumPsfSq
+            predFlux = unshFiltMImage.image[ctrInd, afwImage.LOCAL] / sumPsfSq
             self.assertLess(abs(flux - predFlux), flux * 0.01)
 
             # compute predicted flux error based on filtered pixels
             # = sqrt(value of filtered variance at peak / sum(PSF^2)^2)
-            predFluxErr = math.sqrt(unshFiltMImage.getVariance().get(ctrInd[0], ctrInd[1])) / sumPsfSq
+            predFluxErr = math.sqrt(unshFiltMImage.variance[ctrInd, afwImage.LOCAL]) / sumPsfSq
 
             # compute predicted flux error based on unfiltered pixels
             # = sqrt(sum(unfiltered variance * PSF^2)) / sum(PSF^2)
@@ -220,11 +220,11 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         mask.addMaskPlane('CLIPPED')
         clipped = mask.getPlaneBitMask('CLIPPED')
         mask.set(0)
-        mask.set(20, 20, sat)
-        mask.set(60, 60, interp)
-        mask.set(40, 20, bad)
-        mask.set(20, 80, nodata)
-        mask.set(30, 30, clipped)
+        mask[20, 20, afwImage.LOCAL] = sat
+        mask[60, 60, afwImage.LOCAL] = interp
+        mask[40, 20, afwImage.LOCAL] = bad
+        mask[20, 80, afwImage.LOCAL] = nodata
+        mask[30, 30, afwImage.LOCAL] = clipped
         mask.Factory(mask, lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(3, height))).set(edge)
         x0, y0 = 1234, 5678
         exp.setXY0(lsst.geom.Point2I(x0, y0))
@@ -325,7 +325,7 @@ def addStar(image, center, flux, fwhm):
             y = center[1] - j
             pixVal = flux * func(x, y)
             actFlux += pixVal
-            starImage[i, j] += pixVal
+            starImage[i, j, afwImage.LOCAL] += pixVal
     starImage *= flux / actFlux
 
     image += starImage

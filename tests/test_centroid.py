@@ -74,7 +74,7 @@ class CentroidTestCase(utilsTests.TestCase):
 
             im.set(bkgd)
             x, y = 30, 20
-            im.set(x, y, (1010,))
+            im.image[x, y, afwImage.LOCAL] = 1010
 
             source = table.addNew()
             spans = afwGeom.SpanSet(exp.getBBox(afwImage.LOCAL))
@@ -88,10 +88,10 @@ class CentroidTestCase(utilsTests.TestCase):
             self.assertFalse(source.get("test_flag"))
 
             im.set(bkgd)
-            im.set(10, 20, (1010,))
-            im.set(10, 21, (1010,))
-            im.set(11, 20, (1010,))
-            im.set(11, 21, (1010,))
+            im.image[10, 20, afwImage.LOCAL] = 1010
+            im.image[10, 21, afwImage.LOCAL] = 1010
+            im.image[11, 20, afwImage.LOCAL] = 1010
+            im.image[11, 21, afwImage.LOCAL] = 1010
 
             x, y = 10.5 + x0, 20.5 + y0
             source = table.addNew()
@@ -156,7 +156,8 @@ class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
 
         for i in (-1, 0, 1):
             for j in (-1, 0, 1):
-                im.set(int(self.xcen) + i, int(self.ycen) + j, self.I0*(1 - 0.5*math.hypot(i - 0.5, j)))
+                im[int(self.xcen) + i, int(self.ycen) + j, afwImage.LOCAL] = \
+                    self.I0*(1 - 0.5*math.hypot(i - 0.5, j))
 
     def tearDown(self):
         del self.exp
