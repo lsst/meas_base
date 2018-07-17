@@ -78,7 +78,7 @@ PyFluxTransform declareFluxTransform(py::module &mod) {
     return cls;
 }
 
-}  // <anonymous>
+}  // namespace
 
 PYBIND11_PLUGIN(scaledApertureFlux) {
     py::module::import("lsst.afw.table");
@@ -101,6 +101,6 @@ PYBIND11_PLUGIN(scaledApertureFlux) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

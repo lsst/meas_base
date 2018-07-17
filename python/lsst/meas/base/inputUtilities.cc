@@ -41,21 +41,18 @@ PYBIND11_PLUGIN(inputUtilities) {
     py::class_<SafeCentroidExtractor> clsSafeCentroidExtractor(mod, "SafeCentroidExtractor");
 
     /* Constructors */
-    clsSafeCentroidExtractor.def(py::init<afw::table::Schema &,
-                                          std::string const &,
-                                          bool>(),
-                                 "schema"_a, "name"_a, "isCentroider"_a=false);
+    clsSafeCentroidExtractor.def(py::init<afw::table::Schema &, std::string const &, bool>(), "schema"_a,
+                                 "name"_a, "isCentroider"_a = false);
 
     /* Operators */
-    clsSafeCentroidExtractor.def("__call__", [](SafeCentroidExtractor const & self,
-                           afw::table::SourceRecord & record,
-                           FlagHandler const & flags) {
-            return self(record, flags);
-        }, "record"_a, "flags"_a);
+    clsSafeCentroidExtractor.def("__call__",
+                                 [](SafeCentroidExtractor const &self, afw::table::SourceRecord &record,
+                                    FlagHandler const &flags) { return self(record, flags); },
+                                 "record"_a, "flags"_a);
 
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

@@ -40,12 +40,11 @@ namespace base {
 
 namespace {
 
-using PyAlgorithm = py::class_<LocalBackgroundAlgorithm, std::shared_ptr<LocalBackgroundAlgorithm>,
-                               SimpleAlgorithm>;
+using PyAlgorithm =
+        py::class_<LocalBackgroundAlgorithm, std::shared_ptr<LocalBackgroundAlgorithm>, SimpleAlgorithm>;
 using PyControl = py::class_<LocalBackgroundControl>;
-using PyTransform = py::class_<LocalBackgroundTransform, std::shared_ptr<LocalBackgroundTransform>,
-                               BaseTransform>;
-
+using PyTransform =
+        py::class_<LocalBackgroundTransform, std::shared_ptr<LocalBackgroundTransform>, BaseTransform>;
 
 PyControl declareControl(py::module &mod) {
     PyControl cls(mod, "LocalBackgroundControl");
@@ -61,7 +60,6 @@ PyControl declareControl(py::module &mod) {
     return cls;
 }
 
-
 PyAlgorithm declareAlgorithm(py::module &mod) {
     PyAlgorithm cls(mod, "LocalBackgroundAlgorithm");
 
@@ -72,7 +70,7 @@ PyAlgorithm declareAlgorithm(py::module &mod) {
             "ctrl"_a, "name"_a, "schema"_a);
 
     cls.def(py::init<LocalBackgroundAlgorithm::Control const &, std::string const &, afw::table::Schema &,
-            std::string const &>(),
+                     std::string const &>(),
             "ctrl"_a, "name"_a, "schema"_a, "logName"_a);
     return cls;
 }
@@ -87,7 +85,7 @@ PyTransform declareTransform(py::module &mod) {
     return cls;
 }
 
-}  // <anonymous>
+}  // namespace
 
 PYBIND11_PLUGIN(localBackground) {
     py::module::import("lsst.afw.table");
@@ -111,6 +109,6 @@ PYBIND11_PLUGIN(localBackground) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

@@ -34,11 +34,9 @@ namespace base {
 namespace {
 
 using PyFluxResult = py::class_<FluxResult, std::shared_ptr<FluxResult>>;
-using PyFluxResultKey =
-        py::class_<FluxResultKey, std::shared_ptr<FluxResultKey>>;
+using PyFluxResultKey = py::class_<FluxResultKey, std::shared_ptr<FluxResultKey>>;
 using PyMagResult = py::class_<MagResult, std::shared_ptr<MagResult>>;
-using PyMagResultKey =
-        py::class_<MagResultKey, std::shared_ptr<MagResultKey>>;
+using PyMagResultKey = py::class_<MagResultKey, std::shared_ptr<MagResultKey>>;
 
 void declareFluxResult(py::module &mod) {
     PyFluxResult cls(mod, "FluxResult");
@@ -87,7 +85,8 @@ void declareMagResultKey(py::module &mod) {
                     MagResultKey::set);
     cls.def_static("addFields", &MagResultKey::addFields, "schema"_a, "name"_a);
 }
-}  // <anonymous>
+
+}  // namespace
 
 PYBIND11_PLUGIN(fluxUtilities) {
     py::module::import("lsst.afw.table");
@@ -102,6 +101,6 @@ PYBIND11_PLUGIN(fluxUtilities) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

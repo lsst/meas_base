@@ -43,7 +43,7 @@ using PyCentroidResult = py::class_<CentroidResult, std::shared_ptr<CentroidResu
 using PyCentroidResultKey = py::class_<CentroidResultKey>;
 using PyCentroidTransform = py::class_<CentroidTransform, std::shared_ptr<CentroidTransform>, BaseTransform>;
 
-void declareCentroidResult(py::module & mod) {
+void declareCentroidResult(py::module &mod) {
     PyCentroidResult cls(mod, "CentroidResult");
 
     cls.def_readwrite("x", &CentroidResult::x);
@@ -68,7 +68,7 @@ void declareCentroidResult(py::module & mod) {
             "ySigma"_a);
 }
 
-void declareCentroidResultKey(py::module & mod) {
+void declareCentroidResultKey(py::module &mod) {
     PyCentroidResultKey cls(mod, "CentroidResultKey");
 
     cls.def(py::init<>());
@@ -89,7 +89,7 @@ void declareCentroidResultKey(py::module & mod) {
     cls.def("getY", &CentroidResultKey::getY);
 }
 
-void declareCentroidTransform(py::module & mod) {
+void declareCentroidTransform(py::module &mod) {
     PyCentroidTransform cls(mod, "CentroidTransform");
 
     cls.def(py::init<std::string const &, afw::table::SchemaMapper &>(), "name"_a, "mapper"_a);
@@ -107,7 +107,7 @@ void declareCentroidChecker(py::module &mod) {
     cls.def("__call__", &CentroidChecker::operator(), "record"_a);
 }
 
-}  // <anonymous>
+}  // namespace
 
 PYBIND11_PLUGIN(centroidUtilities) {
     py::module::import("lsst.afw.table");
@@ -123,6 +123,6 @@ PYBIND11_PLUGIN(centroidUtilities) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

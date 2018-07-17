@@ -76,7 +76,7 @@ PyFluxTransform declareFluxTransform(py::module &mod) {
     return cls;
 }
 
-}  // <anonymous>
+}  // namespace
 
 PYBIND11_PLUGIN(gaussianFlux) {
     py::module::import("lsst.afw.table");
@@ -99,6 +99,6 @@ PYBIND11_PLUGIN(gaussianFlux) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

@@ -84,26 +84,17 @@ void declareShapeResultKey(py::module &mod) {
 }
 
 template <typename ImageT>
-static void declareComputeMethods(PyShapeAlgorithm & cls) {
+static void declareComputeMethods(PyShapeAlgorithm &cls) {
     cls.def_static(
-        "computeAdaptiveMoments",
-        (SdssShapeResult (*)(
-            ImageT const &,
-            geom::Point2D const &,
-            bool,
-            SdssShapeControl const &
-        )) &SdssShapeAlgorithm::computeAdaptiveMoments,
-        "image"_a, "position"_a, "negative"_a=false, "ctrl"_a=SdssShapeControl()
-    );
+            "computeAdaptiveMoments",
+            (SdssShapeResult(*)(ImageT const &, geom::Point2D const &, bool, SdssShapeControl const &)) &
+                    SdssShapeAlgorithm::computeAdaptiveMoments,
+            "image"_a, "position"_a, "negative"_a = false, "ctrl"_a = SdssShapeControl());
     cls.def_static(
-        "computeFixedMomentsFlux",
-        (FluxResult (*)(
-            ImageT const &,
-            afw::geom::ellipses::Quadrupole const &,
-            geom::Point2D const &
-        )) &SdssShapeAlgorithm::computeFixedMomentsFlux,
-        "image"_a, "shape"_a, "position"_a
-    );
+            "computeFixedMomentsFlux",
+            (FluxResult(*)(ImageT const &, afw::geom::ellipses::Quadrupole const &, geom::Point2D const &)) &
+                    SdssShapeAlgorithm::computeFixedMomentsFlux,
+            "image"_a, "shape"_a, "position"_a);
 }
 
 PyShapeAlgorithm declareShapeAlgorithm(py::module &mod) {
@@ -143,10 +134,8 @@ void declareShapeResult(py::module &mod) {
     cls.def_readwrite("flags", &SdssShapeResult::flags);
 
     // TODO this method says it's a workaround for Swig which doesn't understand std::bitset
-    cls.def("getFlag", (bool (SdssShapeResult::*)(unsigned int) const) & SdssShapeResult::getFlag,
-            "index"_a);
-    cls.def("getFlag",
-            (bool (SdssShapeResult::*)(std::string const &name) const) & SdssShapeResult::getFlag,
+    cls.def("getFlag", (bool (SdssShapeResult::*)(unsigned int) const) & SdssShapeResult::getFlag, "index"_a);
+    cls.def("getFlag", (bool (SdssShapeResult::*)(std::string const &name) const) & SdssShapeResult::getFlag,
             "name"_a);
 }
 
@@ -162,7 +151,7 @@ PyShapeTransform declareShapeTransform(py::module &mod) {
     return cls;
 }
 
-}  // <anonymous>
+}  // namespace
 
 PYBIND11_PLUGIN(sdssShape) {
     py::module::import("lsst.afw.geom");
@@ -170,7 +159,7 @@ PYBIND11_PLUGIN(sdssShape) {
     py::module::import("lsst.meas.base.algorithm");
     py::module::import("lsst.meas.base.flagHandler");
     py::module::import("lsst.meas.base.centroidUtilities");  // for CentroidResult
-    py::module::import("lsst.meas.base.fluxUtilities");  // for FluxResult
+    py::module::import("lsst.meas.base.fluxUtilities");      // for FluxResult
     py::module::import("lsst.meas.base.shapeUtilities");
     py::module::import("lsst.meas.base.transform");
 
@@ -191,6 +180,6 @@ PYBIND11_PLUGIN(sdssShape) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
