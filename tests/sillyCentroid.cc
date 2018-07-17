@@ -21,7 +21,6 @@
  */
 
 #include <pybind11/pybind11.h>
-//#include <pybind11/stl.h>
 
 #include "lsst/pex/config/python.h"
 #include "lsst/meas/base/python.h"
@@ -35,28 +34,16 @@ namespace test {
 namespace foo {
 namespace bar {
 
-PYBIND11_PLUGIN(_sillyCentroid) {
-    py::module mod("_sillyCentroid", "Python wrapper for afw _SillyCentroid library");
-
-    /* Module level */
+PYBIND11_MODULE(_sillyCentroid, mod) {
     py::class_<SillyCentroidAlgorithm, std::shared_ptr<SillyCentroidAlgorithm>,
                lsst::meas::base::SimpleAlgorithm>
             clsSillyCentroidAlgorithm(mod, "SillyCentroidAlgorithm");
     py::class_<SillyCentroidControl> clsSillyCentroidControl(mod, "SillyCentroidControl");
     py::class_<SillyTransform> clsSillyTransform(mod, "SillyTransform");
 
-    /* Member types and enums */
-
-    /* Constructors */
-
-    /* Operators */
-
-    /* Members */
     lsst::meas::base::python::declareAlgorithm<SillyCentroidAlgorithm, SillyCentroidControl, SillyTransform>(
             clsSillyCentroidAlgorithm, clsSillyCentroidControl, clsSillyTransform);
     LSST_DECLARE_CONTROL_FIELD(clsSillyCentroidControl, SillyCentroidControl, param);
-
-    return mod.ptr();
 }
 
 }  // namespace bar

@@ -98,17 +98,13 @@ void declareShapeResultKey(py::module &mod) {
 
 }  // namespace
 
-PYBIND11_PLUGIN(shapeUtilities) {
+PYBIND11_MODULE(shapeUtilities, mod) {
     py::module::import("lsst.afw.table");
-
-    py::module mod("shapeUtilities");
 
     declareShapeResult(mod);
     declareShapeResultKey(mod);
 
     mod.def("makeShapeTransformMatrix", &makeShapeTransformMatrix, "xform"_a);
-
-    return mod.ptr();
 }
 
 }  // namespace base

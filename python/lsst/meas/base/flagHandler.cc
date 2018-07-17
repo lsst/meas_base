@@ -118,16 +118,12 @@ void declareFlagHandler(py::module &mod) {
 
 }  // namespace
 
-PYBIND11_PLUGIN(flagHandler) {
+PYBIND11_MODULE(flagHandler, mod) {
     py::module::import("lsst.afw.table");
-
-    py::module mod("flagHandler");
 
     declareFlagDefinition(mod);
     declareFlagDefinitionList(mod);
     declareFlagHandler(mod);
-
-    return mod.ptr();
 }
 
 }  // namespace base

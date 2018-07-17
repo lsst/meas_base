@@ -32,11 +32,9 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(algorithm) {
+PYBIND11_MODULE(algorithm, mod) {
     py::module::import("lsst.afw.image");
     py::module::import("lsst.afw.table");
-
-    py::module mod("algorithm");
 
     py::class_<BaseAlgorithm, std::shared_ptr<BaseAlgorithm>> clsBaseAlgorithm(mod, "BaseAlgorithm");
     py::class_<SingleFrameAlgorithm, std::shared_ptr<SingleFrameAlgorithm>, BaseAlgorithm>
@@ -51,8 +49,6 @@ PYBIND11_PLUGIN(algorithm) {
 
     clsSimpleAlgorithm.def("measureForced", &SimpleAlgorithm::measureForced, "measRecord"_a, "exposure"_a,
                            "refRecord"_a, "refWcs"_a);
-
-    return mod.ptr();
 }
 
 }  // namespace base

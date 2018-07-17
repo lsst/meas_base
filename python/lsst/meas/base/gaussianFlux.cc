@@ -78,13 +78,11 @@ PyFluxTransform declareFluxTransform(py::module &mod) {
 
 }  // namespace
 
-PYBIND11_PLUGIN(gaussianFlux) {
+PYBIND11_MODULE(gaussianFlux, mod) {
     py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.algorithm");
     py::module::import("lsst.meas.base.flagHandler");
     py::module::import("lsst.meas.base.transform");
-
-    py::module mod("gaussianFlux");
 
     auto clsFluxControl = declareFluxControl(mod);
     auto clsFluxAlgorithm = declareFluxAlgorithm(mod);
@@ -95,8 +93,6 @@ PYBIND11_PLUGIN(gaussianFlux) {
 
     python::declareAlgorithm<GaussianFluxAlgorithm, GaussianFluxControl, GaussianFluxTransform>(
             clsFluxAlgorithm, clsFluxControl, clsFluxTransform);
-
-    return mod.ptr();
 }
 
 }  // namespace base

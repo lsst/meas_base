@@ -81,14 +81,12 @@ PyFluxTransform declareFluxTransform(py::module &mod) {
 
 }  // namespace
 
-PYBIND11_PLUGIN(psfFlux) {
+PYBIND11_MODULE(psfFlux, mod) {
     py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.algorithm");
     py::module::import("lsst.meas.base.flagHandler");
     py::module::import("lsst.meas.base.fluxUtilities");
     py::module::import("lsst.meas.base.transform");
-
-    py::module mod("psfFlux");
 
     auto clsFluxControl = declareFluxControl(mod);
     auto clsFluxAlgorithm = declareFluxAlgorithm(mod);
@@ -99,8 +97,6 @@ PYBIND11_PLUGIN(psfFlux) {
 
     python::declareAlgorithm<PsfFluxAlgorithm, PsfFluxControl, PsfFluxTransform>(
             clsFluxAlgorithm, clsFluxControl, clsFluxTransform);
-
-    return mod.ptr();
 }
 
 }  // namespace base

@@ -126,7 +126,7 @@ PyFluxTransform declareFluxTransform(py::module &mod) {
 
 }  // namespace
 
-PYBIND11_PLUGIN(apertureFlux) {
+PYBIND11_MODULE(apertureFlux, mod) {
     py::module::import("lsst.afw.geom");
     py::module::import("lsst.afw.image");
     py::module::import("lsst.afw.table");
@@ -134,8 +134,6 @@ PYBIND11_PLUGIN(apertureFlux) {
     py::module::import("lsst.meas.base.flagHandler");
     py::module::import("lsst.meas.base.fluxUtilities");
     py::module::import("lsst.meas.base.transform");
-
-    py::module mod("apertureFlux");
 
     auto clsFluxControl = declareFluxControl(mod);
     auto clsFluxAlgorithm = declareFluxAlgorithm(mod);
@@ -148,8 +146,6 @@ PYBIND11_PLUGIN(apertureFlux) {
 
     python::declareAlgorithm<ApertureFluxAlgorithm, ApertureFluxControl, ApertureFluxTransform>(
             clsFluxAlgorithm, clsFluxControl, clsFluxTransform);
-
-    return mod.ptr();
 }
 
 }  // namespace base

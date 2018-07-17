@@ -109,18 +109,14 @@ void declareCentroidChecker(py::module &mod) {
 
 }  // namespace
 
-PYBIND11_PLUGIN(centroidUtilities) {
+PYBIND11_MODULE(centroidUtilities, mod) {
     py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.transform");
-
-    py::module mod("centroidUtilities");
 
     declareCentroidResult(mod);
     declareCentroidResultKey(mod);
     declareCentroidTransform(mod);
     declareCentroidChecker(mod);
-
-    return mod.ptr();
 }
 
 }  // namespace base

@@ -84,15 +84,12 @@ PyCentroidTransform declareCentroidTransform(py::module &mod) {
 
 }  // namespace
 
-PYBIND11_PLUGIN(naiveCentroid) {
+PYBIND11_MODULE(naiveCentroid, mod) {
     py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.algorithm");
     py::module::import("lsst.meas.base.flagHandler");
     py::module::import("lsst.meas.base.transform");
 
-    py::module mod("naiveCentroid");
-
-    /* Module level */
     auto clsCentroidControl = declareCentroidControl(mod);
     auto clsCentroidAlgorithm = declareCentroidAlgorithm(mod);
     auto clsCentroidTransform = declareCentroidTransform(mod);
@@ -100,11 +97,8 @@ PYBIND11_PLUGIN(naiveCentroid) {
     clsCentroidAlgorithm.attr("Control") = clsCentroidControl;
     clsCentroidTransform.attr("Control") = clsCentroidControl;
 
-    /* Members */
     python::declareAlgorithm<NaiveCentroidAlgorithm, NaiveCentroidControl, NaiveCentroidTransform>(
             clsCentroidAlgorithm, clsCentroidControl, clsCentroidTransform);
-
-    return mod.ptr();
 }
 
 }  // namespace base

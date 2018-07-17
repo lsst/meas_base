@@ -32,25 +32,18 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(inputUtilities) {
+PYBIND11_MODULE(inputUtilities, mod) {
     py::module::import("lsst.afw.table");
 
-    py::module mod("inputUtilities");
-
-    /* Module level */
     py::class_<SafeCentroidExtractor> clsSafeCentroidExtractor(mod, "SafeCentroidExtractor");
 
-    /* Constructors */
     clsSafeCentroidExtractor.def(py::init<afw::table::Schema &, std::string const &, bool>(), "schema"_a,
                                  "name"_a, "isCentroider"_a = false);
 
-    /* Operators */
     clsSafeCentroidExtractor.def("__call__",
                                  [](SafeCentroidExtractor const &self, afw::table::SourceRecord &record,
                                     FlagHandler const &flags) { return self(record, flags); },
                                  "record"_a, "flags"_a);
-
-    return mod.ptr();
 }
 
 }  // namespace base

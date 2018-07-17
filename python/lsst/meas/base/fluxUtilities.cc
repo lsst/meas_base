@@ -88,17 +88,13 @@ void declareMagResultKey(py::module &mod) {
 
 }  // namespace
 
-PYBIND11_PLUGIN(fluxUtilities) {
+PYBIND11_MODULE(fluxUtilities, mod) {
     py::module::import("lsst.afw.table");
-
-    py::module mod("fluxUtilities");
 
     declareFluxResult(mod);
     declareFluxResultKey(mod);
     declareMagResult(mod);
     declareMagResultKey(mod);
-
-    return mod.ptr();
 }
 
 }  // namespace base

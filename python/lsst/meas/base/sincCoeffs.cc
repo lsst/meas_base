@@ -35,26 +35,20 @@ namespace {
 
 template <typename T>
 void declareSincCoeffs(py::module& mod, std::string const& suffix) {
-    /* Module level */
     py::class_<SincCoeffs<T>> cls(mod, ("SincCoeffs" + suffix).c_str());
 
-    /* Members */
     cls.def_static("cache", &SincCoeffs<T>::cache, "rInner"_a, "rOuter"_a);
     cls.def_static("get", &SincCoeffs<T>::get, "outerEllipse"_a, "innerRadiusFactor"_a);
 }
 
 }  // namespace
 
-PYBIND11_PLUGIN(sincCoeffs) {
+PYBIND11_MODULE(sincCoeffs, mod) {
     py::module::import("lsst.afw.geom");
     py::module::import("lsst.afw.image");
 
-    py::module mod("sincCoeffs");
-
     declareSincCoeffs<float>(mod, "F");
     declareSincCoeffs<double>(mod, "D");
-
-    return mod.ptr();
 }
 
 }  // namespace base

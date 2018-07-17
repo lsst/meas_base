@@ -78,12 +78,10 @@ PyBlendenessAlgorithm declareBlendednessAlgorithm(py::module &mod) {
 
 }  // namespace
 
-PYBIND11_PLUGIN(blendedness) {
+PYBIND11_MODULE(blendedness, mod) {
     py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.algorithm");
     py::module::import("lsst.meas.base.flagHandler");
-
-    py::module mod("blendedness");
 
     auto clsBlendednessControl = declareBlendednessControl(mod);
     auto clsBlendednessAlgorithm = declareBlendednessAlgorithm(mod);
@@ -92,8 +90,6 @@ PYBIND11_PLUGIN(blendedness) {
 
     python::declareAlgorithm<BlendednessAlgorithm, BlendednessControl>(clsBlendednessAlgorithm,
                                                                        clsBlendednessControl);
-
-    return mod.ptr();
 }
 
 }  // namespace base

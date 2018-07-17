@@ -33,16 +33,13 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(exceptions) {
+PYBIND11_MODULE(exceptions, mod) {
     using pex::exceptions::python::declareException;
     using pex::exceptions::DomainError;
     using pex::exceptions::RuntimeError;
 
     py::module::import("lsst.pex.exceptions");
 
-    py::module mod("exceptions");
-
-    /* Module level */
     auto clsFatalAlgorithmError =
             declareException<FatalAlgorithmError, RuntimeError>(mod, "FatalAlgorithmError", "RuntimeError");
     auto clsMeasurementError =
@@ -50,15 +47,11 @@ PYBIND11_PLUGIN(exceptions) {
     auto clsPixelValueError =
             declareException<PixelValueError, DomainError>(mod, "PixelValueError", "DomainError");
 
-    /* Constructors */
     clsMeasurementError.def(py::init<std::string const &, std::size_t>(), "message"_a, "flagBit"_a);
     clsFatalAlgorithmError.def(py::init<std::string const &>(), "message"_a);
     clsPixelValueError.def(py::init<std::string const &>(), "message"_a);
 
-    /* Members */
     clsMeasurementError.def("getFlagBit", &MeasurementError::getFlagBit);
-
-    return mod.ptr();
 }
 
 }  // namespace base
