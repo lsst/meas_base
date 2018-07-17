@@ -45,6 +45,6 @@ PYBIND11_PLUGIN(transform) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

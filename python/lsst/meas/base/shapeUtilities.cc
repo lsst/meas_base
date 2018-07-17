@@ -46,20 +46,19 @@ void declareShapeResult(py::module &mod) {
     PyShapeResult cls(mod, "ShapeResult");
 
     cls.def(py::init<>());
-    cls.def(py::init<ShapeElement, ShapeElement, ShapeElement, ShapeCov const &>(),
-                       "xx"_a, "yy"_a, "xy"_a, "matrix"_a);
-    cls.def(py::init<ShapeElement, ShapeElement, ShapeElement, ErrElement, ErrElement, ErrElement>(),
-                       "xx"_a, "yy"_a, "xy"_a, "xxSigma"_a, "yySigma"_a, "xySigma"_a);
+    cls.def(py::init<ShapeElement, ShapeElement, ShapeElement, ShapeCov const &>(), "xx"_a, "yy"_a, "xy"_a,
+            "matrix"_a);
+    cls.def(py::init<ShapeElement, ShapeElement, ShapeElement, ErrElement, ErrElement, ErrElement>(), "xx"_a,
+            "yy"_a, "xy"_a, "xxSigma"_a, "yySigma"_a, "xySigma"_a);
 
     cls.def("getShape", &ShapeResult::getShape);
     cls.def("getQuadrupole", &ShapeResult::getQuadrupole);
     cls.def("setShape", &ShapeResult::setShape, "shape"_a);
     cls.def("getShapeErr", &ShapeResult::getShapeErr);
+    cls.def("setShapeErr", (void (ShapeResult::*)(ShapeCov const &)) & ShapeResult::setShapeErr, "matrix"_a);
     cls.def("setShapeErr",
-        (void (ShapeResult::*)(ShapeCov const &)) &ShapeResult::setShapeErr, "matrix"_a);
-    cls.def("setShapeErr",
-        (void (ShapeResult::*)(ErrElement, ErrElement, ErrElement)) &ShapeResult::setShapeErr,
-        "xxSigma"_a, "yySigma"_a, "xySigma"_a);
+            (void (ShapeResult::*)(ErrElement, ErrElement, ErrElement)) & ShapeResult::setShapeErr,
+            "xxSigma"_a, "yySigma"_a, "xySigma"_a);
 
     cls.def_readwrite("xx", &ShapeResult::xx);
     cls.def_readwrite("yy", &ShapeResult::yy);
@@ -97,7 +96,7 @@ void declareShapeResultKey(py::module &mod) {
     cls.def("getIxy", &ShapeResultKey::getIxy);
 }
 
-}  // <anonymous>
+}  // namespace
 
 PYBIND11_PLUGIN(shapeUtilities) {
     py::module::import("lsst.afw.table");
@@ -112,6 +111,6 @@ PYBIND11_PLUGIN(shapeUtilities) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

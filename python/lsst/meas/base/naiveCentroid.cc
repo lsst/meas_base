@@ -75,13 +75,14 @@ PyCentroidAlgorithm declareCentroidAlgorithm(py::module &mod) {
 PyCentroidTransform declareCentroidTransform(py::module &mod) {
     PyCentroidTransform cls(mod, "NaiveCentroidTransform");
 
-    cls.def(py::init<NaiveCentroidTransform::Control const &, std::string const &, afw::table::SchemaMapper &>(),
+    cls.def(py::init<NaiveCentroidTransform::Control const &, std::string const &,
+                     afw::table::SchemaMapper &>(),
             "ctrl"_a, "name"_a, "mapper"_a);
 
     return cls;
 }
 
-}  // <anonymous>
+}  // namespace
 
 PYBIND11_PLUGIN(naiveCentroid) {
     py::module::import("lsst.afw.table");
@@ -106,6 +107,6 @@ PYBIND11_PLUGIN(naiveCentroid) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

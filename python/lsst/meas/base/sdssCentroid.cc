@@ -86,7 +86,7 @@ PyCentroidTransform declareCentroidTransform(py::module &mod) {
     return cls;
 }
 
-}  // <anonymous>
+}  // namespace
 
 PYBIND11_PLUGIN(sdssCentroid) {
     py::module::import("lsst.afw.table");
@@ -109,6 +109,6 @@ PYBIND11_PLUGIN(sdssCentroid) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

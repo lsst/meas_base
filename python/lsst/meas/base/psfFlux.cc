@@ -65,7 +65,7 @@ PyFluxAlgorithm declareFluxAlgorithm(py::module &mod) {
             "ctrl"_a, "name"_a, "schema"_a);
 
     cls.def(py::init<PsfFluxAlgorithm::Control const &, std::string const &, afw::table::Schema &,
-            std::string const &>(),
+                     std::string const &>(),
             "ctrl"_a, "name"_a, "schema"_a, "logName"_a);
     return cls;
 }
@@ -79,7 +79,7 @@ PyFluxTransform declareFluxTransform(py::module &mod) {
     return cls;
 }
 
-}  // <anonymous>
+}  // namespace
 
 PYBIND11_PLUGIN(psfFlux) {
     py::module::import("lsst.afw.table");
@@ -103,6 +103,6 @@ PYBIND11_PLUGIN(psfFlux) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

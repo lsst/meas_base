@@ -65,10 +65,9 @@ PyBlendenessAlgorithm declareBlendednessAlgorithm(py::module &mod) {
     cls.attr("NO_CENTROID") = py::cast(BlendednessAlgorithm::NO_CENTROID);
     cls.attr("NO_SHAPE") = py::cast(BlendednessAlgorithm::NO_SHAPE);
 
-    cls.def_static("computeAbsExpectation", &BlendednessAlgorithm::computeAbsExpectation,
-                   "data"_a, "variance"_a);
-    cls.def_static("computeAbsBias", &BlendednessAlgorithm::computeAbsBias,
-                   "mu"_a, "variance"_a);
+    cls.def_static("computeAbsExpectation", &BlendednessAlgorithm::computeAbsExpectation, "data"_a,
+                   "variance"_a);
+    cls.def_static("computeAbsBias", &BlendednessAlgorithm::computeAbsBias, "mu"_a, "variance"_a);
     cls.def("measureChildPixels", &BlendednessAlgorithm::measureChildPixels, "image"_a, "child"_a);
     cls.def("measureParentPixels", &BlendednessAlgorithm::measureParentPixels, "image"_a, "child"_a);
     cls.def("measure", &BlendednessAlgorithm::measure, "measRecord"_a, "exposure"_a);
@@ -77,7 +76,7 @@ PyBlendenessAlgorithm declareBlendednessAlgorithm(py::module &mod) {
     return cls;
 }
 
-}  // <anonymous>
+}  // namespace
 
 PYBIND11_PLUGIN(blendedness) {
     py::module::import("lsst.afw.table");
@@ -97,6 +96,6 @@ PYBIND11_PLUGIN(blendedness) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst

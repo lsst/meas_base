@@ -32,16 +32,18 @@ namespace meas {
 namespace base {
 
 namespace {
-    template <typename T>
-    void declareSincCoeffs(py::module & mod, std::string const & suffix) {
-        /* Module level */
-        py::class_<SincCoeffs<T>> cls(mod, ("SincCoeffs" + suffix).c_str());
 
-        /* Members */
-        cls.def_static("cache", &SincCoeffs<T>::cache, "rInner"_a, "rOuter"_a);
-        cls.def_static("get", &SincCoeffs<T>::get, "outerEllipse"_a, "innerRadiusFactor"_a);
-    }
+template <typename T>
+void declareSincCoeffs(py::module& mod, std::string const& suffix) {
+    /* Module level */
+    py::class_<SincCoeffs<T>> cls(mod, ("SincCoeffs" + suffix).c_str());
+
+    /* Members */
+    cls.def_static("cache", &SincCoeffs<T>::cache, "rInner"_a, "rOuter"_a);
+    cls.def_static("get", &SincCoeffs<T>::get, "outerEllipse"_a, "innerRadiusFactor"_a);
 }
+
+}  // namespace
 
 PYBIND11_PLUGIN(sincCoeffs) {
     py::module::import("lsst.afw.geom");
@@ -55,6 +57,6 @@ PYBIND11_PLUGIN(sincCoeffs) {
     return mod.ptr();
 }
 
-}  // base
-}  // meas
-}  // lsst
+}  // namespace base
+}  // namespace meas
+}  // namespace lsst
