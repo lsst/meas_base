@@ -23,7 +23,6 @@
 #include "pybind11/pybind11.h"
 
 #include "lsst/afw/table/Source.h"
-#include "lsst/meas/base/python.h"
 #include "lsst/meas/base/Algorithm.h"
 
 namespace py = pybind11;
@@ -39,19 +38,19 @@ PYBIND11_PLUGIN(algorithm) {
 
     py::module mod("algorithm");
 
-    /* Module level */
     py::class_<BaseAlgorithm, std::shared_ptr<BaseAlgorithm>> clsBaseAlgorithm(mod, "BaseAlgorithm");
     py::class_<SingleFrameAlgorithm, std::shared_ptr<SingleFrameAlgorithm>, BaseAlgorithm>
             clsSingleFrameAlgorithm(mod, "SingleFrameAlgorithm");
     py::class_<SimpleAlgorithm, std::shared_ptr<SimpleAlgorithm>, SingleFrameAlgorithm> clsSimpleAlgorithm(
             mod, "SimpleAlgorithm", py::multiple_inheritance());
 
-    /* Members */
-    python::declareAlgorithm<SingleFrameAlgorithm>(clsSingleFrameAlgorithm);
-    
+    clsBaseAlgorithm.def("fail", &BaseAlgorithm::fail, "measRecord"_a, "error"_a = NULL);
+    clsBaseAlgorithm.def("getLogName", &SimpleAlgorithm::getLogName);
+
+    clsSingleFrameAlgorithm.def("measure", &SingleFrameAlgorithm::measure, "record"_a, "exposure"_a);
+
     clsSimpleAlgorithm.def("measureForced", &SimpleAlgorithm::measureForced, "measRecord"_a, "exposure"_a,
                            "refRecord"_a, "refWcs"_a);
-    clsBaseAlgorithm.def("getLogName", &SimpleAlgorithm::getLogName);
 
     return mod.ptr();
 }
