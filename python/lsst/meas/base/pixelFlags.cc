@@ -37,9 +37,8 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(pixelFlags) {
+PYBIND11_MODULE(pixelFlags, mod) {
     py::module::import("lsst.afw.table");
-    py::module mod("pixelFlags");
 
     py::class_<PixelFlagsAlgorithm, std::shared_ptr<PixelFlagsAlgorithm>, SimpleAlgorithm>
             clsPixelFlagsAlgorithm(mod, "PixelFlagsAlgorithm");
@@ -56,8 +55,6 @@ PYBIND11_PLUGIN(pixelFlags) {
 
     LSST_DECLARE_CONTROL_FIELD(clsPixelFlagsControl, PixelFlagsControl, masksFpAnywhere);
     LSST_DECLARE_CONTROL_FIELD(clsPixelFlagsControl, PixelFlagsControl, masksFpCenter);
-
-    return mod.ptr();
 }
 
 }  // namespace base

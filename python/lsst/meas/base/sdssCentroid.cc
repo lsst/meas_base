@@ -88,13 +88,11 @@ PyCentroidTransform declareCentroidTransform(py::module &mod) {
 
 }  // namespace
 
-PYBIND11_PLUGIN(sdssCentroid) {
+PYBIND11_MODULE(sdssCentroid, mod) {
     py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.algorithm");
     py::module::import("lsst.meas.base.flagHandler");
     py::module::import("lsst.meas.base.transform");
-
-    py::module mod("sdssCentroid");
 
     auto clsCentroidControl = declareCentroidControl(mod);
     auto clsCentroidAlgorithm = declareCentroidAlgorithm(mod);
@@ -105,8 +103,6 @@ PYBIND11_PLUGIN(sdssCentroid) {
 
     python::declareAlgorithm<SdssCentroidAlgorithm, SdssCentroidControl, SdssCentroidTransform>(
             clsCentroidAlgorithm, clsCentroidControl, clsCentroidTransform);
-
-    return mod.ptr();
 }
 
 }  // namespace base

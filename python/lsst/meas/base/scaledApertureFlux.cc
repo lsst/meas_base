@@ -80,13 +80,11 @@ PyFluxTransform declareFluxTransform(py::module &mod) {
 
 }  // namespace
 
-PYBIND11_PLUGIN(scaledApertureFlux) {
+PYBIND11_MODULE(scaledApertureFlux, mod) {
     py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.algorithm");
     py::module::import("lsst.meas.base.fluxUtilities");
     py::module::import("lsst.meas.base.transform");
-
-    py::module mod("scaledApertureFlux");
 
     auto clsFluxControl = declareFluxControl(mod);
     auto clsFluxAlgorithm = declareFluxAlgorithm(mod);
@@ -97,8 +95,6 @@ PYBIND11_PLUGIN(scaledApertureFlux) {
 
     python::declareAlgorithm<ScaledApertureFluxAlgorithm, ScaledApertureFluxControl,
                              ScaledApertureFluxTransform>(clsFluxAlgorithm, clsFluxControl, clsFluxTransform);
-
-    return mod.ptr();
 }
 
 }  // namespace base

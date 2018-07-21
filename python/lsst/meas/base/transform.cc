@@ -33,16 +33,10 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_PLUGIN(transform) {
-    py::module mod("transform");
-
-    /* Module level */
+PYBIND11_MODULE(transform, mod) {
     py::class_<BaseTransform, std::shared_ptr<BaseTransform>> cls(mod, "BaseTransform");
 
-    /* Operators */
     cls.def("__call__", &BaseTransform::operator(), "inputCatalog"_a, "outputCatalog"_a, "wcs"_a, "calib"_a);
-
-    return mod.ptr();
 }
 
 }  // namespace base

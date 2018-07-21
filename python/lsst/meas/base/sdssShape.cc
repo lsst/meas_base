@@ -153,7 +153,7 @@ PyShapeTransform declareShapeTransform(py::module &mod) {
 
 }  // namespace
 
-PYBIND11_PLUGIN(sdssShape) {
+PYBIND11_MODULE(sdssShape, mod) {
     py::module::import("lsst.afw.geom");
     py::module::import("lsst.afw.table");
     py::module::import("lsst.meas.base.algorithm");
@@ -162,8 +162,6 @@ PYBIND11_PLUGIN(sdssShape) {
     py::module::import("lsst.meas.base.fluxUtilities");      // for FluxResult
     py::module::import("lsst.meas.base.shapeUtilities");
     py::module::import("lsst.meas.base.transform");
-
-    py::module mod("sdssShape");
 
     auto clsShapeControl = declareShapeControl(mod);
     declareShapeResultKey(mod);
@@ -176,8 +174,6 @@ PYBIND11_PLUGIN(sdssShape) {
 
     python::declareAlgorithm<SdssShapeAlgorithm, SdssShapeControl, SdssShapeTransform>(
             clsShapeAlgorithm, clsShapeControl, clsShapeTransform);
-
-    return mod.ptr();
 }
 
 }  // namespace base
