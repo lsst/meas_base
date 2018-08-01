@@ -724,7 +724,7 @@ class CentroidTransformTestCase(TransformTestCase):
             record[record.schema.join(name, 'y')] = np.random.random()
             # Some algorithms set no errors; some set only sigma on x & y; some provide
             # a full covariance matrix. Set only those which exist in the schema.
-            for fieldSuffix in ('xSigma', 'ySigma', 'x_y_Cov'):
+            for fieldSuffix in ('xErr', 'yErr', 'x_y_Cov'):
                 fieldName = record.schema.join(name, fieldSuffix)
                 if fieldName in record.schema:
                     record[fieldName] = np.random.random()

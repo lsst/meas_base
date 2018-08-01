@@ -49,7 +49,7 @@ void declareShapeResult(py::module &mod) {
     cls.def(py::init<ShapeElement, ShapeElement, ShapeElement, ShapeCov const &>(), "xx"_a, "yy"_a, "xy"_a,
             "matrix"_a);
     cls.def(py::init<ShapeElement, ShapeElement, ShapeElement, ErrElement, ErrElement, ErrElement>(), "xx"_a,
-            "yy"_a, "xy"_a, "xxSigma"_a, "yySigma"_a, "xySigma"_a);
+            "yy"_a, "xy"_a, "xxErr"_a, "yyErr"_a, "xyErr"_a);
 
     cls.def("getShape", &ShapeResult::getShape);
     cls.def("getQuadrupole", &ShapeResult::getQuadrupole);
@@ -58,14 +58,14 @@ void declareShapeResult(py::module &mod) {
     cls.def("setShapeErr", (void (ShapeResult::*)(ShapeCov const &)) & ShapeResult::setShapeErr, "matrix"_a);
     cls.def("setShapeErr",
             (void (ShapeResult::*)(ErrElement, ErrElement, ErrElement)) & ShapeResult::setShapeErr,
-            "xxSigma"_a, "yySigma"_a, "xySigma"_a);
+            "xxErr"_a, "yyErr"_a, "xyErr"_a);
 
     cls.def_readwrite("xx", &ShapeResult::xx);
     cls.def_readwrite("yy", &ShapeResult::yy);
     cls.def_readwrite("xy", &ShapeResult::xy);
-    cls.def_readwrite("xxSigma", &ShapeResult::xxSigma);
-    cls.def_readwrite("yySigma", &ShapeResult::yySigma);
-    cls.def_readwrite("xySigma", &ShapeResult::xySigma);
+    cls.def_readwrite("xxErr", &ShapeResult::xxErr);
+    cls.def_readwrite("yyErr", &ShapeResult::yyErr);
+    cls.def_readwrite("xyErr", &ShapeResult::xyErr);
     cls.def_readwrite("xx_yy_Cov", &ShapeResult::xx_yy_Cov);
     cls.def_readwrite("xx_xy_Cov", &ShapeResult::xx_xy_Cov);
     cls.def_readwrite("yy_xy_Cov", &ShapeResult::yy_xy_Cov);

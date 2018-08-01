@@ -619,9 +619,9 @@ bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double y
                     // but the older algorithmic code uses (xx, xy, yy) - the order of
                     // indices here is not a bug.
                     shape->fluxSigma = std::sqrt(cov(0, 0));
-                    shape->xxSigma = std::sqrt(cov(1, 1));
-                    shape->xySigma = std::sqrt(cov(2, 2));
-                    shape->yySigma = std::sqrt(cov(3, 3));
+                    shape->xxErr = std::sqrt(cov(1, 1));
+                    shape->xyErr = std::sqrt(cov(2, 2));
+                    shape->yyErr = std::sqrt(cov(3, 3));
                     shape->flux_xx_Cov = cov(0, 1);
                     shape->flux_xy_Cov = cov(0, 2);
                     shape->flux_yy_Cov = cov(0, 3);

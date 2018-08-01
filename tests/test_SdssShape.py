@@ -64,9 +64,9 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         self.assertFloatsAlmostEqual(result.xx, record.get("truth_xx"), rtol=1E-2)
         self.assertFloatsAlmostEqual(result.yy, record.get("truth_yy"), rtol=1E-2)
         self.assertFloatsAlmostEqual(result.xy, record.get("truth_xy"), rtol=1E-1, atol=2E-1)
-        self.assertFinite(result.xxSigma)
-        self.assertFinite(result.yySigma)
-        self.assertFinite(result.xySigma)
+        self.assertFinite(result.xxErr)
+        self.assertFinite(result.yyErr)
+        self.assertFinite(result.xyErr)
         self.assertFinite(result.flux_xx_Cov)
         self.assertFinite(result.flux_yy_Cov)
         self.assertFinite(result.flux_xy_Cov)
@@ -149,7 +149,7 @@ class SdssShapeTransformTestCase(lsst.meas.base.tests.FluxTransformTestCase,
         lsst.meas.base.tests.FluxTransformTestCase._setFieldsInRecords(self, records, name)
         lsst.meas.base.tests.CentroidTransformTestCase._setFieldsInRecords(self, records, name)
         for record in records:
-            for field in ('xx', 'yy', 'xy', 'xxSigma', 'yySigma', 'xySigma', 'psf_xx', 'psf_yy', 'psf_xy'):
+            for field in ('xx', 'yy', 'xy', 'xxErr', 'yyErr', 'xyErr', 'psf_xx', 'psf_yy', 'psf_xy'):
                 if record.schema.join(name, field) in record.schema:
                     record[record.schema.join(name, field)] = np.random.random()
 

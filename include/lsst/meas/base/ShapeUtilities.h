@@ -44,9 +44,9 @@ struct ShapeResult {
     ShapeElement xx;       // image or model second moment for x^2
     ShapeElement yy;       // image or model second moment for y^2
     ShapeElement xy;       // image or model second moment for xy^2
-    ErrElement xxSigma;    ///< 1-Sigma uncertainty on xx (sqrt of variance)
-    ErrElement yySigma;    ///< 1-Sigma uncertainty on yy (sqrt of variance)
-    ErrElement xySigma;    ///< 1-Sigma uncertainty on xy (sqrt of variance)
+    ErrElement xxErr;    ///< 1-Sigma uncertainty on xx (sqrt of variance)
+    ErrElement yyErr;    ///< 1-Sigma uncertainty on yy (sqrt of variance)
+    ErrElement xyErr;    ///< 1-Sigma uncertainty on xy (sqrt of variance)
     ErrElement xx_yy_Cov;  ///< xx,yy term in the uncertainty convariance matrix
     ErrElement xx_xy_Cov;  ///< xx,xy term in the uncertainty convariance matrix
     ErrElement yy_xy_Cov;  ///< yy,xy term in the uncertainty convariance matrix
@@ -59,22 +59,22 @@ struct ShapeResult {
             : xx(xx_),
               yy(yy_),
               xy(xy_),
-              xxSigma(std::sqrt(matrix(0, 0))),
-              yySigma(std::sqrt(matrix(1, 1))),
-              xySigma(std::sqrt(matrix(2, 2))),
+              xxErr(std::sqrt(matrix(0, 0))),
+              yyErr(std::sqrt(matrix(1, 1))),
+              xyErr(std::sqrt(matrix(2, 2))),
               xx_yy_Cov(matrix(0, 1)),
               xx_xy_Cov(matrix(0, 2)),
               yy_xy_Cov(matrix(1, 2)) {}
 
     /// Constructor; initializes everything from values.
-    explicit ShapeResult(ShapeElement xx_, ShapeElement yy_, ShapeElement xy_, ErrElement xxSigma_,
-                         ErrElement yySigma_, ErrElement xySigma_)
+    explicit ShapeResult(ShapeElement xx_, ShapeElement yy_, ShapeElement xy_, ErrElement xxErr_,
+                         ErrElement yyErr_, ErrElement xyErr_)
             : xx(xx_),
               yy(yy_),
               xy(xy_),
-              xxSigma(xxSigma_),
-              yySigma(yySigma_),
-              xySigma(xySigma_),
+              xxErr(xxErr_),
+              yyErr(yyErr_),
+              xyErr(xyErr_),
               xx_yy_Cov(0.0),
               xx_xy_Cov(0.0),
               yy_xy_Cov(0.0) {}
@@ -96,11 +96,12 @@ struct ShapeResult {
     /// Return the 3x3 symmetric covariance matrix, with rows and columns ordered (xx, yy, xy)
     ShapeCov const getShapeErr() const;
 
-    /// Set the struct uncertainty elements from the given matrix, with rows and columns ordered (xx, yy, xy)
+    /// Set the struct standard deviation elements from the given matrix,
+    /// with rows and columns ordered (xx, yy, xy)
     void setShapeErr(ShapeCov const& matrix);
 
-    /// Set the struct uncertainty elements from the given values
-    void setShapeErr(ErrElement xxSigma, ErrElement yySigma, ErrElement xySigma);
+    /// Set the struct standard deviation elements from the given values
+    void setShapeErr(ErrElement xxErr, ErrElement yyErr, ErrElement xyErr);
 };
 
 /**
