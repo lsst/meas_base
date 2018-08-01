@@ -699,16 +699,16 @@ class FluxTransformTestCase(TransformTestCase):
     def _setFieldsInRecords(self, records, name):
         for record in records:
             record[record.schema.join(name, 'flux')] = np.random.random()
-            record[record.schema.join(name, 'fluxSigma')] = np.random.random()
+            record[record.schema.join(name, 'fluxErr')] = np.random.random()
 
         # Negative fluxes should be converted to NaNs.
         assert len(records) > 1
         records[0][record.schema.join(name, 'flux')] = -1
 
     def _compareFieldsInRecords(self, inSrc, outSrc, name):
-        fluxName, fluxSigmaName = inSrc.schema.join(name, 'flux'), inSrc.schema.join(name, 'fluxSigma')
+        fluxName, fluxErrName = inSrc.schema.join(name, 'flux'), inSrc.schema.join(name, 'fluxErr')
         if inSrc[fluxName] > 0:
-            mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[fluxName], inSrc[fluxSigmaName])
+            mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[fluxName], inSrc[fluxErrName])
             self.assertEqual(outSrc[outSrc.schema.join(name, 'mag')], mag)
             self.assertEqual(outSrc[outSrc.schema.join(name, 'magErr')], magErr)
         else:

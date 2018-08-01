@@ -131,7 +131,7 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         def checkSource(source, baseName, expectedFlux):
             """Check that we get the expected results"""
             self.assertEqual(source.get(baseName + "_flux"), expectedFlux)
-            self.assertGreater(source.get(baseName + "_fluxSigma"), 0)
+            self.assertGreater(source.get(baseName + "_fluxErr"), 0)
             self.assertFalse(source.get(baseName + "_flag"))
 
         # Deblended
@@ -148,7 +148,7 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
             image.getBBox(),
             apCorrValue*np.ones((1, 1), dtype=np.float64)
         )
-        apCorrMap[fieldName + "_fluxSigma"] = afwMath.ChebyshevBoundedField(
+        apCorrMap[fieldName + "_fluxErr"] = afwMath.ChebyshevBoundedField(
             image.getBBox(),
             apCorrValue*np.zeros((1, 1), dtype=np.float64)
         )

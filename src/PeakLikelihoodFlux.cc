@@ -235,7 +235,7 @@ void PeakLikelihoodFluxAlgorithm::measure(afw::table::SourceRecord &measRecord,
     double flux = mimageCtrPix.image() * weight;
     double var = mimageCtrPix.variance() * weight * weight;
     result.flux = flux;
-    result.fluxSigma = std::sqrt(var);
+    result.fluxErr = std::sqrt(var);
     measRecord.set(_fluxResultKey, result);
     _flagHandler.setValue(measRecord, FAILURE.number, false);
 }

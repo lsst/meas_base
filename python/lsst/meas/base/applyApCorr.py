@@ -33,7 +33,7 @@ from .apCorrRegistry import getApCorrNameSet
 # that over-estimates flux error (often grossly so) because it double-counts photon noise.
 # This flag is intended to be temporary until we figure out a better way to compute
 # the effects of aperture correction on flux uncertainty
-UseNaiveFluxSigma = True
+UseNaiveFluxErr = True
 
 __all__ = ("ApplyApCorrConfig", "ApplyApCorrTask")
 
@@ -55,7 +55,7 @@ class ApCorrInfo:
         @param[in,out] schema  source catalog schema;
             three fields are used to generate keys:
             - {name}_flux
-            - {name}_fluxSigma
+            - {name}_fluxErr
             - {name}_flag
             three fields are added:
             - {name}_apCorr (only if not already added by proxy)
@@ -68,13 +68,13 @@ class ApCorrInfo:
         ApCorrInfo has the following attributes:
         - name: field name prefix for flux needing aperture correction
         - modelName: field name for aperture correction model for flux
-        - modelSigmaName: field name for aperture correction model for fluxSigma
+        - modelSigmaName: field name for aperture correction model for fluxErr
         - doApCorrColumn: should we write the aperture correction values? (not if they're already being
              written by a proxy)
         - fluxName: name of flux field
-        - fluxSigmaName: name of flux sigma field
+        - fluxErrName: name of flux sigma field
         - fluxKey: key to flux field
-        - fluxSigmaKey: key to flux sigma field
+        - fluxErrKey: key to flux sigma field
         - fluxFlagKey: key to flux flag field
         - apCorrKey: key to new aperture correction field
         - apCorrFluxKey: key to new aperture correction sigma field
@@ -84,11 +84,11 @@ class ApCorrInfo:
             name = model
         self.name = name
         self.modelName = model + "_flux"
-        self.modelSigmaName = model + "_fluxSigma"
+        self.modelSigmaName = model + "_fluxErr"
         self.fluxName = name + "_flux"
-        self.fluxSigmaName = name + "_fluxSigma"
+        self.fluxErrName = name + "_fluxErr"
         self.fluxKey = schema.find(self.fluxName).key
-        self.fluxSigmaKey = schema.find(self.fluxSigmaName).key
+        self.fluxErrKey = schema.find(self.fluxErrName).key
         self.fluxFlagKey = schema.find(name + "_flag").key
 
         # No need to write the same aperture corrections multiple times
@@ -184,7 +184,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
         aperture correction.
         """
         self.log.info("Applying aperture corrections to %d flux fields", len(self.apCorrInfoDict))
-        if UseNaiveFluxSigma:
+        if UseNaiveFluxErr:
             self.log.debug("Use naive flux sigma computation")
         else:
             self.log.debug("Use complex flux sigma computation that double-counts photon noise "
@@ -214,7 +214,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                 apCorrFlux = 0.0
                 try:
                     apCorr = apCorrModel.evaluate(center)
-                    if not UseNaiveFluxSigma:
+                    if not UseNaiveFluxErr:
                         apCorrFlux = apCorrFluxModel.evaluate(center)
                 except lsst.pex.exceptions.DomainError:
                     continue
@@ -227,14 +227,14 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                     continue
 
                 flux = source.get(apCorrInfo.fluxKey)
-                fluxSigma = source.get(apCorrInfo.fluxSigmaKey)
+                fluxErr = source.get(apCorrInfo.fluxErrKey)
                 source.set(apCorrInfo.fluxKey, flux*apCorr)
-                if UseNaiveFluxSigma:
-                    source.set(apCorrInfo.fluxSigmaKey, fluxSigma*apCorr)
+                if UseNaiveFluxErr:
+                    source.set(apCorrInfo.fluxErrKey, fluxErr*apCorr)
                 else:
-                    a = fluxSigma/flux
+                    a = fluxErr/flux
                     b = apCorrFlux/apCorr
-                    source.set(apCorrInfo.fluxSigmaKey, abs(flux*apCorr)*math.sqrt(a*a + b*b))
+                    source.set(apCorrInfo.fluxErrKey, abs(flux*apCorr)*math.sqrt(a*a + b*b))
                 source.set(apCorrInfo.apCorrFlagKey, False)
                 if self.config.doFlagApCorrFailures:
                     source.set(apCorrInfo.fluxFlagKey, oldFluxFlagState)

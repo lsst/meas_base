@@ -33,9 +33,9 @@ def addApCorrName(name):
     """!Add to the set of field name prefixes for fluxes that should be aperture corrected
 
     @param[in] name  field name prefix for a flux that should be aperture corrected.
-        The corresponding field names are {name}_flux, {name}_fluxSigma and {name}_flag.
+        The corresponding field names are {name}_flux, {name}_fluxErr and {name}_flag.
         For example name "base_PsfFlux" corresponds to fields base_PsfFlux_flux,
-        base_PsfFlux_fluxSigma and base_PsfFlux_flag.
+        base_PsfFlux_fluxErr and base_PsfFlux_flag.
     """
     global _ApCorrNameSet
     _ApCorrNameSet.add(str(name))

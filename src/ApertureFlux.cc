@@ -163,7 +163,7 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux(
     result.flux = (ndarray::asEigenArray(subImage.getImage()->getArray()) *
                    ndarray::asEigenArray(cImage->getArray()))
                           .sum();
-    result.fluxSigma =
+    result.fluxErr =
             std::sqrt((ndarray::asEigenArray(subImage.getVariance()->getArray()).template cast<T>() *
                        ndarray::asEigenArray(cImage->getArray()).square())
                               .sum());
@@ -202,7 +202,7 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeNaiveFlux(
         return result;
     }
     result.flux = 0.0;
-    result.fluxSigma = 0.0;
+    result.fluxErr = 0.0;
     for (afw::geom::ellipses::PixelRegion::Iterator spanIter = region.begin(), spanEnd = region.end();
          spanIter != spanEnd; ++spanIter) {
         typename afw::image::MaskedImage<T>::Image::x_iterator pixIter = image.getImage()->x_at(
@@ -211,9 +211,9 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeNaiveFlux(
                 spanIter->getBeginX() - image.getX0(), spanIter->getY() - image.getY0());
         result.flux += std::accumulate(pixIter, pixIter + spanIter->getWidth(), 0.0);
         // we use this to hold variance as we accumulate...
-        result.fluxSigma += std::accumulate(varIter, varIter + spanIter->getWidth(), 0.0);
+        result.fluxErr += std::accumulate(varIter, varIter + spanIter->getWidth(), 0.0);
     }
-    result.fluxSigma = std::sqrt(result.fluxSigma);  // ...and switch back to sigma here.
+    result.fluxErr = std::sqrt(result.fluxErr);  // ...and switch back to sigma here.
     return result;
 }
 
@@ -292,7 +292,7 @@ void ApertureFluxTransform::operator()(afw::table::SourceCatalog const &inputCat
         for (; inSrc != inputCatalog.end() && outSrc != outputCatalog.end(); ++inSrc, ++outSrc) {
             for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
                 FluxResult fluxResult = fluxKeys[i].get(*inSrc);
-                _magKeys[i].set(*outSrc, calib.getMagnitude(fluxResult.flux, fluxResult.fluxSigma));
+                _magKeys[i].set(*outSrc, calib.getMagnitude(fluxResult.flux, fluxResult.fluxErr));
             }
         }
     }

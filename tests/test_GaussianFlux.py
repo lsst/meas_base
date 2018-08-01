@@ -77,10 +77,10 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         flux = record.get("truth_flux")
         algorithm.measure(record, exposure)
         self.assertFloatsAlmostEqual(record.get("base_GaussianFlux_flux"), flux, rtol=1E-3)
-        self.assertLess(record.get("base_GaussianFlux_fluxSigma"), 1E-3)
+        self.assertLess(record.get("base_GaussianFlux_fluxErr"), 1E-3)
         for noise in (0.001, 0.01, 0.1):
             fluxes = []
-            fluxSigmas = []
+            fluxErrs = []
             nSamples = 1000
             for repeat in range(nSamples):
                 # By using ``repeat`` to seed the RNG, we get results which fall within the tolerances
@@ -89,12 +89,12 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                 record = catalog[1]
                 algorithm.measure(record, exposure)
                 fluxes.append(record.get("base_GaussianFlux_flux"))
-                fluxSigmas.append(record.get("base_GaussianFlux_fluxSigma"))
+                fluxErrs.append(record.get("base_GaussianFlux_fluxErr"))
             fluxMean = np.mean(fluxes)
-            fluxSigmaMean = np.mean(fluxSigmas)
+            fluxErrMean = np.mean(fluxErrs)
             fluxStandardDeviation = np.std(fluxes)
-            self.assertFloatsAlmostEqual(fluxSigmaMean, fluxStandardDeviation, rtol=0.10)
-            self.assertLess(fluxMean - flux, 2.0*fluxSigmaMean / nSamples**0.5)
+            self.assertFloatsAlmostEqual(fluxErrMean, fluxStandardDeviation, rtol=0.10)
+            self.assertLess(fluxMean - flux, 2.0*fluxErrMean / nSamples**0.5)
 
     def testForcedPlugin(self):
         task = self.makeForcedMeasurementTask("base_GaussianFlux")
@@ -120,7 +120,7 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             # what it was found to be at one point.
             self.assertFloatsAlmostEqual(measRecord.get("base_GaussianFlux_flux"),
                                          truthCatalog.get("truth_flux"), rtol=0.3)
-            self.assertLess(measRecord.get("base_GaussianFlux_fluxSigma"), 500.0)
+            self.assertLess(measRecord.get("base_GaussianFlux_fluxErr"), 500.0)
 
 
 class GaussianFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,

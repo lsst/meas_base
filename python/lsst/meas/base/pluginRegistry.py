@@ -104,7 +104,7 @@ class PluginRegistry(lsst.pex.config.Registry):
             as well as enough of the namespace to make it clear where to find the code.
             For example "base_GaussianFlux" indicates an algorithm in meas_base
             that measures Gaussian Flux and produces fields such as "base_GaussianFlux_flux",
-            "base_GaussianFlux_fluxSigma" and "base_GaussianFlux_flag".
+            "base_GaussianFlux_fluxErr" and "base_GaussianFlux_flag".
         @param[in] shouldApCorr  if True then this algorithm measures a flux that should be aperture
             corrected. This is shorthand for apCorrList=[name] and is ignored if apCorrList is specified.
         @param[in] apCorrList  list of field name prefixes for flux fields that should be aperture corrected.

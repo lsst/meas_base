@@ -61,7 +61,7 @@ class LocalBackgroundTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
         # Check the background measurements
         bgValue = src.get(self.algName + "_flux")
-        bgStdev = src.get(self.algName + "_fluxSigma")
+        bgStdev = src.get(self.algName + "_fluxErr")
         self.assertFalse(src.get(self.algName + "_flag"))
         self.assertFalse(src.get(self.algName + "_flag_noGoodPixels"))
         self.assertFalse(src.get(self.algName + "_flag_noPsf"))

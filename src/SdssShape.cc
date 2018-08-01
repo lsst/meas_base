@@ -618,7 +618,7 @@ bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double y
                     // convention in afw::geom::ellipses is to order moments (xx, yy, xy),
                     // but the older algorithmic code uses (xx, xy, yy) - the order of
                     // indices here is not a bug.
-                    shape->fluxSigma = std::sqrt(cov(0, 0));
+                    shape->fluxErr = std::sqrt(cov(0, 0));
                     shape->xxErr = std::sqrt(cov(1, 1));
                     shape->xyErr = std::sqrt(cov(2, 2));
                     shape->yyErr = std::sqrt(cov(3, 3));
@@ -806,12 +806,12 @@ SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(ImageT const &image, 
     }
 
     // getAdaptiveMoments() just computes the zeroth moment in result.flux (and its error in
-    // result.fluxSigma, result.flux_xx_Cov, etc.)  That's related to the flux by some geometric
+    // result.fluxErr, result.flux_xx_Cov, etc.)  That's related to the flux by some geometric
     // factors, which we apply here.
     double fluxScale = computeFluxScale(result);
 
     result.flux *= fluxScale;
-    result.fluxSigma *= fluxScale;
+    result.fluxErr *= fluxScale;
     result.x += image.getX0();
     result.y += image.getY0();
 
@@ -869,7 +869,7 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(ImageT const &image,
         }
         double var = ImageAdaptor<ImageT>().getVariance(image, ix, iy);
         double i0Err = std::sqrt(var / wArea);
-        result.fluxSigma = i0Err * 2 * wArea;
+        result.fluxErr = i0Err * 2 * wArea;
     }
 
     return result;

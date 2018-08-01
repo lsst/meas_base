@@ -76,17 +76,17 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
         abConfig = catCalc.CatalogCalculationConfig()
 
         def runFlagTest(psfFlux=100.0, modelFlux=200.0,
-                        psfFluxSigma=1.0, modelFluxSigma=2.0,
+                        psfFluxErr=1.0, modelFluxErr=2.0,
                         psfFluxFlag=False, modelFluxFlag=False):
             task = self.makeSingleFrameMeasurementTask(config=config)
             abTask = catCalc.CatalogCalculationTask(schema=task.schema, config=abConfig)
             exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=1)
             source = catalog[0]
             source.set("base_PsfFlux_flux", psfFlux)
-            source.set("base_PsfFlux_fluxSigma", psfFluxSigma)
+            source.set("base_PsfFlux_fluxErr", psfFluxErr)
             source.set("base_PsfFlux_flag", psfFluxFlag)
             source.set("base_GaussianFlux_flux", modelFlux)
-            source.set("base_GaussianFlux_fluxSigma", modelFluxSigma)
+            source.set("base_GaussianFlux_fluxErr", modelFluxErr)
             source.set("base_GaussianFlux_flag", modelFluxFlag)
             abTask.plugins["base_ClassificationExtendedness"].calculate(source)
             return source.get("base_ClassificationExtendedness_flag")
@@ -108,15 +108,15 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
 
         #  Test modelFluxErr NAN case when modelErrFactor is zero and non-zero
         abConfig.plugins["base_ClassificationExtendedness"].modelErrFactor = 0.
-        self.assertFalse(runFlagTest(modelFluxSigma=float("NaN")))
+        self.assertFalse(runFlagTest(modelFluxErr=float("NaN")))
         abConfig.plugins["base_ClassificationExtendedness"].modelErrFactor = 1.
-        self.assertTrue(runFlagTest(modelFluxSigma=float("NaN")))
+        self.assertTrue(runFlagTest(modelFluxErr=float("NaN")))
 
         #  Test psfFluxErr NAN case when psfErrFactor is zero and non-zero
         abConfig.plugins["base_ClassificationExtendedness"].psfErrFactor = 0.
-        self.assertFalse(runFlagTest(psfFluxSigma=float("NaN")))
+        self.assertFalse(runFlagTest(psfFluxErr=float("NaN")))
         abConfig.plugins["base_ClassificationExtendedness"].psfErrFactor = 1.
-        self.assertTrue(runFlagTest(psfFluxSigma=float("NaN")))
+        self.assertTrue(runFlagTest(psfFluxErr=float("NaN")))
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
