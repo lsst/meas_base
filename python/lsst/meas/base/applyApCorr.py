@@ -59,7 +59,7 @@ class ApCorrInfo:
             - {name}_flag
             three fields are added:
             - {name}_apCorr (only if not already added by proxy)
-            - {name}_apCorrSigma (only if not already added by proxy)
+            - {name}_apCorrFlux (only if not already added by proxy)
             - {name}_flag_apCorr
         @param[in] model  field name prefix for flux with aperture correction model, e.g. "base_PsfFlux"
         @param[in] name  field name prefix for flux needing aperture correction; may be None if it's the
@@ -77,7 +77,7 @@ class ApCorrInfo:
         - fluxSigmaKey: key to flux sigma field
         - fluxFlagKey: key to flux flag field
         - apCorrKey: key to new aperture correction field
-        - apCorrSigmaKey: key to new aperture correction sigma field
+        - apCorrFluxKey: key to new aperture correction sigma field
         - apCorrFlagKey: key to new aperture correction flag field
         """
         if name is None:
@@ -99,17 +99,17 @@ class ApCorrInfo:
                 doc="aperture correction applied to %s" % (name,),
                 type=np.float64,
             )
-            self.apCorrSigmaKey = schema.addField(
-                name + "_apCorrSigma",
+            self.apCorrFluxKey = schema.addField(
+                name + "_apCorrFlux",
                 doc="aperture correction applied to %s" % (name,),
                 type=np.float64,
             )
         else:
             aliases = schema.getAliasMap()
             aliases.set(name + "_apCorr", model + "_apCorr")
-            aliases.set(name + "_apCorrSigma", model + "_apCorrSigma")
+            aliases.set(name + "_apCorrFlux", model + "_apCorrFlux")
             self.apCorrKey = schema.find(name + "_apCorr").key
-            self.apCorrSigmaKey = schema.find(name + "_apCorrSigma").key
+            self.apCorrFluxKey = schema.find(name + "_apCorrFlux").key
 
         self.apCorrFlagKey = schema.addField(
             name + "_flag_apCorr",
@@ -191,10 +191,10 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                            "and thus over-estimates flux uncertainty")
         for apCorrInfo in self.apCorrInfoDict.values():
             apCorrModel = apCorrMap.get(apCorrInfo.modelName)
-            apCorrSigmaModel = apCorrMap.get(apCorrInfo.modelSigmaName)
-            if None in (apCorrModel, apCorrSigmaModel):
+            apCorrFluxModel = apCorrMap.get(apCorrInfo.modelSigmaName)
+            if None in (apCorrModel, apCorrFluxModel):
                 missingNames = [(apCorrInfo.modelName, apCorrInfo.modelSigmaName)[i]
-                                for i, model in enumerate((apCorrModel, apCorrSigmaModel)) if model is None]
+                                for i, model in enumerate((apCorrModel, apCorrFluxModel)) if model is None]
                 self.log.warn("Cannot aperture correct %s because could not find %s in apCorrMap" %
                               (apCorrInfo.name, " or ".join(missingNames),))
                 for source in catalog:
@@ -211,19 +211,19 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                     source.set(apCorrInfo.fluxFlagKey, True)
 
                 apCorr = 1.0
-                apCorrSigma = 0.0
+                apCorrFlux = 0.0
                 try:
                     apCorr = apCorrModel.evaluate(center)
                     if not UseNaiveFluxSigma:
-                        apCorrSigma = apCorrSigmaModel.evaluate(center)
+                        apCorrFlux = apCorrFluxModel.evaluate(center)
                 except lsst.pex.exceptions.DomainError:
                     continue
 
                 if apCorrInfo.doApCorrColumn:
                     source.set(apCorrInfo.apCorrKey, apCorr)
-                    source.set(apCorrInfo.apCorrSigmaKey, apCorrSigma)
+                    source.set(apCorrInfo.apCorrFluxKey, apCorrFlux)
 
-                if apCorr <= 0.0 or apCorrSigma < 0.0:
+                if apCorr <= 0.0 or apCorrFlux < 0.0:
                     continue
 
                 flux = source.get(apCorrInfo.fluxKey)
@@ -233,7 +233,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                     source.set(apCorrInfo.fluxSigmaKey, fluxSigma*apCorr)
                 else:
                     a = fluxSigma/flux
-                    b = apCorrSigma/apCorr
+                    b = apCorrFlux/apCorr
                     source.set(apCorrInfo.fluxSigmaKey, abs(flux*apCorr)*math.sqrt(a*a + b*b))
                 source.set(apCorrInfo.apCorrFlagKey, False)
                 if self.config.doFlagApCorrFailures:
@@ -242,8 +242,8 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
             if self.log.getLevel() <= self.log.DEBUG:
                 # log statistics on the effects of aperture correction
                 apCorrArr = np.array([s.get(apCorrInfo.apCorrKey) for s in catalog])
-                apCorrSigmaArr = np.array([s.get(apCorrInfo.apCorrSigmaKey) for s in catalog])
+                apCorrFluxArr = np.array([s.get(apCorrInfo.apCorrFluxKey) for s in catalog])
                 self.log.debug("For flux field %r: mean apCorr=%s, stdDev apCorr=%s, "
-                               "mean apCorrSigma=%s, stdDev apCorrSigma=%s for %s sources",
+                               "mean apCorrFlux=%s, stdDev apCorrFlux=%s for %s sources",
                                apCorrInfo.name, apCorrArr.mean(), apCorrArr.std(),
-                               apCorrSigmaArr.mean(), apCorrSigmaArr.std(), len(catalog))
+                               apCorrFluxArr.mean(), apCorrFluxArr.std(), len(catalog))

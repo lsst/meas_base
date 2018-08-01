@@ -164,9 +164,9 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         checkSource(child2, "undeblended_" + fieldName, (flux1 + flux2)*apCorrValue)
 
         self.assertIn(fieldName + "_apCorr", schema)
-        self.assertIn(fieldName + "_apCorrSigma", schema)
+        self.assertIn(fieldName + "_apCorrFlux", schema)
         self.assertIn("undeblended_" + fieldName + "_apCorr", schema)
-        self.assertIn("undeblended_" + fieldName + "_apCorrSigma", schema)
+        self.assertIn("undeblended_" + fieldName + "_apCorrFlux", schema)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):

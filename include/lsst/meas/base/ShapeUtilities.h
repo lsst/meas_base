@@ -41,12 +41,12 @@ namespace base {
  *  obfuscate the results of the measurement (i.e. use this one unless you have a good reason not to).
  */
 struct ShapeResult {
-    ShapeElement xx;       // image or model second moment for x^2
-    ShapeElement yy;       // image or model second moment for y^2
-    ShapeElement xy;       // image or model second moment for xy^2
-    ErrElement xxErr;    ///< 1-Sigma uncertainty on xx (sqrt of variance)
-    ErrElement yyErr;    ///< 1-Sigma uncertainty on yy (sqrt of variance)
-    ErrElement xyErr;    ///< 1-Sigma uncertainty on xy (sqrt of variance)
+    ShapeElement xx;       ///< image or model second moment for x^2
+    ShapeElement yy;       ///< image or model second moment for y^2
+    ShapeElement xy;       ///< image or model second moment for xy^2
+    ErrElement xxErr;      ///< standard deviation of xx
+    ErrElement yyErr;      ///< standard deviation of yy
+    ErrElement xyErr;      ///< standard deviation of xy
     ErrElement xx_yy_Cov;  ///< xx,yy term in the uncertainty convariance matrix
     ErrElement xx_xy_Cov;  ///< xx,xy term in the uncertainty convariance matrix
     ErrElement yy_xy_Cov;  ///< yy,xy term in the uncertainty convariance matrix
