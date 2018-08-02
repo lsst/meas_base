@@ -35,8 +35,7 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.center = lsst.geom.Point2D(50.1, 49.8)
-        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
-                                    lsst.geom.Extent2I(100, 100))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(100, 100), invert=False)
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.sourceFlux = 100000.0
         self.dataset.addSource(self.sourceFlux, self.center)

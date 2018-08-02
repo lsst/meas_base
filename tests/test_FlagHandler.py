@@ -101,7 +101,7 @@ class PythonPlugin(SingleFramePlugin):
 
         # create a square bounding box of size = config.size around the center
         centerPoint = lsst.geom.Point2I(int(center.getX()), int(center.getY()))
-        bbox = lsst.geom.Box2I(centerPoint, lsst.geom.Extent2I(1, 1))
+        bbox = lsst.geom.Box2I(centerPoint, lsst.geom.Extent2I(1, 1), invert=False)
         bbox.grow(self.config.size)
 
         # If the measurement box falls outside the exposure, raise the edge MeasurementError
@@ -141,7 +141,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.algName = "test_PythonPlugin"
-        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(100, 100))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(100, 100), invert=False)
         self.dataset = lsst.meas.base.tests.TestDataset(bbox)
         self.dataset.addSource(flux=1E5, centroid=lsst.geom.Point2D(25, 26))
         config = lsst.meas.base.SingleFrameMeasurementConfig()

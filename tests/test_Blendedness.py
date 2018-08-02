@@ -52,8 +52,7 @@ class BlendednessTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.center = lsst.geom.Point2D(50.1, 49.8)
-        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(1, 4),
-                                    lsst.geom.Extent2I(110, 160))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(1, 4), lsst.geom.Extent2I(110, 160), invert=False)
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         with self.dataset.addBlend() as family:
             family.addChild(flux=2E5, centroid=lsst.geom.Point2D(47, 33))

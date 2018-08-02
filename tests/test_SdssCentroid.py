@@ -43,8 +43,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
         self.center = lsst.geom.Point2D(50.1, 49.8)
-        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30),
-                                    lsst.geom.Extent2I(140, 160))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30), lsst.geom.Extent2I(140, 160), invert=False)
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(100000.0, self.center)
 
@@ -139,7 +138,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=3)
         # cutout a subimage around object in the test image
-        bbox = lsst.geom.Box2I(lsst.geom.Point2I(self.center), lsst.geom.Extent2I(1, 1))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(self.center), lsst.geom.Extent2I(1, 1), invert=False)
         bbox.grow(20)
         subImage = lsst.afw.image.ExposureF(exposure, bbox)
         # A completely flat image will trigger the no 2nd derivative error
@@ -152,7 +151,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=4)
         # cutout a subimage around the object in the test image
-        bbox = lsst.geom.Box2I(lsst.geom.Point2I(self.center), lsst.geom.Extent2I(1, 1))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(self.center), lsst.geom.Extent2I(1, 1), invert=False)
         bbox.grow(20)
         subImage = lsst.afw.image.ExposureF(exposure, bbox)
         # zero out the central region, which will destroy the maximum

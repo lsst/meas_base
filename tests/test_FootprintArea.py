@@ -32,8 +32,7 @@ class FootprintAreaTestCase(lsst.meas.base.tests.AlgorithmTestCase,
 
     def setUp(self):
         self.center = lsst.geom.Point2D(50.1, 49.8)
-        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30),
-                                    lsst.geom.Extent2I(140, 160))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30), lsst.geom.Extent2I(140, 160), invert=False)
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(100000.0, self.center)
 

@@ -201,7 +201,7 @@ geom::Box2I computeAdaptiveMomentsBBox(geom::Box2I const &bbox,      // full ima
 ) {
     double radius = std::min(4 * std::sqrt(std::max(sigma11_w, sigma22_w)), maxRadius);
     geom::Extent2D offset(radius, radius);
-    geom::Box2I result(geom::Box2D(center - offset, center + offset));
+    geom::Box2I result(geom::Box2D(center - offset, center + offset, false));
     result.clip(bbox);
     return result;
 }

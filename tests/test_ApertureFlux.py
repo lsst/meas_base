@@ -37,7 +37,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
     """Test case for the ApertureFlux algorithm base class."""
 
     def setUp(self):
-        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(20, -100), lsst.geom.Point2I(100, -20))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(20, -100), lsst.geom.Point2I(100, -20), invert=False)
         self.exposure = lsst.afw.image.ExposureF(self.bbox)
         self.exposure.getMaskedImage().getImage().set(1.0)
         self.exposure.getMaskedImage().getVariance().set(0.25)
@@ -148,8 +148,7 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
     """Test case for the CircularApertureFlux algorithm/plugin."""
 
     def setUp(self):
-        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
-                                    lsst.geom.Extent2I(100, 100))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(100, 100), invert=False)
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         # first source is a point
         self.dataset.addSource(100000.0, lsst.geom.Point2D(49.5, 49.5))

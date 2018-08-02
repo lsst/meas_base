@@ -181,7 +181,7 @@ void PixelFlagsAlgorithm::measure(afw::table::SourceRecord& measRecord,
                       afw::image::positionToIndex(center.getY()) - 1);
 
     func.reset();
-    auto spans = std::make_shared<afw::geom::SpanSet>(geom::Box2I(llc, geom::ExtentI(3)));
+    auto spans = std::make_shared<afw::geom::SpanSet>(geom::Box2I(llc, geom::ExtentI(3), false));
     afw::detection::Footprint const middle(spans);  // central 3x3
     middle.getSpans()->clippedTo(mimage.getBBox())->applyFunctor(func, *(mimage.getMask()));
 

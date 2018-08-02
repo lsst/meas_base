@@ -109,7 +109,7 @@ class SincPhotSums(lsst.utils.tests.TestCase):
         coordList = [[self.nx/2, self.ny/2, self.val, self.sigma]]
 
         # exposure with gaussian
-        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(self.nx, self.ny))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(self.nx, self.ny), invert=False)
         self.expGaussPsf = plantSources(bbox, self.kwid, self.sky, coordList, addPoissonNoise=False)
 
         # just plain sky (ie. a constant)

@@ -78,7 +78,7 @@ class LoggingPlugin(SingleFramePlugin):
         lsst.log.Log.getLogger(self.getLogName()).info("%s plugin measuring."%(self.name,))
         # Sum the pixels inside the bounding box
         centerPoint = lsst.geom.Point2I(int(measRecord.getX()), int(measRecord.getY()))
-        bbox = lsst.geom.Box2I(centerPoint, lsst.geom.Extent2I(1, 1))
+        bbox = lsst.geom.Box2I(centerPoint, lsst.geom.Extent2I(1, 1), invert=False)
         flux = lsst.afw.image.ImageF(exposure.getMaskedImage().getImage(), bbox).getArray().sum()
         measRecord.set(self.fluxKey, flux)
 
@@ -126,8 +126,7 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     """
     def testSingleFramePlugins(self):
         center = lsst.geom.Point2D(50, 50)
-        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
-                               lsst.geom.Extent2I(100, 100))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(100, 100), invert=False)
         dataset = lsst.meas.base.tests.TestDataset(bbox)
         dataset.addSource(1000000.0, center)
         registry = SingleFramePlugin.registry
@@ -149,8 +148,7 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     def testForcedPlugins(self):
         #   Test all the ForcedPlugins registered to see if their logName is set as expected.
         center = lsst.geom.Point2D(50, 50)
-        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
-                               lsst.geom.Extent2I(100, 100))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(100, 100), invert=False)
         dataset = lsst.meas.base.tests.TestDataset(bbox)
         dataset.addSource(1000000.0, center)
         registry = ForcedPlugin.registry
@@ -183,7 +181,7 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     Test one C++ and one Python plugin which are known to have hasLogName=True
     """
     def setUp(self):
-        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(100, 100))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(100, 100), invert=False)
         self.dataset = lsst.meas.base.tests.TestDataset(bbox)
         self.dataset.addSource(flux=1E5, centroid=lsst.geom.Point2D(25, 25))
         config = lsst.meas.base.SingleFrameMeasurementConfig()
@@ -255,8 +253,7 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     def setUp(self):
         #   object in corner to trigger EDGE error
         self.center = lsst.geom.Point2D(5, 5)
-        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
-                                    lsst.geom.Extent2I(100, 100))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(100, 100), invert=False)
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(1000000.0, self.center)
         self.task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
@@ -311,8 +308,7 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     def setUp(self):
         #   object in corner to trigger EDGE error
         self.center = lsst.geom.Point2D(0, 0)
-        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
-                                    lsst.geom.Extent2I(100, 100))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(100, 100), invert=False)
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(1000000.0, self.center)
         self.task = self.makeForcedMeasurementTask("base_SdssCentroid")

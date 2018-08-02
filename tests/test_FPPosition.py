@@ -36,8 +36,7 @@ class FPPositionTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         # Define point2D object which are distributed about a detector
         self.positions = [lsst.geom.Point2D(*x) for x in ((50.1, 49.8), (12, 15.6), (13.4, 100.0))]
         # Define a box which will be used to as boundaries to construct an detector object
-        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30),
-                                    lsst.geom.Extent2I(140, 160))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30), lsst.geom.Extent2I(140, 160), invert=False)
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         # Add in sources to synthetic dataset at defined positions with an arbitrary value
         for pos in self.positions:

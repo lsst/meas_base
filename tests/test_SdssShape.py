@@ -34,8 +34,7 @@ import lsst.utils.tests
 class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
-        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30),
-                                    lsst.geom.Extent2I(240, 160))
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30), lsst.geom.Extent2I(240, 160), invert=False)
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         # first source is a point
         self.dataset.addSource(100000.0, lsst.geom.Point2D(50.1, 49.8))

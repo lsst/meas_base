@@ -578,7 +578,7 @@ class TransformTestCase:
     forcedPlugins = ()
 
     def setUp(self):
-        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(200, 200))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(200, 200), invert=False)
         self.calexp = TestDataset.makeEmptyExposure(bbox)
         self._setupTransform()
 

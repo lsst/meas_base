@@ -99,7 +99,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     #   Setup a configuration and datasource to be used by the plugin tests
     def setUp(self):
         self.algName = "test_Centroider"
-        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(100, 100))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(100, 100), invert=False)
         self.dataset = lsst.meas.base.tests.TestDataset(bbox)
         self.dataset.addSource(flux=1E5, centroid=lsst.geom.Point2D(25, 26))
 

@@ -102,7 +102,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
     def testPeakLikelihoodFlux(self):
         """Test measurement with PeakLikelihoodFlux."""
         # make and measure a series of exposures containing just one star, approximately centered
-        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(100, 101))
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(100, 101), invert=False)
         kernelWidth = 35
         var = 100
         fwhm = 3.0
@@ -225,7 +225,8 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         mask[40, 20, afwImage.LOCAL] = bad
         mask[20, 80, afwImage.LOCAL] = nodata
         mask[30, 30, afwImage.LOCAL] = clipped
-        mask.Factory(mask, lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(3, height))).set(edge)
+        mask.Factory(mask, lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(3, height),
+                                           invert=False)).set(edge)
         x0, y0 = 1234, 5678
         exp.setXY0(lsst.geom.Point2I(x0, y0))
         control = measBase.PixelFlagsControl()

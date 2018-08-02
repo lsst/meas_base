@@ -132,7 +132,7 @@ class InputCountTest(lsst.utils.tests.TestCase):
         crval = lsst.geom.SpherePoint(0.0, 0.0, lsst.geom.degrees)
 
         # Construct the info needed to set the exposure object
-        imageBox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(size, size))
+        imageBox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(size, size), invert=False)
         wcsRef = afwGeom.makeSkyWcs(crpix=lsst.geom.Point2D(0, 0), crval=crval, cdMatrix=cdMatrix)
 
         # Create the exposure object, and set it up to be the output of a coadd
