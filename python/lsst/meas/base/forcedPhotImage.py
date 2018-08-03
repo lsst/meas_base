@@ -86,8 +86,8 @@ class ForcedPhotImageTask(lsst.pipe.base.CmdLineTask):
     """!A base class for command-line forced measurement drivers.
 
     This is a an abstract class, which is the common ancestor for ForcedPhotCcdTask
-    and ForcedPhotCoaddTask.  It provides the run() method that does most of the
-    work, while delegating a few customization tasks to other methods that are
+    and ForcedPhotCoaddTask.  It provides the runDataRef() method that does most of
+    the work, while delegating a few customization tasks to other methods that are
     overridden by subclasses.
 
     This task is not directly usable as a CmdLineTask; subclasses must:
@@ -120,7 +120,7 @@ class ForcedPhotImageTask(lsst.pipe.base.CmdLineTask):
             self.makeSubtask("applyApCorr", schema=self.measurement.schema)
         self.makeSubtask('catalogCalculation', schema=self.measurement.schema)
 
-    def run(self, dataRef, psfCache=None):
+    def runDataRef(self, dataRef, psfCache=None):
         """!Measure a single exposure using forced detection for a reference catalog.
 
         @param[in]  dataRef   An lsst.daf.persistence.ButlerDataRef. It is passed to the
