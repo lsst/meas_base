@@ -48,14 +48,14 @@ void declareCentroidResult(py::module &mod) {
 
     cls.def_readwrite("x", &CentroidResult::x);
     cls.def_readwrite("y", &CentroidResult::y);
-    cls.def_readwrite("xSigma", &CentroidResult::xSigma);
-    cls.def_readwrite("ySigma", &CentroidResult::ySigma);
+    cls.def_readwrite("xErr", &CentroidResult::xErr);
+    cls.def_readwrite("yErr", &CentroidResult::yErr);
     cls.def_readwrite("x_y_Cov", &CentroidResult::x_y_Cov);
 
     cls.def(py::init<>());
     cls.def(py::init<CentroidElement, CentroidElement, CentroidCov const &>(), "x"_a, "y"_a, "matrix"_a);
-    cls.def(py::init<CentroidElement, CentroidElement, ErrElement, ErrElement>(), "x"_a, "y"_a, "xSigma"_a,
-            "ySigma"_a);
+    cls.def(py::init<CentroidElement, CentroidElement, ErrElement, ErrElement>(), "x"_a, "y"_a, "xErr"_a,
+            "yErr"_a);
 
     cls.def("getCentroid", &CentroidResult::getCentroid);
     cls.def("setCentroid", &CentroidResult::setCentroid, "centroid"_a);
@@ -64,8 +64,8 @@ void declareCentroidResult(py::module &mod) {
     cls.def("setCentroidErr",
             (void (CentroidResult::*)(CentroidCov const &)) & CentroidResult::setCentroidErr, "matrix"_a);
     cls.def("setCentroidErr",
-            (void (CentroidResult::*)(ErrElement, ErrElement)) & CentroidResult::setCentroidErr, "xSigma"_a,
-            "ySigma"_a);
+            (void (CentroidResult::*)(ErrElement, ErrElement)) & CentroidResult::setCentroidErr, "xErr"_a,
+            "yErr"_a);
 }
 
 void declareCentroidResultKey(py::module &mod) {

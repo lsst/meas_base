@@ -31,13 +31,13 @@ namespace base {
 
 FluxResult::FluxResult()
         : flux(std::numeric_limits<Flux>::quiet_NaN()),
-          fluxSigma(std::numeric_limits<FluxErrElement>::quiet_NaN()) {}
+          fluxErr(std::numeric_limits<FluxErrElement>::quiet_NaN()) {}
 
 FluxResultKey FluxResultKey::addFields(afw::table::Schema& schema, std::string const& name,
                                        std::string const& doc) {
     FluxResultKey result;
     result._flux = schema.addField<Flux>(schema.join(name, "flux"), doc, "count");
-    result._fluxSigma = schema.addField<FluxErrElement>(schema.join(name, "fluxSigma"),
+    result._fluxErr = schema.addField<FluxErrElement>(schema.join(name, "fluxErr"),
                                                         "1-sigma flux uncertainty", "count");
     return result;
 }
@@ -45,13 +45,13 @@ FluxResultKey FluxResultKey::addFields(afw::table::Schema& schema, std::string c
 FluxResult FluxResultKey::get(afw::table::BaseRecord const& record) const {
     FluxResult r;
     r.flux = record.get(_flux);
-    r.fluxSigma = record.get(_fluxSigma);
+    r.fluxErr = record.get(_fluxErr);
     return r;
 }
 
 void FluxResultKey::set(afw::table::BaseRecord& record, FluxResult const& value) const {
     record.set(_flux, value.flux);
-    record.set(_fluxSigma, value.fluxSigma);
+    record.set(_fluxErr, value.fluxErr);
 }
 
 MagResultKey MagResultKey::addFields(afw::table::Schema& schema, std::string const& name) {
@@ -98,7 +98,7 @@ void FluxTransform::operator()(afw::table::SourceCatalog const& inputCatalog,
         NoThrowOnNegativeFluxContext noThrow;
         for (; inSrc != inputCatalog.end() && outSrc != outputCatalog.end(); ++inSrc, ++outSrc) {
             FluxResult fluxResult = fluxKey.get(*inSrc);
-            _magKey.set(*outSrc, calib.getMagnitude(fluxResult.flux, fluxResult.fluxSigma));
+            _magKey.set(*outSrc, calib.getMagnitude(fluxResult.flux, fluxResult.fluxErr));
         }
     }
 }

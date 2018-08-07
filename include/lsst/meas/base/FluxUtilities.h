@@ -40,13 +40,13 @@ namespace base {
  */
 struct FluxResult {
     Flux flux;                 ///< Measured flux in DN.
-    FluxErrElement fluxSigma;  ///< 1-Sigma error (sqrt of variance) on flux in DN.
+    FluxErrElement fluxErr;  ///< Standard deviation of flux in DN.
 
     /// Default constructor; initializes everything to NaN.
     FluxResult();
 
     /// Constructor from flux and its uncertainty
-    explicit FluxResult(Flux flux_, FluxErrElement fluxSigma_) : flux(flux_), fluxSigma(fluxSigma_) {}
+    explicit FluxResult(Flux flux_, FluxErrElement fluxErr_) : flux(flux_), fluxErr(fluxErr_) {}
 };
 
 /**
@@ -58,10 +58,10 @@ struct FluxResult {
 class FluxResultKey : public afw::table::FunctorKey<FluxResult> {
 public:
     /**
-     *  Add a pair of _flux, _fluxSigma fields to a Schema, and return a FluxResultKey that points to them.
+     *  Add a pair of _flux, _fluxErr fields to a Schema, and return a FluxResultKey that points to them.
      *
      *  @param[in,out] schema  Schema to add fields to.
-     *  @param[in]     name    Name prefix for all fields; "_flux", "_fluxSigma" will be appended to this
+     *  @param[in]     name    Name prefix for all fields; "_flux", "_fluxErr" will be appended to this
      *                         to form the full field names.
      *  @param[in]     doc     String used as the documentation for the fields.
      *
@@ -71,23 +71,23 @@ public:
                                    std::string const& doc);
 
     /// Default constructor; instance will not be usuable unless subsequently assigned to.
-    FluxResultKey() : _flux(), _fluxSigma() {}
+    FluxResultKey() : _flux(), _fluxErr() {}
 
     /// Construct from a pair of Keys
     FluxResultKey(afw::table::Key<meas::base::Flux> const& flux,  // namespace qualification to unconfuse swig
-                  afw::table::Key<FluxErrElement> const& fluxSigma)
-            : _flux(flux), _fluxSigma(fluxSigma) {}
+                  afw::table::Key<FluxErrElement> const& fluxErr)
+            : _flux(flux), _fluxErr(fluxErr) {}
 
     /**
-     *  @brief Construct from a subschema, assuming flux and fluxSigma subfields
+     *  @brief Construct from a subschema, assuming flux and fluxErr subfields
      *
-     *  If a schema has "a_flux" and "a_fluxSigma" fields, this constructor allows you to construct
+     *  If a schema has "a_flux" and "a_fluxErr" fields, this constructor allows you to construct
      *  a FluxResultKey via:
      *  @code
      *  FluxResultKey k(schema["a"]);
      *  @endcode
      */
-    FluxResultKey(afw::table::SubSchema const& s) : _flux(s["flux"]), _fluxSigma(s["fluxSigma"]) {}
+    FluxResultKey(afw::table::SubSchema const& s) : _flux(s["flux"]), _fluxErr(s["fluxErr"]) {}
 
     /// Get a FluxResult from the given record
     virtual FluxResult get(afw::table::BaseRecord const& record) const;
@@ -96,25 +96,25 @@ public:
     virtual void set(afw::table::BaseRecord& record, FluxResult const& other) const;
 
     //@{
-    /// Compare the FunctorKey for equality with another, using the underlying flux and fluxSigma Keys
+    /// Compare the FunctorKey for equality with another, using the underlying flux and fluxErr Keys
     bool operator==(FluxResultKey const& other) const {
-        return _flux == other._flux && _fluxSigma == other._fluxSigma;
+        return _flux == other._flux && _fluxErr == other._fluxErr;
     }
     bool operator!=(FluxResultKey const& other) const { return !(*this == other); }
     //@}
 
-    /// Return True if both the flux and fluxSigma Keys are valid.
-    bool isValid() const { return _flux.isValid() && _fluxSigma.isValid(); }
+    /// Return True if both the flux and fluxErr Keys are valid.
+    bool isValid() const { return _flux.isValid() && _fluxErr.isValid(); }
 
     /// Return the underlying flux Key
     afw::table::Key<meas::base::Flux> getFlux() const { return _flux; }
 
-    /// Return the underlying fluxSigma Key
-    afw::table::Key<FluxErrElement> getFluxSigma() const { return _fluxSigma; }
+    /// Return the underlying fluxErr Key
+    afw::table::Key<FluxErrElement> getFluxErr() const { return _fluxErr; }
 
 private:
     afw::table::Key<Flux> _flux;
-    afw::table::Key<FluxErrElement> _fluxSigma;
+    afw::table::Key<FluxErrElement> _fluxErr;
 };
 
 /**

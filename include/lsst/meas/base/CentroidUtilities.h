@@ -41,8 +41,8 @@ namespace base {
 struct CentroidResult {
     CentroidElement x;   ///< x (column) coordinate of the measured position
     CentroidElement y;   ///< y (row) coordinate of the measured position
-    ErrElement xSigma;   ///< 1-Sigma uncertainty on x (sqrt of variance)
-    ErrElement ySigma;   ///< 1-Sigma uncertainty on y (sqrt of variance)
+    ErrElement xErr;   ///< standard deviation of x
+    ErrElement yErr;   ///< standard deviation of y
     ErrElement x_y_Cov;  ///< x,y term in the uncertainty convariance matrix
 
     /// Constructor; initializes everything to NaN.
@@ -52,13 +52,13 @@ struct CentroidResult {
     explicit CentroidResult(CentroidElement x_, CentroidElement y_, CentroidCov const& matrix)
             : x(x_),
               y(y_),
-              xSigma(std::sqrt(matrix(0, 0))),
-              ySigma(std::sqrt(matrix(1, 1))),
+              xErr(std::sqrt(matrix(0, 0))),
+              yErr(std::sqrt(matrix(1, 1))),
               x_y_Cov(matrix(0, 1)) {}
 
     /// Constructor; initializes everything from values.
-    explicit CentroidResult(CentroidElement x_, CentroidElement y_, ErrElement xSigma_, ErrElement ySigma_)
-            : x(x_), y(y_), xSigma(xSigma_), ySigma(ySigma_), x_y_Cov(0.0) {}
+    explicit CentroidResult(CentroidElement x_, CentroidElement y_, ErrElement xErr_, ErrElement yErr_)
+            : x(x_), y(y_), xErr(xErr_), yErr(yErr_), x_y_Cov(0.0) {}
 
     /// Return a Point object containing the measured x and y
     Centroid const getCentroid() const;
@@ -76,7 +76,7 @@ struct CentroidResult {
     void setCentroidErr(CentroidCov const& matrix);
 
     /// Set the struct uncertainty fields from the sigma values
-    void setCentroidErr(ErrElement _xSigma, ErrElement _ySigma);
+    void setCentroidErr(ErrElement _xErr, ErrElement _yErr);
 };
 
 /**

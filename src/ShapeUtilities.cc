@@ -31,9 +31,9 @@ ShapeResult::ShapeResult()
         : xx(std::numeric_limits<ShapeElement>::quiet_NaN()),
           yy(std::numeric_limits<ShapeElement>::quiet_NaN()),
           xy(std::numeric_limits<ShapeElement>::quiet_NaN()),
-          xxSigma(std::numeric_limits<ErrElement>::quiet_NaN()),
-          yySigma(std::numeric_limits<ErrElement>::quiet_NaN()),
-          xySigma(std::numeric_limits<ErrElement>::quiet_NaN()),
+          xxErr(std::numeric_limits<ErrElement>::quiet_NaN()),
+          yyErr(std::numeric_limits<ErrElement>::quiet_NaN()),
+          xyErr(std::numeric_limits<ErrElement>::quiet_NaN()),
           xx_yy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
           xx_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
           yy_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()) {}
@@ -48,24 +48,24 @@ void ShapeResult::setShape(Shape const &shape) {
 
 ShapeCov const ShapeResult::getShapeErr() const {
     ShapeCov m;
-    m << xxSigma * xxSigma, xx_yy_Cov, xx_xy_Cov, xx_yy_Cov, yySigma * yySigma, yy_xy_Cov, xx_xy_Cov,
-            yy_xy_Cov, xySigma * xySigma;
+    m << xxErr * xxErr, xx_yy_Cov, xx_xy_Cov, xx_yy_Cov, yyErr * yyErr, yy_xy_Cov, xx_xy_Cov,
+            yy_xy_Cov, xyErr * xyErr;
     return m;
 }
 
 void ShapeResult::setShapeErr(ShapeCov const &matrix) {
-    xxSigma = std::sqrt(matrix(0, 0));
-    yySigma = std::sqrt(matrix(1, 1));
-    xySigma = std::sqrt(matrix(2, 2));
+    xxErr = std::sqrt(matrix(0, 0));
+    yyErr = std::sqrt(matrix(1, 1));
+    xyErr = std::sqrt(matrix(2, 2));
     xx_yy_Cov = matrix(0, 1);
     xx_xy_Cov = matrix(0, 2);
     yy_xy_Cov = matrix(1, 2);
 }
 
-void ShapeResult::setShapeErr(ErrElement _xxSigma, ErrElement _yySigma, ErrElement _xySigma) {
-    xxSigma = _xxSigma;
-    yySigma = _yySigma;
-    xySigma = _xySigma;
+void ShapeResult::setShapeErr(ErrElement _xxErr, ErrElement _yyErr, ErrElement _xyErr) {
+    xxErr = _xxErr;
+    yyErr = _yyErr;
+    xyErr = _xyErr;
     xx_yy_Cov = 0.0;
     xx_xy_Cov = 0.0;
     yy_xy_Cov = 0.0;
@@ -80,13 +80,13 @@ ShapeResultKey ShapeResultKey::addFields(afw::table::Schema &schema, std::string
         std::vector<afw::table::Key<ErrElement> > sigma(3);
         std::vector<afw::table::Key<ErrElement> > cov;
         sigma[0] = schema.addField<ErrElement>(
-                schema.join(name, "xxSigma"), "1-sigma uncertainty on xx moment",
+                schema.join(name, "xxErr"), "Standard deviation of xx moment",
                 coordType == afw::table::CoordinateType::PIXEL ? "pixel^2" : "rad^2");
         sigma[1] = schema.addField<ErrElement>(
-                schema.join(name, "yySigma"), "1-sigma uncertainty on yy moment",
+                schema.join(name, "yyErr"), "Standard deviation of yy moment",
                 coordType == afw::table::CoordinateType::PIXEL ? "pixel^2" : "rad^2");
         sigma[2] = schema.addField<ErrElement>(
-                schema.join(name, "xySigma"), "1-sigma uncertainty on xy moment",
+                schema.join(name, "xyErr"), "Standard deviation of xy moment",
                 coordType == afw::table::CoordinateType::PIXEL ? "pixel^2" : "rad^2");
         if (uncertainty == FULL_COVARIANCE) {
             cov.push_back(schema.addField<ErrElement>(

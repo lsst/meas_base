@@ -108,9 +108,9 @@ void PsfFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
     result.flux = model.dot(data.cast<PsfPixel>()) / alpha;
     // If we're not using per-pixel weights to compute the flux, we'll still want to compute the
     // variance as if we had, so we'll apply the weights to the model now, and update alpha.
-    result.fluxSigma = std::sqrt(model.array().square().matrix().dot(variance.cast<PsfPixel>())) / alpha;
+    result.fluxErr = std::sqrt(model.array().square().matrix().dot(variance.cast<PsfPixel>())) / alpha;
     measRecord.set(_areaKey, model.sum() / alpha);
-    if (!std::isfinite(result.flux) || !std::isfinite(result.fluxSigma)) {
+    if (!std::isfinite(result.flux) || !std::isfinite(result.fluxErr)) {
         throw LSST_EXCEPT(PixelValueError, "Invalid pixel value detected in image.");
     }
     measRecord.set(_fluxResultKey, result);

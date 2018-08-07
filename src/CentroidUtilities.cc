@@ -34,8 +34,8 @@ namespace base {
 CentroidResult::CentroidResult()
         : x(std::numeric_limits<CentroidElement>::quiet_NaN()),
           y(std::numeric_limits<CentroidElement>::quiet_NaN()),
-          xSigma(std::numeric_limits<ErrElement>::quiet_NaN()),
-          ySigma(std::numeric_limits<ErrElement>::quiet_NaN()),
+          xErr(std::numeric_limits<ErrElement>::quiet_NaN()),
+          yErr(std::numeric_limits<ErrElement>::quiet_NaN()),
           x_y_Cov(std::numeric_limits<ErrElement>::quiet_NaN()) {}
 
 Centroid const CentroidResult::getCentroid() const { return Centroid(x, y); }
@@ -47,19 +47,19 @@ void CentroidResult::setCentroid(Centroid const &centroid) {
 
 CentroidCov const CentroidResult::getCentroidErr() const {
     CentroidCov m;
-    m << xSigma * xSigma, x_y_Cov, x_y_Cov, ySigma * ySigma;
+    m << xErr * xErr, x_y_Cov, x_y_Cov, yErr * yErr;
     return m;
 }
 
 void CentroidResult::setCentroidErr(CentroidCov const &matrix) {
-    xSigma = std::sqrt(matrix(0, 0));
-    ySigma = std::sqrt(matrix(1, 1));
+    xErr = std::sqrt(matrix(0, 0));
+    yErr = std::sqrt(matrix(1, 1));
     x_y_Cov = matrix(0, 1);
 }
 
-void CentroidResult::setCentroidErr(ErrElement _xSigma, ErrElement _ySigma) {
-    xSigma = _xSigma;
-    ySigma = _ySigma;
+void CentroidResult::setCentroidErr(ErrElement _xErr, ErrElement _yErr) {
+    xErr = _xErr;
+    yErr = _yErr;
     x_y_Cov = 0.0;
 }
 
@@ -70,9 +70,9 @@ CentroidResultKey CentroidResultKey::addFields(afw::table::Schema &schema, std::
     if (uncertainty != NO_UNCERTAINTY) {
         std::vector<afw::table::Key<ErrElement> > sigma(2);
         std::vector<afw::table::Key<ErrElement> > cov;
-        sigma[0] = schema.addField<ErrElement>(schema.join(name, "xSigma"),
+        sigma[0] = schema.addField<ErrElement>(schema.join(name, "xErr"),
                                                "1-sigma uncertainty on x position", "pixel");
-        sigma[1] = schema.addField<ErrElement>(schema.join(name, "ySigma"),
+        sigma[1] = schema.addField<ErrElement>(schema.join(name, "yErr"),
                                                "1-sigma uncertainty on y position", "pixel");
         if (uncertainty == FULL_COVARIANCE) {
             cov.push_back(schema.addField<ErrElement>(schema.join(name, "x_y_Cov"),
@@ -133,8 +133,8 @@ CentroidTransform::CentroidTransform(std::string const &name, afw::table::Schema
     if (CentroidResultKey(mapper.getInputSchema()[name]).getCentroidErr().isValid()) {
         std::vector<afw::table::Key<ErrElement> > sigma(2);
         std::vector<afw::table::Key<ErrElement> > cov(1);
-        sigma[0] = s.addField<ErrElement>(s.join(name, "raSigma"), "Uncertainty on RA", "rad");
-        sigma[1] = s.addField<ErrElement>(s.join(name, "decSigma"), "Uncertainty on dec", "rad");
+        sigma[0] = s.addField<ErrElement>(s.join(name, "raErr"), "1-sigma uncertainty on RA", "rad");
+        sigma[1] = s.addField<ErrElement>(s.join(name, "decErr"), "1-sigma uncertainty on dec", "rad");
         cov[0] = s.addField<ErrElement>(s.join(name, "ra_dec_Cov"), "Uncertainty covariance in RA and dec",
                                         "rad^2");
         _coordErrKey = afw::table::CovarianceMatrixKey<ErrElement, 2>(sigma, cov);

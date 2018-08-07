@@ -33,7 +33,7 @@ from .apCorrRegistry import getApCorrNameSet
 # that over-estimates flux error (often grossly so) because it double-counts photon noise.
 # This flag is intended to be temporary until we figure out a better way to compute
 # the effects of aperture correction on flux uncertainty
-UseNaiveFluxSigma = True
+UseNaiveFluxErr = True
 
 __all__ = ("ApplyApCorrConfig", "ApplyApCorrTask")
 
@@ -55,11 +55,11 @@ class ApCorrInfo:
         @param[in,out] schema  source catalog schema;
             three fields are used to generate keys:
             - {name}_flux
-            - {name}_fluxSigma
+            - {name}_fluxErr
             - {name}_flag
             three fields are added:
             - {name}_apCorr (only if not already added by proxy)
-            - {name}_apCorrSigma (only if not already added by proxy)
+            - {name}_apCorrFlux (only if not already added by proxy)
             - {name}_flag_apCorr
         @param[in] model  field name prefix for flux with aperture correction model, e.g. "base_PsfFlux"
         @param[in] name  field name prefix for flux needing aperture correction; may be None if it's the
@@ -68,27 +68,27 @@ class ApCorrInfo:
         ApCorrInfo has the following attributes:
         - name: field name prefix for flux needing aperture correction
         - modelName: field name for aperture correction model for flux
-        - modelSigmaName: field name for aperture correction model for fluxSigma
+        - modelSigmaName: field name for aperture correction model for fluxErr
         - doApCorrColumn: should we write the aperture correction values? (not if they're already being
              written by a proxy)
         - fluxName: name of flux field
-        - fluxSigmaName: name of flux sigma field
+        - fluxErrName: name of flux sigma field
         - fluxKey: key to flux field
-        - fluxSigmaKey: key to flux sigma field
+        - fluxErrKey: key to flux sigma field
         - fluxFlagKey: key to flux flag field
         - apCorrKey: key to new aperture correction field
-        - apCorrSigmaKey: key to new aperture correction sigma field
+        - apCorrFluxKey: key to new aperture correction sigma field
         - apCorrFlagKey: key to new aperture correction flag field
         """
         if name is None:
             name = model
         self.name = name
         self.modelName = model + "_flux"
-        self.modelSigmaName = model + "_fluxSigma"
+        self.modelSigmaName = model + "_fluxErr"
         self.fluxName = name + "_flux"
-        self.fluxSigmaName = name + "_fluxSigma"
+        self.fluxErrName = name + "_fluxErr"
         self.fluxKey = schema.find(self.fluxName).key
-        self.fluxSigmaKey = schema.find(self.fluxSigmaName).key
+        self.fluxErrKey = schema.find(self.fluxErrName).key
         self.fluxFlagKey = schema.find(name + "_flag").key
 
         # No need to write the same aperture corrections multiple times
@@ -99,17 +99,17 @@ class ApCorrInfo:
                 doc="aperture correction applied to %s" % (name,),
                 type=np.float64,
             )
-            self.apCorrSigmaKey = schema.addField(
-                name + "_apCorrSigma",
+            self.apCorrFluxKey = schema.addField(
+                name + "_apCorrFlux",
                 doc="aperture correction applied to %s" % (name,),
                 type=np.float64,
             )
         else:
             aliases = schema.getAliasMap()
             aliases.set(name + "_apCorr", model + "_apCorr")
-            aliases.set(name + "_apCorrSigma", model + "_apCorrSigma")
+            aliases.set(name + "_apCorrFlux", model + "_apCorrFlux")
             self.apCorrKey = schema.find(name + "_apCorr").key
-            self.apCorrSigmaKey = schema.find(name + "_apCorrSigma").key
+            self.apCorrFluxKey = schema.find(name + "_apCorrFlux").key
 
         self.apCorrFlagKey = schema.addField(
             name + "_flag_apCorr",
@@ -184,17 +184,17 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
         aperture correction.
         """
         self.log.info("Applying aperture corrections to %d flux fields", len(self.apCorrInfoDict))
-        if UseNaiveFluxSigma:
+        if UseNaiveFluxErr:
             self.log.debug("Use naive flux sigma computation")
         else:
             self.log.debug("Use complex flux sigma computation that double-counts photon noise "
                            "and thus over-estimates flux uncertainty")
         for apCorrInfo in self.apCorrInfoDict.values():
             apCorrModel = apCorrMap.get(apCorrInfo.modelName)
-            apCorrSigmaModel = apCorrMap.get(apCorrInfo.modelSigmaName)
-            if None in (apCorrModel, apCorrSigmaModel):
+            apCorrFluxModel = apCorrMap.get(apCorrInfo.modelSigmaName)
+            if None in (apCorrModel, apCorrFluxModel):
                 missingNames = [(apCorrInfo.modelName, apCorrInfo.modelSigmaName)[i]
-                                for i, model in enumerate((apCorrModel, apCorrSigmaModel)) if model is None]
+                                for i, model in enumerate((apCorrModel, apCorrFluxModel)) if model is None]
                 self.log.warn("Cannot aperture correct %s because could not find %s in apCorrMap" %
                               (apCorrInfo.name, " or ".join(missingNames),))
                 for source in catalog:
@@ -211,30 +211,30 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                     source.set(apCorrInfo.fluxFlagKey, True)
 
                 apCorr = 1.0
-                apCorrSigma = 0.0
+                apCorrFlux = 0.0
                 try:
                     apCorr = apCorrModel.evaluate(center)
-                    if not UseNaiveFluxSigma:
-                        apCorrSigma = apCorrSigmaModel.evaluate(center)
+                    if not UseNaiveFluxErr:
+                        apCorrFlux = apCorrFluxModel.evaluate(center)
                 except lsst.pex.exceptions.DomainError:
                     continue
 
                 if apCorrInfo.doApCorrColumn:
                     source.set(apCorrInfo.apCorrKey, apCorr)
-                    source.set(apCorrInfo.apCorrSigmaKey, apCorrSigma)
+                    source.set(apCorrInfo.apCorrFluxKey, apCorrFlux)
 
-                if apCorr <= 0.0 or apCorrSigma < 0.0:
+                if apCorr <= 0.0 or apCorrFlux < 0.0:
                     continue
 
                 flux = source.get(apCorrInfo.fluxKey)
-                fluxSigma = source.get(apCorrInfo.fluxSigmaKey)
+                fluxErr = source.get(apCorrInfo.fluxErrKey)
                 source.set(apCorrInfo.fluxKey, flux*apCorr)
-                if UseNaiveFluxSigma:
-                    source.set(apCorrInfo.fluxSigmaKey, fluxSigma*apCorr)
+                if UseNaiveFluxErr:
+                    source.set(apCorrInfo.fluxErrKey, fluxErr*apCorr)
                 else:
-                    a = fluxSigma/flux
-                    b = apCorrSigma/apCorr
-                    source.set(apCorrInfo.fluxSigmaKey, abs(flux*apCorr)*math.sqrt(a*a + b*b))
+                    a = fluxErr/flux
+                    b = apCorrFlux/apCorr
+                    source.set(apCorrInfo.fluxErrKey, abs(flux*apCorr)*math.sqrt(a*a + b*b))
                 source.set(apCorrInfo.apCorrFlagKey, False)
                 if self.config.doFlagApCorrFailures:
                     source.set(apCorrInfo.fluxFlagKey, oldFluxFlagState)
@@ -242,8 +242,8 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
             if self.log.getLevel() <= self.log.DEBUG:
                 # log statistics on the effects of aperture correction
                 apCorrArr = np.array([s.get(apCorrInfo.apCorrKey) for s in catalog])
-                apCorrSigmaArr = np.array([s.get(apCorrInfo.apCorrSigmaKey) for s in catalog])
+                apCorrFluxArr = np.array([s.get(apCorrInfo.apCorrFluxKey) for s in catalog])
                 self.log.debug("For flux field %r: mean apCorr=%s, stdDev apCorr=%s, "
-                               "mean apCorrSigma=%s, stdDev apCorrSigma=%s for %s sources",
+                               "mean apCorrFlux=%s, stdDev apCorrFlux=%s for %s sources",
                                apCorrInfo.name, apCorrArr.mean(), apCorrArr.std(),
-                               apCorrSigmaArr.mean(), apCorrSigmaArr.std(), len(catalog))
+                               apCorrFluxArr.mean(), apCorrFluxArr.std(), len(catalog))

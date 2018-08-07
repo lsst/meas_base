@@ -90,8 +90,8 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         for noise in (0.001, 0.01):
             xList = []
             yList = []
-            xSigmaList = []
-            ySigmaList = []
+            xErrList = []
+            yErrList = []
             nSamples = 1000
             for repeat in range(nSamples):
                 # By using ``repeat`` to seed the RNG, we get results which fall within the tolerances
@@ -101,18 +101,18 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                 algorithm.measure(record, exposure)
                 xList.append(record.get("base_SdssCentroid_x"))
                 yList.append(record.get("base_SdssCentroid_y"))
-                xSigmaList.append(record.get("base_SdssCentroid_xSigma"))
-                ySigmaList.append(record.get("base_SdssCentroid_ySigma"))
+                xErrList.append(record.get("base_SdssCentroid_xErr"))
+                yErrList.append(record.get("base_SdssCentroid_yErr"))
             xMean = np.mean(xList)
             yMean = np.mean(yList)
-            xSigmaMean = np.mean(xSigmaList)
-            ySigmaMean = np.mean(ySigmaList)
+            xErrMean = np.mean(xErrList)
+            yErrMean = np.mean(yErrList)
             xStandardDeviation = np.std(xList)
             yStandardDeviation = np.std(yList)
-            self.assertFloatsAlmostEqual(xSigmaMean, xStandardDeviation, rtol=0.2)   # rng dependent
-            self.assertFloatsAlmostEqual(ySigmaMean, yStandardDeviation, rtol=0.2)   # rng dependent
-            self.assertLess(xMean - x, 3.0*xSigmaMean / nSamples**0.5)   # rng dependent
-            self.assertLess(yMean - y, 3.0*ySigmaMean / nSamples**0.5)   # rng dependent
+            self.assertFloatsAlmostEqual(xErrMean, xStandardDeviation, rtol=0.2)   # rng dependent
+            self.assertFloatsAlmostEqual(yErrMean, yStandardDeviation, rtol=0.2)   # rng dependent
+            self.assertLess(xMean - x, 3.0*xErrMean / nSamples**0.5)   # rng dependent
+            self.assertLess(yMean - y, 3.0*yErrMean / nSamples**0.5)   # rng dependent
 
     def testEdge(self):
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")

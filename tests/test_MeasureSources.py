@@ -167,7 +167,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
                 source.set("centroid_y", adjCenter.getY())
                 plugin.measure(source, exp)
                 measFlux = source.get("test_flux")
-                measFluxErr = source.get("test_fluxSigma")
+                measFluxErr = source.get("test_fluxErr")
                 self.assertLess(abs(measFlux - flux), flux * 0.003)
 
                 self.assertLess(abs(measFluxErr - predFluxErr), predFluxErr * 0.2)

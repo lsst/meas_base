@@ -42,7 +42,7 @@ void declareFluxResult(py::module &mod) {
     PyFluxResult cls(mod, "FluxResult");
 
     cls.def_readwrite("flux", &FluxResult::flux);
-    cls.def_readwrite("fluxSigma", &FluxResult::fluxSigma);
+    cls.def_readwrite("fluxErr", &FluxResult::fluxErr);
 }
 
 void declareFluxResultKey(py::module &mod) {
@@ -50,7 +50,7 @@ void declareFluxResultKey(py::module &mod) {
 
     cls.def(py::init<>());
     cls.def(py::init<afw::table::Key<meas::base::Flux> const &, afw::table::Key<FluxErrElement> const &>(),
-            "flux"_a, "fluxSigma"_a);
+            "flux"_a, "fluxErr"_a);
     cls.def(py::init<afw::table::SubSchema const &>());
 
     cls.def("__eq__", &FluxResultKey::operator==, py::is_operator());
@@ -61,7 +61,7 @@ void declareFluxResultKey(py::module &mod) {
     cls.def_static("addFields", &FluxResultKey::addFields, "schema"_a, "name"_a, "doc"_a);
     cls.def("isValid", &FluxResultKey::isValid);
     cls.def("getFlux", &FluxResultKey::getFlux);
-    cls.def("getFluxSigma", &FluxResultKey::getFluxSigma);
+    cls.def("getFluxErr", &FluxResultKey::getFluxErr);
 }
 
 void declareMagResult(py::module &mod) {

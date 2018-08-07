@@ -495,8 +495,8 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
     result.x = afw::image::indexToPosition(xc + image.getX0());
     result.y = afw::image::indexToPosition(yc + image.getY0());
 
-    result.xSigma = sqrt(dxc * dxc);
-    result.ySigma = sqrt(dyc * dyc);
+    result.xErr = sqrt(dxc * dxc);
+    result.yErr = sqrt(dyc * dyc);
     measRecord.set(_centroidKey, result);
     _centroidChecker(measRecord);
 }
