@@ -70,7 +70,7 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
     def testAddFields(self):
         # Check that the required fields have been added to the schema
         self.assertIn(self.name + "_apCorr", self.schema.getNames())
-        self.assertIn(self.name + "_apCorrFlux", self.schema.getNames())
+        self.assertIn(self.name + "_apCorrErr", self.schema.getNames())
         self.assertIn(self.name + "_flag_apCorr", self.schema.getNames())
 
     def testSuccessUnflagged(self):
