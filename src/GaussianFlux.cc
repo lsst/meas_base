@@ -44,7 +44,7 @@ FlagDefinitionList const& GaussianFluxAlgorithm::getFlagDefinitions() { return f
 GaussianFluxAlgorithm::GaussianFluxAlgorithm(Control const& ctrl, std::string const& name,
                                              afw::table::Schema& schema)
         : _ctrl(ctrl),
-          _fluxResultKey(FluxResultKey::addFields(schema, name, "flux from Gaussian Flux algorithm")),
+          _instFluxResultKey(FluxResultKey::addFields(schema, name, "instFlux from Gaussian Flux algorithm")),
           _centroidExtractor(schema, name),
           _shapeExtractor(schema, name) {
     _flagHandler = FlagHandler::addFields(schema, name, getFlagDefinitions());
@@ -58,7 +58,7 @@ void GaussianFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
     FluxResult result =
             SdssShapeAlgorithm::computeFixedMomentsFlux(exposure.getMaskedImage(), shape, centroid);
 
-    measRecord.set(_fluxResultKey, result);
+    measRecord.set(_instFluxResultKey, result);
     _flagHandler.setValue(measRecord, FAILURE.number, false);
 }
 

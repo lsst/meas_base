@@ -61,7 +61,7 @@ std::string ApertureFluxAlgorithm::makeFieldPrefix(std::string const &name, doub
 
 ApertureFluxAlgorithm::Keys::Keys(afw::table::Schema &schema, std::string const &prefix,
                                   std::string const &doc, bool isSinc)
-        : fluxKey(FluxResultKey::addFields(schema, prefix, doc)),
+        : instFluxKey(FluxResultKey::addFields(schema, prefix, doc)),
           flags(
                   //  The exclusion List can either be empty, or constain the sinc coeffs flag
                   FlagHandler::addFields(
@@ -77,7 +77,7 @@ ApertureFluxAlgorithm::ApertureFluxAlgorithm(Control const &ctrl, std::string co
     for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
         metadata.add(name + "_radii", ctrl.radii[i]);
         std::string prefix = ApertureFluxAlgorithm::makeFieldPrefix(name, ctrl.radii[i]);
-        std::string doc = (boost::format("flux within %f-pixel aperture") % ctrl.radii[i]).str();
+        std::string doc = (boost::format("instFlux within %f-pixel aperture") % ctrl.radii[i]).str();
         _keys.push_back(Keys(schema, prefix, doc, ctrl.radii[i] <= ctrl.maxSincRadius));
     }
 }
@@ -93,7 +93,7 @@ void ApertureFluxAlgorithm::fail(afw::table::SourceRecord &measRecord, Measureme
 
 void ApertureFluxAlgorithm::copyResultToRecord(Result const &result, afw::table::SourceRecord &record,
                                                int index) const {
-    record.set(_keys[index].fluxKey, result);
+    record.set(_keys[index].instFluxKey, result);
     if (result.getFlag(FAILURE.number)) {
         _keys[index].flags.setValue(record, FAILURE.number, true);
     }
@@ -107,7 +107,7 @@ void ApertureFluxAlgorithm::copyResultToRecord(Result const &result, afw::table:
 
 namespace {
 
-// Helper function for computeSincFlux get Sinc flux coefficients, and handle cases where the coeff
+// Helper function for computeSincFlux get Sinc instFlux coefficients, and handle cases where the coeff
 // image needs to be clipped to fit in the measurement image
 template <typename T>
 CONST_PTR(afw::image::Image<T>)
@@ -115,7 +115,7 @@ getSincCoeffs(geom::Box2I const &bbox,                      // measurement image
               afw::geom::ellipses::Ellipse const &ellipse,  // ellipse that defines the aperture
               ApertureFluxAlgorithm::Result &result,        // result object where we set flags if we do clip
               ApertureFluxAlgorithm::Control const &ctrl    // configuration
-) {
+              ) {
     CONST_PTR(afw::image::Image<T>) cImage = SincCoeffs<T>::get(ellipse.getCore(), 0.0);
     cImage = afw::math::offsetImage(*cImage, ellipse.getCenter().getX(), ellipse.getCenter().getY(),
                                     ctrl.shiftKernel);
@@ -147,7 +147,7 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux(
     CONST_PTR(afw::image::Image<T>) cImage = getSincCoeffs<T>(image.getBBox(), ellipse, result, ctrl);
     if (result.getFlag(APERTURE_TRUNCATED.number)) return result;
     afw::image::Image<T> subImage(image, cImage->getBBox());
-    result.flux =
+    result.instFlux =
             (ndarray::asEigenArray(subImage.getArray()) * ndarray::asEigenArray(cImage->getArray())).sum();
     return result;
 }
@@ -160,10 +160,10 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux(
     CONST_PTR(afw::image::Image<T>) cImage = getSincCoeffs<T>(image.getBBox(), ellipse, result, ctrl);
     if (result.getFlag(APERTURE_TRUNCATED.number)) return result;
     afw::image::MaskedImage<T> subImage(image, cImage->getBBox(afw::image::PARENT), afw::image::PARENT);
-    result.flux = (ndarray::asEigenArray(subImage.getImage()->getArray()) *
-                   ndarray::asEigenArray(cImage->getArray()))
-                          .sum();
-    result.fluxErr =
+    result.instFlux = (ndarray::asEigenArray(subImage.getImage()->getArray()) *
+                       ndarray::asEigenArray(cImage->getArray()))
+                              .sum();
+    result.instFluxErr =
             std::sqrt((ndarray::asEigenArray(subImage.getVariance()->getArray()).template cast<T>() *
                        ndarray::asEigenArray(cImage->getArray()).square())
                               .sum());
@@ -180,12 +180,12 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeNaiveFlux(
         result.setFlag(FAILURE.number);
         return result;
     }
-    result.flux = 0;
+    result.instFlux = 0;
     for (afw::geom::ellipses::PixelRegion::Iterator spanIter = region.begin(), spanEnd = region.end();
          spanIter != spanEnd; ++spanIter) {
         typename afw::image::Image<T>::x_iterator pixIter =
                 image.x_at(spanIter->getBeginX() - image.getX0(), spanIter->getY() - image.getY0());
-        result.flux += std::accumulate(pixIter, pixIter + spanIter->getWidth(), 0.0);
+        result.instFlux += std::accumulate(pixIter, pixIter + spanIter->getWidth(), 0.0);
     }
     return result;
 }
@@ -201,19 +201,19 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeNaiveFlux(
         result.setFlag(FAILURE.number);
         return result;
     }
-    result.flux = 0.0;
-    result.fluxErr = 0.0;
+    result.instFlux = 0.0;
+    result.instFluxErr = 0.0;
     for (afw::geom::ellipses::PixelRegion::Iterator spanIter = region.begin(), spanEnd = region.end();
          spanIter != spanEnd; ++spanIter) {
         typename afw::image::MaskedImage<T>::Image::x_iterator pixIter = image.getImage()->x_at(
                 spanIter->getBeginX() - image.getX0(), spanIter->getY() - image.getY0());
         typename afw::image::MaskedImage<T>::Variance::x_iterator varIter = image.getVariance()->x_at(
                 spanIter->getBeginX() - image.getX0(), spanIter->getY() - image.getY0());
-        result.flux += std::accumulate(pixIter, pixIter + spanIter->getWidth(), 0.0);
+        result.instFlux += std::accumulate(pixIter, pixIter + spanIter->getWidth(), 0.0);
         // we use this to hold variance as we accumulate...
-        result.fluxErr += std::accumulate(varIter, varIter + spanIter->getWidth(), 0.0);
+        result.instFluxErr += std::accumulate(varIter, varIter + spanIter->getWidth(), 0.0);
     }
-    result.fluxErr = std::sqrt(result.fluxErr);  // ...and switch back to sigma here.
+    result.instFluxErr = std::sqrt(result.instFluxErr);  // ...and switch back to sigma here.
     return result;
 }
 
@@ -278,21 +278,22 @@ void ApertureFluxTransform::operator()(afw::table::SourceCatalog const &inputCat
                                        afw::table::BaseCatalog &outputCatalog, afw::geom::SkyWcs const &wcs,
                                        afw::image::Calib const &calib) const {
     checkCatalogSize(inputCatalog, outputCatalog);
-    std::vector<FluxResultKey> fluxKeys;
+    std::vector<FluxResultKey> instFluxKeys;
     for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
-        fluxKeys.push_back(FluxResultKey(
+        instFluxKeys.push_back(FluxResultKey(
                 inputCatalog.getSchema()[ApertureFluxAlgorithm::makeFieldPrefix(_name, _ctrl.radii[i])]));
     }
     afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
     afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();
     {
-        // While noThrow is in scope, converting a negative flux to a magnitude
+        // While noThrow is in scope, converting a negative instFlux to a magnitude
         // returns NaN rather than throwing.
         NoThrowOnNegativeFluxContext noThrow;
         for (; inSrc != inputCatalog.end() && outSrc != outputCatalog.end(); ++inSrc, ++outSrc) {
             for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
-                FluxResult fluxResult = fluxKeys[i].get(*inSrc);
-                _magKeys[i].set(*outSrc, calib.getMagnitude(fluxResult.flux, fluxResult.fluxErr));
+                FluxResult instFluxResult = instFluxKeys[i].get(*inSrc);
+                _magKeys[i].set(*outSrc,
+                                calib.getMagnitude(instFluxResult.instFlux, instFluxResult.instFluxErr));
             }
         }
     }

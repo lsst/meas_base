@@ -48,7 +48,7 @@ public:
 
     LSST_CONTROL_FIELD(nSigmaWeightMax, double,
                        "Radius factor that sets the maximum extent of the weight function (and hence the "
-                       "flux measurements)");
+                       "instFlux measurements)");
 
     BlendednessControl() : doOld(true), doFlux(true), doShape(true), nSigmaWeightMax(3.0) {}
 };
@@ -75,7 +75,7 @@ public:
     BlendednessAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema);
 
     /**
-     *  Compute the posterior expectation value of the true flux in a pixel
+     *  Compute the posterior expectation value of the true instFlux in a pixel
      *  from its (Gaussian) likelihood and a flat nonnegative prior.
      *
      *  This computes
@@ -122,17 +122,18 @@ public:
 
 private:
     void _measureMoments(afw::image::MaskedImage<float> const& image, afw::table::SourceRecord& child,
-                         afw::table::Key<double> const& fluxRawKey, afw::table::Key<double> const& fluxAbsKey,
-                         ShapeResultKey const& _shapeRawKey, ShapeResultKey const& _shapeAbsKey) const;
+                         afw::table::Key<double> const& instFluxRawKey,
+                         afw::table::Key<double> const& instFluxAbsKey, ShapeResultKey const& _shapeRawKey,
+                         ShapeResultKey const& _shapeAbsKey) const;
 
     Control const _ctrl;
     afw::table::Key<double> _old;
-    afw::table::Key<double> _fluxRaw;
-    afw::table::Key<double> _fluxChildRaw;
-    afw::table::Key<double> _fluxParentRaw;
-    afw::table::Key<double> _fluxAbs;
-    afw::table::Key<double> _fluxChildAbs;
-    afw::table::Key<double> _fluxParentAbs;
+    afw::table::Key<double> _instFluxRaw;
+    afw::table::Key<double> _instFluxChildRaw;
+    afw::table::Key<double> _instFluxParentRaw;
+    afw::table::Key<double> _instFluxAbs;
+    afw::table::Key<double> _instFluxChildAbs;
+    afw::table::Key<double> _instFluxParentAbs;
     ShapeResultKey _shapeChildRaw;
     ShapeResultKey _shapeParentRaw;
     ShapeResultKey _shapeChildAbs;

@@ -101,7 +101,7 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
         sfm_config.slots.shape = None
         sfm_config.slots.psfShape = None
         sfm_config.slots.psfFlux = None
-        sfm_config.slots.instFlux = None
+        sfm_config.slots.gaussianFlux = None
         sfm_config.slots.calibFlux = None
         sfm_config.slots.apFlux = None
         sfm_config.slots.modelFlux = None

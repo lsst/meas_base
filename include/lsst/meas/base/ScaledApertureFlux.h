@@ -53,9 +53,9 @@ public:
 };
 
 /**
- *  @brief Measure the flux in an aperture scaled to the PSF.
+ *  @brief Measure the instFlux in an aperture scaled to the PSF.
  *
- *  This algorithm performs a sinc aperture flux measurement where they size
+ *  This algorithm performs a sinc aperture instFlux measurement where they size
  *  of the aperture is determined by multiplying the FWHM of the PSF by the
  *  scaling factor specified in the algorithm configuration.
  */
@@ -67,7 +67,7 @@ public:
     ScaledApertureFluxAlgorithm(Control const& control, std::string const& name, afw::table::Schema& schema);
 
     /**
-     *  Measure the scaled aperture flux on the given image.
+     *  Measure the scaled aperture instFlux on the given image.
      *
      *  Python plugins will delegate to this method.
      *
@@ -81,7 +81,7 @@ public:
 
 private:
     Control _ctrl;
-    FluxResultKey _fluxResultKey;
+    FluxResultKey _instFluxResultKey;
     FlagHandler _flagHandler;
     SafeCentroidExtractor _centroidExtractor;
 };

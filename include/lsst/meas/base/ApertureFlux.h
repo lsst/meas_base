@@ -88,14 +88,14 @@ public:
     typedef ApertureFluxResult Result;
 
     //@{
-    /**  Compute the flux (and optionally, uncertanties) within an aperture using Sinc photometry
+    /**  Compute the instFlux (and optionally, uncertanties) within an aperture using Sinc photometry
      *
      *   The Sinc algorithm is slower than a naive aperture, but more accurate, in that it correctly
      *   handles sub-pixel aperture boundaries on well-sampled data.  This improved accuracy is most
      *   important for smaller apertures.
      *
      *   @param[in]   image                 Image or MaskedImage to be measured.  If a MaskedImage is
-     *                                      provided, uncertainties will be returned as well as fluxes.
+     *                                      provided, uncertainties will be returned as well as instFluxes.
      *   @param[in]   ellipse               Ellipse that defines the outer boundary of the aperture.
      *   @param[in]   ctrl                  Control object.
      */
@@ -110,13 +110,13 @@ public:
     //@}
 
     //@{
-    /**  Compute the flux (and optionally, uncertanties) within an aperture using naive photometry
+    /**  Compute the instFlux (and optionally, uncertanties) within an aperture using naive photometry
      *
-     *   The naive algorithm just counts the flux in pixels whose centers lie within the aperture,
+     *   The naive algorithm just counts the instFlux in pixels whose centers lie within the aperture,
      *   ignoring the effects of sub-pixel aperture boundaries.
      *
      *   @param[in]   image                 Image or MaskedImage to be measured.  If a MaskedImage is
-     *                                      provided, uncertainties will be returned as well as fluxes.
+     *                                      provided, uncertainties will be returned as well as instFluxes.
      *   @param[in]   ellipse               Ellipse that defines the outer boundary of the aperture.
      */
     template <typename T>
@@ -130,14 +130,14 @@ public:
     //@}
 
     //@{
-    /**  Compute the flux (and optionally, uncertanties) within an aperture using the algorithm
+    /**  Compute the instFlux (and optionally, uncertanties) within an aperture using the algorithm
      *   determined by its size and the maxSincRadius control parameter.
      *
      *   This method delegates to computeSincFlux is the minor axis of the aperture is smaller than
      *   ctrl.maxSincRadius, and delegates to computeNaiveFlux otherwise.
      *
      *   @param[in]   image                 Image or MaskedImage to be measured.  If a MaskedImage is
-     *                                      provided, uncertainties will be returned as well as fluxes.
+     *                                      provided, uncertainties will be returned as well as instFluxes.
      *   @param[in]   ellipse               Ellipse that defines the outer boundary of the aperture.
      *   @param[in]   ctrl                  Control object.
      */
@@ -177,8 +177,8 @@ public:
      *
      *  Given a plugin name (e.g. base_CircularApertureFlux) and an aperture radius (e.g. 12 pixels)
      *  return an appropriate prefix for table fields to contain the measurement results (e.g.
-     *  base_CircularApertureFlux_12_0). Table fields can then be created named <prefix>_flux,
-     *  <prefix>_fluxErr, etc.
+     *  base_CircularApertureFlux_12_0). Table fields can then be created named <prefix>_instFlux,
+     *  <prefix>_instFluxErr, etc.
      *
      * @param[in] pluginName      Name of measurement plugin.
      * @param[in] radius          Aperture radius (pixels).
@@ -187,7 +187,7 @@ public:
     static std::string makeFieldPrefix(std::string const& name, double radius);
 
     /**
-     *  Return the flag definitions which apply to aperture flux measurements.
+     *  Return the flag definitions which apply to aperture instFlux measurements.
      */
 
 protected:
@@ -200,7 +200,7 @@ protected:
 
 private:
     struct Keys {
-        FluxResultKey fluxKey;
+        FluxResultKey instFluxKey;
         FlagHandler flags;
 
         Keys(afw::table::Schema& schema, std::string const& prefix, std::string const& doc, bool isSinc);
@@ -236,7 +236,7 @@ private:
 /**
  *  Measurement transformation for aperture fluxes
  *
- *  Transforms fluxes with associated errors to magnitudes. Correctly handles
+ *  Transforms instFluxes with associated errors to magnitudes. Correctly handles
  *  multiple apertures. Flags are propagated from input to output.
  */
 class ApertureFluxTransform : public BaseTransform {

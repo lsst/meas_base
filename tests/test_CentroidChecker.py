@@ -101,7 +101,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.algName = "test_Centroider"
         bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(100, 100))
         self.dataset = lsst.meas.base.tests.TestDataset(bbox)
-        self.dataset.addSource(flux=1E5, centroid=lsst.geom.Point2D(25, 26))
+        self.dataset.addSource(instFlux=1E5, centroid=lsst.geom.Point2D(25, 26))
 
     def makeConfig(self, algName=None):
         if algName is None:
@@ -111,7 +111,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         config.slots.centroid = None
         config.slots.apFlux = None
         config.slots.calibFlux = None
-        config.slots.instFlux = None
+        config.slots.gaussianFlux = None
         config.slots.modelFlux = None
         config.slots.psfFlux = None
         config.slots.shape = None

@@ -74,9 +74,9 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         ctrl.badMaskPlanes = ["BAD"]
         algorithm, schema = self.makeAlgorithm(ctrl)
         algorithm.measure(record, exposure)
-        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_flux"),
-                                     record.get("truth_flux"),
-                                     atol=3*record.get("base_PsfFlux_fluxErr"))
+        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_instFlux"),
+                                     record.get("truth_instFlux"),
+                                     atol=3*record.get("base_PsfFlux_instFluxErr"))
         # If we mask the whole image, we should get a MeasurementError
         maskArray[:, :] |= badMask
         with self.assertRaises(lsst.meas.base.MeasurementError) as context:
@@ -97,8 +97,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         bbox.grow(-1)
         subExposure = exposure.Factory(exposure, bbox, lsst.afw.image.LOCAL)
         algorithm.measure(record, subExposure)
-        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_flux"), record.get("truth_flux"),
-                                     atol=3*record.get("base_PsfFlux_fluxErr"))
+        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_instFlux"), record.get("truth_instFlux"),
+                                     atol=3*record.get("base_PsfFlux_instFluxErr"))
         self.assertTrue(record.get("base_PsfFlux_flag_edge"))
 
     def testNoPsf(self):
@@ -118,27 +118,27 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         # Results are RNG dependent; we choose a seed that is known to pass.
         exposure, catalog = self.dataset.realize(0.0, schema, randomSeed=3)
         record = catalog[0]
-        flux = record.get("truth_flux")
+        instFlux = record.get("truth_instFlux")
         algorithm.measure(record, exposure)
-        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_flux"), flux, rtol=1E-3)
-        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_fluxErr"), 0.0, rtol=1E-3)
+        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_instFlux"), instFlux, rtol=1E-3)
+        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_instFluxErr"), 0.0, rtol=1E-3)
         for noise in (0.001, 0.01, 0.1):
-            fluxes = []
-            fluxErrs = []
+            instFluxes = []
+            instFluxErrs = []
             nSamples = 1000
             for repeat in range(nSamples):
                 # By using ``repeat`` to seed the RNG, we get results which fall within the tolerances
                 # defined below. If we allow this test to be truly random, passing becomes RNG-dependent.
-                exposure, catalog = self.dataset.realize(noise*flux, schema, randomSeed=repeat)
+                exposure, catalog = self.dataset.realize(noise*instFlux, schema, randomSeed=repeat)
                 record = catalog[0]
                 algorithm.measure(record, exposure)
-                fluxes.append(record.get("base_PsfFlux_flux"))
-                fluxErrs.append(record.get("base_PsfFlux_fluxErr"))
-            fluxMean = np.mean(fluxes)
-            fluxErrMean = np.mean(fluxErrs)
-            fluxStandardDeviation = np.std(fluxes)
-            self.assertFloatsAlmostEqual(fluxErrMean, fluxStandardDeviation, rtol=0.10)
-            self.assertLess(fluxMean - flux, 2.0*fluxErrMean / nSamples**0.5)
+                instFluxes.append(record.get("base_PsfFlux_instFlux"))
+                instFluxErrs.append(record.get("base_PsfFlux_instFluxErr"))
+            instFluxMean = np.mean(instFluxes)
+            instFluxErrMean = np.mean(instFluxErrs)
+            instFluxStandardDeviation = np.std(instFluxes)
+            self.assertFloatsAlmostEqual(instFluxErrMean, instFluxStandardDeviation, rtol=0.10)
+            self.assertLess(instFluxMean - instFlux, 2.0*instFluxErrMean / nSamples**0.5)
 
     def testSingleFramePlugin(self):
         task = self.makeSingleFrameMeasurementTask("base_PsfFlux")
@@ -149,8 +149,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFalse(record.get("base_PsfFlux_flag"))
         self.assertFalse(record.get("base_PsfFlux_flag_noGoodPixels"))
         self.assertFalse(record.get("base_PsfFlux_flag_edge"))
-        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_flux"), record.get("truth_flux"),
-                                     atol=3*record.get("base_PsfFlux_fluxErr"))
+        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_instFlux"), record.get("truth_instFlux"),
+                                     atol=3*record.get("base_PsfFlux_instFluxErr"))
 
     def testForcedPlugin(self):
         task = self.makeForcedMeasurementTask("base_PsfFlux")
@@ -173,9 +173,9 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFalse(measRecord.get("base_PsfFlux_flag"))
         self.assertFalse(measRecord.get("base_PsfFlux_flag_noGoodPixels"))
         self.assertFalse(measRecord.get("base_PsfFlux_flag_edge"))
-        self.assertFloatsAlmostEqual(measRecord.get("base_PsfFlux_flux"),
-                                     truthCatalog.get("truth_flux"), rtol=1E-3)
-        self.assertLess(measRecord.get("base_PsfFlux_fluxErr"), 500.0)
+        self.assertFloatsAlmostEqual(measRecord.get("base_PsfFlux_instFlux"),
+                                     truthCatalog.get("truth_instFlux"), rtol=1E-3)
+        self.assertLess(measRecord.get("base_PsfFlux_instFluxErr"), 500.0)
 
 
 class PsfFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,

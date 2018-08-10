@@ -70,20 +70,20 @@ class CatalogCalculationClassificationPlugin(CatalogCalculationPlugin):
         self.keyFlag = schema.addField(name + "_flag", type="Flag", doc="Set to 1 for any fatal failure.")
 
     def calculate(self, measRecord):
-        modelFlux = measRecord.getModelFlux()
-        psfFlux = measRecord.getPsfFlux()
+        modelFlux = measRecord.getModelInstFlux()
+        psfFlux = measRecord.getPsfInstFlux()
         modelFluxFlag = (measRecord.getModelFluxFlag()
-                         if measRecord.table.getModelFluxFlagKey().isValid()
+                         if measRecord.table.getModelFluxSlot().isValid()
                          else False)
         psfFluxFlag = (measRecord.getPsfFluxFlag()
-                       if measRecord.table.getPsfFluxFlagKey().isValid()
+                       if measRecord.table.getPsfFluxSlot().isValid()
                        else False)
         flux1 = self.config.fluxRatio*modelFlux
         if self.config.modelErrFactor != 0:
-            flux1 += self.config.modelErrFactor*measRecord.getModelFluxErr()
+            flux1 += self.config.modelErrFactor*measRecord.getModelInstFluxErr()
         flux2 = psfFlux
         if not self.config.psfErrFactor == 0:
-            flux2 += self.config.psfErrFactor*measRecord.getPsfFluxErr()
+            flux2 += self.config.psfErrFactor*measRecord.getPsfInstFluxErr()
 
         # A generic failure occurs when either FluxFlag is set to True
         # A generic failure also occurs if either calculated flux value is NAN:

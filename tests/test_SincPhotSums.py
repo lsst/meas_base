@@ -135,8 +135,8 @@ class SincPhotSums(lsst.utils.tests.TestCase):
         #
         gal = afwImage.ImageF(lsst.geom.ExtentI(width, height))
         a, b, theta = float(10), float(5), 20
-        flux = 1e4
-        I0 = flux/(2*math.pi*a*b)
+        instFlux = 1e4
+        I0 = instFlux/(2*math.pi*a*b)
 
         c, s = math.cos(math.radians(theta)), math.sin(math.radians(theta))
         for y in range(height):
@@ -157,7 +157,7 @@ class SincPhotSums(lsst.utils.tests.TestCase):
             ds9.mtv(objImg, frame=frame, title="Elliptical")
 
         self.assertAlmostEqual(1.0, afwMath.makeStatistics(objImg.getMaskedImage().getImage(),
-                                                           afwMath.SUM).getValue()/flux)
+                                                           afwMath.SUM).getValue()/instFlux)
         #
         # Now measure some annuli
         #
@@ -191,7 +191,7 @@ class SincPhotSums(lsst.utils.tests.TestCase):
             result1 = measBase.ApertureFluxAlgorithm.computeSincFlux(objImg.getMaskedImage(), ellipse)
 
             self.assertAlmostEqual(math.exp(-0.5*(r1/a)**2) - math.exp(-0.5*(r2/a)**2),
-                                   (result2.flux-result1.flux)/flux, 4)
+                                   (result2.instFlux-result1.instFlux)/instFlux, 4)
 
 
 class SincCoeffTestCase(lsst.utils.tests.TestCase):

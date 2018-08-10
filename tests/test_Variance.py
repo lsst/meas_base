@@ -101,7 +101,7 @@ class VarianceTest(lsst.utils.tests.TestCase):
         config.slots.psfFlux = None
         config.slots.apFlux = None
         config.slots.modelFlux = None
-        config.slots.instFlux = None
+        config.slots.gaussianFlux = None
         config.slots.calibFlux = None
         config.slots.shape = "base_SdssShape"
         config.slots.psfShape = None

@@ -56,8 +56,8 @@ class BlendednessTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                                     lsst.geom.Extent2I(110, 160))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         with self.dataset.addBlend() as family:
-            family.addChild(flux=2E5, centroid=lsst.geom.Point2D(47, 33))
-            family.addChild(flux=1.5E5, centroid=lsst.geom.Point2D(53, 31))
+            family.addChild(instFlux=2E5, centroid=lsst.geom.Point2D(47, 33))
+            family.addChild(instFlux=1.5E5, centroid=lsst.geom.Point2D(53, 31))
 
     def tearDown(self):
         del self.center
@@ -91,8 +91,8 @@ class BlendednessTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         task = self.makeSingleFrameMeasurementTask("base_Blendedness")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         task.run(catalog, exposure)
-        self.assertGreater(catalog[1].get('base_Blendedness_abs_flux'), 0)
-        self.assertGreater(catalog[2].get('base_Blendedness_abs_flux'), 0)
+        self.assertGreater(catalog[1].get('base_Blendedness_abs_instFlux'), 0)
+        self.assertGreater(catalog[2].get('base_Blendedness_abs_instFlux'), 0)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):

@@ -36,33 +36,35 @@ namespace meas {
 namespace base {
 
 /**
- *  @brief A reusable result struct for flux measurements.
+ *  @brief A reusable result struct for instFlux measurements.
  */
 struct FluxResult {
-    Flux flux;                 ///< Measured flux in DN.
-    FluxErrElement fluxErr;  ///< Standard deviation of flux in DN.
+    meas::base::Flux instFlux;               ///< Measured instFlux in DN.
+    meas::base::FluxErrElement instFluxErr;  ///< Standard deviation of instFlux in DN.
 
     /// Default constructor; initializes everything to NaN.
     FluxResult();
 
-    /// Constructor from flux and its uncertainty
-    explicit FluxResult(Flux flux_, FluxErrElement fluxErr_) : flux(flux_), fluxErr(fluxErr_) {}
+    /// Constructor from instFlux and its uncertainty
+    explicit FluxResult(meas::base::Flux instFlux_, meas::base::FluxErrElement instFluxErr_)
+            : instFlux(instFlux_), instFluxErr(instFluxErr_) {}
 };
 
 /**
  *  @brief A FunctorKey for FluxResult
  *
- *  This class makes it easy to copy fluxes and their uncertainties to and from records, and provides
+ *  This class makes it easy to copy instFluxes and their uncertainties to and from records, and provides
  *  a method to add the appropriate fields to a Schema.
  */
 class FluxResultKey : public afw::table::FunctorKey<FluxResult> {
 public:
     /**
-     *  Add a pair of _flux, _fluxErr fields to a Schema, and return a FluxResultKey that points to them.
+     *  Add a pair of _instFlux, _instFluxErr fields to a Schema, and return a FluxResultKey that points to
+     * them.
      *
      *  @param[in,out] schema  Schema to add fields to.
-     *  @param[in]     name    Name prefix for all fields; "_flux", "_fluxErr" will be appended to this
-     *                         to form the full field names.
+     *  @param[in]     name    Name prefix for all fields; "_instFlux", "_instFluxErr" will be appended to
+     * this to form the full field names.
      *  @param[in]     doc     String used as the documentation for the fields.
      *
      *  The unit for both fields will be "count".
@@ -71,23 +73,25 @@ public:
                                    std::string const& doc);
 
     /// Default constructor; instance will not be usuable unless subsequently assigned to.
-    FluxResultKey() : _flux(), _fluxErr() {}
+    FluxResultKey() : _instFlux(), _instFluxErr() {}
 
     /// Construct from a pair of Keys
-    FluxResultKey(afw::table::Key<meas::base::Flux> const& flux,  // namespace qualification to unconfuse swig
-                  afw::table::Key<FluxErrElement> const& fluxErr)
-            : _flux(flux), _fluxErr(fluxErr) {}
+    FluxResultKey(
+            afw::table::Key<meas::base::Flux> const& instFlux,  // namespace qualification to unconfuse swig
+            afw::table::Key<meas::base::FluxErrElement> const& instFluxErr)
+            : _instFlux(instFlux), _instFluxErr(instFluxErr) {}
 
     /**
-     *  @brief Construct from a subschema, assuming flux and fluxErr subfields
+     *  @brief Construct from a subschema, assuming instFlux and instFluxErr subfields
      *
-     *  If a schema has "a_flux" and "a_fluxErr" fields, this constructor allows you to construct
+     *  If a schema has "a_instFlux" and "a_instFluxErr" fields, this constructor allows you to construct
      *  a FluxResultKey via:
      *  @code
      *  FluxResultKey k(schema["a"]);
      *  @endcode
      */
-    FluxResultKey(afw::table::SubSchema const& s) : _flux(s["flux"]), _fluxErr(s["fluxErr"]) {}
+    FluxResultKey(afw::table::SubSchema const& s)
+            : _instFlux(s["instFlux"]), _instFluxErr(s["instFluxErr"]) {}
 
     /// Get a FluxResult from the given record
     virtual FluxResult get(afw::table::BaseRecord const& record) const;
@@ -96,25 +100,25 @@ public:
     virtual void set(afw::table::BaseRecord& record, FluxResult const& other) const;
 
     //@{
-    /// Compare the FunctorKey for equality with another, using the underlying flux and fluxErr Keys
+    /// Compare the FunctorKey for equality with another, using the underlying instFlux and instFluxErr Keys
     bool operator==(FluxResultKey const& other) const {
-        return _flux == other._flux && _fluxErr == other._fluxErr;
+        return _instFlux == other._instFlux && _instFluxErr == other._instFluxErr;
     }
     bool operator!=(FluxResultKey const& other) const { return !(*this == other); }
     //@}
 
-    /// Return True if both the flux and fluxErr Keys are valid.
-    bool isValid() const { return _flux.isValid() && _fluxErr.isValid(); }
+    /// Return True if both the instFlux and instFluxErr Keys are valid.
+    bool isValid() const { return _instFlux.isValid() && _instFluxErr.isValid(); }
 
-    /// Return the underlying flux Key
-    afw::table::Key<meas::base::Flux> getFlux() const { return _flux; }
+    /// Return the underlying instFlux Key
+    afw::table::Key<meas::base::Flux> getInstFlux() const { return _instFlux; }
 
-    /// Return the underlying fluxErr Key
-    afw::table::Key<FluxErrElement> getFluxErr() const { return _fluxErr; }
+    /// Return the underlying instFluxErr Key
+    afw::table::Key<FluxErrElement> getInstFluxErr() const { return _instFluxErr; }
 
 private:
-    afw::table::Key<Flux> _flux;
-    afw::table::Key<FluxErrElement> _fluxErr;
+    afw::table::Key<meas::base::Flux> _instFlux;
+    afw::table::Key<FluxErrElement> _instFluxErr;
 };
 
 /**
@@ -170,9 +174,9 @@ private:
 };
 
 /**
- *  Base for flux measurement transformations
+ *  Base for instFlux measurement transformations
  *
- *  Provides a basic transform from flux plus associated uncertainty to
+ *  Provides a basic transform from instFlux plus associated uncertainty to
  *  magnitude with uncertainty. The basic "flag" attribute for the measurement
  *  algorithm is propagated to the output
  *
@@ -202,10 +206,10 @@ private:
 };
 
 /**
- *  Temporarily replace negative fluxes with NaNs
+ *  Temporarily replace negative instFluxes with NaNs
  *
  *  Instantiating a NoThrowOnNegativeFluxContext object will cause afw::image::Calib
- *  objects to return NaN, rather than throwing, when asked to convert a negative flux to
+ *  objects to return NaN, rather than throwing, when asked to convert a negative instFlux to
  *  a magnitude for the lifetime of the NoThrowOnNegativeFluxContext.
  */
 class NoThrowOnNegativeFluxContext {

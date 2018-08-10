@@ -66,23 +66,23 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             for radius in radii:
                 ellipse = lsst.afw.geom.Ellipse(lsst.afw.geom.ellipses.Axes(radius, radius, 0.0), position)
                 area = self.computeNaiveArea(position, radius)
-                # test that this isn't the same as the sinc flux
+                # test that this isn't the same as the sinc instFlux
                 self.assertFloatsNotEqual(
                     ApertureFluxAlgorithm.computeSincFlux(self.exposure.getMaskedImage().getImage(),
-                                                          ellipse, self.ctrl).flux, area)
+                                                          ellipse, self.ctrl).instFlux, area)
 
                 def check(method, image):
-                    """test that all the ways we could invoke naive flux measurement
+                    """test that all the ways we could invoke naive instFlux measurement
                     produce the expected result
                     """
                     result = method(image, ellipse, self.ctrl)
-                    self.assertFloatsAlmostEqual(result.flux, area)
+                    self.assertFloatsAlmostEqual(result.instFlux, area)
                     self.assertFalse(result.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
                     self.assertFalse(result.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
                     if hasattr(image, "getVariance"):
-                        self.assertFloatsAlmostEqual(result.fluxErr, (area*0.25)**0.5)
+                        self.assertFloatsAlmostEqual(result.instFluxErr, (area*0.25)**0.5)
                     else:
-                        self.assertTrue(np.isnan(result.fluxErr))
+                        self.assertTrue(np.isnan(result.instFluxErr))
                 check(ApertureFluxAlgorithm.computeNaiveFlux, self.exposure.getMaskedImage())
                 check(ApertureFluxAlgorithm.computeNaiveFlux, self.exposure.getMaskedImage().getImage())
                 check(ApertureFluxAlgorithm.computeFlux, self.exposure.getMaskedImage())
@@ -95,7 +95,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             self.ctrl)
         self.assertTrue(invalid.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
         self.assertFalse(invalid.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
-        self.assertTrue(np.isnan(invalid.flux))
+        self.assertTrue(np.isnan(invalid.instFlux))
 
     def testSinc(self):
         positions = [lsst.geom.Point2D(60.0, -60.0),
@@ -107,21 +107,21 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             for radius in radii:
                 ellipse = lsst.afw.geom.Ellipse(lsst.afw.geom.ellipses.Axes(radius, radius, 0.0), position)
                 area = ellipse.getCore().getArea()
-                # test that this isn't the same as the naive flux
+                # test that this isn't the same as the naive instFlux
                 self.assertFloatsNotEqual(
                     ApertureFluxAlgorithm.computeNaiveFlux(self.exposure.getMaskedImage().getImage(),
-                                                           ellipse, self.ctrl).flux, area)
+                                                           ellipse, self.ctrl).instFlux, area)
 
                 def check(method, image):
                     # test that all the ways we could invoke sinc flux measurement produce the expected result
                     result = method(image, ellipse, self.ctrl)
-                    self.assertFloatsAlmostEqual(result.flux, area, rtol=1E-3)
+                    self.assertFloatsAlmostEqual(result.instFlux, area, rtol=1E-3)
                     self.assertFalse(result.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
                     self.assertFalse(result.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
                     if hasattr(image, "getVariance"):
-                        self.assertFalse(np.isnan(result.fluxErr))
+                        self.assertFalse(np.isnan(result.instFluxErr))
                     else:
-                        self.assertTrue(np.isnan(result.fluxErr))
+                        self.assertTrue(np.isnan(result.instFluxErr))
                 check(ApertureFluxAlgorithm.computeSincFlux, self.exposure.getMaskedImage())
                 check(ApertureFluxAlgorithm.computeSincFlux, self.exposure.getMaskedImage().getImage())
                 check(ApertureFluxAlgorithm.computeFlux, self.exposure.getMaskedImage())
@@ -133,7 +133,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             self.ctrl)
         self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
         self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
-        self.assertTrue(np.isnan(invalid1.flux))
+        self.assertTrue(np.isnan(invalid1.instFlux))
         # test failure conditions when the aperture is not truncated, but the sinc coeffs are
         invalid2 = ApertureFluxAlgorithm.computeSincFlux(
             self.exposure.getMaskedImage().getImage(),
@@ -141,7 +141,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
             self.ctrl)
         self.assertFalse(invalid2.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
         self.assertTrue(invalid2.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
-        self.assertFalse(np.isnan(invalid2.flux))
+        self.assertFalse(np.isnan(invalid2.instFlux))
 
 
 class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
@@ -188,17 +188,17 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
                     self.assertEqual(record.get(record.schema.join(prefix, "flag")), radius > 50)
                     self.assertEqual(record.get(record.schema.join(prefix, "flag_apertureTruncated")),
                                      radius > 50)
-                # Test that the fluxes and uncertainties increase as we increase the apertures, or that
-                # they match the true flux within 3 sigma.  This is just a test as to whether the values
+                # Test that the instFluxes and uncertainties increase as we increase the apertures, or that
+                # they match the true instFlux within 3 sigma.  This is just a test as to whether the values
                 # are reasonable.  As to whether the values are exactly correct, we rely on the tests on
                 # ApertureFluxAlgorithm's static methods, as the way the plugins code calls that is
                 # extremely simple, so if the results we get are reasonable, it's hard to imagine
                 # how they could be incorrect if ApertureFluxAlgorithm's tests are valid.
-                currentFlux = record.get(record.schema.join(prefix, "flux"))
-                currentFluxErr = record.get(record.schema.join(prefix, "fluxErr"))
+                currentFlux = record.get(record.schema.join(prefix, "instFlux"))
+                currentFluxErr = record.get(record.schema.join(prefix, "instFluxErr"))
                 if not record.get(record.schema.join(prefix, "flag")):
                     self.assertTrue(currentFlux > lastFlux or
-                                    (record.get("truth_flux") - currentFlux) < 3*currentFluxErr)
+                                    (record.get("truth_instFlux") - currentFlux) < 3*currentFluxErr)
                     self.assertGreater(currentFluxErr, lastFluxErr)
                     lastFlux = currentFlux
                     lastFluxErr = currentFluxErr
@@ -206,10 +206,10 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
                     self.assertTrue(np.isnan(currentFlux))
                     self.assertTrue(np.isnan(currentFluxErr))
             # When measuring an isolated point source with a sufficiently large aperture, we should
-            # recover the known input flux.
+            # recover the known input instFlux.
             if record.get("truth_isStar") and record.get("parent") == 0:
-                self.assertFloatsAlmostEqual(record.get("base_CircularApertureFlux_25_0_flux"),
-                                             record.get("truth_flux"), rtol=0.02)
+                self.assertFloatsAlmostEqual(record.get("base_CircularApertureFlux_25_0_instFlux"),
+                                             record.get("truth_instFlux"), rtol=0.02)
 
     def testForcedPlugin(self):
         baseName = "base_CircularApertureFlux"
@@ -236,9 +236,9 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
                 # CircularApertureFlux isn't designed to do a good job in forced mode, because it doesn't
                 # account for changes in the PSF or changes in the WCS.  Hence, this is really just a
                 # test to make sure the values are reasonable and that it runs with no unexpected errors.
-                self.assertFloatsAlmostEqual(measRecord.get(measRecord.schema.join(prefix, "flux")),
-                                             truthCatalog.get("truth_flux"), rtol=1.0)
-                self.assertLess(measRecord.get(measRecord.schema.join(prefix, "fluxErr")), (n+1)*150.0)
+                self.assertFloatsAlmostEqual(measRecord.get(measRecord.schema.join(prefix, "instFlux")),
+                                             truthCatalog.get("truth_instFlux"), rtol=1.0)
+                self.assertLess(measRecord.get(measRecord.schema.join(prefix, "instFluxErr")), (n+1)*150.0)
 
 
 class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,

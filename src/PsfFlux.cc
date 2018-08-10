@@ -53,8 +53,8 @@ namespace {}  // namespace
 PsfFluxAlgorithm::PsfFluxAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema,
                                    std::string const& logName)
         : _ctrl(ctrl),
-          _fluxResultKey(FluxResultKey::addFields(schema, name,
-                                                  "flux derived from linear least-squares fit of PSF model")),
+          _instFluxResultKey(FluxResultKey::addFields(
+                  schema, name, "instFlux derived from linear least-squares fit of PSF model")),
           _areaKey(schema.addField<float>(name + "_area", "effective area of PSF", "pixel")),
           _centroidExtractor(schema, name) {
     _logName = logName.size() ? logName : name;
@@ -105,15 +105,15 @@ void PsfFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
     auto variance = ndarray::asEigenMatrix(varianceNdArray);
     PsfPixel alpha = model.squaredNorm();
     FluxResult result;
-    result.flux = model.dot(data.cast<PsfPixel>()) / alpha;
-    // If we're not using per-pixel weights to compute the flux, we'll still want to compute the
+    result.instFlux = model.dot(data.cast<PsfPixel>()) / alpha;
+    // If we're not using per-pixel weights to compute the instFlux, we'll still want to compute the
     // variance as if we had, so we'll apply the weights to the model now, and update alpha.
-    result.fluxErr = std::sqrt(model.array().square().matrix().dot(variance.cast<PsfPixel>())) / alpha;
+    result.instFluxErr = std::sqrt(model.array().square().matrix().dot(variance.cast<PsfPixel>())) / alpha;
     measRecord.set(_areaKey, model.sum() / alpha);
-    if (!std::isfinite(result.flux) || !std::isfinite(result.fluxErr)) {
+    if (!std::isfinite(result.instFlux) || !std::isfinite(result.instFluxErr)) {
         throw LSST_EXCEPT(PixelValueError, "Invalid pixel value detected in image.");
     }
-    measRecord.set(_fluxResultKey, result);
+    measRecord.set(_instFluxResultKey, result);
 }
 
 void PsfFluxAlgorithm::fail(afw::table::SourceRecord& measRecord, MeasurementError* error) const {

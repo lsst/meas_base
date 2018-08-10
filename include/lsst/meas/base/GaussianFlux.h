@@ -53,9 +53,9 @@ public:
 };
 
 /**
- *  @brief A measurement algorithm that estimates flux using an elliptical Gaussian weight.
+ *  @brief A measurement algorithm that estimates instFlux using an elliptical Gaussian weight.
  *
- *  This algorithm computes flux as the dot product of an elliptical Gaussian weight function
+ *  This algorithm computes instFlux as the dot product of an elliptical Gaussian weight function
  *  with the image.  The size and ellipticity of the weight function are determined using the
  *  SdssShape algorithm, or retreived from a named field.
  */
@@ -78,7 +78,7 @@ public:
 
 private:
     Control _ctrl;
-    FluxResultKey _fluxResultKey;
+    FluxResultKey _instFluxResultKey;
     FlagHandler _flagHandler;
     SafeCentroidExtractor _centroidExtractor;
     SafeShapeExtractor _shapeExtractor;

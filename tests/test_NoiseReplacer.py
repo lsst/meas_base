@@ -34,7 +34,7 @@ import lsst.utils.tests
 
 @lsst.meas.base.register("test_NoiseReplacer")
 class NoiseReplacerTestPlugin(lsst.meas.base.SingleFramePlugin):
-    """A measurement plugin that simply sums flux inside and outside the source's footprint."""
+    """A measurement plugin that simply sums instFlux inside and outside the source's footprint."""
 
     @staticmethod
     def getExecutionOrder():
@@ -42,9 +42,10 @@ class NoiseReplacerTestPlugin(lsst.meas.base.SingleFramePlugin):
 
     def __init__(self, config, name, schema, metadata):
         lsst.meas.base.SingleFramePlugin.__init__(self, config, name, schema, metadata)
-        self.insideKey = schema.addField("%s_inside" % (name,), type=np.float64, doc="flux inside footprint")
+        self.insideKey = schema.addField("%s_inside" % (name,), type=np.float64,
+                                         doc="instFlux inside footprint")
         self.outsideKey = schema.addField("%s_outside" % (name,), type=np.float64,
-                                          doc="flux outside footprint")
+                                          doc="instFlux outside footprint")
 
     def measure(self, measRecord, exposure):
         footprint = measRecord.getFootprint()
@@ -76,7 +77,7 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.t
 
     def testSingleFrameMeasurement(self):
         """Test that replacing sources with noise works as used in SingleFrameMeasurementTask,
-        by comparing flux inside and outside source Footprints on an extremely high S/N image."""
+        by comparing instFlux inside and outside source Footprints on an extremely high S/N image."""
         # We choose a random seed which causes the test to pass.
         task = self.makeSingleFrameMeasurementTask("test_NoiseReplacer")
         exposure, catalog = self.dataset.realize(1.0, task.schema, randomSeed=0)
@@ -84,7 +85,7 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.t
         sumVariance = exposure.getMaskedImage().getVariance().getArray().sum()
         for record in catalog:
             self.assertFloatsAlmostEqual(record.get("test_NoiseReplacer_inside"),
-                                         record.get("truth_flux"), rtol=1E-3)
+                                         record.get("truth_instFlux"), rtol=1E-3)
             # n.b. Next line checks that a random value is correct to a statistical 1-sigma prediction;
             # some RNG seeds may cause it to fail (indeed, 67% should)
             self.assertLess(record.get("test_NoiseReplacer_outside"), np.sqrt(sumVariance))

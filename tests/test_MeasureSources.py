@@ -95,7 +95,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         plugin.measure(source, exp)
 
         for r in radii:
-            currentFlux = source.get("%s_flux" %
+            currentFlux = source.get("%s_instFlux" %
                                      measBase.CircularApertureFluxAlgorithm.makeFieldPrefix("test", r))
             self.assertAlmostEqual(10.0*math.pi*r*r/currentFlux, 1.0, places=4)
 
@@ -114,30 +114,30 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         sumPsfSq = np.sum(psfImage.getArray()**2)
         psfSqArr = psfImage.getArray()**2
 
-        for flux in (1000, 10000):
+        for instFlux in (1000, 10000):
             ctrInd = lsst.geom.Point2I(50, 51)
             ctrPos = lsst.geom.Point2D(ctrInd)
 
             kernelBBox = psfImage.getBBox()
             kernelBBox.shift(lsst.geom.Extent2I(ctrInd))
 
-            # compute predicted flux error
-            unshMImage = makeFakeImage(bbox, [ctrPos], [flux], fwhm, var)
+            # compute predicted instFlux error
+            unshMImage = makeFakeImage(bbox, [ctrPos], [instFlux], fwhm, var)
 
             # filter image by PSF
             unshFiltMImage = afwImage.MaskedImageF(unshMImage.getBBox())
             afwMath.convolve(unshFiltMImage, unshMImage, psfKernel, convolutionControl)
 
-            # compute predicted flux = value of image at peak / sum(PSF^2)
+            # compute predicted instFlux = value of image at peak / sum(PSF^2)
             # this is a sanity check of the algorithm, as much as anything
             predFlux = unshFiltMImage.image[ctrInd, afwImage.LOCAL] / sumPsfSq
-            self.assertLess(abs(flux - predFlux), flux * 0.01)
+            self.assertLess(abs(instFlux - predFlux), instFlux * 0.01)
 
-            # compute predicted flux error based on filtered pixels
+            # compute predicted instFlux error based on filtered pixels
             # = sqrt(value of filtered variance at peak / sum(PSF^2)^2)
             predFluxErr = math.sqrt(unshFiltMImage.variance[ctrInd, afwImage.LOCAL]) / sumPsfSq
 
-            # compute predicted flux error based on unfiltered pixels
+            # compute predicted instFlux error based on unfiltered pixels
             # = sqrt(sum(unfiltered variance * PSF^2)) / sum(PSF^2)
             # and compare to that derived from filtered pixels;
             # again, this is a test of the algorithm
@@ -152,7 +152,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
                     maskedImage = unshMImage
                     filteredImage = unshFiltMImage
                 else:
-                    maskedImage = makeFakeImage(bbox, [adjCenter], [flux], fwhm, var)
+                    maskedImage = makeFakeImage(bbox, [adjCenter], [instFlux], fwhm, var)
                     # filter image by PSF
                     filteredImage = afwImage.MaskedImageF(maskedImage.getBBox())
                     afwMath.convolve(filteredImage, maskedImage, psfKernel, convolutionControl)
@@ -166,13 +166,13 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
                 source.set("centroid_x", adjCenter.getX())
                 source.set("centroid_y", adjCenter.getY())
                 plugin.measure(source, exp)
-                measFlux = source.get("test_flux")
-                measFluxErr = source.get("test_fluxErr")
-                self.assertLess(abs(measFlux - flux), flux * 0.003)
+                measFlux = source.get("test_instFlux")
+                measFluxErr = source.get("test_instFluxErr")
+                self.assertLess(abs(measFlux - instFlux), instFlux * 0.003)
 
                 self.assertLess(abs(measFluxErr - predFluxErr), predFluxErr * 0.2)
 
-                # try nearby points and verify that the flux is smaller;
+                # try nearby points and verify that the instFlux is smaller;
                 # this checks that the sub-pixel shift is performed in the correct direction
                 for dx in (-0.2, 0, 0.2):
                     for dy in (-0.2, 0, 0.2):
@@ -183,7 +183,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
                         source.set("centroid_x", offsetCtr.getX())
                         source.set("centroid_y", offsetCtr.getY())
                         plugin.measure(source, exp)
-                        self.assertLess(source.get("test_flux"), measFlux)
+                        self.assertLess(source.get("test_instFlux"), measFlux)
 
         # source so near edge of image that PSF does not overlap exposure should result in failure
         for edgePos in (
@@ -301,7 +301,7 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         self.assertTrue(source.get("test_flag_clipped"), "The clipped flag should be set True")
 
 
-def addStar(image, center, flux, fwhm):
+def addStar(image, center, instFlux, fwhm):
     """Add a perfect single Gaussian star to an image
 
     @warning uses Python to iterate over all pixels (because there is no C++
@@ -309,29 +309,29 @@ def addStar(image, center, flux, fwhm):
 
     @param[in,out] image: Image to which to add star
     @param[in] center: position of center of star on image (pair of float)
-    @param[in] flux: flux of Gaussian star, in counts
+    @param[in] instFlux: instFlux of Gaussian star, in counts
     @param[in] fwhm: FWHM of Gaussian star, in pixels
     """
     sigma = fwhm/FwhmPerSigma
     func = afwMath.GaussianFunction2D(sigma, sigma, 0)
     starImage = afwImage.ImageF(image.getBBox())
-    # The flux in the region of the image will not be exactly the desired flux because the Gaussian
-    # does not extend to infinity, so keep track of the actual flux and correct for it
+    # The instFlux in the region of the image will not be exactly the desired instFlux because the Gaussian
+    # does not extend to infinity, so keep track of the actual instFlux and correct for it
     actFlux = 0
     # No function exists that has a fractional x and y offset, so set the image the slow way
     for i in range(image.getWidth()):
         x = center[0] - i
         for j in range(image.getHeight()):
             y = center[1] - j
-            pixVal = flux * func(x, y)
+            pixVal = instFlux * func(x, y)
             actFlux += pixVal
             starImage[i, j, afwImage.LOCAL] += pixVal
-    starImage *= flux / actFlux
+    starImage *= instFlux / actFlux
 
     image += starImage
 
 
-def makeFakeImage(bbox, centerList, fluxList, fwhm, var):
+def makeFakeImage(bbox, centerList, instFluxList, fwhm, var):
     """Make a fake image containing a set of stars variance = image + var
 
     (It is trivial to add Poisson noise, which would be more accurate,
@@ -339,16 +339,16 @@ def makeFakeImage(bbox, centerList, fluxList, fwhm, var):
 
     @param[in] bbox: bounding box for image
     @param[in] centerList: list of positions of center of star on image (pairs of float)
-    @param[in] fluxList: flux of each star, in counts
+    @param[in] instFluxList: instFlux of each star, in counts
     @param[in] fwhm: FWHM of Gaussian star, in pixels
     @param[in] var: value of variance plane (counts)
     """
-    if len(centerList) != len(fluxList):
-        raise RuntimeError("len(centerList) != len(fluxList)")
+    if len(centerList) != len(instFluxList):
+        raise RuntimeError("len(centerList) != len(instFluxList)")
     maskedImage = afwImage.MaskedImageF(bbox)
     image = maskedImage.getImage()
-    for center, flux in zip(centerList, fluxList):
-        addStar(image, center=center, flux=flux, fwhm=fwhm)
+    for center, instFlux in zip(centerList, instFluxList):
+        addStar(image, center=center, instFlux=instFlux, fwhm=fwhm)
     variance = maskedImage.getVariance()
     variance[:] = image
     variance += var

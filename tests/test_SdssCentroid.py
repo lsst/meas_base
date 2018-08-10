@@ -35,7 +35,7 @@ import lsst.utils.tests
 # For the current test data and seed value, they pass, but they may not
 # if the test data is regenerated or the seed value changes.  I've marked
 # these with an "rng dependent" comment.  In most cases, they test that
-# the measured flux lies within 2 sigma of the correct value, which we
+# the measured instFlux lies within 2 sigma of the correct value, which we
 # should expect to fail sometimes.
 
 
@@ -83,7 +83,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         record = catalog[0]
         x = record.get("truth_x")
         y = record.get("truth_y")
-        flux = record.get("truth_flux")
+        instFlux = record.get("truth_instFlux")
         algorithm.measure(record, exposure)
         self.assertFloatsAlmostEqual(record.get("base_SdssCentroid_x"), x, rtol=1E-4)
         self.assertFloatsAlmostEqual(record.get("base_SdssCentroid_y"), y, rtol=1E-4)
@@ -96,7 +96,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             for repeat in range(nSamples):
                 # By using ``repeat`` to seed the RNG, we get results which fall within the tolerances
                 # defined below. If we allow this test to be truly random, passing becomes RNG-dependent.
-                exposure, catalog = self.dataset.realize(noise*flux, schema, randomSeed=repeat)
+                exposure, catalog = self.dataset.realize(noise*instFlux, schema, randomSeed=repeat)
                 record = catalog[0]
                 algorithm.measure(record, exposure)
                 xList.append(record.get("base_SdssCentroid_x"))

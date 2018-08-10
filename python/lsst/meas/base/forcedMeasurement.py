@@ -182,7 +182,7 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         self.slots.apFlux = None
         self.slots.modelFlux = None
         self.slots.psfFlux = None
-        self.slots.instFlux = None
+        self.slots.gaussianFlux = None
         self.slots.calibFlux = None
 
 ## @addtogroup LSST_task_documentation

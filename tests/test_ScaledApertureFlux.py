@@ -57,23 +57,24 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         return algorithm, schema
 
     def testSourceFlux(self):
-        """Check that we recover the source flux."""
+        """Check that we recover the source instFlux."""
         ctrl = lsst.meas.base.ScaledApertureFluxControl()
         algorithm, schema = self.makeAlgorithm(ctrl)
         exposure, catalog = self.dataset.realize(10.0, schema, randomSeed=0)
 
-        # Default aperture should collect ~all source flux.
+        # Default aperture should collect ~all source instFlux.
         algorithm.measure(catalog[0], exposure)
-        self.assertAlmostEqual(catalog[0].get("base_ScaledApertureFlux_flux") / self.sourceFlux, 1.0, 2)
+        self.assertAlmostEqual(catalog[0].get("base_ScaledApertureFlux_instFlux") / self.sourceFlux, 1.0, 2)
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag"))
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag_apertureTruncated"))
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag_sincCoeffsTruncated"))
 
-        # Aperture equal to the PSF FWHM should collect ~93.7% of the flux.
+        # Aperture equal to the PSF FWHM should collect ~93.7% of the instFlux.
         ctrl.scale = 1.0
         algorithm, schema = self.makeAlgorithm(ctrl)
         algorithm.measure(catalog[0], exposure)
-        self.assertAlmostEqual(catalog[0].get("base_ScaledApertureFlux_flux") / self.sourceFlux, 0.9375, 2)
+        self.assertAlmostEqual(catalog[0].get("base_ScaledApertureFlux_instFlux") /
+                               self.sourceFlux, 0.9375, 2)
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag"))
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag_apertureTruncated"))
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag_sincCoeffsTruncated"))
@@ -89,7 +90,7 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         exposure, catalog = self.dataset.realize(10.0, schema, randomSeed=1)
 
         algorithm.measure(catalog[0], exposure)
-        self.assertTrue(math.isnan(catalog[0].get("base_ScaledApertureFlux_flux")))
+        self.assertTrue(math.isnan(catalog[0].get("base_ScaledApertureFlux_instFlux")))
         self.assertTrue(catalog[0].get("base_ScaledApertureFlux_flag"))
         self.assertTrue(catalog[0].get("base_ScaledApertureFlux_flag_apertureTruncated"))
         self.assertTrue(catalog[0].get("base_ScaledApertureFlux_flag_sincCoeffsTruncated"))
@@ -106,7 +107,7 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         exposure, catalog = self.dataset.realize(10.0, schema, randomSeed=2)
 
         algorithm.measure(catalog[0], exposure)
-        self.assertFalse(math.isnan(catalog[0].get("base_ScaledApertureFlux_flux")))
+        self.assertFalse(math.isnan(catalog[0].get("base_ScaledApertureFlux_instFlux")))
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag"))
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag_apertureTruncated"))
         self.assertTrue(catalog[0].get("base_ScaledApertureFlux_flag_sincCoeffsTruncated"))

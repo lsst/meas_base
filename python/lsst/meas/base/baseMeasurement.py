@@ -75,22 +75,23 @@ class SourceSlotConfig(lsst.pex.config.Config):
     NOTE: the default algorithm for each slot must be registered, even if the default is not used.
     """
 
-    centroid = lsst.pex.config.Field(dtype=str, default="base_SdssCentroid", optional=True,
-                                     doc="the name of the centroiding algorithm used to set source x,y")
-    shape = lsst.pex.config.Field(dtype=str, default="base_SdssShape", optional=True,
-                                  doc="the name of the algorithm used to set source moments parameters")
-    psfShape = lsst.pex.config.Field(dtype=str, default="base_SdssShape_psf", optional=True,
-                                     doc="the name of the algorithm used to set PSF moments parameters")
-    apFlux = lsst.pex.config.Field(dtype=str, default="base_CircularApertureFlux_12_0", optional=True,
-                                   doc="the name of the algorithm used to set the source aperture flux slot")
-    modelFlux = lsst.pex.config.Field(dtype=str, default="base_GaussianFlux", optional=True,
-                                      doc="the name of the algorithm used to set the source model flux slot")
-    psfFlux = lsst.pex.config.Field(dtype=str, default="base_PsfFlux", optional=True,
-                                    doc="the name of the algorithm used to set the source psf flux slot")
-    instFlux = lsst.pex.config.Field(dtype=str, default="base_GaussianFlux", optional=True,
-                                     doc="the name of the algorithm used to set the source inst flux slot")
-    calibFlux = lsst.pex.config.Field(dtype=str, default="base_CircularApertureFlux_12_0", optional=True,
-                                      doc="the name of the flux measurement algorithm used for calibration")
+    Field = lsst.pex.config.Field
+    centroid = Field(dtype=str, default="base_SdssCentroid", optional=True,
+                     doc="the name of the centroiding algorithm used to set source x,y")
+    shape = Field(dtype=str, default="base_SdssShape", optional=True,
+                  doc="the name of the algorithm used to set source moments parameters")
+    psfShape = Field(dtype=str, default="base_SdssShape_psf", optional=True,
+                     doc="the name of the algorithm used to set PSF moments parameters")
+    apFlux = Field(dtype=str, default="base_CircularApertureFlux_12_0", optional=True,
+                   doc="the name of the algorithm used to set the source aperture instFlux slot")
+    modelFlux = Field(dtype=str, default="base_GaussianFlux", optional=True,
+                      doc="the name of the algorithm used to set the source model instFlux slot")
+    psfFlux = Field(dtype=str, default="base_PsfFlux", optional=True,
+                    doc="the name of the algorithm used to set the source psf instFlux slot")
+    gaussianFlux = Field(dtype=str, default="base_GaussianFlux", optional=True,
+                         doc="the name of the algorithm used to set the source Gaussian instFlux slot")
+    calibFlux = Field(dtype=str, default="base_CircularApertureFlux_12_0", optional=True,
+                      doc="the name of the instFlux measurement algorithm used for calibration")
 
     def setupSchema(self, schema):
         """Convenience method to setup a Schema's slots according to the config definition.
@@ -111,8 +112,8 @@ class SourceSlotConfig(lsst.pex.config.Config):
             aliases.set("slot_ModelFlux", self.modelFlux)
         if self.psfFlux is not None:
             aliases.set("slot_PsfFlux", self.psfFlux)
-        if self.instFlux is not None:
-            aliases.set("slot_InstFlux", self.instFlux)
+        if self.gaussianFlux is not None:
+            aliases.set("slot_GaussianFlux", self.gaussianFlux)
         if self.calibFlux is not None:
             aliases.set("slot_CalibFlux", self.calibFlux)
 
@@ -163,13 +164,13 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
         if self.slots.shape is not None and self.slots.shape not in self.plugins.names:
             raise ValueError("source shape slot algorithm '%s' is not being run." % self.slots.shape)
         for slot in (self.slots.psfFlux, self.slots.apFlux, self.slots.modelFlux,
-                     self.slots.instFlux, self.slots.calibFlux):
+                     self.slots.gaussianFlux, self.slots.calibFlux):
             if slot is not None:
                 for name in self.plugins.names:
                     if len(name) <= len(slot) and name == slot[:len(name)]:
                         break
                 else:
-                    raise ValueError("source flux slot algorithm '%s' is not being run." % slot)
+                    raise ValueError("source instFlux slot algorithm '%s' is not being run." % slot)
 
 ## @addtogroup LSST_task_documentation
 ## @{

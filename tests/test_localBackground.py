@@ -60,8 +60,8 @@ class LocalBackgroundTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         src = catalog[0]
 
         # Check the background measurements
-        bgValue = src.get(self.algName + "_flux")
-        bgStdev = src.get(self.algName + "_fluxErr")
+        bgValue = src.get(self.algName + "_instFlux")
+        bgStdev = src.get(self.algName + "_instFluxErr")
         self.assertFalse(src.get(self.algName + "_flag"))
         self.assertFalse(src.get(self.algName + "_flag_noGoodPixels"))
         self.assertFalse(src.get(self.algName + "_flag_noPsf"))
@@ -71,10 +71,11 @@ class LocalBackgroundTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
         # Check that the background value is useful, and it's what we'd get if the background wasn't there.
         src = catalog[0]
-        psfFlux = src.get("base_PsfFlux_flux") - src.get("base_PsfFlux_area")*src.get(self.algName + "_flux")
+        psfFlux = src.get("base_PsfFlux_instFlux") - \
+            src.get("base_PsfFlux_area")*src.get(self.algName + "_instFlux")
         exposure.maskedImage.image.array[:] -= self.bgValue
         task.run(catalog, exposure, *args)
-        self.assertFloatsAlmostEqual(src.get("base_PsfFlux_flux"), psfFlux, rtol=3.0e-4)
+        self.assertFloatsAlmostEqual(src.get("base_PsfFlux_instFlux"), psfFlux, rtol=3.0e-4)
 
     def setConfig(self, config):
         config.plugins[self.algName].annulusInner = self.annulusInner

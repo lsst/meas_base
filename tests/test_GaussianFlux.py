@@ -57,14 +57,14 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         return algorithm, schema
 
     def testGaussians(self):
-        """Test that we get correct fluxes when measuring Gaussians with known positions and shapes."""
+        """Test that we get correct instFluxes when measuring Gaussians with known positions and shapes."""
         task = self.makeSingleFrameMeasurementTask("base_GaussianFlux")
         # Results are RNG dependent; we choose a seed that is known to pass.
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         task.run(catalog, exposure)
         for measRecord in catalog:
-            self.assertFloatsAlmostEqual(measRecord.get("base_GaussianFlux_flux"),
-                                         measRecord.get("truth_flux"), rtol=3E-3)
+            self.assertFloatsAlmostEqual(measRecord.get("base_GaussianFlux_instFlux"),
+                                         measRecord.get("truth_instFlux"), rtol=3E-3)
 
     def testMonteCarlo(self):
         """Test that we get exactly the right answer on an ideal sim with no noise, and that
@@ -74,27 +74,27 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         # Results are RNG dependent; we choose a seed that is known to pass.
         exposure, catalog = self.dataset.realize(1E-8, schema, randomSeed=1)
         record = catalog[0]
-        flux = record.get("truth_flux")
+        instFlux = record.get("truth_instFlux")
         algorithm.measure(record, exposure)
-        self.assertFloatsAlmostEqual(record.get("base_GaussianFlux_flux"), flux, rtol=1E-3)
-        self.assertLess(record.get("base_GaussianFlux_fluxErr"), 1E-3)
+        self.assertFloatsAlmostEqual(record.get("base_GaussianFlux_instFlux"), instFlux, rtol=1E-3)
+        self.assertLess(record.get("base_GaussianFlux_instFluxErr"), 1E-3)
         for noise in (0.001, 0.01, 0.1):
-            fluxes = []
-            fluxErrs = []
+            instFluxes = []
+            instFluxErrs = []
             nSamples = 1000
             for repeat in range(nSamples):
                 # By using ``repeat`` to seed the RNG, we get results which fall within the tolerances
                 # defined below. If we allow this test to be truly random, passing becomes RNG-dependent.
-                exposure, catalog = self.dataset.realize(noise*flux, schema, randomSeed=repeat)
+                exposure, catalog = self.dataset.realize(noise*instFlux, schema, randomSeed=repeat)
                 record = catalog[1]
                 algorithm.measure(record, exposure)
-                fluxes.append(record.get("base_GaussianFlux_flux"))
-                fluxErrs.append(record.get("base_GaussianFlux_fluxErr"))
-            fluxMean = np.mean(fluxes)
-            fluxErrMean = np.mean(fluxErrs)
-            fluxStandardDeviation = np.std(fluxes)
-            self.assertFloatsAlmostEqual(fluxErrMean, fluxStandardDeviation, rtol=0.10)
-            self.assertLess(fluxMean - flux, 2.0*fluxErrMean / nSamples**0.5)
+                instFluxes.append(record.get("base_GaussianFlux_instFlux"))
+                instFluxErrs.append(record.get("base_GaussianFlux_instFluxErr"))
+            instFluxMean = np.mean(instFluxes)
+            instFluxErrMean = np.mean(instFluxErrs)
+            instFluxStandardDeviation = np.std(instFluxes)
+            self.assertFloatsAlmostEqual(instFluxErrMean, instFluxStandardDeviation, rtol=0.10)
+            self.assertLess(instFluxMean - instFlux, 2.0*instFluxErrMean / nSamples**0.5)
 
     def testForcedPlugin(self):
         task = self.makeForcedMeasurementTask("base_GaussianFlux")
@@ -118,9 +118,9 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             # for changes in the PSF (and in fact confuses them with changes in the WCS).  Hence, this
             # is really just a regression test, with the initial threshold set to just a bit more than
             # what it was found to be at one point.
-            self.assertFloatsAlmostEqual(measRecord.get("base_GaussianFlux_flux"),
-                                         truthCatalog.get("truth_flux"), rtol=0.3)
-            self.assertLess(measRecord.get("base_GaussianFlux_fluxErr"), 500.0)
+            self.assertFloatsAlmostEqual(measRecord.get("base_GaussianFlux_instFlux"),
+                                         truthCatalog.get("truth_instFlux"), rtol=0.3)
+            self.assertLess(measRecord.get("base_GaussianFlux_instFluxErr"), 500.0)
 
 
 class GaussianFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,
