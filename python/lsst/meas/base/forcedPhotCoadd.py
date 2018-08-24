@@ -72,8 +72,8 @@ class ForcedPhotCoaddConfig(ForcedPhotImageConfig):
 
 class ForcedPhotCoaddRunner(lsst.pipe.base.ButlerInitializedTaskRunner):
     """Get the psfCache setting into ForcedPhotCoaddTask"""
-    @staticmethod
-    def getTargetList(parsedCmd, **kwargs):
+    @classmethod
+    def getTargetList(cls, parsedCmd, **kwargs):
         return lsst.pipe.base.ButlerInitializedTaskRunner.getTargetList(parsedCmd,
                                                                         psfCache=parsedCmd.psfCache)
 
