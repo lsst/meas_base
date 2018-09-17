@@ -186,10 +186,6 @@ public:
      */
     static std::string makeFieldPrefix(std::string const& name, double radius);
 
-    /**
-     *  Return the flag definitions which apply to aperture instFlux measurements.
-     */
-
 protected:
     void copyResultToRecord(Result const& result, afw::table::SourceRecord& record, int index) const;
 
