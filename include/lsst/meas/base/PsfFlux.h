@@ -59,10 +59,10 @@ public:
 };
 
 /**
- *  @brief A measurement algorithm that estimates flux using a linear least-squares fit with the Psf model
+ *  @brief A measurement algorithm that estimates instFlux using a linear least-squares fit with the Psf model
  *
  *  The PsfFlux algorithm is extremely simple: we do a least-squares fit of the Psf model (evaluated
- *  at a given position) to the data.  For point sources, this provides the optimal flux measurement
+ *  at a given position) to the data.  For point sources, this provides the optimal instFlux measurement
  *  in the limit where the Psf model is correct.  We do not use per-pixel weights in the fit, as this
  *  results in bright stars being fit with a different effective profile than faint stairs.
  */
@@ -88,7 +88,7 @@ public:
 
 private:
     Control _ctrl;
-    FluxResultKey _fluxResultKey;
+    FluxResultKey _instFluxResultKey;
     afw::table::Key<float> _areaKey;
     FlagHandler _flagHandler;
     SafeCentroidExtractor _centroidExtractor;

@@ -130,7 +130,7 @@ class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
         msConfig.slots.apFlux = None
         msConfig.slots.modelFlux = None
         msConfig.slots.psfFlux = None
-        msConfig.slots.instFlux = None
+        msConfig.slots.gaussianFlux = None
         msConfig.slots.calibFlux = None
         schema = afwTable.SourceTable.makeMinimalSchema()
         task = measBase.SingleFrameMeasurementTask(schema, config=msConfig)

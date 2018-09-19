@@ -34,7 +34,8 @@ namespace base {
 ScaledApertureFluxAlgorithm::ScaledApertureFluxAlgorithm(Control const& ctrl, std::string const& name,
                                                          afw::table::Schema& schema)
         : _ctrl(ctrl),
-          _fluxResultKey(FluxResultKey::addFields(schema, name, "flux derived from PSF-scaled aperture")),
+          _instFluxResultKey(
+                  FluxResultKey::addFields(schema, name, "instFlux derived from PSF-scaled aperture")),
           _centroidExtractor(schema, name) {
     _flagHandler = FlagHandler::addFields(schema, name, ApertureFluxAlgorithm::getFlagDefinitions());
 }
@@ -54,7 +55,7 @@ void ScaledApertureFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
 
     Result result = ApertureFluxAlgorithm::computeSincFlux(
             exposure.getMaskedImage(), afw::geom::ellipses::Ellipse(axes, center), apCtrl);
-    measRecord.set(_fluxResultKey, result);
+    measRecord.set(_instFluxResultKey, result);
 
     for (std::size_t i = 0; i < ApertureFluxAlgorithm::getFlagDefinitions().size(); i++) {
         FlagDefinition const& iter = ApertureFluxAlgorithm::getFlagDefinitions()[i];

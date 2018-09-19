@@ -128,9 +128,9 @@ void declareShapeResult(py::module &mod) {
 
     cls.def(py::init<>());
 
-    cls.def_readwrite("flux_xx_Cov", &SdssShapeResult::flux_xx_Cov);
-    cls.def_readwrite("flux_yy_Cov", &SdssShapeResult::flux_yy_Cov);
-    cls.def_readwrite("flux_xy_Cov", &SdssShapeResult::flux_xy_Cov);
+    cls.def_readwrite("instFlux_xx_Cov", &SdssShapeResult::instFlux_xx_Cov);
+    cls.def_readwrite("instFlux_yy_Cov", &SdssShapeResult::instFlux_yy_Cov);
+    cls.def_readwrite("instFlux_xy_Cov", &SdssShapeResult::instFlux_xy_Cov);
     cls.def_readwrite("flags", &SdssShapeResult::flags);
 
     // TODO this method says it's a workaround for Swig which doesn't understand std::bitset

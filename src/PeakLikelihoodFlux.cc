@@ -70,7 +70,7 @@ public:
         FIRST_MOMENT,      ///< Calculate width using \<r>
         SECOND_MOMENT,     ///< Calculate width using \<r^2>
         NOISE_EQUIVALENT,  ///< Calculate width as sqrt(n_eff/(4 pi))
-        BICKERTON          ///< Weight \<r^2> by I^2 to avoid negative fluxes
+        BICKERTON          ///< Weight \<r^2> by I^2 to avoid negative instFluxes
     };
 
     PsfAttributes(CONST_PTR(afw::detection::Psf) psf, int const iX, int const iY);
@@ -89,7 +89,7 @@ private:
 PsfAttributes::PsfAttributes(CONST_PTR(afw::detection::Psf) psf,  ///< The psf whose attributes we want
                              int const iX,  ///< the x position in the frame we want the attributes at
                              int const iY   ///< the y position in the frame we want the attributes at
-) {
+                             ) {
     // N.b. (iX, iY) are ints so that we know this image is centered in the central pixel of _psfImage
     _psfImage = psf->computeImage(geom::PointD(iX, iY));
 }
@@ -136,7 +136,7 @@ typename afw::image::MaskedImage<T>::SinglePixel computeShiftedValue(
         std::string const &warpingKernelName,           ///< warping kernel name
         geom::Point2D const &fracShift,                 ///< amount of sub-pixel shift (pixels)
         geom::Point2I const &parentInd                  ///< parent index at which to compute pixel
-) {
+        ) {
     typedef typename afw::image::Exposure<T>::MaskedImageT MaskedImageT;
     typedef typename afw::image::Image<double> KernelImageT;
 
@@ -179,7 +179,8 @@ typename afw::image::MaskedImage<T>::SinglePixel computeShiftedValue(
 PeakLikelihoodFluxAlgorithm::PeakLikelihoodFluxAlgorithm(Control const &ctrl, std::string const &name,
                                                          afw::table::Schema &schema)
         : _ctrl(ctrl),
-          _fluxResultKey(FluxResultKey::addFields(schema, name, "flux from PeakLikelihood Flux algorithm")),
+          _instFluxResultKey(
+                  FluxResultKey::addFields(schema, name, "instFlux from PeakLikelihood Flux algorithm")),
           _centroidExtractor(schema, name) {
     _flagHandler = FlagHandler::addFields(schema, name, getFlagDefinitions());
 }
@@ -232,11 +233,11 @@ void PeakLikelihoodFluxAlgorithm::measure(afw::table::SourceRecord &measRecord,
     MaskedImageT::SinglePixel mimageCtrPix = computeShiftedValue(
             mimage, _ctrl.warpingKernelName,
             geom::Point2D(xCtrPixParentIndFrac.second, yCtrPixParentIndFrac.second), ctrPixParentInd);
-    double flux = mimageCtrPix.image() * weight;
+    double instFlux = mimageCtrPix.image() * weight;
     double var = mimageCtrPix.variance() * weight * weight;
-    result.flux = flux;
-    result.fluxErr = std::sqrt(var);
-    measRecord.set(_fluxResultKey, result);
+    result.instFlux = instFlux;
+    result.instFluxErr = std::sqrt(var);
+    measRecord.set(_instFluxResultKey, result);
     _flagHandler.setValue(measRecord, FAILURE.number, false);
 }
 

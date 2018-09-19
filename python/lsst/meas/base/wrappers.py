@@ -117,10 +117,10 @@ def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=No
                                If None, the default (defined by BasePlugin) is used.
     @param[in] doRegister      If True (the default), register the plugin with Base's registry, allowing it
                                to be used by measurement Tasks.
-    @param[in] shouldApCorr    Does this algorithm measure a flux that can be aperture corrected? This is
+    @param[in] shouldApCorr    Does this algorithm measure a instFlux that can be aperture corrected? This is
                                shorthand for apCorrList=[name] and is ignored if apCorrList is specified.
-    @param[in] apCorrList      List of field name prefixes for flux fields that should be aperture corrected.
-                               If an algorithm produces a single flux that should be
+    @param[in] apCorrList      List of field name prefixes for instFlux fields that to be aperture corrected.
+                               If an algorithm produces a single instFlux that should be
                                aperture corrected then it is simpler to set shouldApCorr=True. But if an
                                algorithm produces multiple such fields then it must specify apCorrList,
                                instead. For example modelfit_CModel produces 3 such fields: apCorrList=
@@ -193,11 +193,11 @@ def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=
                                - doRegister: If True (the default), register the plugin with
                                  SingleFramePlugin.registry, allowing it to be used by
                                  SingleFrameMeasurementTask.
-                               - shouldApCorr: does this algorithm measure a flux that can be aperture
+                               - shouldApCorr: does this algorithm measure a instFlux that can be aperture
                                  corrected? This is shorthand for apCorrList=[name] and is ignored if
                                  apCorrList is specified.
-                               - apCorrList: list of field name prefixes for flux fields that should be
-                                 aperture corrected. If an algorithm produces a single flux that should be
+                               - apCorrList: list of field name prefixes for instFlux fields that should be
+                                 aperture corrected. If an algorithm produces a single instFlux that should be
                                  aperture corrected then it is simpler to set shouldApCorr=True. But if an
                                  algorithm produces multiple such fields then it must specify apCorrList,
                                  instead. For example modelfit_CModel produces 3 such fields: apCorrList=
@@ -280,11 +280,11 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
                                  Config class using the Control argument.
                                - doRegister: If True (the default), register the plugin with
                                  ForcedPlugin.registry, allowing it to be used by ForcedMeasurementTask.
-                               - shouldApCorr: does this algorithm measure a flux that can be aperture
+                               - shouldApCorr: does this algorithm measure a instFlux that can be aperture
                                  corrected? This is shorthand for apCorrList=[name] and is ignored if
                                  apCorrList is specified.
-                               - apCorrList: list of field name prefixes for flux fields that should be
-                                 aperture corrected. If an algorithm produces a single flux that should be
+                               - apCorrList: list of field name prefixes for instFlux fields that should be
+                                 aperture corrected. If an algorithm produces a single instFlux that should be
                                  aperture corrected then it is simpler to set shouldApCorr=True. But if an
                                  algorithm produces multiple such fields then it must specify apCorrList,
                                  instead. For example modelfit_CModel produces 3 such fields: apCorrList=
@@ -381,11 +381,11 @@ def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
                                  Config class using the Control argument.
                                - doRegister: If True (the default), register the plugins with Base's
                                  registry, allowing it to be used by measurement Tasks.
-                               - shouldApCorr: does this algorithm measure a flux that can be aperture
+                               - shouldApCorr: does this algorithm measure a instFlux that can be aperture
                                  corrected? This is shorthand for apCorrList=[name] and is ignored if
                                  apCorrList is specified.
-                               - apCorrList: list of field name prefixes for flux fields that should be
-                                 aperture corrected. If an algorithm produces a single flux that should be
+                               - apCorrList: list of field name prefixes for instFlux fields that should be
+                                 aperture corrected. If an algorithm produces a single instFlux that should be
                                  aperture corrected then it is simpler to set shouldApCorr=True. But if an
                                  algorithm produces multiple such fields then it must specify apCorrList,
                                  instead. For example modelfit_CModel produces 3 such fields: apCorrList=

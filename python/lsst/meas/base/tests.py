@@ -58,17 +58,17 @@ class BlendContext:
         # BlendContext is its own context manager, so we just return self.
         return self
 
-    def addChild(self, flux, centroid, shape=None):
+    def addChild(self, instFlux, centroid, shape=None):
         """!
         Add a child source to the blend, and return the truth catalog record that corresponds to it.
 
-        @param[in]  flux      Total flux of the source to be added.
+        @param[in]  instFlux  Total instFlux of the source to be added.
         @param[in]  centroid  Position of the source to be added (lsst.geom.Point2D).
         @param[in]  shape     2nd moments of the source before PSF convolution
                               (lsst.afw.geom.Quadrupole).  Note that the truth catalog
                               records post-convolution moments)
         """
-        record, image = self.owner.addSource(flux, centroid, shape)
+        record, image = self.owner.addSource(instFlux, centroid, shape)
         record.set(self.owner.keys["parent"], self.parentRecord.getId())
         self.parentImage += image
         self.children.append((record, image))
@@ -81,25 +81,25 @@ class BlendContext:
             return
         # On exit, we need to compute and set the truth values for the parent object.
         self.parentRecord.set(self.owner.keys["nChild"], len(self.children))
-        # Compute flux from sum of component fluxes
-        flux = 0.0
+        # Compute instFlux from sum of component fluxes
+        instFlux = 0.0
         for record, image in self.children:
-            flux += record.get(self.owner.keys["flux"])
-        self.parentRecord.set(self.owner.keys["flux"], flux)
-        # Compute centroid from flux-weighted mean of component centroids
+            instFlux += record.get(self.owner.keys["instFlux"])
+        self.parentRecord.set(self.owner.keys["instFlux"], instFlux)
+        # Compute centroid from instFlux-weighted mean of component centroids
         x = 0.0
         y = 0.0
         for record, image in self.children:
-            w = record.get(self.owner.keys["flux"])/flux
+            w = record.get(self.owner.keys["instFlux"])/instFlux
             x += record.get(self.owner.keys["centroid"].getX())*w
             y += record.get(self.owner.keys["centroid"].getY())*w
         self.parentRecord.set(self.owner.keys["centroid"], lsst.geom.Point2D(x, y))
-        # Compute shape from flux-weighted mean of offset component shapes
+        # Compute shape from instFlux-weighted mean of offset component shapes
         xx = 0.0
         yy = 0.0
         xy = 0.0
         for record, image in self.children:
-            w = record.get(self.owner.keys["flux"])/flux
+            w = record.get(self.owner.keys["instFlux"])/instFlux
             dx = record.get(self.owner.keys["centroid"].getX()) - x
             dy = record.get(self.owner.keys["centroid"].getY()) - y
             xx += (record.get(self.owner.keys["shape"].getIxx()) + dx**2)*w
@@ -130,12 +130,12 @@ class TestDataset:
     @code
     bbox = lsst.geom.Box2I(lsst.geom.Point2I(0,0), lsst.geom.Point2I(100, 100))
     dataset = TestDataset(bbox)
-    dataset.addSource(flux=1E5, centroid=lsst.geom.Point2D(25, 26))
-    dataset.addSource(flux=2E5, centroid=lsst.geom.Point2D(75, 24),
+    dataset.addSource(instFlux=1E5, centroid=lsst.geom.Point2D(25, 26))
+    dataset.addSource(instFlux=2E5, centroid=lsst.geom.Point2D(75, 24),
                       shape=lsst.afw.geom.Quadrupole(8, 7, 2))
     with dataset.addBlend() as family:
-        family.addChild(flux=2E5, centroid=lsst.geom.Point2D(50, 72))
-        family.addChild(flux=1.5E5, centroid=lsst.geom.Point2D(51, 74))
+        family.addChild(instFlux=2E5, centroid=lsst.geom.Point2D(50, 72))
+        family.addChild(instFlux=1.5E5, centroid=lsst.geom.Point2D(51, 74))
     exposure, catalog = dataset.realize(noise=100.0, schema=TestDataset.makeMinimalSchema())
     @endcode
     """
@@ -154,7 +154,8 @@ class TestDataset:
             cls.keys = {}
             cls.keys["parent"] = schema.find("parent").key
             cls.keys["nChild"] = schema.addField("deblend_nChild", type=np.int32)
-            cls.keys["flux"] = schema.addField("truth_flux", type=np.float64, doc="true flux", units="count")
+            cls.keys["instFlux"] = schema.addField("truth_instFlux", type=np.float64,
+                                                   doc="true instFlux", units="count")
             cls.keys["centroid"] = lsst.afw.table.Point2DKey.addFields(
                 schema, "truth", "true simulated centroid", "pixel"
             )
@@ -272,13 +273,13 @@ class TestDataset:
         return exposure
 
     @staticmethod
-    def drawGaussian(bbox, flux, ellipse):
+    def drawGaussian(bbox, instFlux, ellipse):
         """!
         Create an image of an elliptical Gaussian.
 
         @param[in,out] bbox        Bounding box of image to create.
-        @param[in]     flux        Total flux of the Gaussian (normalized analytically, not using pixel
-                                   values)
+        @param[in]     instFlux Total instFlux of the Gaussian (normalized analytically,
+                                not using pixel values)
         @param[in]     ellipse     lsst.afw.geom.Ellipse holding the centroid and shape.
         """
         x, y = np.meshgrid(np.arange(bbox.getBeginX(), bbox.getEndX()),
@@ -287,7 +288,7 @@ class TestDataset:
         xt = t[t.XX] * x + t[t.XY] * y + t[t.X]
         yt = t[t.YX] * x + t[t.YY] * y + t[t.Y]
         image = lsst.afw.image.ImageF(bbox)
-        image.getArray()[:, :] = np.exp(-0.5*(xt**2 + yt**2))*flux/(2.0*ellipse.getCore().getArea())
+        image.getArray()[:, :] = np.exp(-0.5*(xt**2 + yt**2))*instFlux/(2.0*ellipse.getCore().getArea())
         return image
 
     def __init__(self, bbox, threshold=10.0, exposure=None, **kwds):
@@ -328,11 +329,11 @@ class TestDataset:
             raise RuntimeError("Threshold value results in zero Footprints for object")
         record.setFootprint(fpSet.getFootprints()[0])
 
-    def addSource(self, flux, centroid, shape=None):
+    def addSource(self, instFlux, centroid, shape=None):
         """!
         Add a source to the simulation
 
-        @param[in]  flux      Total flux of the source to be added.
+        @param[in]  instFlux  Total instFlux of the source to be added.
         @param[in]  centroid  Position of the source to be added (lsst.geom.Point2D).
         @param[in]  shape     2nd moments of the source before PSF convolution
                               (lsst.afw.geom.Quadrupole).  Note that the truth catalog
@@ -343,7 +344,7 @@ class TestDataset:
         """
         # Create and set the truth catalog fields
         record = self.catalog.addNew()
-        record.set(self.keys["flux"], flux)
+        record.set(self.keys["instFlux"], instFlux)
         record.set(self.keys["centroid"], centroid)
         covariance = np.random.normal(0, 0.1, 4).reshape(2, 2)
         covariance[0, 1] = covariance[1, 0]  # CovarianceMatrixKey assumes symmetric x_y_Cov
@@ -356,7 +357,7 @@ class TestDataset:
             fullShape = shape.convolve(self.psfShape)
         record.set(self.keys["shape"], fullShape)
         # Create an image containing just this source
-        image = self.drawGaussian(self.exposure.getBBox(), flux,
+        image = self.drawGaussian(self.exposure.getBBox(), instFlux,
                                   lsst.afw.geom.Ellipse(fullShape, centroid))
         # Generate a footprint for this source
         self._installFootprint(record, image)
@@ -403,7 +404,7 @@ class TestDataset:
         for record in self.catalog:
             if record.get(self.keys["nChild"]):
                 raise NotImplementedError("Transforming blended sources in TestDatasets is not supported")
-            magnitude = oldCalib.getMagnitude(record.get(self.keys["flux"]))
+            magnitude = oldCalib.getMagnitude(record.get(self.keys["instFlux"]))
             newFlux = newCalib.getFlux(magnitude)
             oldCentroid = record.get(self.keys["centroid"])
             newCentroid = xyt.applyForward(oldCentroid)
@@ -488,7 +489,7 @@ class AlgorithmTestCase:
         config.slots.modelFlux = None
         config.slots.apFlux = None
         config.slots.psfFlux = None
-        config.slots.instFlux = None
+        config.slots.gaussianFlux = None
         config.slots.calibFlux = None
         config.plugins.names = (plugin,) + tuple(dependencies)
         return config
@@ -523,7 +524,7 @@ class AlgorithmTestCase:
         config.slots.modelFlux = None
         config.slots.apFlux = None
         config.slots.psfFlux = None
-        config.slots.instFlux = None
+        config.slots.gaussianFlux = None
         config.plugins.names = (plugin,) + tuple(dependencies) + ("base_TransformedCentroid",
                                                                   "base_TransformedShape")
         return config
@@ -626,9 +627,9 @@ class TransformTestCase:
         * Otherwise, all appropriate conversions are properly appled and that flags have been propagated.
 
         The `baseNames` argument requires some explanation. This should be an iterable of the leading parts of
-        the field names for each measurement; that is, everything that appears before `_flux`, `_flag`, etc.
-        In the simple case of a single measurement per plugin, this is simply equal to `self.name` (thus
-        measurements are stored as `self.name + "_flux"`, etc). More generally, the developer may specify
+        the field names for each measurement; that is, everything that appears before `_instFlux`, `_flag`,
+        etc. In the simple case of a single measurement per plugin, this is simply equal to `self.name` (thus
+        measurements are stored as `self.name + "_instFlux"`, etc). More generally, the developer may specify
         whatever iterable they require. For example, to handle multiple apertures, we could have
         `(self.name + "_0", self.name + "_1", ...)`.
 
@@ -698,17 +699,18 @@ class FluxTransformTestCase(TransformTestCase):
 
     def _setFieldsInRecords(self, records, name):
         for record in records:
-            record[record.schema.join(name, 'flux')] = np.random.random()
-            record[record.schema.join(name, 'fluxErr')] = np.random.random()
+            record[record.schema.join(name, 'instFlux')] = np.random.random()
+            record[record.schema.join(name, 'instFluxErr')] = np.random.random()
 
-        # Negative fluxes should be converted to NaNs.
+        # Negative instFluxes should be converted to NaNs.
         assert len(records) > 1
-        records[0][record.schema.join(name, 'flux')] = -1
+        records[0][record.schema.join(name, 'instFlux')] = -1
 
     def _compareFieldsInRecords(self, inSrc, outSrc, name):
-        fluxName, fluxErrName = inSrc.schema.join(name, 'flux'), inSrc.schema.join(name, 'fluxErr')
-        if inSrc[fluxName] > 0:
-            mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[fluxName], inSrc[fluxErrName])
+        instFluxName = inSrc.schema.join(name, 'instFlux')
+        instFluxErrName = inSrc.schema.join(name, 'instFluxErr')
+        if inSrc[instFluxName] > 0:
+            mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[instFluxName], inSrc[instFluxErrName])
             self.assertEqual(outSrc[outSrc.schema.join(name, 'mag')], mag)
             self.assertEqual(outSrc[outSrc.schema.join(name, 'magErr')], magErr)
         else:

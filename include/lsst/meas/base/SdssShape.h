@@ -128,11 +128,11 @@ private:
     bool _includePsf;
     ShapeResultKey _shapeResult;
     CentroidResultKey _centroidResult;
-    FluxResultKey _fluxResult;
+    FluxResultKey _instFluxResult;
     afw::table::QuadrupoleKey _psfShapeResult;
-    afw::table::Key<ErrElement> _flux_xx_Cov;
-    afw::table::Key<ErrElement> _flux_yy_Cov;
-    afw::table::Key<ErrElement> _flux_xy_Cov;
+    afw::table::Key<ErrElement> _instFlux_xx_Cov;
+    afw::table::Key<ErrElement> _instFlux_yy_Cov;
+    afw::table::Key<ErrElement> _instFlux_xy_Cov;
     FlagHandler _flagHandler;
 };
 
@@ -177,7 +177,7 @@ public:
      *                       need not be a small postage stamp (the pixel region actually used in the
      *                       fit will be a subset of this image determined automatically).
      *  @param[in] position  Center position of the object to be measured, in the image's PARENT coordinates.
-     *  @param[in] negative  Boolean, specify if the source is in negative flux space
+     *  @param[in] negative  Boolean, specify if the source is in negative instFlux space
      *  @param[in] ctrl      Control object specifying the details of how the object is to be measured.
      */
     template <typename ImageT>
@@ -185,7 +185,7 @@ public:
                                          bool negative = false, Control const& ctrl = Control());
 
     /**
-     *  Compute the flux within a fixed Gaussian aperture.
+     *  Compute the instFlux within a fixed Gaussian aperture.
      *
      *  @param[in] image     An Image or MaskedImage instance with int, float, or double pixels.  This
      *                       need not be a small postage stamp (the pixel region actually used in the
@@ -216,16 +216,16 @@ private:
  *  we need to run it on PSF model images), we provide an interface that doesn't need to use SourceRecord
  *  for its inputs and outputs.  Instead, it returns an instance of this class.
  *
- *  Note: for what I guess are historical reasons, SdssShape computes covariance terms between the flux
- *  and the shape, but not between the flux and centroid or centroid and shape.
+ *  Note: for what I guess are historical reasons, SdssShape computes covariance terms between the instFlux
+ *  and the shape, but not between the instFlux and centroid or centroid and shape.
  *
  *  This should logically be an inner class, but Swig doesn't know how to parse those.
  */
 class SdssShapeResult : public ShapeResult, public CentroidResult, public FluxResult {
 public:
-    ErrElement flux_xx_Cov;  ///< flux, xx term in the uncertainty covariance matrix
-    ErrElement flux_yy_Cov;  ///< flux, yy term in the uncertainty covariance matrix
-    ErrElement flux_xy_Cov;  ///< flux, xy term in the uncertainty covariance matrix
+    ErrElement instFlux_xx_Cov;  ///< instFlux, xx term in the uncertainty covariance matrix
+    ErrElement instFlux_yy_Cov;  ///< instFlux, yy term in the uncertainty covariance matrix
+    ErrElement instFlux_xy_Cov;  ///< instFlux, xy term in the uncertainty covariance matrix
 
     std::bitset<SdssShapeAlgorithm::N_FLAGS> flags;  ///< Status flags (see SdssShapeAlgorithm).
 
@@ -243,7 +243,7 @@ public:
 /**
  *  Transformation for SdssShape measurements.
  *
- *  SdssShape measures not just shape but also flux and centroid. This
+ *  SdssShape measures not just shape but also instFlux and centroid. This
  *  transform operates on the first directly, and delegates to the Flux and
  *  Centroid transforms for the other two.
  */
@@ -267,7 +267,7 @@ public:
                             afw::image::Calib const& calib) const;
 
 private:
-    FluxTransform _fluxTransform;
+    FluxTransform _instFluxTransform;
     CentroidTransform _centroidTransform;
     ShapeResultKey _outShapeKey;
     afw::table::QuadrupoleKey _outPsfShapeKey;

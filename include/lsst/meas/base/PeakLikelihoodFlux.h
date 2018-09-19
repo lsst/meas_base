@@ -38,16 +38,16 @@ namespace meas {
 namespace base {
 
 /**
- *  @brief C++ control object for peak likelihood flux.
+ *  @brief C++ control object for peak likelihood instrument flux.
  *
  * Peak likelihood flux requires an image that has been filtered by convolving with its own PSF
- * (or an approximate model). It is equivalent to a PSF flux (e.g. PsfFluxAlgorithm) computed on
- * a non-preconvolved image.
+ * (or an approximate model). It is equivalent to a PSF instrument flux (e.g. as computed by PsfFluxAlgorithm)
+ * computed on a non-preconvolved image.
  *
  * The PSF must be provided in the exposure, as it is used to compute a weighting factor.
  *
  * Flux and error are computed as follows:
- * * flux = sum(unfiltered image * PSF) / sum(PSF^2)
+ * * instFlux = sum(unfiltered image * PSF) / sum(PSF^2)
  *        = value of peak of filtered source / sum(PSF^2)
  * * err  = sqrt(sum(unfiltered variance * PSF^2) / sum(PSF^2)^2)
  *        = sqrt(value of filtered variance at peak / sum(PSF^2)^2)
@@ -65,7 +65,7 @@ public:
 };
 
 /**
- *  @brief A measurement algorithm that estimates the peak flux, using a filtered image
+ *  @brief A measurement algorithm that estimates the peak instrument flux, using a filtered image
     which has been convolved with its own PSF.
  */
 class PeakLikelihoodFluxAlgorithm : public SimpleAlgorithm {
@@ -87,7 +87,7 @@ public:
 
 private:
     Control _ctrl;
-    FluxResultKey _fluxResultKey;
+    FluxResultKey _instFluxResultKey;
     FlagHandler _flagHandler;
     SafeCentroidExtractor _centroidExtractor;
 };

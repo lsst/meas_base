@@ -84,7 +84,7 @@ class PythonPlugin(SingleFramePlugin):
         self.EDGE = flagDefs.add("flag_edge", "Measurement area over edge")
         self.flagHandler = FlagHandler.addFields(schema, name, flagDefs)
         self.centroidExtractor = lsst.meas.base.SafeCentroidExtractor(schema, name)
-        self.fluxKey = schema.addField(name + "_flux", "F", doc="flux")
+        self.instFluxKey = schema.addField(name + "_instFlux", "F", doc="flux")
         self.magKey = schema.addField(name + "_mag", "F", doc="mag")
 
     def measure(self, measRecord, exposure):
@@ -109,17 +109,17 @@ class PythonPlugin(SingleFramePlugin):
             raise MeasurementError(self.EDGE.doc, self.EDGE.number)
 
         # Sum the pixels inside the bounding box
-        flux = lsst.afw.image.ImageF(exposure.getMaskedImage().getImage(), bbox).getArray().sum()
-        measRecord.set(self.fluxKey, flux)
+        instFlux = lsst.afw.image.ImageF(exposure.getMaskedImage().getImage(), bbox).getArray().sum()
+        measRecord.set(self.instFluxKey, instFlux)
 
-        # If there was a nan inside the bounding box, the flux will still be nan
-        if np.isnan(flux):
+        # If there was a nan inside the bounding box, the instFlux will still be nan
+        if np.isnan(instFlux):
             raise MeasurementError(self.CONTAINS_NAN.doc, self.CONTAINS_NAN.number)
 
         if self.config.flux0 is not None:
             if self.config.flux0 == 0:
                 raise ZeroDivisionError("self.config.flux0 is zero in divisor")
-            mag = -2.5 * np.log10(flux/self.config.flux0)
+            mag = -2.5 * np.log10(instFlux/self.config.flux0)
             measRecord.set(self.magKey, mag)
 
     def fail(self, measRecord, error=None):
@@ -143,13 +143,13 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.algName = "test_PythonPlugin"
         bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(100, 100))
         self.dataset = lsst.meas.base.tests.TestDataset(bbox)
-        self.dataset.addSource(flux=1E5, centroid=lsst.geom.Point2D(25, 26))
+        self.dataset.addSource(instFlux=1E5, centroid=lsst.geom.Point2D(25, 26))
         config = lsst.meas.base.SingleFrameMeasurementConfig()
         config.plugins = [self.algName]
         config.slots.centroid = None
         config.slots.apFlux = None
         config.slots.calibFlux = None
-        config.slots.instFlux = None
+        config.slots.gaussianFlux = None
         config.slots.modelFlux = None
         config.slots.psfFlux = None
         config.slots.shape = None
@@ -320,29 +320,29 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         source = cat[0]
         task.run(cat, exposure)
         self.assertFalse(source.get(self.algName + "_flag"))
-        flux = source.get("test_PythonPlugin_flux")
-        self.assertFalse(np.isnan(flux))
+        instFlux = source.get("test_PythonPlugin_instFlux")
+        self.assertFalse(np.isnan(instFlux))
 
         # If one of the center coordinates is nan and the centroid slot error flag has
         # not been set, the SafeCentroidExtractor will fail.
         source.set('truth_x', np.nan)
         source.set('truth_flag', False)
-        source.set("test_PythonPlugin_flux", np.nan)
+        source.set("test_PythonPlugin_instFlux", np.nan)
         source.set(self.algName + "_flag", False)
         task.run(cat, exposure)
         self.assertTrue(source.get(self.algName + "_flag"))
-        self.assertTrue(np.isnan(source.get("test_PythonPlugin_flux")))
+        self.assertTrue(np.isnan(source.get("test_PythonPlugin_instFlux")))
 
         # But if the same conditions occur and the centroid slot error flag is set
         # to true, the SafeCentroidExtractor will succeed and the algorithm will complete.
         # However, the failure flag will also be set.
         source.set('truth_x', np.nan)
         source.set('truth_flag', True)
-        source.set("test_PythonPlugin_flux", np.nan)
+        source.set("test_PythonPlugin_instFlux", np.nan)
         source.set(self.algName + "_flag", False)
         task.run(cat, exposure)
         self.assertTrue(source.get(self.algName + "_flag"))
-        self.assertEqual(source.get("test_PythonPlugin_flux"), flux)
+        self.assertEqual(source.get("test_PythonPlugin_instFlux"), instFlux)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):

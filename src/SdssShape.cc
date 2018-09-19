@@ -61,7 +61,7 @@ namespace {  // anonymous
 
 typedef Eigen::Matrix<double, 4, 4, Eigen::DontAlign> Matrix4d;
 
-// Return multiplier that transforms I0 to a total flux
+// Return multiplier that transforms I0 to a total instFlux
 double computeFluxScale(SdssShapeResult const &result) {
     /*
      * The shape is an ellipse that's axis-aligned in (u, v) [<uv> = 0] after rotation by theta:
@@ -95,8 +95,8 @@ double computeFluxScale(SdssShapeResult const &result) {
  */
 Matrix4d calc_fisher(SdssShapeResult const &shape,  // the Shape that we want the the Fisher matrix for
                      float bkgd_var                 // background variance level for object
-) {
-    float const A = shape.flux;  // amplitude; will be converted to flux later
+                     ) {
+    float const A = shape.instFlux;  // amplitude; will be converted to instFlux later
     float const sigma11W = shape.xx;
     float const sigma12W = shape.xy;
     float const sigma22W = shape.yy;
@@ -198,7 +198,7 @@ geom::Box2I computeAdaptiveMomentsBBox(geom::Box2I const &bbox,      // full ima
                                        double,                       //         weighting function
                                        double sigma22_w,             //                    xx, xy, and yy
                                        double maxRadius = 1000       // Maximum radius of area to use
-) {
+                                       ) {
     double radius = std::min(4 * std::sqrt(std::max(sigma11_w, sigma22_w)), maxRadius);
     geom::Extent2D offset(radius, radius);
     geom::Box2I result(geom::Box2D(center - offset, center + offset));
@@ -210,7 +210,7 @@ geom::Box2I computeAdaptiveMomentsBBox(geom::Box2I const &bbox,      // full ima
 /*
  * Calculate weighted moments of an object up to 2nd order
  */
-template <bool fluxOnly, typename ImageT>
+template <bool instFluxOnly, typename ImageT>
 static int calcmom(ImageT const &image,                             // the image data
                    float xcen, float ycen,                          // centre of object
                    geom::BoxI bbox,                                 // bounding box to consider
@@ -219,9 +219,9 @@ static int calcmom(ImageT const &image,                             // the image
                    double w11, double w12, double w22,              // weights
                    double *pI0,                                     // amplitude of fit
                    double *psum,                                    // sum w*I (if !NULL)
-                   double *psumx, double *psumy,                    // sum [xy]*w*I (if !fluxOnly)
-                   double *psumxx, double *psumxy, double *psumyy,  // sum [xy]^2*w*I (if !fluxOnly)
-                   double *psums4,  // sum w*I*weight^2 (if !fluxOnly && !NULL)
+                   double *psumx, double *psumy,                    // sum [xy]*w*I (if !instFluxOnly)
+                   double *psumxx, double *psumxy, double *psumyy,  // sum [xy]^2*w*I (if !instFluxOnly)
+                   double *psums4,  // sum w*I*weight^2 (if !instFluxOnly && !NULL)
                    bool negative = false) {
     float tmod, ymod;
     float X, Y;  // sub-pixel interpolated [xy]
@@ -283,7 +283,7 @@ static int calcmom(ImageT const &image,                             // the image
 
                             ymod = tmod * weight;
                             sum += ymod;
-                            if (!fluxOnly) {
+                            if (!instFluxOnly) {
                                 sumx += ymod * (X + xcen);
                                 sumy += ymod * (Y + ycen);
 #if RECALC_W
@@ -320,7 +320,7 @@ static int calcmom(ImageT const &image,                             // the image
                     tmod = *ptr - bkgd;
                     ymod = tmod * weight;
                     sum += ymod;
-                    if (!fluxOnly) {
+                    if (!instFluxOnly) {
                         sumx += ymod * j;
                         sumy += ymod * i;
 #if RECALC_W
@@ -355,7 +355,7 @@ static int calcmom(ImageT const &image,                             // the image
     if (psum) {
         *psum = sum;
     }
-    if (!fluxOnly) {
+    if (!instFluxOnly) {
         *psumx = sumx;
         *psumy = sumy;
         *psumxx = sumxx;
@@ -367,7 +367,7 @@ static int calcmom(ImageT const &image,                             // the image
     }
 
 #if RECALC_W
-    if (wsum > 0 && !fluxOnly) {
+    if (wsum > 0 && !instFluxOnly) {
         double det = w11 * w22 - w12 * w12;
         wsumxx /= wsum;
         wsumxy /= wsum;
@@ -377,9 +377,9 @@ static int calcmom(ImageT const &image,                             // the image
 #endif
 
     if (negative) {
-        return (fluxOnly || (sum < 0 && sumxx < 0 && sumyy < 0)) ? 0 : -1;
+        return (instFluxOnly || (sum < 0 && sumxx < 0 && sumyy < 0)) ? 0 : -1;
     } else {
-        return (fluxOnly || (sum > 0 && sumxx > 0 && sumyy > 0)) ? 0 : -1;
+        return (instFluxOnly || (sum > 0 && sumxx > 0 && sumyy > 0)) ? 0 : -1;
     }
 }
 
@@ -598,7 +598,7 @@ bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double y
         sigma22W = sumyy / sum;  //      at this point
     }
 
-    shape->flux = I0;
+    shape->instFlux = I0;
     shape->xx = sigma11W;
     shape->xy = sigma12W;
     shape->yy = sigma22W;
@@ -618,13 +618,13 @@ bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double y
                     // convention in afw::geom::ellipses is to order moments (xx, yy, xy),
                     // but the older algorithmic code uses (xx, xy, yy) - the order of
                     // indices here is not a bug.
-                    shape->fluxErr = std::sqrt(cov(0, 0));
+                    shape->instFluxErr = std::sqrt(cov(0, 0));
                     shape->xxErr = std::sqrt(cov(1, 1));
                     shape->xyErr = std::sqrt(cov(2, 2));
                     shape->yyErr = std::sqrt(cov(3, 3));
-                    shape->flux_xx_Cov = cov(0, 1);
-                    shape->flux_xy_Cov = cov(0, 2);
-                    shape->flux_yy_Cov = cov(0, 3);
+                    shape->instFlux_xx_Cov = cov(0, 1);
+                    shape->instFlux_xy_Cov = cov(0, 2);
+                    shape->instFlux_yy_Cov = cov(0, 3);
                     shape->xx_yy_Cov = cov(1, 3);
                     shape->xx_xy_Cov = cov(1, 2);
                     shape->yy_xy_Cov = cov(2, 3);
@@ -639,9 +639,9 @@ bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double y
 }  // namespace
 
 SdssShapeResult::SdssShapeResult()
-        : flux_xx_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
-          flux_yy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
-          flux_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()) {}
+        : instFlux_xx_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
+          instFlux_yy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()),
+          instFlux_xy_Cov(std::numeric_limits<ErrElement>::quiet_NaN()) {}
 
 SdssShapeResultKey SdssShapeResultKey::addFields(afw::table::Schema &schema, std::string const &name,
                                                  bool doMeasurePsf) {
@@ -650,7 +650,7 @@ SdssShapeResultKey SdssShapeResultKey::addFields(afw::table::Schema &schema, std
             ShapeResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments", SIGMA_ONLY);
     r._centroidResult = CentroidResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments",
                                                      NO_UNCERTAINTY);
-    r._fluxResult = FluxResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments");
+    r._instFluxResult = FluxResultKey::addFields(schema, name, "elliptical Gaussian adaptive moments");
 
     // Only include PSF shape fields if doMeasurePsf = True
     if (doMeasurePsf) {
@@ -661,21 +661,24 @@ SdssShapeResultKey SdssShapeResultKey::addFields(afw::table::Schema &schema, std
         r._includePsf = false;
     }
 
-    r._flux_xx_Cov = schema.addField<ErrElement>(schema.join(name, "flux", "xx", "Cov"),
-                                                 (boost::format("uncertainty covariance between %s and %s") %
-                                                  schema.join(name, "flux") % schema.join(name, "xx"))
-                                                         .str(),
-                                                 "count*pixel^2");
-    r._flux_yy_Cov = schema.addField<ErrElement>(schema.join(name, "flux", "yy", "Cov"),
-                                                 (boost::format("uncertainty covariance between %s and %s") %
-                                                  schema.join(name, "flux") % schema.join(name, "yy"))
-                                                         .str(),
-                                                 "count*pixel^2");
-    r._flux_xy_Cov = schema.addField<ErrElement>(schema.join(name, "flux", "xy", "Cov"),
-                                                 (boost::format("uncertainty covariance between %s and %s") %
-                                                  schema.join(name, "flux") % schema.join(name, "xy"))
-                                                         .str(),
-                                                 "count*pixel^2");
+    r._instFlux_xx_Cov =
+            schema.addField<ErrElement>(schema.join(name, "instFlux", "xx", "Cov"),
+                                        (boost::format("uncertainty covariance between %s and %s") %
+                                         schema.join(name, "instFlux") % schema.join(name, "xx"))
+                                                .str(),
+                                        "count*pixel^2");
+    r._instFlux_yy_Cov =
+            schema.addField<ErrElement>(schema.join(name, "instFlux", "yy", "Cov"),
+                                        (boost::format("uncertainty covariance between %s and %s") %
+                                         schema.join(name, "instFlux") % schema.join(name, "yy"))
+                                                .str(),
+                                        "count*pixel^2");
+    r._instFlux_xy_Cov =
+            schema.addField<ErrElement>(schema.join(name, "instFlux", "xy", "Cov"),
+                                        (boost::format("uncertainty covariance between %s and %s") %
+                                         schema.join(name, "instFlux") % schema.join(name, "xy"))
+                                                .str(),
+                                        "count*pixel^2");
 
     // Skip the psf flag if not recording the PSF shape.
     if (r._includePsf) {
@@ -690,10 +693,10 @@ SdssShapeResultKey SdssShapeResultKey::addFields(afw::table::Schema &schema, std
 SdssShapeResultKey::SdssShapeResultKey(afw::table::SubSchema const &s)
         : _shapeResult(s),
           _centroidResult(s),
-          _fluxResult(s),
-          _flux_xx_Cov(s["flux"]["xx"]["Cov"]),
-          _flux_yy_Cov(s["flux"]["yy"]["Cov"]),
-          _flux_xy_Cov(s["flux"]["xy"]["Cov"]) {
+          _instFluxResult(s),
+          _instFlux_xx_Cov(s["instFlux"]["xx"]["Cov"]),
+          _instFlux_yy_Cov(s["instFlux"]["yy"]["Cov"]),
+          _instFlux_xy_Cov(s["instFlux"]["xy"]["Cov"]) {
     // The input SubSchema may optionally provide for a PSF.
     try {
         _psfShapeResult = afw::table::QuadrupoleKey(s["psf"]);
@@ -710,10 +713,10 @@ SdssShapeResult SdssShapeResultKey::get(afw::table::BaseRecord const &record) co
     SdssShapeResult result;
     static_cast<ShapeResult &>(result) = record.get(_shapeResult);
     static_cast<CentroidResult &>(result) = record.get(_centroidResult);
-    static_cast<FluxResult &>(result) = record.get(_fluxResult);
-    result.flux_xx_Cov = record.get(_flux_xx_Cov);
-    result.flux_yy_Cov = record.get(_flux_yy_Cov);
-    result.flux_xy_Cov = record.get(_flux_xy_Cov);
+    static_cast<FluxResult &>(result) = record.get(_instFluxResult);
+    result.instFlux_xx_Cov = record.get(_instFlux_xx_Cov);
+    result.instFlux_yy_Cov = record.get(_instFlux_yy_Cov);
+    result.instFlux_xy_Cov = record.get(_instFlux_xy_Cov);
     for (size_t n = 0; n < SdssShapeAlgorithm::N_FLAGS; ++n) {
         if (n == SdssShapeAlgorithm::PSF_SHAPE_BAD.number && !_includePsf) continue;
         result.flags[n] = _flagHandler.getValue(record, n);
@@ -728,10 +731,10 @@ afw::geom::ellipses::Quadrupole SdssShapeResultKey::getPsfShape(afw::table::Base
 void SdssShapeResultKey::set(afw::table::BaseRecord &record, SdssShapeResult const &value) const {
     record.set(_shapeResult, value);
     record.set(_centroidResult, value);
-    record.set(_fluxResult, value);
-    record.set(_flux_xx_Cov, value.flux_xx_Cov);
-    record.set(_flux_yy_Cov, value.flux_yy_Cov);
-    record.set(_flux_xy_Cov, value.flux_xy_Cov);
+    record.set(_instFluxResult, value);
+    record.set(_instFlux_xx_Cov, value.instFlux_xx_Cov);
+    record.set(_instFlux_yy_Cov, value.instFlux_yy_Cov);
+    record.set(_instFlux_xy_Cov, value.instFlux_xy_Cov);
     for (size_t n = 0; n < SdssShapeAlgorithm::N_FLAGS; ++n) {
         if (n == SdssShapeAlgorithm::PSF_SHAPE_BAD.number && !_includePsf) continue;
         _flagHandler.setValue(record, n, value.flags[n]);
@@ -745,16 +748,16 @@ void SdssShapeResultKey::setPsfShape(afw::table::BaseRecord &record,
 
 bool SdssShapeResultKey::operator==(SdssShapeResultKey const &other) const {
     return _shapeResult == other._shapeResult && _centroidResult == other._centroidResult &&
-           _fluxResult == other._fluxResult && _psfShapeResult == other._psfShapeResult &&
-           _flux_xx_Cov == other._flux_xx_Cov && _flux_yy_Cov == other._flux_yy_Cov &&
-           _flux_xy_Cov == other._flux_xy_Cov;
+           _instFluxResult == other._instFluxResult && _psfShapeResult == other._psfShapeResult &&
+           _instFlux_xx_Cov == other._instFlux_xx_Cov && _instFlux_yy_Cov == other._instFlux_yy_Cov &&
+           _instFlux_xy_Cov == other._instFlux_xy_Cov;
     // don't bother with flags - if we've gotten this far, it's basically impossible the flags don't match
 }
 
 bool SdssShapeResultKey::isValid() const {
-    return _shapeResult.isValid() && _centroidResult.isValid() && _fluxResult.isValid() &&
-           _psfShapeResult.isValid() && _flux_xx_Cov.isValid() && _flux_yy_Cov.isValid() &&
-           _flux_xy_Cov.isValid();
+    return _shapeResult.isValid() && _centroidResult.isValid() && _instFluxResult.isValid() &&
+           _psfShapeResult.isValid() && _instFlux_xx_Cov.isValid() && _instFlux_yy_Cov.isValid() &&
+           _instFlux_xy_Cov.isValid();
     // don't bother with flags - if we've gotten this far, it's basically impossible the flags are invalid
 }
 
@@ -805,20 +808,20 @@ SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(ImageT const &image, 
         }
     }
 
-    // getAdaptiveMoments() just computes the zeroth moment in result.flux (and its error in
-    // result.fluxErr, result.flux_xx_Cov, etc.)  That's related to the flux by some geometric
+    // getAdaptiveMoments() just computes the zeroth moment in result.instFlux (and its error in
+    // result.instFluxErr, result.instFlux_xx_Cov, etc.)  That's related to the instFlux by some geometric
     // factors, which we apply here.
-    double fluxScale = computeFluxScale(result);
+    double instFluxScale = computeFluxScale(result);
 
-    result.flux *= fluxScale;
-    result.fluxErr *= fluxScale;
+    result.instFlux *= instFluxScale;
+    result.instFluxErr *= instFluxScale;
     result.x += image.getX0();
     result.y += image.getY0();
 
     if (ImageAdaptor<ImageT>::hasVariance) {
-        result.flux_xx_Cov *= fluxScale;
-        result.flux_yy_Cov *= fluxScale;
-        result.flux_xy_Cov *= fluxScale;
+        result.instFlux_xx_Cov *= instFluxScale;
+        result.instFlux_yy_Cov *= instFluxScale;
+        result.instFlux_xy_Cov *= instFluxScale;
     }
 
     return result;
@@ -856,7 +859,7 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(ImageT const &image,
 
     double const wArea = geom::PI * std::sqrt(shape.getDeterminant());
 
-    result.flux = i0 * 2 * wArea;
+    result.instFlux = i0 * 2 * wArea;
 
     if (ImageAdaptor<ImageT>::hasVariance) {
         int ix = static_cast<int>(center.getX() - image.getX0());
@@ -869,7 +872,7 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(ImageT const &image,
         }
         double var = ImageAdaptor<ImageT>().getVariance(image, ix, iy);
         double i0Err = std::sqrt(var / wArea);
-        result.fluxErr = i0Err * 2 * wArea;
+        result.instFluxErr = i0Err * 2 * wArea;
     }
 
     return result;
@@ -930,7 +933,7 @@ INSTANTIATE_PIXEL(double);
 
 SdssShapeTransform::SdssShapeTransform(Control const &ctrl, std::string const &name,
                                        afw::table::SchemaMapper &mapper)
-        : BaseTransform{name}, _fluxTransform{name, mapper}, _centroidTransform{name, mapper} {
+        : BaseTransform{name}, _instFluxTransform{name, mapper}, _centroidTransform{name, mapper} {
     // If the input schema has a PSF flag -- it's optional --  assume we are also transforming the PSF.
     _transformPsf = mapper.getInputSchema().getNames().count("sdssShape_flag_psf") ? true : false;
 
@@ -957,9 +960,9 @@ SdssShapeTransform::SdssShapeTransform(Control const &ctrl, std::string const &n
 void SdssShapeTransform::operator()(afw::table::SourceCatalog const &inputCatalog,
                                     afw::table::BaseCatalog &outputCatalog, afw::geom::SkyWcs const &wcs,
                                     afw::image::Calib const &calib) const {
-    // The flux and cetroid transforms will check that the catalog lengths
+    // The instFlux and cetroid transforms will check that the catalog lengths
     // match and throw if not, so we don't repeat the test here.
-    _fluxTransform(inputCatalog, outputCatalog, wcs, calib);
+    _instFluxTransform(inputCatalog, outputCatalog, wcs, calib);
     _centroidTransform(inputCatalog, outputCatalog, wcs, calib);
 
     CentroidResultKey centroidKey(inputCatalog.getSchema()[_name]);

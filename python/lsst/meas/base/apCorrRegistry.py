@@ -20,29 +20,29 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-"""Registry for names of flux fields that should be aperture corrected
+"""Registry for names of instrument flux fields that should be aperture corrected
 """
 
 __all__ = ("addApCorrName", "getApCorrNameSet")
 
-# Set of names of algorithms that measure fluxes that can be aperture corrected
+# Set of names of algorithms that measure instrument flux that can be aperture corrected
 _ApCorrNameSet = set()
 
 
 def addApCorrName(name):
-    """!Add to the set of field name prefixes for fluxes that should be aperture corrected
+    """!Add to the set of field name prefixes for instrument flux that should be aperture corrected
 
-    @param[in] name  field name prefix for a flux that should be aperture corrected.
-        The corresponding field names are {name}_flux, {name}_fluxErr and {name}_flag.
-        For example name "base_PsfFlux" corresponds to fields base_PsfFlux_flux,
-        base_PsfFlux_fluxErr and base_PsfFlux_flag.
+    @param[in] name  field name prefix for a instrument flux that should be aperture corrected.
+        The corresponding field names are {name}_instFlux, {name}_instFluxErr and {name}_flag.
+        For example name "base_PsfFlux" corresponds to fields base_PsfFlux_instFlux,
+        base_PsfFlux_instFluxErr and base_PsfFlux_flag.
     """
     global _ApCorrNameSet
     _ApCorrNameSet.add(str(name))
 
 
 def getApCorrNameSet():
-    """!Return a copy of the set of field name prefixes for fluxes that should be aperture corrected
+    """!Return a copy of the set of field name prefixes for instrument flux that should be aperture corrected.
 
     For example the returned set will likely include "base_PsfFlux" and "base_GaussianFlux".
     """

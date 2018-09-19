@@ -103,12 +103,12 @@ class PluginRegistry(lsst.pex.config.Registry):
             and it should generally contain the name of the Plugin or Algorithm class itself
             as well as enough of the namespace to make it clear where to find the code.
             For example "base_GaussianFlux" indicates an algorithm in meas_base
-            that measures Gaussian Flux and produces fields such as "base_GaussianFlux_flux",
-            "base_GaussianFlux_fluxErr" and "base_GaussianFlux_flag".
-        @param[in] shouldApCorr  if True then this algorithm measures a flux that should be aperture
+            that measures Gaussian Flux and produces fields such as "base_GaussianFlux_instFlux",
+            "base_GaussianFlux_instFluxErr" and "base_GaussianFlux_flag".
+        @param[in] shouldApCorr  if True then this algorithm measures a instFlux that should be aperture
             corrected. This is shorthand for apCorrList=[name] and is ignored if apCorrList is specified.
-        @param[in] apCorrList  list of field name prefixes for flux fields that should be aperture corrected.
-            If an algorithm produces a single flux that should be aperture corrected then it is simpler
+        @param[in] apCorrList  list of field name prefixes for instFlux fields to be aperture corrected.
+            If an algorithm produces a single instFlux that should be aperture corrected then it is simpler
             to set shouldApCorr=True. But if an algorithm produces multiple such fields then it must
             specify apCorrList, instead. For example modelfit_CModel produces 3 such fields:
                 apCorrList=("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")

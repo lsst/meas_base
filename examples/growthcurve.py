@@ -165,7 +165,7 @@ def main():
             # this test uses a single Gaussian instead of the original double gaussian
             psf = afwDet.GaussianPsf(psfW, psfH, sigma)
 
-            # get the aperture fluxes for Naive and Sinc methods
+            # get the aperture instFluxes for Naive and Sinc methods
 
             axes = afwGeom.ellipses.Axes(radius[iR], radius[iR], math.radians(0))
             center = lsst.geom.Point2D(0, 0)
@@ -177,15 +177,15 @@ def main():
             source["centroid_y"] = 0
             exposure.setPsf(psf)
             plugin.measure(source, exposure)
-            fluxNaive = resultNaive.flux
-            fluxSinc = resultSinc.flux
-            fluxPsf = source["test_flux"]
+            instFluxNaive = resultNaive.instFlux
+            instFluxSinc = resultSinc.instFlux
+            instFluxPsf = source["instFlux"]
 
-            # get the exact flux for the theoretical smooth PSF
+            # get the exact instFlux for the theoretical smooth PSF
             # rpsf = RGaussian(sigma, a, radius[iR], aptaper)
             # *** not sure how to integrate a python functor ***
 
-            print("%.2f %.2f  %.3f %.3f %.3f" % (sigma, radius[iR], fluxNaive, fluxSinc, fluxPsf))
+            print("%.2f %.2f  %.3f %.3f %.3f" % (sigma, radius[iR], instFluxNaive, instFluxSinc, instFluxPsf))
 
 
 #############################################################

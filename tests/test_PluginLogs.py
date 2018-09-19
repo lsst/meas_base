@@ -67,7 +67,7 @@ class LoggingPlugin(SingleFramePlugin):
         self.FAILURE = flagDefs.addFailureFlag()
         self.CONTAINS_NAN = flagDefs.add("flag_containsNan", "Measurement area contains a nan")
         self.flagHandler = FlagHandler.addFields(schema, name, flagDefs)
-        self.fluxKey = schema.addField(name + "_flux", "F", doc="flux")
+        self.instFluxKey = schema.addField(name + "_instFlux", "F", doc="flux")
 
     def measure(self, measRecord, exposure):
         """
@@ -79,11 +79,11 @@ class LoggingPlugin(SingleFramePlugin):
         # Sum the pixels inside the bounding box
         centerPoint = lsst.geom.Point2I(int(measRecord.getX()), int(measRecord.getY()))
         bbox = lsst.geom.Box2I(centerPoint, lsst.geom.Extent2I(1, 1))
-        flux = lsst.afw.image.ImageF(exposure.getMaskedImage().getImage(), bbox).getArray().sum()
-        measRecord.set(self.fluxKey, flux)
+        instFlux = lsst.afw.image.ImageF(exposure.getMaskedImage().getImage(), bbox).getArray().sum()
+        measRecord.set(self.instFluxKey, instFlux)
 
-        # If there was a nan inside the bounding box, the flux will still be nan
-        if numpy.isnan(flux):
+        # If there was a nan inside the bounding box, the instFlux will still be nan
+        if numpy.isnan(instFlux):
             raise MeasurementError(self.CONTAINS_NAN.doc, self.CONTAINS_NAN.number)
 
     def fail(self, measRecord, error=None):
@@ -185,12 +185,12 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     def setUp(self):
         bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(100, 100))
         self.dataset = lsst.meas.base.tests.TestDataset(bbox)
-        self.dataset.addSource(flux=1E5, centroid=lsst.geom.Point2D(25, 25))
+        self.dataset.addSource(instFlux=1E5, centroid=lsst.geom.Point2D(25, 25))
         config = lsst.meas.base.SingleFrameMeasurementConfig()
         config.slots.centroid = None
         config.slots.apFlux = None
         config.slots.calibFlux = None
-        config.slots.instFlux = None
+        config.slots.gaussianFlux = None
         config.slots.modelFlux = None
         config.slots.psfFlux = None
         config.slots.shape = None

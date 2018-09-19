@@ -157,7 +157,7 @@ class InputCountTest(lsst.utils.tests.TestCase):
         measureSourcesConfig.slots.psfFlux = None
         measureSourcesConfig.slots.apFlux = None
         measureSourcesConfig.slots.modelFlux = None
-        measureSourcesConfig.slots.instFlux = None
+        measureSourcesConfig.slots.gaussianFlux = None
         measureSourcesConfig.slots.calibFlux = None
         measureSourcesConfig.slots.shape = None
         measureSourcesConfig.validate()

@@ -30,28 +30,28 @@ namespace meas {
 namespace base {
 
 FluxResult::FluxResult()
-        : flux(std::numeric_limits<Flux>::quiet_NaN()),
-          fluxErr(std::numeric_limits<FluxErrElement>::quiet_NaN()) {}
+        : instFlux(std::numeric_limits<meas::base::Flux>::quiet_NaN()),
+          instFluxErr(std::numeric_limits<meas::base::FluxErrElement>::quiet_NaN()) {}
 
 FluxResultKey FluxResultKey::addFields(afw::table::Schema& schema, std::string const& name,
                                        std::string const& doc) {
     FluxResultKey result;
-    result._flux = schema.addField<Flux>(schema.join(name, "flux"), doc, "count");
-    result._fluxErr = schema.addField<FluxErrElement>(schema.join(name, "fluxErr"),
-                                                        "1-sigma flux uncertainty", "count");
+    result._instFlux = schema.addField<meas::base::Flux>(schema.join(name, "instFlux"), doc, "count");
+    result._instFluxErr = schema.addField<meas::base::FluxErrElement>(
+            schema.join(name, "instFluxErr"), "1-sigma instFlux uncertainty", "count");
     return result;
 }
 
 FluxResult FluxResultKey::get(afw::table::BaseRecord const& record) const {
     FluxResult r;
-    r.flux = record.get(_flux);
-    r.fluxErr = record.get(_fluxErr);
+    r.instFlux = record.get(_instFlux);
+    r.instFluxErr = record.get(_instFluxErr);
     return r;
 }
 
 void FluxResultKey::set(afw::table::BaseRecord& record, FluxResult const& value) const {
-    record.set(_flux, value.flux);
-    record.set(_fluxErr, value.fluxErr);
+    record.set(_instFlux, value.instFlux);
+    record.set(_instFluxErr, value.instFluxErr);
 }
 
 MagResultKey MagResultKey::addFields(afw::table::Schema& schema, std::string const& name) {
@@ -89,16 +89,16 @@ void FluxTransform::operator()(afw::table::SourceCatalog const& inputCatalog,
                                afw::table::BaseCatalog& outputCatalog, afw::geom::SkyWcs const& wcs,
                                afw::image::Calib const& calib) const {
     checkCatalogSize(inputCatalog, outputCatalog);
-    FluxResultKey fluxKey(inputCatalog.getSchema()[_name]);
+    FluxResultKey instFluxKey(inputCatalog.getSchema()[_name]);
     afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
     afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();
     {
-        // While noThrow is in scope, converting a negative flux to a magnitude
+        // While noThrow is in scope, converting a negative instFlux to a magnitude
         // returns NaN rather than throwing.
         NoThrowOnNegativeFluxContext noThrow;
         for (; inSrc != inputCatalog.end() && outSrc != outputCatalog.end(); ++inSrc, ++outSrc) {
-            FluxResult fluxResult = fluxKey.get(*inSrc);
-            _magKey.set(*outSrc, calib.getMagnitude(fluxResult.flux, fluxResult.fluxErr));
+            FluxResult instFluxResult = instFluxKey.get(*inSrc);
+            _magKey.set(*outSrc, calib.getMagnitude(instFluxResult.instFlux, instFluxResult.instFluxErr));
         }
     }
 }

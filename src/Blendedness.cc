@@ -200,24 +200,24 @@ BlendednessAlgorithm::BlendednessAlgorithm(Control const& ctrl, std::string cons
                 "blendedness from dot products: (child.dot(parent)/child.dot(child) - 1)");
     }
     if (_ctrl.doFlux) {
-        _fluxRaw = schema.addField<double>(
-                schema.join(name, "raw_flux"),
-                "measure of how flux is affected by neighbors: (1 - flux.child/flux.parent)");
-        _fluxChildRaw = schema.addField<double>(
-                schema.join(name, "raw_flux_child"),
-                "flux of the child, measured with a Gaussian weight matched to the child", "count");
-        _fluxParentRaw = schema.addField<double>(
-                schema.join(name, "raw_flux_parent"),
-                "flux of the parent, measured with a Gaussian weight matched to the child", "count");
-        _fluxAbs = schema.addField<double>(
-                schema.join(name, "abs_flux"),
-                "measure of how flux is affected by neighbors: (1 - flux.child/flux.parent)");
-        _fluxChildAbs = schema.addField<double>(
-                schema.join(name, "abs_flux_child"),
-                "flux of the child, measured with a Gaussian weight matched to the child", "count");
-        _fluxParentAbs = schema.addField<double>(
-                schema.join(name, "abs_flux_parent"),
-                "flux of the parent, measured with a Gaussian weight matched to the child", "count");
+        _instFluxRaw = schema.addField<double>(
+                schema.join(name, "raw_instFlux"),
+                "measure of how instFlux is affected by neighbors: (1 - instFlux.child/instFlux.parent)");
+        _instFluxChildRaw = schema.addField<double>(
+                schema.join(name, "raw_instFlux_child"),
+                "instFlux of the child, measured with a Gaussian weight matched to the child", "count");
+        _instFluxParentRaw = schema.addField<double>(
+                schema.join(name, "raw_instFlux_parent"),
+                "instFlux of the parent, measured with a Gaussian weight matched to the child", "count");
+        _instFluxAbs = schema.addField<double>(
+                schema.join(name, "abs_instFlux"),
+                "measure of how instFlux is affected by neighbors: (1 - instFlux.child/instFlux.parent)");
+        _instFluxChildAbs = schema.addField<double>(
+                schema.join(name, "abs_instFlux_child"),
+                "instFlux of the child, measured with a Gaussian weight matched to the child", "count");
+        _instFluxParentAbs = schema.addField<double>(
+                schema.join(name, "abs_instFlux_parent"),
+                "instFlux of the parent, measured with a Gaussian weight matched to the child", "count");
     }
     if (_ctrl.doShape) {
         _shapeChildRaw = ShapeResultKey::addFields(
@@ -256,14 +256,14 @@ float BlendednessAlgorithm::computeAbsBias(float mu, float variance) {
 
 void BlendednessAlgorithm::_measureMoments(afw::image::MaskedImage<float> const& image,
                                            afw::table::SourceRecord& child,
-                                           afw::table::Key<double> const& fluxRawKey,
-                                           afw::table::Key<double> const& fluxAbsKey,
+                                           afw::table::Key<double> const& instFluxRawKey,
+                                           afw::table::Key<double> const& instFluxAbsKey,
                                            ShapeResultKey const& _shapeRawKey,
                                            ShapeResultKey const& _shapeAbsKey) const {
     if (_ctrl.doFlux || _ctrl.doShape) {
         if (!child.getTable()->getCentroidKey().isValid()) {
             throw LSST_EXCEPT(pex::exceptions::LogicError,
-                              "Centroid Key must be defined to measure the blendedness flux");
+                              "Centroid Key must be defined to measure the blendedness instFlux");
         }
     }
     if (_ctrl.doShape) {
@@ -309,8 +309,8 @@ void BlendednessAlgorithm::_measureMoments(afw::image::MaskedImage<float> const&
         computeMoments(image, child.getCentroid(), child.getShape(), _ctrl.nSigmaWeightMax, accumulatorRaw,
                        accumulatorAbs);
         if (_ctrl.doFlux) {
-            child.set(fluxRawKey, accumulatorRaw.getFlux());
-            child.set(fluxAbsKey, std::max(accumulatorAbs.getFlux(), 0.0));
+            child.set(instFluxRawKey, accumulatorRaw.getFlux());
+            child.set(instFluxAbsKey, std::max(accumulatorAbs.getFlux(), 0.0));
         }
         _shapeRawKey.set(child, accumulatorRaw.getShape());
         _shapeAbsKey.set(child, accumulatorAbs.getShape());
@@ -319,14 +319,14 @@ void BlendednessAlgorithm::_measureMoments(afw::image::MaskedImage<float> const&
         FluxAccumulator accumulatorAbs;
         computeMoments(image, child.getCentroid(), child.getShape(), _ctrl.nSigmaWeightMax, accumulatorRaw,
                        accumulatorAbs);
-        child.set(fluxRawKey, accumulatorRaw.getFlux());
-        child.set(fluxAbsKey, std::max(accumulatorAbs.getFlux(), 0.0));
+        child.set(instFluxRawKey, accumulatorRaw.getFlux());
+        child.set(instFluxAbsKey, std::max(accumulatorAbs.getFlux(), 0.0));
     }
 }
 
 void BlendednessAlgorithm::measureChildPixels(afw::image::MaskedImage<float> const& image,
                                               afw::table::SourceRecord& child) const {
-    _measureMoments(image, child, _fluxChildRaw, _fluxChildAbs, _shapeChildRaw, _shapeChildAbs);
+    _measureMoments(image, child, _instFluxChildRaw, _instFluxChildAbs, _shapeChildRaw, _shapeChildAbs);
 }
 
 void BlendednessAlgorithm::measureParentPixels(afw::image::MaskedImage<float> const& image,
@@ -334,13 +334,13 @@ void BlendednessAlgorithm::measureParentPixels(afw::image::MaskedImage<float> co
     if (_ctrl.doOld) {
         child.set(_old, computeOldBlendedness(child.getFootprint(), *image.getImage()));
     }
-    _measureMoments(image, child, _fluxParentRaw, _fluxParentAbs, _shapeParentRaw, _shapeParentAbs);
+    _measureMoments(image, child, _instFluxParentRaw, _instFluxParentAbs, _shapeParentRaw, _shapeParentAbs);
     if (_ctrl.doFlux) {
-        child.set(_fluxRaw, 1.0 - child.get(_fluxChildRaw) / child.get(_fluxParentRaw));
-        child.set(_fluxAbs, 1.0 - child.get(_fluxChildAbs) / child.get(_fluxParentAbs));
-        if (child.get(_fluxParentAbs) == 0.0) {
+        child.set(_instFluxRaw, 1.0 - child.get(_instFluxChildRaw) / child.get(_instFluxParentRaw));
+        child.set(_instFluxAbs, 1.0 - child.get(_instFluxChildAbs) / child.get(_instFluxParentAbs));
+        if (child.get(_instFluxParentAbs) == 0.0) {
             // We can get NaNs in the absolute measure if both parent and child have only negative
-            // biased-corrected fluxes (which we clip to zero).  We can't really recover from this,
+            // biased-corrected instFluxes (which we clip to zero).  We can't really recover from this,
             // so we should set the flag.
             _flagHandler.setValue(child, FAILURE.number, true);
         }

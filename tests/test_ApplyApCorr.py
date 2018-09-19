@@ -34,15 +34,15 @@ from lsst.afw.math import ChebyshevBoundedField
 from lsst.meas.base.apCorrRegistry import addApCorrName
 
 
-def initializeSourceCatalog(schema=None, name=None, flux=None, sigma=None, centroid=None):
-    fluxName = name + "_flux"
-    fluxErrName = name + "_fluxErr"
-    fluxKey = schema.find(fluxName).key
+def initializeSourceCatalog(schema=None, name=None, instFlux=None, sigma=None, centroid=None):
+    instFluxName = name + "_instFlux"
+    instFluxErrName = name + "_instFluxErr"
+    instFluxKey = schema.find(instFluxName).key
     centroidKey = afwTable.Point2DKey(schema["slot_Centroid"])
     sourceCat = afwTable.SourceCatalog(schema)
     source = sourceCat.addNew()
-    source.set(fluxKey, flux)
-    source.set(fluxErrName, sigma)
+    source.set(instFluxKey, instFlux)
+    source.set(instFluxErrName, sigma)
     source.set(centroidKey, centroid)
     return(sourceCat)
 
@@ -53,8 +53,8 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         schema = afwTable.SourceTable.makeMinimalSchema()
         name = "test"
         addApCorrName(name)
-        schema.addField(name + "_flux", type=np.float64)
-        schema.addField(name + "_fluxErr", type=np.float64)
+        schema.addField(name + "_instFlux", type=np.float64)
+        schema.addField(name + "_instFluxErr", type=np.float64)
         schema.addField(name + "_flag", type=np.float64)
         schema.addField(name + "_Centroid_x", type=np.float64)
         schema.addField(name + "_Centroid_y", type=np.float64)
@@ -77,19 +77,19 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         # Check that the aperture correction flag is set to False if aperture correction was successfully run
         flagName = self.name + "_flag_apCorr"
         flagKey = self.schema.find(flagName).key
-        source_test_flux = 5.1
+        source_test_instFlux = 5.1
         source_test_centroid = lsst.geom.Point2D(5, 7.1)
-        sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, flux=source_test_flux,
+        sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, instFlux=source_test_instFlux,
                                             sigma=0, centroid=source_test_centroid)
-        fluxName = self.name + "_flux"
-        fluxErrName = self.name + "_fluxErr"
+        instFluxName = self.name + "_instFlux"
+        instFluxErrName = self.name + "_instFluxErr"
 
         apCorrMap = afwImage.ApCorrMap()
         bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.ExtentI(10, 10))
         coefficients = np.ones((1, 1), dtype=np.float64)
         coefficients_sigma = np.zeros((1, 1), dtype=np.float64)
-        apCorrMap[fluxName] = ChebyshevBoundedField(bbox, coefficients)
-        apCorrMap[fluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
+        apCorrMap[instFluxName] = ChebyshevBoundedField(bbox, coefficients)
+        apCorrMap[instFluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
         self.ap_corr_task.run(sourceCat, apCorrMap)
         self.assertFalse(sourceCat[flagKey])
 
@@ -97,62 +97,62 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         # Check that aperture correction flag is set to True if aperture correction is invalid (negative)
         flagName = self.name + "_flag_apCorr"
         flagKey = self.schema.find(flagName).key
-        source_test_flux = 5.2
+        source_test_instFlux = 5.2
         source_test_centroid = lsst.geom.Point2D(5, 7.1)
-        sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, flux=source_test_flux,
+        sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, instFlux=source_test_instFlux,
                                             sigma=0, centroid=source_test_centroid)
-        fluxName = self.name + "_flux"
-        fluxErrName = self.name + "_fluxErr"
+        instFluxName = self.name + "_instFlux"
+        instFluxErrName = self.name + "_instFluxErr"
 
         apCorrMap = afwImage.ApCorrMap()
         bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.ExtentI(10, 10))
         coefficients = -(np.ones((1, 1), dtype=np.float64))
         coefficients_sigma = np.zeros((1, 1), dtype=np.float64)
-        apCorrMap[fluxName] = ChebyshevBoundedField(bbox, coefficients)
-        apCorrMap[fluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
+        apCorrMap[instFluxName] = ChebyshevBoundedField(bbox, coefficients)
+        apCorrMap[instFluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
         self.ap_corr_task.run(sourceCat, apCorrMap)
         self.assertTrue(sourceCat[flagKey])
 
     def testCatFluxUnchanged(self):
         # Pick arbitrary but unique values for the test case
-        source_test_flux = 5.3
+        source_test_instFlux = 5.3
         source_test_centroid = lsst.geom.Point2D(5, 7.1)
-        sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, flux=source_test_flux,
+        sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, instFlux=source_test_instFlux,
                                             sigma=0, centroid=source_test_centroid)
-        fluxName = self.name + "_flux"
-        fluxErrName = self.name + "_fluxErr"
-        fluxKey = self.schema.find(fluxName).key
+        instFluxName = self.name + "_instFlux"
+        instFluxErrName = self.name + "_instFluxErr"
+        instFluxKey = self.schema.find(instFluxName).key
 
         apCorrMap = afwImage.ApCorrMap()
         bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.ExtentI(10, 10))
         coefficients = np.ones((1, 1), dtype=np.float64)
         coefficients_sigma = np.zeros((1, 1), dtype=np.float64)
-        apCorrMap[fluxName] = ChebyshevBoundedField(bbox, coefficients)
-        apCorrMap[fluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
+        apCorrMap[instFluxName] = ChebyshevBoundedField(bbox, coefficients)
+        apCorrMap[instFluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
         self.ap_corr_task.run(sourceCat, apCorrMap)
 
-        self.assertEqual(sourceCat[fluxKey], source_test_flux)
+        self.assertEqual(sourceCat[instFluxKey], source_test_instFlux)
 
     def testCatFluxHalf(self):
         # Pick arbitrary but unique values for the test case
-        source_test_flux = 5.4
+        source_test_instFlux = 5.4
         source_test_centroid = lsst.geom.Point2D(5, 7.1)
-        sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, flux=source_test_flux,
+        sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, instFlux=source_test_instFlux,
                                             sigma=0, centroid=source_test_centroid)
-        fluxName = self.name + "_flux"
-        fluxErrName = self.name + "_fluxErr"
-        fluxKey = self.schema.find(fluxName).key
+        instFluxName = self.name + "_instFlux"
+        instFluxErrName = self.name + "_instFluxErr"
+        instFluxKey = self.schema.find(instFluxName).key
 
         apCorrMap = afwImage.ApCorrMap()
         bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.ExtentI(10, 10))
         coefficients = np.ones((1, 1), dtype=np.float64)
         coefficients /= 2.
         coefficients_sigma = np.zeros((1, 1), dtype=np.float64)
-        apCorrMap[fluxName] = ChebyshevBoundedField(bbox, coefficients)
-        apCorrMap[fluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
+        apCorrMap[instFluxName] = ChebyshevBoundedField(bbox, coefficients)
+        apCorrMap[instFluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
         self.ap_corr_task.run(sourceCat, apCorrMap)
 
-        self.assertAlmostEqual(sourceCat[fluxKey], source_test_flux / 2)
+        self.assertAlmostEqual(sourceCat[instFluxKey], source_test_instFlux / 2)
 
     def testCatFluxErr(self):
         """
@@ -161,25 +161,25 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         It is likely that this test will need to be modified if the noise calculation is updated.
         """
         # Pick arbitrary but unique values for the test case
-        source_test_flux = 5.5
+        source_test_instFlux = 5.5
         source_test_sigma = 0.23
         source_test_centroid = lsst.geom.Point2D(5, 7.3)
-        sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, flux=source_test_flux,
+        sourceCat = initializeSourceCatalog(schema=self.schema, name=self.name, instFlux=source_test_instFlux,
                                             sigma=source_test_sigma, centroid=source_test_centroid)
 
-        fluxName = self.name + "_flux"
-        fluxErrName = self.name + "_fluxErr"
-        fluxErrKey = self.schema.find(fluxErrName).key
+        instFluxName = self.name + "_instFlux"
+        instFluxErrName = self.name + "_instFluxErr"
+        instFluxErrKey = self.schema.find(instFluxErrName).key
 
         apCorrMap = afwImage.ApCorrMap()
         bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.ExtentI(10, 10))
         coefficients = np.ones((1, 1), dtype=np.float64)
         coefficients_sigma = np.ones((1, 1), dtype=np.float64)
-        apCorrMap[fluxName] = ChebyshevBoundedField(bbox, coefficients)
-        apCorrMap[fluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
+        apCorrMap[instFluxName] = ChebyshevBoundedField(bbox, coefficients)
+        apCorrMap[instFluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
         self.ap_corr_task.run(sourceCat, apCorrMap)
 
-        self.assertAlmostEqual(sourceCat[fluxErrKey], source_test_sigma)
+        self.assertAlmostEqual(sourceCat[instFluxErrKey], source_test_sigma)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):

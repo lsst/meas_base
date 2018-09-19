@@ -48,7 +48,7 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         radius = 3.0  # Aperture radius
         xCenter, yCenter = width//2, height//2  # Position of first source; integer values, for convenience
         xOffset, yOffset = 1, 1  # Offset from first source to second source
-        flux1, flux2 = 1000, 1  # Flux of sources
+        instFlux1, instFlux2 = 1000, 1  # Flux of sources
         apCorrValue = 3.21  # Aperture correction value to apply
 
         image = afwImage.MaskedImageF(lsst.geom.ExtentI(width, height))
@@ -75,7 +75,7 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         slots.apFlux = None
         slots.modelFlux = None
         slots.psfFlux = None
-        slots.instFlux = None
+        slots.gaussianFlux = None
         slots.calibFlux = None
 
         fieldName = lsst.meas.base.CircularApertureFluxAlgorithm.makeFieldPrefix(algName, radius)
@@ -100,7 +100,7 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         child1.set("centroid_x", parent.get("centroid_x"))
         child1.set("centroid_y", parent.get("centroid_y"))
         child1.setParent(parent.getId())
-        image[xCenter, yCenter, afwImage.LOCAL] = (flux1, 0, 0)
+        image[xCenter, yCenter, afwImage.LOCAL] = (instFlux1, 0, 0)
         spanSetChild1 = afwGeom.SpanSet.fromShape(1)
         spanSetChild1 = spanSetChild1.shiftedBy(x0 + xCenter, y0 + yCenter)
         foot1 = afwDetection.Footprint(spanSetChild1)
@@ -111,7 +111,7 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         child2.set("centroid_x", parent.get("centroid_x") + xOffset)
         child2.set("centroid_y", parent.get("centroid_y") + yOffset)
         child2.setParent(parent.getId())
-        image[xCenter + xOffset, yCenter + yOffset, afwImage.LOCAL] = (flux2, 0, 0)
+        image[xCenter + xOffset, yCenter + yOffset, afwImage.LOCAL] = (instFlux2, 0, 0)
         spanSetChild2 = afwGeom.SpanSet.fromShape(1)
         tmpPoint = (x0 + xCenter + xOffset, y0 + yCenter + yOffset)
         spanSetChild2 = spanSetChild2.shiftedBy(*tmpPoint)
@@ -130,25 +130,25 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
 
         def checkSource(source, baseName, expectedFlux):
             """Check that we get the expected results"""
-            self.assertEqual(source.get(baseName + "_flux"), expectedFlux)
-            self.assertGreater(source.get(baseName + "_fluxErr"), 0)
+            self.assertEqual(source.get(baseName + "_instFlux"), expectedFlux)
+            self.assertGreater(source.get(baseName + "_instFluxErr"), 0)
             self.assertFalse(source.get(baseName + "_flag"))
 
         # Deblended
-        checkSource(child1, fieldName, flux1)
-        checkSource(child2, fieldName, flux2)
+        checkSource(child1, fieldName, instFlux1)
+        checkSource(child2, fieldName, instFlux2)
 
         # Undeblended
-        checkSource(child1, "undeblended_" + fieldName, flux1 + flux2)
-        checkSource(child2, "undeblended_" + fieldName, flux1 + flux2)
+        checkSource(child1, "undeblended_" + fieldName, instFlux1 + instFlux2)
+        checkSource(child2, "undeblended_" + fieldName, instFlux1 + instFlux2)
 
         # Apply aperture correction
         apCorrMap = afwImage.ApCorrMap()
-        apCorrMap[fieldName + "_flux"] = afwMath.ChebyshevBoundedField(
+        apCorrMap[fieldName + "_instFlux"] = afwMath.ChebyshevBoundedField(
             image.getBBox(),
             apCorrValue*np.ones((1, 1), dtype=np.float64)
         )
-        apCorrMap[fieldName + "_fluxErr"] = afwMath.ChebyshevBoundedField(
+        apCorrMap[fieldName + "_instFluxErr"] = afwMath.ChebyshevBoundedField(
             image.getBBox(),
             apCorrValue*np.zeros((1, 1), dtype=np.float64)
         )
@@ -156,12 +156,12 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         apCorr.run(cat, apCorrMap)
 
         # Deblended
-        checkSource(child1, fieldName, flux1*apCorrValue)
-        checkSource(child2, fieldName, flux2*apCorrValue)
+        checkSource(child1, fieldName, instFlux1*apCorrValue)
+        checkSource(child2, fieldName, instFlux2*apCorrValue)
 
         # Undeblended
-        checkSource(child1, "undeblended_" + fieldName, (flux1 + flux2)*apCorrValue)
-        checkSource(child2, "undeblended_" + fieldName, (flux1 + flux2)*apCorrValue)
+        checkSource(child1, "undeblended_" + fieldName, (instFlux1 + instFlux2)*apCorrValue)
+        checkSource(child2, "undeblended_" + fieldName, (instFlux1 + instFlux2)*apCorrValue)
 
         self.assertIn(fieldName + "_apCorr", schema)
         self.assertIn(fieldName + "_apCorrErr", schema)
