@@ -43,8 +43,10 @@ __all__ = ("PerTractCcdDataIdContainer", "ForcedPhotCcdConfig", "ForcedPhotCcdTa
 
 
 class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
-    """A version of lsst.pipe.base.DataIdContainer that combines raw data IDs with a tract.
+    """A version of `~lsst.pipe.base.DataIdContainer~ that combines raw data IDs with a tract.
 
+    Notes
+    -----
     Required because we need to add "tract" to the raw data ID keys (defined as whatever we
     use for 'src') when no tract is provided (so that the user is not required to know
     which tracts are spanned by the raw data ID).
@@ -106,10 +108,18 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
 def imageOverlapsTract(tract, imageWcs, imageBox):
     """Return whether the image (specified by Wcs and bounding box) overlaps the tract
 
-    @param tract: TractInfo specifying a tract
-    @param imageWcs: Wcs for image
-    @param imageBox: Bounding box for image
-    @return bool
+    Parameters
+    ----------
+    tract:
+        TractInfo specifying a tract
+    imageWcs:
+        Wcs for image
+    imageBox:
+        Bounding box for image
+
+    Returns
+    -------
+    bool
     """
     tractPoly = tract.getOuterSkyPolygon()
 
@@ -143,8 +153,10 @@ class ForcedPhotCcdConfig(ForcedPhotImageConfig):
 
 
 class ForcedPhotCcdTask(ForcedPhotImageTask):
-    """!A command-line driver for performing forced measurement on CCD images
+    """A command-line driver for performing forced measurement on CCD images
 
+    Notes
+    -----
     This task is a subclass of ForcedPhotImageTask which is specifically for doing forced
     measurement on a single CCD exposure, using as a reference catalog the detections which
     were made on overlapping coadds.
@@ -173,10 +185,13 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
     def makeIdFactory(self, dataRef):
         """Create an object that generates globally unique source IDs from per-CCD IDs and the CCD ID.
 
-        @param dataRef       Data reference from butler.  The "ccdExposureId_bits" and "ccdExposureId"
-                             datasets are accessed.  The data ID must have the keys that correspond
-                             to ccdExposureId, which is generally the same that correspond to "calexp"
-                             (e.g. visit, raft, sensor for LSST data).
+        Parameters
+        ----------
+        dataRef :
+            Data reference from butler.  The "ccdExposureId_bits" and "ccdExposureId"
+            datasets are accessed.  The data ID must have the keys that correspond
+            to ccdExposureId, which is generally the same that correspond to "calexp"
+            (e.g. visit, raft, sensor for LSST data).
         """
         expBits = dataRef.get("ccdExposureId_bits")
         expId = int(dataRef.get("ccdExposureId"))
@@ -186,18 +201,28 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
         return int(dataRef.get("ccdExposureId", immediate=True))
 
     def fetchReferences(self, dataRef, exposure):
-        """Return a SourceCatalog of sources which overlap the exposure.
+        """Get sources that overlap the exposure
 
+        Parameters
+        ----------
+        dataRef :
+            Data reference from butler corresponding to the image to be measured;
+            should have tract, patch, and filter keys.
+        exposure : `lsst.afw.image.Exposure`
+            lsst.afw.image.Exposure to be measured (used only to obtain a Wcs and
+            bounding box).
+
+        Notes
+        -----
         The returned catalog is sorted by ID and guarantees that all included children have their
         parent included and that all Footprints are valid.
-
-        @param dataRef       Data reference from butler corresponding to the image to be measured;
-                             should have tract, patch, and filter keys.
-        @param exposure      lsst.afw.image.Exposure to be measured (used only to obtain a Wcs and
-                             bounding box).
-
         All work is delegated to the references subtask; see CoaddSrcReferencesTask for information
         about the default behavior.
+
+        Returns
+        -------
+        lsst.afw.table.SourceCatalog
+            Catalog of sources that overlap the exposure
         """
         references = lsst.afw.table.SourceCatalog(self.references.schema)
         badParents = set()
@@ -219,9 +244,12 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
     def getExposure(self, dataRef):
         """Read input exposure to measure
 
-        @param dataRef       Data reference from butler.  Only the 'calexp' dataset is used,
-                             unless config.doApplyUberCal is true, in which case the corresponding
-                             meas_mosaic outputs are used as well.
+        Parameters
+        ----------
+        dataRef :
+            Data reference from butler.  Only the 'calexp' dataset is used,
+            unless config.doApplyUberCal is true, in which case the corresponding
+            meas_mosaic outputs are used as well.
         """
         exposure = ForcedPhotImageTask.getExposure(self, dataRef)
         if not self.config.doApplyUberCal:
@@ -235,12 +263,12 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
         return exposure
 
     def _getConfigName(self):
-        """!Return the name of the config dataset.  Forces config comparison from run-to-run
+        """Return the name of the config dataset.  Forces config comparison from run-to-run
         """
         return self.dataPrefix + "forcedPhotCcd_config"
 
     def _getMetadataName(self):
-        """!Return the name of the metadata dataset.  Forced metadata to be saved
+        """Return the name of the metadata dataset.  Forced metadata to be saved
         """
         return self.dataPrefix + "forcedPhotCcd_metadata"
 

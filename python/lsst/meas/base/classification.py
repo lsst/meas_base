@@ -46,10 +46,11 @@ class CatalogCalculationClassificationConfig(CatalogCalculationPluginConfig):
 
 @register("base_ClassificationExtendedness")
 class CatalogCalculationClassificationPlugin(CatalogCalculationPlugin):
-    """
-    A binary measure of the extendedness of a source, based a simple cut on the ratio of the
+    """A binary measure of the extendedness of a source, based a simple cut on the ratio of the
     PSF flux to the model flux.
 
+    Notes
+    -----
     Because the fluxes on which this algorithm is based on are slot measurements, they can be provided
     by different algorithms, and the "fluxRatio" threshold used by this algorithm should generally
     be set differently for different algorithms.  To do this, plot the difference between the PSF

@@ -41,16 +41,31 @@ __all__ = ("SingleFramePluginConfig", "SingleFramePlugin",
 
 
 class SingleFramePluginConfig(BaseMeasurementPluginConfig):
-    """!
+    """
     Base class for configs of single-frame plugin algorithms.
     """
     pass
 
 
 class SingleFramePlugin(BaseMeasurementPlugin):
-    """!
-    Base class for single-frame plugin algorithms.
+    """Base class for single-frame plugin algorithms.
 
+    Parameters
+    ----------
+    config :
+        An instance of this class's ConfigClass.
+    name :
+        The string the plugin was registered with.
+    schema :
+        The Source schema.  New fields should be added here to
+        hold measurements produced by this plugin.
+    metadata :
+        Plugin metadata that will be attached to the output catalog
+    logName :
+        May include logName to use for this plugin
+
+    Notes
+    -----
     New Plugins can be created in Python by inheriting directly from this class
     and implementing measure(), fail() (from BasePlugin), and optionally __init__
     and measureN().  Plugins can also be defined in C++ via the WrappedSingleFramePlugin
@@ -62,49 +77,41 @@ class SingleFramePlugin(BaseMeasurementPlugin):
     ConfigClass = SingleFramePluginConfig
 
     def __init__(self, config, name, schema, metadata, logName=None, **kwds):
-        """!
-        Initialize the measurement object.
-
-        @param[in]  config       An instance of this class's ConfigClass.
-        @param[in]  name         The string the plugin was registered with.
-        @param[in,out]  schema   The Source schema.  New fields should be added here to
-                                 hold measurements produced by this plugin.
-        @param[in]  metadata     Plugin metadata that will be attached to the output catalog
-        @param[in]  logName      May include logName to use for this plugin
-        """
         BaseMeasurementPlugin.__init__(self, config, name, logName=logName)
 
     def measure(self, measRecord, exposure):
-        """!
-        Measure the properties of a source on a single image (single-epoch image or coadd).
+        """Measure the properties of a source on a single image (single-epoch image or coadd).
 
-        @param[in,out] measRecord  lsst.afw.table.SourceRecord to be filled with outputs,
-                                   and from which previously-measured quantities can be
-                                   retreived.
+        Parameters
+        ----------
+        measRecord : `lsst.afw.table.SourceRecord`
+            to be filled with outputs,
+            and from which previously-measured quantities can be
+            retreived.
 
-        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
-                                 be measured and the associated Psf, Wcs, etc.  All
-                                 other sources in the image will have been replaced by
-                                 noise according to deblender outputs.
-
+        exposure : `lsst.afw.image.ExposureF`
+            containing the pixel data to be measured and the associated Psf, Wcs, etc. All
+            other sources in the image will have been replaced by noise according to deblender outputs.
         """
         raise NotImplementedError()
 
     def measureN(self, measCat, exposure):
-        """!
-        Measure the properties of a group of blended sources on a single image
+        """Measure the properties of a group of blended sources on a single image
         (single-epoch image or coadd).
 
-        @param[in,out] measCat   lsst.afw.table.SourceCatalog to be filled with outputs,
-                                 and from which previously-measured quantities can be
-                                 retrieved, containing only the sources that should be
-                                 measured together in this call.
+        Parameters
+        ----------
+        measCat : `lsst.afw.table.SourceCatalog`
+            to be filled with outputs, and from which previously-measured quantities can be
+            retrieved, containing only the sources that should be measured together in this call.
 
-        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
-                                 be measured and the associated Psf, Wcs, etc.  Sources
-                                 not in the blended hierarchy to be measured will have
-                                 been replaced with noise using deblender outputs.
+        exposure : `lsst.afw.image.ExposureF`
+            containing the pixel data to be measured and the associated Psf, Wcs, etc.  Sources
+            not in the blended hierarchy to be measured will have been
+            replaced with noise using deblender outputs.
 
+        Notes
+        -----
         Derived classes that do not implement measureN() should just inherit this
         disabled version.  Derived classes that do implement measureN() should additionally
         add a bool doMeasureN config field to their config class to signal that measureN-mode
@@ -114,7 +121,7 @@ class SingleFramePlugin(BaseMeasurementPlugin):
 
 
 class SingleFrameMeasurementConfig(BaseMeasurementConfig):
-    """!
+    """
     Config class for single frame measurement driver task.
     """
 
@@ -150,11 +157,21 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
 
 
 class SingleFrameMeasurementTask(BaseMeasurementTask):
-    """!
-    @anchor SingleFrameMeasurementTask_
+    """A subtask for measuring the properties of sources on a single exposure.
 
-    @brief A subtask for measuring the properties of sources on a single exposure.
+    Parameters
+    ----------
+    schema : `lsst.afw.table.Schema`
+        to be initialized to include the
+        measurement fields from the plugins already
+    algMetadata : `lsst.daf.base.PropertyList`
+        used to record information about
+        each algorithm.  An empty PropertyList will be created if None.
+    kwds:
+        Keyword arguments forwarded to lsst.pipe.base.Task.__init__
 
+    Notes
+    -----
     The task is configured with a list of "plugins": each plugin defines the values it
     measures (i.e. the columns in a table it will fill) and conducts that measurement
     on each detected source (see SingleFramePlugin).  The job of the
@@ -170,19 +187,18 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
     SingleFrameMeasurementTask has only two methods: __init__() and run().  For configuration
     options, see SingleFrameMeasurementConfig.
 
-    @section meas_base_sfm_Example	A complete example of using SingleFrameMeasurementTask
+    A complete example of using SingleFrameMeasurementTask
 
     The code below is in examples/runSingleFrameTask.py
-
-    @dontinclude runSingleFrameTask.py
 
     See meas_algorithms_detection_Example for more information on SourceDetectionTask.
 
     First, import the required tasks (there are some other standard imports;
     read the file if you're confused):
 
-    @skip SourceDetectionTask
-    @until SingleFrameMeasurementTask
+    .. code-block:py
+        from lsst.meas.algorithms.detection import SourceDetectionTask
+        from lsst.meas.base import SingleFrameMeasurementTask
 
     We need to create our tasks before processing any data as the task constructors
     can add extra columns to the schema.  The most important argument we pass these to these
@@ -192,29 +208,46 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
     they add the fields they'll fill later when run.  We construct a mostly empty Schema that
     contains just the fields required for a SourceCatalog like this:
 
-    @skipline schema
+    .. code-block:py
+        schema = afwTable.SourceTable.makeMinimalSchema()
 
     Now we can configure and create the SourceDetectionTask:
 
-    @until detectionTask
+    .. code-block:py
+        # Create the detection task
+        #
+        config = SourceDetectionTask.ConfigClass()
+        config.thresholdPolarity = "both"
+        config.background.isNanSafe = True
+        config.thresholdValue = 3
+        detectionTask = SourceDetectionTask(config=config, schema=schema)
 
     We then move on to configuring the measurement task:
 
-    @until config
+    .. code-block:py
+        config = SingleFrameMeasurementTask.ConfigClass()
 
     While a reasonable set of plugins is configured by default, we'll customize the list.
     We also need to unset one of the slots at the same time, because we're
     not running the algorithm that it's set to by default, and that would cause problems later:
 
-    @until psfFlux
+    .. code-block:py
+        config.plugins.names.clear()
+        for plugin in ["base_SdssCentroid", "base_SdssShape",
+        "base_CircularApertureFlux", "base_GaussianFlux"]:
+        config.plugins.names.add(plugin)
+        config.slots.psfFlux = None
 
     Now, finally, we can construct the measurement task:
 
-    @skipline measureTask
+    .. code-block:py
+        measureTask = SingleFrameMeasurementTask(schema, config=config)
 
     After constructing all the tasks, we can inspect the Schema we've created:
 
-    @skipline print schema
+    .. code-block:py
+
+        print(schema)
 
     All of the fields in the
     schema can be accessed via the get() method on a record object.  See afwTable for more
@@ -223,22 +256,34 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
     We're now ready to process the data (we could loop over multiple exposures/catalogs using the same
     task objects).  First create the output table and process the image to find sources:
 
-    @skipline afwTable
-    @skip result
-    @until sources
+    .. code-block:py
+
+        tab = afwTable.SourceTable.make(schema)
+        sources = result.sources
 
     Then measure them:
 
-    @skipline measure
+    .. code-block:py
 
-    We then might plot the results (@em e.g. if you set `--ds9` on the command line)
+        measureTask.run(sources, exposure)
 
-    @skip display
-    @until RED
+    We then might plot the results (e.g. if you set `--ds9` on the command line)
+
+    .. code-block:py
+
+        if display:
+        # display on ds9 (see also --debug argparse option)
+            frame = 1
+            ds9.mtv(exposure, frame=frame)
+
+            with ds9.Buffering():
+                for s in sources:
+                    xy = s.getCentroid()
+                    ds9.dot('+', *xy, ctype=ds9.CYAN if s.get("flags_negative") else ds9.GREEN, frame=frame)
+                    ds9.dot(s.getShape(), *xy, ctype=ds9.RED, frame=frame)
 
     and end up with something like
-
-    @image html runSingleFrameTask-ds9.png
+    html runSingleFrameTask-ds9.png
     """
 
     ConfigClass = SingleFrameMeasurementConfig
@@ -249,18 +294,6 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
     NOISE_EXPOSURE_ID = "NOISE_EXPOSURE_ID"
 
     def __init__(self, schema, algMetadata=None, **kwds):
-        """!
-        Initialize the task. Set up the execution order of the plugins and initialize
-        the plugins, giving each plugin an opportunity to add its measurement fields to
-        the output schema and to record information in the task metadata.
-
-        @param[in,out] schema      lsst.afw.table.Schema, to be initialized to include the
-                                   measurement fields from the plugins already
-        @param[in,out] algMetadata lsst.daf.base.PropertyList used to record information about
-                                   each algorithm.  An empty PropertyList will be created if None.
-        @param[in]     **kwds      Keyword arguments forwarded to lsst.pipe.base.Task.__init__
-        """
-
         super(SingleFrameMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
         self.schema = schema
         self.config.slots.setupSchema(self.schema)
@@ -275,23 +308,28 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
 
     @pipeBase.timeMethod
     def run(self, measCat, exposure, noiseImage=None, exposureId=None, beginOrder=None, endOrder=None):
-        """!
-        Run single frame measurement over an exposure and source catalog
+        """Run single frame measurement over an exposure and source catalog
 
-        @param[in,out]  measCat  lsst.afw.table.SourceCatalog to be filled with outputs.  Must
-                                 contain all the SourceRecords to be measured (with Footprints
-                                 attached), and have a schema that is a superset of self.schema.
-
-        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
-                                 be measured and the associated Psf, Wcs, etc.
-        @param[in] noiseImage    optional lsst.afw.image.ImageF for test which need to control
-                                 noiseReplacement
-        @param[in] exposureId    optional unique exposureId used to calculate random number
-                                 generator seed in the NoiseReplacer.
-        @param[in] beginOrder    beginning execution order (inclusive): measurements with
-                                 executionOrder < beginOrder are not executed. None for no limit.
-        @param[in] endOrder      ending execution order (exclusive): measurements with
-                                 executionOrder >= endOrder are not executed. None for no limit.
+        Parameters
+        ----------
+        measCat : `lsst.afw.table.SourceCatalog`
+            to be filled with outputs. Must contain all the SourceRecords to be measured (with Footprints
+            attached), and have a schema that is a superset of self.schema.
+        exposure : `lsst.afw.image.ExposureF`
+            containing the pixel data to
+            be measured and the associated Psf, Wcs, etc.
+        noiseImage : `lsst.afw.image.ImageF`
+            for test which need to control
+            noiseReplacement
+        exposureId :
+            optional unique exposureId used to calculate random number
+            generator seed in the NoiseReplacer.
+        beginOrder :
+            beginning execution order (inclusive): measurements with
+            executionOrder < beginOrder are not executed. None for no limit.
+        endOrder :
+            ending execution order (exclusive): measurements with
+            executionOrder >= endOrder are not executed. None for no limit.
         """
         assert measCat.getSchema().contains(self.schema)
         footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
@@ -390,7 +428,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
                 self.blendPlugin.cpp.measureParentPixels(exposure.getMaskedImage(), source)
 
     def measure(self, measCat, exposure):
-        """!
+        """
         Backwards-compatibility alias for run()
         """
         self.run(measCat, exposure)

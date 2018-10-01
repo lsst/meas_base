@@ -60,7 +60,22 @@ __all__ = ("ForcedPluginConfig", "ForcedPlugin",
 
 
 class ForcedPluginConfig(BaseMeasurementPluginConfig):
-    """Base class for configs of forced measurement plugins."""
+    """Base class for configs of forced measurement plugins.
+
+    Parameters
+    ----------
+    config :
+        An instance of this class's ConfigClass.
+    name :
+        The string the plugin was registered with.
+    schemaMapper :
+        A SchemaMapper that maps reference catalog fields to output
+        catalog fields.  Output fields should be added to the
+        output schema.  While most plugins will not need to map
+        fields from the reference schema, if they do so, those fields
+        will be transferred before any plugins are run.
+    metadata :
+        Plugin metadata that will be attached to the output catalog"""
     pass
 
 
@@ -72,38 +87,35 @@ class ForcedPlugin(BaseMeasurementPlugin):
     ConfigClass = ForcedPluginConfig
 
     def __init__(self, config, name, schemaMapper, metadata, logName=None):
-        """Initialize the measurement object.
-
-        @param[in]  config       An instance of this class's ConfigClass.
-        @param[in]  name         The string the plugin was registered with.
-        @param[in,out]  schemaMapper  A SchemaMapper that maps reference catalog fields to output
-                                      catalog fields.  Output fields should be added to the
-                                      output schema.  While most plugins will not need to map
-                                      fields from the reference schema, if they do so, those fields
-                                      will be transferred before any plugins are run.
-        @param[in]  metadata     Plugin metadata that will be attached to the output catalog
-        """
         BaseMeasurementPlugin.__init__(self, config, name, logName=logName)
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
         """Measure the properties of a source on a single image, given data from a
         reference record.
 
-        @param[in] exposure       lsst.afw.image.ExposureF, containing the pixel data to
-                                  be measured and the associated Psf, Wcs, etc.  All
-                                  other sources in the image will have been replaced by
-                                  noise according to deblender outputs.
-        @param[in,out] measRecord lsst.afw.table.SourceRecord to be filled with outputs,
-                                  and from which previously-measured quantities can be
-                                  retreived.
-        @param[in] refRecord      lsst.afw.table.SimpleRecord that contains additional
-                                  parameters to define the fit, as measured elsewhere.
-        @param[in] refWcs         The coordinate system for the reference catalog values.
-                                  An lsst.geom.Angle may be passed, indicating that a
-                                  local tangent Wcs should be created for each object
-                                  using afw.image.makeLocalWcs and the given angle as
-                                  a pixel scale.
+        Parameters
+        ----------
+        exposure : `lsst.afw.image.ExposureF`
+            containing the pixel data to
+            be measured and the associated Psf, Wcs, etc.  All
+            other sources in the image will have been replaced by
+            noise according to deblender outputs.
+        measRecord : `lsst.afw.table.SourceRecord`
+            lsst.afw.table.SourceRecord to be filled with outputs,
+            and from which previously-measured quantities can be
+            retreived.
+        refRecord : `lsst.afw.table.SimpleRecord`
+            lsst.afw.table.SimpleRecord that contains additional
+            parameters to define the fit, as measured elsewhere.
+        refWcs :
+            The coordinate system for the reference catalog values.
+            An lsst.geom.Angle may be passed, indicating that a
+            local tangent Wcs should be created for each object
+            using afw.image.makeLocalWcs and the given angle as
+            a pixel scale.
 
+        Notes
+        -----
         In the normal mode of operation, the source centroid will be set to the
         WCS-transformed position of the reference object, so plugins that only
         require a reference position should not have to access the reference object
@@ -115,23 +127,31 @@ class ForcedPlugin(BaseMeasurementPlugin):
         """Measure the properties of a group of blended sources on a single image,
         given data from a reference record.
 
-        @param[in] exposure      lsst.afw.image.ExposureF, containing the pixel data to
-                                 be measured and the associated Psf, Wcs, etc.  Sources
-                                 not in the blended hierarchy to be measured will have
-                                 been replaced with noise using deblender outputs.
-        @param[in,out] measCat   lsst.afw.table.SourceCatalog to be filled with outputs,
-                                 and from which previously-measured quantities can be
-                                 retrieved, containing only the sources that should be
-                                 measured together in this call.
-        @param[in] refCat        lsst.afw.table.SimpleCatalog that contains additional
-                                 parameters to define the fit, as measured elsewhere.
-                                 Ordered such that zip(sources, references) may be used.
-        @param[in] refWcs        The coordinate system for the reference catalog values.
-                                 An lsst.geom.Angle may be passed, indicating that a
-                                 local tangent Wcs should be created for each object
-                                 using afw.image.makeLocalWcs and the given Angle as
-                                 a pixel scale.
+        Parameters
+        ----------
+        exposure : `lsst.afw.image.ExposureF`
+            lsst.afw.image.ExposureF, containing the pixel data to
+            be measured and the associated Psf, Wcs, etc.  Sources
+            not in the blended hierarchy to be measured will have
+            been replaced with noise using deblender outputs.
+        measCat : `lsst.afw.table.SourceCatalog`
+            lsst.afw.table.SourceCatalog to be filled with outputs,
+            and from which previously-measured quantities can be
+            retrieved, containing only the sources that should be
+            measured together in this call.
+        refCat : `lsst.afw.table.SimpleCatalog`
+            lsst.afw.table.SimpleCatalog that contains additional
+            parameters to define the fit, as measured elsewhere.
+            Ordered such that zip(sources, references) may be used.
+        refWcs :
+            The coordinate system for the reference catalog values.
+            An lsst.geom.Angle may be passed, indicating that a
+            local tangent Wcs should be created for each object
+            using afw.image.makeLocalWcs and the given Angle as
+            a pixel scale.
 
+        Notes
+        -----
         In the normal mode of operation, the source centroids will be set to the
         WCS-transformed position of the reference object, so plugins that only
         require a reference position should not have to access the reference object
@@ -194,13 +214,23 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
 
 
 class ForcedMeasurementTask(BaseMeasurementTask):
-    """!
-    @anchor ForcedMeasurementTask_
-
-    @brief A subtask for measuring the properties of sources on a single
+    """A subtask for measuring the properties of sources on a single
     exposure, using an existing "reference" catalog to constrain some aspects
     of the measurement.
 
+    Parameters
+    ----------
+    refSchema :
+        Schema of the reference catalog.  Must match the catalog
+        later passed to generateMeasCat() and/or run().
+    algMetadata :
+        lsst.daf.base.PropertyList used to record information about
+        each algorithm.  An empty PropertyList will be created if None.
+    kwds :
+        Keyword arguments passed from `lsst.pipe.base.Task` superclass constructor.
+
+    Notes
+    -----
     The task is configured with a list of "plugins": each plugin defines the values it
     measures (i.e. the columns in a table it will fill) and conducts that measurement
     on each detected source (see ForcedPlugin).  The job of the
@@ -219,10 +249,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
     ForcedMeasurementTask has only three methods: __init__(), run(), and generateMeasCat().
     For configuration options, see SingleFrameMeasurementConfig.
 
-    Notes
-    -----
-
-    *Forced* measurement means that the plugins are provided with a reference
+    Forced measurement means that the plugins are provided with a reference
     source containing centroid and/or shape measurements that they may use
     however they see fit. Some plugins can use these to set the location and
     size of apertures, but others may choose to ignore this information,
@@ -232,28 +259,17 @@ class ForcedMeasurementTask(BaseMeasurementTask):
     essential to interpreting its resulting measurements. Typically, centroid
     and shape measurement plugins (e.g., ``SdssCentroid`` and ``SdssShape``)
     are performing unforced measurements.
+
+    Note that while SingleFrameMeasurementTask is passed an initial Schema that is
+    appended to in order to create the output Schema, ForcedMeasurementTask is
+    initialized with the Schema of the reference catalog, from which a new Schema
+    for the output catalog is created.  Fields to be copied directly from the
+    reference Schema are added before Plugin fields are added.
     """
 
     ConfigClass = ForcedMeasurementConfig
 
     def __init__(self, refSchema, algMetadata=None, **kwds):
-        """!
-        Initialize the task.  Set up the execution order of the plugins and initialize
-        the plugins, giving each plugin an opportunity to add its measurement fields to
-        the output schema and to record information in the task metadata.
-
-        Note that while SingleFrameMeasurementTask is passed an initial Schema that is
-        appended to in order to create the output Schema, ForcedMeasurementTask is
-        initialized with the Schema of the reference catalog, from which a new Schema
-        for the output catalog is created.  Fields to be copied directly from the
-        reference Schema are added before Plugin fields are added.
-
-        @param[in]  refSchema      Schema of the reference catalog.  Must match the catalog
-                                   later passed to generateMeasCat() and/or run().
-        @param[in,out] algMetadata lsst.daf.base.PropertyList used to record information about
-                                   each algorithm.  An empty PropertyList will be created if None.
-        @param[in]     **kwds      Keyword arguments passed from lsst.pipe.base.Task.__init__
-        """
         super(ForcedMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
         self.mapper = lsst.afw.table.SchemaMapper(refSchema)
         self.mapper.addMinimalSchema(lsst.afw.table.SourceTable.makeMinimalSchema(), False)
@@ -267,32 +283,45 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.schema.checkUnits(parse_strict=self.config.checkUnitsParseStrict)
 
     def run(self, measCat, exposure, refCat, refWcs, exposureId=None, beginOrder=None, endOrder=None):
-        """!
-        Perform forced measurement.
+        """Perform forced measurement.
 
-        @param[in]  exposure     lsst.afw.image.ExposureF to be measured; must have at least a Wcs attached.
-        @param[in]  measCat      Source catalog for measurement results; must be initialized with empty
-                                 records already corresponding to those in refCat (via e.g. generateMeasCat).
-        @param[in]  refCat       A sequence of SourceRecord objects that provide reference information
-                                 for the measurement.  These will be passed to each Plugin in addition
-                                 to the output SourceRecord.
-        @param[in]  refWcs       Wcs that defines the X,Y coordinate system of refCat
-        @param[in]  exposureId   optional unique exposureId used to calculate random number
-                                 generator seed in the NoiseReplacer.
-        @param[in]  beginOrder   beginning execution order (inclusive): measurements with
-                                 executionOrder < beginOrder are not executed. None for no limit.
-        @param[in]  endOrder     ending execution order (exclusive): measurements with
-                                 executionOrder >= endOrder are not executed. None for no limit.
+        Parameters
+        ----------
+        exposure :
+            lsst.afw.image.ExposureF to be measured; must have at least a Wcs attached.
+        measCat :
+            Source catalog for measurement results; must be initialized with empty
+            records already corresponding to those in refCat
+            (via e.g. generateMeasCat).
+        refCat :
+            A sequence of SourceRecord objects that provide reference information
+            for the measurement.  These will be passed to each Plugin in addition
+            to the output SourceRecord.
+        refWcs :
+            Wcs that defines the X,Y coordinate system of refCat
+        exposureId :
+            optional unique exposureId used to calculate random number
+            generator seed in the NoiseReplacer.
+        beginOrder :
+            beginning execution order (inclusive): measurements with
+            executionOrder < beginOrder are not executed. None for no limit.
+        endOrder :
+            ending execution order (exclusive): measurements with
+            executionOrder >= endOrder are not executed. None for no limit.
 
+        Notes
+        -----
         Fills the initial empty SourceCatalog with forced measurement results.  Two steps must occur
         before run() can be called:
-         - generateMeasCat() must be called to create the output measCat argument.
-         - Footprints appropriate for the forced sources must be attached to the measCat records.  The
-           attachTransformedFootprints() method can be used to do this, but this degrades HeavyFootprints
-           to regular Footprints, leading to non-deblended measurement, so most callers should provide
-           Footprints some other way.  Typically, calling code will have access to information that will
-           allow them to provide HeavyFootprints - for instance, ForcedPhotCoaddTask uses the HeavyFootprints
-           from deblending run in the same band just before non-forced is run measurement in that band.
+        - generateMeasCat() must be called to create the output measCat argument.
+        - Footprints appropriate for the forced sources must be attached to the measCat records. The
+        attachTransformedFootprints() method can be used to do this, but this degrades HeavyFootprints
+        to regular Footprints, leading to non-deblended measurement, so most callers should provide
+        Footprints some other way.  Typically, calling code will have access to information that will
+        allow them to provide HeavyFootprints - for instance,
+        ForcedPhotCoaddTask uses the HeavyFootprints from deblending run in the same
+        band just before non-forced is run measurement in that band.
+
         """
         # First check that the reference catalog does not contain any children for which
         # any member of their parent chain is not within the list.  This can occur at
@@ -369,19 +398,30 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                     self.doMeasurement(plugin, measRecord, exposure, refRecord, refWcs)
 
     def generateMeasCat(self, exposure, refCat, refWcs, idFactory=None):
-        """!Initialize an output SourceCatalog using information from the reference catalog.
+        """Initialize an output SourceCatalog using information from the reference catalog.
 
+        Parameters
+        ----------
+        exposure :
+            Exposure to be measured
+        refCat :
+            Sequence (not necessarily a SourceCatalog) of reference SourceRecords.
+        refWcs :
+            Wcs that defines the X,Y coordinate system of refCat
+        idFactory :
+            factory for creating IDs for sources
+
+        Returns
+        -------
+        meascat : `lsst.afw.table.SourceCatalog`
+            Source catalog ready for measurement
+
+        Notes
+        -----
         This generates a new blank SourceRecord for each record in refCat.  Note that this
         method does not attach any Footprints.  Doing so is up to the caller (who may
         call attachedTransformedFootprints or define their own method - see run() for more
         information).
-
-        @param[in] exposure    Exposure to be measured
-        @param[in] refCat      Sequence (not necessarily a SourceCatalog) of reference SourceRecords.
-        @param[in] refWcs      Wcs that defines the X,Y coordinate system of refCat
-        @param[in] idFactory   factory for creating IDs for sources
-
-        @return    Source catalog ready for measurement
         """
         if idFactory is None:
             idFactory = lsst.afw.table.IdFactory.makeSimple()
@@ -396,8 +436,10 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         return measCat
 
     def attachTransformedFootprints(self, sources, refCat, exposure, refWcs):
-        """!Default implementation for attaching Footprints to blank sources prior to measurement
+        """Default implementation for attaching Footprints to blank sources prior to measurement
 
+        Notes
+        -----
         Footprints for forced photometry must be in the pixel coordinate system of the image being
         measured, while the actual detections may start out in a different coordinate system.
         This default implementation transforms the Footprints from the reference catalog from the

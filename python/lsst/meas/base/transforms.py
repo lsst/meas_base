@@ -53,7 +53,7 @@ __all__ = ("NullTransform", "PassThroughTransform", "SimpleCentroidTransform")
 
 
 class MeasurementTransform:
-    """!
+    """
     Base class for measurement transformations.
 
     Create transformations by deriving from this class, implementing
@@ -74,7 +74,7 @@ class MeasurementTransform:
 
 
 class NullTransform(MeasurementTransform):
-    """!
+    """
     The null transform transfers no data from input to output.
 
     This is intended as the default for measurements for which no other
@@ -86,7 +86,7 @@ class NullTransform(MeasurementTransform):
 
 
 class PassThroughTransform(MeasurementTransform):
-    """!
+    """
     Copy all fields named after the measurement plugin from input to output, without transformation.
     """
 
@@ -100,7 +100,7 @@ class PassThroughTransform(MeasurementTransform):
 
 
 class SimpleCentroidTransform(MeasurementTransform):
-    """!
+    """
     Transform a pixel centroid, excluding uncertainties, to celestial coordinates.
     """
 

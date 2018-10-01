@@ -117,9 +117,9 @@ class SingleFrameFPPositionConfig(SingleFramePluginConfig):
 
 @register("base_FPPosition")
 class SingleFrameFPPositionPlugin(SingleFramePlugin):
-    '''
+    """
     Algorithm to calculate the position of a centroid on the focal plane
-    '''
+    """
 
     ConfigClass = SingleFrameFPPositionConfig
 
@@ -155,10 +155,10 @@ class SingleFrameJacobianConfig(SingleFramePluginConfig):
 
 @register("base_Jacobian")
 class SingleFrameJacobianPlugin(SingleFramePlugin):
-    '''
+    """
     Algorithm which computes the Jacobian about a source and computes its ratio with a nominal pixel area.
     This allows one to compare relative instead of absolute areas of pixels.
-    '''
+    """
 
     ConfigClass = SingleFrameJacobianConfig
 
@@ -194,11 +194,11 @@ class VarianceConfig(BaseMeasurementPluginConfig):
 
 
 class VariancePlugin(GenericPlugin):
-    '''
+    """
     Calculate the median variance within a Footprint scaled from the object shape so
     the value is not terribly influenced by the object and instead represents the
     variance in the background near the object.
-    '''
+    """
     ConfigClass = VarianceConfig
     FAILURE_BAD_CENTROID = 1
     FAILURE_EMPTY_FOOTPRINT = 2

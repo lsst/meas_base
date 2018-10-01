@@ -35,6 +35,8 @@ def generateAlgorithmName(AlgClass):
     """Generate a string name for an algorithm class that strips away terms that are generally redundant
     while (hopefully) remaining easy to trace to the code.
 
+    Notes
+    -----
     The returned name will cobmine the package name, with any "lsst" and/or "meas" prefix removed,
     with the class name, with any "Algorithm" suffix removed.  For instance,
     lsst.meas.base.SdssShapeAlgorithm becomes "base_SdssShape".
@@ -58,18 +60,20 @@ def generateAlgorithmName(AlgClass):
 
 
 class PluginRegistry(lsst.pex.config.Registry):
-    """!
-    Base class for plugin registries
+    """Base class for plugin registries
 
+    Notes
+    -----
     The Plugin class allowed in the registry is defined in the ctor of the registry.
 
     Single-frame and forced plugins have different registries.
     """
 
     class Configurable:
-        """!
-        Class used as the actual element in the registry
+        """Class used as the actual element in the registry
 
+        Notes
+        -----
         Rather than constructing a Plugin instance, its __call__ method
         (invoked by RegistryField.apply) returns a tuple
         of (executionOrder, name, config, PluginClass), which can then
@@ -93,25 +97,27 @@ class PluginRegistry(lsst.pex.config.Registry):
             return (self.PluginClass.getExecutionOrder(), self.name, config, self.PluginClass)
 
     def register(self, name, PluginClass, shouldApCorr=False, apCorrList=()):
-        """!
-        Register a Plugin class with the given name.
+        """Register a Plugin class with the given name.
 
         The same Plugin may be registered multiple times with different names; this can
         be useful if we often want to run it multiple times with different configuration.
 
-        @param[in] name  name of plugin class. This is used as a prefix for all fields produced by the Plugin,
+        name :
+            name of plugin class. This is used as a prefix for all fields produced by the Plugin,
             and it should generally contain the name of the Plugin or Algorithm class itself
             as well as enough of the namespace to make it clear where to find the code.
             For example "base_GaussianFlux" indicates an algorithm in meas_base
             that measures Gaussian Flux and produces fields such as "base_GaussianFlux_instFlux",
             "base_GaussianFlux_instFluxErr" and "base_GaussianFlux_flag".
-        @param[in] shouldApCorr  if True then this algorithm measures a instFlux that should be aperture
+        shouldApCorr :
+            if True then this algorithm measures a instFlux that should be aperture
             corrected. This is shorthand for apCorrList=[name] and is ignored if apCorrList is specified.
-        @param[in] apCorrList  list of field name prefixes for instFlux fields to be aperture corrected.
+        apCorrList :
+            list of field name prefixes for instFlux fields to be aperture corrected.
             If an algorithm produces a single instFlux that should be aperture corrected then it is simpler
             to set shouldApCorr=True. But if an algorithm produces multiple such fields then it must
             specify apCorrList, instead. For example modelfit_CModel produces 3 such fields:
-                apCorrList=("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
+            apCorrList=("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
             If apCorrList is non-empty then shouldApCorr is ignored.
         """
         lsst.pex.config.Registry.register(self, name, self.Configurable(name, PluginClass))
@@ -125,21 +131,10 @@ class PluginRegistry(lsst.pex.config.Registry):
 
 
 def register(name, shouldApCorr=False, apCorrList=()):
-    """!
-    A Python decorator that registers a class, using the given name, in its base class's PluginRegistry.
-    For example,
-    @code
-    @register("base_TransformedCentroid")
-    class ForcedTransformedCentroidPlugin(ForcedPlugin):
-        ...
-    @endcode
-    is equivalent to:
-    @code
-    class ForcedTransformedCentroidPlugin(ForcedPlugin):
-        ...
-    @ForcedPlugin.registry.register("base_TransformedCentroid", ForcedTransformedCentroidPlugin)
-    @endcode
     """
+    A Python decorator that registers a class, using the given name, in its base class's PluginRegistry.
+    """
+
     def decorate(PluginClass):
         PluginClass.registry.register(name, PluginClass, shouldApCorr=shouldApCorr, apCorrList=apCorrList)
         return PluginClass
@@ -147,27 +142,34 @@ def register(name, shouldApCorr=False, apCorrList=()):
 
 
 class PluginMap(collections.OrderedDict):
-    """!
-    Map of plugins (instances of subclasses of BasePlugin) to be run for a task
+    """Map of plugins (instances of subclasses of BasePlugin) to be run for a task
 
+    Notes
+    -----
     We assume plugins are added to the PluginMap according to their "Execution Order", so this
     class doesn't actually do any of the sorting (though it does have to maintain that order,
     which it does by inheriting from OrderedDict).
     """
 
     def iter(self):
-        """!Return an iterator over plugins for which plugin.config.doMeasure is true
+        """Return an iterator over plugins for which plugin.config.doMeasure is true
 
-        @note plugin.config.doMeasure is usually a simple boolean class attribute, not a normal Config field.
+        Notes
+        -----
+        plugin.config.doMeasure is usually a simple boolean class attribute,
+        not a normal Config field.
         """
         for plugin in self.values():
             if plugin.config.doMeasure:
                 yield plugin
 
     def iterN(self):
-        """!Return an iterator over plugins for which plugin.config.doMeasureN is true
+        """Return an iterator over plugins for which plugin.config.doMeasureN is true
 
-        @note plugin.config.doMeasureN is usually a simple boolean class attribute, not a normal Config field.
+        Notes
+        -----
+        plugin.config.doMeasureN is usually a simple boolean class attribute,
+        not a normal Config field.
         """
         for plugin in self.values():
             if plugin.config.doMeasureN:

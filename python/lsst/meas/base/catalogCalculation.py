@@ -16,16 +16,26 @@ __all__ = ("CatalogCalculationPluginConfig", "CatalogCalculationPlugin", "Catalo
 
 
 class CatalogCalculationPluginConfig(BasePluginConfig):
-    '''
-    Default configuration class for catalogCalcuation plugins
-    '''
+    """Default configuration class for catalogCalcuation plugins
+    """
     pass
 
 
 class CatalogCalculationPlugin(BasePlugin):
-    '''
-    Base class for after CatalogCalculation plugin
-    '''
+    """Base class for after CatalogCalculation plugin
+
+    Parameters
+    ----------
+    config :
+        An instance of catalogCalculation config class.
+    name :
+        The string the plugin was registered with.
+    schema :
+        The source schema, New fields should be added here to
+        hold output produced by this plugin.
+    metadata :
+        Plugin metadata that will be attached to the output catalog
+    """
     registry = PluginRegistry(CatalogCalculationPluginConfig)
     ConfigClass = CatalogCalculationPluginConfig
     # This defines if the plugin operates on a single source at a time, or expects the whole catalog.
@@ -36,49 +46,50 @@ class CatalogCalculationPlugin(BasePlugin):
     plugType = 'single'
 
     def __init__(self, config, name, schema, metadata):
-        """!
-        Initialize the catalogCalculation plugin
-
-        @param[in] config     An instance of catalogCalculation config class.
-        @param[in] name       The string the plugin was registered with.
-        @param[in,out] schema The source schema, New fields should be added here to
-                              hold output produced by this plugin.
-        @param[in] metadata   Plugin metadata that will be attached to the output catalog
-        """
         BasePlugin.__init__(self, config, name)
 
     @classmethod
     def getExecutionOrder(cls):
-        ''' Sets the relative order of plugins (smaller numbers run first).
+        """Sets the relative order of plugins (smaller numbers run first).
 
+        Notes
+        -----
         CatalogCalculation plugins must run with BasePlugin.DEFAULT_CATALOGCALCULATION or higher
 
         All plugins must implement this method with an appropriate run level
-        '''
+        """
         raise NotImplementedError()
 
     def calculate(self, cat, **kwargs):
-        """!
-        Process either a single catalog enter or the whole catalog and produce output defined by the plugin
+        """Process either a single catalog enter or the whole catalog and produce output defined by the plugin
 
-        @param[in,out] cat  Either a lsst source catalog or a catalog entery depending on the plug type
-                            specified in the classes configuration. Results may be added to new columns,
-                            or existing entries altered.
-        @param[in] kwargs   Any additional kwargs that may be passed through the CatalogCalculationPlugin.
+        Parameters
+        ----------
+        cat:
+            Either a lsst source catalog or a catalog entery depending on the plug type
+            specified in the classes configuration. Results may be added to new columns,
+            or existing entries altered.
+        kwargs:
+            Any additional kwargs that may be passed through the CatalogCalculationPlugin.
         """
         raise NotImplementedError()
 
 
 class CCContext:
-    '''
-    Context manager to handle catching errors that may have been thrown in a catalogCalculation plugin
-    @param[in] plugin   The plugin that is to be run
-    @param[in] cat      Either a catalog or a source record entry of a catalog, depending of the plugin type,
-                        i.e. either working on a whole catalog, or a single record.
-    @param[in] log      The log which to write to, most likely will always be the log (self.log) of the object
-                        in which the context manager is used.
-    '''
+    """Context manager to handle catching errors that may have been thrown in a catalogCalculation plugin
 
+    Parameters
+    ----------
+    plugin :
+        The plugin that is to be run
+    cat :
+        Either a catalog or a source record entry of a catalog,
+        depending of the plugin type,
+        i.e. either working on a whole catalog, or a single record.
+    log :
+        The log which to write to, most likely will always be the log (self.log)
+        of the object in which the context manager is used.
+    """
     def __init__(self, plugin, cat, log):
         self.plugin = plugin
         self.cat = cat
@@ -100,12 +111,13 @@ class CCContext:
 
 
 class CatalogCalculationConfig(lsst.pex.config.Config):
-    '''
-    Config class for catalog calculation driver task.
+    """Config class for catalog calculation driver task.
 
+    Notes
+    -----
     Specifies which plugins will execute when CatalogCalculationTask
     associated with this configuration is run.
-    '''
+    """
     plugins = CatalogCalculationPlugin.registry.makeField(
         multi=True,
         default=["base_ClassificationExtendedness",
@@ -114,24 +126,27 @@ class CatalogCalculationConfig(lsst.pex.config.Config):
 
 
 class CatalogCalculationTask(lsst.pipe.base.Task):
-    '''
-    This task facilitates running plugins which will operate on a source catalog. These plugins may do things
-    such as classifying an object based on source record entries inserted during a measurement task.
+    """This task facilitates running plugins which will operate on a source catalog.
+    These plugins may do things such as classifying an object based on
+    source record entries inserted during a measurement task.
 
+    Parameters
+    ----------
+    plugMetaData :
+        An lsst.daf.base.PropertyList that will be filled with metadata
+        about the plugins being run. If None, an empty empty PropertyList
+        will be created.
+    kwargs :
+        Additional arguments passed to `~lsst.pipe.base.Task` superclass constructor
+
+    Notes
+    -----
     Plugins may either take an entire catalog to work on at a time, or work on individual records
-    '''
+    """
     ConfigClass = CatalogCalculationConfig
     _DefaultName = "catalogCalculation"
 
     def __init__(self, schema, plugMetadata=None, **kwargs):
-        """
-        Constructor; only called by derived classes
-
-        @param[in] plugMetaData     An lsst.daf.base.PropertyList that will be filled with metadata
-                                    about the plugins being run. If None, an empty empty PropertyList
-                                    will be created.
-        @param[in] **kwargs         Additional arguments passed to lsst.pipe.base.Task.__init__.
-        """
         lsst.pipe.base.Task.__init__(self, **kwargs)
         self.schema = schema
         if plugMetadata is None:
@@ -142,9 +157,7 @@ class CatalogCalculationTask(lsst.pipe.base.Task):
         self.initializePlugins()
 
     def initializePlugins(self):
-        '''
-        Initialize the plugins according to the configuration.
-        '''
+        """Initialize the plugins according to the configuration."""
 
         pluginType = namedtuple('pluginType', 'single multi')
         self.executionDict = {}
@@ -170,17 +183,24 @@ class CatalogCalculationTask(lsst.pipe.base.Task):
 
     @lsst.pipe.base.timeMethod
     def run(self, measCat):
-        '''
-        The entry point for the catalogCalculation task. This method should be called with a reference to a
-        measurement catalog.
-        '''
+        """The entry point for the catalogCalculation task.
+
+        Parameters
+        ----------
+        meascat :
+            This method should be called with a reference to a
+            measurement catalog.
+        """
         self.callCompute(measCat)
 
     def callCompute(self, catalog):
-        '''
-        Run each of the plugins on the catalog
-        @param[in] catalog  The catalog on which the plugins will operate
-        '''
+        """Run each of the plugins on the catalog
+
+        Parameters
+        ----------
+        catalog :
+            The catalog on which the plugins will operate
+        """
         for runlevel in sorted(self.executionDict):
             # Run all of the plugins which take a whole catalog first
             for plug in self.executionDict[runlevel].multi:

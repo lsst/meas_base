@@ -79,9 +79,10 @@ class ForcedPhotCoaddRunner(lsst.pipe.base.ButlerInitializedTaskRunner):
 
 
 class ForcedPhotCoaddTask(ForcedPhotImageTask):
-    """!
-    A command-line driver for performing forced measurement on coadd images
+    """A command-line driver for performing forced measurement on coadd images
 
+    Notes
+    -----
     This task is a subclass of ForcedPhotImageTask which is specifically for doing forced
     measurement on a coadd, using as a reference catalog detections which were made on overlapping
     coadds (i.e. in other bands).
@@ -89,14 +90,17 @@ class ForcedPhotCoaddTask(ForcedPhotImageTask):
     The run method (inherited from ForcedPhotImageTask) takes a lsst.daf.persistence.ButlerDataRef
     argument that corresponds to a coadd image.  This is used to provide all the inputs and outputs
     for the task:
-     - A "*Coadd_src" (e.g. "deepCoadd_src") dataset is used as the reference catalog.  This not loaded
-       directly from the passed dataRef, however; only the patch and tract are used, while the filter
-       is set by the configuration for the references subtask (see CoaddSrcReferencesTask).
-     - A "*Coadd_calexp" (e.g. "deepCoadd_calexp") dataset is used as the measurement image.  Note that
-       this means that ProcessCoaddTask must be run on an image before ForcedPhotCoaddTask, in order
-       to generate the "*Coadd_calexp" dataset.
-     - A "*Coadd_forced_src" (e.g. "deepCoadd_forced_src") dataset will be written with the output
-       measurement catalog.
+
+    - A "Coadd_src" (e.g. "deepCoadd_src") dataset is used as the reference catalog.  This not loaded
+        directly from the passed dataRef, however; only the patch and tract are used, while the filter
+        is set by the configuration for the references subtask (see CoaddSrcReferencesTask).'
+
+    - A "Coadd_calexp" (e.g. "deepCoadd_calexp") dataset is used as the measurement image.  Note that
+        this means that ProcessCoaddTask must be run on an image before ForcedPhotCoaddTask, in order
+        to generate the "Coadd_calexp" dataset.
+
+    - A "Coadd_forced_src" (e.g. "deepCoadd_forced_src") dataset will be written with the output
+        measurement catalog.
 
     In addition to the run method, ForcedPhotCcdTask overrides several methods of ForcedPhotImageTask
     to specialize it for coadd processing, including makeIdFactory() and fetchReferences().  None of these
@@ -115,8 +119,11 @@ class ForcedPhotCoaddTask(ForcedPhotImageTask):
     def makeIdFactory(self, dataRef):
         """Create an object that generates globally unique source IDs from per-CCD IDs and the CCD ID.
 
-        @param dataRef       Data reference from butler.  The "CoaddId_bits" and "CoaddId"
-                             datasets are accessed.  The data ID must have tract and patch keys.
+        Parameters
+        ----------
+        dataRef :
+            Data reference from butler.  The "CoaddId_bits" and "CoaddId"
+            datasets are accessed.  The data ID must have tract and patch keys.
         """
         # With the default configuration, this IdFactory doesn't do anything, because
         # the IDs it generates are immediately overwritten by the ID from the reference
@@ -133,10 +140,16 @@ class ForcedPhotCoaddTask(ForcedPhotImageTask):
     def fetchReferences(self, dataRef, exposure):
         """Return an iterable of reference sources which overlap the exposure
 
-        @param dataRef       Data reference from butler corresponding to the image to be measured;
-                             should have tract, patch, and filter keys.
-        @param exposure      lsst.afw.image.Exposure to be measured (not used by this implementation)
+        Parameters
+        ----------
+        dataRef :
+            Data reference from butler corresponding to the image to be measured;
+            should have tract, patch, and filter keys.
+        exposure :
+            lsst.afw.image.Exposure to be measured (not used by this implementation)
 
+        Notes
+        -----
         All work is delegated to the references subtask; see CoaddSrcReferencesTask for information
         about the default behavior.
         """

@@ -30,20 +30,25 @@ _ApCorrNameSet = set()
 
 
 def addApCorrName(name):
-    """!Add to the set of field name prefixes for instrument flux that should be aperture corrected
+    """Add to the set of field name prefixes for instrument flux that should be aperture corrected
 
-    @param[in] name  field name prefix for a instrument flux that should be aperture corrected.
-        The corresponding field names are {name}_instFlux, {name}_instFluxErr and {name}_flag.
-        For example name "base_PsfFlux" corresponds to fields base_PsfFlux_instFlux,
-        base_PsfFlux_instFluxErr and base_PsfFlux_flag.
+    Parameters
+    ----------
+    name: `str`
+        Field name prefix for a flux that should be aperture corrected.
+        The corresponding field names are {name}_flux, {name}_fluxErr and {name}_flag.
+        For example name "base_PsfFlux" corresponds to fields base_PsfFlux_flux,
+        base_PsfFlux_fluxErr and base_PsfFlux_flag.
     """
     global _ApCorrNameSet
     _ApCorrNameSet.add(str(name))
 
 
 def getApCorrNameSet():
-    """!Return a copy of the set of field name prefixes for instrument flux that should be aperture corrected.
+    """Return a copy of the set of field name prefixes for instrument flux that should be aperture corrected.
 
+    Notes
+    -----
     For example the returned set will likely include "base_PsfFlux" and "base_GaussianFlux".
     """
     global _ApCorrNameSet

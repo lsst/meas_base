@@ -45,14 +45,25 @@ class BaseReferencesConfig(lsst.pex.config.Config):
 
 
 class BaseReferencesTask(lsst.pipe.base.Task):
-    """!
-    Base class for forced photometry subtask that retrieves reference sources.
+    """Base class for forced photometry subtask that retrieves reference sources.
+
+    Parameters
+    ----------
+    - schema :
+        the Schema of the reference catalog
+    - butler :
+        a butler that will allow the task to load its Schema from disk.
+
+    Notes
+    -----
+    At least one of these arguments must be present; if both are, schema takes precedence.
 
     BaseReferencesTask defines the required API for the references task, which includes:
-      - getSchema(butler)
-      - fetchInPatches(butler, tract, filter, patchList)
-      - fetchInBox(self, butler, tract, filter, bbox, wcs)
-      - the removePatchOverlaps config option
+
+    - getSchema(butler)
+    - fetchInPatches(butler, tract, filter, patchList)
+    - fetchInBox(self, butler, tract, filter, bbox, wcs)
+    - the removePatchOverlaps config option
 
     It also provides the subset() method, which may be of use to derived classes when
     reimplementing fetchInBox.
@@ -61,40 +72,40 @@ class BaseReferencesTask(lsst.pipe.base.Task):
     ConfigClass = BaseReferencesConfig
 
     def __init__(self, butler=None, schema=None, **kwargs):
-        """!Initialize the task.
-
-        BaseReferencesTask and its subclasses take two keyword arguments beyond the usual Task arguments:
-         - schema: the Schema of the reference catalog
-         - butler: a butler that will allow the task to load its Schema from disk.
-        At least one of these arguments must be present; if both are, schema takes precedence.
-        """
         lsst.pipe.base.Task.__init__(self, **kwargs)
 
     def getSchema(self, butler):
-        """!
-        Return the schema for the reference sources.
-
+        """Return the schema for the reference sources.
         Must be available even before any data has been processed.
         """
         raise NotImplementedError("BaseReferencesTask is pure abstract, and cannot be used directly.")
 
     def getWcs(self, dataRef):
-        """!
+        """
         Return the WCS for reference sources.  The given dataRef must include the tract in its dataId.
         """
         raise NotImplementedError("BaseReferencesTask is pure abstract, and cannot be used directly.")
 
     def fetchInBox(self, dataRef, bbox, wcs):
-        """!
-        Return reference sources that overlap a region defined by a pixel-coordinate bounding box
+        """Return reference sources that overlap a region defined by a pixel-coordinate bounding box
         and corresponding Wcs.
 
-        @param[in] dataRef    ButlerDataRef; the implied data ID must contain the 'tract' key.
-        @param[in] bbox       a geom.Box2I or Box2D that defines the region in pixel coordinates
-        @param[in] wcs        afw.image.Wcs that maps the bbox to sky coordinates
+        Parameters
+        ----------
+        dataRef :
+            ButlerDataRef; the implied data ID must contain the 'tract' key.
+        bbox :
+            a geom.Box2I or Box2D that defines the region in pixel coordinates
+        wcs :
+            afw.image.Wcs that maps the bbox to sky coordinates
 
-        @return an iterable of reference sources
+        Returns
+        -------
+        skyMap :
+        an iterable of reference sources
 
+        Notes
+        -----
         It is not required that the returned object be a SourceCatalog; it may be any Python iterable
         containing SourceRecords (including a lazy iterator).
 
@@ -103,14 +114,22 @@ class BaseReferencesTask(lsst.pipe.base.Task):
         raise NotImplementedError("BaseReferencesTask is pure abstract, and cannot be used directly.")
 
     def fetchInPatches(self, dataRef, patchList):
-        """!
-        Return reference sources that overlap a region defined by one or more SkyMap patches.
+        """Return reference sources that overlap a region defined by one or more SkyMap patches.
 
-        @param[in] dataRef    ButlerDataRef; the implied data ID must contain the 'tract' key.
-        @param[in] patchList  list of skymap.PatchInfo instances for which to fetch reference sources
+        Parameters
+        ----------
+        dataRef :
+            ButlerDataRef; the implied data ID must contain the 'tract' key.
+        patchList :
+            list of skymap.PatchInfo instances for which to fetch reference sources
 
-        @return an iterable of reference sources
+        Returns
+        -------
+        skyMap :
+        an iterable of reference sources
 
+        Notes
+        -----
         It is not required that the returned object be a SourceCatalog; it may be any Python sequence
         containing SourceRecords (including a lazy iterator).
 
@@ -121,20 +140,29 @@ class BaseReferencesTask(lsst.pipe.base.Task):
         raise NotImplementedError("BaseReferencesTask is pure abstract, and cannot be used directly.")
 
     def subset(self, sources, bbox, wcs):
-        """!
-        Filter sources to contain only those within the given box, defined in the coordinate system
+        """Filter sources to contain only those within the given box, defined in the coordinate system
         defined by the given Wcs.
 
-        @param[in] sources     input iterable of SourceRecords
-        @param[in] bbox        bounding box with which to filter reference sources (Box2I or Box2D)
-        @param[in] wcs         afw.image.Wcs that defines the coordinate system of bbox
+        Parameters
+        ----------
+        sources :
+            input iterable of SourceRecords
+        bbox :
+            bounding box with which to filter reference sources (Box2I or Box2D)
+        wcs :
+            afw.image.Wcs that defines the coordinate system of bbox
 
+        Returns
+        -------
+        skyMap :
+        an iterable of filtered reference sources
+
+        Notes
+        -----
         Instead of filtering sources directly via their positions, we filter based on the positions
         of parent objects, then include or discard all children based on their parent's status.  This
         is necessary to support ReplaceWithNoise in measurement, which requires all child sources have
         their parent present.
-
-        @return an iterable of filtered reference sources
 
         This is not a part of the required BaseReferencesTask interface; it's a convenience function
         used in implementing fetchInBox that may be of use to subclasses.
@@ -179,21 +207,22 @@ class CoaddSrcReferencesConfig(BaseReferencesTask.ConfigClass):
 
 
 class CoaddSrcReferencesTask(BaseReferencesTask):
-    """!
-    A references task implementation that loads the coadd_datasetSuffix dataset directly from
+    """A references task implementation that loads the coadd_datasetSuffix dataset directly from
     disk using the butler.
+
+    Parameters
+    ----------
+    - schema :
+        the schema of the detection catalogs used as input to this one
+    - butler :
+        a butler used to read the input schema from disk, if schema is None
+        The task will set its own self.schema attribute to the schema of the output merged catalog.
     """
 
     ConfigClass = CoaddSrcReferencesConfig
     datasetSuffix = "src"  # Suffix to add to "Coadd_" for dataset name
 
     def __init__(self, butler=None, schema=None, **kwargs):
-        """! Initialize the task.
-        Additional keyword arguments (forwarded to BaseReferencesTask.__init__):
-         - schema: the schema of the detection catalogs used as input to this one
-         - butler: a butler used to read the input schema from disk, if schema is None
-        The task will set its own self.schema attribute to the schema of the output merged catalog.
-        """
         BaseReferencesTask.__init__(self, butler=butler, schema=schema, **kwargs)
         if schema is None:
             assert butler is not None, "No butler nor schema provided"
@@ -208,7 +237,7 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
         return skyMap[dataRef.dataId["tract"]].getWcs()
 
     def fetchInPatches(self, dataRef, patchList):
-        """!
+        """
         An implementation of BaseReferencesTask.fetchInPatches that loads 'coadd_' + datasetSuffix
         catalogs using the butler.
 
@@ -238,17 +267,25 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
                     yield source
 
     def fetchInBox(self, dataRef, bbox, wcs, pad=0):
-        """!
-        Return reference sources that overlap a region defined by a pixel-coordinate bounding box
+        """Return reference sources that overlap a region defined by a pixel-coordinate bounding box
         and corresponding Wcs.
 
-        @param[in] dataRef    ButlerDataRef; the implied data ID must contain the 'tract' key.
-        @param[in] bbox       a geom.Box2I or Box2D that defines the region in pixel coordinates
-        @param[in] wcs        afw.image.Wcs that maps the bbox to sky coordinates
-        @param[in] pad        a buffer to grow the bounding box by after catalogs have been loaded, but
-                              before filtering them to include just the given bounding box.
+        Parameters
+        ----------
+        dataRef :
+            ButlerDataRef; the implied data ID must contain the 'tract' key.
+        bbox :
+            a geom.Box2I or Box2D that defines the region in pixel coordinates
+        wcs :
+            afw.image.Wcs that maps the bbox to sky coordinates
+        pad :
+            a buffer to grow the bounding box by after catalogs have been loaded, but
+            before filtering them to include just the given bounding box.
 
-        @return an iterable of reference sources
+        Returns
+        -------
+        skyMap :
+            an iterable of reference sources
         """
         skyMap = dataRef.get(self.config.coaddName + "Coadd_skyMap", immediate=True)
         tract = skyMap[dataRef.dataId["tract"]]
