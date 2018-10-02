@@ -32,4 +32,5 @@ Using meas_base
 .. toctree::
    :maxdepth: 1
 
+   intro
    ReconstructingMeasurements
