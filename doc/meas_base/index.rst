@@ -25,3 +25,11 @@ Modules
 .. Link to Python module landing pages (same as in manifest.yaml)
 
 - :ref:`lsst.meas.base <lsst.meas.base>`
+
+Using meas_base
+===============
+
+.. toctree::
+   :maxdepth: 1
+
+   ReconstructingMeasurements

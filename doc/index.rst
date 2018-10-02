@@ -11,4 +11,3 @@ meas_base documentation preview
 
    meas_base/index
    lsst.meas.base/index
-   ReconstructingMeasurements.rst
