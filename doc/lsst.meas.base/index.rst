@@ -6,7 +6,7 @@
 lsst.meas.base
 ##############
 
-The “meas_base” package provides core astronomical measurement algorithms and base classes.
+``lsst.meas.base`` provides core astronomical measurement algorithms and base classes.
 
 .. _lsst.meas.base-using:
 
@@ -17,13 +17,13 @@ Using lsst.meas.base
    :maxdepth: 1
 
    intro
-   ReconstructingMeasurements
+   reconstructing-measurements
 
 Contributing
 ============
 
 ``lsst.meas.base`` is developed at https://github.com/lsst/meas_base.
-You can find Jira issues for this module under the `meas_base <https://jira.lsstcorp.org/issues/?jql=project%20%3D%20DM%20AND%20component%20%3D%20meas_base>`_ compoonent.
+You can find Jira issues for this module under the `meas_base <https://jira.lsstcorp.org/issues/?jql=project%20%3D%20DM%20AND%20component%20%3D%20meas_base>`_ component.
 
 Python API reference
 ====================
