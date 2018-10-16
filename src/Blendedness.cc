@@ -197,41 +197,59 @@ BlendednessAlgorithm::BlendednessAlgorithm(Control const& ctrl, std::string cons
     if (_ctrl.doOld) {
         _old = schema.addField<double>(
                 schema.join(name, "old"),
-                "blendedness from dot products: (child.dot(parent)/child.dot(child) - 1)");
+                "Blendedness from dot products: (child.dot(parent)/child.dot(child) - 1)");
     }
     if (_ctrl.doFlux) {
-        _instFluxRaw = schema.addField<double>(
-                schema.join(name, "raw_instFlux"),
-                "measure of how instFlux is affected by neighbors: (1 - instFlux.child/instFlux.parent)");
+        _raw = schema.addField<double>(
+                schema.join(name, "raw"),
+                "Measure of how much the flux is affected by neighbors: "
+                "(1 - child_instFlux/parent_instFlux).  Operates on the \"raw\" pixel values.");
         _instFluxChildRaw = schema.addField<double>(
-                schema.join(name, "raw_instFlux_child"),
-                "instFlux of the child, measured with a Gaussian weight matched to the child", "count");
+                schema.join(name, "raw_child_instFlux"),
+                "Instrumental flux of the child, measured with a Gaussian weight matched to the child.  "
+                "Operates on the \"raw\" pixel values.", "count");
         _instFluxParentRaw = schema.addField<double>(
-                schema.join(name, "raw_instFlux_parent"),
-                "instFlux of the parent, measured with a Gaussian weight matched to the child", "count");
-        _instFluxAbs = schema.addField<double>(
-                schema.join(name, "abs_instFlux"),
-                "measure of how instFlux is affected by neighbors: (1 - instFlux.child/instFlux.parent)");
+                schema.join(name, "raw_parent_instFlux"),
+                "Instrumental flux of the parent, measured with a Gaussian weight matched to the child.  "
+                "Operates on the \"raw\" pixel values.", "count");
+        _abs = schema.addField<double>(
+                schema.join(name, "abs"),
+                "Measure of how much the flux is affected by neighbors: "
+                "(1 - child_instFlux/parent_instFlux).  "
+                "Operates on the absolute value of the pixels to try to obtain a \"de-noised\" value.  "
+                "See section 4.9.11 of Bosch et al. 2018, PASJ, 70, S5 for details.");
         _instFluxChildAbs = schema.addField<double>(
-                schema.join(name, "abs_instFlux_child"),
-                "instFlux of the child, measured with a Gaussian weight matched to the child", "count");
+                schema.join(name, "abs_child_instFlux"),
+                "Instrumental flux of the child, measured with a Gaussian weight matched to the child.  "
+                "Operates on the absolute value of the pixels to try to obtain a \"de-noised\" value.  "
+                "See section 4.9.11 of Bosch et al. 2018, PASJ, 70, S5 for details.", "count");
         _instFluxParentAbs = schema.addField<double>(
-                schema.join(name, "abs_instFlux_parent"),
-                "instFlux of the parent, measured with a Gaussian weight matched to the child", "count");
+                schema.join(name, "abs_parent_instFlux"),
+                "Instrumental flux of the parent, measured with a Gaussian weight matched to the child.  "
+                "Operates on the absolute value of the pixels to try to obtain a \"de-noised\" value.  "
+                "See section 4.9.11 of Bosch et al. 2018, PASJ, 70, S5 for details.", "count");
     }
     if (_ctrl.doShape) {
         _shapeChildRaw = ShapeResultKey::addFields(
                 schema, schema.join(name, "raw_child"),
-                "shape of the child, measured with a Gaussian weight matched to the child", NO_UNCERTAINTY);
+                "Shape of the child, measured with a Gaussian weight matched to the child.  "
+                "Operates on the \"raw\" pixel values.", NO_UNCERTAINTY);
         _shapeParentRaw = ShapeResultKey::addFields(
                 schema, schema.join(name, "raw_parent"),
-                "shape of the parent, measured with a Gaussian weight matched to the child", NO_UNCERTAINTY);
+                "Shape of the parent, measured with a Gaussian weight matched to the child.  "
+                "Operates on the \"raw\" pixel values.", NO_UNCERTAINTY);
         _shapeChildAbs = ShapeResultKey::addFields(
                 schema, schema.join(name, "abs_child"),
-                "shape of the child, measured with a Gaussian weight matched to the child", NO_UNCERTAINTY);
+                "Shape of the child, measured with a Gaussian weight matched to the child.  "
+                "Operates on the absolute value of the pixels to try to obtain a \"de-noised\" value.  "
+                "See section 4.9.11 of Bosch et al. 2018, PASJ, 70, S5 for details.",
+                NO_UNCERTAINTY);
         _shapeParentAbs = ShapeResultKey::addFields(
                 schema, schema.join(name, "abs_parent"),
-                "shape of the parent, measured with a Gaussian weight matched to the child", NO_UNCERTAINTY);
+                "Shape of the parent, measured with a Gaussian weight matched to the child.  "
+                "Operates on the absolute value of the pixels to try to obtain a \"de-noised\" value.  "
+                "See section 4.9.11 of Bosch et al. 2018, PASJ, 70, S5 for details.",
+                NO_UNCERTAINTY);
     }
     if (_ctrl.doShape || _ctrl.doFlux) {
         _flagHandler = FlagHandler::addFields(schema, name, getFlagDefinitions());
@@ -336,8 +354,8 @@ void BlendednessAlgorithm::measureParentPixels(afw::image::MaskedImage<float> co
     }
     _measureMoments(image, child, _instFluxParentRaw, _instFluxParentAbs, _shapeParentRaw, _shapeParentAbs);
     if (_ctrl.doFlux) {
-        child.set(_instFluxRaw, 1.0 - child.get(_instFluxChildRaw) / child.get(_instFluxParentRaw));
-        child.set(_instFluxAbs, 1.0 - child.get(_instFluxChildAbs) / child.get(_instFluxParentAbs));
+        child.set(_raw, 1.0 - child.get(_instFluxChildRaw) / child.get(_instFluxParentRaw));
+        child.set(_abs, 1.0 - child.get(_instFluxChildAbs) / child.get(_instFluxParentAbs));
         if (child.get(_instFluxParentAbs) == 0.0) {
             // We can get NaNs in the absolute measure if both parent and child have only negative
             // biased-corrected instFluxes (which we clip to zero).  We can't really recover from this,
