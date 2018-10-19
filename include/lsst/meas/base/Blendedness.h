@@ -1,10 +1,12 @@
 // -*- LSST-C++ -*-
 /*
- * LSST Data Management System
- * Copyright 2016 LSST/AURA
+ * This file is part of meas_base.
  *
- * This product includes software developed by the
- * LSST Project (http://www.lsst.org/).
+ * Developed for the LSST Data Management System.
+ * This product includes software developed by the LSST Project
+ * (https://www.lsst.org).
+ * See the COPYRIGHT file at the top-level directory of this distribution
+ * for details of code ownership.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,9 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the LSST License Statement and
- * the GNU General Public License along with this program.  If not,
- * see <http://www.lsstcorp.org/LegalNotices/>.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 #ifndef LSST_MEAS_BASE_Blendedness_h_INCLUDED
@@ -48,7 +49,7 @@ public:
 
     LSST_CONTROL_FIELD(nSigmaWeightMax, double,
                        "Radius factor that sets the maximum extent of the weight function (and hence the "
-                       "instFlux measurements)");
+                       "flux measurements)");
 
     BlendednessControl() : doOld(true), doFlux(true), doShape(true), nSigmaWeightMax(3.0) {}
 };
@@ -75,7 +76,7 @@ public:
     BlendednessAlgorithm(Control const& ctrl, std::string const& name, afw::table::Schema& schema);
 
     /**
-     *  Compute the posterior expectation value of the true instFlux in a pixel
+     *  Compute the posterior expectation value of the true instrumental flux in a pixel
      *  from its (Gaussian) likelihood and a flat nonnegative prior.
      *
      *  This computes
@@ -106,6 +107,7 @@ public:
      *  @f]
      *  where @f$\mu@f$ is the mean of the underlying distribution and @f$\sigma^2@f$
      *  is its variance.
+     *  See section 4.9.11 of Bosch, J. et al. 2018, PASJ, 70, S5 for further details.
      */
     static float computeAbsBias(float mu, float variance);
 
@@ -128,10 +130,10 @@ private:
 
     Control const _ctrl;
     afw::table::Key<double> _old;
-    afw::table::Key<double> _instFluxRaw;
+    afw::table::Key<double> _raw;
     afw::table::Key<double> _instFluxChildRaw;
     afw::table::Key<double> _instFluxParentRaw;
-    afw::table::Key<double> _instFluxAbs;
+    afw::table::Key<double> _abs;
     afw::table::Key<double> _instFluxChildAbs;
     afw::table::Key<double> _instFluxParentAbs;
     ShapeResultKey _shapeChildRaw;
