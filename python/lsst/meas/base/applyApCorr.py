@@ -39,26 +39,54 @@ __all__ = ("ApplyApCorrConfig", "ApplyApCorrTask")
 
 
 class ApCorrInfo:
-    """Catalog field names and keys needed to aperture correct a particular instrument flux
+    """Catalog field names and keys needed to aperture correct a particular
+    instrument flux.
+
     Parameters
     ----------
     schema : `lsst.afw.table`
-        source catalog schema;
-        three fields are used to generate keys:
-        - {name}_flux
-        - {name}_fluxErr
-        - {name}_flag
-        three fields are added:
-        - {name}_apCorr (only if not already added by proxy)
-        - {name}_apCorrErr (only if not already added by proxy)
-        - {name}_flag_apCorr
+        Source catalog schema. Three fields are used to generate keys:
+        - ``{name}_instFlux``
+        - ``{name}_instFluxErr``
+        - ``{name}_flag``
+        Three fields are added:
+        - ``{name}_apCorr`` (only if not already added by proxy)
+        - ``{name}_apCorrErr`` (only if not already added by proxy)
+        - ``{name}_flag_apCorr``
+    model : `str`
+        Field name prefix for instFlux with aperture correction model, e.g.
+        "base_PsfFlux"
+    name : `str`
+        Field name prefix for instFlux needing aperture correction; may be
+        `None` if it is the same as ``model``
 
-    model: `str`
-        field name prefix for flux with aperture correction model, e.g. "base_PsfFlux"
-
-    name: `str`
-        field name prefix for flux needing aperture correction; may be None if it's the
-        same as for the 'model' parameter
+    Attributes
+    ----------
+    name : `str`
+        Field name prefix for flux needing aperture correction
+    modelName : `str`
+        Field name for aperture correction model for flux
+    modelSigmaName : `str`
+        Field name for aperture correction model for fluxErr
+    doApCorrColumn : `bool`
+        Should we write the aperture correction values? (not if they're
+        already being written by a proxy)
+    instFluxName : `str`
+        Name of instFlux field
+    instFluxErrName : `str`
+        Name of instFlux sigma field
+    instFluxKey
+        Key to instFlux field
+    instFluxErrKey
+        Key to instFlux sigma field
+    fluxFlagKey
+        Key to flux flag field
+    apCorrKey
+        Key to new aperture correction field
+    apCorrErrKey
+        Key to new aperture correction sigma field
+    apCorrFlagKey
+        Key to new aperture correction flag field
 
     Notes
     -----
@@ -68,23 +96,6 @@ class ApCorrInfo:
     the aperture correction values; in the second case (using a proxy),
     we will add an alias to the proxy's aperture correction values. In
     all cases, we add a flag.
-
-    ApCorrInfo has the following attributes:
-
-    - name: field name prefix for flux needing aperture correction
-    - modelName: field name for aperture correction model for flux
-    - modelSigmaName: field name for aperture correction model for fluxErr
-    - doApCorrColumn: should we write the aperture correction values? (not if they're already being
-    written by a proxy)
-    - fluxName: name of flux field
-    - fluxErrName: name of flux sigma field
-    - fluxKey: key to flux field
-    - fluxErrKey: key to flux sigma field
-    - fluxFlagKey: key to flux flag field
-    - apCorrKey: key to new aperture correction field
-    - apCorrErrKey: key to new aperture correction sigma field
-    - apCorrFlagKey: key to new aperture correction flag field
-
     """
 
     def __init__(self, schema, model, name=None):
@@ -127,6 +138,9 @@ class ApCorrInfo:
 
 
 class ApplyApCorrConfig(lsst.pex.config.Config):
+    """Aperture correction configuration.
+    """
+
     ignoreList = lsst.pex.config.ListField(
         doc="flux measurement algorithms in getApCorrNameSet() to ignore; "
             "if a name is listed that does not appear in getApCorrNameSet() then a warning is logged",
@@ -150,7 +164,7 @@ class ApplyApCorrConfig(lsst.pex.config.Config):
 
 
 class ApplyApCorrTask(lsst.pipe.base.Task):
-    """Apply aperture corrections
+    """Apply aperture corrections.
 
     Parameters
     ----------
@@ -185,20 +199,19 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
             self.apCorrInfoDict[name] = ApCorrInfo(schema=schema, model=model, name=name)
 
     def run(self, catalog, apCorrMap):
-        """Apply aperture corrections to a catalog of sources
+        """Apply aperture corrections to a catalog of sources.
 
         Parameters
         ----------
-        catalog :
-            catalog of sources
-
+        catalog : `lsst.afw.table.SourceCatalog`
+            Catalog of sources. Will be updated in place.
         apCorrMap : `lsst.afw.image.ApCorrMap`
-            aperture correction map
+            Aperture correction map
 
         Notes
         -----
-        If you show debug-level log messages then you will see statistics for the effects of
-        aperture correction.
+        If you show debug-level log messages then you will see statistics for
+        the effects of aperture correction.
         """
         self.log.info("Applying aperture corrections to %d instFlux fields", len(self.apCorrInfoDict))
         if UseNaiveFluxErr:

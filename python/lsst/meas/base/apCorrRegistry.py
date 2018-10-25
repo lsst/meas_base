@@ -20,7 +20,7 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-"""Registry for names of instrument flux fields that should be aperture corrected
+"""Registry of instrument flux fields that should be aperture corrected.
 """
 
 __all__ = ("addApCorrName", "getApCorrNameSet")
@@ -30,26 +30,37 @@ _ApCorrNameSet = set()
 
 
 def addApCorrName(name):
-    """Add to the set of field name prefixes for instrument flux that should be aperture corrected
+    """Register an instrumental flux field name prefix for aperture correction.
 
     Parameters
     ----------
-    name: `str`
-        Field name prefix for a flux that should be aperture corrected.
-        The corresponding field names are {name}_flux, {name}_fluxErr and {name}_flag.
-        For example name "base_PsfFlux" corresponds to fields base_PsfFlux_flux,
-        base_PsfFlux_fluxErr and base_PsfFlux_flag.
+    name : `str`
+        Field name prefix for an instrumental flux that should be aperture
+        corrected.
+
+    Notes
+    -----
+    The prefix ``name`` corresponds to the fields ``name_instFlux``,
+    ``name_instFluxErr`` and ``name_flag``. For example, specifying
+    ``base_PsfFlux`` will select the fields ``base_PsfFlux_instFlux``,
+    ``base_PsfFlux_instFluxErr`` and ``base_PsfFlux_flag``.
     """
     global _ApCorrNameSet
     _ApCorrNameSet.add(str(name))
 
 
 def getApCorrNameSet():
-    """Return a copy of the set of field name prefixes for instrument flux that should be aperture corrected.
+    """Get a copy of the field name prefixes which will be aperture corrected.
+
+    Returns
+    -------
+    apCorrNameSet : `set`
+        Field prefixes which will be aperture corrected.
 
     Notes
     -----
-    For example the returned set will likely include "base_PsfFlux" and "base_GaussianFlux".
+    For example, the returned set may include ``base_PsfFlux`` and
+    ``base_GaussianFlux``.
     """
     global _ApCorrNameSet
     return _ApCorrNameSet.copy()
