@@ -86,11 +86,11 @@ id for each object.
     measTask.runPlugins(rebuildNoiseReplacer(exposure, srcCat), newSrcCatalog, exposure)
 
 
-At the time of writing, measTask.runPlugins will not run on any child
-objects if their parents are not also in the catalog. The makeRerunCatalog
-function has two options to resolve this issue. The ``resetParents`` flag (True
- by default) will reset the parent keys of any children whose parents are not
-  included in the idList, effectively turning them into parents. The
+At the time of writing, measTask.runPlugins will not run on any child objects
+if their parents are not also in the catalog. The makeRerunCatalog function
+has two options to resolve this issue. The ``resetParents`` flag (``True`` by
+default) will reset the parent keys of any children whose parents are not
+included in the idList, effectively turning them into parents. The
 ``addParents`` flag (False by default) will add these parents to the idList.
 
 .. code-block:: python

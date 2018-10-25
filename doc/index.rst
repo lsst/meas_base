@@ -9,6 +9,4 @@ meas_base documentation preview
 .. toctree::
    :maxdepth: 1
 
-   meas_base/index
    lsst.meas.base/index
-   ReconstructingMeasurements.rst
