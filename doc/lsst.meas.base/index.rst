@@ -28,4 +28,14 @@ You can find Jira issues for this module under the `meas_base <https://jira.lsst
 Python API reference
 ====================
 
-.. .. automodapi:: lsst.meas.base
+.. The :skip: options below exclude objects which are imported with
+   lsst.meas.base but aren't actually part of it (e.g. lsst.meas.base.Calib is
+   “actually” lsst.afw.image.calib.Calib). This causes the Sphinx build to
+   fail, at least when executed standalone.
+
+.. automodapi:: lsst.meas.base
+   :skip: Calib
+   :skip: FatalAlgorithmError
+   :skip: MeasurementError
+   :skip: PixelValueError
+   :skip: SkyWcs

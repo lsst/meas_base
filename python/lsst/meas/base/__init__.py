@@ -20,7 +20,7 @@
 # see <https://www.lsstcorp.org/LegalNotices/>.
 #
 
-"""lsst..meas.base
+"""lsst.meas.base
 """
 from .version import *
 # Needed for pybind11-generated docstrings
