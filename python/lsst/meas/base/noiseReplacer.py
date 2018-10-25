@@ -48,9 +48,9 @@ class NoiseReplacerConfig(lsst.pex.config.Config):
     )
     noiseSeedMultiplier = lsst.pex.config.Field(
         dtype=int, default=1,
-        doc="The seed multiplier value to use for random number generation\n"
-        "   >= 1: set the seed deterministically based on exposureId\n"
-        "      0: fall back to the afw.math.Random default constructor (which uses a seed value of 1)"
+        doc="The seed multiplier value to use for random number generation:\n"
+            ">= 1: set the seed deterministically based on exposureId\n"
+            "0: fall back to the afw.math.Random default constructor (which uses a seed value of 1)"
     )
 
 

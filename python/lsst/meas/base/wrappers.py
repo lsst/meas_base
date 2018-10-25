@@ -286,6 +286,8 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
                         hasMeasureN=False, needsSchemaOnly=False, hasLogName=False, **kwds):
     """Wrap a C++ ForcedAlgorithm class into a Python ForcedPlugin class.
 
+    Parameters
+    ----------
     AlgClass :
         Swigged C++ Algorithm class to convert; must be a subclass of
         ForcedAlgorithm, or an unrelated class with the same measure(), measureN(),
@@ -335,6 +337,7 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
             retrieved by getApCorrNameSet
         - ``executionOrder`` : If not None, an override for the default executionOrder for
             this plugin (the default is 2.0, which is usually appropriate for fluxes).
+
     Returns
     -------
     result : callable

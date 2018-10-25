@@ -43,7 +43,7 @@ __all__ = ("PerTractCcdDataIdContainer", "ForcedPhotCcdConfig", "ForcedPhotCcdTa
 
 
 class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
-    """A version of `~lsst.pipe.base.DataIdContainer~ that combines raw data IDs with a tract.
+    """A version of `lsst.pipe.base.DataIdContainer` that combines raw data IDs with a tract.
 
     Notes
     -----
