@@ -19,9 +19,11 @@
 # You should have received a copy of the LSST License Statement and
 # the GNU General Public License along with this program.  If not,
 # see <https://www.lsstcorp.org/LegalNotices/>.
-#
-"""Base measurement task, which subclassed by the single frame and forced measurement tasks.
+
+"""Base measurement task, which subclassed by the single frame and forced
+measurement tasks.
 """
+
 import lsst.pipe.base
 import lsst.pex.config
 
@@ -38,16 +40,16 @@ FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)
 
 
 class BaseMeasurementPluginConfig(BasePluginConfig):
-    """Base config class for all measurement plugins
+    """Base config class for all measurement plugins.
 
     Notes
     -----
-    Most derived classes will want to override setDefaults() in order to customize
-    the default exceutionOrder.
+    Most derived classes will want to override `setDefaults` in order to
+    customize the default `executionOrder`.
 
-    A derived class whose corresponding Plugin class implements measureN() should
-    additionally add a bool doMeasureN field to replace the bool class attribute
-    defined here.
+    A derived class whose corresponding Plugin class implements a do `measureN`
+    method should additionally add a bool `doMeasureN` field to replace the
+    bool class attribute defined here.
     """
 
     doMeasure = lsst.pex.config.Field(dtype=bool, default=True,
@@ -57,26 +59,30 @@ class BaseMeasurementPluginConfig(BasePluginConfig):
 
 
 class BaseMeasurementPlugin(BasePlugin):
-    """Base class for all measurement plugins
+    """Base class for all measurement plugins.
 
     Notes
     -----
-    This is class is a placeholder for future behavior which will be shared only between
-    measurement plugins and is implemented for symmetry with the measurement base plugin
-    configuration class
+    This is class is a placeholder for future behavior which will be shared
+    only between measurement plugins and is implemented for symmetry with the
+    measurement base plugin configuration class
     """
+
     pass
 
 
 class SourceSlotConfig(lsst.pex.config.Config):
-    """
-    Slot configuration which assigns a particular named plugin to each of a set of
-    slots.  Each slot allows a type of measurement to be fetched from the SourceTable
-    without knowing which algorithm was used to produced the data.
+    """Assign named plugins to measurement slots.
+
+    Slot configuration which assigns a particular named plugin to each of a set
+    of slots.  Each slot allows a type of measurement to be fetched from the
+    `lsst.afw.table.SourceTable` without knowing which algorithm was used to
+    produced the data.
 
     Notes
     -----
-    The default algorithm for each slot must be registered, even if the default is not used.
+    The default algorithm for each slot must be registered, even if the default
+    is not used.
     """
 
     Field = lsst.pex.config.Field
@@ -98,16 +104,17 @@ class SourceSlotConfig(lsst.pex.config.Config):
                       doc="the name of the instFlux measurement algorithm used for calibration")
 
     def setupSchema(self, schema):
-        """Convenience method to setup a Schema's slots according to the config definition.
+        """Set up a slots in a schema following configuration directives.
 
         Parameters
         ----------
-        schema :
+        schema : `lsst.afw.table.Schema`
+            The schema in which slots will be set up.
 
         Notes
         -----
-        This is defined in the Config class to support use in unit tests without needing
-        to construct a Task object.
+        This is defined in this configuration class to support use in unit
+        tests without needing to construct an `lsst.pipe.base.Task` object.
         """
         aliases = schema.getAliasMap()
         if self.centroid is not None:
@@ -129,7 +136,7 @@ class SourceSlotConfig(lsst.pex.config.Config):
 
 
 class BaseMeasurementConfig(lsst.pex.config.Config):
-    """Base config class for all measurement driver tasks.
+    """Base configuration for all measurement driver tasks.
 
     Examples
     --------
@@ -148,9 +155,8 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
             doc="Plugins to run on undeblended image"
         )
 
-    where PluginBaseClass is the appropriate base class of the plugin
-    (e.g., SingleFramePlugin or ForcedPlugin).
-
+    where ``PluginBaseClass`` is the appropriate base class of the plugin
+    (e.g., `SingleFramePlugin` or `ForcedPlugin`).
     """
 
     slots = lsst.pex.config.ConfigField(
@@ -186,40 +192,52 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
                 else:
                     raise ValueError("source instFlux slot algorithm '%s' is not being run." % slot)
 
-## @addtogroup LSST_task_documentation
-## @{
-## @page baseMeasurementTask
-## BaseMeasurementTask @copybrief BaseMeasurementTask
-## @}
-
 
 class BaseMeasurementTask(lsst.pipe.base.Task):
     """Ultimate base class for all measurement tasks.
 
     Parameters
     ----------
+    algMetadata : `lsst.daf.base.PropertyList` or `None`
+        Will be modified in-place to contain metadata about the plugins being
+        run. If `None`, an empty `~lsst.daf.base.PropertyList` will be
+        created.
+    **kwds
+        Additional arguments passed to `lsst.pipe.base.Task.__init__`.
+
+    Attributes
+    ----------
+    plugins : `PluginMap`
+        Initially empty, this will eventually be filled by subclasses until it
+        containsall active plugins to be invoked by `run`. This should be
+        considered read-only.
     algMetadata : `lsst.daf.base.PropertyList`
-        An lsst.daf.base.PropertyList that will be filled with metadata
-        about the plugins being run. If None, an empty PropertyList will
-        be created.
-    kwds :
-        Additional arguments passed to lsst.pipe.base.Task.__init__.
+        Contains additional information about active plugins to be saved with
+        the output catalog. Will be filled by subclasses.
 
     Notes
     -----
-    This attaches two public attributes to the class for use by derived classes and parent tasks:
-
-        - plugins: an empty PluginMap, which will eventually contain all active plugins that will by
-            invoked by the run() method (to be filled by subclasses).  This should be considered read-only.
-        - algMetadata: a lsst.daf.base.PropertyList that will contain additional information about the
-            active plugins to be saved with the output catalog (to be filled by subclasses).
-
-    This base class for SingleFrameMeasurementTask and ForcedMeasurementTask mostly exists to share
-    code between the two, and generally should not be used directly.
+    This base class for `SingleFrameMeasurementTask` and
+    `ForcedMeasurementTask` mostly exists to share code between the two, and
+    generally should not be used directly.
     """
 
     ConfigClass = BaseMeasurementConfig
     _DefaultName = "measurement"
+
+    plugins = None
+    """Plugins to be invoked (`PluginMap`).
+
+    Initially empty, this will be populated as plugins are initialized. It
+    should be considered read-only.
+    """
+
+    algMetadata = None
+    """Metadata about active plugins (`lsst.daf.base.PropertyList`).
+
+    Contains additional information about active plugins to be saved with
+    the output catalog. Will be filled by subclasses.
+    """
 
     def __init__(self, algMetadata=None, **kwds):
         super(BaseMeasurementTask, self).__init__(**kwds)
@@ -233,18 +251,25 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         return self.log.getName() + '.' + pluginName
 
     def initializePlugins(self, **kwds):
-        """Initialize the plugins (and slots) according to the configuration.
+        """Initialize plugins (and slots) according to configuration.
+
+        Parameters
+        ----------
+        **kwds
+            Keyword arguments forwarded directly to plugin constructors.
 
         Notes
         -----
-        Derived class constructors should call this method to fill the self.plugins
-        attribute and add correspond output fields and slot aliases to the output schema.
+        Derived class constructors should call this method to fill the
+        `plugins` attribute and add corresponding output fields and slot
+        aliases to the output schema.
 
-        In addition to the attributes added by BaseMeasurementTask.__init__, a self.schema
-        attribute holding the output schema must also be present before this method is called, .
+        In addition to the attributes added by `BaseMeasurementTask.__init__`,
+        a ``schema``` attribute holding the output schema must be present
+        before this method is called.
 
-        Keyword arguments are forwarded directly to plugin constructors, allowing derived
-        classes to use plugins with different signatures.
+        Keyword arguments are forwarded directly to plugin constructors,
+        allowing derived classes to use plugins with different signatures.
         """
         # Make a place at the beginning for the centroid plugin to run first (because it's an OrderedDict,
         # adding an empty element in advance means it will get run first when it's reassigned to the
@@ -273,32 +298,39 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
                                                         **kwds)
 
     def callMeasure(self, measRecord, *args, **kwds):
-        """Call the measure() method on all plugins, handling exceptions in a consistent way.
+        """Call ``measure`` on all plugins and consistently handle exceptions.
 
         Parameters
         ----------
         measRecord : `lsst.afw.table.SourceRecord`
-            that corresponds to the object being
-            measured, and where outputs should be written.
-        args :
-            Positional arguments forwarded to Plugin.measure()
-        kwds :
+            The record corresponding to the object being measured. Will be
+            updated in-place with the results of measurement.
+        *args
+            Positional arguments forwarded to ``plugin.measure``
+        **kwds
             Keyword arguments. Two are handled locally:
-            - beginOrder: beginning execution order (inclusive):
-            measurements with
-            executionOrder < beginOrder are not executed.
-            None for no limit.
-            - endOrder: ending execution order (exclusive): measurements with
-            executionOrder >= endOrder are not executed. None for no limit.
-            the rest are forwarded to Plugin.measure()
+
+            beginOrder : `int`
+                Beginning execution order (inclusive). Measurements with
+                ``executionOrder`` < ``beginOrder`` are not executed. `None`
+                for no limit.
+
+            endOrder : `int`
+                Ending execution order (exclusive). Measurements with
+                ``executionOrder`` >= ``endOrder`` are not executed. `None`
+                for no limit.
+
+            Others are forwarded to ``plugin.measure()``.
 
         Notes
         -----
-        This method can be used with plugins that have different signatures; the only requirement is that
-        'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are
-        forwarded directly to the plugin.
+        This method can be used with plugins that have different signatures;
+        the only requirement is that ``measRecord`` be the first argument.
+        Subsequent positional arguments and keyword arguments are forwarded
+        directly to the plugin.
 
-        This method should be considered "protected"; it is intended for use by derived classes, not users.
+        This method should be considered "protected": it is intended for use by
+        derived classes, not users.
         """
         beginOrder = kwds.pop("beginOrder", None)
         endOrder = kwds.pop("endOrder", None)
@@ -310,27 +342,31 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
             self.doMeasurement(plugin, measRecord, *args, **kwds)
 
     def doMeasurement(self, plugin, measRecord, *args, **kwds):
-        """Call the measure() method on the nominated plugin, handling exceptions in a consistent way.
+        """Call ``measure`` on the specified plugin.
+
+        Exceptions are handled in a consistent way.
 
         Parameters
         ----------
-        plugin :
-            Plugin that will measure
-        measRecord :
-            lsst.afw.table.SourceRecord that corresponds to the object being
-            measured, and where outputs should be written.
-        args :
-            Positional arguments forwarded to plugin.measure()
-        kwds :
-            Keyword arguments forwarded to plugin.measure()
+        plugin : subclass of `BasePlugin`
+            Plugin that will be executed.
+        measRecord : `lsst.afw.table.SourceRecord`
+            The record corresponding to the object being measured. Will be
+            updated in-place with the results of measurement.
+        *args
+            Positional arguments forwarded to ``plugin.measure()``.
+        **kwds
+            Keyword arguments forwarded to ``plugin.measure()``.
 
         Notes
         -----
-        This method can be used with plugins that have different signatures; the only requirement is that
-        the 'plugin' and 'measRecord' be the first two arguments.  Subsequent positional arguments and
-        keyword arguments are forwarded directly to the plugin.
+        This method can be used with plugins that have different signatures;
+        the only requirement is that ``plugin`` and ``measRecord`` be the first
+        two arguments.  Subsequent positional arguments and keyword arguments
+        are forwarded directly to the plugin.
 
-        This method should be considered "protected"; it is intended for use by derived classes, not users.
+        This method should be considered "protected": it is intended for use by
+        derived classes, not users.
         """
         try:
             plugin.measure(measRecord, *args, **kwds)
@@ -348,38 +384,38 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
             plugin.fail(measRecord)
 
     def callMeasureN(self, measCat, *args, **kwds):
-        """Call the measureN() method on all plugins, handling exceptions in a consistent way.
+        """Call ``measureN`` on all plugins and consistently handle exceptions.
 
         Parameters
         ----------
         measCat : `lsst.afw.table.SourceCatalog`
-            lsst.afw.table.SourceCatalog containing records for just
-            the source family to be measured, and where outputs should
-            be written.
-        beginOrder :
-            beginning execution order (inclusive): measurements with
-            executionOrder < beginOrder are not executed. None for no limit.
-        endOrder :
-            ending execution order (exclusive): measurements with
-            executionOrder >= endOrder are not executed. None for no limit.
-        args :
-            Positional arguments forwarded to Plugin.measure()
-        kwds :
+            Catalog containing only the records for the source family to be
+            measured, and where outputs should be written.
+        *args
+            Positional arguments forwarded to ``plugin.measure()``
+        **kwds
             Keyword arguments. Two are handled locally:
-            - beginOrder: beginning execution order (inclusive): measurements
-            with executionOrder < beginOrder are not executed.
-            None for no limit.
-            - endOrder: ending execution order (exclusive): measurements with
-            executionOrder >= endOrder are not executed. None for no limit.
-            the rest are forwarded to Plugin.measure()
+
+            beginOrder:
+                Beginning execution order (inclusive): Measurements with
+                ``executionOrder`` < ``beginOrder`` are not executed. `None`
+                for no limit.
+            endOrder:
+                Ending execution order (exclusive): measurements with
+                ``executionOrder`` >= ``endOrder`` are not executed. `None` for
+                no ``limit``.
+
+            Others are are forwarded to ``plugin.measure()``.
 
         Notes
         -----
-        This method can be used with plugins that have different signatures; the only requirement is that
-        'measRecord' be the first argument.  Subsequent positional arguments and keyword arguments are
-        forwarded directly to the plugin.
+        This method can be used with plugins that have different signatures;
+        the only requirement is that ``measRecord`` be the first argument.
+        Subsequent positional arguments and keyword arguments are forwarded
+        directly to the plugin.
 
-        This method should be considered "protected"; it is intended for use by derived classes, not users.
+        This method should be considered "protected": it is intended for use by
+        derived classes, not users.
         """
         beginOrder = kwds.pop("beginOrder", None)
         endOrder = kwds.pop("endOrder", None)
@@ -391,28 +427,31 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
             self.doMeasurementN(plugin, measCat, *args, **kwds)
 
     def doMeasurementN(self, plugin, measCat, *args, **kwds):
-        """Call the measureN() method on the nominated plugin, handling exceptions in a consistent way.
+        """Call ``measureN`` on the specified plugin.
+
+        Exceptions are handled in a consistent way.
 
         Parameters
         ----------
-        plugin :
-            plugin that will measure
+        plugin : subclass of `BasePlugin`
+            Plugin that will be executed.
         measCat : `lsst.afw.table.SourceCatalog`
-            lsst.afw.table.SourceCatalog containing records for just
-            the source family to be measured, and where outputs should
-            be written.
-        args :
-            Positional arguments forwarded to plugin.measureN()
-        kwds :
-            Keyword arguments forwarded to plugin.measureN()
+            Catalog containing only the records for the source family to be
+            measured, and where outputs should be written.
+        *args
+            Positional arguments forwarded to ``plugin.measureN()``.
+        **kwds
+            Keyword arguments forwarded to ``plugin.measureN()``.
 
         Notes
         -----
-        This method can be used with plugins that have different signatures; the only requirement is that
-        the 'plugin' and 'measCat' be the first two arguments. Subsequent positional arguments and
-        keyword arguments are forwarded directly to the plugin.
+        This method can be used with plugins that have different signatures;
+        the only requirement is that the ``plugin`` and ``measCat`` be the
+        first two arguments. Subsequent positional arguments and keyword
+        arguments are forwarded directly to the plugin.
 
-        This method should be considered "protected"; it is intended for use by derived classes, not users.
+        This method should be considered "protected": it is intended for use by
+        derived classes, not users.
         """
         try:
             plugin.measureN(measCat, *args, **kwds)
