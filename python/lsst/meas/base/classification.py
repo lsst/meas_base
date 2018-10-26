@@ -16,13 +16,19 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
 # GNU General Public License for more details.
 #
+<<<<<<< HEAD
 # You should have received a copy of the LSST License Statement and
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
+"""Definition and registration of classification plugins."""
+=======
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+"""Definition and registration of classification plugins.
 """
-Definition and registration of classification plugins
-"""
+>>>>>>> a6f0034... fixup! Tidy up classification.py.
 
 import numpy as np
 
@@ -36,6 +42,12 @@ __all__ = (
 
 
 class CatalogCalculationClassificationConfig(CatalogCalculationPluginConfig):
+<<<<<<< HEAD
+=======
+    """Configuration for catalog classification plugin.
+    """
+
+>>>>>>> a6f0034... fixup! Tidy up classification.py.
     fluxRatio = lsst.pex.config.Field(dtype=float, default=.925, optional=True,
                                       doc="critical ratio of model to psf flux")
     modelErrFactor = lsst.pex.config.Field(dtype=float, default=0.0, optional=True,
@@ -46,15 +58,19 @@ class CatalogCalculationClassificationConfig(CatalogCalculationPluginConfig):
 
 @register("base_ClassificationExtendedness")
 class CatalogCalculationClassificationPlugin(CatalogCalculationPlugin):
-    """A binary measure of the extendedness of a source, based a simple cut on the ratio of the
-    PSF flux to the model flux.
+    """Plugin which calculates a binary measure of source extendedness.
+
+    Extendedness is based on a simple cut of the ratio of the PSF flux to the
+    model flux.
 
     Notes
     -----
-    Because the fluxes on which this algorithm is based on are slot measurements, they can be provided
-    by different algorithms, and the "fluxRatio" threshold used by this algorithm should generally
-    be set differently for different algorithms.  To do this, plot the difference between the PSF
-    magnitude and the model magnitude vs. the PSF magnitude, and look for where the cloud of galaxies
+    Because the fluxes on which this algorithm is based on are slot
+    measurements, they can be provided by different algorithms, and the
+    `~CatalogCalculationClassificationConfig.fluxRatio` threshold used by this
+    algorithm should generally be set differently for different algorithms.
+    To do this, plot the difference between the PSF magnitude and the model
+    magnitude vs. the PSF magnitude, and look for where the cloud of galaxies
     begins.
     """
 
@@ -87,9 +103,9 @@ class CatalogCalculationClassificationPlugin(CatalogCalculationPlugin):
             flux2 += self.config.psfErrFactor*measRecord.getPsfInstFluxErr()
 
         # A generic failure occurs when either FluxFlag is set to True
-        # A generic failure also occurs if either calculated flux value is NAN:
-        #     this can occur if the Flux field itself is NAN,
-        #     or the ErrFactor != 0 and the FluxErr is NAN
+        # A generic failure also occurs if either calculated flux value is NaN:
+        #     this can occur if the Flux field itself is NaN,
+        #     or the ErrFactor != 0 and the FluxErr is NaN
         if np.isnan(flux1) or np.isnan(flux2) or modelFluxFlag or psfFluxFlag:
             self.fail(measRecord)
         else:
