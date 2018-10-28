@@ -34,13 +34,15 @@ __all__ = (
 
 
 class CatalogCalculationFootprintAreaConfig(CatalogCalculationPluginConfig):
+    """Configuration for footprint area catalog calculation plugin.
+    """
+
     pass
 
 
 @register("base_FootprintArea")
 class CatalogCalculationFootprintAreaPlugin(CatalogCalculationPlugin):
-    """A catalog calcluation plugin  that simply records the area of the
-    source's detection Footprint.
+    """Catalog calculation plugin to record the area of a source's footprint.
     """
 
     ConfigClass = CatalogCalculationFootprintAreaConfig
