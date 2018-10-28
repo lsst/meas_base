@@ -20,31 +20,39 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-"""Base classes for forced measurement plugins and the driver task for these.
+r"""Base classes for forced measurement plugins and the driver task for these.
 
-In forced measurement, a reference catalog is used to define restricted measurements (usually just fluxes)
-on an image.  As the reference catalog may be deeper than the detection limit of the measurement image, we
-do not assume that we can use detection and deblend information from the measurement image.  Instead, we
-assume this information is present in the reference catalog and can be "transformed" in some sense to
-the measurement frame.  At the very least, this means that Footprints from the reference catalog should
-be transformed and installed as Footprints in the output measurement catalog.  If we have a procedure that
-can transform HeavyFootprints, we can then proceed with measurement as usual, but using the reference
-catalog's id and parent fields to define deblend families.  If this transformation does not preserve
-HeavyFootprints (this is currently the case, at least for CCD forced photometry), then we will only
-be able to replace objects with noise one deblend family at a time, and hence measurements run in
-single-object mode may be contaminated by neighbors when run on objects with parent != 0.
+In forced measurement, a reference catalog is used to define restricted
+measurements (usually just fluxes) on an image.  As the reference catalog may
+be deeper than the detection limit of the measurement image, we do not assume
+that we can use detection and deblend information from the measurement image.
+Instead, we assume this information is present in the reference catalog and
+can be "transformed" in some sense to the measurement frame.  At the very
+least, this means that `~lsst.afw.detection.Footprint`\ s from the reference
+catalog should be transformed and installed as Footprints in the output
+measurement catalog. If we have a procedure that can transform "heavy"
+Footprints (ie, including pixel data), we can then proceed with measurement as
+usual, but using the reference catalog's ``id`` and ``parent`` fields to
+define deblend families.  If this transformation does not preserve
+heavy Footprints (this is currently the case, at least for CCD forced
+photometry), then we will only be able to replace objects with noise one
+deblend family at a time, and hence measurements run in single-object mode may
+be contaminated by neighbors when run on objects with ``parent != 0``.
 
-Measurements are generally recorded in the coordinate system of the image being measured (and all
-slot-eligible fields must be), but non-slot fields may be recorded in other coordinate systems if necessary
-to avoid information loss (this should, of course, be indicated in the field documentation).  Note that
-the reference catalog may be in a different coordinate system; it is the responsibility of plugins
-to transform the data they need themselves, using the reference WCS provided.  However, for plugins
-that only require a position or shape, they may simply use output SourceCatalog's centroid or shape slots,
-which will generally be set to the transformed position of the reference object before any other plugins are
-run, and hence avoid using the reference catalog at all.
+Measurements are generally recorded in the coordinate system of the image
+being measured (and all slot-eligible fields must be), but non-slot fields may
+be recorded in other coordinate systems if necessary to avoid information loss
+(this should, of course, be indicated in the field documentation).  Note that
+the reference catalog may be in a different coordinate system; it is the
+responsibility of plugins to transform the data they need themselves, using
+the reference WCS provided.  However, for plugins that only require a position
+or shape, they may simply use output `~lsst.afw.table.SourceCatalog`\'s
+centroid or shape slots, which will generally be set to the transformed
+position of the reference object before any other plugins are run, and hence
+avoid using the reference catalog at all.
 
-Command-line driver tasks for forced measurement can be found in forcedPhotImage.py, including
-ForcedPhotImageTask, ForcedPhotCcdTask, and ForcedPhotCoaddTask.
+Command-line driver tasks for forced measurement include
+`ForcedPhotImageTask`, `ForcedPhotCcdTask`, and `ForcedPhotCoaddTask`.
 """
 
 import lsst.pex.config
@@ -60,29 +68,34 @@ __all__ = ("ForcedPluginConfig", "ForcedPlugin",
 
 
 class ForcedPluginConfig(BaseMeasurementPluginConfig):
-    """Base class for configs of forced measurement plugins.
+    """Base class for configs of forced measurement plugins."""
 
-    Parameters
-    ----------
-    config :
-        An instance of this class's ConfigClass.
-    name :
-        The string the plugin was registered with.
-    schemaMapper :
-        A SchemaMapper that maps reference catalog fields to output
-        catalog fields.  Output fields should be added to the
-        output schema.  While most plugins will not need to map
-        fields from the reference schema, if they do so, those fields
-        will be transferred before any plugins are run.
-    metadata :
-        Plugin metadata that will be attached to the output catalog"""
     pass
 
 
 class ForcedPlugin(BaseMeasurementPlugin):
+    """Base class for forced measurement plugins.
 
-    # All subclasses of ForcedPlugin should be registered here
+    Parameters
+    ----------
+    config : `ForcedPlugin.ConfigClass`
+        Configuration for this plugin.
+    name : `str`
+        The string with which the plugin was registered.
+    schemaMapper : `lsst.afw.table.SchemaMapper`
+        A mapping from reference catalog fields to output catalog fields.
+        Output fields should be added to the output schema. While most plugins
+        will not need to map fields from the reference schema, if they do so,
+        those fields will be transferred before any plugins are run.
+    metadata : `lsst.daf.base.PropertySet`
+        Plugin metadata that will be attached to the output catalog.
+    logName : `str`, optional
+        Name to use when logging errors.
+    """
+
     registry = PluginRegistry(ForcedPluginConfig)
+    """Subclasses of `ForcedPlugin` must be registered here (`PluginRegistry`).
+    """
 
     ConfigClass = ForcedPluginConfig
 
@@ -90,78 +103,73 @@ class ForcedPlugin(BaseMeasurementPlugin):
         BaseMeasurementPlugin.__init__(self, config, name, logName=logName)
 
     def measure(self, measRecord, exposure, refRecord, refWcs):
-        """Measure the properties of a source on a single image, given data from a
-        reference record.
+        """Measure the properties of a source given an image and a reference.
 
         Parameters
         ----------
         exposure : `lsst.afw.image.ExposureF`
-            containing the pixel data to
-            be measured and the associated Psf, Wcs, etc.  All
-            other sources in the image will have been replaced by
-            noise according to deblender outputs.
+            The pixel data to be measured, together with the associated PSF,
+            WCS, etc. All other sources in the image should have been replaced
+            by noise according to deblender outputs.
         measRecord : `lsst.afw.table.SourceRecord`
-            lsst.afw.table.SourceRecord to be filled with outputs,
-            and from which previously-measured quantities can be
-            retreived.
+            Record describing the object being measured. Previously-measured
+            quantities will be retrieved from here, and it will be updated
+            in-place with the outputs of this plugin.
         refRecord : `lsst.afw.table.SimpleRecord`
-            lsst.afw.table.SimpleRecord that contains additional
-            parameters to define the fit, as measured elsewhere.
-        refWcs :
-            The coordinate system for the reference catalog values.
-            An lsst.geom.Angle may be passed, indicating that a
-            local tangent Wcs should be created for each object
-            using afw.image.makeLocalWcs and the given angle as
-            a pixel scale.
+            Additional parameters to define the fit, as measured elsewhere.
+        refWcs : `lsst.afw.geom.SkyWcs` or `lsst.afw.geom.Angle`
+            The coordinate system for the reference catalog values. An
+            `~lsst.geom.Angle` may be passed, indicating that a local tangent
+            WCS should be created for each object using the given angle as a
+            pixel scale.
 
         Notes
         -----
-        In the normal mode of operation, the source centroid will be set to the
-        WCS-transformed position of the reference object, so plugins that only
-        require a reference position should not have to access the reference object
-        at all.
+        In the normal mode of operation, the source centroid will be set to
+        the WCS-transformed position of the reference object, so plugins that
+        only require a reference position should not have to access the
+        reference object at all.
         """
         raise NotImplementedError()
 
     def measureN(self, measCat, exposure, refCat, refWcs):
-        """Measure the properties of a group of blended sources on a single image,
-        given data from a reference record.
+        """Measure the properties of blended sources from image & reference.
+
+        This operates on all members of a blend family at once.
 
         Parameters
         ----------
         exposure : `lsst.afw.image.ExposureF`
-            lsst.afw.image.ExposureF, containing the pixel data to
-            be measured and the associated Psf, Wcs, etc.  Sources
-            not in the blended hierarchy to be measured will have
-            been replaced with noise using deblender outputs.
+            The pixel data to be measured, together with the associated PSF,
+            WCS, etc. Sources not in the blended hierarchy to be measured
+            should have been replaced with noise using deblender outputs.
         measCat : `lsst.afw.table.SourceCatalog`
-            lsst.afw.table.SourceCatalog to be filled with outputs,
-            and from which previously-measured quantities can be
-            retrieved, containing only the sources that should be
-            measured together in this call.
+            Catalog describing the objects (and only those objects) being
+            measured. Previously-measured quantities will be retrieved from
+            here, and it will be updated in-place with the outputs of this
+            plugin.
         refCat : `lsst.afw.table.SimpleCatalog`
-            lsst.afw.table.SimpleCatalog that contains additional
-            parameters to define the fit, as measured elsewhere.
-            Ordered such that zip(sources, references) may be used.
-        refWcs :
-            The coordinate system for the reference catalog values.
-            An lsst.geom.Angle may be passed, indicating that a
-            local tangent Wcs should be created for each object
-            using afw.image.makeLocalWcs and the given Angle as
-            a pixel scale.
+            Additional parameters to define the fit, as measured elsewhere.
+            Ordered such that ``zip(measCat, refcat)`` may be used.
+        refWcs : `lsst.afw.geom.SkyWcs` or `lsst.afw.geom.Angle`
+            The coordinate system for the reference catalog values. An
+            `~lsst.geom.Angle` may be passed, indicating that a local tangent
+            WCS should be created for each object using the given angle as a
+            pixel scale.
 
         Notes
         -----
-        In the normal mode of operation, the source centroids will be set to the
-        WCS-transformed position of the reference object, so plugins that only
-        require a reference position should not have to access the reference object
-        at all.
+        In the normal mode of operation, the source centroids will be set to
+        the WCS-transformed position of the reference object, so plugins that
+        only require a reference position should not have to access the
+        reference object at all.
         """
         raise NotImplementedError()
 
 
 class ForcedMeasurementConfig(BaseMeasurementConfig):
-    """Config class for forced measurement driver task."""
+    """Config class for forced measurement driver task.
+    """
 
     plugins = ForcedPlugin.registry.makeField(
         multi=True,
@@ -205,66 +213,36 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         self.slots.gaussianFlux = None
         self.slots.calibFlux = None
 
-## @addtogroup LSST_task_documentation
-## @{
-## @page ForcedMeasurementTask
-## @ref ForcedMeasurementTask_ "ForcedMeasurementTask"
-## @copybrief ForcedMeasurementTask
-## @}
-
 
 class ForcedMeasurementTask(BaseMeasurementTask):
-    """A subtask for measuring the properties of sources on a single
-    exposure, using an existing "reference" catalog to constrain some aspects
-    of the measurement.
+    """Measure sources on an image, constrained by a reference catalog.
+
+    A subtask for measuring the properties of sources on a single image,
+    using an existing "reference" catalog to constrain some aspects of the
+    measurement.
 
     Parameters
     ----------
-    refSchema :
-        Schema of the reference catalog.  Must match the catalog
-        later passed to generateMeasCat() and/or run().
-    algMetadata :
-        lsst.daf.base.PropertyList used to record information about
-        each algorithm.  An empty PropertyList will be created if None.
-    kwds :
-        Keyword arguments passed from `lsst.pipe.base.Task` superclass constructor.
+    refSchema : `lsst.afw.table.Schema`
+        Schema of the reference catalog.  Must match the catalog later passed
+        to 'ForcedMeasurementTask.generateMeasCat` and/or
+        `ForcedMeasurementTask.run`.
+    algMetadata : `lsst.daf.base.PropertyList` or `None`
+        Will be updated in place to to record information about each
+        algorithm. An empty `~lsst.daf.base.PropertyList` will be created if
+        `None`.
+    **kwds
+        Keyword arguments are passed to the supertask constructor.
 
     Notes
     -----
-    The task is configured with a list of "plugins": each plugin defines the values it
-    measures (i.e. the columns in a table it will fill) and conducts that measurement
-    on each detected source (see ForcedPlugin).  The job of the
-    measurement task is to initialize the set of plugins (which includes setting up the
-    catalog schema) from their configuration, and then invoke each plugin on each
-    source.
-
-    Most of the time, ForcedMeasurementTask will be used via one of the subclasses of
-    ForcedPhotImageTask, ForcedPhotCcdTask and ForcedPhotCoaddTask.  These combine
-    this measurement subtask with a "references" subtask (see BaseReferencesTask and
-    CoaddSrcReferencesTask) to perform forced measurement using measurements performed on
-    another image as the references.  There is generally little reason to use
-    ForcedMeasurementTask outside of one of these drivers, unless it is necessary to avoid
-    using the Butler for I/O.
-
-    ForcedMeasurementTask has only three methods: __init__(), run(), and generateMeasCat().
-    For configuration options, see SingleFrameMeasurementConfig.
-
-    Forced measurement means that the plugins are provided with a reference
-    source containing centroid and/or shape measurements that they may use
-    however they see fit. Some plugins can use these to set the location and
-    size of apertures, but others may choose to ignore this information,
-    essentially performing an unforced measurement starting at the position
-    of the reference source (which may nevertheless be useful for certain
-    investigations). Knowing how the plugin uses the reference information is
-    essential to interpreting its resulting measurements. Typically, centroid
-    and shape measurement plugins (e.g., ``SdssCentroid`` and ``SdssShape``)
-    are performing unforced measurements.
-
-    Note that while SingleFrameMeasurementTask is passed an initial Schema that is
-    appended to in order to create the output Schema, ForcedMeasurementTask is
-    initialized with the Schema of the reference catalog, from which a new Schema
-    for the output catalog is created.  Fields to be copied directly from the
-    reference Schema are added before Plugin fields are added.
+    Note that while `SingleFrameMeasurementTask` is passed an initial
+    `~lsst.afw.table.Schema` that is appended to in order to create the output
+    `~lsst.afw.table.Schema`, `ForcedMeasurementTask` is initialized with the
+    `~lsst.afw.table.Schema` of the reference catalog, from which a new
+    `~lsst.afw.table.Schema` for the output catalog is created.  Fields to be
+    copied directly from the reference `~lsst.afw.table.Schema` are added
+    before ``Plugin`` fields are added.
     """
 
     ConfigClass = ForcedMeasurementConfig
@@ -287,51 +265,60 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
         Parameters
         ----------
-        exposure :
-            lsst.afw.image.ExposureF to be measured; must have at least a Wcs attached.
-        measCat :
-            Source catalog for measurement results; must be initialized with empty
-            records already corresponding to those in refCat
-            (via e.g. generateMeasCat).
-        refCat :
-            A sequence of SourceRecord objects that provide reference information
-            for the measurement.  These will be passed to each Plugin in addition
-            to the output SourceRecord.
-        refWcs :
-            Wcs that defines the X,Y coordinate system of refCat
-        exposureId :
-            optional unique exposureId used to calculate random number
+        exposure : `lsst.afw.image.exposureF`
+            Image to be measured. Must have at least a `lsst.afw.geom.SkyWcs`
+            attached.
+        measCat : `lsst.afw.table.SourceCatalog`
+            Source catalog for measurement results; must be initialized with
+            empty records already corresponding to those in ``refCat`` (via
+            e.g. `generateMeasCat`).
+        refCat : `lsst.afw.table.SourceCatalog`
+            A sequence of `lsst.afw.table.SourceRecord` objects that provide
+            reference information for the measurement.  These will be passed
+            to each plugin in addition to the output
+            `~lsst.afw.table.SourceRecord`.
+        refWcs : `lsst.afw.geom.SkyWcs`
+            Defines the X,Y coordinate system of ``refCat``.
+        exposureId : `int`, optional
+            Optional unique exposureId used to calculate random number
             generator seed in the NoiseReplacer.
-        beginOrder :
-            beginning execution order (inclusive): measurements with
-            executionOrder < beginOrder are not executed. None for no limit.
-        endOrder :
-            ending execution order (exclusive): measurements with
-            executionOrder >= endOrder are not executed. None for no limit.
+        beginOrder : `int`, optional
+            Beginning execution order (inclusive). Algorithms with
+            ``executionOrder`` < ``beginOrder`` are not executed. `None` for no limit.
+        endOrder : `int`, optional
+            Ending execution order (exclusive). Algorithms with
+            ``executionOrder`` >= ``endOrder`` are not executed. `None` for no limit.
 
         Notes
         -----
-        Fills the initial empty SourceCatalog with forced measurement results.  Two steps must occur
-        before run() can be called:
-        - generateMeasCat() must be called to create the output measCat argument.
-        - Footprints appropriate for the forced sources must be attached to the measCat records. The
-        attachTransformedFootprints() method can be used to do this, but this degrades HeavyFootprints
-        to regular Footprints, leading to non-deblended measurement, so most callers should provide
-        Footprints some other way.  Typically, calling code will have access to information that will
-        allow them to provide HeavyFootprints - for instance,
-        ForcedPhotCoaddTask uses the HeavyFootprints from deblending run in the same
-        band just before non-forced is run measurement in that band.
+        Fills the initial empty `~lsst.afw.table.SourceCatalog` with forced
+        measurement results.  Two steps must occur before `run` can be called:
 
+        - `generateMeasCat` must be called to create the output ``measCat``
+          argument.
+        - `~lsst.afw.detection.Footprint`\s appropriate for the forced sources
+          must be attached to the ``measCat`` records. The
+          `attachTransformedFootprints` method can be used to do this, but
+          this degrades "heavy" (i.e., including pixel values)
+          `~lsst.afw.detection.Footprint`\s to regular
+          `~lsst.afw.detection.Footprint`\s, leading to non-deblended
+          measurement, so most callers should provide
+          `~lsst.afw.detection.Footprint`\s some other way. Typically, calling
+          code will have access to information that will allow them to provide
+          heavy footprints - for instance, `ForcedPhotCoaddTask` uses the
+          heavy footprints from deblending run in the same band just before
+          non-forced is run measurement in that band.
         """
-        # First check that the reference catalog does not contain any children for which
-        # any member of their parent chain is not within the list.  This can occur at
-        # boundaries when the parent is outside and one of the children is within.
-        # Currently, the parent chain is always only one deep, but just in case, this
-        # code checks for any case where when the parent chain to a child's topmost
-        # parent is broken and raises an exception if it occurs.
+        # First check that the reference catalog does not contain any children
+        # for which any member of their parent chain is not within the list.
+        # This can occur at boundaries when the parent is outside and one of
+        # the children is within.  Currently, the parent chain is always only
+        # one deep, but just in case, this code checks for any case where when
+        # the parent chain to a child's topmost parent is broken and raises an
+        # exception if it occurs.
         #
-        # I.e. this code checks that this precondition is satisfied by whatever reference
-        # catalog provider is being paired with it.
+        # I.e. this code checks that this precondition is satisfied by
+        # whatever reference catalog provider is being paired with it.
         refCatIdDict = {ref.getId(): ref.getParent() for ref in refCat}
         for ref in refCat:
             refId = ref.getId()
@@ -398,30 +385,31 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                     self.doMeasurement(plugin, measRecord, exposure, refRecord, refWcs)
 
     def generateMeasCat(self, exposure, refCat, refWcs, idFactory=None):
-        """Initialize an output SourceCatalog using information from the reference catalog.
+        """Initialize an output catalog from the reference catalog.
 
         Parameters
         ----------
-        exposure :
-            Exposure to be measured
-        refCat :
-            Sequence (not necessarily a SourceCatalog) of reference SourceRecords.
-        refWcs :
-            Wcs that defines the X,Y coordinate system of refCat
-        idFactory :
-            factory for creating IDs for sources
+        exposure : `lsst.afw.image.exposureF`
+            Image to be measured.
+        refCat : iterable of `lsst.afw.table.SourceRecord`
+            Catalog of reference sources.
+        refWcs : `lsst.afw.geom.SkyWcs`
+            Defines the X,Y coordinate system of ``refCat``.
+        idFactory : `lsst.afw.table.IdFactory`, optional
+            Factory for creating IDs for sources.
 
         Returns
         -------
         meascat : `lsst.afw.table.SourceCatalog`
-            Source catalog ready for measurement
+            Source catalog ready for measurement.
 
         Notes
         -----
-        This generates a new blank SourceRecord for each record in refCat.  Note that this
-        method does not attach any Footprints.  Doing so is up to the caller (who may
-        call attachedTransformedFootprints or define their own method - see run() for more
-        information).
+        This generates a new blank `~lsst.afw.table.SourceRecord` for each
+        record in ``refCat``. Note that this method does not attach any
+        `~lsst.afw.detection.Footprint`\s.  Doing so is up to the caller (who
+        may call `attachedTransformedFootprints` or define their own method -
+        see `run` for more information).
         """
         if idFactory is None:
             idFactory = lsst.afw.table.IdFactory.makeSimple()
@@ -436,22 +424,26 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         return measCat
 
     def attachTransformedFootprints(self, sources, refCat, exposure, refWcs):
-        """Default implementation for attaching Footprints to blank sources prior to measurement
+        """Attach Footprints to blank sources prior to measurement.
 
         Notes
         -----
-        Footprints for forced photometry must be in the pixel coordinate system of the image being
-        measured, while the actual detections may start out in a different coordinate system.
-        This default implementation transforms the Footprints from the reference catalog from the
-        refWcs to the exposure's Wcs, which downgrades HeavyFootprints into regular Footprints,
+        `~lsst.afw.detection.Footprint`\s for forced photometry must be in the
+        pixel coordinate system of the image being measured, while the actual
+        detections may start out in a different coordinate system. This
+        default implementation transforms the Footprints from the reference
+        catalog from the WCS to the exposure's WCS, which downgrades
+        ``HeavyFootprint``\s into regular `~lsst.afw.detection.Footprint`\s,
         destroying deblend information.
 
-        Note that ForcedPhotImageTask delegates to this method in its own attachFootprints method.
-        attachFootprints can then be overridden by its subclasses to define how their Footprints
-        should be generated.
+        Note that `ForcedPhotImageTask` delegates to this method in its own
+        `~ForcedPhotImageTask.attachFootprints` method.  This method can be
+        overridden by its subclasses to define how their
+        `~lsst.afw.detection.Footprint`\ s should be generated.
 
-        See the documentation for run() for information about the relationships between run(),
-        generateMeasCat(), and attachTransformedFootprints().
+        See the documentation for `run` for information about the
+        relationships between `run`, `generateMeasCat`, and
+        `attachTransformedFootprints`.
         """
         exposureWcs = exposure.getWcs()
         region = exposure.getBBox(lsst.afw.image.PARENT)
