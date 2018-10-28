@@ -32,6 +32,8 @@ __all__ = ("NoiseReplacerConfig", "NoiseReplacer", "DummyNoiseReplacer")
 
 
 class NoiseReplacerConfig(lsst.pex.config.Config):
+    """Noise replacement configuration."""
+
     noiseSource = lsst.pex.config.ChoiceField(
         doc='How to choose mean and variance of the Gaussian noise we generate?',
         dtype=str,
