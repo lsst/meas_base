@@ -8,6 +8,7 @@ _build.*
 *.os
 *.pyc
 *~
+*.swp
 core.*
 .sconf_temp
 .sconsign.dblite
