@@ -16,19 +16,12 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
 # GNU General Public License for more details.
 #
-<<<<<<< HEAD
 # You should have received a copy of the LSST License Statement and
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-"""Definition and registration of classification plugins."""
-=======
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 """Definition and registration of classification plugins.
 """
->>>>>>> a6f0034... fixup! Tidy up classification.py.
 
 import numpy as np
 
@@ -42,12 +35,9 @@ __all__ = (
 
 
 class CatalogCalculationClassificationConfig(CatalogCalculationPluginConfig):
-<<<<<<< HEAD
-=======
     """Configuration for catalog classification plugin.
     """
 
->>>>>>> a6f0034... fixup! Tidy up classification.py.
     fluxRatio = lsst.pex.config.Field(dtype=float, default=.925, optional=True,
                                       doc="critical ratio of model to psf flux")
     modelErrFactor = lsst.pex.config.Field(dtype=float, default=0.0, optional=True,

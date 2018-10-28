@@ -67,3 +67,4 @@ Python API reference
 .. automodapi:: lsst.meas.base.applyApCorr
 .. automodapi:: lsst.meas.base.baseMeasurement
 .. automodapi:: lsst.meas.base.catalogCalculation
+.. automodapi:: lsst.meas.base.classification
