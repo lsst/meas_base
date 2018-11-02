@@ -51,16 +51,17 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
 
     def setUp(self):
         schema = afwTable.SourceTable.makeMinimalSchema()
-        name = "test"
-        addApCorrName(name)
-        schema.addField(name + "_instFlux", type=np.float64)
-        schema.addField(name + "_instFluxErr", type=np.float64)
-        schema.addField(name + "_flag", type=np.float64)
-        schema.addField(name + "_Centroid_x", type=np.float64)
-        schema.addField(name + "_Centroid_y", type=np.float64)
-        schema.getAliasMap().set('slot_Centroid', name + '_Centroid')
+        names = ["test2", "test"]
+        for name in names:
+            addApCorrName(name)
+            schema.addField(name + "_instFlux", type=np.float64)
+            schema.addField(name + "_instFluxErr", type=np.float64)
+            schema.addField(name + "_flag", type=np.float64)
+            schema.addField(name + "_Centroid_x", type=np.float64)
+            schema.addField(name + "_Centroid_y", type=np.float64)
+            schema.getAliasMap().set('slot_Centroid', name + '_Centroid')
         self.ap_corr_task = applyApCorr.ApplyApCorrTask(schema=schema)
-        self.name = name
+        self.name = name   # just use 'test' prefix for most of the tests
         self.schema = schema
 
     def tearDown(self):
@@ -72,6 +73,8 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         self.assertIn(self.name + "_apCorr", self.schema.getNames())
         self.assertIn(self.name + "_apCorrErr", self.schema.getNames())
         self.assertIn(self.name + "_flag_apCorr", self.schema.getNames())
+        self.assertLess(self.schema.find("test_apCorr").key.getOffset(),
+                        self.schema.find("test2_apCorr").key.getOffset())
 
     def testSuccessUnflagged(self):
         # Check that the aperture correction flag is set to False if aperture correction was successfully run
