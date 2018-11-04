@@ -74,3 +74,4 @@ Python API reference
 .. automodapi:: lsst.meas.base.forcedPhotImage
 .. automodapi:: lsst.meas.base.references
 .. automodapi:: lsst.meas.base.measurementInvestigationLib
+.. automodapi:: lsst.meas.base.noiseReplacer
