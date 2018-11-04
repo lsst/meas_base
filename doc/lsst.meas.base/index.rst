@@ -73,3 +73,4 @@ Python API reference
 .. automodapi:: lsst.meas.base.forcedPhotCcd
 .. automodapi:: lsst.meas.base.forcedPhotImage
 .. automodapi:: lsst.meas.base.references
+.. automodapi:: lsst.meas.base.measurementInvestigationLib

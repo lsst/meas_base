@@ -29,25 +29,25 @@ from lsst.meas.base import SingleFrameMeasurementTask as SFMT  # noqa N814
 
 
 def rebuildNoiseReplacer(exposure, measCat):
-    """ Recreate NoiseReplacer used in measurement
+    """Recreate the `NoiseReplacer` used in measurement.
 
-    Given a measurement catalog and the exposure on which the measurements were
-    made, reconstruct the NoiseReplacer object that was used to mask out
-    sources during measurement.
+    Given a measurement catalog and the exposure on which the measurements
+    were made, reconstruct the `NoiseReplacer` object that was used to mask
+    out sources during measurement.
 
     Parameters
     ----------
-    exposure : lsst.awf.exposure.Exposure
-        The exposure on which measurements were made
+    exposure : `lsst.afw.exposure.Exposure`
+        The image on which measurements were made.
 
-    meaCat : lsst.afw.table.SourceCatalog
-        Catalog containing the outputs of measurements on each source
+    measCat : `lsst.afw.table.SourceCatalog`
+        Catalog containing the results measurements on each source.
 
     Returns
     -------
-    noiseReplacer : lsst.meas.base.NoiseReplacer
-        Object used to replace and or restore sources in the exposure with
-        deterministic noise
+    noiseReplacer : `NoiseReplacer`
+        Object used to replace and/or restore sources in the exposure with
+        deterministic noise.
     """
 
     algMetadata = measCat.getMetadata()
@@ -72,49 +72,49 @@ def rebuildNoiseReplacer(exposure, measCat):
 
 def makeRerunCatalog(schema, oldCatalog, idList, fields=None,
                      resetParents=True, addParents=False):
-    """ Creates a catalog prepopulated with ids
+    """Create a catalog prepopulated with IDs.
 
-    This function is used to generate a SourceCatalog containing blank records
-    with Ids specified in the idList parameter
+    This function is used to generate a `~lsst.afw.table.SourceCatalog`
+    containing blank records with IDs as specified in the ``idList``
+    parameter.
 
-    This function is primarily used when rerunning measurements on a footprint.
-    Specifying ids in a new measurement catalog which correspond to ids in an
-    old catalog makes comparing results much easier.
+    This function is primarily used when re-running measurements on a
+    particular footprint. Specifying IDs in the new measurement catalog which
+    correspond to IDs in the old catalog makes comparing results much easier.
 
-    The resetParents and addParents options are needed because
-    lsst.meas.base.SingleFrameMeasurementTask.runPlugins() will skip child
+    The ``resetParents`` and ``addParents`` options are needed because
+    `SingleFrameMeasurementTask.runPlugins` will skip child
     objects whose parents are not in the catalog.
 
     Parameters
     ----------
-    schema : lsst.afw.table.Schema
-        Schema used to describe the fields in the resulting SourceCatalog
+    schema : `lsst.afw.table.Schema`
+        Schema used to describe the fields in the resulting catalog.
 
-    oldCatalog : lsst.afw.table.SourceCatalog
+    oldCatalog : `lsst.afw.table.SourceCatalog`
         Catalog containing previous measurements.
 
-    idList : iterable
-        Python iterable whose values should be numbers corresponding to
-        measurement ids, ids must exist in the oldCatalog
+    idList : iterable of `int`
+        Iterable whose values should be numbers corresponding to measurement
+        IDs which exist in ``oldCatalog``.
 
-    fields : iterable
-        Python iterable whose entries should be strings corresponding to schema
-        keys that exist in both the old catalog and input schema. Fields listed
+    fields : iterable of `str`
+        Iterable whose entries should be strings corresponding to schema keys
+        that exist in both the old catalog and input schema. Fields listed
         will be copied from the old catalog into the new catalog.
 
-    resetParents: boolean
-        Flag to toggle whether child objects whose parents are not in the
-        idList should have their parents reset to zero.
+    resetParents : `bool`
+        If `True`, child objects whose parents are not in the ``idList``
+        will have their parents reset to zero.
 
-    addParents: boolean
-        Flag to toggle whether parents of child objects will be added to the
-        idList (if not already present).
+    addParents : `bool`
+        If `True`, parents of child objects will be added to ``idList`` if
+        they are not already present.
 
     Returns
     -------
-    measCat : lsst.afw.table.SourceCatalog
-        SourceCatalog prepopulated with entries corresponding to the ids
-        specified
+    measCat : `lsst.afw.table.SourceCatalog`
+        Catalog prepopulated with entries with the IDs specified.
     """
 
     if not isinstance(schema, Schema):
