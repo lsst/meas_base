@@ -60,34 +60,6 @@ class ApCorrInfo:
         Field name prefix for instFlux needing aperture correction; may be
         `None` if it is the same as ``model``
 
-    Attributes
-    ----------
-    name : `str`
-        Field name prefix for flux needing aperture correction
-    modelName : `str`
-        Field name for aperture correction model for flux
-    modelSigmaName : `str`
-        Field name for aperture correction model for fluxErr
-    doApCorrColumn : `bool`
-        Should we write the aperture correction values? (not if they're
-        already being written by a proxy)
-    instFluxName : `str`
-        Name of instFlux field
-    instFluxErrName : `str`
-        Name of instFlux sigma field
-    instFluxKey
-        Key to instFlux field
-    instFluxErrKey
-        Key to instFlux sigma field
-    fluxFlagKey
-        Key to flux flag field
-    apCorrKey
-        Key to new aperture correction field
-    apCorrErrKey
-        Key to new aperture correction sigma field
-    apCorrFlagKey
-        Key to new aperture correction flag field
-
     Notes
     -----
     The aperture correction can be derived from the meaasurements in the
@@ -96,6 +68,56 @@ class ApCorrInfo:
     the aperture correction values; in the second case (using a proxy),
     we will add an alias to the proxy's aperture correction values. In
     all cases, we add a flag.
+    """
+
+    name = None
+    """Field name prefix for flux needing aperture correction (`str`).
+    """
+
+    modelName = None
+    """Field name for aperture correction model for flux (`str`).
+    """
+
+    modelSigmaName = None
+    """Field name for aperture correction model for fluxErr (`str`).
+    """
+
+    doApCorrColumn = None
+    """Should we write the aperture correction values (`bool`)?
+
+    They should not be written if they're already being written by a proxy.
+    """
+
+    instFluxName = None
+    """Name of ``instFlux`` field (`str`).
+    """
+
+    instFluxErrName = None
+    """Name of ``instFlux`` sigma field (`str`).
+    """
+
+    instFluxKey = None
+    """Key to ``instFlux`` field (`lsst.afw.table.schema.Key`).
+    """
+
+    instFluxErrKey = None
+    """Key to ``instFlux`` sigma field (`lsst.afw.table.schema.Key`).
+    """
+
+    fluxFlagKey = None
+    """Key to the flux flag field (`lsst.afw.table.schema.Key`).
+    """
+
+    apCorrKey = None
+    """Key to new aperture correction field (`lsst.afw.table.schema.Key`).
+    """
+
+    apCorrErrKey = None
+    """Key to new aperture correction sigma field (`lsst.afw.table.schema.Key`).
+    """
+
+    apCorrFlagKey = None
+    """Key to new aperture correction flag field (`lsst.afw.table.schema.Key`).
     """
 
     def __init__(self, schema, model, name=None):

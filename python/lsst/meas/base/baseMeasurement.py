@@ -205,16 +205,6 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
     **kwds
         Additional arguments passed to `lsst.pipe.base.Task.__init__`.
 
-    Attributes
-    ----------
-    plugins : `PluginMap`
-        Initially empty, this will eventually be filled by subclasses until it
-        containsall active plugins to be invoked by `run`. This should be
-        considered read-only.
-    algMetadata : `lsst.daf.base.PropertyList`
-        Contains additional information about active plugins to be saved with
-        the output catalog. Will be filled by subclasses.
-
     Notes
     -----
     This base class for `SingleFrameMeasurementTask` and

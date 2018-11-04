@@ -38,19 +38,21 @@ class CatalogCalculationPlugin(BasePlugin):
         Plugin metadata that will be attached to the output catalog
     """
 
+    ConfigClass = CatalogCalculationPluginConfig  # documentation inherited
+
     registry = PluginRegistry(CatalogCalculationPluginConfig)
-    """List of available plugins (`PluginRegistry`).
+    """List of available plugins (`lsst.meas.base.PluginRegistry`).
     """
 
-    ConfigClass = CatalogCalculationPluginConfig
-
-    # This defines if the plugin operates on a single source at a time, or
-    # expects the whole catalog.  The value defaults to single for a single
-    # source, set to multi when the plugin expects the whole catalog. If The
-    # plugin is of type multi, the fail method should be implemented to accept
-    # the whole catalog. If the plugin is of type the fail method should
-    # accept a single source record.
     plugType = 'single'
+    """Does the plugin operate on a single source or the whole catalog (`str`)?
+
+    If the plugin operates on a single source at a time, this should be set to
+    ``"single"``; if it expects the whoe catalog, to ``"multi"``.  If the
+    plugin is of type ``"multi"``, the `fail` method must be implemented to
+    accept the whole catalog. If the plugin is of type ``"single"``, `fail`
+    should accept a single source record.
+    """
 
     def __init__(self, config, name, schema, metadata):
         BasePlugin.__init__(self, config, name)

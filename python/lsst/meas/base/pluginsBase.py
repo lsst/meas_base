@@ -51,6 +51,10 @@ class BasePlugin:
     APCORR_ORDER = 3.0
     DEFAULT_CATALOGCALCULATION = 4.0
 
+    ConfigClass = BasePluginConfig
+    """Plugin configuration information (`lsst.pex.config.Config`).
+    """
+
     @classmethod
     def getExecutionOrder(cls):
         """Sets the relative order of plugins (smaller numbers run first).
