@@ -43,19 +43,20 @@ __all__ = ("PerTractCcdDataIdContainer", "ForcedPhotCcdConfig", "ForcedPhotCcdTa
 
 
 class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
-    """A version of `lsst.pipe.base.DataIdContainer` that combines raw data IDs with a tract.
+    """A data ID container which combines raw data IDs with a tract.
 
     Notes
     -----
-    Required because we need to add "tract" to the raw data ID keys (defined as whatever we
-    use for 'src') when no tract is provided (so that the user is not required to know
-    which tracts are spanned by the raw data ID).
+    Required because we need to add "tract" to the raw data ID keys (defined as
+    whatever we use for ``src``) when no tract is provided (so that the user is
+    not required to know which tracts are spanned by the raw data ID).
 
-    This IdContainer assumes that a calexp is being measured using the detection information,
-    a set of reference catalogs, from the set of coadds which intersect with the calexp.
-    It needs the calexp id (e.g. visit, raft, sensor), but is also uses the tract to decide
-    what set of coadds to use.  The references from the tract whose patches intersect with
-    the calexp are used.
+    This subclass of `~lsst.pipe.base.DataIdContainer` assumes that a calexp is
+    being measured using the detection information, a set of reference
+    catalogs, from the set of coadds which intersect with the calexp.  It needs
+    the calexp id (e.g.  visit, raft, sensor), but is also uses the tract to
+    decide what set of coadds to use.  The references from the tract whose
+    patches intersect with the calexp are used.
     """
 
     def makeDataRefList(self, namespace):
@@ -106,20 +107,21 @@ class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
 
 
 def imageOverlapsTract(tract, imageWcs, imageBox):
-    """Return whether the image (specified by Wcs and bounding box) overlaps the tract
+    """Return whether the given bounding box overlaps the tract given a WCS.
 
     Parameters
     ----------
-    tract:
-        TractInfo specifying a tract
-    imageWcs:
-        Wcs for image
-    imageBox:
-        Bounding box for image
+    tract : `lsst.skymap.TractInfo`
+        TractInfo specifying a tract.
+    imageWcs : `lsst.afw.geom.SkyWcs`
+        World coordinate system for the image.
+    imageBox : `lsst.geom.Box2I`
+        Bounding box for the image.
 
     Returns
     -------
-    bool
+    overlap : `bool`
+        `True` if the bounding box overlaps the tract; `False` otherwise.
     """
     tractPoly = tract.getOuterSkyPolygon()
 
@@ -144,37 +146,39 @@ class ForcedPhotCcdConfig(ForcedPhotImageConfig):
         default=False
     )
 
-## @addtogroup LSST_task_documentation
-## @{
-## @page processForcedCcdTask
-## ForcedPhotCcdTask
-## @copybrief ForcedPhotCcdTask
-## @}
-
-
 class ForcedPhotCcdTask(ForcedPhotImageTask):
-    """A command-line driver for performing forced measurement on CCD images
+    """A command-line driver for performing forced measurement on CCD images.
 
     Notes
     -----
-    This task is a subclass of ForcedPhotImageTask which is specifically for doing forced
-    measurement on a single CCD exposure, using as a reference catalog the detections which
-    were made on overlapping coadds.
+    This task is a subclass of
+    :lsst-task:`lsst.meas.base.forcedPhotImage.ForcedPhotImageTask` which is
+    specifically for doing forced measurement on a single CCD exposure, using
+    as a reference catalog the detections which were made on overlapping
+    coadds.
 
-    The run method (inherited from ForcedPhotImageTask) takes a lsst.daf.persistence.ButlerDataRef
-    argument that corresponds to a single CCD.  This should contain the data ID keys that correspond to
-    the "forced_src" dataset (the output dataset for ForcedPhotCcdTask), which are typically all those
-    used to specify the "calexp" dataset (e.g. visit, raft, sensor for LSST data) as well as a coadd
-    tract.  The tract is used to look up the appropriate coadd measurement catalogs to use as references
-    (e.g. deepCoadd_src; see CoaddSrcReferencesTask for more information). While the tract must be given
-    as part of the dataRef, the patches are determined automatically from the bounding box and WCS of the
-    calexp to be measured, and the filter used to fetch references is set via config
-    (BaseReferencesConfig.filter).
+    The `run` method (inherited from `ForcedPhotImageTask`) takes a
+    `~lsst.daf.persistence.ButlerDataRef` argument that corresponds to a single
+    CCD. This should contain the data ID keys that correspond to the
+    ``forced_src`` dataset (the output dataset for this task), which are
+    typically all those used to specify the ``calexp`` dataset (``visit``,
+    ``raft``, ``sensor`` for LSST data) as well as a coadd tract. The tract is
+    used to look up the appropriate coadd measurement catalogs to use as
+    references (e.g. ``deepCoadd_src``; see
+    :lsst-task:`lsst.meas.base.references.CoaddSrcReferencesTask` for more
+    information). While the tract must be given as part of the dataRef, the
+    patches are determined automatically from the bounding box and WCS of the
+    calexp to be measured, and the filter used to fetch references is set via
+    the ``filter`` option in the configuration of
+    :lsst-task:`lsst.meas.base.references.BaseReferencesTask`).
 
-    In addition to the run method, ForcedPhotCcdTask overrides several methods of ForcedPhotImageTask
-    to specialize it for single-CCD processing, including makeIdFactory(), fetchReferences(), and
-    getExposure().  None of these should be called directly by the user, though it may be useful
-    to override them further in subclasses.
+    In addition to the `run` method, `ForcedPhotCcdTask` overrides several
+    methods of `ForcedPhotImageTask` to specialize it for single-CCD
+    processing, including `~ForcedPhotImageTask.makeIdFactory`,
+    `~ForcedPhotImageTask.fetchReferences`, and
+    `~ForcedPhotImageTask.getExposure`. None of these should be called
+    directly by the user, though it may be useful to override them further in
+    subclasses.
     """
 
     ConfigClass = ForcedPhotCcdConfig
@@ -183,15 +187,19 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
     dataPrefix = ""
 
     def makeIdFactory(self, dataRef):
-        """Create an object that generates globally unique source IDs from per-CCD IDs and the CCD ID.
+        """Create an object that generates globally unique source IDs.
+
+        Source IDs are created based on a per-CCD ID and the ID of the CCD
+        itself.
 
         Parameters
         ----------
-        dataRef :
-            Data reference from butler.  The "ccdExposureId_bits" and "ccdExposureId"
-            datasets are accessed.  The data ID must have the keys that correspond
-            to ccdExposureId, which is generally the same that correspond to "calexp"
-            (e.g. visit, raft, sensor for LSST data).
+        dataRef : `lsst.daf.persistence.ButlerDataRef`
+            Butler data reference. The ``ccdExposureId_bits`` and
+            ``ccdExposureId`` datasets are accessed. The data ID must have the
+            keys that correspond to ``ccdExposureId``, which are generally the
+            same as those that correspond to ``calexp`` (``visit``, ``raft``,
+            ``sensor`` for LSST data).
         """
         expBits = dataRef.get("ccdExposureId_bits")
         expId = int(dataRef.get("ccdExposureId"))
@@ -201,28 +209,30 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
         return int(dataRef.get("ccdExposureId", immediate=True))
 
     def fetchReferences(self, dataRef, exposure):
-        """Get sources that overlap the exposure
+        """Get sources that overlap the exposure.
 
         Parameters
         ----------
-        dataRef :
-            Data reference from butler corresponding to the image to be measured;
-            should have tract, patch, and filter keys.
+        dataRef : `lsst.daf.persistence.ButlerDataRef`
+            Butler data reference corresponding to the image to be measured;
+            should have ``tract``, ``patch``, and ``filter`` keys.
         exposure : `lsst.afw.image.Exposure`
-            lsst.afw.image.Exposure to be measured (used only to obtain a Wcs and
-            bounding box).
-
-        Notes
-        -----
-        The returned catalog is sorted by ID and guarantees that all included children have their
-        parent included and that all Footprints are valid.
-        All work is delegated to the references subtask; see CoaddSrcReferencesTask for information
-        about the default behavior.
+            The image to be measured (used only to obtain a WCS and bounding
+            box).
 
         Returns
         -------
-        lsst.afw.table.SourceCatalog
+        referencs : `lsst.afw.table.SourceCatalog`
             Catalog of sources that overlap the exposure
+
+        Notes
+        -----
+        The returned catalog is sorted by ID and guarantees that all included
+        children have their parent included and that all Footprints are valid.
+
+        All work is delegated to the references subtask; see
+        :lsst-task:`lsst.meas.base.references.CoaddSrcReferencesTask`
+        for information about the default behavior.
         """
         references = lsst.afw.table.SourceCatalog(self.references.schema)
         badParents = set()
@@ -242,14 +252,14 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
         return references
 
     def getExposure(self, dataRef):
-        """Read input exposure to measure
+        """Read input exposure for measurement.
 
         Parameters
         ----------
-        dataRef :
-            Data reference from butler.  Only the 'calexp' dataset is used,
-            unless config.doApplyUberCal is true, in which case the corresponding
-            meas_mosaic outputs are used as well.
+        dataRef : `lsst.daf.persistence.ButlerDataRef`
+            Butler data reference. Only the ``calexp`` dataset is used, unless
+            ``config.doApplyUberCal`` is `True`, in which case the
+            corresponding meas_mosaic outputs are used as well.
         """
         exposure = ForcedPhotImageTask.getExposure(self, dataRef)
         if not self.config.doApplyUberCal:
@@ -263,13 +273,11 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
         return exposure
 
     def _getConfigName(self):
-        """Return the name of the config dataset.  Forces config comparison from run-to-run
-        """
+        # Documented in superclass.
         return self.dataPrefix + "forcedPhotCcd_config"
 
     def _getMetadataName(self):
-        """Return the name of the metadata dataset.  Forced metadata to be saved
-        """
+        # Documented in superclass
         return self.dataPrefix + "forcedPhotCcd_metadata"
 
     @classmethod

@@ -32,6 +32,9 @@ __all__ = ("BaseReferencesTask", "CoaddSrcReferencesTask")
 
 
 class BaseReferencesConfig(lsst.pex.config.Config):
+    """Default configuration for reference source selection.
+    """
+
     removePatchOverlaps = lsst.pex.config.Field(
         doc="Only include reference sources for each patch that lie within the patch's inner bbox",
         dtype=bool,
@@ -45,134 +48,156 @@ class BaseReferencesConfig(lsst.pex.config.Config):
 
 
 class BaseReferencesTask(lsst.pipe.base.Task):
-    """Base class for forced photometry subtask that retrieves reference sources.
+    """Base class for forced photometry subtask that fetches reference sources.
 
     Parameters
     ----------
-    - schema :
-        the Schema of the reference catalog
-    - butler :
-        a butler that will allow the task to load its Schema from disk.
+    schema : `lsst.afw.table.Schema`, optional
+        The schema of the reference catalog.
+    butler : `lsst.daf.persistence.butler.Butler`, optional
+        A butler that will allow the task to load its schema from disk.
 
     Notes
     -----
-    At least one of these arguments must be present; if both are, schema takes precedence.
+    At least one of the ``schema`` and ``butler`` arguments must be present;
+    if both are, ``schema`` takes precedence.
 
-    BaseReferencesTask defines the required API for the references task, which includes:
+    ``BaseReferencesTask`` defines the required API for the references task,
+    which consists of:
 
-    - getSchema(butler)
-    - fetchInPatches(butler, tract, filter, patchList)
-    - fetchInBox(self, butler, tract, filter, bbox, wcs)
-    - the removePatchOverlaps config option
+    - ``getSchema(butler)``
+    - ``fetchInPatches(butler, tract, filter, patchList)``
+    - ``fetchInBox(self, butler, tract, filter, bbox, wcs)``
+    - the ``removePatchOverlaps`` config option
 
-    It also provides the subset() method, which may be of use to derived classes when
-    reimplementing fetchInBox.
+    It also provides the ``subset`` method, which may be of use to derived
+    classes when reimplementing ``fetchInBox``.
     """
 
     ConfigClass = BaseReferencesConfig
+    """Configuration class associated with this task (`lsst.pex.config.Config`).
+    """
 
     def __init__(self, butler=None, schema=None, **kwargs):
         lsst.pipe.base.Task.__init__(self, **kwargs)
 
     def getSchema(self, butler):
         """Return the schema for the reference sources.
+
+        Parameters
+        ----------
+        butler : `lsst.daf.persistence.butler.Butler`
+            Data butler from which the schema will be fetched.
+
+        Notes
+        -----
         Must be available even before any data has been processed.
         """
         raise NotImplementedError("BaseReferencesTask is pure abstract, and cannot be used directly.")
 
     def getWcs(self, dataRef):
-        """
-        Return the WCS for reference sources.  The given dataRef must include the tract in its dataId.
+        """Return the WCS for reference sources.
+
+        Parameters
+        ----------
+        dataRef : `lsst.daf.persistence.ButlerDataRef`
+            The data reference from which the WCS will be fetched. This must
+            include the tract in its dataId.
         """
         raise NotImplementedError("BaseReferencesTask is pure abstract, and cannot be used directly.")
 
     def fetchInBox(self, dataRef, bbox, wcs):
-        """Return reference sources that overlap a region defined by a pixel-coordinate bounding box
-        and corresponding Wcs.
+        """Return reference sources within a given bounding box.
+
+        Reference sources are selected if they overlap a region defined by a
+        pixel-coordinate bounding box and corresponding WCS.
 
         Parameters
         ----------
-        dataRef :
-            ButlerDataRef; the implied data ID must contain the 'tract' key.
-        bbox :
-            a geom.Box2I or Box2D that defines the region in pixel coordinates
-        wcs :
-            afw.image.Wcs that maps the bbox to sky coordinates
+        dataRef : `lsst.daf.persistence.ButlerDataRef`
+            Butler data reference. The implied data ID must contain the
+            ``tract`` key.
+        bbox : `lsst.afw.geom.Box2I` or `lsst.afw.geom.Box2D`
+            Defines the selection region in pixel coordinates.
+        wcs : `lsst.afw.image.SkyWcs`
+            Maps ``bbox`` to sky coordinates.
 
         Returns
         -------
-        skyMap :
-        an iterable of reference sources
+        sources : iterable of `~lsst.afw.table.SourceRecord`
+            Reference sources. May be any Python iterable, including a lazy
+            iterator.
 
         Notes
         -----
-        It is not required that the returned object be a SourceCatalog; it may be any Python iterable
-        containing SourceRecords (including a lazy iterator).
-
         The returned set of sources should be complete and close to minimal.
         """
         raise NotImplementedError("BaseReferencesTask is pure abstract, and cannot be used directly.")
 
     def fetchInPatches(self, dataRef, patchList):
-        """Return reference sources that overlap a region defined by one or more SkyMap patches.
+        """Return reference sources within one or more patches.
 
         Parameters
         ----------
-        dataRef :
-            ButlerDataRef; the implied data ID must contain the 'tract' key.
-        patchList :
-            list of skymap.PatchInfo instances for which to fetch reference sources
+        dataRef : `lsst.daf.persistence.ButlerDataRef`
+            Butler data reference. The implied data ID must contain the
+            ``tract`` key.
+        patchList : `list` of `lsst.skymap.PatchInfo`
+            Patches for which to fetch reference sources.
 
         Returns
         -------
-        skyMap :
-        an iterable of reference sources
+        sources : iterable of `~lsst.afw.table.SourceRecord`
+            Reference sources. May be any Python iterable, including a lazy
+            iterator.
 
         Notes
         -----
-        It is not required that the returned object be a SourceCatalog; it may be any Python sequence
-        containing SourceRecords (including a lazy iterator).
+        The returned set of sources should be complete and close to minimal.
 
-        The returned set of sources should be complete and close to minimal.  If
-        config.removePatchOverlaps is True, only sources within each patch's "inner" bounding box
-        should be returned.
+        If ``config.removePatchOverlaps`` is `True`, only sources within each
+        patch's "inner" bounding box should be returned.
         """
         raise NotImplementedError("BaseReferencesTask is pure abstract, and cannot be used directly.")
 
     def subset(self, sources, bbox, wcs):
-        """Filter sources to contain only those within the given box, defined in the coordinate system
-        defined by the given Wcs.
+        """Filter a list of sources to only those within the bounding box.
 
         Parameters
         ----------
-        sources :
-            input iterable of SourceRecords
-        bbox :
-            bounding box with which to filter reference sources (Box2I or Box2D)
-        wcs :
-            afw.image.Wcs that defines the coordinate system of bbox
+        sources : iterable of `~lsst.afw.table.SourceRecord`
+            Reference sources. May be any Python iterable, including a lazy
+            iterator.
+        bbox : `lsst.afw.geom.Box2I` or `lsst.afw.geom.Box2D`
+            Defines the selection region.
+        wcs : `lsst.afw.image.SkyWcs`
+            Maps ``bbox`` to sky coordinates.
 
         Returns
         -------
-        skyMap :
-        an iterable of filtered reference sources
+        sources : iterable of `~lsst.afw.table.SourceRecord`
+            Filtered sources. May be any Python iterable, including a lazy
+            iterator.
 
         Notes
         -----
-        Instead of filtering sources directly via their positions, we filter based on the positions
-        of parent objects, then include or discard all children based on their parent's status.  This
-        is necessary to support ReplaceWithNoise in measurement, which requires all child sources have
-        their parent present.
+        Instead of filtering sources directly via their positions, we filter
+        based on the positions of parent objects, then include or discard all
+        children based on their parent's status. This is necessary to support
+        replacement with noise in measurement, which requires all child
+        sources have their parent present.
 
-        This is not a part of the required BaseReferencesTask interface; it's a convenience function
-        used in implementing fetchInBox that may be of use to subclasses.
+        This is not a part of the required `BaseReferencesTask` interface;
+        it's a convenience function used in implementing `fetchInBox` that may
+        be of use to subclasses.
         """
         boxD = lsst.geom.Box2D(bbox)
-        # We're passed an arbitrary iterable, but we need a catalog so we can iterate
-        # over parents and then children.
+        # We're passed an arbitrary iterable, but we need a catalog so we can
+        # iterate over parents and then children.
         catalog = lsst.afw.table.SourceCatalog(self.schema)
         catalog.extend(sources)
-        # catalog must be sorted by parent ID for lsst.afw.table.getChildren to work
+        # catalog must be sorted by parent ID for lsst.afw.table.getChildren
+        # to work
         catalog.sort(lsst.afw.table.SourceTable.getParentKey())
         # Iterate over objects that have no parent.
         parentSources = catalog.getChildren(0)
@@ -186,6 +211,9 @@ class BaseReferencesTask(lsst.pipe.base.Task):
 
 
 class CoaddSrcReferencesConfig(BaseReferencesTask.ConfigClass):
+    """Default configuration for coadd reference source selection.
+    """
+
     coaddName = lsst.pex.config.Field(
         doc="Coadd name: typically one of deep or goodSeeing.",
         dtype=str,
@@ -207,20 +235,33 @@ class CoaddSrcReferencesConfig(BaseReferencesTask.ConfigClass):
 
 
 class CoaddSrcReferencesTask(BaseReferencesTask):
-    """A references task implementation that loads the coadd_datasetSuffix dataset directly from
-    disk using the butler.
+    """Select reference sources by loading the “coadd source” dataset directly.
+
+    The name of the dataset to read is generated by appending the
+    `datasetSuffix` attribute to the string ``Coadd_``. The dataset is then
+    read directly from disk using the Butler.
 
     Parameters
     ----------
-    - schema :
-        the schema of the detection catalogs used as input to this one
-    - butler :
-        a butler used to read the input schema from disk, if schema is None
-        The task will set its own self.schema attribute to the schema of the output merged catalog.
+    schema : `lsst.afw.table.Schema`, optional
+        The schema of the detection catalogs used as input to this one.
+    butler : `lsst.daf.persistence.butler.Butler`, optional
+        A Butler used to read the input schema from disk. Required if
+        ``schema`` is `None`.
+
+    Notes
+    -----
+    The task will set its own ``self.schema`` attribute to the schema of the
+    output merged catalog.
     """
 
     ConfigClass = CoaddSrcReferencesConfig
-    datasetSuffix = "src"  # Suffix to add to "Coadd_" for dataset name
+    """Configuration class associated with this task (`lsst.pex.config.Config`).
+    """
+
+    datasetSuffix = "src"
+    """Suffix to append to ``Coadd_`` to generate the dataset name (`str`).
+    """
 
     def __init__(self, butler=None, schema=None, **kwargs):
         BaseReferencesTask.__init__(self, butler=butler, schema=schema, **kwargs)
@@ -231,17 +272,37 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
         self.schema = schema
 
     def getWcs(self, dataRef):
-        """Return the WCS for reference sources.  The given dataRef must include the tract in its dataId.
+        """Return the WCS for reference sources.
+
+        Parameters
+        ----------
+        dataRef : `lsst.daf.persistence.ButlerDataRef`
+            Butler data reference. Must includ the trac in its dataId.
         """
         skyMap = dataRef.get(self.config.coaddName + "Coadd_skyMap", immediate=True)
         return skyMap[dataRef.dataId["tract"]].getWcs()
 
     def fetchInPatches(self, dataRef, patchList):
-        """
-        An implementation of BaseReferencesTask.fetchInPatches that loads 'coadd_' + datasetSuffix
-        catalogs using the butler.
+        """Fetch the source catalog using the Butler.
 
-        The given dataRef must include the tract in its dataId.
+        Parameters
+        ----------
+        dataRef : `lsst.daf.persistence.ButlerDataRef`
+            Butler data reference. The implied data ID must contain the
+            ``tract`` key.
+        patchList : `list` of `lsst.skymap.PatchInfo`
+            Patches for which to fetch reference sources.
+
+        Returns
+        -------
+        sources : iterable of `~lsst.afw.table.SourceRecord`
+            Reference sources. May be any Python iterable, including a lazy
+            iterator.
+
+        Notes
+        -----
+        An implementation of `BaseReferencesTask.fetchInPatches` that loads
+        ``Coadd_`` + `datasetSuffix` catalogs using the butler.
         """
         dataset = "{}Coadd_{}".format(self.config.coaddName, self.datasetSuffix)
         tract = dataRef.dataId["tract"]
@@ -267,25 +328,29 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
                     yield source
 
     def fetchInBox(self, dataRef, bbox, wcs, pad=0):
-        """Return reference sources that overlap a region defined by a pixel-coordinate bounding box
-        and corresponding Wcs.
+        """Return reference sources within a given bounding box.
+
+        Reference sources are selected if they overlap a region defined by a
+        pixel-coordinate bounding box and corresponding WCS.
 
         Parameters
         ----------
-        dataRef :
-            ButlerDataRef; the implied data ID must contain the 'tract' key.
-        bbox :
-            a geom.Box2I or Box2D that defines the region in pixel coordinates
-        wcs :
-            afw.image.Wcs that maps the bbox to sky coordinates
-        pad :
+        dataRef : `lsst.daf.persistence.ButlerDataRef`
+            Butler data reference. The implied data ID must contain the
+            ``tract`` key.
+        bbox : `lsst.afw.geom.Box2I` or `lsst.afw.geom.Box2D`
+            Defines the selection region in pixel coordinates.
+        wcs : `lsst.afw.image.SkyWcs`
+            Maps ``bbox`` to sky coordinates.
+        pad : `int`
             a buffer to grow the bounding box by after catalogs have been loaded, but
             before filtering them to include just the given bounding box.
 
         Returns
         -------
-        skyMap :
-            an iterable of reference sources
+        sources : iterable of `~lsst.afw.table.SourceRecord`
+            Reference sources. May be any Python iterable, including a lazy
+            iterator.
         """
         skyMap = dataRef.get(self.config.coaddName + "Coadd_skyMap", immediate=True)
         tract = skyMap[dataRef.dataId["tract"]]
@@ -301,6 +366,8 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
 
 
 class MultiBandReferencesConfig(CoaddSrcReferencesTask.ConfigClass):
+    """Default configuration for multi-band reference source selection.
+    """
 
     def validate(self):
         if self.filter is not None:
@@ -313,6 +380,8 @@ class MultiBandReferencesConfig(CoaddSrcReferencesTask.ConfigClass):
 
 
 class MultiBandReferencesTask(CoaddSrcReferencesTask):
-    """Loads references from the multiband processing scheme"""
+    """Loads references from the multi-band processing scheme.
+    """
+
     ConfigClass = MultiBandReferencesConfig
-    datasetSuffix = "ref"
+    datasetSuffix = "ref"  # Documented in superclass
