@@ -86,4 +86,5 @@ Python API reference
    :skip: SingleFrameInputCountPlugin
    :skip: ForcedInputCountPlugin
 
+.. automodapi:: lsst.meas.base.pluginsBase
 .. automodapi:: lsst.meas.base.references
