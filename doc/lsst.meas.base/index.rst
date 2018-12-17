@@ -56,6 +56,7 @@ Python API reference
 ..    “actually” lsst.afw.image.calib.Calib). This causes the Sphinx build to
 ..    fail, at least when executed standalone.
 ..
+
 .. .. automodapi:: lsst.meas.base
 ..    :skip: Calib
 ..    :skip: FatalAlgorithmError
@@ -75,4 +76,14 @@ Python API reference
 .. automodapi:: lsst.meas.base.measurementInvestigationLib
 .. automodapi:: lsst.meas.base.noiseReplacer
 .. automodapi:: lsst.meas.base.pluginRegistry
+
+.. The skips below are necessary to prevent a build failure when building
+   module-by-module, but not when building everything at once.
+
+.. automodapi:: lsst.meas.base.plugins
+   :skip: SingleFrameVariancePlugin
+   :skip: ForcedVariancePlugin
+   :skip: SingleFrameInputCountPlugin
+   :skip: ForcedInputCountPlugin
+
 .. automodapi:: lsst.meas.base.references
