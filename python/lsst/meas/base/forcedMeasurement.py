@@ -261,7 +261,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.schema.checkUnits(parse_strict=self.config.checkUnitsParseStrict)
 
     def run(self, measCat, exposure, refCat, refWcs, exposureId=None, beginOrder=None, endOrder=None):
-        """Perform forced measurement.
+        r"""Perform forced measurement.
 
         Parameters
         ----------
@@ -296,7 +296,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
         - `generateMeasCat` must be called to create the output ``measCat``
           argument.
-        - `~lsst.afw.detection.Footprint`\s appropriate for the forced sources
+        - `~lsst.afw.detection.Footprint`\ s appropriate for the forced sources
           must be attached to the ``measCat`` records. The
           `attachTransformedFootprints` method can be used to do this, but
           this degrades "heavy" (i.e., including pixel values)
@@ -385,7 +385,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                     self.doMeasurement(plugin, measRecord, exposure, refRecord, refWcs)
 
     def generateMeasCat(self, exposure, refCat, refWcs, idFactory=None):
-        """Initialize an output catalog from the reference catalog.
+        r"""Initialize an output catalog from the reference catalog.
 
         Parameters
         ----------
@@ -407,7 +407,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         -----
         This generates a new blank `~lsst.afw.table.SourceRecord` for each
         record in ``refCat``. Note that this method does not attach any
-        `~lsst.afw.detection.Footprint`\s.  Doing so is up to the caller (who
+        `~lsst.afw.detection.Footprint`\ s.  Doing so is up to the caller (who
         may call `attachedTransformedFootprints` or define their own method -
         see `run` for more information).
         """
@@ -424,7 +424,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         return measCat
 
     def attachTransformedFootprints(self, sources, refCat, exposure, refWcs):
-        """Attach Footprints to blank sources prior to measurement.
+        r"""Attach Footprints to blank sources prior to measurement.
 
         Notes
         -----
@@ -439,7 +439,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         Note that `ForcedPhotImageTask` delegates to this method in its own
         `~ForcedPhotImageTask.attachFootprints` method.  This method can be
         overridden by its subclasses to define how their
-        `~lsst.afw.detection.Footprint`\ s should be generated.
+        `~lsst.afw.detection.Footprint`\s should be generated.
 
         See the documentation for `run` for information about the
         relationships between `run`, `generateMeasCat`, and

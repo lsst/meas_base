@@ -146,6 +146,7 @@ class ForcedPhotCcdConfig(ForcedPhotImageConfig):
         default=False
     )
 
+
 class ForcedPhotCcdTask(ForcedPhotImageTask):
     """A command-line driver for performing forced measurement on CCD images.
 

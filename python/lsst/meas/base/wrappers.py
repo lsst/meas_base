@@ -101,7 +101,7 @@ def wrapAlgorithmControl(Base, Control, module=2, hasMeasureN=False):
 def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=None,
                   ConfigClass=None, TransformClass=None, doRegister=True, shouldApCorr=False,
                   apCorrList=(), hasLogName=False, **kwds):
-    """Wrap a C++ Algorithm class into a Python Plugin class.
+    r"""Wrap a C++ Algorithm class into a Python Plugin class.
 
     Parameters
     ----------
@@ -191,7 +191,7 @@ def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=No
 
 def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False, hasMeasureN=False,
                              hasLogName=False, **kwds):
-    """Wrap a C++ SingleFrameAlgorithm class into a Python SingleFramePlugin class.
+    r"""Wrap a C++ SingleFrameAlgorithm class into a Python SingleFramePlugin class.
 
     AlgClass :
         Swigged C++ Algorithm class to convert; must be a subclass of
@@ -284,7 +284,7 @@ def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=
 
 def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False,
                         hasMeasureN=False, needsSchemaOnly=False, hasLogName=False, **kwds):
-    """Wrap a C++ ForcedAlgorithm class into a Python ForcedPlugin class.
+    r"""Wrap a C++ ForcedAlgorithm class into a Python ForcedPlugin class.
 
     Parameters
     ----------
@@ -403,7 +403,7 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
 
 def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False, hasMeasureN=False,
                         hasLogName=False, **kwds):
-    """Wrap a C++ SimpleAlgorithm class into both a Python SingleFramePlugin and ForcedPlugin classes
+    r"""Wrap a C++ SimpleAlgorithm class into both a Python SingleFramePlugin and ForcedPlugin classes
 
     AlgClass :
         Swigged C++ Algorithm class to convert; must be a subclass of

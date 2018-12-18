@@ -232,22 +232,22 @@ class ForcedPhotImageTask(lsst.pipe.base.CmdLineTask):
         raise NotImplementedError()
 
     def attachFootprints(self, sources, refCat, exposure, refWcs, dataRef):
-        """Attach footprints to blank sources prior to measurements.
+        r"""Attach footprints to blank sources prior to measurements.
 
         Notes
         -----
-        `~lsst.afw.detection.Footprint`\s for forced photometry must be in the
+        `~lsst.afw.detection.Footprint`\ s for forced photometry must be in the
         pixel coordinate system of the image being measured, while the actual
         detections may start out in a different coordinate system.
 
         Subclasses of this class must implement this method to define how
-        those `~lsst.afw.detection.Footprint`\s should be generated.
+        those `~lsst.afw.detection.Footprint`\ s should be generated.
 
         This default implementation transforms the
-        `~lsst.afw.detection.Footprint`\s from the reference catalog from the
+        `~lsst.afw.detection.Footprint`\ s from the reference catalog from the
         reference WCS to the exposure's WcS, which downgrades
-        `lsst.afw.detection.heavyFootprint.HeavyFootprint`\s into regular
-        `~lsst.afw.detection.Footprint`\s, destroying deblend information.
+        `lsst.afw.detection.heavyFootprint.HeavyFootprint`\ s into regular
+        `~lsst.afw.detection.Footprint`\ s, destroying deblend information.
         """
         return self.measurement.attachTransformedFootprints(sources, refCat, exposure, refWcs)
 

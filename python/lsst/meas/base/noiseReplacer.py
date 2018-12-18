@@ -57,7 +57,7 @@ class NoiseReplacerConfig(lsst.pex.config.Config):
 
 
 class NoiseReplacer:
-    """Replace sources with noise during measurement.
+    r"""Replace sources with noise during measurement.
 
     Parameters
     ----------
@@ -84,10 +84,10 @@ class NoiseReplacer:
     When measuring a source (or the children associated with a parent source),
     this class is used to replace its neighbors with noise, using the
     deblender's definition of the sources as stored in
-    `~lsst.afw.detection.heavyFootprint.HeavyFootprint`\s attached to the
-    `~lsst.afw.table.SourceRecord`\s.  The algorithm works as follows:
+    `~lsst.afw.detection.heavyFootprint.HeavyFootprint`\ s attached to the
+    `~lsst.afw.table.SourceRecord`\ s.  The algorithm works as follows:
 
-    #. All pixels in the source `~lsst.afw.detection.Footprint`\s are replaced
+    #. All pixels in the source `~lsst.afw.detection.Footprint`\ s are replaced
        with artificially generated noise (in `NoiseReplacer.__init__`).
     #. Before each source is measured, we restore the original pixel data by
        inserting that source's
@@ -105,10 +105,10 @@ class NoiseReplacer:
     exposure, not an entire processing run.
 
     When processing the ``footprints`` parameter, this routine should create
-    `~lsst.afw.detection.heavyFootprint.HeavyFootprint`\s for any non-Heavy
-    `~lsst.afw.detection.Footprint`\s, and replace them in the dictionary. It
+    `~lsst.afw.detection.heavyFootprint.HeavyFootprint`\ s for any non-Heavy
+    `~lsst.afw.detection.Footprint`\ s, and replace them in the dictionary. It
     should then create a dict of
-    `~lsst.afw.detection.heavyFootprint.HeavyFootprint`\s containing noise,
+    `~lsst.afw.detection.heavyFootprint.HeavyFootprint`\ s containing noise,
     but only for parent objects, then replace all sources with noise. This
     should ignore any footprints that lay outside the bounding box of the
     exposure, and clip those that lie on the border.
@@ -404,10 +404,10 @@ class NoiseReplacerList(list):
 
 
 class NoiseGenerator:
-    """Base class for noise generators.
+    r"""Base class for noise generators.
 
     Derived classes produce
-    `~lsst.afw.detection.heavyFootprint.HeavyFootprint`\s filled with noise
+    `~lsst.afw.detection.heavyFootprint.HeavyFootprint`\ s filled with noise
     generated in various ways.
 
     Notes

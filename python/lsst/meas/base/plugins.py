@@ -317,6 +317,7 @@ ForcedVariancePlugin = VariancePlugin.makeForcedPlugin("base_Variance")
 """Forced version of `VariancePlugin`.
 """
 
+
 class InputCountConfig(BaseMeasurementPluginConfig):
     """Configuration for the input image counting plugin.
     """
