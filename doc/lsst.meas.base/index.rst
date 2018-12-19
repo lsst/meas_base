@@ -90,3 +90,4 @@ Python API reference
 .. automodapi:: lsst.meas.base.references
 .. automodapi:: lsst.meas.base.tests
 .. automodapi:: lsst.meas.base.transforms
+.. automodapi:: lsst.meas.base.wrappers

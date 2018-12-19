@@ -1,4 +1,3 @@
-
 import lsst.pex.config
 from .pluginsBase import BasePlugin
 from .pluginRegistry import generateAlgorithmName, register
@@ -6,8 +5,8 @@ from .apCorrRegistry import addApCorrName
 from .sfm import SingleFramePlugin, SingleFramePluginConfig
 from .forcedMeasurement import ForcedPlugin, ForcedPluginConfig
 
-__all__ = ("wrapSingleFrameAlgorithm", "wrapForcedAlgorithm", "wrapSimpleAlgorithm", "wrapTransform",
-           "GenericPlugin")
+__all__ = ("wrapSingleFrameAlgorithm", "wrapForcedAlgorithm", "wrapSimpleAlgorithm",
+           "wrapAlgorithm", "wrapAlgorithmControl", "wrapTransform", "GenericPlugin")
 
 
 class WrappedSingleFramePlugin(SingleFramePlugin):
@@ -49,41 +48,42 @@ class WrappedForcedPlugin(ForcedPlugin):
 
 
 def wrapAlgorithmControl(Base, Control, module=2, hasMeasureN=False):
-    """Wrap a C++ algorithm's control class into a Python Config class.
+    """Wrap a C++ algorithm's control class into a Python config class.
 
     Parameters
     ----------
-    Base :
-        Base class for the returned ConfigClass; one of SingleFramePluginConfig or
-        ForcedPluginConfig
-    Control :
-        Control class to be wrapped (a Swigged C++ class)
-    module :
-        Either a module object, a string specifying the name of the module, or an
-        integer specifying how far back in the stack to look for the module to use:
-        0 is pex.config.wrap, 1 is lsst.meas.base.wrappers, 2 is the immediate
-        caller, etc.  This will be used to set __module__ for the new config class,
-        and the class will also be added to the module.  The default is to use the
+    Base : `SingleFramePluginConfig` or `ForcedPluginConfig`
+        Base class for the returned config.
+    Control : pybind11-wrapped version of a C++ class.
+        Control class to be wrapped.
+    module : module, `str` or `int`; optional
+        Either a module object, a string specifying the name of the module, or
+        an integer specifying how far back in the stack to look for the module
+        to use: ``0`` is `lsst.pex.config.wrap`, ``1`` is
+        `lsst.meas.base.wrappers`, ``2`` is the immediate caller, etc.  This
+        will be used to set ``__module__`` for the new config class, and the
+        class will also be added to the module.  The default is to use the
         callers' module.
-    hasMeasureN :
+    hasMeasureN : `bool`, optional
         Whether the plugin supports fitting multiple objects at once (if so, a
         config option to enable/disable this will be added).
 
     Returns
     -------
     ConfigClass : `lsst.pex.config.Config`
-    a new subclass of lsst.pex.config.Config
+        A new subclass of lsst.pex.config.Config.
 
     Notes
     -----
-    This function is generally only called by wrapAlgorithm; it is unlikely users will have to call it
-    directly.
+    This function is generally only called by `wrapAlgorithm`; it is unlikely
+    users will have to call it directly.
     """
     if hasMeasureN:
-        # We need to add a Config field to enable multi-object measurement, to replace
-        # the simple bool class attribute that's on the base class.  To do that, we
-        # create the Config class dynamically here, then call makeControlClass to finish
-        # it off by adding fields from the control object.
+        # We need to add a Config field to enable multi-object measurement, to
+        # replace the simple bool class attribute that's on the base class.
+        # To do that, we create the Config class dynamically here, then call
+        # makeControlClass to finish it off by adding fields from the control
+        # object.
         cls = type(
             Control.__name__.replace("Control", "Config"),
             (Base,),
@@ -92,8 +92,8 @@ def wrapAlgorithmControl(Base, Control, module=2, hasMeasureN=False):
         )
         ConfigClass = lsst.pex.config.makeConfigClass(Control, module=module, cls=cls)
     else:
-        # If we don't have to add that Config field, we can delegate all of the work to
-        # pex_config's makeControlClass
+        # If we don't have to add that Config field, we can delegate all of
+        # the work to pex_config's makeControlClass
         ConfigClass = lsst.pex.config.makeConfigClass(Control, module=module, base=Base)
     return ConfigClass
 
@@ -101,71 +101,76 @@ def wrapAlgorithmControl(Base, Control, module=2, hasMeasureN=False):
 def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=None,
                   ConfigClass=None, TransformClass=None, doRegister=True, shouldApCorr=False,
                   apCorrList=(), hasLogName=False, **kwds):
-    r"""Wrap a C++ Algorithm class into a Python Plugin class.
+    """Wrap a C++ algorithm class to create a measurement plugin.
 
     Parameters
     ----------
-    Base :
-        Base class for the returned Plugin; one of SingleFramePlugin or
-        ForcedPlugin
-    AlgClass :
-        Swigged C++ Algorithm class to convert; must be a subclass of
-        SingleFrameAlgorithm or ForcedAlgorithm (matching the Base argument), or
-        an unrelated class with the same measure() and measureN() signatures as
-        those base classes.
-    factory :
-        A callable that is used to construct an instance of AlgClass.  It must take
-        four arguments, either (config, name, schema, metadata) or
-        (config, name, schemaMapper, metadata), depending on whether the algorithm is
-        single-frame or forced.
-    executionOrder :
+    Base : `SingleFramePlugin` or `ForcedPlugin`
+        Base class for the returned Plugin.
+    AlgClass : API compatible with `SingleFrameAlgorithm` or `ForcedAlgorithm`
+        C++ algorithm class to convert. May either derive directly from
+        `SingleFrameAlgorithm` or `ForcedAlgorithm`, or be an unrelated class
+        which has the same ``measure`` and ``measureN`` signatures.
+    factory : callable
+        A callable that is used to construct an instance of ``AlgClass``.  It
+        must take four arguments, either ``(config, name, schema, metadata)``
+        or ``(config, name, schemaMapper, metadata)``, depending on whether
+        the algorithm is single-frame or forced.
+    executionOrder : `float`
         The order this plugin should be run, relative to others
-        (see BasePlugin.getExecutionOrder()).
-    name :
-        String to use when registering the algorithm.  Ignored if doRegistry=False,
-        set to generateAlgorithmName(AlgClass) if None.
-    Control :
-        Swigged C++ Control class for the algorithm; AlgClass.Control is used if None.
-        Ignored if ConfigClass is not None.
-    ConfigClass :
-        Python Config class that wraps the C++ Algorithm's swigged Control class.  If
-        None, wrapAlgorithmControl is called to generate a Config class using the
-        Control argument.
-    TransformClass :
-        Transformation which may be used to post-process the results of measurement.
-        If None, the default (defined by BasePlugin) is used.
-    doRegister :
-        If True (the default), register the plugin with Base's registry, allowing it
-        to be used by measurement Tasks.
-    shouldApCorr :
-        Does this algorithm measure a instFlux that can be aperture corrected? This is
-        shorthand for apCorrList=[name] and is ignored if apCorrList is specified.
-    apCorrList :
-        List of field name prefixes for instFlux fields that to be aperture corrected.
-        If an algorithm produces a single instFlux that should be
-        aperture corrected then it is simpler to set shouldApCorr=True. But if an
-        algorithm produces multiple such fields then it must specify apCorrList,
-        instead. For example modelfit_CModel produces 3 such fields: apCorrList=
-        ("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
-        If apCorrList is non-empty then shouldApCorr is ignored.
-        If non-empty and doRegister is True then the names are added to the set
-        retrieved by getApCorrNameSet
-    hasLogName :
-        Plugin supports a logName as a constructor argument
+        (see `BasePlugin.getExecutionOrder`).
+    name : `str`, optional
+        String to use when registering the algorithm. Ignored if
+        ``doRegistry=False``, set to ``generateAlgorithmName(AlgClass)`` if
+        `None`.
+    Control : Pybind11-wrapped version of a C++ class, optional
+        Pybind11-wrapped C++ Control class for the algorithm;
+        ``AlgClass.Control`` is used if `None`. Ignored if ``ConfigClass``
+        is not `None`.
+    ConfigClass : subclass of `BaseMeasurementPluginConfig`
+        Python config class that wraps the C++ algorithm's pybind11-wrapped
+        Control class.  If `None`, `wrapAlgorithmControl` is called to
+        generate a Config class using the ``Control`` argument.
+    TransformClass : subclass of `MeasurementTransform`, optional
+        Transformation which may be used to post-process the results of
+        measurement.  If `None`, the default defined by `BasePlugin` is
+        used.
+    doRegister : `bool`, optional
+        If `True` (the default), register the plugin with ``Base``'s
+        registry, allowing it to be used by measurement tasks.
+    shouldApCorr : `bool`, optional
+        Does this algorithm measure an instFlux that can be aperture
+        corrected?  This is shorthand for ``apCorrList=[name]`` and is ignored
+        if ``apCorrList`` is specified.
+    apCorrList : iterable of `str`, optional
+        Field name prefixes for instFlux fields to be aperture corrected. If
+        an algorithm measures a single instFlux that should be aperture
+        corrected, then it is simpler to set ``shouldApCorr=True``. However,
+        if an algorithm produces multiple such fields, then specify
+        ``apCorrList`` instead.  For example, ``modelfit_CModel`` produces
+        three such fields: ``apCorrList= ("modelfit_CModel_exp",
+        "modelfit_CModel_exp", "modelfit_CModel_def")`` If ``apCorrList`` is
+        not empty then ``shouldApCorr`` is ignored.  If non-empty and
+        ``doRegister`` is `True` then the names are added to the set
+        retrieved by ``getApCorrNameSet``.
+    hasLogName : `bool`, optional
+        `True` if the C++ algorithm supports ``logName`` as a constructor
+        argument.
+    **kwds
+        Additional keyword arguments passed to generateAlgorithmControl, which
+        may include:
 
-
-    \*\*kwds :
-        Additional keyword arguments passed to generateAlgorithmControl, including:
-
-        - ``hasMeasureN`` :  Whether the plugin supports fitting multiple objects at once
-            (if so, a config option to enable/disable this will be added).
-        - ``executionOrder`` : If not None, an override for the default executionOrder for
-            this plugin (the default is 2.0, which is usually appropriate for fluxes).
+        - ``hasMeasureN``:  Whether the plugin supports fitting multiple
+          objects at once ;if so, a config option to enable/disable this will
+          be added (`bool`).
+        - ``executionOrder``: If not `None`, an override for the default
+          execution order for this plugin (the default is ``2.0``, which is
+          usually appropriate for fluxes; `bool`).
 
     Returns
     -------
-    result :
-        return the new Plugin class, a subclass of Base
+    PluginClass : subclass of ``Base``
+        The new plugin class.
     """
     if ConfigClass is None:
         if Control is None:
@@ -191,77 +196,55 @@ def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=No
 
 def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False, hasMeasureN=False,
                              hasLogName=False, **kwds):
-    r"""Wrap a C++ SingleFrameAlgorithm class into a Python SingleFramePlugin class.
+    """Expose a C++ ``SingleFrameAlgorithm`` class as a measurement plugin.
 
-    AlgClass :
-        Swigged C++ Algorithm class to convert; must be a subclass of
-        SingleFrameAlgorithm, or an unrelated class with the same measure(),
-        measureN(), and fail() signatures.
-    executionOrder :
+    Parameters
+    ----------
+    AlgClass : API compatible with `SingleFrameAlgorithm`
+        C++ algorithm class to convert. May either derive directly from
+        `SingleFrameAlgorithm` or be an unrelated class which has the same
+        ``measure``, ``measureN`` and ``fail`` signatures.
+    executionOrder : `float`
         The order this plugin should be run, relative to others
-        (see BasePlugin.getExecutionOrder()).
-    name :
-        String to use when registering the algorithm.  Ignored if doRegistry=False,
-        set to generateAlgorithmName(AlgClass) if None.
-    needsMetadata :
-        Sets whether the AlgClass's constructor should be passed a PropertySet
-        metadata argument.
-    hasMeasureN :
-        Whether the algorithm supports simultaneous measurement of multiple sources.
-        If True, a bool doMeasureN field will be added to the generated Config class,
-        and its value will be passed as the last argument when calling the AlgClass
-        constructor.
-    hasLogName :
-        Plugin supports a logName as a constructor argument
-    \*\*kwds :
-        Additional keyword arguments passed to the lower-level wrapAlgorithm and
-        wrapAlgorithmControl classes.  These include:
-
-        - Control: Swigged C++ Control class for the algorithm; AlgClass.Control
-            is used if None. Ignored if ConfigClass is not None.
-        - ConfigClass: Python Config class that wraps the C++ Algorithm's swigged
-            Control class.  If None, wrapAlgorithmControl is called to generate a
-            Config class using the Control argument.
-        - doRegister: If True (the default), register the plugin with
-            SingleFramePlugin.registry, allowing it to be used by
-            SingleFrameMeasurementTask.
-        - shouldApCorr: does this algorithm measure a instFlux that can be aperture
-            corrected? This is shorthand for apCorrList=[name] and is ignored if
-            apCorrList is specified.
-        - apCorrList: list of field name prefixes for instFlux fields that should be
-            aperture corrected. If an algorithm produces a single instFlux that should be
-            aperture corrected then it is simpler to set shouldApCorr=True. But if an
-            algorithm produces multiple such fields then it must specify apCorrList,
-            instead. For example modelfit_CModel produces 3 such fields: apCorrList=
-            ("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
-            If apCorrList is non-empty then shouldApCorr is ignored.
-            If non-empty and doRegister is True then the names are added to the set
-            retrieved by getApCorrNameSet
-        - executionOrder: If not None, an override for the default executionOrder for
-            this plugin (the default is 2.0, which is usually appropriate for fluxes).
+        (see `BasePlugin.getExecutionOrder`).
+    name : `str`, optional
+        Name to use when registering the algorithm. Ignored if
+        ``doRegistry=False``; set to ``generateAlgorithmName(AlgClass)`` if
+        `None`.
+    needsMetadata : `bool`, optional
+        Sets whether the ``AlgClass``'s constructor should be passed a
+        `~lsst.daf.base.PropertySet` metadata argument.
+    hasMeasureN : `bool`, optional
+        Does the algorithm support simultaneous measurement of multiple
+        sources? If `True`, a `bool` ``doMeasureN`` field will be added to
+        the generated config class, and its value will be passed as the last
+        argument when calling the ``AlgClass`` constructor.
+    hasLogName : `bool`, optional
+        `True` if the C++ algorithm supports ``logName`` as a constructor
+        argument.
+    **kwds
+        Additional keyword arguments are passed to the lower-level
+        `wrapAlgorithm` and `wrapAlgorithmControl` classes.
 
     Returns
     -------
-    result : callable
+    singleFramePlugin : subclass of `SingleFramePlugin`
+        The new measurement plugin class.
 
     Notes
     -----
-    The needsMetadata and hasMeasureN arguments combine to determine the expected constructor signature;
+    The first three arguments to the C++ constructor are expected to be
+    ``Control const & ctrl, std::string const & name, Schema & schema``.
 
-    we always expect the first three arguments to be:
-    Control const & ctrl, std::string const & name, Schema & schema
+    If ``needsMetadata`` is `True`, we also append ``PropertySet & metadata``.
 
-    If needsMetadata, we also append:
-    PropertySet & metadata
+    If ``hasMeasureN`` is `True`, we also append ``bool doMeasureN``.
 
-    If hasMeasureN, we also append:
-    bool doMeasureN
+    If ``hasLogName`` is `True`, we also append ``std::string logName``.
 
-    If hasLogName, we also append:
-    std::string logName
-
-    If more than one is True, the metadata PropertySet precedes
-    the doMeasureN bool and the logName comes last of the three
+    If more than one of the above is `True`, the metadata ``PropertySet``
+    precedes the ``doMeasureN`` ``bool`` and the ``logName`` comes last of the
+    three.
     """
     if hasMeasureN:
         if needsMetadata:
@@ -284,94 +267,65 @@ def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=
 
 def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False,
                         hasMeasureN=False, needsSchemaOnly=False, hasLogName=False, **kwds):
-    r"""Wrap a C++ ForcedAlgorithm class into a Python ForcedPlugin class.
+    """Expose a C++ ``ForcedAlgorithm`` class as a measurement plugin.
 
     Parameters
     ----------
-    AlgClass :
-        Swigged C++ Algorithm class to convert; must be a subclass of
-        ForcedAlgorithm, or an unrelated class with the same measure(), measureN(),
-        and fail() signatures.
-    executionOrder :
+    AlgClass : API compatible with `ForcedAlgorithm`
+        C++ algorithm class to convert. May either derive directly from
+        `ForcedAlgorithm` or be an unrelated class which has the same
+        ``measure``, ``measureN`` and ``fail`` signatures.
+    executionOrder : `float`
         The order this plugin should be run, relative to others
-        (see BasePlugin.getExecutionOrder()).
-    name :
-        String to use when registering the algorithm.  Ignored if doRegistry=False,
-        set to generateAlgorithmName(AlgClass) if None.
-    needsMetadata :
-        Sets whether the AlgClass's constructor should be passed a PropertySet
-        metadata argument.
-    hasMeasureN :
-        Whether the algorithm supports simultaneous measurement of multiple sources.
-        If True, a bool doMeasureN field will be added to the generated Config class,
-        and its value will be passed as the last argument when calling the AlgClass
-        constructor.
-    hasLogName :
-        Plugin supports a logName as a constructor argument
-    needsSchemaOnly :
-        Whether the algorithm constructor expects a Schema argument (representing the
-        output Schema) rather than the full SchemaMapper (which provides access to
-        both the reference Schema and the output Schema).
-    \*\*kwds :
-        Additional keyword arguments passed to the lower-level wrapAlgorithm and
-        wrapAlgorithmControl classes.  These include:
-
-        - ``Control`` : Swigged C++ Control class for the algorithm; AlgClass.Control
-            is used if None. Ignored if ConfigClass is not None.
-        - ``ConfigClass`` : Python Config class that wraps the C++ Algorithm's swigged
-            Control class.  If None, wrapAlgorithmControl is called to generate a
-            Config class using the Control argument.
-        - ``doRegister`` : If True (the default), register the plugin with
-            ForcedPlugin.registry, allowing it to be used by ForcedMeasurementTask.
-        - ``shouldApCorr`` : does this algorithm measure a instFlux that can be aperture
-            corrected? This is shorthand for apCorrList=[name] and is ignored if
-            apCorrList is specified.
-        - ``apCorrList`` : list of field name prefixes for instFlux fields that should be
-            aperture corrected. If an algorithm produces a single instFlux that should be
-            aperture corrected then it is simpler to set shouldApCorr=True. But if an
-            algorithm produces multiple such fields then it must specify apCorrList,
-            instead. For example modelfit_CModel produces 3 such fields: apCorrList=
-            ("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
-            If apCorrList is non-empty then shouldApCorr is ignored.
-            If non-empty and doRegister is True then the names are added to the set
-            retrieved by getApCorrNameSet
-        - ``executionOrder`` : If not None, an override for the default executionOrder for
-            this plugin (the default is 2.0, which is usually appropriate for fluxes).
+        (see `BasePlugin.getExecutionOrder`).
+    name : `str`, optional
+        Name to use when registering the algorithm. Ignored if
+        ``doRegistry=False``; set to ``generateAlgorithmName(AlgClass)`` if
+        `None`.
+    needsMetadata : `bool`, optional
+        Sets whether the ``AlgClass``'s constructor should be passed a
+        `~lsst.daf.base.PropertySet` metadata argument.
+    hasMeasureN : `bool`, optional
+        Does the algorithm support simultaneous measurement of multiple
+        sources? If `True`, a `bool` ``doMeasureN`` field will be added to
+        the generated config class, and its value will be passed as the last
+        argument when calling the ``AlgClass`` constructor.
+    hasLogName : `bool`, optional
+        `True` if the C++ algorithm supports ``logName`` as a constructor
+        argument.
+    needsSchemaOnly : `bool`, optional
+        Whether the algorithm constructor expects a Schema argument
+        (representing the output `~lsst.afw.table.Schema`) rather than the
+        full `~lsst.afw.table.SchemaMapper` (which provides access to both the
+        reference schema and the output schema).
+    **kwds
+        Additional keyword arguments are passed to the lower-level
+        `wrapAlgorithm` and `wrapAlgorithmControl` classes.
 
     Returns
     -------
-    result : callable
-        the new ForcedPlugin subclass
+    forcedPlugin : subclass of `ForcedPlugin`
+        The new measurement plugin class.
 
     Notes
     -----
-    The needsMetadata, hasMeasureN, and needsSchemaOnly arguments combine to determine the expected
-    constructor signature; we always expect the first two arguments to be:
+    The first two arguments to the C++ constructor are expected to be
+    ``Control const & ctrl, std::string const & name``
 
-    >>> Control const & ctrl, std::string const & name
+    If ``needsSchemaOnly`` is `True`, then the third argument will be
+    ``Schema & schema``; otherwise, it will be ``SchemaMapper &
+    schemaMapper``.
 
-    If needsSchemaOnly is True, then the third argument will be
+    If ``needsMetadata`` is `True`, we also append ``PropertySet &
+    metadata``.
 
-    >>> Schema & schema
+    If ``hasMeasureN`` is `True`, we also append ``bool doMeasureN``.
 
-    otherwise, it will be:
+    If ``hasLogName`` is `True`, we also append ``std::string logName``.
 
-    >>> SchemaMapper & schemaMapper
-
-    If needsMetadata, we also append:
-
-    >>> PropertySet & metadata
-
-    If hasMeasureN, we also append:
-
-    >>> bool doMeasureN
-
-    If hasLogName, we also append:
-
-    >>> std::string logName
-
-    If more than one is True, the metadata PropertySet precedes the doMeasureN bool
-    and the logName comes last of the three
+    If more than one of the above is `True`, the metadata ``PropertySet``
+    precedes the ``doMeasureN`` ``bool`` and the ``logName`` comes last of the
+    three.
     """
     if needsSchemaOnly:
         def extractSchemaArg(m):
@@ -403,80 +357,61 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
 
 def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False, hasMeasureN=False,
                         hasLogName=False, **kwds):
-    r"""Wrap a C++ SimpleAlgorithm class into both a Python SingleFramePlugin and ForcedPlugin classes
+    r"""Expose a C++ ``SimpleAlgorithm`` class as a measurement plugin.
 
-    AlgClass :
-        Swigged C++ Algorithm class to convert; must be a subclass of
-        simpleAlgorithm, or an unrelated class with the same measure(), measureN(),
-        and fail() signatures.
-    executionOrder :
+    ``SimpleAlgorithm``\ s are made available as both `SingleFramePlugin`\ s
+    and `ForcedPlugin`\ s.
+
+    Parameters
+    ----------
+    AlgClass : Subclass of C++ ``SimpleAlgorithm``, or API compatible
+        Algorithm class to convert. The C++ class should be wrapped with
+        Pybind11, and must provide ``measure()``, ``measureN()`` and ``fail()`
+        signatures equivalent to ``SimpleAlgorithm``.
+    executionOrder : `float`
         The order this plugin should be run, relative to others
-        (see BasePlugin.getExecutionOrder()).
-    name :
-        String to use when registering the algorithm.  Ignored if doRegistry=False,
-        set to generateAlgorithmName(AlgClass) if None.
-    needsMetadata :
-        Sets whether the AlgClass's constructor should be passed a PropertySet
-        metadata argument.
-    hasMeasureN :
-        Whether the algorithm supports simultaneous measurement of multiple sources.
-        If True, a bool doMeasureN field will be added to the generated Config class,
-        and its value will be passed as the last argument when calling the AlgClass
-        constructor.
-    hasLogName :
-        Plugin supports a logName as a constructor argument
-    \*\*kwds :
-            Additional keyword arguments passed to the lower-level wrapAlgorithm and
-            wrapAlgorithmControl classes.  These include:
-
-            - ``Control`` : Swigged C++ Control class for the algorithm; AlgClass.Control
-                is used if None. Ignored if ConfigClass is not None.
-            - ``ConfigClass`` : Python Config class that wraps the C++ Algorithm's swigged
-                Control class.  If None, wrapAlgorithmControl is called to generate a
-                Config class using the Control argument.
-            - ``doRegister`` : If True (the default), register the plugins with Base's
-                registry, allowing it to be used by measurement Tasks.
-            - ``shouldApCorr`` : does this algorithm measure a instFlux that can be aperture
-                corrected? This is shorthand for apCorrList=[name] and is ignored if
-                apCorrList is specified.
-            - ``apCorrList`` : list of field name prefixes for instFlux fields that should be
-                aperture corrected. If an algorithm produces a single instFlux that should be
-                aperture corrected then it is simpler to set shouldApCorr=True. But if an
-                algorithm produces multiple such fields then it must specify apCorrList,
-                instead. For example modelfit_CModel produces 3 such fields: apCorrList=
-                ("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
-                If apCorrList is non-empty then shouldApCorr is ignored.
-                If non-empty and doRegister is True then the names are added to the set
-                retrieved by getApCorrNameSet
-            - ``executionOrder`` : If not None, an override for the default executionOrder for
-                this plugin (the default is 2.0, which is usually appropriate for fluxes).
+        (see `~BasePlugin.getExecutionOrder`).
+    name : `str`, optional
+        Name to use when registering the algorithm. Ignored if
+        ``doRegistry=False``; set to ``generateAlgorithmName(AlgClass)`` if
+        `None`.
+    needsMetadata : `bool`, optional
+        Sets whether the ``AlgClass``'s constructor should be passed a
+        `~lsst.daf.base.PropertySet` metadata argument.
+    hasMeasureN : `bool`, optional
+        Does the algorithm support simultaneous measurement of multiple
+        sources? If `True`, a `bool` ``doMeasureN`` field will be added to
+        the generated config class, and its value will be passed as the last
+        argument when calling the ``AlgClass`` constructor.
+    hasLogName : `bool`, optional
+        `True` if the C++ algorithm supports ``logName`` as a constructor
+        argument.
+    **kwds
+        Additional keyword arguments are passed to the lower-level
+        `wrapAlgorithm` and `wrapAlgorithmControl` classes.
 
     Returns
     -------
-    result : callable
-        return a two-element tuple, containing the new SingleFramePlugin and ForcedPlugin subclasses
+    singleFramePlugin : subclass of `SingleFramePlugin`
+        The new single frame measurement plugin class.
+    forcedPlugin : subclass of `ForcedPlugin`
+        The new forced measurement plugin class.
 
     Notes
     -----
-    The needsMetadata and hasMeasureN arguments combine to determine the expected constructor signature;
-    we always expect the first three arguments to be:
+    The first three arguments to the C++ constructor are expected to be
+    ``Control const & ctrl, std::string const & name, Schema & schema``.
 
-    >>> Control const & ctrl, std::string const & name, Schema & schema
+    If ``needsMetadata`` is `True`, we also append ``PropertySet &
+    metadata``.
 
-    If needsMetadata, we also append:
+    If ``hasMeasureN`` is `True`, we also append ``bool doMeasureN``.
 
-    >>> PropertySet & metadata
+    If ``hasLogName`` is `True`, we also append ``std::string logName``.
 
-    If hasMeasureN, we also append:
-
-    >>> bool doMeasureN
-
-    If hasLogName, we also append:
-
-    >>> std::string logName
-
-    If more than one is True, the metadata PropertySet precedes the doMeasureN bool
-    and the logName comes last of the three
+    If more than one of the above is `True`, the metadata ``PropertySet``
+    precedes the ``doMeasureN`` ``bool`` and the ``logName`` comes last of the
+    three.
     """
     return (wrapSingleFrameAlgorithm(AlgClass, executionOrder=executionOrder, name=name,
                                      needsMetadata=needsMetadata, hasLogName=hasLogName, **kwds),
@@ -486,32 +421,40 @@ def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
 
 
 def wrapTransform(transformClass, hasLogName=False):
-    """Modify a C++ Transform class so that it can be configured with either a Config or a Control.
+    """Modify a C++ transform to accept either a ``Config`` or a ``Control``.
+
+    That is, the configuration may either be provided as a (C++) ``Control``
+    object or an instance of a Python class derived from
+    `~lsst.meas.base.BasePluginConfig`.
 
     Parameters
     ----------
-    transformClass: class
-        A Transform class. Its constructor must take a Control, a string, and
-        a SchemaMapper, in that order.
+    transformClass : Subclass of C++ ``BaseTransform``
+        A C++ transform class, wrapped with pybind11. Its constructor must
+        take a ``Control`` object, a ``std::string``, and a
+        `~lsst.afw.table.SchemaMapper`, in that order.
+    hasLogName : `bool`, optional
+        Unused.
     """
     oldInit = transformClass.__init__
 
     def _init(self, ctrl, name, mapper, logName=None):
         if hasattr(ctrl, "makeControl"):
             ctrl = ctrl.makeControl()
-        #  logName signature needs to be on this Class __init__, but is not needed by the C++ plugin
+        # logName signature needs to be on this Class __init__, but is not
+        # needed by the C++ plugin.
         oldInit(self, ctrl, name, mapper)
 
     transformClass.__init__ = _init
 
 
 class GenericPlugin(BasePlugin):
-    """Abstract base class for a generic plugin
+    """Abstract base class for a generic plugin.
 
     Parameters
     ----------
     config : `lsst.pex.config.Config`
-        An instance of this class' ConfigClass.
+        An instance of this class' ``ConfigClass``.
     name : `str`
         Name of this measurement plguin, for registering.
     schema : `lsst.afw.table.Schema`
@@ -519,25 +462,24 @@ class GenericPlugin(BasePlugin):
         hold measurements produced by this plugin.
     metadata : `lsst.daf.base.PropertySet`
         Metadata that will be attached to the output catalog.
-    logName : `str`
+    logName : `str`, optional
         Name of log component.
 
     Notes
     -----
     A generic plugin can be used with the `singleFramePluginFromGeneric`
-    and/or `forcedPluginFromGeneric` wrappers to create classes that can
-    be used for single frame measurement and/or forced measurement (as
-    appropriate). The only real difference between `SingleFramePlugin`
-    and `ForcedPlugin` is the `measure` method; this class introduces
-    a shared signature for the `measure` method that, in combination
-    with the afore-mentioned wrappers, allows both plugin styles to
-    share a single implementation.
+    and/or `forcedPluginFromGeneric` wrappers to create classes that can be
+    used for single frame measurement and/or forced measurement (as
+    appropriate). The only real difference between `SingleFramePlugin` and
+    `ForcedPlugin` is the ``measure`` method; this class introduces a shared
+    signature for `measure` that, in combination with the aforementioned
+    wrappers, allows both plugin styles to share a single implementation.
 
-    This doesn't use abc.ABCMeta because I couldn't get it to work
+    This doesn't use `abc.ABCMeta` because I couldn't get it to work
     with a superclass.
 
-    Sub-classes should set `ConfigClass` and implement the `measure`
-    and `measureN` methods. They may optionally provide alternative
+    Sub-classes should set `ConfigClass` and implement the `measure` and
+    `measureN` methods. They may optionally provide alternative
     implementations for the `__init__`, `fail` and `getExecutionOrder`
     methods.
 
@@ -555,7 +497,7 @@ class GenericPlugin(BasePlugin):
         self._failKey = schema.addField(name + '_flag', type="Flag", doc="Set for any fatal failure")
 
     def measure(self, measRecord, exposure, center):
-        """Measure source
+        """Measure a single source.
 
         It is the responsibility of this method to perform the desired
         measurement and record the result in the `measRecord`.
@@ -571,13 +513,13 @@ class GenericPlugin(BasePlugin):
 
         Raises
         ------
-        `MeasurementError`
-            If the measurement fails for a known/justifiable reason.
+        MeasurementError
+            Raised if the measurement fails for a known/justifiable reason.
         """
         raise NotImplementedError()
 
     def measureN(self, measCat, exposure, refCat, refWcs):
-        """Measure multiple sources
+        """Measure multiple sources.
 
         It is the responsibility of this method to perform the desired
         measurement and record the result in the `measCat`.
@@ -595,16 +537,16 @@ class GenericPlugin(BasePlugin):
 
         Raises
         ------
-        `MeasurementError`
-            If the measurement fails for a known/justifiable reason.
+        MeasurementError
+            Raised if the measurement fails for a known/justifiable reason.
         """
         raise NotImplementedError()
 
     def fail(self, measRecord, error=None):
-        """Record failure
+        """Record a measurement failure.
 
-        This default implementation simply records the failure
-        in the source record.
+        This default implementation simply records the failure in the source
+        record.
 
         Parameters
         ----------
@@ -617,7 +559,7 @@ class GenericPlugin(BasePlugin):
 
     @classmethod
     def makeSingleFramePlugin(cls, name):
-        """Produce a SingleFramePlugin sub-class from this GenericPlugin class
+        """Produce a SingleFramePlugin subclass from this GenericPlugin class.
 
         The class is also registered.
 
@@ -658,7 +600,7 @@ class GenericPlugin(BasePlugin):
 
     @classmethod
     def makeForcedPlugin(cls, name):
-        """Produce a ForcedPlugin sub-class from this GenericPlugin class
+        """Produce a ForcedPlugin subclass from this GenericPlugin class.
 
         The class is also registered.
 
