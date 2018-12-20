@@ -17,7 +17,8 @@ Using lsst.meas.base
    :maxdepth: 1
 
    intro
-   reconstructing-measurements
+   tasks_and_algorithms
+   reconstructing_measurements
 
 Contributing
 ============
