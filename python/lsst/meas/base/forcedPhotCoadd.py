@@ -60,13 +60,6 @@ class ForcedPhotCoaddConfig(ForcedPhotImageConfig):
             raise ValueError("Cannot use removePatchOverlaps=True with deblended footprints, as parent "
                              "sources may be rejected while their children are not.")
 
-## @addtogroup LSST_task_documentation
-## @{
-## @page processForcedCoaddTask
-## ForcedPhotCoaddTask
-## @copybrief ForcedPhotCoaddTask
-## @}
-
 
 class ForcedPhotCoaddRunner(lsst.pipe.base.ButlerInitializedTaskRunner):
     """Get the psfCache setting into ForcedPhotCoaddTask"""
@@ -77,32 +70,16 @@ class ForcedPhotCoaddRunner(lsst.pipe.base.ButlerInitializedTaskRunner):
 
 
 class ForcedPhotCoaddTask(ForcedPhotImageTask):
-    """A command-line driver for performing forced measurement on coadd images
+    """A command-line driver for performing forced measurement on coadd images.
 
     Notes
     -----
-    This task is a subclass of ForcedPhotImageTask which is specifically for doing forced
-    measurement on a coadd, using as a reference catalog detections which were made on overlapping
-    coadds (i.e. in other bands).
-
-    The run method (inherited from ForcedPhotImageTask) takes a lsst.daf.persistence.ButlerDataRef
-    argument that corresponds to a coadd image.  This is used to provide all the inputs and outputs
-    for the task:
-
-    - A "Coadd_src" (e.g. "deepCoadd_src") dataset is used as the reference catalog.  This not loaded
-        directly from the passed dataRef, however; only the patch and tract are used, while the filter
-        is set by the configuration for the references subtask (see CoaddSrcReferencesTask).'
-
-    - A "Coadd_calexp" (e.g. "deepCoadd_calexp") dataset is used as the measurement image.  Note that
-        this means that ProcessCoaddTask must be run on an image before ForcedPhotCoaddTask, in order
-        to generate the "Coadd_calexp" dataset.
-
-    - A "Coadd_forced_src" (e.g. "deepCoadd_forced_src") dataset will be written with the output
-        measurement catalog.
-
-    In addition to the run method, ForcedPhotCcdTask overrides several methods of ForcedPhotImageTask
-    to specialize it for coadd processing, including makeIdFactory() and fetchReferences().  None of these
-    should be called directly by the user, though it may be useful to override them further in subclasses.
+    In addition to the run method, `ForcedPhotCcdTask` overrides several
+    methods of `ForcedPhotImageTask` to specialize it for coadd processing,
+    including `~ForcedPhotImageTask.makeIdFactory` and
+    `~ForcedPhotImageTask.fetchReferences`. None of these should be called
+    directly by the user, though it may be useful to override them further in
+    subclasses.
     """
 
     ConfigClass = ForcedPhotCoaddConfig
@@ -115,19 +92,24 @@ class ForcedPhotCoaddTask(ForcedPhotImageTask):
         return dataRef.get(name) if dataRef.datasetExists(name) else None
 
     def makeIdFactory(self, dataRef):
-        """Create an object that generates globally unique source IDs from per-CCD IDs and the CCD ID.
+        """Create an object that generates globally unique source IDs.
+
+        Source IDs are created based on a per-CCD ID and the ID of the CCD
+        itself.
 
         Parameters
         ----------
-        dataRef :
-            Data reference from butler.  The "CoaddId_bits" and "CoaddId"
-            datasets are accessed.  The data ID must have tract and patch keys.
+        dataRef : `lsst.daf.persistence.ButlerDataRef`
+            Butler data reference. The "CoaddId_bits" and "CoaddId" datasets
+            are accessed. The data ID must have tract and patch keys.
         """
-        # With the default configuration, this IdFactory doesn't do anything, because
-        # the IDs it generates are immediately overwritten by the ID from the reference
-        # catalog (since that's in config.measurement.copyColumns).  But we create one here anyway, to
-        # allow us to revert back to the old behavior of generating new forced source IDs,
-        # just by renaming the ID in config.copyColumns to "object_id".
+        # With the default configuration, this IdFactory doesn't do anything,
+        # because the IDs it generates are immediately overwritten by the ID
+        # from the reference catalog (since that's in
+        # config.measurement.copyColumns).  But we create one here anyway, to
+        # allow us to revert back to the old behavior of generating new forced
+        # source IDs, just by renaming the ID in config.copyColumns to
+        # "object_id".
         expBits = dataRef.get(self.config.coaddName + "CoaddId_bits")
         expId = int(dataRef.get(self.config.coaddName + "CoaddId"))
         return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
@@ -136,20 +118,21 @@ class ForcedPhotCoaddTask(ForcedPhotImageTask):
         return int(dataRef.get(self.config.coaddName + "CoaddId"))
 
     def fetchReferences(self, dataRef, exposure):
-        """Return an iterable of reference sources which overlap the exposure
+        """Return an iterable of reference sources which overlap the exposure.
 
         Parameters
         ----------
-        dataRef :
-            Data reference from butler corresponding to the image to be measured;
+        dataRef : `lsst.daf.persistence.ButlerDataRef`
+            Butler data reference corresponding to the image to be measured;
             should have tract, patch, and filter keys.
-        exposure :
-            lsst.afw.image.Exposure to be measured (not used by this implementation)
+
+        exposure : `lsst.afw.image.Exposure`
+            Unused.
 
         Notes
         -----
-        All work is delegated to the references subtask; see CoaddSrcReferencesTask for information
-        about the default behavior.
+        All work is delegated to the references subtask; see
+        `CoaddSrcReferencesTask` for information about the default behavior.
         """
         skyMap = dataRef.get(self.dataPrefix + "skyMap", immediate=True)
         tractInfo = skyMap[dataRef.dataId["tract"]]
@@ -160,12 +143,16 @@ class ForcedPhotCoaddTask(ForcedPhotImageTask):
         return references
 
     def attachFootprints(self, sources, refCat, exposure, refWcs, dataRef):
-        """For coadd forced photometry, we use the deblended HeavyFootprints from the single-band
-        measurements of the same band - because we've guaranteed that the peaks (and hence child sources)
-        will be consistent across all bands before we get to measurement, this should yield reasonable
-        deblending for most sources.  It's most likely limitation is that it will not provide good flux
-        upper limits for sources that were not detected in this band but were blended with sources that
-        were.
+        r"""Attach Footprints to source records.
+
+        For coadd forced photometry, we use the deblended "heavy"
+        `~lsst.afw.detection.Footprint`\ s from the single-band measurements
+        of the same band - because we've guaranteed that the peaks (and hence
+        child sources) will be consistent across all bands before we get to
+        measurement, this should yield reasonable deblending for most sources.
+        It's most likely limitation is that it will not provide good flux
+        upper limits for sources that were not detected in this band but were
+        blended with sources that were.
         """
         if self.config.footprintDatasetName is None:
             return ForcedPhotImageTask.attachFootprints(self, sources, refCat, exposure, refWcs, dataRef)

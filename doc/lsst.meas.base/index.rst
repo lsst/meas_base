@@ -57,38 +57,39 @@ Python API reference
 ..    fail, at least when executed standalone.
 ..
 
-.. .. automodapi:: lsst.meas.base
-..    :skip: Calib
-..    :skip: FatalAlgorithmError
-..    :skip: MeasurementError
-..    :skip: PixelValueError
-..    :skip: SkyWcs
+.. automodapi:: lsst.meas.base
+   :skip: Calib
+   :skip: FatalAlgorithmError
+   :skip: MeasurementError
+   :skip: PixelValueError
+   :skip: SkyWcs
 
-.. automodapi:: lsst.meas.base.apCorrRegistry
-.. automodapi:: lsst.meas.base.applyApCorr
-.. automodapi:: lsst.meas.base.baseMeasurement
-.. automodapi:: lsst.meas.base.catalogCalculation
-.. automodapi:: lsst.meas.base.classification
-.. automodapi:: lsst.meas.base.footprintArea
-.. automodapi:: lsst.meas.base.forcedMeasurement
-.. automodapi:: lsst.meas.base.forcedPhotCcd
-.. automodapi:: lsst.meas.base.forcedPhotImage
-.. automodapi:: lsst.meas.base.measurementInvestigationLib
-.. automodapi:: lsst.meas.base.noiseReplacer
-.. automodapi:: lsst.meas.base.pluginRegistry
+.. .. automodapi:: lsst.meas.base.apCorrRegistry
+.. .. automodapi:: lsst.meas.base.applyApCorr
+.. .. automodapi:: lsst.meas.base.baseMeasurement
+.. .. automodapi:: lsst.meas.base.catalogCalculation
+.. .. automodapi:: lsst.meas.base.classification
+.. .. automodapi:: lsst.meas.base.footprintArea
+.. .. automodapi:: lsst.meas.base.forcedMeasurement
+.. .. automodapi:: lsst.meas.base.forcedPhotCoadd
+.. .. automodapi:: lsst.meas.base.forcedPhotCcd
+.. .. automodapi:: lsst.meas.base.forcedPhotImage
+.. .. automodapi:: lsst.meas.base.measurementInvestigationLib
+.. .. automodapi:: lsst.meas.base.noiseReplacer
+.. .. automodapi:: lsst.meas.base.pluginRegistry
 
-.. The skips below are necessary to prevent a build failure when building
-   module-by-module, but not when building everything at once.
+.. .. The skips below are necessary to prevent a build failure when building
+..    module-by-module, but not when building everything at once.
 
-.. automodapi:: lsst.meas.base.plugins
-   :skip: SingleFrameVariancePlugin
-   :skip: ForcedVariancePlugin
-   :skip: SingleFrameInputCountPlugin
-   :skip: ForcedInputCountPlugin
+.. .. automodapi:: lsst.meas.base.plugins
+..    :skip: SingleFrameVariancePlugin
+..    :skip: ForcedVariancePlugin
+..    :skip: SingleFrameInputCountPlugin
+..    :skip: ForcedInputCountPlugin
 
-.. automodapi:: lsst.meas.base.pluginsBase
-.. automodapi:: lsst.meas.base.references
-.. automodapi:: lsst.meas.base.sfm
-.. automodapi:: lsst.meas.base.tests
-.. automodapi:: lsst.meas.base.transforms
-.. automodapi:: lsst.meas.base.wrappers
+.. .. automodapi:: lsst.meas.base.pluginsBase
+.. .. automodapi:: lsst.meas.base.references
+.. .. automodapi:: lsst.meas.base.sfm
+.. .. automodapi:: lsst.meas.base.tests
+.. .. automodapi:: lsst.meas.base.transforms
+.. .. automodapi:: lsst.meas.base.wrappers
