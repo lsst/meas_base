@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import math
 import unittest
@@ -40,7 +39,8 @@ except NameError:
 
 
 class CentroidTestCase(utilsTests.TestCase):
-    """A test case for centroiding"""
+    """A test case for centroiding.
+    """
 
     def setUp(self):
         pass
@@ -53,7 +53,8 @@ class CentroidTestCase(utilsTests.TestCase):
         pass
 
     def do_testAstrometry(self, alg, bkgd, control):
-        """Test that we can instantiate and play with a centroiding algorithms"""
+        """Test that we can instantiate and play with a centroiding algorithm.
+        """
 
         schema = afwTable.SourceTable.makeMinimalSchema()
         schema.getAliasMap().set("slot_Centroid", "test")
@@ -103,7 +104,8 @@ class CentroidTestCase(utilsTests.TestCase):
             self.assertFalse(source.get("test_flag"))
 
     def testNaiveMeasureCentroid(self):
-        """Test that we can instantiate and play with NAIVE centroids"""
+        """Test that we can instantiate and play with naive centroids.
+        """
         bkgd = 10.0
         afwTable.SourceTable.makeMinimalSchema()
         control = measBase.NaiveCentroidControl()
@@ -119,7 +121,8 @@ class CentroidTestCase(utilsTests.TestCase):
 
 
 class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
-    """A test case for the SingleFrameMeasurementTask"""
+    """A test case for the SingleFrameMeasurementTask.
+    """
 
     def mySetup(self):
         msConfig = measBase.SingleFrameMeasurementConfig()
@@ -146,7 +149,8 @@ class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
         return source
 
     def setUp(self):
-        """Make the image we'll measure"""
+        """Make the image we'll measure.
+        """
 
         self.exp = afwImage.ExposureF(100, 100)
         psf = lsst.afw.detection.GaussianPsf(15, 15, 3.0)
@@ -163,7 +167,8 @@ class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
         del self.exp
 
     def testCentroider(self):
-        """Measure the centroid"""
+        """Measure the centroid.
+        """
         s = self.mySetup()
 
         # this does not match exactly, and it used to

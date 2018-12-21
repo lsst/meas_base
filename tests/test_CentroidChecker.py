@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 LSST Corporation.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 
@@ -47,12 +46,13 @@ class CentroiderConfig(SingleFramePluginConfig):
 
 @register("test_Centroider")
 class Centroider(SingleFramePlugin):
-    '''
-    This is a sample Python plugin.  The flag handler for this plugin is created
-    during construction, and is called using the method fail().  All plugins are
-    required to implement this method, which is used to set the flags in the
-    output source record if an error occurs.
-    '''
+    """Sample Python measurement plugin.
+
+    The flag handler for this plugin is created during construction, and is
+    called using the method `fail`.  All plugins are required to implement
+    this method, which is used to set the flags in the output source record if
+    an error occurs.
+    """
     ConfigClass = CentroiderConfig
     # Class variables ErrEnum and FLAGDEFS are added by the decorator
 
@@ -75,18 +75,18 @@ class Centroider(SingleFramePlugin):
             self.centroidChecker = lsst.meas.base.CentroidChecker(schema, name, True, self.config.dist)
 
     def measure(self, measRecord, exposure):
-        """
-        This measure routine moves the centroid by design to create an error.
+        """This measure routine moves the centroid by design to create an error.
         """
         measRecord.set(self.xKey, measRecord.getX() + self.config.moveX)
         measRecord.set(self.yKey, measRecord.getY() + self.config.moveY)
         self.centroidChecker(measRecord)
 
     def fail(self, measRecord, error=None):
-        """
+        """Respond to measurement failures.
+
         This routine responds to the standard failure call in baseMeasurement
-        If the exception is a MeasurementError, the error will be passed to the
-        fail method by the MeasurementFramework.
+        If the exception is a MeasurementError, the error will be passed to
+        the fail method by the MeasurementFramework.
         """
         if error is None:
             self.flagHandler.handleFailure(measRecord)
@@ -96,7 +96,7 @@ class Centroider(SingleFramePlugin):
 
 class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
-    #   Setup a configuration and datasource to be used by the plugin tests
+    # Setup a configuration and datasource to be used by the plugin tests
     def setUp(self):
         self.algName = "test_Centroider"
         bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(100, 100))
@@ -122,8 +122,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         del self.dataset
 
     def testNoError(self):
-        """
-        Test to be sure that the resetToPeak flag is not set when no error
+        """Test that the ``resetToPeak`` flag is not set when no error seen.
         """
         schema = self.dataset.makeMinimalSchema()
         config = self.makeConfig()
@@ -136,9 +135,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFalse(source.get("test_Centroider_flag_resetToPeak"))
 
     def testCentroidDistance(self):
-        """
-        test if a slight move of the centroid (but inside the footprint) will trigger
-        the distance error
+        """Test that a slight centroid movement triggers the distance error.
         """
         schema = self.dataset.makeMinimalSchema()
         config = self.makeConfig()
@@ -154,9 +151,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertEqual(source.getFootprint().getPeaks()[0].getFx(), source.get("test_Centroider_x"))
 
     def testCentroidOutsideFootprint(self):
-        """
-        test if moving the centroid completely outside of the footprint will trigger
-        the move back to the first peak
+        """A large centroid movement should trigger a move back to first peak.
         """
         schema = self.dataset.makeMinimalSchema()
         config = self.makeConfig()
@@ -171,8 +166,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertEqual(source.getFootprint().getPeaks()[0].getFx(), source.get("test_Centroider_x"))
 
     def testNaiveCentroid(self):
-        """
-        Test to be sure that NaiveCentroid centroid checker works with maxDistance check
+        """Test the `NaiveCentroid` works with the ``maxDistance`` check.
         """
         schema = self.dataset.makeMinimalSchema()
         config = self.makeConfig("base_NaiveCentroid")
@@ -185,8 +179,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertTrue(source.get("base_NaiveCentroid_flag_resetToPeak"))
 
     def testSdssCentroid(self):
-        """
-        Test to be sure that SdssCentroid centroid checker works with maxDistance check
+        """Test the `SdssCentroid` works with the ``maxDistance`` check.
         """
         schema = self.dataset.makeMinimalSchema()
         config = self.makeConfig("base_SdssCentroid")

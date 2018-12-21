@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 LSST Corporation.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,11 +16,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
-""" Unit tests for Python Plugin FlagHandlers and Sample Plugin Example."""
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import unittest
 
 import numpy as np
@@ -38,8 +37,7 @@ from lsst.meas.base.sfm import SingleFramePluginConfig, SingleFramePlugin
 
 
 class PythonPluginConfig(SingleFramePluginConfig):
-    """
-    Configuration for Sample Plugin with a FlagHandler.
+    """Configuration for a sample plugin with a `FlagHandler`.
     """
 
     edgeLimit = lsst.pex.config.Field(dtype=int, default=0, optional=False,
@@ -52,22 +50,26 @@ class PythonPluginConfig(SingleFramePluginConfig):
 
 @register("test_PythonPlugin")
 class PythonPlugin(SingleFramePlugin):
-    """
-    This is a sample Python plugin which shows how to create and use a FlagHandler.
-    The FlagHandler defines the known failures which can occur when the plugin is
-    called, and should be tested after measure() to detect any potential problems.
+    """Example Python measurement plugin using a `FlagHandler`.
 
-    This plugin is a very simple flux measurement algorithm which sums
-    the pixel values in a square box of dimension config.size around the center point.
+    This is a sample Python plugin which shows how to create and use a
+    `FlagHandler`. The `FlagHandler` defines the known failures which can
+    occur when the plugin is called, and should be tested after `measure` to
+    detect any potential problems.
 
-    Note that to properly set the error flags when a MeasurementError occurs, the plugin
-    must implement the fail() method as shown below. The fail method should set both
-    the general error flag, and any specific flag as designated in the MeasurementError.
+    This plugin is a very simple flux measurement algorithm which sums the
+    pixel values in a square box of dimension `PythonPluginConfig.size` around
+    the center point.
 
-    This example also demonstrates the use of the SafeCentroidExtractor. The
-    SafeCentroidEextractor and SafeShapeExtractor can be used to get some reasonable
-    estimate of the centroid or shape in cases where the centroid or shape slot
-    has failed on a particular source.
+    Note that to properly set the error flags when a `MeasurementError` occurs,
+    the plugin must implement the `fail` method as shown below. The `fail`
+    method should set both the general error flag, and any specific flag as
+    designated in the `MeasurementError`.
+
+    This example also demonstrates the use of the `SafeCentroidExtractor`. The
+    `SafeCentroidEextractor` and `SafeShapeExtractor` can be used to get some
+    reasonable estimate of the centroid or shape in cases where the centroid
+    or shape slot has failed on a particular source.
     """
 
     ConfigClass = PythonPluginConfig
@@ -88,15 +90,17 @@ class PythonPlugin(SingleFramePlugin):
         self.magKey = schema.addField(name + "_mag", "F", doc="mag")
 
     def measure(self, measRecord, exposure):
-        """
-        The measure method is called by the measurement framework when task.run is called
-        If a MeasurementError is raised during this method, the fail() method will be
-        called to set the error flags.
+        """Perform measurement.
+
+        The measure method is called by the measurement framework when
+        `run` is called. If a `MeasurementError` is raised during this method,
+        the `fail` method will be called to set the error flags.
         """
         # Call the SafeCentroidExtractor to get a centroid, even if one has
-        # not been supplied by the centroid slot. Normally, the centroid is supplied
-        # by the centroid slot, but if that fails, the footprint is used as a fallback.
-        # If the fallback is needed, the fail flag will be set on this record.
+        # not been supplied by the centroid slot. Normally, the centroid is
+        # supplied by the centroid slot, but if that fails, the footprint is
+        # used as a fallback.  If the fallback is needed, the fail flag will
+        # be set on this record.
         center = self.centroidExtractor(measRecord, self.flagHandler)
 
         # create a square bounding box of size = config.size around the center
@@ -104,7 +108,8 @@ class PythonPlugin(SingleFramePlugin):
         bbox = lsst.geom.Box2I(centerPoint, lsst.geom.Extent2I(1, 1))
         bbox.grow(self.config.size)
 
-        # If the measurement box falls outside the exposure, raise the edge MeasurementError
+        # If the measurement box falls outside the exposure, raise the edge
+        # MeasurementError
         if not exposure.getBBox().contains(bbox):
             raise MeasurementError(self.EDGE.doc, self.EDGE.number)
 
@@ -112,7 +117,8 @@ class PythonPlugin(SingleFramePlugin):
         instFlux = lsst.afw.image.ImageF(exposure.getMaskedImage().getImage(), bbox).getArray().sum()
         measRecord.set(self.instFluxKey, instFlux)
 
-        # If there was a nan inside the bounding box, the instFlux will still be nan
+        # If there was a NaN inside the bounding box, the instFlux will still
+        # be NaN
         if np.isnan(instFlux):
             raise MeasurementError(self.CONTAINS_NAN.doc, self.CONTAINS_NAN.number)
 
@@ -123,12 +129,12 @@ class PythonPlugin(SingleFramePlugin):
             measRecord.set(self.magKey, mag)
 
     def fail(self, measRecord, error=None):
-        """
-        This routine responds to the standard failure call in baseMeasurement
-        If the exception is a MeasurementError, the error will be passed to the
-        fail method by the MeasurementFramework. If error is not none, error.cpp
-        should correspond to a specific error and the appropriate
-        error flag will be set.
+        """Handle measurement failures.
+
+        If the exception is a `MeasurementError`, the error will be passed to
+        the fail method by the measurement Framework. If ``error`` is not
+        `None`, ``error.cpp`` should correspond to a specific error and the
+        appropriate error flag will be set.
         """
         if error is None:
             self.flagHandler.handleFailure(measRecord)
@@ -161,9 +167,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         del self.dataset
 
     def testFlagHandler(self):
-        """
-        Standalone test to create a flaghandler and call it
-        This is not a real world example, just a simple unit test
+        """Test creation and invocation of `FlagHander`.
         """
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
 
@@ -179,7 +183,8 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
         catalog = lsst.afw.table.SourceCatalog(schema)
 
-        # Now check to be sure that all of the known failures set the bits correctly
+        # Now check to be sure that all of the known failures set the bits
+        # correctly
         record = catalog.addNew()
         fh.handleFailure(record)
         self.assertTrue(fh.getValue(record, FAILURE.number))
@@ -207,11 +212,8 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFalse(fh.getValue(record, FIRST.number))
         self.assertTrue(fh.getValue(record, SECOND.number))
 
-    #   Test with no failure flag
     def testNoFailureFlag(self):
-        """
-        Standalone test to create a flaghandler and call it
-        This is not a real world example, just a simple unit test
+        """Test with no failure flag.
         """
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
 
@@ -226,7 +228,8 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
         catalog = lsst.afw.table.SourceCatalog(schema)
 
-        # Now check to be sure that all of the known failures set the bits correctly
+        # Now check to be sure that all of the known failures set the bits
+        # correctly
         record = catalog.addNew()
         fh.handleFailure(record)
         self.assertFalse(fh.getValue(record, FIRST.number))
@@ -246,11 +249,10 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertTrue(fh.getValue(record, SECOND.number))
 
     # This and the following tests using the toy plugin, and demonstrate how
-    # the flagHandler is used.
+    # the FlagHandler is used.
 
     def testPluginNoError(self):
-        """
-        Test that the sample plugin can be run without errors
+        """Test that the sample plugin can be run without errors.
         """
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
@@ -262,12 +264,14 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFalse(source.get(self.algName + "_flag_edge"))
 
     def testPluginUnexpectedError(self):
+        """Test that unexpected non-fatal errors set the failure flag.
+
+        An unexpected error is a non-fatal error which is not caught by the
+        algorithm itself.  However, such errors are caught by the measurement
+        framework in task.run, and result in the failure flag being set, but
+        no other specific flags
         """
-        An unexpected error is a non-fatal error which is not caught by the algorithm itself.
-        However, such errors are caught by the measurement framework in task.run, and result
-        in the failure flag being set, but no other specific flags
-        """
-        self.config.plugins[self.algName].flux0 = 0.0     # this causes a divide by zero
+        self.config.plugins[self.algName].flux0 = 0.0  # divide by zero
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
         exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=1)
@@ -279,8 +283,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFalse(source.get(self.algName + "_flag_edge"))
 
     def testPluginContainsNan(self):
-        """
-        Test that the containsNan error can be triggered.
+        """Test that the ``containsNan`` error can be triggered.
         """
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
@@ -293,8 +296,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFalse(source.get(self.algName + "_flag_edge"))
 
     def testPluginEdgeError(self):
-        """
-        Test that the Edge error can be triggered.
+        """Test that the ``edge`` error can be triggered.
         """
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
@@ -309,10 +311,10 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertTrue(source.get(self.algName + "_flag_edge"))
 
     def testSafeCentroider(self):
+        """Test `SafeCentroidExtractor` correctly runs and sets flags.
         """
-        Test that the SafeCentroidExtractor works and sets the flags correctly
-        """
-        # Normal case should use the centroid slot to get the center, which should succeed
+        # Normal case should use the centroid slot to get the center, which
+        # should succeed
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
         task.log.setLevel(task.log.FATAL)
@@ -323,8 +325,8 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         instFlux = source.get("test_PythonPlugin_instFlux")
         self.assertFalse(np.isnan(instFlux))
 
-        # If one of the center coordinates is nan and the centroid slot error flag has
-        # not been set, the SafeCentroidExtractor will fail.
+        # If one of the center coordinates is nan and the centroid slot error
+        # flag has not been set, the SafeCentroidExtractor will fail.
         source.set('truth_x', np.nan)
         source.set('truth_flag', False)
         source.set("test_PythonPlugin_instFlux", np.nan)
@@ -333,9 +335,10 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertTrue(source.get(self.algName + "_flag"))
         self.assertTrue(np.isnan(source.get("test_PythonPlugin_instFlux")))
 
-        # But if the same conditions occur and the centroid slot error flag is set
-        # to true, the SafeCentroidExtractor will succeed and the algorithm will complete.
-        # However, the failure flag will also be set.
+        # But if the same conditions occur and the centroid slot error flag is
+        # set to true, the SafeCentroidExtractor will succeed and the
+        # algorithm will complete.  However, the failure flag will also be
+        # set.
         source.set('truth_x', np.nan)
         source.set('truth_flag', True)
         source.set("test_PythonPlugin_instFlux", np.nan)

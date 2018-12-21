@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 LSST Corporation.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
@@ -30,7 +29,7 @@ from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
 import lsst.afw.geom
 import lsst.utils.tests
 
-# n.b. Some tests here depend on the noise realization in the test data
+# N.B. Some tests here depend on the noise realization in the test data
 # or from the numpy random number generator.
 # For the current test data and seed value, they pass, but they may not
 # if the test data is regenerated or the seed value changes.  I've marked
@@ -55,7 +54,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         del self.dataset
 
     def makeAlgorithm(self, ctrl=None):
-        """Construct an algorithm (finishing a schema in the process), and return both.
+        """Construct an algorithm and return both it and its schema.
         """
         if ctrl is None:
             ctrl = lsst.meas.base.SdssCentroidControl()
@@ -64,7 +63,8 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         return algorithm, schema
 
     def testSingleFramePlugin(self):
-        """Test that we can call the algorithm through the SFM plugin interface."""
+        """Test calling the algorithm through the plugin interface.
+        """
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         task.run(catalog, exposure)
@@ -75,8 +75,12 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFloatsAlmostEqual(record.get("base_SdssCentroid_y"), record.get("truth_y"), rtol=0.005)
 
     def testMonteCarlo(self):
-        """Test that we get exactly the right answer on an ideal sim with no noise, and that
-        the reported uncertainty agrees with a Monte Carlo test of the noise.
+        """Test an ideal simulation, with no noise.
+
+        Demonstrate that:
+
+        - We get exactly the right answer, and
+        - The reported uncertainty agrees with a Monte Carlo test of the noise.
         """
         algorithm, schema = self.makeAlgorithm()
         exposure, catalog = self.dataset.realize(0.0, schema, randomSeed=1)
@@ -94,8 +98,9 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             yErrList = []
             nSamples = 1000
             for repeat in range(nSamples):
-                # By using ``repeat`` to seed the RNG, we get results which fall within the tolerances
-                # defined below. If we allow this test to be truly random, passing becomes RNG-dependent.
+                # By using ``repeat`` to seed the RNG, we get results which
+                # fall within the tolerances defined below. If we allow this
+                # test to be truly random, passing becomes RNG-dependent.
                 exposure, catalog = self.dataset.realize(noise*instFlux, schema, randomSeed=repeat)
                 record = catalog[0]
                 algorithm.measure(record, exposure)
@@ -122,8 +127,8 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         bbox = psfImage.getBBox()
         bbox.grow(-5)
         subImage = lsst.afw.image.ExposureF(exposure, bbox)
-        # we also need to install a smaller footprint, or NoiseReplacer complains before we even get to
-        # measuring the centriod
+        # we also need to install a smaller footprint, or NoiseReplacer
+        # complains before we even get to measuring the centroid
         record = catalog[0]
         spanSet = lsst.afw.geom.SpanSet(bbox)
         newFootprint = lsst.afw.detection.Footprint(spanSet)

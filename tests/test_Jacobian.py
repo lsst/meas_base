@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,13 +13,11 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
@@ -74,7 +73,8 @@ class JacobianTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     def testJacobianPlugin(self):
         config = SingleFrameMeasurementConfig()
         config.plugins.names |= ['base_Jacobian']
-        # Pixel scale chosen to approximately match the scale defined in the above WCS
+        # Pixel scale chosen to approximately match the scale defined in the
+        # above WCS
         config.plugins['base_Jacobian'].pixelScale = 0.2
         task = self.makeSingleFrameMeasurementTask(config=config)
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)

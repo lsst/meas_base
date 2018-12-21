@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
@@ -31,8 +30,11 @@ import lsst.utils.tests
 class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testFlagAliases(self):
-        """Test that we get flag aliases to the slot centroid and shape algorithms when we
-        initialize GaussianFlux (which uses both SafeCentroidExtractor and SafeShapeExtractor).
+        """Test flag aliases are created correctly.
+
+        In particular, we should get flag aliases to the slot centroid and
+        shape algorithms when we initialize `GaussianFlux` (which uses both
+        `SafeCentroidExtractor` and `SafeShapeExtractor`).
         """
         config = self.makeSingleFrameMeasurementConfig("base_GaussianFlux",
                                                        ["base_SdssCentroid", "base_SdssShape"])
@@ -44,14 +46,16 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
                          task.schema.find("base_SdssCentroid_flag").key)
         self.assertEqual(task.schema.find("base_GaussianFlux_flag_badShape").key,
                          task.schema.find("base_SdssShape_flag").key)
-        # Test that the aliases are direct links (i.e. they do not require recursive expansion).
+        # Test that the aliases are direct links (i.e. they do not require
+        # recursive expansion).
         self.assertEqual(task.schema.getAliasMap().get("base_GaussianFlux_flag_badCentroid"),
                          "base_SdssCentroid_flag")
         self.assertEqual(task.schema.getAliasMap().get("base_GaussianFlux_flag_badShape"),
                          "base_SdssShape_flag")
 
     def testCentroidFlagAliases(self):
-        """Test that we setup the right aliases when using centroid algorithms to feed each other."""
+        """Test aliases are correct when using multiple centroid algorithms.
+        """
         config = self.makeSingleFrameMeasurementConfig("base_NaiveCentroid", ["base_SdssCentroid"])
         config.slots.centroid = "base_SdssCentroid"
         config.slots.shape = None
@@ -67,8 +71,10 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
         self.assertRaises(LookupError, task.schema.find, "base_SdssCentroid_flag_badInitialCentroid")
 
     def testUnmetCentroidDependency(self):
-        """Test that we throw an exception (LogicError) when initializing an algorithm
-        that requires a centroid without the centroid slot set.
+        """Test that an unmet centroid dependency raises.
+
+        We should throw a `LogicError` when initializing an algorithm that
+        requires a centroid without the centroid slot set.
         """
         config = self.makeSingleFrameMeasurementConfig("base_GaussianFlux",
                                                        ["base_SdssCentroid", "base_SdssShape"])
@@ -79,8 +85,10 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
             self.makeSingleFrameMeasurementTask(config=config)
 
     def testUnmetShapeDependency(self):
-        """Test that we throw an exception (LogicError) when initializing an algorithm
-        that requires a shape without the shape slot set.
+        """Test that an unmet shape dependency raises.
+
+        Test that we throw a `LogicError` when initializing an algorithm that
+        requires a shape without the shape slot set.
         """
         config = self.makeSingleFrameMeasurementConfig("base_GaussianFlux",
                                                        ["base_SdssCentroid", "base_SdssShape"])

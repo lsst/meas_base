@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 LSST Corporation.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
@@ -60,14 +59,22 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
         self.assertGreater(catalog[1].get("base_ClassificationExtendedness_value"), 0.5)
 
     def testFlags(self):
-        """Test all the failure modes of this algorithm, as well as checking that it succeeds when it should.
+        """Test for success and check all failure modes.
 
-        Since this algorithm depends on having a ModelFlux and a PsfFlux measurement, it is a failure
-        mode when either is NAN, or when ModelFluxFlag or PsfFluxFlag is True.
+        Test all the failure modes of this algorithm, as well as checking that
+        it succeeds when it should.
 
-        When psfFluxFactor != 0, the PsfFluxErr cannot be NAN, but otherwise is ignored
+        Notes
+        -----
+        Since this algorithm depends on having a ``ModelFlux`` and a
+        ``PsfFlux`` measurement, it is a failure mode when either is NaN, or
+        when ``ModelFluxFlag`` or ``PsfFluxFlag`` is ``True``.
 
-        When modelFluxFactor != 0, the ModelFluxErr cannot be NAN, but otherwise is ignored
+        When ``psfFluxFactor != 0``, the ``PsfFluxErr`` cannot be NaN, but
+        otherwise is ignored.
+
+        When ``modelFluxFactor != 0``, the ``ModelFluxErr`` cannot be NaN, but
+        otherwise is ignored.
         """
         config = measBase.SingleFrameMeasurementConfig()
         config.slots.psfFlux = "base_PsfFlux"

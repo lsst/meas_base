@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 LSST/AURA
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,14 +16,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Tests for Variance measurement algorithm
-"""
 import unittest
 
 import numpy as np
@@ -83,7 +79,8 @@ class VarianceTest(lsst.utils.tests.TestCase):
             var.getArray()[:, bad] = float("nan")
             mask.getArray()[:, bad] = mask.getPlaneBitMask("BAD")
 
-        # Put in some unmasked bad pixels outside the expected aperture, to ensure the aperture is working
+        # Put in some unmasked bad pixels outside the expected aperture, to
+        # ensure the aperture is working
         var.getArray()[0, 0] = float("nan")
         var.getArray()[0, -1] = float("nan")
         var.getArray()[-1, 0] = float("nan")
@@ -146,17 +143,18 @@ class VarianceTest(lsst.utils.tests.TestCase):
 
         self.assertLess(np.abs(self.source.get("base_Variance_value") - self.variance), self.varianceStd)
 
-        # flag_emptyFootprint should not have been set since the footprint has non-masked pixels at this
-        # point.
+        # flag_emptyFootprint should not have been set since the footprint has
+        # non-masked pixels at this point.
         self.assertFalse(self.source.get("base_Variance_flag_emptyFootprint"))
 
     def testEmptyFootprint(self):
-        # Set the pixel mask for all pixels to 'BAD' and remeasure.
+        # Set the pixel mask for all pixels to ``BAD`` and remeasure.
         self.mask.getArray()[:, :] = self.mask.getPlaneBitMask("BAD")
         self.task.run(self.catalog, self.exp)
 
-        # The computed variance should be nan and flag_emptyFootprint should have been set since the footprint
-        # has all masked pixels at this point.
+        # The computed variance should be NaN and flag_emptyFootprint should
+        # have been set since the footprint has all masked pixels at this
+        # point.
         self.assertTrue(np.isnan(self.source.get("base_Variance_value")))
         self.assertTrue(self.source.get("base_Variance_flag_emptyFootprint"))
 
@@ -164,7 +162,11 @@ class VarianceTest(lsst.utils.tests.TestCase):
 class BadCentroidTest(lsst.utils.tests.TestCase):
 
     def testBadCentroid(self):
-        """The flag from the centroid slot should propagate to the badCentroid flag on the variance plugin."""
+        """Test propagation of flags to ``badCentroid``.
+
+        If the centroid is flagged as bad, the ``badCentroid`` flag should be
+        set on the variance measurement.
+        """
         schema = afwTable.SourceTable.makeMinimalSchema()
         measBase.SingleFramePeakCentroidPlugin(measBase.SingleFramePeakCentroidConfig(),
                                                "centroid", schema, None)
@@ -173,8 +175,9 @@ class BadCentroidTest(lsst.utils.tests.TestCase):
                                                       "variance", schema, None)
         catalog = afwTable.SourceCatalog(schema)
 
-        # The centroid is not flagged as bad, but there's no way the algorithm can run without
-        # valid data in the SourceRecord and Exposure: this should throw a logic error.
+        # The centroid is not flagged as bad, but there's no way the algorithm
+        # can run without valid data in the SourceRecord and Exposure: this
+        # should throw a logic error.
         record = catalog.addNew()
         record.set("centroid_flag", False)
         with self.assertRaises(measBase.MeasurementError) as measErr:
@@ -192,8 +195,6 @@ class BadCentroidTest(lsst.utils.tests.TestCase):
         variance.fail(record, measErr.exception)
         self.assertTrue(record.get("variance_flag"))
         self.assertTrue(record.get("variance_flag_badCentroid"))
-
-##############################################################################################################
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):

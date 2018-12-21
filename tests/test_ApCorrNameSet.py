@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
@@ -27,10 +26,15 @@ import lsst.meas.base
 
 
 class MinimalistTestPlugin(lsst.meas.base.SingleFramePlugin):
-    """This class is used below to test registration. It is set up as the
+    """Minimal plugin implementation.
+
+    Notes
+    -----
+    This class is used below to test registration. It is set up as the
     minimal class that still has a valid implementation. Whilst these
     methods are not needed in this test file, the class registered here
-    might appear in other tests that scan the registry."""
+    might appear in other tests that scan the registry.
+    """
     @classmethod
     def getExecutionOrder(cls):
         return cls.CENTROID_ORDER
@@ -61,7 +65,7 @@ class ApCorrNameTestCase(lsst.utils.tests.TestCase):
         self.assertEqual(len(nameSet2 - nameSet1), 0)
 
     def testCopy(self):
-        """Make sure getApCorrNameSet returns a copy
+        """Make sure `getApCorrNameSet` returns a copy.
         """
         nameSet0 = lsst.meas.base.getApCorrNameSet()
         nameSet0.add("test_LocalName")
@@ -70,7 +74,8 @@ class ApCorrNameTestCase(lsst.utils.tests.TestCase):
         self.assertEqual(len(nameSet0 - nameSet1), 1)
 
     def testRegisterDecorator(self):
-        """Test the shouldApCorr argument of the register decorator for measurement plugins."""
+        """Test the ``shouldApCorr`` argument to plugin registration.
+        """
         @lsst.meas.base.register("test_ApCorrPlugin", shouldApCorr=True)
         class ApCorrPlugin(MinimalistTestPlugin):
             pass

@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2015 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,13 +13,11 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
@@ -35,11 +34,15 @@ class FPPositionTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     def setUp(self):
         # Define point2D object which are distributed about a detector
         self.positions = [lsst.geom.Point2D(*x) for x in ((50.1, 49.8), (12, 15.6), (13.4, 100.0))]
-        # Define a box which will be used to as boundaries to construct an detector object
+
+        # Define a box which will be used to as boundaries to construct an
+        # detector object
         self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30),
                                     lsst.geom.Extent2I(140, 160))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
-        # Add in sources to synthetic dataset at defined positions with an arbitrary value
+
+        # Add in sources to synthetic dataset at defined positions with an
+        # arbitrary value
         for pos in self.positions:
             self.dataset.addSource(100000.0, pos)
         self.dw = DetectorWrapper()
@@ -56,9 +59,9 @@ class FPPositionTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         exposure.setDetector(self.dw.detector)
         task.run(catalog, exposure)
         pointKey = lsst.afw.table.Point2DKey(catalog.schema["base_FPPosition"])
-        # Compare the derived focal plane position to the true position.
-        # True position is calculated as pixel coordinate plus half pixel offset
-        # to the center of a pixel, times the pixel scale.
+        # Compare the derived focal plane position to the true position.  True
+        # position is calculated as pixel coordinate plus half pixel offset to
+        # the center of a pixel, times the pixel scale.
         for record, pos in zip(catalog, self.positions):
             self.assertFalse(record.get("base_FPPosition_flag"))
             point = record.get(pointKey)

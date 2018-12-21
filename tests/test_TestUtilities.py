@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,13 +13,12 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import unittest
 
 import numpy as np
@@ -45,7 +45,8 @@ class TestDatasetTestCase(utilsTests.TestCase):
         del self.wcs
 
     def test_perturb(self):
-        """Test that perturbing a WCS gives us back something different."""
+        """Test that perturbing a WCS gives us back something different.
+        """
         # We should always get something different from our starting point.
         self.assertNotEqual(self.wcs, DatasetTester.makePerturbedWcs(self.wcs))
 
@@ -59,12 +60,16 @@ class TestDatasetTestCase(utilsTests.TestCase):
                             DatasetTester.makePerturbedWcs(self.wcs, randomSeed=2))
 
     def test_randomState(self):
-        """Test that we do not alter global state when perturbing the WCS."""
-        # This checks that global state doesn't change while the test is
-        # executing. This isn't perfectly robust: the test will fail if
-        # another thread manipulates the RNG state while this is executing.
-        # However, since pytest doesn't using multi-threading, it should be
-        # safe in practice.
+        """Test that we do not alter global state when perturbing the WCS.
+
+        Notes
+        -----
+        This checks that global state doesn't change while the test is
+        executing. This isn't perfectly robust: the test will fail if another
+        thread manipulates the RNG state while this is executing. However,
+        since pytest doesn't using multi-threading, it should be safe in
+        practice.
+        """
         init_state = np.random.get_state()
         DatasetTester.makePerturbedWcs(self.wcs)
         for init, final in zip(init_state, np.random.get_state()):

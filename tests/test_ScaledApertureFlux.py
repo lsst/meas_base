@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 import math
@@ -47,8 +46,7 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         del self.dataset
 
     def makeAlgorithm(self, ctrl=None):
-        """
-        Construct a ScaledApertureFluxAlgorithm with an accompanying schema and return them both.
+        """Construct an and return both it and its schema.
         """
         if ctrl is None:
             ctrl = lsst.meas.base.ScaledApertureFluxControl()
@@ -57,7 +55,8 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         return algorithm, schema
 
     def testSourceFlux(self):
-        """Check that we recover the source instFlux."""
+        """Check that we recover the source instFlux.
+        """
         ctrl = lsst.meas.base.ScaledApertureFluxControl()
         algorithm, schema = self.makeAlgorithm(ctrl)
         exposure, catalog = self.dataset.realize(10.0, schema, randomSeed=0)
@@ -69,7 +68,8 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag_apertureTruncated"))
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag_sincCoeffsTruncated"))
 
-        # Aperture equal to the PSF FWHM should collect ~93.7% of the instFlux.
+        # Aperture equal to the PSF FWHM should collect ~93.7% of the
+        # instFlux.
         ctrl.scale = 1.0
         algorithm, schema = self.makeAlgorithm(ctrl)
         algorithm.measure(catalog[0], exposure)
@@ -80,9 +80,12 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag_sincCoeffsTruncated"))
 
     def testApertureTruncated(self):
-        """Check that we set a flag appropriately when the aperture overflows the image."""
-        """
-        Note that this is a fatal failure: we do not return a useful result, but rather set the global flag.
+        """Check that a flag is set when the aperture overflows the image.
+
+        Notes
+        -----
+        This is a fatal failure: we do not return a useful result, but rather
+        set the global flag.
         """
         ctrl = lsst.meas.base.ScaledApertureFluxControl()
         ctrl.scale = 100
@@ -96,10 +99,12 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertTrue(catalog[0].get("base_ScaledApertureFlux_flag_sincCoeffsTruncated"))
 
     def testSincCoeffsTruncated(self):
-        """Check that we set a flag appropriately when the coefficient image is clipped."""
-        """
-        Note that we don't regard this as a fatal failure, so the global flag
-        is not set and we still provide a numeric result.
+        """Check that a flag is set when the coefficient image is clipped.
+
+        Notes
+        -----
+        This is not regarded as a fatal failure, so the global flag is not set
+        and we still provide a numeric result.
         """
         ctrl = lsst.meas.base.ScaledApertureFluxControl()
         ctrl.scale = 10

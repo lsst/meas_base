@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 LSST/AURA
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,13 +16,10 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Tests for InputCounts measurement algorithm
+"""Tests for InputCounts measurement algorithm.
 """
 import numpy as np
 import itertools
@@ -47,25 +45,32 @@ except NameError:
 
 
 def ccdVennDiagram(exp, showImage=True, legendLocation='best'):
-    '''
-    Create a figure with the bounding boxes for each of the images which go into a coadd,
-    over-plotting the given exposure object.
-    @param[in] exp              (Exposure) The exposure object to plot, must be the product of a coadd
-    Optional:
-    @param[in] showImage        (Bool)     Plot image data in addition to it's bounding box, default True
-    @param[in] legendLocation   (String)   Matplotlib legend location code, can be: 'best', 'upper right',
-                                           'upper left', 'lower left', 'lower right', 'right', center left',
-                                           'center right', 'lower center', 'upper center', 'center'
-    '''
+    """Display and exposure & bounding boxes for images which go into a coadd.
+
+    Parameters
+    ----------
+    exp : `lsst.afw.image.Exposure`
+        The exposure object to plot, must be the product of a coadd
+    showImage : `bool`, optional
+        Plot image data in addition to its bounding box
+    legendLocation : `str`, optional
+        Matplotlib legend location code. Can be: ``'best'``, ``'upper
+        right'``, ``'upper left'``, ``'lower left'``, ``'lower right'``,
+        ``'right'``, ``'center left'``, ``'center right'``, ``'lower
+        center'``, ``'upper center'``, ``'center'``
+
+    """
     # Create the figure object
     fig = plt.figure()
-    # Use all the built in matplotib line style attributes to create a list of the possible styles
+    # Use all the built in matplotib line style attributes to create a list of
+    # the possible styles
     linestyles = ['solid', 'dashed', 'dashdot', 'dotted']
     colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
-    # Calculate the cartisian product of the styles, and randomize the order, to help each CCD get
-    # it's own color
+    # Calculate the cartisian product of the styles, and randomize the order,
+    # to help each CCD get it's own color
     pcomb = np.random.permutation(list(itertools.product(colors, linestyles)))
-    # Filter out a black solid box, as that will be the style of the given exp object
+    # Filter out a black solid box, as that will be the style of the given exp
+    # object
     pcomb = pcomb[((pcomb[:, 0] == 'k') * (pcomb[:, 1] == 'solid')) is False]
     # Get the image properties
     origin = lsst.geom.PointD(exp.getXY0())
@@ -83,7 +88,8 @@ def ccdVennDiagram(exp, showImage=True, legendLocation='best'):
         plt.gca().add_patch(patches.Rectangle(coaddCorners[0], *list(coaddCorners[2]-coaddCorners[0]),
                                               fill=False, color=pcomb[i][0], ls=pcomb[i][1],
                                               label="CCD{}".format(i)))
-    # If showImage is true, plot the data contained in exp as well as the boundrys
+    # If showImage is true, plot the data contained in exp as well as the
+    # boundaries
     if showImage:
         plt.imshow(exp.getMaskedImage().getArrays()[0], cmap='Greys', origin='lower')
         plt.colorbar()
@@ -185,14 +191,24 @@ class InputCountTest(lsst.utils.tests.TestCase):
             ccdVennDiagram(exp)
 
     def _preparePlugin(self, addCoaddInputs):
-        """
-        Prepare a SingleFrameInputCountPlugin for running.
+        """Prepare a `SingleFrameInputCountPlugin` for running.
 
-        Sets up an InputCount plugin to run on an empty catalog together with a synthetic, content-free
-        Exposure.
+        Sets up the plugin to run on an empty catalog together with a
+        synthetic, content-free `~lsst.afw.image.ExposureF`.
 
-        @param[in] addCoaddInputs  Should we add the coadd inputs?
-        @returns   tuple of (initialized plugin, empty catalog, synthetic exposure)
+        Parameters
+        ----------
+        addCoaddInputs : `bool`
+            Should we add the coadd inputs?
+
+        Returns
+        -------
+        inputCount : `SingleFrameInputCountPlugin`
+            Initialized measurement plugin.
+        catalog : `lsst.afw.table.SourceCatalog`
+            Empty Catalog.
+        exp : `lsst.afw.image.ExposureF`
+            Synthetic exposure.
         """
         exp = afwImage.ExposureF(20, 20)
         scale = 1.0e-5*lsst.geom.degrees
@@ -219,28 +235,31 @@ class InputCountTest(lsst.utils.tests.TestCase):
         return inputCount, catalog, exp
 
     def testBadCentroid(self):
-        """
+        """Test that a NaN centroid raises and results in a correct flag.
+
         The flag from the centroid slot should propagate to the badCentroid
         flag on InputCount and the algorithm should throw a MeasurementError
-        when it encounters a NAN position.
+        when it encounters a NaN position.
         """
         inputCount, catalog, exp = self._preparePlugin(True)
         record = catalog.addNew()
 
-        # The inputCount's badCentroid flag is an alias to the centroid's global flag,
-        # so it should be set immediately.
+        # The inputCount's badCentroid flag is an alias to the centroid's
+        # global flag, so it should be set immediately.
         record.set("centroid_flag", True)
         self.assertTrue(record.get("inputCount_flag_badCentroid"))
 
-        # Even though the source is flagged as bad, if the position is good we should still get a measurement.
+        # Even though the source is flagged as bad, if the position is good we
+        # should still get a measurement.
         record.set("slot_Centroid_x", 10)
         record.set("slot_Centroid_y", 10)
         inputCount.measure(record, exp)
         self.assertTrue(record.get("inputCount_flag_badCentroid"))
         self.assertEqual(record.get("inputCount_value"), 1)
 
-        # The centroid is bad (with a NAN) even though the centroid isn't flagged, so we should get a
-        # MeasurementError indicating an expected failure.
+        # The centroid is bad (with a NaN) even though the centroid isn't
+        # flagged, so we should get a MeasurementError indicating an expected
+        # failure.
         record = catalog.addNew()
         record.set("slot_Centroid_x", float("nan"))
         record.set("slot_Centroid_y", 12.345)
@@ -255,9 +274,10 @@ class InputCountTest(lsst.utils.tests.TestCase):
         self.assertTrue(record.get("inputCount_flag"))
 
     def testBadCoaddInputs(self):
-        """
-        When there are no coadd inputs on the input exposure we should throw a MeasurementError
-        and set both the global flag and flag_noInputs.
+        """Test that no coadd inputs raises and results in a correct flag.
+
+        When there are no coadd inputs on the input exposure we should throw a
+        MeasurementError and set both the global flag and flag_noInputs.
         """
         inputCount, catalog, exp = self._preparePlugin(False)
         record = catalog.addNew()
@@ -266,8 +286,8 @@ class InputCountTest(lsst.utils.tests.TestCase):
         self.assertFalse(record.get("inputCount_flag"))
         self.assertFalse(record.get("inputCount_flag_noInputs"))
 
-        # There are no coadd inputs, so we should get a MeasurementError indicating
-        # an expected failure.
+        # There are no coadd inputs, so we should get a MeasurementError
+        # indicating an expected failure.
         with self.assertRaises(measBase.MeasurementError) as measErr:
             inputCount.measure(record, exp)
 

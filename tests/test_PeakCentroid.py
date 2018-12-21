@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from contextlib import contextmanager
 import unittest
@@ -34,8 +33,7 @@ from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
 
 @contextmanager
 def onlyLogFatal(log):
-    """
-    For the duration of the context, only log FATAL errors.
+    """For the duration of this context, only log ``FATAL`` errors.
 
     This is convenient when testing algorithms under failure conditions: we
     want to be able to check that they have set appropriate flags without
@@ -69,7 +67,8 @@ class SingleFramePeakCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCa
         del self.catalog
 
     def testSingleFramePlugin(self):
-        """Check that we recover the correct location of the centroid."""
+        """Check that we recover the correct location of the centroid.
+        """
         self.task.run(self.catalog, self.exposure)
         x = self.catalog[0].get("base_PeakCentroid_x")
         y = self.catalog[0].get("base_PeakCentroid_y")
@@ -78,10 +77,12 @@ class SingleFramePeakCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCa
         self.assertFloatsAlmostEqual(y, self.center.getY(), atol=None, rtol=.02)
 
     def testFlags(self):
-        """
-        When it is impossible to measure the centroid -- in this case, because
-        we have removed the Peaks from the SourceRecord -- the centroider
-        should set a failure flag.
+        """Test that a flag is set when centroid measurement is impossible.
+
+        Notes
+        -----
+        In this case, it is impossible to measure the centroid because we
+        remove the peaks from the `~lsst.afw.table.SourceRecord`.
         """
         self.catalog[0].getFootprint().getPeaks().clear()
         # The decorator suppresses alarming but expected errors on the console.
@@ -95,9 +96,9 @@ class SingleFramePeakCentroidTransformTestCase(CentroidTransformTestCase,
                                                lsst.utils.tests.TestCase):
 
     class SingleFramePeakCentroidPluginFactory:
-        """
-        Helper class to sub in an empty PropertyList as the final argument to
-        lsst.meas.base.SingleFramePeakCentroidPlugin.
+        """Supply an empty ``PropertyList`` to `XingleFramePeakCentroidPlugin`.
+
+        This is a helper class to make testing more convenient.
         """
 
         def __call__(self, control, name, inputSchema):

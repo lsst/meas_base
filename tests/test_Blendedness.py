@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from contextlib import contextmanager
 import unittest
@@ -33,8 +32,7 @@ from lsst.meas.base.tests import AlgorithmTestCase
 
 @contextmanager
 def onlyLogFatal(log):
-    """
-    For the duration of the context, only log FATAL errors.
+    """For the duration of this context, only log ``FATAL`` errors.
 
     This is convenient when testing algorithms under failure conditions: we
     want to be able to check that they have set appropriate flags without
@@ -85,8 +83,7 @@ class BlendednessTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFloatsAlmostEqual(f(1.0, 0.3**2), 0.0000672467314, rtol=1E-5)
 
     def testBlendedness(self):
-        """
-        Check that we measure a positive blendedness for two overlapping sources
+        """Test that we measure a positive blendedness for overlapping sources.
         """
         task = self.makeSingleFrameMeasurementTask("base_Blendedness")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)

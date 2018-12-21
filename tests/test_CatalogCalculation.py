@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 LSST Corporation.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import unittest
 import lsst.utils.tests
 
@@ -30,9 +30,8 @@ from lsst.meas.base import MeasurementError
 
 @register("FailcatalogCalculation")
 class FailCC(catCalc.CatalogCalculationPlugin):
-    '''
-    catalogCalculation plugin which is guaranteed to fail, testing the failure framework
-    '''
+    """Plugin which is guaranteed to fail, testing the failure framework.
+    """
     @classmethod
     def getExecutionOrder(cls):
         return cls.DEFAULT_CATALOGCALCULATION
@@ -51,10 +50,11 @@ class FailCC(catCalc.CatalogCalculationPlugin):
 
 @register("singleRecordCatalogCalculation")
 class SingleRecordCC(catCalc.CatalogCalculationPlugin):
-    '''
-    CatalogCalculation plugin which works in single mode. It takes a single record, reads a value, squares it,
-    and writes out the results to the record
-    '''
+    """Test plugin which operates on single records.
+
+    Takes a single record, reads a value, squares it, and writes out the
+    results to the record.
+    """
     @classmethod
     def getExecutionOrder(cls):
         return cls.DEFAULT_CATALOGCALCULATION
@@ -74,10 +74,11 @@ class SingleRecordCC(catCalc.CatalogCalculationPlugin):
 
 @register("multiRecordCatalogCalculation")
 class MultiRecordAb(catCalc.CatalogCalculationPlugin):
-    """
-    CatalogCalcuation plugin to test the framework in multimode. This plugin takes the whole source catalog at
-    once, and loops over the catalog internally. The algorithm simply reads a value, cubes it, and writes the
-    results out to the table
+    """Test plugin which operates on multiple records.
+
+    This plugin takes the whole source catalog at once, and loops over the
+    catalog internally. The algorithm simply reads a value, cubes it, and
+    writes the results out to the table.
     """
     plugType = 'multi'
 
@@ -102,10 +103,12 @@ class MultiRecordAb(catCalc.CatalogCalculationPlugin):
 
 @register("dependentCatalogCalulation")
 class DependentAb(catCalc.CatalogCalculationPlugin):
-    '''
-    CatalogCalculation plugin to test the runlevel resolution. This plugin takes in single records, reads a
-    value from a previous plugin computes a square root, and writes the results to the table.
-    '''
+    """Test plugin which depends on a previous plugin execution.
+
+    Used to test runlevel resolution. This plugin takes in single records,
+    reads a value calculated by a previous plugin, computes a square root, and
+    writes the results to the table.
+    """
     @classmethod
     def getExecutionOrder(cls):
         return cls.DEFAULT_CATALOGCALCULATION + 1
@@ -125,15 +128,15 @@ class DependentAb(catCalc.CatalogCalculationPlugin):
 
 
 class CatalogCalculationTest(unittest.TestCase):
-    '''
-    Test the catalogCalculation framework, running only the plugins defined above
-    '''
+    """Test the catalogCalculation framework using plugins defined above.
+    """
     def setUp(self):
-        # Create a schema object, and populate it with a field to simulate results from measurements on an
-        # image
+        # Create a schema object, and populate it with a field to simulate
+        # results from measurements on an image
         schema = afwTable.SourceTable.makeMinimalSchema()
         schema.addField("start", type="D")
-        # Instantiate a config object adding each of the above plugins, and use it to create a task
+        # Instantiate a config object adding each of the above plugins, and
+        # use it to create a task
         catCalcConfig = catCalc.CatalogCalculationConfig()
         catCalcConfig.plugins.names = ["FailcatalogCalculation", "singleRecordCatalogCalculation",
                                        "multiRecordCatalogCalculation", "dependentCatalogCalulation"]
@@ -144,7 +147,9 @@ class CatalogCalculationTest(unittest.TestCase):
         for i in range(self.numObjects):
             rec = self.catalog.addNew()
             rec.set("start", float(i + 1))
-        # Run the catalogCalculation task, outputs will be checked in test methods
+
+        # Run the catalogCalculation task, outputs will be checked in test
+        # methods
         catCalcTask.run(self.catalog)
 
     def testCatalogCalculation(self):
@@ -157,7 +162,8 @@ class CatalogCalculationTest(unittest.TestCase):
         for rec in self.catalog:
             self.assertAlmostEqual(rec.get("start")**2, rec.get("singleRecordCatalogCalculation_square"), 4)
 
-        # Verify that the system correctly handled a plugin which expects a full catalog to be passed
+        # Verify that the system correctly handled a plugin which expects a
+        # full catalog to be passed
         for rec in self.catalog:
             self.assertAlmostEqual(rec.get("start")**3, rec.get("multiRecordCatalogCalculation_cube"), 4)
 
