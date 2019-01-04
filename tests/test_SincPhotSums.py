@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 Aura/LSST
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,12 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
-
-# -*- lsst-python -*-
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import math
 import unittest
@@ -45,16 +42,29 @@ except NameError:
 
 
 def plantSources(bbox, kwid, sky, coordList, addPoissonNoise=True):
-    """Make an exposure with stars (modelled as Gaussians)."""
-    """
-    @param bbox: parent bbox of exposure
-    @param kwid: kernel width (and height; kernel is square)
-    @param sky: amount of sky background (counts)
-    @param coordList: a list of [x, y, counts, sigma], where:
-        * x,y are relative to exposure origin
-        * counts is the integrated counts for the star
-        * sigma is the Gaussian sigma in pixels
-    @param addPoissonNoise: add Poisson noise to the exposure?
+    """Make an exposure with stars (modelled as Gaussians).
+
+    Parameters
+    ----------
+    bbox : `lsst.afw.geom.Box2I`
+        Parent bounding box of output exposure.
+    kwid : `float`
+        Kernel width (and height; kernel is square).
+    sky : `float`
+        Amount of sky background (counts)
+    coordList : iterable of `list`
+        Where:
+           - ``coordList[0]`` is the X coord of the star relative to the origin
+           - ``coordList[1]`` is the Y coord of the star relative to the origin
+           - ``coordList[2]`` is the integrated counts in the star
+           - ``coordlist[3]`` is the Gaussian sigma in pixels.
+    addPoissonNoise : `bool`, optional
+        Add Poisson noise to the output exposure?
+
+    Returns
+    -------
+    exposure : `lsst.afw.image.ExposureF`
+        Resulting exposure with simulated stars.
     """
     # make an image with sources
     img = afwImage.ImageD(bbox)
@@ -126,8 +136,8 @@ class SincPhotSums(lsst.utils.tests.TestCase):
         del self.expSky
 
     def testEllipticalGaussian(self):
-        """Test measuring elliptical aperture mags for an elliptical Gaussian"""
-
+        """Test measuring elliptical aperture mags for an elliptical Gaussian.
+        """
         width, height = 200, 200
         xcen, ycen = 0.5*width, 0.5*height
         #
@@ -168,7 +178,7 @@ class SincPhotSums(lsst.utils.tests.TestCase):
                        (3.0*a, 5.0*a),
                        (3.0*a, 10.0*a),
                        ]:
-            if display:                 # draw the inner and outer boundaries of the aperture
+            if display:  # draw the inner and outer boundaries of the aperture
                 Mxx = 1
                 Myy = (b/a)**2
 

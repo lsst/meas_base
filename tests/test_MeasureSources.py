@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,14 +16,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
-"""
-Tests for measuring sources using the meas_base framework
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""
 import math
 import unittest
 
@@ -63,7 +59,6 @@ def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
 
 
 class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
-    """A test case for Measure"""
 
     def setUp(self):
         pass
@@ -100,8 +95,14 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
             self.assertAlmostEqual(10.0*math.pi*r*r/currentFlux, 1.0, places=4)
 
     def testPeakLikelihoodFlux(self):
-        """Test measurement with PeakLikelihoodFlux."""
-        # make and measure a series of exposures containing just one star, approximately centered
+        """Test measurement with PeakLikelihoodFlux.
+
+        Notes
+        -----
+        This test makes and measures a series of exposures containing just one
+        star, approximately centered.
+        """
+
         bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Extent2I(100, 101))
         kernelWidth = 35
         var = 100
@@ -173,7 +174,8 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
                 self.assertLess(abs(measFluxErr - predFluxErr), predFluxErr * 0.2)
 
                 # try nearby points and verify that the instFlux is smaller;
-                # this checks that the sub-pixel shift is performed in the correct direction
+                # this checks that the sub-pixel shift is performed in the
+                # correct direction
                 for dx in (-0.2, 0, 0.2):
                     for dy in (-0.2, 0, 0.2):
                         if dx == dy == 0:
@@ -185,7 +187,8 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
                         plugin.measure(source, exp)
                         self.assertLess(source.get("test_instFlux"), measFlux)
 
-        # source so near edge of image that PSF does not overlap exposure should result in failure
+        # source so near edge of image that PSF does not overlap exposure
+        # should result in failure
         for edgePos in (
             (1, 50),
             (50, 1),
@@ -270,8 +273,9 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
                 else:
                     self.assertFalse(value, "Flag %s should not be set for %f,%f" % (flag, x, y))
 
-        # the new code which grabs the center of a record throws when a Nan is set in the
-        # centroid slot and the algorithm attempts to get the default center position
+        # the new code which grabs the center of a record throws when a NaN is
+        # set in the centroid slot and the algorithm attempts to get the
+        # default center position
         source = cat.makeRecord()
         source.set("centroid_x", float("NAN"))
         source.set("centroid_y", 40)
@@ -281,7 +285,9 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         source.setFootprint(afwDetection.Footprint(tmpSpanSet))
         with self.assertRaises(lsst.pex.exceptions.RuntimeError):
             plugin.measure(source, exp)
-        # Test that if there is no center and centroider that the object should look at the footprint
+
+        # Test that if there is no center and centroider that the object
+        # should look at the footprint
         plugin, cat = makePluginAndCat(measBase.PixelFlagsAlgorithm, "test", control)
         # The first test should raise exception because there is no footprint
         source = cat.makeRecord()
@@ -293,8 +299,9 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         source.setFootprint(afwDetection.Footprint(tmpSpanSet2))
         with self.assertRaises(lsst.pex.exceptions.RuntimeError):
             plugin.measure(source, exp)
-        # The final test should pass because it detects a peak, we are reusing the location of the
-        # clipped bit in the mask plane, so we will check first that it is false, then true
+        # The final test should pass because it detects a peak, we are reusing
+        # the location of the clipped bit in the mask plane, so we will check
+        # first that it is False, then True
         source.getFootprint().addPeak(x+x0, y+y0, 100)
         self.assertFalse(source.get("test_flag_clipped"), "The clipped flag should be set False")
         plugin.measure(source, exp)
@@ -302,23 +309,33 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
 
 
 def addStar(image, center, instFlux, fwhm):
-    """Add a perfect single Gaussian star to an image
+    """Add a perfect single Gaussian star to an image.
 
-    @warning uses Python to iterate over all pixels (because there is no C++
+    Parameters
+    ----------
+    image : `lsst.afw.image.ImageF`
+        Image to which the star will be added.
+    center : `list` or `tuple` of `float`, length 2
+        Position of the center of the star on the image.
+    instFlux : `float`
+        instFlux of the Gaussian star, in counts.
+    fwhm : `float`
+        FWHM of the Gaussian star, in pixels.
+
+    Notes
+    -----
+    Uses Python to iterate over all pixels (because there is no C++
     function that computes a Gaussian offset by a non-integral amount).
-
-    @param[in,out] image: Image to which to add star
-    @param[in] center: position of center of star on image (pair of float)
-    @param[in] instFlux: instFlux of Gaussian star, in counts
-    @param[in] fwhm: FWHM of Gaussian star, in pixels
     """
     sigma = fwhm/FwhmPerSigma
     func = afwMath.GaussianFunction2D(sigma, sigma, 0)
     starImage = afwImage.ImageF(image.getBBox())
-    # The instFlux in the region of the image will not be exactly the desired instFlux because the Gaussian
-    # does not extend to infinity, so keep track of the actual instFlux and correct for it
+    # The instFlux in the region of the image will not be exactly the desired
+    # instFlux because the Gaussian does not extend to infinity, so keep track
+    # of the actual instFlux and correct for it
     actFlux = 0
-    # No function exists that has a fractional x and y offset, so set the image the slow way
+    # No function exists that has a fractional x and y offset, so set the
+    # image the slow way
     for i in range(image.getWidth()):
         x = center[0] - i
         for j in range(image.getHeight()):
@@ -332,16 +349,31 @@ def addStar(image, center, instFlux, fwhm):
 
 
 def makeFakeImage(bbox, centerList, instFluxList, fwhm, var):
-    """Make a fake image containing a set of stars variance = image + var
+    """Make a fake image containing a set of stars with variance = image + var.
 
-    (It is trivial to add Poisson noise, which would be more accurate,
-    but hard to make a unit test  that can reliably determine whether such an image passes a test)
+    Paramters
+    ---------
+    bbox : `lsst.afw.image.Box2I`
+        Bounding box for image.
+    centerList : iterable of pairs of `float`
+        list of positions of center of star on image.
+    instFluxList : `list` of `float`
+        instFlux of each star, in counts.
+    fwhm : `float`
+        FWHM of Gaussian star, in pixels.
+    var : `float`
+        Value of variance plane, in counts.
 
-    @param[in] bbox: bounding box for image
-    @param[in] centerList: list of positions of center of star on image (pairs of float)
-    @param[in] instFluxList: instFlux of each star, in counts
-    @param[in] fwhm: FWHM of Gaussian star, in pixels
-    @param[in] var: value of variance plane (counts)
+    Returns
+    -------
+    maskedImage : `lsst.afw.image.MaskedImageF`
+        Resulting fake image.
+
+    Notes
+    -----
+    It is trivial to add Poisson noise, which would be more accurate, but
+    hard to make a unit test that can reliably determine whether such an
+    image passes a test.
     """
     if len(centerList) != len(instFluxList):
         raise RuntimeError("len(centerList) != len(instFluxList)")

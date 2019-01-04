@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2015 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,15 +13,15 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
-"""Registry for measurement plugins and associated utilities generateAlgorithmName and PluginMap
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+"""Registry for measurement plugins and utilities for plugin management.
 """
+
 import collections
 
 import lsst.pipe.base
@@ -32,12 +32,28 @@ __all__ = ("generateAlgorithmName", "PluginRegistry", "register", "PluginMap")
 
 
 def generateAlgorithmName(AlgClass):
-    """Generate a string name for an algorithm class that strips away terms that are generally redundant
-    while (hopefully) remaining easy to trace to the code.
+    """Generate a name for an algorithm.
 
-    The returned name will cobmine the package name, with any "lsst" and/or "meas" prefix removed,
-    with the class name, with any "Algorithm" suffix removed.  For instance,
-    lsst.meas.base.SdssShapeAlgorithm becomes "base_SdssShape".
+    This generates a short name for an algorithmic class that strips away
+    terms that are generally redundant while remaining easy to trace to the
+    code.
+
+    Parameters
+    ----------
+    AlgClass : subclass of `BaseAlgorithm`
+        The class to generate a name for.
+
+    Returns
+    -------
+    name : `str`
+        A short name for the algorithm.
+
+    Notes
+    -----
+    The returned name will cobmine the package name, with any ``lsst`` and/or
+    ``meas`` prefix removed, with the class name, with any ``Algorithm``
+    suffix removed.  For instance, ``lsst.meas.base.SdssShapeAlgorithm``
+    becomes ``base_SdssShape``.
     """
     name = AlgClass.__name__
     pkg = AlgClass.__module__
@@ -58,30 +74,37 @@ def generateAlgorithmName(AlgClass):
 
 
 class PluginRegistry(lsst.pex.config.Registry):
-    """!
-    Base class for plugin registries
+    """Base class for plugin registries.
 
-    The Plugin class allowed in the registry is defined in the ctor of the registry.
+    Notes
+    -----
+    The class of plugins allowed in the registry is defined in the constructor
+    of the registry.
 
     Single-frame and forced plugins have different registries.
     """
 
     class Configurable:
-        """!
-        Class used as the actual element in the registry
+        """Class used as the element in the plugin registry.
 
+        Parameters
+        ----------
+        name : `str`
+            Name under which the plugin is registerd.
+        PluginClass : subclass of `BasePlugin`
+            The class of plugin which can be stored in the registry.
+
+        Notes
+        -----
         Rather than constructing a Plugin instance, its __call__ method
         (invoked by RegistryField.apply) returns a tuple
-        of (executionOrder, name, config, PluginClass), which can then
+        of ``(executionOrder, name, config, PluginClass)``, which can then
         be sorted before the plugins are instantiated.
         """
 
         __slots__ = "PluginClass", "name"
 
         def __init__(self, name, PluginClass):
-            """!
-            Create a Configurable object for the given PluginClass and name
-            """
             self.name = name
             self.PluginClass = PluginClass
 
@@ -93,26 +116,39 @@ class PluginRegistry(lsst.pex.config.Registry):
             return (self.PluginClass.getExecutionOrder(), self.name, config, self.PluginClass)
 
     def register(self, name, PluginClass, shouldApCorr=False, apCorrList=()):
-        """!
-        Register a Plugin class with the given name.
+        """Register a plugin class with the given name.
 
-        The same Plugin may be registered multiple times with different names; this can
-        be useful if we often want to run it multiple times with different configuration.
+        Parameters
+        ----------
+        name : `str`
+            The name of the plugin. This is used as a prefix for all fields
+            produced by the plugin, and it should generally contain the name
+            of the plugin or algorithm class itself as well as enough of the
+            namespace to make it clear where to find the code.  For example
+            ``base_GaussianFlux`` indicates an algorithm in `lsst.meas.base`
+            that measures Gaussian Flux and produces fields such as
+            ``base_GaussianFlux_instFlux``, ``base_GaussianFlux_instFluxErr``
+            and ``base_GaussianFlux_flag``.
+        shouldApCorr : `bool`
+            If `True`, then this algorithm measures an instFlux that should
+            be aperture corrected. This is shorthand for ``apCorrList=[name]``
+            and is ignored if ``apCorrList`` is specified.
+        apCorrList : `list` of `str`
+            List of field name prefixes for instFlux fields to be aperture
+            corrected.  If an algorithm produces a single instFlux that should
+            be aperture corrected then it is simpler to set
+            ``shouldApCorr=True``. But if an algorithm produces multiple such
+            fields then it must specify ``apCorrList`` instead. For example,
+            ``modelfit_CModel`` produces three such fields:
+            ``apCorrList=("modelfit_CModel_exp", "modelfit_CModel_exp",
+            "modelfit_CModel_def")``. If ``apCorrList`` is not empty then
+            shouldApCorr is ignored.
 
-        @param[in] name  name of plugin class. This is used as a prefix for all fields produced by the Plugin,
-            and it should generally contain the name of the Plugin or Algorithm class itself
-            as well as enough of the namespace to make it clear where to find the code.
-            For example "base_GaussianFlux" indicates an algorithm in meas_base
-            that measures Gaussian Flux and produces fields such as "base_GaussianFlux_instFlux",
-            "base_GaussianFlux_instFluxErr" and "base_GaussianFlux_flag".
-        @param[in] shouldApCorr  if True then this algorithm measures a instFlux that should be aperture
-            corrected. This is shorthand for apCorrList=[name] and is ignored if apCorrList is specified.
-        @param[in] apCorrList  list of field name prefixes for instFlux fields to be aperture corrected.
-            If an algorithm produces a single instFlux that should be aperture corrected then it is simpler
-            to set shouldApCorr=True. But if an algorithm produces multiple such fields then it must
-            specify apCorrList, instead. For example modelfit_CModel produces 3 such fields:
-                apCorrList=("modelfit_CModel_exp", "modelfit_CModel_exp", "modelfit_CModel_def")
-            If apCorrList is non-empty then shouldApCorr is ignored.
+        Notes
+        -----
+        The same plugin may be registered multiple times with different names;
+        this can be useful if we often want to run it multiple times with
+        different configuration.
         """
         lsst.pex.config.Registry.register(self, name, self.Configurable(name, PluginClass))
         if shouldApCorr and not apCorrList:
@@ -125,21 +161,26 @@ class PluginRegistry(lsst.pex.config.Registry):
 
 
 def register(name, shouldApCorr=False, apCorrList=()):
-    """!
-    A Python decorator that registers a class, using the given name, in its base class's PluginRegistry.
-    For example,
-    @code
-    @register("base_TransformedCentroid")
-    class ForcedTransformedCentroidPlugin(ForcedPlugin):
-        ...
-    @endcode
-    is equivalent to:
-    @code
-    class ForcedTransformedCentroidPlugin(ForcedPlugin):
-        ...
-    @ForcedPlugin.registry.register("base_TransformedCentroid", ForcedTransformedCentroidPlugin)
-    @endcode
+    """A decorator to register a plugin class in its base class's registry.
+
+    Parameters
+    ----------
+    shouldApCorr : `bool`
+        If `True`, then this algorithm measures an instFlux that should be
+        aperture corrected. This is shorthand for ``apCorrList=[name]`` and is
+        ignored if ``apCorrList`` is specified.
+    apCorrList : `list` of `str`
+        List of field name prefixes for instFlux fields to be aperture
+        corrected.  If an algorithm produces a single instFlux that should be
+        aperture corrected then it is simpler to set ``shouldApCorr=True``.
+        But if an algorithm produces multiple such fields then it must specify
+        ``apCorrList`` instead. For example, ``modelfit_CModel`` produces
+        three such fields: ``apCorrList=("modelfit_CModel_exp",
+        "modelfit_CModel_exp", "modelfit_CModel_def")``. If ``apCorrList`` is
+        not empty then shouldApCorr is ignored.
+
     """
+
     def decorate(PluginClass):
         PluginClass.registry.register(name, PluginClass, shouldApCorr=shouldApCorr, apCorrList=apCorrList)
         return PluginClass
@@ -147,27 +188,39 @@ def register(name, shouldApCorr=False, apCorrList=()):
 
 
 class PluginMap(collections.OrderedDict):
-    """!
-    Map of plugins (instances of subclasses of BasePlugin) to be run for a task
+    """Map of plugins to be run for a given task.
 
-    We assume plugins are added to the PluginMap according to their "Execution Order", so this
-    class doesn't actually do any of the sorting (though it does have to maintain that order,
-    which it does by inheriting from OrderedDict).
+    Notes
+    -----
+    Plugins are classes derived from `BasePlugin`.
+
+    We assume plugins are added to the plugin map according to their
+    "Execution Order", so this class doesn't actually do any of the sorting
+    (though it does have to maintain that order, which it does by inheriting
+    from `collections.OrderedDict`).
     """
 
     def iter(self):
-        """!Return an iterator over plugins for which plugin.config.doMeasure is true
+        """Return an iterator over plugins for use in single-object mode.
 
-        @note plugin.config.doMeasure is usually a simple boolean class attribute, not a normal Config field.
+        Notes
+        -----
+        Plugins which should be used in single-object mode are identified by
+        having the `doMeasure` config attribute evaluate to `True`. This is
+        usually a simple boolean class attribute.
         """
         for plugin in self.values():
             if plugin.config.doMeasure:
                 yield plugin
 
     def iterN(self):
-        """!Return an iterator over plugins for which plugin.config.doMeasureN is true
+        """Return an iterator over plugins for use in multi-object mode.
 
-        @note plugin.config.doMeasureN is usually a simple boolean class attribute, not a normal Config field.
+        Notes
+        -----
+        Plugins which should be used in multi-object mode are identified by
+        having the `doMeasureN` config attribute evaluate to `True`.
+        This is usually a simple boolean class attribute.
         """
         for plugin in self.values():
             if plugin.config.doMeasureN:

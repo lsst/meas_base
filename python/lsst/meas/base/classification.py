@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2016 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,15 +13,13 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
-"""
-Definition and registration of classification plugins
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+"""Definition and registration of classification plugins.
 """
 
 import numpy as np
@@ -36,6 +34,9 @@ __all__ = (
 
 
 class CatalogCalculationClassificationConfig(CatalogCalculationPluginConfig):
+    """Configuration for catalog classification plugin.
+    """
+
     fluxRatio = lsst.pex.config.Field(dtype=float, default=.925, optional=True,
                                       doc="critical ratio of model to psf flux")
     modelErrFactor = lsst.pex.config.Field(dtype=float, default=0.0, optional=True,
@@ -46,14 +47,19 @@ class CatalogCalculationClassificationConfig(CatalogCalculationPluginConfig):
 
 @register("base_ClassificationExtendedness")
 class CatalogCalculationClassificationPlugin(CatalogCalculationPlugin):
-    """
-    A binary measure of the extendedness of a source, based a simple cut on the ratio of the
-    PSF flux to the model flux.
+    """Plugin which calculates a binary measure of source extendedness.
 
-    Because the fluxes on which this algorithm is based on are slot measurements, they can be provided
-    by different algorithms, and the "fluxRatio" threshold used by this algorithm should generally
-    be set differently for different algorithms.  To do this, plot the difference between the PSF
-    magnitude and the model magnitude vs. the PSF magnitude, and look for where the cloud of galaxies
+    Extendedness is based on a simple cut of the ratio of the PSF flux to the
+    model flux.
+
+    Notes
+    -----
+    Because the fluxes on which this algorithm is based on are slot
+    measurements, they can be provided by different algorithms, and the
+    `~CatalogCalculationClassificationConfig.fluxRatio` threshold used by this
+    algorithm should generally be set differently for different algorithms.
+    To do this, plot the difference between the PSF magnitude and the model
+    magnitude vs. the PSF magnitude, and look for where the cloud of galaxies
     begins.
     """
 
@@ -86,9 +92,9 @@ class CatalogCalculationClassificationPlugin(CatalogCalculationPlugin):
             flux2 += self.config.psfErrFactor*measRecord.getPsfInstFluxErr()
 
         # A generic failure occurs when either FluxFlag is set to True
-        # A generic failure also occurs if either calculated flux value is NAN:
-        #     this can occur if the Flux field itself is NAN,
-        #     or the ErrFactor != 0 and the FluxErr is NAN
+        # A generic failure also occurs if either calculated flux value is NaN:
+        #     this can occur if the Flux field itself is NaN,
+        #     or the ErrFactor != 0 and the FluxErr is NaN
         if np.isnan(flux1) or np.isnan(flux2) or modelFluxFlag or psfFluxFlag:
             self.fail(measRecord)
         else:

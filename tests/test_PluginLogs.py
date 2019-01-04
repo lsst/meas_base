@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2016 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 import os
@@ -40,18 +38,20 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 class LoggingPluginConfig(SingleFramePluginConfig):
-    """
-    Configuration for Sample Plugin with a FlagHandler.
+    """Configuration for sample plugin.
     """
     pass
 
 
 @register("test_LoggingPlugin")
 class LoggingPlugin(SingleFramePlugin):
-    """
-    This is a sample Python plugin which shows how to create a plugin which has
-    a log provided to it by the measurement task which is running it.
-    Note that the hasLogName attribute must be a member of the Plugin class, and must be True
+    """Sample Python plugin which has an associated log name.
+
+    Notes
+    -----
+    The log name is provided to the plugin by the measurement task which is
+    running it. This requires that the `hasLogName` attribute must be a member
+    of the plugin class, and it must be `True`.
     """
     hasLogName = True
     ConfigClass = LoggingPluginConfig
@@ -60,7 +60,7 @@ class LoggingPlugin(SingleFramePlugin):
     def getExecutionOrder(cls):
         return cls.FLUX_ORDER
 
-    #  The initializer for the class requires an optional logName
+    # The initializer for the class must accept an optional logName parameter.
     def __init__(self, config, name, schema, metadata, logName=None):
         SingleFramePlugin.__init__(self, config, name, schema, metadata, logName=logName)
         flagDefs = FlagDefinitionList()
@@ -70,10 +70,13 @@ class LoggingPlugin(SingleFramePlugin):
         self.instFluxKey = schema.addField(name + "_instFlux", "F", doc="flux")
 
     def measure(self, measRecord, exposure):
-        """
-        The measure method is called by the measurement framework when task.run is called
-        If a MeasurementError is raised during this method, the fail() method will be
-        called to set the error flags.
+        """Perform measurement.
+
+        Notes
+        -----
+        The `measure` method is called by the measurement framework when `run`
+        is called. If a `MeasurementError` is raised during this method, the
+        `fail` method will be called to set the error flags.
         """
         lsst.log.Log.getLogger(self.getLogName()).info("%s plugin measuring."%(self.name,))
         # Sum the pixels inside the bounding box
@@ -82,17 +85,20 @@ class LoggingPlugin(SingleFramePlugin):
         instFlux = lsst.afw.image.ImageF(exposure.getMaskedImage().getImage(), bbox).getArray().sum()
         measRecord.set(self.instFluxKey, instFlux)
 
-        # If there was a nan inside the bounding box, the instFlux will still be nan
+        # If there was a NaN inside the bounding box, the instFlux will still
+        # be NaN
         if numpy.isnan(instFlux):
             raise MeasurementError(self.CONTAINS_NAN.doc, self.CONTAINS_NAN.number)
 
     def fail(self, measRecord, error=None):
-        """
-        This routine responds to the standard failure call in baseMeasurement
-        If the exception is a MeasurementError, the error will be passed to the
-        fail method by the MeasurementFramework. If error is not none, error.cpp
-        should correspond to a specific error and the appropriate
-        error flag will be set.
+        """Handle measurement failures.
+
+        Notes
+        -----
+        If measurement raises a `MeasurementError`, the error will be passed
+        to the fail method by the measurement framework. If the error is not
+        `None`, ``error.cpp`` should correspond to a specific error and the
+        appropriate error flag will be set.
         """
         if error is None:
             self.flagHandler.handleFailure(measRecord)
@@ -101,7 +107,8 @@ class LoggingPlugin(SingleFramePlugin):
 
 
 def directLog(log, file=None):
-    """Direct the log given to a file, or to the console if no file is specified"""
+    """Direct the log given to a file or to the console if ``file`` is `None`.
+    """
     props = "log4j.rootLogger=INFO, FA\n"
     if file is None:
         props += "log4j.appender.FA=ConsoleAppender\n"
@@ -117,12 +124,12 @@ def directLog(log, file=None):
 
 
 class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
-    """
-    Test all the registered Plugins to see if their logName is set as expected.
-    Those which have the hasLogName=True attribute will have a LogName parameter
-    in their __init__, and should set the internal BasePlugin._logName attribute.
-    If they are wrapped C++ Algorithms, the cpp.getLogName() should also return
-    same logName as the plugin.
+    """Test all registered Plugins to see if their logName is set as expected.
+
+    Those which have the ``hasLogName=True`` attribute will have a ``logName``
+    parameter passed to their ``__init__``, and should set the internal
+    ``_logName`` attribute.  If they are wrapped C++ algorithms, the
+    `getLogName` should also return same ``logName`` as the plugin.
     """
     def testSingleFramePlugins(self):
         center = lsst.geom.Point2D(50, 50)
@@ -147,7 +154,8 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                 self.assertEqual(plugin.getLogName(), None)
 
     def testForcedPlugins(self):
-        #   Test all the ForcedPlugins registered to see if their logName is set as expected.
+        # Test all the ForcedPlugins registered to see if their logName is set
+        # as expected.
         center = lsst.geom.Point2D(50, 50)
         bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
                                lsst.geom.Extent2I(100, 100))
@@ -179,8 +187,7 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
 
 class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
-    """
-    Test one C++ and one Python plugin which are known to have hasLogName=True
+    """Test one C++ and one Python plugin which have hasLogName=True.
     """
     def setUp(self):
         bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.Point2I(100, 100))
@@ -217,11 +224,12 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             # direct back to console, closing log files
             with open(pluginLogName) as fin:
                 lines = fin.read()
-        #  test that the sample plugin has correctly logged to where we expected it to.
+        # test that the sample plugin has correctly logged to where we
+        # expected it to.
         self.assertTrue(lines.find("measuring") >= 0)
 
     def testLoggingCppPlugin(self):
-        #   PsfFlux is known to log an ERROR if a Psf is not attached
+        # PsfFlux is known to log an ``ERROR`` if a Psf is not attached
         algName = "base_PsfFlux"
         self.config.plugins = [algName]
 
@@ -230,7 +238,7 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         log = lsst.log.Log.getLogger(task.getPluginLogName(algName))
         log.setLevel(lsst.log.ERROR)
 
-        #  test that the plugin's logName has been propagated to the plugin
+        # test that the plugin's logName has been propagated to the plugin
         self.assertTrue(task.plugins[algName].getLogName(), task.getPluginLogName(algName))
         self.assertTrue(task.plugins[algName].cpp.getLogName(), task.getPluginLogName(algName))
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
@@ -246,14 +254,15 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             # direct back to console, closing log files
             with open(pluginLogName) as fin:
                 lines = fin.read()
-        #  test that the sample plugin has correctly logged to where we expected it to.
+        # test that the sample plugin has correctly logged to where we
+        # expected it to.
         self.assertTrue(lines.find("ERROR") >= 0)
 
 
 class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
-        #   object in corner to trigger EDGE error
+        # object in corner to trigger EDGE error
         self.center = lsst.geom.Point2D(5, 5)
         self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
                                     lsst.geom.Extent2I(100, 100))
@@ -273,7 +282,8 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         del self.catalog
 
     def testSeparatePluginLogs(self):
-        """Check that the task log and the plugin log are truly separate."""
+        """Check that the task log and the plugin log are truly separate.
+        """
         taskLogName = os.path.join(ROOT, 'testSeparatePluginLogs-task.log')
         directLog(self.task.log, taskLogName)
         self.task.log.info("Testing")
@@ -292,9 +302,11 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                 lines = fin.read()
         self.assertTrue(lines.find("MeasurementError") >= 0)
 
-        """Check that plugin log can be set to ERROR level, where Measurement Error doesn't show."""
     def testSetPluginLevel(self):
-        """Check that we recover the correct location of the centroid."""
+        """Test setting the plugin log level.
+
+        Specifically, we set it to the ``ERROR`` level.
+        """
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(self.log, pluginLogName)
             self.log.setLevel(lsst.log.ERROR)
@@ -309,7 +321,7 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
-        #   object in corner to trigger EDGE error
+        # object in corner to trigger EDGE error
         self.center = lsst.geom.Point2D(0, 0)
         self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
                                     lsst.geom.Extent2I(100, 100))
@@ -337,7 +349,8 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         del self.refWcs
 
     def testSeparatePluginLog(self):
-        """Check that the task log and the plugin log are truly separate."""
+        """Check that the task log and the plugin log are truly separate.
+        """
         taskLogName = os.path.join(ROOT, 'testSeparatePluginLog-task.log')
         directLog(self.task.log, taskLogName)
         self.task.log.info("Testing")
@@ -356,9 +369,11 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                 lines = fin.read()
         self.assertTrue(lines.find("MeasurementError") >= 0)
 
-        """Check that plugin log can be set to ERROR level, where Measurement Error doesn't show."""
     def testSetPluginLevel(self):
-        """Check that we recover the correct location of the centroid."""
+        """Test setting the plugin log level.
+
+        Specifically, we set it to the ``ERROR`` level.
+        """
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(self.log, pluginLogName)
             self.log.setLevel(lsst.log.ERROR)

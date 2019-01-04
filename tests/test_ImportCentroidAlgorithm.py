@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
@@ -38,8 +37,8 @@ except NameError:
 
 lsst.meas.base.wrapSimpleAlgorithm(
     testLib.SillyCentroidAlgorithm,
-    # algorithm name is specified manually here because testLib isn't in a normal Python package;
-    # normally this is unnecessary
+    # algorithm name is specified manually here because testLib isn't in a
+    # normal Python package; normally this is unnecessary
     name="testLib_SillyCentroid",
     Control=testLib.SillyCentroidControl,
     executionOrder=lsst.meas.base.BasePlugin.CENTROID_ORDER,
@@ -47,7 +46,8 @@ lsst.meas.base.wrapSimpleAlgorithm(
 
 
 class CentroidTestCase(lsst.utils.tests.TestCase):
-    """A test case for centroiding."""
+    """A test case for centroiding.
+    """
 
     def setUp(self):
         pass
@@ -56,7 +56,8 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
         pass
 
     def testApplyCentroid(self):
-        """Test that we can instantiate and play with SillyMeasureCentroid"""
+        """Test that we can instantiate and play with SillyMeasureCentroid.
+        """
 
         for imageFactory in (
             afwImage.MaskedImageF,
@@ -81,7 +82,8 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
                 self.assertEqual(y, source.get("test_y") - offset)
 
     def testMeasureCentroid(self):
-        """Test that we can use our silly centroid through the usual Tasks."""
+        """Test that we can use our silly centroid through the usual Tasks.
+        """
         testLib.SillyCentroidControl()
         x, y = 10, 20
 

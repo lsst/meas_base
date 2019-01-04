@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,9 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
@@ -41,7 +41,8 @@ except NameError:
 
 
 def makeWcs():
-    """Provide a simple WCS for use in testing"""
+    """Provide a simple WCS for use in testing.
+    """
     # The parameters given are placeholders; their values are unimportant
     md = dafBase.PropertySet()
     md.set("NAXIS", 2)
@@ -77,7 +78,8 @@ class TransformTestCase(lsst.utils.tests.TestCase):
         return cat
 
     def _performTransform(self, transformClass, inCat, doExtend=True):
-        """Operate on inCat with a transform of class transformClass"""
+        """Operate on ``inCat`` with a transform of class ``transformClass``.
+        """
         mapper = afwTable.SchemaMapper(inCat.schema)
         config = SillyCentroidConfig()
         transform = transformClass(config, self.pluginName, mapper)
@@ -88,10 +90,12 @@ class TransformTestCase(lsst.utils.tests.TestCase):
         return outCat
 
     def _checkSillyOutputs(self, inCat, outCat):
-        """Check that outCat corresponds to inCat after application of SillyTransform"""
-        # SillyTransform looks for fields named ``name_x`` and ``name_y``; it
-        # copies them to the output, and adds ``name_reverse_x`` and ``_y``
-        # which are equal to the corresponding inputs multiplied by -1.
+        """Check that ``outCat`` matches ``inCat`` under `SillyTransform`.
+
+        SillyTransform looks for fields named ``name_x`` and ``name_y``; it
+        copies them to the output, and adds ``name_reverse_x`` and ``_y``
+        which are equal to the corresponding inputs multiplied by -1.
+        """
         for inSrc, outSrc in zip(inCat, outCat):
             # The source x, y should have been copied to the output table
             self.assertEqual(outSrc[self.pluginName + "_x"], inSrc[self.pluginName + "_x"])
@@ -107,7 +111,8 @@ class TransformTestCase(lsst.utils.tests.TestCase):
             self.assertNotIn(name, outCat.schema)
 
     def testNullTransform(self):
-        """The NullTransform passes through nothing"""
+        """The `NullTransform` passes through nothing.
+        """
         inCat = self._generateCatalog()
         with self.assertRaises(pexExcept.LengthError):
             self._performTransform(measBase.NullTransform, inCat, False)
@@ -116,7 +121,8 @@ class TransformTestCase(lsst.utils.tests.TestCase):
         self.assertEqual(outCat.schema.getFieldCount(), 0)
 
     def testPassThroughTransform(self):
-        """The PassThroughTransform copies all fields starting with the plugin name"""
+        """Copies all fields starting with the plugin name.
+        """
         inCat = self._generateCatalog()
         with self.assertRaises(pexExcept.LengthError):
             self._performTransform(measBase.PassThroughTransform, inCat, False)
@@ -127,7 +133,8 @@ class TransformTestCase(lsst.utils.tests.TestCase):
                 self.assertEqual(inSrc.get(fieldname), outSrc.get(fieldname))
 
     def testPythonConfig(self):
-        """The Python Config should be automatically converted to Control when calling a C++ transform."""
+        """Python configs are converted to Control when using a C++ transform.
+        """
         inCat = self._generateCatalog()
         with self.assertRaises(pexExcept.LengthError):
             self._performTransform(testLib.SillyTransform, inCat, False)
@@ -135,7 +142,8 @@ class TransformTestCase(lsst.utils.tests.TestCase):
         self._checkSillyOutputs(inCat, outCat)
 
     def testApplyCppTransform(self):
-        """Test that we can apply a simple C++ transform"""
+        """Test that we can apply a simple C++ transform.
+        """
         inCat = self._generateCatalog()
         sillyControl = testLib.SillyCentroidControl()
         mapper = afwTable.SchemaMapper(inCat.schema)
@@ -150,11 +158,13 @@ class TransformTestCase(lsst.utils.tests.TestCase):
 class AlgorithmConfigurationTestCase(lsst.utils.tests.TestCase):
 
     def testDefaultTransform(self):
-        """By default, we perform no transformations"""
+        """By default, we perform no transformations.
+        """
         self.assertEqual(measBase.BasePlugin.getTransformClass(), measBase.PassThroughTransform)
 
     def testWrapAlgorithm(self):
-        """Test that the appropriate transform is provided for wrapped algorithms"""
+        """Test the appropriate transform is provided for wrapped algorithms.
+        """
         # By default, we inherit from BasePlugin
         # NB the choice of algorithm and executionOrder is arbitrary
         singleFrame, forced = measBase.wrapSimpleAlgorithm(measBase.PsfFluxAlgorithm,

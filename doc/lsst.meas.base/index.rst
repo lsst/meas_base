@@ -17,7 +17,8 @@ Using lsst.meas.base
    :maxdepth: 1
 
    intro
-   reconstructing-measurements
+   tasks_and_algorithms
+   reconstructing_measurements
 
 Contributing
 ============
@@ -25,7 +26,47 @@ Contributing
 ``lsst.meas.base`` is developed at https://github.com/lsst/meas_base.
 You can find Jira issues for this module under the `meas_base <https://jira.lsstcorp.org/issues/?jql=project%20%3D%20DM%20AND%20component%20%3D%20meas_base>`_ component.
 
+Task reference
+==============
+
+Command-line tasks
+------------------
+
+.. lsst-cmdlinetasks::
+   :root: lsst.meas.base
+
+Tasks
+-----
+
+.. lsst-tasks::
+   :root: lsst.meas.base
+   :toctree: tasks
+
+Configs
+-------
+
+.. lsst-configs::
+   :root: lsst.meas.base
+   :toctree: configs
+
 Python API reference
 ====================
 
-.. .. automodapi:: lsst.meas.base
+.. There are two reasons for the :skip: parameters below.
+   - Objects which are imported with lsst.meas.base but aren't actually part
+     of it --- e.g. lsst.meas.base.Calib is actually lsst.afw.image.calib.Calib
+     --- cause the Sphinx build to fail when executed standalone.
+   - SingleFrameFromGenericPlugin and ForcedFromGenericPlugin cause the
+     construction of an inheritance diagram to fail, per DM-15461.
+     Unfortunately, including them here causes a warning, but that seems to be
+     unavoidable.
+
+.. automodapi:: lsst.meas.base
+   :no-main-docstr:
+   :skip: Calib
+   :skip: FatalAlgorithmError
+   :skip: MeasurementError
+   :skip: PixelValueError
+   :skip: SkyWcs
+   :skip: SingleFrameFromGenericPlugin
+   :skip: ForcedFromGenericPlugin

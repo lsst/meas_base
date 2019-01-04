@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2015 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,13 +13,11 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 
@@ -40,12 +38,12 @@ __all__ = ("BlendContext", "TestDataset", "AlgorithmTestCase", "TransformTestCas
 
 
 class BlendContext:
-    """!
-    A Python context manager used to add multiple overlapping sources along with a parent source
-    that represents all of them together.
+    """Context manager which adds multiple overlapping sources and a parent.
 
-    This is used as the return value for TestDataset.addBlend(), and this is the only way it should
-    be used.  The only public method is addChild().
+    Notes
+    -----
+    This is used as the return value for `TestDataset.addBlend`, and this is
+    the only way it should be used.
     """
 
     def __init__(self, owner):
@@ -59,14 +57,15 @@ class BlendContext:
         return self
 
     def addChild(self, instFlux, centroid, shape=None):
-        """!
-        Add a child source to the blend, and return the truth catalog record that corresponds to it.
+        """Add a child to the blend; return corresponding truth catalog record.
 
-        @param[in]  instFlux  Total instFlux of the source to be added.
-        @param[in]  centroid  Position of the source to be added (lsst.geom.Point2D).
-        @param[in]  shape     2nd moments of the source before PSF convolution
-                              (lsst.afw.geom.Quadrupole).  Note that the truth catalog
-                              records post-convolution moments)
+        instFlux : `float`
+            Total instFlux of the source to be added.
+        centroid : `lsst.geom.Point2D`
+            Position of the source to be added.
+        shape : `lsst.afw.geom.Quadrupole`
+            Second moments of the source before PSF convolution.  Note that
+            the truth catalog records post-convolution moments)
         """
         record, image = self.owner.addSource(instFlux, centroid, shape)
         record.set(self.owner.keys["parent"], self.parentRecord.getId())
@@ -75,11 +74,14 @@ class BlendContext:
         return record
 
     def __exit__(self, type_, value, tb):
-        # We're not using the context manager for any kind of exception safety or guarantees;
-        # we just want the nice "with" statement syntax.
-        if type_ is not None:  # exception was raised; just skip all this and let it propagate
+        # We're not using the context manager for any kind of exception safety
+        # or guarantees; we just want the nice "with" statement syntax.
+
+        if type_ is not None:
+            # exception was raised; just skip all this and let it propagate
             return
-        # On exit, we need to compute and set the truth values for the parent object.
+
+        # On exit, compute and set the truth values for the parent object.
         self.parentRecord.set(self.owner.keys["nChild"], len(self.children))
         # Compute instFlux from sum of component fluxes
         instFlux = 0.0
@@ -108,8 +110,8 @@ class BlendContext:
         self.parentRecord.set(self.owner.keys["shape"], lsst.afw.geom.Quadrupole(xx, yy, xy))
         # Run detection on the parent image to get the parent Footprint.
         self.owner._installFootprint(self.parentRecord, self.parentImage)
-        # Create perfect HeavyFootprints for all children; these will need to be modified later to account
-        # for the noise we'll add to the image.
+        # Create perfect HeavyFootprints for all children; these will need to
+        # be modified later to account for the noise we'll add to the image.
         deblend = lsst.afw.image.MaskedImageF(self.owner.exposure.getMaskedImage(), True)
         for record, image in self.children:
             deblend.getImage().getArray()[:, :] = image.getArray()
@@ -118,36 +120,60 @@ class BlendContext:
 
 
 class TestDataset:
-    """!
-    A simulated dataset consisting of a test image and an associated truth catalog.
+    """A simulated dataset consisuting of test image and truth catalog.
 
-    TestDataset creates an idealized image made of pure Gaussians (including a Gaussian PSF),
-    with simple noise and idealized Footprints/HeavyFootprints that simulated the outputs
-    of detection and deblending.  Multiple noise realizations can be created from the same
-    underlying sources, allowing uncertainty estimates to be verified via Monte Carlo.
+    TestDataset creates an idealized image made of pure Gaussians (including a
+    Gaussian PSF), with simple noise and idealized Footprints/HeavyFootprints
+    that simulated the outputs of detection and deblending.  Multiple noise
+    realizations can be created from the same underlying sources, allowing
+    uncertainty estimates to be verified via Monte Carlo.
 
+    Parameters
+    ----------
+    bbox : `lsst.geom.Box2I` or `lsst.geom.Box2D`
+        Bounding box of the test image.
+    threshold : `float`
+        Threshold absolute value used to determine footprints for
+        simulated sources.  This thresholding will be applied before noise is
+        actually added to images (or before the noise level is even known), so
+        this will necessarily produce somewhat artificial footprints.
+    exposure : `lsst.afw.image.ExposureF`
+        The image to which test sources should be added. Ownership should
+        be considered transferred from the caller to the TestDataset.
+        Must have a Gaussian PSF for truth catalog shapes to be exact.
+    **kwds
+        Keyword arguments forwarded to makeEmptyExposure if exposure is `None`.
+
+    Notes
+    -----
     Typical usage:
-    @code
-    bbox = lsst.geom.Box2I(lsst.geom.Point2I(0,0), lsst.geom.Point2I(100, 100))
-    dataset = TestDataset(bbox)
-    dataset.addSource(instFlux=1E5, centroid=lsst.geom.Point2D(25, 26))
-    dataset.addSource(instFlux=2E5, centroid=lsst.geom.Point2D(75, 24),
-                      shape=lsst.afw.geom.Quadrupole(8, 7, 2))
-    with dataset.addBlend() as family:
-        family.addChild(instFlux=2E5, centroid=lsst.geom.Point2D(50, 72))
-        family.addChild(instFlux=1.5E5, centroid=lsst.geom.Point2D(51, 74))
-    exposure, catalog = dataset.realize(noise=100.0, schema=TestDataset.makeMinimalSchema())
-    @endcode
+
+    .. code-block: py
+
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0,0), lsst.geom.Point2I(100,
+                                                                         100))
+        dataset = TestDataset(bbox)
+        dataset.addSource(flux=1E5, centroid=lsst.geom.Point2D(25, 26))
+        dataset.addSource(flux=2E5, centroid=lsst.geom.Point2D(75, 24),
+                        shape=lsst.afw.geom.Quadrupole(8, 7, 2))
+        with dataset.addBlend() as family:
+            family.addChild(flux=2E5, centroid=lsst.geom.Point2D(50, 72))
+            family.addChild(flux=1.5E5, centroid=lsst.geom.Point2D(51, 74))
+        exposure, catalog = dataset.realize(noise=100.0,
+                                            schema=TestDataset.makeMinimalSchema())
     """
 
     @classmethod
     def makeMinimalSchema(cls):
         """Return the minimal schema needed to hold truth catalog fields.
 
-        When TestDataset.realize() is called, the schema must include at least these fields.
-        Usually it will include additional fields for measurement algorithm outputs, allowing
-        the same catalog to be used for both truth values (the fields from the minimal schema)
-        and the measurements.
+        Notes
+        -----
+        When `TestDataset.realize` is called, the schema must include at least
+        these fields.  Usually it will include additional fields for
+        measurement algorithm outputs, allowing the same catalog to be used
+        for both truth values (the fields from the minimal schema) and the
+        measurements.
         """
         if not hasattr(cls, "_schema"):
             schema = lsst.afw.table.SourceTable.makeMinimalSchema()
@@ -183,22 +209,61 @@ class TestDataset:
                          minRotation=None, maxRotation=None,
                          minRefShift=None, maxRefShift=None,
                          minPixShift=2.0, maxPixShift=4.0, randomSeed=1):
-        """!
-        Create a new undistorted TAN WCS that is similar but not identical to another, with random
-        scaling, rotation, and offset (in both pixel position and reference position).
+        """Return a perturbed version of the input WCS.
 
-        The maximum and minimum arguments are interpreted as absolute values for a split
-        range that covers both positive and negative values (as this method is used
-        in testing, it is typically most important to avoid perturbations near zero).
-        Scale factors are treated somewhat differently: the actual scale factor is chosen between
-        minScaleFactor and maxScaleFactor OR (1/maxScaleFactor) and (1/minScaleFactor).
+        Create a new undistorted TAN WCS that is similar but not identical to
+        another, with random scaling, rotation, and offset (in both pixel
+        position and reference position).
 
-        The default range for rotation is 30-60 degrees, and the default range for reference shift
-        is 0.5-1.0 arcseconds (these cannot be safely included directly as default values because Angle
-        objects are mutable).
+        Parameters
+        ----------
+        oldWcs : `lsst.afw.geom.SkyWcs`
+            The input WCS.
+        minScaleFactor : `float`
+            Minimum scale factor to apply to the input WCS.
+        maxScaleFactor : `float`
+            Maximum scale factor to apply to the input WCS.
+        minRotation : `lsst.geom.Angle` or `None`
+            Minimum rotation to apply to the input WCS. If `None`, defaults to
+            30 degrees.
+        maxRotation : `lsst.geom.Angle` or `None`
+            Minimum rotation to apply to the input WCS. If `None`, defaults to
+            60 degrees.
+        minRefShift : `lsst.geom.Angle` or `None`
+            Miniumum shift to apply to the input WCS reference value. If
+            `None`, defaults to 0.5 arcsec.
+        maxRefShift : `lsst.geom.Angle` or `None`
+            Miniumum shift to apply to the input WCS reference value. If
+            `None`, defaults to 1.0 arcsec.
+        minPixShift : `float`
+            Minimum shift to apply to the input WCS reference pixel.
+        maxPixShift : `float`
+            Maximum shift to apply to the input WCS reference pixel.
+        randomSeed : `int`
+            Random seed.
 
-        The random number generator is primed with the seed given. If ``None``, a seed is
-        automatically chosen.
+        Returns
+        -------
+        newWcs : `lsst.afw.geom.SkyWcs`
+            A perturbed version of the input WCS.
+
+        Notes
+        -----
+        The maximum and minimum arguments are interpreted as absolute values
+        for a split range that covers both positive and negative values (as
+        this method is used in testing, it is typically most important to
+        avoid perturbations near zero). Scale factors are treated somewhat
+        differently: the actual scale factor is chosen between
+        ``minScaleFactor`` and ``maxScaleFactor`` OR (``1/maxScaleFactor``)
+        and (``1/minScaleFactor``).
+
+        The default range for rotation is 30-60 degrees, and the default range
+        for reference shift is 0.5-1.0 arcseconds (these cannot be safely
+        included directly as default values because Angle objects are
+        mutable).
+
+        The random number generator is primed with the seed given. If
+        `None`, a seed is automatically chosen.
         """
         random_state = np.random.RandomState(randomSeed)
         if minRotation is None:
@@ -244,16 +309,30 @@ class TestDataset:
 
     @staticmethod
     def makeEmptyExposure(bbox, wcs=None, crval=None, cdelt=None, psfSigma=2.0, psfDim=17, fluxMag0=1E12):
-        """!
-        Create an Exposure, with a Calib, Wcs, and Psf, but no pixel values set.
+        """Create an Exposure, with a Calib, Wcs, and Psf, but no pixel values.
 
-        @param[in]    bbox        Bounding box of the image (image coordinates) as returned by makeCatalog.
-        @param[in]    wcs         New Wcs for the exposure (created from crval and cdelt if None).
-        @param[in]    crval       afw.geom.SpherePoint: ICRS center of the TAN WCS attached to the image.
-        @param[in]    cdelt       afw.geom.Angle: pixel scale of the image
-        @param[in]    psfSigma    Radius (sigma) of the Gaussian PSF attached to the image
-        @param[in]    psfDim      Width and height of the image's Gaussian PSF attached to the image
-        @param[in]    fluxMag0    Flux at magnitude zero (in e-) used to set the Calib of the exposure.
+        Parameters
+        ----------
+        bbox : `lsst.geom.Box2I` or `lsst.geom.Box2D`
+            Bounding box of the image in image coordinates.
+        wcs : `lsst.afw.geom.SkyWcs`, optional
+            New WCS for the exposure (created from CRVAL and CDELT if `None`).
+        crval : `lsst.afw.geom.SpherePoint`, optional
+            ICRS center of the TAN WCS attached to the image. If `None`, (45
+            degrees, 45 degrees) is assumed.
+        cdelt : `lsst.geom.Angle`, optional
+            Pixel scale of the image. If `None`, 0.2 arcsec is assumed.
+        psfSigma : `float`, optional
+            Radius (sigma) of the Gaussian PSF attached to the image
+        psfDim : `int`, optional
+            Width and height of the image's Gaussian PSF attached to the image
+        fluxMag0 : `float`, optional
+            Flux at magnitude zero (in e-) used to set the Calib of the exposure.
+
+        Returns
+        -------
+        exposure : `lsst.age.image.ExposureF`
+            An empty image.
         """
         if wcs is None:
             if crval is None:
@@ -274,13 +353,22 @@ class TestDataset:
 
     @staticmethod
     def drawGaussian(bbox, instFlux, ellipse):
-        """!
-        Create an image of an elliptical Gaussian.
+        """Create an image of an elliptical Gaussian.
 
-        @param[in,out] bbox        Bounding box of image to create.
-        @param[in]     instFlux Total instFlux of the Gaussian (normalized analytically,
-                                not using pixel values)
-        @param[in]     ellipse     lsst.afw.geom.Ellipse holding the centroid and shape.
+        Parameters
+        ----------
+        bbox : `lsst.geom.Box2I` or `lsst.geom.Box2D`
+            Bounding box of image to create.
+        instFlux : `float`
+            Total instrumental flux of the Gaussian (normalized analytically,
+            not using pixel values).
+        ellipse : `lsst.afw.geom.Ellipse`
+            Defines the centroid and shape.
+
+        Returns
+        -------
+        image : `lsst.afw.image.ImageF`
+            An image of the Gaussian.
         """
         x, y = np.meshgrid(np.arange(bbox.getBeginX(), bbox.getEndX()),
                            np.arange(bbox.getBeginY(), bbox.getEndY()))
@@ -292,19 +380,6 @@ class TestDataset:
         return image
 
     def __init__(self, bbox, threshold=10.0, exposure=None, **kwds):
-        """!
-        Initialize the dataset.
-
-        @param[in]   bbox       Bounding box of the test image.
-        @param[in]   threshold  Threshold absolute value used to determine footprints for
-                                simulated sources.  This thresholding will be applied before noise is
-                                actually added to images (or before the noise level is even known), so
-                                this will necessarily produce somewhat artificial footprints.
-        @param[in]   exposure   lsst.afw.image.ExposureF test sources should be added to.  Ownership should
-                                be considered transferred from the caller to the TestDataset.
-                                Must have a Gaussian Psf for truth catalog shapes to be exact.
-        @param[in]   **kwds     Keyword arguments forwarded to makeEmptyExposure if exposure is None.
-        """
         if exposure is None:
             exposure = self.makeEmptyExposure(bbox, **kwds)
         self.threshold = lsst.afw.detection.Threshold(threshold, lsst.afw.detection.Threshold.VALUE)
@@ -314,7 +389,7 @@ class TestDataset:
         self.catalog = lsst.afw.table.SourceCatalog(self.schema)
 
     def _installFootprint(self, record, image):
-        """Create a Footprint for a simulated source and add it to its truth catalog record.
+        """Create simulated Footprint and add it to a truth catalog record.
         """
         # Run detection on the single-source image
         fpSet = lsst.afw.detection.FootprintSet(image, self.threshold)
@@ -330,17 +405,25 @@ class TestDataset:
         record.setFootprint(fpSet.getFootprints()[0])
 
     def addSource(self, instFlux, centroid, shape=None):
-        """!
-        Add a source to the simulation
+        """Add a source to the simulation.
 
-        @param[in]  instFlux  Total instFlux of the source to be added.
-        @param[in]  centroid  Position of the source to be added (lsst.geom.Point2D).
-        @param[in]  shape     2nd moments of the source before PSF convolution
-                              (lsst.afw.geom.Quadrupole).  Note that the truth catalog
-                              records post-convolution moments).  If None, a point source
-                              will be added.
+        Parameters
+        ----------
+        instFlux : `float`
+            Total instFlux of the source to be added.
+        centroid : `lsst.geom.Point2D`
+            Position of the source to be added.
+        shape : `lsst.afw.geom.Quadrupole`
+            Second moments of the source before PSF convolution. Note that the
+            truth catalog records post-convolution moments. If `None`, a point
+            source will be added.
 
-        @return a truth catalog record and single-source image corresponding to the new source.
+        Returns
+        -------
+        record : `lsst.afw.table.SourceRecord`
+            A truth catalog record.
+        image : `lsst.afw.image.ImageF`
+            Single-source image corresponding to the new source.
         """
         # Create and set the truth catalog fields
         record = self.catalog.addNew()
@@ -366,31 +449,41 @@ class TestDataset:
         return record, image
 
     def addBlend(self):
-        """!
-        Return a context manager that allows a blend of multiple sources to be added.
+        """Return a context manager which can add a blend of multiple sources.
 
-        Example:
-        @code
-        d = TestDataset(...)
-        with d.addBlend() as b:
-            b.addChild(flux1, centroid1)
-            b.addChild(flux2, centroid2, shape2)
-        @endcode
-
+        Notes
+        -----
         Note that nothing stops you from creating overlapping sources just using the addSource() method,
         but addBlend() is necesssary to create a parent object and deblended HeavyFootprints of the type
         produced by the detection and deblending pipelines.
+
+        Examples
+        --------
+        .. code-block: py
+            d = TestDataset(...)
+            with d.addBlend() as b:
+                b.addChild(flux1, centroid1)
+                b.addChild(flux2, centroid2, shape2)
         """
         return BlendContext(self)
 
     def transform(self, wcs, **kwds):
-        """!
-        Create a copy of the dataset transformed to a new WCS, with new Psf and Calib.
+        """Copy this dataset transformed to a new WCS, with new Psf and Calib.
 
-        @param[in]  wcs      Wcs for the new dataset.
-        @param[in]  **kwds   Additional keyword arguments passed on to makeEmptyExposure.  If not
-                             specified, these revert to the defaults for makeEmptyExposure, not the
-                             values in the current dataset.
+        Parameters
+        ----------
+        wcs : `lsst.afw.geom.SkyWcs`
+            WCS for the new dataset.
+        **kwds
+            Additional keyword arguments passed on to
+            `TestDataset.makeEmptyExposure`.  If not specified, these revert
+            to the defaults for `~TestDataset.makeEmptyExposure`, not the
+            values in the current dataset.
+
+        Returns
+        -------
+        newDataset : `TestDataset`
+            Transformed copy of this dataset.
         """
         bboxD = lsst.geom.Box2D()
         xyt = lsst.afw.geom.makeWcsPairTransform(self.exposure.getWcs(), wcs)
@@ -424,17 +517,32 @@ class TestDataset:
         return result
 
     def realize(self, noise, schema, randomSeed=1):
-        """!
-        Create a simulated with noise and a simulated post-detection catalog with (Heavy)Footprints.
+        r"""Simulate an exposure and detection catalog for this dataset.
 
-        @param[in]   noise      Standard deviation of noise to be added to the exposure.  The noise will be
-                                Gaussian and constant, appropriate for the sky-limited regime.
-        @param[in]   schema     Schema of the new catalog to be created.  Must start with self.schema (i.e.
-                                schema.contains(self.schema) must be True), but typically contains fields for
-                                already-configured measurement algorithms as well.
-        @param[in]   randomSeed Seed for the random number generator. If None, a seed is chosen automatically.
+        The simulation includes noise, and the detection catalog includes
+        `~lsst.afw.detection.heavyFootprint.HeavyFootprint`\ s.
 
-        @return a tuple of (exposure, catalog)
+        Parameters
+        ----------
+        noise : `float`
+            Standard deviation of noise to be added to the exposure.  The
+            noise will be Gaussian and constant, appropriate for the
+            sky-limited regime.
+        schema : `lsst.afw.table.Schema`
+            Schema of the new catalog to be created.  Must start with
+            ``self.schema`` (i.e. ``schema.contains(self.schema)`` must be
+            `True`), but typically contains fields for already-configured
+            measurement algorithms as well.
+        randomSeed : `int`, optional
+            Seed for the random number generator.
+            If `None`, a seed is chosen automatically.
+
+        Returns
+        -------
+        `exposure` : `lsst.afw.image.ExposureF`
+            Simulated image.
+        `catalog` : `lsst.afw.table.SourceCatalog`
+            Simulated detection catalog.
         """
         random_state = np.random.RandomState(randomSeed)
         assert schema.contains(self.schema)
@@ -446,13 +554,15 @@ class TestDataset:
             += random_state.randn(exposure.getHeight(), exposure.getWidth())*noise
         catalog = lsst.afw.table.SourceCatalog(schema)
         catalog.extend(self.catalog, mapper=mapper)
-        # Loop over sources and generate new HeavyFootprints that divide up the noisy pixels, not the
-        # ideal no-noise pixels.
+        # Loop over sources and generate new HeavyFootprints that divide up
+        # the noisy pixels, not the ideal no-noise pixels.
         for record in catalog:
-            # parent objects have non-Heavy Footprints, which don't need to be updated after adding noise.
+            # parent objects have non-Heavy Footprints, which don't need to be
+            # updated after adding noise.
             if record.getParent() == 0:
                 continue
-            # get flattened arrays that correspond to the no-noise and noisy parent images
+            # get flattened arrays that correspond to the no-noise and noisy
+            # parent images
             parent = catalog.find(record.getParent())
             footprint = parent.getFootprint()
             parentFluxArrayNoNoise = np.zeros(footprint.getArea(), dtype=np.float32)
@@ -465,8 +575,9 @@ class TestDataset:
                                     exposure.getXY0())
             oldHeavy = record.getFootprint()
             fraction = (oldHeavy.getImageArray() / parentFluxArrayNoNoise)
-            # n.b. this isn't a copy ctor - it's a copy from a vanilla Footprint, so it doesn't copy
-            # the arrays we don't want to change, and hence we have to do that ourselves below.
+            # N.B. this isn't a copy ctor - it's a copy from a vanilla
+            # Footprint, so it doesn't copy the arrays we don't want to
+            # change, and hence we have to do that ourselves below.
             newHeavy = lsst.afw.detection.HeavyFootprintF(oldHeavy)
             newHeavy.getImageArray()[:] = parentFluxArrayNoisy*fraction
             newHeavy.getMaskArray()[:] = oldHeavy.getMaskArray()
@@ -478,10 +589,23 @@ class TestDataset:
 class AlgorithmTestCase:
 
     def makeSingleFrameMeasurementConfig(self, plugin=None, dependencies=()):
-        """Convenience function to create a Config instance for SingleFrameMeasurementTask
+        """Create an instance of `SingleFrameMeasurementTask.ConfigClass`.
 
-        The plugin and its dependencies will be the only plugins run, while the Centroid, Shape,
-        and ModelFlux slots will be set to the truth fields generated by the TestDataset class.
+        Only the specified plugin and its dependencies will be run; the
+        Centroid, Shape, and ModelFlux slots will be set to the truth fields
+        generated by the `TestDataset` class.
+
+        Parameters
+        ----------
+        plugin : `str`
+            Name of measurement plugin to enable.
+        dependencies : iterable of `str`, optional
+            Names of dependencies of the measurement plugin.
+
+        Returns
+        -------
+        config : `SingleFrameMeasurementTask.ConfigClass`
+            The resulting task configuration.
         """
         config = SingleFrameMeasurementTask.ConfigClass()
         config.slots.centroid = "truth"
@@ -496,7 +620,31 @@ class AlgorithmTestCase:
 
     def makeSingleFrameMeasurementTask(self, plugin=None, dependencies=(), config=None, schema=None,
                                        algMetadata=None):
-        """Convenience function to create a SingleFrameMeasurementTask with a simple configuration.
+        """Create a configured instance of `SingleFrameMeasurementTask`.
+
+        Parameters
+        ----------
+        plugin : `str`, optional
+            Name of measurement plugin to enable. If `None`, a configuration
+            must be supplied as the ``config`` parameter. If both are
+            specified, ``config`` takes precedence.
+        dependencies : iterable of `str`, optional
+            Names of dependencies of the specified measurement plugin.
+        config : `SingleFrameMeasurementTask.ConfigClass`, optional
+            Configuration for the task. If `None`, a measurement plugin must
+            be supplied as the ``plugin`` paramter. If both are specified,
+            ``config`` takes precedence.
+        schema : `lsst.afw.table.Schema`, optional
+            Measurement table schema. If `None`, a default schema is
+            generated.
+        algMetadata : `lsst.daf.base.PropertyList`, optional
+            Measurement algorithm metadata. If `None`, a default container
+            will be generated.
+
+        Returns
+        -------
+        task : `SingleFrameMeasurementTask`
+            A configured instance of the measurement task.
         """
         if config is None:
             if plugin is None:
@@ -511,13 +659,27 @@ class AlgorithmTestCase:
         return SingleFrameMeasurementTask(schema=schema, algMetadata=algMetadata, config=config)
 
     def makeForcedMeasurementConfig(self, plugin=None, dependencies=()):
-        """Convenience function to create a Config instance for ForcedMeasurementTask
+        """Create an instance of `ForcedMeasurementTask.ConfigClass`.
 
-        In addition to the plugins specified in the plugin and dependencies arguments,
-        the TransformedCentroid and TransformedShape plugins will be run and used as the
-        Centroid and Shape slots; these simply transform the reference catalog centroid
-        and shape to the measurement coordinate system.
+        In addition to the plugins specified in the plugin and dependencies
+        arguments, the `TransformedCentroid` and `TransformedShape` plugins
+        will be run and used as the centroid and shape slots; these simply
+        transform the reference catalog centroid and shape to the measurement
+        coordinate system.
+
+        Parameters
+        ----------
+        plugin : `str`
+            Name of measurement plugin to enable.
+        dependencies : iterable of `str`, optional
+            Names of dependencies of the measurement plugin.
+
+        Returns
+        -------
+        config : `ForcedMeasurementTask.ConfigClass`
+            The resulting task configuration.
         """
+
         config = ForcedMeasurementTask.ConfigClass()
         config.slots.centroid = "base_TransformedCentroid"
         config.slots.shape = "base_TransformedShape"
@@ -531,7 +693,31 @@ class AlgorithmTestCase:
 
     def makeForcedMeasurementTask(self, plugin=None, dependencies=(), config=None, refSchema=None,
                                   algMetadata=None):
-        """Convenience function to create a ForcedMeasurementTask with a simple configuration.
+        """Create a configured instance of `ForcedMeasurementTask`.
+
+        Parameters
+        ----------
+        plugin : `str`, optional
+            Name of measurement plugin to enable. If `None`, a configuration
+            must be supplied as the ``config`` parameter. If both are
+            specified, ``config`` takes precedence.
+        dependencies : iterable of `str`, optional
+            Names of dependencies of the specified measurement plugin.
+        config : `SingleFrameMeasurementTask.ConfigClass`, optional
+            Configuration for the task. If `None`, a measurement plugin must
+            be supplied as the ``plugin`` paramter. If both are specified,
+            ``config`` takes precedence.
+        refSchema : `lsst.afw.table.Schema`, optional
+            Reference table schema. If `None`, a default schema is
+            generated.
+        algMetadata : `lsst.daf.base.PropertyList`, optional
+            Measurement algorithm metadata. If `None`, a default container
+            will be generated.
+
+        Returns
+        -------
+        task : `ForcedMeasurementTask`
+            A configured instance of the measurement task.
         """
         if config is None:
             if plugin is None:
@@ -545,9 +731,10 @@ class AlgorithmTestCase:
 
 
 class TransformTestCase:
-    """!
-    Base class for testing measurement transformations.
+    """Base class for testing measurement transformations.
 
+    Notes
+    -----
     We test both that the transform itself operates successfully (fluxes are
     converted to magnitudes, flags are propagated properly) and that the
     transform is registered as the default for the appropriate measurement
@@ -558,19 +745,24 @@ class TransformTestCase:
     variables is all that is required. More complex measurements (e.g.
     multiple aperture fluxes) require extra effort.
     """
-    # The name used for the measurement algorithm; determines the names of the
-    # fields in the resulting catalog. This default should generally be fine,
-    # but subclasses can override if required.
     name = "MeasurementTransformTest"
+    """The name used for the measurement algorithm (str).
+
+    Notes
+    -----
+    This determines the names of the fields in the resulting catalog. This
+    default should generally be fine, but subclasses can override if
+    required.
+    """
 
     # These should be customized by subclassing.
     controlClass = None
     algorithmClass = None
     transformClass = None
 
-    # Flags which may be set by the algorithm being tested. Can be customized
-    # in subclasses.
     flagNames = ("flag",)
+    """Flags which may be set by the algorithm being tested (iterable of `str`).
+    """
 
     # The plugin being tested should be registered under these names for
     # single frame and forced measurement. Should be customized by
@@ -617,23 +809,31 @@ class TransformTestCase:
         self.transform(self.inputCat, self.outputCat, self.calexp.getWcs(), self.calexp.getCalib())
 
     def testTransform(self, baseNames=None):
-        """
-        Test the operation of the transformation on a catalog containing random data.
+        """Test the transformation on a catalog containing random data.
 
+        Parameters
+        ----------
+        baseNames : iterable of `str`
+            Iterable of the initial parts of measurement field names.
+
+        Notes
+        -----
         We check that:
 
-        * An appropriate exception is raised on an attempt to transform between catalogs with different
-          numbers of rows;
-        * Otherwise, all appropriate conversions are properly appled and that flags have been propagated.
+        - An appropriate exception is raised on an attempt to transform
+          between catalogs with different numbers of rows;
+        - Otherwise, all appropriate conversions are properly appled and that
+          flags have been propagated.
 
-        The `baseNames` argument requires some explanation. This should be an iterable of the leading parts of
-        the field names for each measurement; that is, everything that appears before `_instFlux`, `_flag`,
-        etc. In the simple case of a single measurement per plugin, this is simply equal to `self.name` (thus
-        measurements are stored as `self.name + "_instFlux"`, etc). More generally, the developer may specify
-        whatever iterable they require. For example, to handle multiple apertures, we could have
-        `(self.name + "_0", self.name + "_1", ...)`.
-
-        @param[in]  baseNames  Iterable of the initial parts of measurement field names.
+        The ``baseNames`` argument requires some explanation. This should be
+        an iterable of the leading parts of the field names for each
+        measurement; that is, everything that appears before ``_instFlux``,
+        ``_flag``, etc. In the simple case of a single measurement per plugin,
+        this is simply equal to ``self.name`` (thus measurements are stored as
+        ``self.name + "_instFlux"``, etc). More generally, the developer may
+        specify whatever iterable they require. For example, to handle
+        multiple apertures, we could have ``(self.name + "_0", self.name +
+        "_1", ...)``.
         """
         baseNames = baseNames or [self.name]
         self._populateCatalog(baseNames)
@@ -647,8 +847,7 @@ class TransformTestCase:
         self.assertEqual(registry[name].PluginClass.getTransformClass(), self.transformClass)
 
     def testRegistration(self):
-        """
-        Test that the transformation is appropriately registered with the relevant measurement algorithms.
+        """Test that the transformation is appropriately registered.
         """
         for pluginName in self.singleFramePlugins:
             self._checkRegisteredTransform(lsst.meas.base.SingleFramePlugin.registry, pluginName)

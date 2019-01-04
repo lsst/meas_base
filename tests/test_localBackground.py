@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2018 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
@@ -33,7 +32,8 @@ from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
 
 
 class LocalBackgroundTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
-    """Test case for the CircularApertureFlux algorithm/plugin."""
+    """Test case for the CircularApertureFlux algorithm/plugin.
+    """
 
     def setUp(self):
         self.algName = "base_LocalBackground"
@@ -69,7 +69,8 @@ class LocalBackgroundTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                                      atol=3.0*self.bgStdev/np.sqrt(self.numPix))  # Within 3 sigma
         self.assertFloatsAlmostEqual(bgStdev, self.bgStdev, rtol=0.1)
 
-        # Check that the background value is useful, and it's what we'd get if the background wasn't there.
+        # Check that the background value is useful, and it's what we'd get if
+        # the background wasn't there.
         src = catalog[0]
         psfFlux = src.get("base_PsfFlux_instFlux") - \
             src.get("base_PsfFlux_area")*src.get(self.algName + "_instFlux")

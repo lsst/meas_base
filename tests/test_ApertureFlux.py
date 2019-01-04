@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
@@ -34,7 +33,8 @@ from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
 
 
 class ApertureFluxTestCase(lsst.utils.tests.TestCase):
-    """Test case for the ApertureFlux algorithm base class."""
+    """Test case for the ApertureFlux algorithm base class.
+    """
 
     def setUp(self):
         self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(20, -100), lsst.geom.Point2I(100, -20))
@@ -48,9 +48,10 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         del self.exposure
 
     def computeNaiveArea(self, position, radius):
-        """Return the area of a circular aperture with the given position and radius, according to
-        the 'naive' definition of the aperture - just test whether the center of each pixel is within
-        the circle.
+        """Computes the area of a circular aperture.
+
+        Calculates the area of the aperture by the "naive" approach of testing
+        each pixel to see whether its center lies within the aperture.
         """
         x, y = np.meshgrid(np.arange(self.bbox.getBeginX(), self.bbox.getEndX()),
                            np.arange(self.bbox.getBeginY(), self.bbox.getEndY()))
@@ -72,8 +73,9 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                                                           ellipse, self.ctrl).instFlux, area)
 
                 def check(method, image):
-                    """test that all the ways we could invoke naive instFlux measurement
-                    produce the expected result
+                    """Test that all instFlux measurement invocations work.
+
+                    That is, that they return the expected value.
                     """
                     result = method(image, ellipse, self.ctrl)
                     self.assertFloatsAlmostEqual(result.instFlux, area)
@@ -113,7 +115,8 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
                                                            ellipse, self.ctrl).instFlux, area)
 
                 def check(method, image):
-                    # test that all the ways we could invoke sinc flux measurement produce the expected result
+                    # test that all the ways we could invoke sinc flux
+                    # measurement produce the expected result
                     result = method(image, ellipse, self.ctrl)
                     self.assertFloatsAlmostEqual(result.instFlux, area, rtol=1E-3)
                     self.assertFalse(result.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
@@ -134,7 +137,8 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.APERTURE_TRUNCATED.number))
         self.assertTrue(invalid1.getFlag(ApertureFluxAlgorithm.SINC_COEFFS_TRUNCATED.number))
         self.assertTrue(np.isnan(invalid1.instFlux))
-        # test failure conditions when the aperture is not truncated, but the sinc coeffs are
+        # test failure conditions when the aperture is not truncated, but the
+        # sinc coeffs are
         invalid2 = ApertureFluxAlgorithm.computeSincFlux(
             self.exposure.getMaskedImage().getImage(),
             lsst.afw.geom.Ellipse(lsst.afw.geom.ellipses.Axes(9.0, 9.0), lsst.geom.Point2D(30.0, -60.0)),
@@ -145,7 +149,8 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
 
 
 class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
-    """Test case for the CircularApertureFlux algorithm/plugin."""
+    """Test case for the CircularApertureFlux algorithm/plugin.
+    """
 
     def setUp(self):
         self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
@@ -188,12 +193,15 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
                     self.assertEqual(record.get(record.schema.join(prefix, "flag")), radius > 50)
                     self.assertEqual(record.get(record.schema.join(prefix, "flag_apertureTruncated")),
                                      radius > 50)
-                # Test that the instFluxes and uncertainties increase as we increase the apertures, or that
-                # they match the true instFlux within 3 sigma.  This is just a test as to whether the values
-                # are reasonable.  As to whether the values are exactly correct, we rely on the tests on
-                # ApertureFluxAlgorithm's static methods, as the way the plugins code calls that is
-                # extremely simple, so if the results we get are reasonable, it's hard to imagine
-                # how they could be incorrect if ApertureFluxAlgorithm's tests are valid.
+                # Test that the instFluxes and uncertainties increase as we
+                # increase the apertures, or that they match the true instFlux
+                # within 3 sigma.  This is just a test as to whether the
+                # values are reasonable.  As to whether the values are exactly
+                # correct, we rely on the tests on ApertureFluxAlgorithm's
+                # static methods, as the way the plugins code calls that is
+                # extremely simple, so if the results we get are reasonable,
+                # it's hard to imagine how they could be incorrect if
+                # ApertureFluxAlgorithm's tests are valid.
                 currentFlux = record.get(record.schema.join(prefix, "instFlux"))
                 currentFluxErr = record.get(record.schema.join(prefix, "instFluxErr"))
                 if not record.get(record.schema.join(prefix, "flag")):
@@ -205,8 +213,8 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
                 else:
                     self.assertTrue(np.isnan(currentFlux))
                     self.assertTrue(np.isnan(currentFluxErr))
-            # When measuring an isolated point source with a sufficiently large aperture, we should
-            # recover the known input instFlux.
+            # When measuring an isolated point source with a sufficiently
+            # large aperture, we should recover the known input instFlux.
             if record.get("truth_isStar") and record.get("parent") == 0:
                 self.assertFloatsAlmostEqual(record.get("base_CircularApertureFlux_25_0_instFlux"),
                                              record.get("truth_instFlux"), rtol=0.02)
@@ -233,9 +241,11 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
             for n, radius in enumerate(radii):
                 prefix = ApertureFluxAlgorithm.makeFieldPrefix(baseName, radius)
                 self.assertFalse(measRecord.get(measRecord.schema.join(prefix, "flag")))
-                # CircularApertureFlux isn't designed to do a good job in forced mode, because it doesn't
-                # account for changes in the PSF or changes in the WCS.  Hence, this is really just a
-                # test to make sure the values are reasonable and that it runs with no unexpected errors.
+                # CircularApertureFlux isn't designed to do a good job in
+                # forced mode, because it doesn't account for changes in the
+                # PSF or changes in the WCS.  Hence, this is really just a
+                # test to make sure the values are reasonable and that it runs
+                # with no unexpected errors.
                 self.assertFloatsAlmostEqual(measRecord.get(measRecord.schema.join(prefix, "instFlux")),
                                              truthCatalog.get("truth_instFlux"), rtol=1.0)
                 self.assertLess(measRecord.get(measRecord.schema.join(prefix, "instFluxErr")), (n+1)*150.0)
@@ -245,9 +255,9 @@ class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTran
                                     lsst.utils.tests.TestCase):
 
     class CircApFluxAlgorithmFactory:
-        """
-        Helper class to sub in an empty PropertyList as the final argument to
-        CircularApertureFluxAlgorithm.
+        """Supply an empty ``PropertyList`` to `CircularApertureFluxAlgorithm`.
+
+        This is a helper class to make testing more convenient.
         """
 
         def __call__(self, control, name, inputSchema):
@@ -262,7 +272,8 @@ class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTran
     forcedPlugins = ('base_CircularApertureFlux',)
 
     def testTransform(self):
-        """Demonstrate application of the ApertureFluxTransform to a synthetic SourceCatalog."""
+        """Test `ApertureFluxTransform` with a synthetic catalog.
+        """
         FluxTransformTestCase.testTransform(self, [ApertureFluxAlgorithm.makeFieldPrefix(self.name, r)
                                                    for r in self.control.radii])
 

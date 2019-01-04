@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
@@ -49,7 +48,8 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         del self.dataset
 
     def makeAlgorithm(self, ctrl=None):
-        """Construct an algorithm (finishing a schema in the process), and return both."""
+        """Construct an algorithm and return both it and its schema.
+        """
         if ctrl is None:
             ctrl = lsst.meas.base.GaussianFluxControl()
         schema = lsst.meas.base.tests.TestDataset.makeMinimalSchema()
@@ -57,7 +57,8 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         return algorithm, schema
 
     def testGaussians(self):
-        """Test that we get correct instFluxes when measuring Gaussians with known positions and shapes."""
+        """Test for correct instFlux given known position and shape.
+        """
         task = self.makeSingleFrameMeasurementTask("base_GaussianFlux")
         # Results are RNG dependent; we choose a seed that is known to pass.
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
@@ -67,8 +68,12 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                                          measRecord.get("truth_instFlux"), rtol=3E-3)
 
     def testMonteCarlo(self):
-        """Test that we get exactly the right answer on an ideal sim with no noise, and that
-        the reported uncertainty agrees with a Monte Carlo test of the noise.
+        """Test an ideal simulation, with no noise.
+
+        Demonstrate that:
+
+        - We get exactly the right answer, and
+        - The reported uncertainty agrees with a Monte Carlo test of the noise.
         """
         algorithm, schema = self.makeAlgorithm()
         # Results are RNG dependent; we choose a seed that is known to pass.
@@ -83,8 +88,9 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             instFluxErrs = []
             nSamples = 1000
             for repeat in range(nSamples):
-                # By using ``repeat`` to seed the RNG, we get results which fall within the tolerances
-                # defined below. If we allow this test to be truly random, passing becomes RNG-dependent.
+                # By using ``repeat`` to seed the RNG, we get results which
+                # fall within the tolerances defined below. If we allow this
+                # test to be truly random, passing becomes RNG-dependent.
                 exposure, catalog = self.dataset.realize(noise*instFlux, schema, randomSeed=repeat)
                 record = catalog[1]
                 algorithm.measure(record, exposure)
@@ -98,7 +104,8 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testForcedPlugin(self):
         task = self.makeForcedMeasurementTask("base_GaussianFlux")
-        # Results of this test are RNG dependent: we choose seeds that are known to pass.
+        # Results of this test are RNG dependent: we choose seeds that are
+        # known to pass.
         measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs(), randomSeed=2)
         measDataset = self.dataset.transform(measWcs)
         exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema(), randomSeed=2)
@@ -114,10 +121,11 @@ class GaussianFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             self.assertFloatsAlmostEqual(measRecord.get("slot_Centroid_y"),
                                          truthRecord.get("truth_y"), rtol=1E-7)
             self.assertFalse(measRecord.get("base_GaussianFlux_flag"))
-            # GaussianFlux isn't designed to do a good job in forced mode, because it doesn't account
-            # for changes in the PSF (and in fact confuses them with changes in the WCS).  Hence, this
-            # is really just a regression test, with the initial threshold set to just a bit more than
-            # what it was found to be at one point.
+            # GaussianFlux isn't designed to do a good job in forced mode,
+            # because it doesn't account for changes in the PSF (and in fact
+            # confuses them with changes in the WCS).  Hence, this is really
+            # just a regression test, with the initial threshold set to just a
+            # bit more than what it was found to be at one point.
             self.assertFloatsAlmostEqual(measRecord.get("base_GaussianFlux_instFlux"),
                                          truthCatalog.get("truth_instFlux"), rtol=0.3)
             self.assertLess(measRecord.get("base_GaussianFlux_instFluxErr"), 500.0)

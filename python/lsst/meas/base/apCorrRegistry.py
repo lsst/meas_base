@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2015 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,14 +13,13 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
-"""Registry for names of instrument flux fields that should be aperture corrected
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+"""Registry of instrument flux fields that should be aperture corrected.
 """
 
 __all__ = ("addApCorrName", "getApCorrNameSet")
@@ -30,21 +29,37 @@ _ApCorrNameSet = set()
 
 
 def addApCorrName(name):
-    """!Add to the set of field name prefixes for instrument flux that should be aperture corrected
+    """Register an instrumental flux field name prefix for aperture correction.
 
-    @param[in] name  field name prefix for a instrument flux that should be aperture corrected.
-        The corresponding field names are {name}_instFlux, {name}_instFluxErr and {name}_flag.
-        For example name "base_PsfFlux" corresponds to fields base_PsfFlux_instFlux,
-        base_PsfFlux_instFluxErr and base_PsfFlux_flag.
+    Parameters
+    ----------
+    name : `str`
+        Field name prefix for an instrumental flux that should be aperture
+        corrected.
+
+    Notes
+    -----
+    The prefix ``name`` corresponds to the fields ``name_instFlux``,
+    ``name_instFluxErr`` and ``name_flag``. For example, specifying
+    ``base_PsfFlux`` will select the fields ``base_PsfFlux_instFlux``,
+    ``base_PsfFlux_instFluxErr`` and ``base_PsfFlux_flag``.
     """
     global _ApCorrNameSet
     _ApCorrNameSet.add(str(name))
 
 
 def getApCorrNameSet():
-    """!Return a copy of the set of field name prefixes for instrument flux that should be aperture corrected.
+    """Get a copy of the field name prefixes which will be aperture corrected.
 
-    For example the returned set will likely include "base_PsfFlux" and "base_GaussianFlux".
+    Returns
+    -------
+    apCorrNameSet : `set`
+        Field prefixes which will be aperture corrected.
+
+    Notes
+    -----
+    For example, the returned set may include ``base_PsfFlux`` and
+    ``base_GaussianFlux``.
     """
     global _ApCorrNameSet
     return _ApCorrNameSet.copy()

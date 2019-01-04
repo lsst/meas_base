@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2016 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,16 +13,17 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
-"""
-Definitions and registration of pure-Python plugins with trivial implementations,
-and automatic plugin-from-algorithm calls for those implemented in C++.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+"""Definition of measurement plugins.
+
+This module defines and registers a series of pure-Python measurement plugins
+which have trivial implementations. It also wraps measurement algorithms
+defined in C++ to expose them to the measurement framework.
 """
 
 import numpy as np
@@ -69,7 +70,6 @@ __all__ = (
     "ForcedTransformedShapeConfig", "ForcedTransformedShapePlugin",
 )
 
-# --- Wrapped C++ Plugins ---
 
 wrapSimpleAlgorithm(PsfFluxAlgorithm, Control=PsfFluxControl,
                     TransformClass=PsfFluxTransform, executionOrder=BasePlugin.FLUX_ORDER,
@@ -108,18 +108,30 @@ wrapTransform(ScaledApertureFluxTransform)
 wrapTransform(ApertureFluxTransform)
 wrapTransform(LocalBackgroundTransform)
 
-# --- Single-Frame Measurement Plugins ---
-
 
 class SingleFrameFPPositionConfig(SingleFramePluginConfig):
+    """Configuration for the focal plane position measurment algorithm.
+    """
+
     pass
 
 
 @register("base_FPPosition")
 class SingleFrameFPPositionPlugin(SingleFramePlugin):
-    '''
-    Algorithm to calculate the position of a centroid on the focal plane
-    '''
+    """Algorithm to calculate the position of a centroid on the focal plane.
+
+    Parameters
+    ----------
+    config : `SingleFrameFPPositionConfig`
+        Plugin configuraion.
+    name : `str`
+        Plugin name.
+    schema : `lsst.afw.table.Schema`
+        The schema for the measurement output catalog. New fields will be
+        added to hold measurements produced by this plugin.
+    metadata : `lsst.daf.base.PropertySet`
+        Plugin metadata that will be attached to the output catalog
+    """
 
     ConfigClass = SingleFrameFPPositionConfig
 
@@ -150,15 +162,30 @@ class SingleFrameFPPositionPlugin(SingleFramePlugin):
 
 
 class SingleFrameJacobianConfig(SingleFramePluginConfig):
+    """Configuration for the Jacobian calculation plugin.
+    """
+
     pixelScale = lsst.pex.config.Field(dtype=float, default=0.5, doc="Nominal pixel size (arcsec)")
 
 
 @register("base_Jacobian")
 class SingleFrameJacobianPlugin(SingleFramePlugin):
-    '''
-    Algorithm which computes the Jacobian about a source and computes its ratio with a nominal pixel area.
-    This allows one to compare relative instead of absolute areas of pixels.
-    '''
+    """Compute the Jacobian and its ratio with a nominal pixel area.
+
+    This enables one to compare relative, rather than absolute, pixel areas.
+
+    Parameters
+    ----------
+    config : `SingleFrameJacobianConfig`
+        Plugin configuraion.
+    name : `str`
+        Plugin name.
+    schema : `lsst.afw.table.Schema`
+        The schema for the measurement output catalog. New fields will be
+        added to hold measurements produced by this plugin.
+    metadata : `lsst.daf.base.PropertySet`
+        Plugin metadata that will be attached to the output catalog
+    """
 
     ConfigClass = SingleFrameJacobianConfig
 
@@ -175,8 +202,8 @@ class SingleFrameJacobianPlugin(SingleFramePlugin):
 
     def measure(self, measRecord, exposure):
         center = measRecord.getCentroid()
-        # Compute the area of a pixel at a source record's centroid, and take the
-        # ratio of that with the defined reference pixel area.
+        # Compute the area of a pixel at a source record's centroid, and take
+        # the ratio of that with the defined reference pixel area.
         result = np.abs(self.scale*exposure.getWcs().linearizePixelToSky(
             center,
             lsst.geom.arcseconds).getLinear().computeDeterminant())
@@ -187,6 +214,8 @@ class SingleFrameJacobianPlugin(SingleFramePlugin):
 
 
 class VarianceConfig(BaseMeasurementPluginConfig):
+    """Configuration for the variance calculation plugin.
+    """
     scale = lsst.pex.config.Field(dtype=float, default=5.0, optional=True,
                                   doc="Scale factor to apply to shape for aperture")
     mask = lsst.pex.config.ListField(doc="Mask planes to ignore", dtype=str,
@@ -194,14 +223,34 @@ class VarianceConfig(BaseMeasurementPluginConfig):
 
 
 class VariancePlugin(GenericPlugin):
-    '''
-    Calculate the median variance within a Footprint scaled from the object shape so
-    the value is not terribly influenced by the object and instead represents the
-    variance in the background near the object.
-    '''
+    """Compute the median variance corresponding to a footprint.
+
+    The aim here is to measure the background variance, rather than that of
+    the object itself. In order to achieve this, the variance is calculated
+    over an area scaled up from the shape of the input footprint.
+
+    Parameters
+    ----------
+    config : `VarianceConfig`
+        Plugin configuraion.
+    name : `str`
+        Plugin name.
+    schema : `lsst.afw.table.Schema`
+        The schema for the measurement output catalog. New fields will be
+        added to hold measurements produced by this plugin.
+    metadata : `lsst.daf.base.PropertySet`
+        Plugin metadata that will be attached to the output catalog
+    """
+
     ConfigClass = VarianceConfig
+
     FAILURE_BAD_CENTROID = 1
+    """Denotes failures due to bad centroiding (`int`).
+    """
+
     FAILURE_EMPTY_FOOTPRINT = 2
+    """Denotes failures due to a lack of usable pixels (`int`).
+    """
 
     @classmethod
     def getExecutionOrder(cls):
@@ -213,13 +262,15 @@ class VariancePlugin(GenericPlugin):
         self.emptyFootprintFlag = schema.addField(name + '_flag_emptyFootprint', type="Flag",
                                                   doc="Set to True when the footprint has no usable pixels")
 
-        # Alias the badCentroid flag to that which is defined for the target of the centroid slot.
-        # We do not simply rely on the alias because that could be changed post-measurement.
+        # Alias the badCentroid flag to that which is defined for the target
+        # of the centroid slot.  We do not simply rely on the alias because
+        # that could be changed post-measurement.
         schema.getAliasMap().set(name + '_flag_badCentroid', schema.getAliasMap().apply("slot_Centroid_flag"))
 
     def measure(self, measRecord, exposure, center):
-        # Create an aperture and grow it by scale value defined in config to ensure there are enough
-        # pixels around the object to get decent statistics
+        # Create an aperture and grow it by scale value defined in config to
+        # ensure there are enough pixels around the object to get decent
+        # statistics
         if not np.all(np.isfinite(measRecord.getCentroid())):
             raise MeasurementError("Bad centroid and/or shape", self.FAILURE_BAD_CENTROID)
         aperture = lsst.afw.geom.Ellipse(measRecord.getShape(), measRecord.getCentroid())
@@ -227,15 +278,16 @@ class VariancePlugin(GenericPlugin):
         ellipse = lsst.afw.geom.SpanSet.fromShape(aperture)
         foot = lsst.afw.detection.Footprint(ellipse)
         foot.clipTo(exposure.getBBox(lsst.afw.image.PARENT))
-        # Filter out any pixels which have mask bits set corresponding to the planes to be excluded
-        # (defined in config.mask)
+        # Filter out any pixels which have mask bits set corresponding to the
+        # planes to be excluded (defined in config.mask)
         maskedImage = exposure.getMaskedImage()
         pixels = lsst.afw.detection.makeHeavyFootprint(foot, maskedImage)
         maskBits = maskedImage.getMask().getPlaneBitMask(self.config.mask)
         logicalMask = np.logical_not(pixels.getMaskArray() & maskBits)
-        # Compute the median variance value for each pixel not excluded by the mask and write the record.
-        # Numpy median is used here instead of afw.math makeStatistics because of an issue with data types
-        # being passed into the C++ layer (DM-2379).
+        # Compute the median variance value for each pixel not excluded by the
+        # mask and write the record.  Numpy median is used here instead of
+        # afw.math makeStatistics because of an issue with data types being
+        # passed into the C++ layer (DM-2379).
         if np.any(logicalMask):
             medVar = np.median(pixels.getVarianceArray()[logicalMask])
             measRecord.set(self.varValue, medVar)
@@ -244,7 +296,8 @@ class VariancePlugin(GenericPlugin):
                                    self.FAILURE_EMPTY_FOOTPRINT)
 
     def fail(self, measRecord, error=None):
-        # Check that we have a error object and that it is of type MeasurementError
+        # Check that we have an error object and that it is of type
+        # MeasurementError
         if isinstance(error, MeasurementError):
             assert error.getFlagBit() in (self.FAILURE_BAD_CENTROID, self.FAILURE_EMPTY_FOOTPRINT)
             # FAILURE_BAD_CENTROID handled by alias to centroid record.
@@ -255,25 +308,55 @@ class VariancePlugin(GenericPlugin):
 
 
 SingleFrameVariancePlugin = VariancePlugin.makeSingleFramePlugin("base_Variance")
+"""Single-frame version of `VariancePlugin`.
+"""
+
 ForcedVariancePlugin = VariancePlugin.makeForcedPlugin("base_Variance")
+"""Forced version of `VariancePlugin`.
+"""
 
 
 class InputCountConfig(BaseMeasurementPluginConfig):
+    """Configuration for the input image counting plugin.
+    """
     pass
 
 
 class InputCountPlugin(GenericPlugin):
-    """
-    Plugin to count how many input images contributed to each source. This information
-    is in the exposure's coaddInputs. Some limitations:
-    * This is only for the pixel containing the center, not for all the pixels in the
-      Footprint
-    * This does not account for any clipping in the coadd
+    """Count the number of input images which contributed to a a source.
+
+    Parameters
+    ----------
+    config : `InputCountConfig`
+        Plugin configuraion.
+    name : `str`
+        Plugin name.
+    schema : `lsst.afw.table.Schema`
+        The schema for the measurement output catalog. New fields will be
+        added to hold measurements produced by this plugin.
+    metadata : `lsst.daf.base.PropertySet`
+        Plugin metadata that will be attached to the output catalog
+
+    Notes
+    -----
+    Information is derived from the image's `~lsst.afw.image.CoaddInputs`.
+    Note these limitation:
+
+    - This records the number of images which contributed to the pixel in the
+      center of the source footprint, rather than to any or all pixels in the
+      source.
+    - Clipping in the coadd is not taken into account.
     """
 
     ConfigClass = InputCountConfig
+
     FAILURE_BAD_CENTROID = 1
+    """Denotes failures due to bad centroiding (`int`).
+    """
+
     FAILURE_NO_INPUTS = 2
+    """Denotes failures due to the image not having coadd inputs.  (`int`)
+    """
 
     @classmethod
     def getExecutionOrder(cls):
@@ -309,19 +392,38 @@ class InputCountPlugin(GenericPlugin):
 
 
 SingleFrameInputCountPlugin = InputCountPlugin.makeSingleFramePlugin("base_InputCount")
+"""Single-frame version of `InputCoutPlugin`.
+"""
+
 ForcedInputCountPlugin = InputCountPlugin.makeForcedPlugin("base_InputCount")
+"""Forced version of `InputCoutPlugin`.
+"""
 
 
 class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
+    """Configuration for the single frame peak centroiding algorithm.
+    """
     pass
 
 
 @register("base_PeakCentroid")
 class SingleFramePeakCentroidPlugin(SingleFramePlugin):
-    """
-    A centroid algorithm that simply uses the first (i.e. highest) Peak in the Source's
-    Footprint as the centroid.  This is of course a relatively poor measure of the true
-    centroid of the object; this algorithm is provided mostly for testing and debugging.
+    """Record the highest peak in a source footprint as its centroid.
+
+    This is of course a relatively poor measure of the true centroid of the
+    object; this algorithm is provided mostly for testing and debugging.
+
+    Parameters
+    ----------
+    config : `SingleFramePeakCentroidConfig`
+        Plugin configuraion.
+    name : `str`
+        Plugin name.
+    schema : `lsst.afw.table.Schema`
+        The schema for the measurement output catalog. New fields will be
+        added to hold measurements produced by this plugin.
+    metadata : `lsst.daf.base.PropertySet`
+        Plugin metadata that will be attached to the output catalog
     """
 
     ConfigClass = SingleFramePeakCentroidConfig
@@ -350,14 +452,29 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
 
 
 class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
+    """Configuration for the sky coordinates algorithm.
+    """
     pass
 
 
 @register("base_SkyCoord")
 class SingleFrameSkyCoordPlugin(SingleFramePlugin):
-    """
-    A measurement plugin that sets the "coord" field (part of the Source minimal schema)
-    using the slot centroid and the Wcs attached to the Exposure.
+    """Record the sky position of an object based on its centroid slot and WCS.
+
+    The position is record in the ``coord`` field, which is part of the
+    `~lsst.afw.table.SourceCatalog` minimal schema.
+
+    Parameters
+    ----------
+    config : `SingleFrameSkyCoordConfig`
+        Plugin configuraion.
+    name : `str`
+        Plugin name.
+    schema : `lsst.afw.table.Schema`
+        The schema for the measurement output catalog. New fields will be
+        added to hold measurements produced by this plugin.
+    metadata : `lsst.daf.base.PropertySet`
+        Plugin metadata that will be attached to the output catalog
     """
 
     ConfigClass = SingleFrameSkyCoordConfig
@@ -367,31 +484,49 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
         return cls.SHAPE_ORDER
 
     def measure(self, measRecord, exposure):
-        # there should be a base class method for handling this exception. Put this on a later ticket
-        # Also, there should be a python Exception of the appropriate type for this error
+        # There should be a base class method for handling this exception. Put
+        # this on a later ticket. Also, there should be a python Exception of
+        # the appropriate type for this error
         if not exposure.hasWcs():
             raise Exception("Wcs not attached to exposure.  Required for " + self.name + " algorithm")
         measRecord.updateCoord(exposure.getWcs())
 
     def fail(self, measRecord, error=None):
-        # Override fail() to do nothing in the case of an exception: this is not ideal,
-        # but we don't have a place to put failures because we don't allocate any fields.
-        # Should consider fixing as part of DM-1011
+        # Override fail() to do nothing in the case of an exception: this is
+        # not ideal, but we don't have a place to put failures because we
+        # don't allocate any fields.  Should consider fixing as part of
+        # DM-1011
         pass
 
 
-# --- Forced Plugins ---
-
 class ForcedPeakCentroidConfig(ForcedPluginConfig):
+    """Configuration for the forced peak centroid algorithm.
+    """
     pass
 
 
 @register("base_PeakCentroid")
 class ForcedPeakCentroidPlugin(ForcedPlugin):
-    """
-    The forced peak centroid is like the SFM peak centroid plugin, except that it must transform
-    the peak coordinate from the original (reference) coordinate system to the coordinate system
-    of the exposure being measured.
+    """Record the highest peak in a source footprint as its centroid.
+
+    This is of course a relatively poor measure of the true centroid of the
+    object; this algorithm is provided mostly for testing and debugging.
+
+    This is similar to `SingleFramePeakCentroidPlugin`, except that transforms
+    the peak coordinate from the original (reference) coordinate system to the
+    coordinate system of the exposure being measured.
+
+    Parameters
+    ----------
+    config : `ForcedPeakCentroidConfig`
+        Plugin configuraion.
+    name : `str`
+        Plugin name.
+    schemaMapper : `lsst.afw.table.SchemaMapper`
+        A mapping from reference catalog fields to output
+        catalog fields. Output fields are added to the output schema.
+    metadata : `lsst.daf.base.PropertySet`
+        Plugin metadata that will be attached to the output catalog.
     """
 
     ConfigClass = ForcedPeakCentroidConfig
@@ -420,15 +555,35 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
 
 
 class ForcedTransformedCentroidConfig(ForcedPluginConfig):
+    """Configuration for the forced transformed centroid algorithm.
+    """
     pass
 
 
 @register("base_TransformedCentroid")
 class ForcedTransformedCentroidPlugin(ForcedPlugin):
-    """A centroid pseudo-algorithm for forced measurement that simply transforms the centroid
-    from the reference catalog to the measurement coordinate system.  This is used as
-    the slot centroid by default in forced measurement, allowing subsequent measurements
-    to simply refer to the slot value just as they would in single-frame measurement.
+    """Record the transformation of the reference catalog centroid.
+
+    The centroid recorded in the reference catalog is tranformed to the
+    measurement coordinate system and stored.
+
+    Parameters
+    ----------
+    config : `ForcedTransformedCentroidConfig`
+        Plugin configuration
+    name : `str`
+        Plugin name
+    schemaMapper : `lsst.afw.table.SchemaMapper`
+        A mapping from reference catalog fields to output
+        catalog fields. Output fields are added to the output schema.
+    metadata : `lsst.daf.base.PropertySet`
+        Plugin metadata that will be attached to the output catalog.
+
+    Notes
+    -----
+    This is used as the slot centroid by default in forced measurement,
+    allowing subsequent measurements to simply refer to the slot value just as
+    they would in single-frame measurement.
     """
 
     ConfigClass = ForcedTransformedCentroidConfig
@@ -467,15 +622,35 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
 
 
 class ForcedTransformedShapeConfig(ForcedPluginConfig):
+    """Configuration for the forced transformed shape algorithm.
+    """
     pass
 
 
 @register("base_TransformedShape")
 class ForcedTransformedShapePlugin(ForcedPlugin):
-    """A shape pseudo-algorithm for forced measurement that simply transforms the shape
-    from the reference catalog to the measurement coordinate system.  This is used as
-    the slot shape by default in forced measurement, allowing subsequent measurements
-    to simply refer to the slot value just as they would in single-frame measurement.
+    """Record the transformation of the reference catalog shape.
+
+    The shape recorded in the reference catalog is tranformed to the
+    measurement coordinate system and stored.
+
+    Parameters
+    ----------
+    config : `ForcedTransformedShapeConfig`
+        Plugin configuration
+    name : `str`
+        Plugin name
+    schemaMapper : `lsst.afw.table.SchemaMapper`
+        A mapping from reference catalog fields to output
+        catalog fields. Output fields are added to the output schema.
+    metadata : `lsst.daf.base.PropertySet`
+        Plugin metadata that will be attached to the output catalog.
+
+    Notes
+    -----
+    This is used as the slot shape by default in forced measurement, allowing
+    subsequent measurements to simply refer to the slot value just as they
+    would in single-frame measurement.
     """
 
     ConfigClass = ForcedTransformedShapeConfig

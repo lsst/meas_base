@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 LSST Corporation.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
@@ -77,7 +76,8 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
                         self.schema.find("test2_apCorr").key.getOffset())
 
     def testSuccessUnflagged(self):
-        # Check that the aperture correction flag is set to False if aperture correction was successfully run
+        # Check that the aperture correction flag is set to False if aperture
+        # correction was successfully run
         flagName = self.name + "_flag_apCorr"
         flagKey = self.schema.find(flagName).key
         source_test_instFlux = 5.1
@@ -97,7 +97,8 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         self.assertFalse(sourceCat[flagKey])
 
     def testFailureFlagged(self):
-        # Check that aperture correction flag is set to True if aperture correction is invalid (negative)
+        # Check that aperture correction flag is set to True if aperture
+        # correction is invalid (negative)
         flagName = self.name + "_flag_apCorr"
         flagKey = self.schema.find(flagName).key
         source_test_instFlux = 5.2
@@ -158,10 +159,15 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         self.assertAlmostEqual(sourceCat[instFluxKey], source_test_instFlux / 2)
 
     def testCatFluxErr(self):
-        """
-        Important note! This test will break if UseNaiveFluxErr = False
-        The alternate method significantly overestimates noise, causing this test to fail.
-        It is likely that this test will need to be modified if the noise calculation is updated.
+        """Test catalog flux errors.
+
+        Notes
+        -----
+        This test will break if ``UseNaiveFluxErr = False``~
+
+        The alternate method significantly overestimates noise, causing this
+        test to fail.  It is likely that this test will need to be modified if
+        the noise calculation is updated.
         """
         # Pick arbitrary but unique values for the test case
         source_test_instFlux = 5.5

@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2015 LSST Corporation.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import math
 
 import numpy as np
@@ -39,47 +39,88 @@ __all__ = ("ApplyApCorrConfig", "ApplyApCorrTask")
 
 
 class ApCorrInfo:
-    """!Catalog field names and keys needed to aperture correct a particular instrument flux
+    """Catalog field names and keys needed to aperture correct a particular
+    instrument flux.
+
+    Parameters
+    ----------
+    schema : `lsst.afw.table`
+        Source catalog schema. Three fields are used to generate keys:
+        - ``{name}_instFlux``
+        - ``{name}_instFluxErr``
+        - ``{name}_flag``
+        Three fields are added:
+        - ``{name}_apCorr`` (only if not already added by proxy)
+        - ``{name}_apCorrErr`` (only if not already added by proxy)
+        - ``{name}_flag_apCorr``
+    model : `str`
+        Field name prefix for instFlux with aperture correction model, e.g.
+        "base_PsfFlux"
+    name : `str`
+        Field name prefix for instFlux needing aperture correction; may be
+        `None` if it is the same as ``model``
+
+    Notes
+    -----
+    The aperture correction can be derived from the meaasurements in the
+    column being aperture-corrected or from measurements in a different
+    column (a "proxy"). In the first case, we will add columns to contain
+    the aperture correction values; in the second case (using a proxy),
+    we will add an alias to the proxy's aperture correction values. In
+    all cases, we add a flag.
+    """
+
+    name = None
+    """Field name prefix for flux needing aperture correction (`str`).
+    """
+
+    modelName = None
+    """Field name for aperture correction model for flux (`str`).
+    """
+
+    modelSigmaName = None
+    """Field name for aperture correction model for fluxErr (`str`).
+    """
+
+    doApCorrColumn = None
+    """Should we write the aperture correction values (`bool`)?
+
+    They should not be written if they're already being written by a proxy.
+    """
+
+    instFluxName = None
+    """Name of ``instFlux`` field (`str`).
+    """
+
+    instFluxErrName = None
+    """Name of ``instFlux`` sigma field (`str`).
+    """
+
+    instFluxKey = None
+    """Key to ``instFlux`` field (`lsst.afw.table.schema.Key`).
+    """
+
+    instFluxErrKey = None
+    """Key to ``instFlux`` sigma field (`lsst.afw.table.schema.Key`).
+    """
+
+    fluxFlagKey = None
+    """Key to the flux flag field (`lsst.afw.table.schema.Key`).
+    """
+
+    apCorrKey = None
+    """Key to new aperture correction field (`lsst.afw.table.schema.Key`).
+    """
+
+    apCorrErrKey = None
+    """Key to new aperture correction sigma field (`lsst.afw.table.schema.Key`).
+    """
+
+    apCorrFlagKey = None
+    """Key to new aperture correction flag field (`lsst.afw.table.schema.Key`).
     """
 
     def __init__(self, schema, model, name=None):
-        """!Construct an ApCorrInfo and add fields to the schema
-
-        The aperture correction can be derived from the meaasurements in the
-        column being aperture-corrected or from measurements in a different
-        column (a "proxy"). In the first case, we will add columns to contain
-        the aperture correction values; in the second case (using a proxy),
-        we will add an alias to the proxy's aperture correction values. In
-        all cases, we add a flag.
-
-        @param[in,out] schema  source catalog schema;
-            three fields are used to generate keys:
-            - {name}_instFlux
-            - {name}_instFluxErr
-            - {name}_flag
-            three fields are added:
-            - {name}_apCorr (only if not already added by proxy)
-            - {name}_apCorrErr (only if not already added by proxy)
-            - {name}_flag_apCorr
-        @param[in] model  field name prefix for instFlux with aperture correction model, e.g. "base_PsfFlux"
-        @param[in] name  field name prefix for instFlux needing aperture correction; may be None if it's the
-            same as for the 'model' parameter
-
-        ApCorrInfo has the following attributes:
-        - name: field name prefix for instFlux needing aperture correction
-        - modelName: field name for aperture correction model for instFlux
-        - modelSigmaName: field name for aperture correction model for instFluxErr
-        - doApCorrColumn: should we write the aperture correction values? (not if they're already being
-             written by a proxy)
-        - instFluxName: name of instFlux field
-        - instFluxErrName: name of instFlux sigma field
-        - instFluxKey: key to instFlux field
-        - instFluxErrKey: key to instFlux sigma field
-        - fluxFlagKey: key to flux flag field
-        - apCorrKey: key to new aperture correction field
-        - apCorrErrKey: key to new aperture correction sigma field
-        - apCorrFlagKey: key to new aperture correction flag field
-        """
         if name is None:
             name = model
         self.name = name
@@ -119,6 +160,9 @@ class ApCorrInfo:
 
 
 class ApplyApCorrConfig(lsst.pex.config.Config):
+    """Aperture correction configuration.
+    """
+
     ignoreList = lsst.pex.config.ListField(
         doc="flux measurement algorithms in getApCorrNameSet() to ignore; "
             "if a name is listed that does not appear in getApCorrNameSet() then a warning is logged",
@@ -142,14 +186,16 @@ class ApplyApCorrConfig(lsst.pex.config.Config):
 
 
 class ApplyApCorrTask(lsst.pipe.base.Task):
-    """!Apply aperture corrections
+    """Apply aperture corrections.
+
+    Parameters
+    ----------
+    schema : `lsst.afw.table.Schema`
     """
     ConfigClass = ApplyApCorrConfig
     _DefaultName = "applyApCorr"
 
     def __init__(self, schema, **kwds):
-        """Construct an instance of this task
-        """
         lsst.pipe.base.Task.__init__(self, **kwds)
 
         self.apCorrInfoDict = dict()
@@ -175,13 +221,19 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
             self.apCorrInfoDict[name] = ApCorrInfo(schema=schema, model=model, name=name)
 
     def run(self, catalog, apCorrMap):
-        """Apply aperture corrections to a catalog of sources
+        """Apply aperture corrections to a catalog of sources.
 
-        @param[in,out] catalog  catalog of sources
-        @param[in] apCorrMap  aperture correction map (an lsst.afw.image.ApCorrMap)
+        Parameters
+        ----------
+        catalog : `lsst.afw.table.SourceCatalog`
+            Catalog of sources. Will be updated in place.
+        apCorrMap : `lsst.afw.image.ApCorrMap`
+            Aperture correction map
 
-        If you show debug-level log messages then you will see statistics for the effects of
-        aperture correction.
+        Notes
+        -----
+        If you show debug-level log messages then you will see statistics for
+        the effects of aperture correction.
         """
         self.log.info("Applying aperture corrections to %d instFlux fields", len(self.apCorrInfoDict))
         if UseNaiveFluxErr:

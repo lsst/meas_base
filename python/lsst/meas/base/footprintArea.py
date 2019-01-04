@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,13 +13,11 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 
@@ -34,13 +32,15 @@ __all__ = (
 
 
 class CatalogCalculationFootprintAreaConfig(CatalogCalculationPluginConfig):
+    """Configuration for footprint area catalog calculation plugin.
+    """
+
     pass
 
 
 @register("base_FootprintArea")
 class CatalogCalculationFootprintAreaPlugin(CatalogCalculationPlugin):
-    """A catalog calcluation plugin  that simply records the area of the
-    source's detection Footprint.
+    """Catalog calculation plugin to record the area of a source's footprint.
     """
 
     ConfigClass = CatalogCalculationFootprintAreaConfig

@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
@@ -48,7 +47,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         del self.dataset
 
     def makeAlgorithm(self, ctrl=None):
-        """Construct an algorithm (finishing a schema in the process), and return both."""
+        """Construct an algorithm and return both it and its schema.
+        """
         if ctrl is None:
             ctrl = lsst.meas.base.PsfFluxControl()
         schema = lsst.meas.base.tests.TestDataset.makeMinimalSchema()
@@ -66,7 +66,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         badMask = exposure.getMaskedImage().getMask().getPlaneBitMask("BAD")
         imageArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] = np.inf
         maskArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] |= badMask
-        # Should get an infinite value exception, because we didn't mask that one pixel
+        # Should get an infinite value exception, because we didn't mask that
+        # one pixel
         with self.assertRaises(lsst.meas.base.PixelValueError):
             algorithm.measure(record, exposure)
         # If we do mask it, we should get a reasonable result
@@ -85,9 +86,12 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                          lsst.meas.base.PsfFluxAlgorithm.NO_GOOD_PIXELS.number)
 
     def testSubImage(self):
-        """Test that we don't get confused by images with nonzero xy0, and that the EDGE flag is set
-        when it should be.
+        """Test measurement on sub-images.
+
+        Specifically, checks that we don't get confused by images with nonzero
+        ``xy0``, and that the ``EDGE`` flag is set when it should be.
         """
+
         algorithm, schema = self.makeAlgorithm()
         # Results are RNG dependent; we choose a seed that is known to pass.
         exposure, catalog = self.dataset.realize(10.0, schema, randomSeed=1)
@@ -102,7 +106,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertTrue(record.get("base_PsfFlux_flag_edge"))
 
     def testNoPsf(self):
-        """Test that we raise FatalAlgorithmError when there's no PSF."""
+        """Test that we raise `FatalAlgorithmError` when there's no PSF.
+        """
         algorithm, schema = self.makeAlgorithm()
         # Results are RNG dependent; we choose a seed that is known to pass.
         exposure, catalog = self.dataset.realize(10.0, schema, randomSeed=2)
@@ -111,8 +116,12 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             algorithm.measure(catalog[0], exposure)
 
     def testMonteCarlo(self):
-        """Test that we get exactly the right answer on an ideal sim with no noise, and that
-        the reported uncertainty agrees with a Monte Carlo test of the noise.
+        """Test an ideal simulation, with no noise.
+
+        Demonstrate that:
+
+        - We get exactly the right answer, and
+        - The reported uncertainty agrees with a Monte Carlo test of the noise.
         """
         algorithm, schema = self.makeAlgorithm()
         # Results are RNG dependent; we choose a seed that is known to pass.
@@ -127,8 +136,9 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             instFluxErrs = []
             nSamples = 1000
             for repeat in range(nSamples):
-                # By using ``repeat`` to seed the RNG, we get results which fall within the tolerances
-                # defined below. If we allow this test to be truly random, passing becomes RNG-dependent.
+                # By using ``repeat`` to seed the RNG, we get results which
+                # fall within the tolerances defined below. If we allow this
+                # test to be truly random, passing becomes RNG-dependent.
                 exposure, catalog = self.dataset.realize(noise*instFlux, schema, randomSeed=repeat)
                 record = catalog[0]
                 algorithm.measure(record, exposure)
@@ -154,7 +164,8 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def testForcedPlugin(self):
         task = self.makeForcedMeasurementTask("base_PsfFlux")
-        # Results of this test are RNG dependent: we choose seeds that are known to pass.
+        # Results of this test are RNG dependent: we choose seeds that are
+        # known to pass.
         measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs(), randomSeed=5)
         measDataset = self.dataset.transform(measWcs)
         exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema(), randomSeed=5)

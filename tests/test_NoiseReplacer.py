@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 LSST Corporation.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +16,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
 
@@ -34,7 +33,8 @@ import lsst.utils.tests
 
 @lsst.meas.base.register("test_NoiseReplacer")
 class NoiseReplacerTestPlugin(lsst.meas.base.SingleFramePlugin):
-    """A measurement plugin that simply sums instFlux inside and outside the source's footprint."""
+    """Plugin that sums instFlux inside and outside the source footprint.
+    """
 
     @staticmethod
     def getExecutionOrder():
@@ -76,8 +76,12 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.t
             family.addChild(90000.0, lsst.geom.Point2D(68.5, 156.9))
 
     def testSingleFrameMeasurement(self):
-        """Test that replacing sources with noise works as used in SingleFrameMeasurementTask,
-        by comparing instFlux inside and outside source Footprints on an extremely high S/N image."""
+        """Test noise replacement in single frame measurement.
+
+        We compare the instFlux inside and outside source Footprints on an
+        extremely high S/N image.
+        """
+
         # We choose a random seed which causes the test to pass.
         task = self.makeSingleFrameMeasurementTask("test_NoiseReplacer")
         exposure, catalog = self.dataset.realize(1.0, task.schema, randomSeed=0)
@@ -86,8 +90,10 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.t
         for record in catalog:
             self.assertFloatsAlmostEqual(record.get("test_NoiseReplacer_inside"),
                                          record.get("truth_instFlux"), rtol=1E-3)
-            # n.b. Next line checks that a random value is correct to a statistical 1-sigma prediction;
-            # some RNG seeds may cause it to fail (indeed, 67% should)
+
+            # N.B. Next line checks that a random value is correct to a
+            # statistical 1-sigma prediction; some RNG seeds may cause it to
+            # fail (indeed, 67% should)
             self.assertLess(record.get("test_NoiseReplacer_outside"), np.sqrt(sumVariance))
 
     def tearDown(self):

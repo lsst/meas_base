@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2015 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,13 +13,12 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """Measurement transformations.
 
 When a measurement plugin is run, it provides raw, uncalibrated outputs such
@@ -29,17 +28,18 @@ convert those outputs to calibrated quantities, such as celestial coordinates.
 At construction, the transformation is passed the configuration and name of
 the plugin whose outputs it will be transformaing (all fields in the input
 table produced by that plugin will have their field names prefixed by the
-plugin name) and a `SchemaMapper` which holds the schemata for the input and
-output catalogs and which may be used to directly map fields between the
-catalogs.
+plugin name) and a `~lsst.afw.table.SchemaMapper` which holds the schemata for
+the input and output catalogs and which may be used to directly map fields
+between the catalogs.
 
-When a transformer is called, it is handed a `SourceCatalog` containing the
-measurements to be transformed, a `BaseCatalog` in which to store results, and
-information about the WCS and calibration of the data. It may be safely
-assumed that both are contiguous in memory, thus a ColumnView may be used for
-efficient processing. If the transformation is not possible, it should be
-aborted by throwing an exception; if this happens, the caller should
-assume that the contents of the output catalog are inconsistent.
+When a transformer is called, it is handed a `~lsst.afw.table.SourceCatalog`
+containing the measurements to be transformed, a `~lsst.afw.table.BaseCatalog`
+in which to store results, and information about the WCS and calibration of
+the data. It may be safely assumed that both are contiguous in memory, thus a
+``ColumnView`` may be used for efficient processing. If the transformation is
+not possible, it should be aborted by throwing an exception; if this happens,
+the caller should assume that the contents of the output catalog are
+inconsistent.
 
 Transformations can be defined in Python or in C++. Python code should inherit
 from `MeasurementTransform`, following its interface.
@@ -49,13 +49,26 @@ from lsst.afw.table import CoordKey
 from lsst.pex.exceptions import LengthError
 from . import CentroidResultKey
 
-__all__ = ("NullTransform", "PassThroughTransform", "SimpleCentroidTransform")
+__all__ = ("MeasurementTransform", "NullTransform", "PassThroughTransform", "SimpleCentroidTransform")
 
 
 class MeasurementTransform:
-    """!
-    Base class for measurement transformations.
+    """Base class for measurement transformations.
 
+    Parameters
+    ----------
+    config : subclass of `BasePluginConfig`
+        The configuration of the measurement plugin whose outputs are being
+        transformed.
+    name : `str`
+        The name of the measurement plugin whose outputs are being
+        transformed.
+    mapper : `lsst.afw.table.SchemaMapper`
+        Mapping between the input (pre-transformation) and output
+        (transformed) catalogs.
+
+    Notes
+    -----
     Create transformations by deriving from this class, implementing
     `__call__()` and (optionally) augmenting `__init__()`.
     """
@@ -74,11 +87,22 @@ class MeasurementTransform:
 
 
 class NullTransform(MeasurementTransform):
-    """!
-    The null transform transfers no data from input to output.
+    """Null transform which transfers no data from input to output.
 
     This is intended as the default for measurements for which no other
     transformation is specified.
+
+    Parameters
+    ----------
+    config : subclass of `BasePluginConfig`
+        The configuration of the measurement plugin whose outputs are being
+        transformed.
+    name : `str`
+        The name of the measurement plugin whose outputs are being
+        transformed.
+    mapper : `lsst.afw.table.SchemaMapper`
+        Mapping between the input (pre-transformation) and output
+        (transformed) catalogs.
     """
 
     def __call__(self, inputCatalog, outputCatalog, wcs, calib):
@@ -86,8 +110,19 @@ class NullTransform(MeasurementTransform):
 
 
 class PassThroughTransform(MeasurementTransform):
-    """!
-    Copy all fields named after the measurement plugin from input to output, without transformation.
+    """Copy fields from input to output without transformation.
+
+    Parameters
+    ----------
+    config : subclass of `BasePluginConfig`
+        The configuration of the measurement plugin whose outputs are being
+        transformed.
+    name : `str`
+        The name of the measurement plugin whose outputs are being
+        transformed.
+    mapper : `lsst.afw.table.SchemaMapper`
+        Mapping between the input (pre-transformation) and output
+        (transformed) catalogs.
     """
 
     def __init__(self, config, name, mapper):
@@ -100,8 +135,19 @@ class PassThroughTransform(MeasurementTransform):
 
 
 class SimpleCentroidTransform(MeasurementTransform):
-    """!
-    Transform a pixel centroid, excluding uncertainties, to celestial coordinates.
+    """Transform pixel centroid, without uncertainty, to celestial coordinates.
+
+    Parameters
+    ----------
+    config : subclass of `BasePluginConfig`
+        The configuration of the measurement plugin whose outputs are being
+        transformed.
+    name : `str`
+        The name of the measurement plugin whose outputs are being
+        transformed.
+    mapper : `lsst.afw.table.SchemaMapper`
+        Mapping between the input (pre-transformation) and output
+        (transformed) catalogs.
     """
 
     def __init__(self, config, name, mapper):

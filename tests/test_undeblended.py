@@ -1,9 +1,10 @@
+# This file is part of meas_base.
 #
-# LSST Data Management System
-# Copyright 2008-2017 AURA/LSST.
-#
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,15 +16,11 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
-#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+"""Tests for measuring sources on undeblended images.
 """
-Tests for measuring sources on undeblended images
-"""
-
 
 import sys
 import unittest
@@ -42,11 +39,14 @@ import lsst.utils.tests
 
 class UndeblendedTestCase(lsst.utils.tests.TestCase):
     def testUndeblendedMeasurement(self):
-        """Check undeblended measurement and aperture correction"""
+        """Check undeblended measurement and aperture correction.
+        """
         width, height = 100, 100  # Dimensions of image
         x0, y0 = 1234, 5678  # Offset of image
         radius = 3.0  # Aperture radius
-        xCenter, yCenter = width//2, height//2  # Position of first source; integer values, for convenience
+
+        # Position of first source; integer values, for convenience
+        xCenter, yCenter = width//2, height//2
         xOffset, yOffset = 1, 1  # Offset from first source to second source
         instFlux1, instFlux2 = 1000, 1  # Flux of sources
         apCorrValue = 3.21  # Aperture correction value to apply
@@ -67,7 +67,8 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         for subConfig in (sfmConfig.plugins, sfmConfig.undeblended):
             subConfig.names = [algName]
             subConfig[algName].radii = [radius]
-            subConfig[algName].maxSincRadius = 0  # Disable sinc photometry because we're undersampled
+            # Disable sinc photometry because we're undersampled
+            subConfig[algName].maxSincRadius = 0
         slots = sfmConfig.slots
         slots.centroid = "centroid"
         slots.shape = None
@@ -129,7 +130,8 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         sfm.run(cat, exposure)
 
         def checkSource(source, baseName, expectedFlux):
-            """Check that we get the expected results"""
+            """Check that we get the expected results.
+            """
             self.assertEqual(source.get(baseName + "_instFlux"), expectedFlux)
             self.assertGreater(source.get(baseName + "_instFluxErr"), 0)
             self.assertFalse(source.get(baseName + "_flag"))
