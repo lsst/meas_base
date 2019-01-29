@@ -294,15 +294,15 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
                                  executionOrder >= endOrder are not executed. None for no limit.
         """
         assert measCat.getSchema().contains(self.schema)
-        footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
-                      for measRecord in measCat}
 
         # noiseReplacer is used to fill the footprints with noise and save heavy footprints
         # of the source pixels so that they can be restored one at a time for measurement.
-        # After the NoiseReplacer is constructed, all pixels in the exposure.getMaskedImage()
-        # which belong to objects in measCat will be replaced with noise
+        # After the NoiseReplacer is constructed, it may be used as a context manager to
+        # access a record and an image corresponding to that record where all other sources
+        # have been replaced by noise
+
         if self.config.doReplaceWithNoise:
-            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints,
+            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, measCat,
                                           noiseImage=noiseImage, log=self.log, exposureId=exposureId)
             algMetadata = measCat.getMetadata()
             if algMetadata is not None:

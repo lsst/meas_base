@@ -28,6 +28,8 @@ import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.pex.config
 
+from contextlib import contextmanager
+
 __all__ = ("NoiseReplacerConfig", "NoiseReplacer", "DummyNoiseReplacer")
 
 
@@ -76,13 +78,15 @@ class NoiseReplacer:
 
     ConfigClass = NoiseReplacerConfig
 
-    def __init__(self, config, exposure, footprints, noiseImage=None, exposureId=None, log=None):
+    def __init__(self, config, exposure, catalog, refCatalog=None, noiseImage=None, exposureId=None, log=None):
         """!
         Initialize the NoiseReplacer.
 
         @param[in]      config       instance of NoiseReplacerConfig
         @param[in,out]  exposure     Exposure to be noise replaced. (All sources replaced on return)
-        @param[in]      footprints   dict of {id: (parent, footprint)};
+        @param[in]      catalog      Catalog of objects to insert and remove from the exposure
+        @param[in]      refCatalog   Optional catalog which is used to define the footprints instead
+                                     of the catalog.
         @param[in]      noiseImage   an afw.image.ImageF used as a predictable noise replacement source
                                      (for tests only)
         @param[in]      log          Log object to use for status messages; no status messages
@@ -101,19 +105,29 @@ class NoiseReplacer:
         topmost parent in the objects parent chain must be used.  The heavy footprint for that source
         is created in this class from the masked image.
         """
-        noiseMeanVar = None
+        self.noiseMeanVar = None
         self.noiseSource = config.noiseSource
         self.noiseOffset = config.noiseOffset
         self.noiseSeedMultiplier = config.noiseSeedMultiplier
         self.noiseGenMean = None
         self.noiseGenStd = None
         self.log = log
+        self.exposureId = exposureId
 
         # creates heavies, replaces all footprints with noise
         # We need the source table to be sorted by ID to do the parent lookups
         self.exposure = exposure
-        self.footprints = footprints
-        mi = exposure.getMaskedImage()
+        if refCatalog:
+            self.footprints = {ref.getId(): (ref.getParents(), measRecord.getForrprint())
+                               for (ref, measRecord) in zip(refCatalog, catalog)}
+        else:
+            self.footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
+                               for measRecord in catalog}
+        self.catalog = catalog
+        self.refCatalog = refCatalog
+
+    def __enter__(self):
+        mi = self.exposure.getMaskedImage()
         im = mi.getImage()
         mask = mi.getMask()
         # Add temporary Mask planes for THISDET and OTHERDET
@@ -147,7 +161,7 @@ class NoiseReplacer:
         # so they are never available for forced measurements.
 
         # Create in the dict heavies = {id:heavyfootprint}
-        for id, fp in footprints.items():
+        for id, fp in self.footprints.items():
             if fp[1].isHeavy():
                 self.heavies[id] = fp[1]
             elif fp[0] == 0:
@@ -162,14 +176,15 @@ class NoiseReplacer:
         # We now create a noise HeavyFootprint for each source with has a heavy footprint.
         # We'll put the noise footprints in a dict heavyNoise = {id:heavyNoiseFootprint}
         self.heavyNoise = {}
-        noisegen = self.getNoiseGenerator(exposure, noiseImage, noiseMeanVar, exposureId=exposureId)
+        noisegen = self.getNoiseGenerator(self.exposure, self.noiseImage,
+                                          self.noiseMeanVar, exposureId=self.exposureId)
         #  The noiseGenMean and Std are used by the unit tests
         self.noiseGenMean = noisegen.mean
         self.noiseGenStd = noisegen.std
         if self.log:
             self.log.debug('Using noise generator: %s', str(noisegen))
         for id in self.heavies:
-            fp = footprints[id][1]
+            fp = self.footprints[id][1]
             noiseFp = noisegen.getHeavyFootprint(fp)
             self.heavyNoise[id] = noiseFp
             # Also insert the noisy footprint into the image now.
@@ -178,6 +193,10 @@ class NoiseReplacer:
             noiseFp.insert(im)
             # Also set the OTHERDET bit
             fp.spans.setMask(mask, self.otherbitmask)
+        return NoiseReplacerProxy(self)
+
+    def __exit__(self, exc_type, exc_value, tranceback):
+        self.end()
 
     def insertSource(self, id):
         """!
@@ -317,6 +336,22 @@ class NoiseReplacer:
             self.log.debug("Measured from image: clipped mean = %g, stdev = %g",
                            noiseMean, noiseStd)
         return FixedGaussianNoiseGenerator(noiseMean + offset, noiseStd, rand=rand)
+
+
+class NoiseReplacerProxy:
+    def __init__(self, parent):
+        self.parent = parent
+
+    def __iter__(self):
+        for k, _ in self.parent.footprints:
+            with self[k] as info:
+                return info
+
+    @contextmanager
+    def __getitem__(self, item):
+        self.parent.insertSource(item)
+        yield self.parent.catalog.find(item), self.parent.exposure
+        self.parent.removeSource(item)
 
 
 class NoiseReplacerList(list):
@@ -467,6 +502,17 @@ class DummyNoiseReplacer:
 
     DummyNoiseReplacer has all the public methods of NoiseReplacer, but none of them do anything.
     """
+
+    def __init__(self, exposure, catalog):
+        self.exposure = exposure
+        self.catalog = catalog
+        self.footprints = {record.getId(): True for record in catalog}
+
+    def __enter__(self):
+        return NoiseReplacerProxy(self)
+
+    def __exit__(self):
+        pass
 
     def insertSource(self, id):
         pass
