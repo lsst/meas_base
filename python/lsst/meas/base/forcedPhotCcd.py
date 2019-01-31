@@ -145,6 +145,25 @@ class ForcedPhotCcdConfig(ForcedPhotImageConfig):
         default=False
     )
 
+    def setDefaults(self):
+        super().setDefaults()
+
+        # Override the Gen3 datasets from ForcedPhotImageTaskConfig.
+        # When these nameTemplate values are used in ForcedPhotCoadd,
+        # there is a coadd name that may change, depending on the
+        # coadd type.  For CCD forced photometry, there will likely
+        # only ever be a single calexp type, but for consistency, use
+        # the nameTemplate with nothing to substitute.
+        self.outputSchema.nameTemplate = "forced_src_schema"
+        self.exposure.nameTemplate = "{inputName}"
+        self.exposure.dimensions = ["Instrument", "Visit", "Detector"]
+        self.measCat.nameTemplate = "forced_src"
+        self.measCat.dimensions = ["Instrument", "Visit", "Detector", "SkyMap", "Tract"]
+
+        self.formatTemplateNames({"inputName": "calexp",
+                                  "inputCoaddName": "deep"})
+        self.quantum.dimensions = ("Instrument", "Visit", "Detector", "SkyMap", "Tract")
+
 
 class ForcedPhotCcdTask(ForcedPhotImageTask):
     """A command-line driver for performing forced measurement on CCD images.
@@ -185,6 +204,86 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
     RunnerClass = lsst.pipe.base.ButlerInitializedTaskRunner
     _DefaultName = "forcedPhotCcd"
     dataPrefix = ""
+
+    def adaptArgsAndRun(self, inputData, inputDataIds, outputDataIds, butler):
+        inputData['refCat'] = self.filterReferences(inputData['exposure'],
+                                                    inputData['refCat'], inputData['refWcs'])
+        inputData['measCat'] = self.generateMeasCat(inputDataIds['exposure'],
+                                                    inputData['exposure'],
+                                                    inputData['refCat'], inputData['refWcs'],
+                                                    "VisitDetector", butler)
+
+        return self.run(**inputData)
+
+    def filterReferences(self, exposure, refCat, refWcs):
+        """Filter reference catalog so that all sources are within the
+        boundaries of the exposure.
+
+        Parameters
+        ----------
+        exposure : `lsst.afw.image.exposure.Exposure`
+            Exposure to generate the catalog for.
+        refCat : `lsst.afw.table.SourceCatalog`
+            Catalog of shapes and positions at which to force photometry.
+        refWcs : `lsst.afw.image.SkyWcs`
+            Reference world coordinate system.
+
+        Returns
+        -------
+        refSources : `lsst.afw.table.SourceCatalog`
+            Filtered catalog of forced sources to measure.
+
+        Notes
+        -----
+        Filtering the reference catalog is currently handled by Gen2
+        specific methods.  To function for Gen3, this method copies
+        code segments to do the filtering and transformation.  The
+        majority of this code is based on the methods of
+        lsst.meas.algorithms.loadReferenceObjects.ReferenceObjectLoader
+
+        """
+
+        # Step 1: Determine bounds of the exposure photometry will
+        # be performed on.
+        expWcs = exposure.getWcs()
+        expRegion = exposure.getBBox(lsst.afw.image.PARENT)
+        expBBox = lsst.geom.Box2D(expRegion)
+        expBoxCorners = expBBox.getCorners()
+        expSkyCorners = [expWcs.pixelToSky(corner).getVector() for
+                         corner in expBoxCorners]
+        expPolygon = lsst.sphgeom.ConvexPolygon(expSkyCorners)
+
+        # Step 2: Filter out reference catalog sources that are
+        # not contained within the exposure boundaries.
+        sources = type(refCat)(refCat.table)
+        for record in refCat:
+            if expPolygon.contains(record.getCoord().getVector()):
+                sources.append(record)
+        refCatIdDict = {ref.getId(): ref.getParent() for ref in sources}
+
+        # Step 3: Cull sources that do not have their parent
+        # source in the filtered catalog.  Save two copies of each
+        # source.
+        refSources = type(refCat)(refCat.table)
+        for record in refCat:
+            if expPolygon.contains(record.getCoord().getVector()):
+                recordId = record.getId()
+                topId = recordId
+                while (topId > 0):
+                    if topId in refCatIdDict:
+                        topId = refCatIdDict[topId]
+                    else:
+                        break
+                if topId == 0:
+                    refSources.append(record)
+
+        # Step 4: Transform source footprints from the reference
+        # coordinates to the exposure coordinates.
+        for refRecord in refSources:
+            refRecord.setFootprint(refRecord.getFootprint().transform(refWcs,
+                                                                      expWcs, expRegion))
+        # Step 5: Replace reference catalog with filtered source list.
+        return refSources
 
     def makeIdFactory(self, dataRef):
         """Create an object that generates globally unique source IDs.
