@@ -68,9 +68,10 @@ class ForcedPhotImageConfig(lsst.pipe.base.PipelineTaskConfig):
     )
     refWcs = lsst.pipe.base.InputDatasetField(
         doc="Reference world coordinate system.",
-        nameTemplate="{inputCoaddName}Coadd.wcs",
+        nameTemplate="{inputCoaddName}Coadd",
         scalar=True,
-        storageClass="TablePersistableWcs",
+        manualLoad=True,
+        storageClass="ExposureF",
         dimensions=["AbstractFilter", "SkyMap", "Tract", "Patch"],
     )
     measCat = lsst.pipe.base.OutputDatasetField(
@@ -177,6 +178,7 @@ class ForcedPhotImageTask(lsst.pipe.base.PipelineTask, lsst.pipe.base.CmdLineTas
         return {"outputSchema": lsst.afw.table.SourceCatalog(self.measurement.schema)}
 
     def adaptArgsAndRun(self, inputData, inputDataIds, outputDataIds, butler):
+        inputData['refWcs'] = butler.get(f"{self.config.refWcs.name}.wcs", inputDataIds["refWcs"])
         inputData['measCat'] = self.generateMeasCat(inputDataIds['exposure'],
                                                     inputData['exposure'],
                                                     inputData['refCat'], inputData['refWcs'],
