@@ -39,6 +39,12 @@ class ForcedPhotCoaddConfig(ForcedPhotImageConfig):
         optional=True
     )
 
+    hasFakes = lsst.pex.config.Field(
+        dtype=bool,
+        default=False,
+        doc="Should be set to True if fake sources have been inserted into the input data."
+    )
+
     def setDefaults(self):
         ForcedPhotImageTask.ConfigClass.setDefaults(self)
         # Copy 'id' and 'parent' columns without renaming them; since these are
@@ -88,7 +94,12 @@ class ForcedPhotCoaddTask(ForcedPhotImageTask):
     dataPrefix = "deepCoadd_"
 
     def getExposure(self, dataRef):
-        name = self.config.coaddName + "Coadd_calexp"
+
+        if self.config.hasFakes:
+            name = "fakes_" + self.config.coaddName + "Coadd_calexp"
+        else:
+            name = self.config.coaddName + "Coadd_calexp"
+
         return dataRef.get(name) if dataRef.datasetExists(name) else None
 
     def makeIdFactory(self, dataRef):
