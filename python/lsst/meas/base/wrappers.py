@@ -68,7 +68,7 @@ class WrappedForcedPlugin(ForcedPlugin):
         self.cpp.fail(measRecord, error.cpp if error is not None else None)
 
 
-def wrapAlgorithmControl(Base, Control, module=2, hasMeasureN=False):
+def wrapAlgorithmControl(Base, Control, module=None, hasMeasureN=False):
     """Wrap a C++ algorithm's control class into a Python config class.
 
     Parameters
@@ -77,14 +77,14 @@ def wrapAlgorithmControl(Base, Control, module=2, hasMeasureN=False):
         Base class for the returned config.
     Control : pybind11-wrapped version of a C++ class.
         Control class to be wrapped.
-    module : module, `str` or `int`; optional
+    module : module, `str`, `int`, or `None`; optional
         Either a module object, a string specifying the name of the module, or
         an integer specifying how far back in the stack to look for the module
         to use: ``0`` is `lsst.pex.config.wrap`, ``1`` is
         `lsst.meas.base.wrappers`, ``2`` is the immediate caller, etc.  This
         will be used to set ``__module__`` for the new config class, and the
-        class will also be added to the module.  The default is to use the
-        callers' module.
+        class will also be added to the module.  The default is none in which
+        case module will be looked up from Control.
     hasMeasureN : `bool`, optional
         Whether the plugin supports fitting multiple objects at once (if so, a
         config option to enable/disable this will be added).
