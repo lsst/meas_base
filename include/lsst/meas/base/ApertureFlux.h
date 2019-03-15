@@ -250,12 +250,12 @@ public:
      * @param[in]     inputCatalog   Source of data to be transformed
      * @param[in,out] outputCatalog  Container for transformed results
      * @param[in]     wcs            World coordinate system under which transformation will take place
-     * @param[in]     calib          Photometric calibration under which transformation will take place
+     * @param[in]     photoCalib     Photometric calibration under which transformation will take place
      * @throws        LengthError    Catalog sizes do not match
      */
     virtual void operator()(afw::table::SourceCatalog const& inputCatalog,
                             afw::table::BaseCatalog& outputCatalog, afw::geom::SkyWcs const& wcs,
-                            afw::image::Calib const& calib) const;
+                            afw::image::PhotoCalib const& photoCalib) const;
 
 private:
     std::vector<MagResultKey> _magKeys;

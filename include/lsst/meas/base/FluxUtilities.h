@@ -27,7 +27,7 @@
 #include "lsst/meas/base/constants.h"
 #include "lsst/meas/base/Transform.h"
 #include "lsst/afw/geom/SkyWcs.h"
-#include "lsst/afw/image/Calib.h"
+#include "lsst/afw/image/PhotoCalib.h"
 #include "lsst/afw/table/FunctorKey.h"
 #include "lsst/afw/table/Schema.h"
 
@@ -165,8 +165,8 @@ public:
     /// Set a MagResult in the given record.
     virtual void set(afw::table::BaseRecord& record, MagResult const& magResult) const;
 
-    /// Set a MagResult in the record given the result of `afw::image::Calib::getMagnitude(double, double)`.
-    virtual void set(afw::table::BaseRecord& record, std::pair<double, double> const& magPair) const;
+    /// Set a MagResult in the record given the result of `afw::image::PhotoCalib::instFluxToMagnitude`.
+    virtual void set(afw::table::BaseRecord& record, afw::image::Measurement const& magnitude) const;
 
 private:
     afw::table::Key<Mag> _magKey;
@@ -194,12 +194,12 @@ public:
      * @param[in]     inputCatalog   Source of data to be transformed
      * @param[in,out] outputCatalog  Container for transformed results
      * @param[in]     wcs            World coordinate system under which transformation will take place
-     * @param[in]     calib          Photometric calibration under which transformation will take place
+     * @param[in]     photoCalib     Photometric calibration under which transformation will take place
      * @throws        LengthError    Catalog sizes do not match
      */
     virtual void operator()(afw::table::SourceCatalog const& inputCatalog,
                             afw::table::BaseCatalog& outputCatalog, afw::geom::SkyWcs const& wcs,
-                            afw::image::Calib const& calib) const;
+                            afw::image::PhotoCalib const& photoCalib) const;
 
 private:
     MagResultKey _magKey;

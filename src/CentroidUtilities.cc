@@ -70,10 +70,10 @@ CentroidResultKey CentroidResultKey::addFields(afw::table::Schema &schema, std::
     if (uncertainty != NO_UNCERTAINTY) {
         std::vector<afw::table::Key<ErrElement> > sigma(2);
         std::vector<afw::table::Key<ErrElement> > cov;
-        sigma[0] = schema.addField<ErrElement>(schema.join(name, "xErr"),
-                                               "1-sigma uncertainty on x position", "pixel");
-        sigma[1] = schema.addField<ErrElement>(schema.join(name, "yErr"),
-                                               "1-sigma uncertainty on y position", "pixel");
+        sigma[0] = schema.addField<ErrElement>(schema.join(name, "xErr"), "1-sigma uncertainty on x position",
+                                               "pixel");
+        sigma[1] = schema.addField<ErrElement>(schema.join(name, "yErr"), "1-sigma uncertainty on y position",
+                                               "pixel");
         if (uncertainty == FULL_COVARIANCE) {
             cov.push_back(schema.addField<ErrElement>(schema.join(name, "x_y_Cov"),
                                                       "uncertainty covariance in x and y", "pixel^2"));
@@ -143,7 +143,7 @@ CentroidTransform::CentroidTransform(std::string const &name, afw::table::Schema
 
 void CentroidTransform::operator()(afw::table::SourceCatalog const &inputCatalog,
                                    afw::table::BaseCatalog &outputCatalog, afw::geom::SkyWcs const &wcs,
-                                   afw::image::Calib const &calib) const {
+                                   afw::image::PhotoCalib const &photoCalib) const {
     checkCatalogSize(inputCatalog, outputCatalog);
     CentroidResultKey centroidResultKey(inputCatalog.getSchema()[_name]);
 

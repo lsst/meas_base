@@ -30,7 +30,7 @@
 
 #include "ndarray.h"
 #include "lsst/afw/geom/SkyWcs.h"
-#include "lsst/afw/image/Calib.h"
+#include "lsst/afw/image/PhotoCalib.h"
 #include "lsst/afw/table/fwd.h"
 #include "lsst/afw/table/Schema.h"
 #include "lsst/afw/table/SchemaMapper.h"
@@ -156,12 +156,13 @@ void declareAlgorithm(PyAlg &clsAlgorithm, PyCtrl &clsControl, PyXform &clsTrans
             "ctrl"_a, "name"_a, "mapper"_a);
 
     /* Operators */
-    clsTransform.def(
-            "__call__",
-            [](Transform const &self, afw::table::SourceCatalog const &inputCatalog,
-               afw::table::BaseCatalog &outputCatalog, afw::geom::SkyWcs const &wcs,
-               afw::image::Calib const &calib) { return self(inputCatalog, outputCatalog, wcs, calib); },
-            "inputCatalog"_a, "outputCatalog"_a, "wcs"_a, "calib"_a);
+    clsTransform.def("__call__",
+                     [](Transform const &self, afw::table::SourceCatalog const &inputCatalog,
+                        afw::table::BaseCatalog &outputCatalog, afw::geom::SkyWcs const &wcs,
+                        afw::image::PhotoCalib const &photoCalib) {
+                         return self(inputCatalog, outputCatalog, wcs, photoCalib);
+                     },
+                     "inputCatalog"_a, "outputCatalog"_a, "wcs"_a, "photoCalib"_a);
 
     /* Members */
 }

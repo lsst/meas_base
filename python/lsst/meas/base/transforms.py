@@ -77,7 +77,7 @@ class MeasurementTransform:
         self.name = name
         self.config = config
 
-    def __call__(self, inputCatalog, outputCatalog, wcs, calib):
+    def __call__(self, inputCatalog, outputCatalog, wcs, photoCalib):
         raise NotImplementedError()
 
     @staticmethod
@@ -105,7 +105,7 @@ class NullTransform(MeasurementTransform):
         (transformed) catalogs.
     """
 
-    def __call__(self, inputCatalog, outputCatalog, wcs, calib):
+    def __call__(self, inputCatalog, outputCatalog, wcs, photoCalib):
         self._checkCatalogSize(inputCatalog, outputCatalog)
 
 
@@ -130,7 +130,7 @@ class PassThroughTransform(MeasurementTransform):
         for key, field in mapper.getInputSchema().extract(name + "*").values():
             mapper.addMapping(key)
 
-    def __call__(self, inputCatalog, outputCatalog, wcs, calib):
+    def __call__(self, inputCatalog, outputCatalog, wcs, photoCalib):
         self._checkCatalogSize(inputCatalog, outputCatalog)
 
 
@@ -154,7 +154,7 @@ class SimpleCentroidTransform(MeasurementTransform):
         MeasurementTransform.__init__(self, config, name, mapper)
         self.coordKey = CoordKey.addFields(mapper.editOutputSchema(), name, "Position from " + name)
 
-    def __call__(self, inputCatalog, outputCatalog, wcs, calib):
+    def __call__(self, inputCatalog, outputCatalog, wcs, photoCalib):
         self._checkCatalogSize(inputCatalog, outputCatalog)
         centroidResultKey = CentroidResultKey(inputCatalog.schema[self.name])
         for inSrc, outSrc in zip(inputCatalog, outputCatalog):

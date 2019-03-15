@@ -86,7 +86,7 @@ class TransformTestCase(lsst.utils.tests.TestCase):
         outCat = afwTable.BaseCatalog(mapper.getOutputSchema())
         if doExtend:
             outCat.extend(inCat, mapper=mapper)
-        transform(inCat, outCat, makeWcs(), afwImage.Calib())
+        transform(inCat, outCat, makeWcs(), afwImage.PhotoCalib())
         return outCat
 
     def _checkSillyOutputs(self, inCat, outCat):
@@ -151,7 +151,7 @@ class TransformTestCase(lsst.utils.tests.TestCase):
         outCat = afwTable.BaseCatalog(mapper.getOutputSchema())
         outCat.extend(inCat, mapper=mapper)
         self.assertEqual(len(inCat), len(outCat))
-        sillyTransform(inCat, outCat, makeWcs(), afwImage.Calib())
+        sillyTransform(inCat, outCat, makeWcs(), afwImage.PhotoCalib())
         self._checkSillyOutputs(inCat, outCat)
 
 

@@ -28,7 +28,7 @@
 
 #include "lsst/pex/config.h"
 #include "lsst/afw/geom/SkyWcs.h"
-#include "lsst/afw/image/Calib.h"
+#include "lsst/afw/image/PhotoCalib.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/afw/geom/ellipses/Quadrupole.h"
 #include "lsst/afw/table/aggregates.h"
@@ -259,12 +259,12 @@ public:
      * @param[in]     inputCatalog   Source of data to be transformed
      * @param[in,out] outputCatalog  Container for transformed results
      * @param[in]     wcs            World coordinate system under which transformation will take place
-     * @param[in]     calib          Photometric calibration under which transformation will take place
+     * @param[in]     photoCalib     Photometric calibration under which transformation will take place
      * @throws        LengthError    Catalog sizes do not match
      */
     virtual void operator()(afw::table::SourceCatalog const& inputCatalog,
                             afw::table::BaseCatalog& outputCatalog, afw::geom::SkyWcs const& wcs,
-                            afw::image::Calib const& calib) const;
+                            afw::image::PhotoCalib const& photoCalib) const;
 
 private:
     FluxTransform _instFluxTransform;
