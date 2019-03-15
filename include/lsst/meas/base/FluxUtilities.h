@@ -205,22 +205,6 @@ private:
     MagResultKey _magKey;
 };
 
-/**
- *  Temporarily replace negative instFluxes with NaNs
- *
- *  Instantiating a NoThrowOnNegativeFluxContext object will cause afw::image::Calib
- *  objects to return NaN, rather than throwing, when asked to convert a negative instFlux to
- *  a magnitude for the lifetime of the NoThrowOnNegativeFluxContext.
- */
-class NoThrowOnNegativeFluxContext {
-public:
-    NoThrowOnNegativeFluxContext();
-    ~NoThrowOnNegativeFluxContext();
-
-private:
-    bool _throwOnNegative;
-};
-
 }  // namespace base
 }  // namespace meas
 }  // namespace lsst

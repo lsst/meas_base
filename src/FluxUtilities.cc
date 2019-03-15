@@ -101,15 +101,6 @@ void FluxTransform::operator()(afw::table::SourceCatalog const& inputCatalog,
     }
 }
 
-NoThrowOnNegativeFluxContext::NoThrowOnNegativeFluxContext() {
-    _throwOnNegative = afw::image::Calib::getThrowOnNegativeFlux();
-    afw::image::Calib::setThrowOnNegativeFlux(false);
-}
-
-NoThrowOnNegativeFluxContext::~NoThrowOnNegativeFluxContext() {
-    afw::image::Calib::setThrowOnNegativeFlux(_throwOnNegative);
-}
-
 }  // namespace base
 }  // namespace meas
 }  // namespace lsst
