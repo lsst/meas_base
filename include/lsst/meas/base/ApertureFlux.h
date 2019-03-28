@@ -25,6 +25,10 @@
 #define LSST_MEAS_BASE_ApertureFlux_h_INCLUDED
 
 #include <array>
+#include <string>
+#include <vector>
+#include <bitset>
+
 #include "lsst/pex/config.h"
 #include "lsst/afw/image/Exposure.h"
 #include "lsst/afw/table/arrays.h"
