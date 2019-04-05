@@ -21,7 +21,7 @@
 
 from .version import *
 # Needed for pybind11-generated docstrings
-from lsst.afw.image import Calib
+from lsst.afw.image import PhotoCalib
 from lsst.afw.geom import SkyWcs
 
 from .flagHandler import *

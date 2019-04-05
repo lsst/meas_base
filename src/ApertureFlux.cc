@@ -115,7 +115,7 @@ getSincCoeffs(geom::Box2I const &bbox,                      // measurement image
               afw::geom::ellipses::Ellipse const &ellipse,  // ellipse that defines the aperture
               ApertureFluxAlgorithm::Result &result,        // result object where we set flags if we do clip
               ApertureFluxAlgorithm::Control const &ctrl    // configuration
-              ) {
+) {
     CONST_PTR(afw::image::Image<T>) cImage = SincCoeffs<T>::get(ellipse.getCore(), 0.0);
     cImage = afw::math::offsetImage(*cImage, ellipse.getCenter().getX(), ellipse.getCenter().getY(),
                                     ctrl.shiftKernel);
@@ -276,7 +276,7 @@ ApertureFluxTransform::ApertureFluxTransform(Control const &ctrl, std::string co
 
 void ApertureFluxTransform::operator()(afw::table::SourceCatalog const &inputCatalog,
                                        afw::table::BaseCatalog &outputCatalog, afw::geom::SkyWcs const &wcs,
-                                       afw::image::Calib const &calib) const {
+                                       afw::image::PhotoCalib const &photoCalib) const {
     checkCatalogSize(inputCatalog, outputCatalog);
     std::vector<FluxResultKey> instFluxKeys;
     for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
@@ -286,14 +286,11 @@ void ApertureFluxTransform::operator()(afw::table::SourceCatalog const &inputCat
     afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
     afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();
     {
-        // While noThrow is in scope, converting a negative instFlux to a magnitude
-        // returns NaN rather than throwing.
-        NoThrowOnNegativeFluxContext noThrow;
         for (; inSrc != inputCatalog.end() && outSrc != outputCatalog.end(); ++inSrc, ++outSrc) {
             for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
                 FluxResult instFluxResult = instFluxKeys[i].get(*inSrc);
-                _magKeys[i].set(*outSrc,
-                                calib.getMagnitude(instFluxResult.instFlux, instFluxResult.instFluxErr));
+                _magKeys[i].set(*outSrc, photoCalib.instFluxToMagnitude(instFluxResult.instFlux,
+                                                                        instFluxResult.instFluxErr));
             }
         }
     }

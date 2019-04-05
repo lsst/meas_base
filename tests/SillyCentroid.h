@@ -134,10 +134,9 @@ public:
         _key_revY = mapper.editOutputSchema().addField<double>(name + "_reverse_y", "reversed Y");
     }
 
-    virtual void operator()(lsst::afw::table::SourceCatalog const & inputCatalog,
-                            lsst::afw::table::BaseCatalog & outputCatalog,
-                            lsst::afw::geom::SkyWcs const & wcs,
-                            lsst::afw::image::Calib const & calib) const {
+    virtual void operator()(lsst::afw::table::SourceCatalog const& inputCatalog,
+                            lsst::afw::table::BaseCatalog& outputCatalog, lsst::afw::geom::SkyWcs const& wcs,
+                            lsst::afw::image::PhotoCalib const& photoCalib) const {
         checkCatalogSize(inputCatalog, outputCatalog);
         lsst::afw::table::Key<double> xkey = inputCatalog.getSchema()[_name + "_x"];
         lsst::afw::table::Key<double> ykey = inputCatalog.getSchema()[_name + "_y"];
@@ -149,14 +148,15 @@ public:
             outSrc->set(_key_revX, -1.0 * inSrc->get(xkey));
             outSrc->set(_key_revY, -1.0 * inSrc->get(ykey));
         }
-    } // operator()
+    }  // operator()
 
 private:
     Control _ctrl;
     lsst::afw::table::Key<double> _key_revX;
     lsst::afw::table::Key<double> _key_revY;
-
 };
 
-}}}
-#endif // !LSST_MEAS_BASE_SillyCentroid_h_INCLUDED
+}  // namespace bar
+}  // namespace foo
+}  // namespace test
+#endif  // !LSST_MEAS_BASE_SillyCentroid_h_INCLUDED

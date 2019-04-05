@@ -959,11 +959,11 @@ SdssShapeTransform::SdssShapeTransform(Control const &ctrl, std::string const &n
 
 void SdssShapeTransform::operator()(afw::table::SourceCatalog const &inputCatalog,
                                     afw::table::BaseCatalog &outputCatalog, afw::geom::SkyWcs const &wcs,
-                                    afw::image::Calib const &calib) const {
+                                    afw::image::PhotoCalib const &photoCalib) const {
     // The instFlux and cetroid transforms will check that the catalog lengths
     // match and throw if not, so we don't repeat the test here.
-    _instFluxTransform(inputCatalog, outputCatalog, wcs, calib);
-    _centroidTransform(inputCatalog, outputCatalog, wcs, calib);
+    _instFluxTransform(inputCatalog, outputCatalog, wcs, photoCalib);
+    _centroidTransform(inputCatalog, outputCatalog, wcs, photoCalib);
 
     CentroidResultKey centroidKey(inputCatalog.getSchema()[_name]);
     ShapeResultKey inShapeKey(inputCatalog.getSchema()[_name]);

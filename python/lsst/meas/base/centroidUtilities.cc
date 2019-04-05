@@ -95,7 +95,7 @@ void declareCentroidTransform(py::module &mod) {
     cls.def(py::init<std::string const &, afw::table::SchemaMapper &>(), "name"_a, "mapper"_a);
 
     cls.def("__call__", &CentroidTransform::operator(), "inputCatalog"_a, "outputCatalog"_a, "wcs"_a,
-            "calib"_a);
+            "photoCalib"_a);
 }
 
 void declareCentroidChecker(py::module &mod) {

@@ -119,7 +119,7 @@ PyFluxTransform declareFluxTransform(py::module &mod) {
             "ctrl"_a, "name"_a, "mapper"_a);
 
     cls.def("__call__", &ApertureFluxTransform::operator(), "inputCatalog"_a, "outputCatalog"_a, "wcs"_a,
-            "calib"_a);
+            "photoCalib"_a);
 
     return cls;
 }

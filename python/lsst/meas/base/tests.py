@@ -308,8 +308,8 @@ class TestDataset:
         return lsst.afw.geom.makeSkyWcs(crpix=newPixOrigin, crval=newSkyOrigin, cdMatrix=matrix)
 
     @staticmethod
-    def makeEmptyExposure(bbox, wcs=None, crval=None, cdelt=None, psfSigma=2.0, psfDim=17, fluxMag0=1E12):
-        """Create an Exposure, with a Calib, Wcs, and Psf, but no pixel values.
+    def makeEmptyExposure(bbox, wcs=None, crval=None, cdelt=None, psfSigma=2.0, psfDim=17, calibration=4):
+        """Create an Exposure, with a PhotoCalib, Wcs, and Psf, but no pixel values.
 
         Parameters
         ----------
@@ -326,8 +326,9 @@ class TestDataset:
             Radius (sigma) of the Gaussian PSF attached to the image
         psfDim : `int`, optional
             Width and height of the image's Gaussian PSF attached to the image
-        fluxMag0 : `float`, optional
-            Flux at magnitude zero (in e-) used to set the Calib of the exposure.
+        calibration : `float`, optional
+            The spatially-constant calibration (in nJy/count) to set the
+            PhotoCalib of the exposure.
 
         Returns
         -------
@@ -344,11 +345,10 @@ class TestDataset:
                                            cdMatrix=lsst.afw.geom.makeCdMatrix(scale=cdelt))
         exposure = lsst.afw.image.ExposureF(bbox)
         psf = lsst.afw.detection.GaussianPsf(psfDim, psfDim, psfSigma)
-        calib = lsst.afw.image.Calib()
-        calib.setFluxMag0(fluxMag0)
+        photoCalib = lsst.afw.image.PhotoCalib(calibration)
         exposure.setWcs(wcs)
         exposure.setPsf(psf)
-        exposure.setCalib(calib)
+        exposure.setPhotoCalib(photoCalib)
         return exposure
 
     @staticmethod
@@ -468,7 +468,7 @@ class TestDataset:
         return BlendContext(self)
 
     def transform(self, wcs, **kwds):
-        """Copy this dataset transformed to a new WCS, with new Psf and Calib.
+        """Copy this dataset transformed to a new WCS, with new Psf and PhotoCalib.
 
         Parameters
         ----------
@@ -491,14 +491,14 @@ class TestDataset:
             bboxD.include(xyt.applyForward(lsst.geom.Point2D(corner)))
         bboxI = lsst.geom.Box2I(bboxD)
         result = TestDataset(bbox=bboxI, wcs=wcs, **kwds)
-        oldCalib = self.exposure.getCalib()
-        newCalib = result.exposure.getCalib()
+        oldPhotoCalib = self.exposure.getPhotoCalib()
+        newPhotoCalib = result.exposure.getPhotoCalib()
         oldPsfShape = self.exposure.getPsf().computeShape()
         for record in self.catalog:
             if record.get(self.keys["nChild"]):
                 raise NotImplementedError("Transforming blended sources in TestDatasets is not supported")
-            magnitude = oldCalib.getMagnitude(record.get(self.keys["instFlux"]))
-            newFlux = newCalib.getFlux(magnitude)
+            magnitude = oldPhotoCalib.instFluxToMagnitude(record.get(self.keys["instFlux"]))
+            newFlux = newPhotoCalib.magnitudeToInstFlux(magnitude)
             oldCentroid = record.get(self.keys["centroid"])
             newCentroid = xyt.applyForward(oldCentroid)
             if record.get(self.keys["isStar"]):
@@ -806,7 +806,7 @@ class TransformTestCase:
     def _runTransform(self, doExtend=True):
         if doExtend:
             self.outputCat.extend(self.inputCat, mapper=self.mapper)
-        self.transform(self.inputCat, self.outputCat, self.calexp.getWcs(), self.calexp.getCalib())
+        self.transform(self.inputCat, self.outputCat, self.calexp.getWcs(), self.calexp.getPhotoCalib())
 
     def testTransform(self, baseNames=None):
         """Test the transformation on a catalog containing random data.
@@ -909,12 +909,19 @@ class FluxTransformTestCase(TransformTestCase):
         instFluxName = inSrc.schema.join(name, 'instFlux')
         instFluxErrName = inSrc.schema.join(name, 'instFluxErr')
         if inSrc[instFluxName] > 0:
-            mag, magErr = self.calexp.getCalib().getMagnitude(inSrc[instFluxName], inSrc[instFluxErrName])
-            self.assertEqual(outSrc[outSrc.schema.join(name, 'mag')], mag)
-            self.assertEqual(outSrc[outSrc.schema.join(name, 'magErr')], magErr)
+            mag = self.calexp.getPhotoCalib().instFluxToMagnitude(inSrc[instFluxName],
+                                                                  inSrc[instFluxErrName])
+            self.assertEqual(outSrc[outSrc.schema.join(name, 'mag')], mag.value)
+            self.assertEqual(outSrc[outSrc.schema.join(name, 'magErr')], mag.error)
         else:
+            # negative instFlux results in NaN magnitude, but can still have finite error
             self.assertTrue(np.isnan(outSrc[outSrc.schema.join(name, 'mag')]))
-            self.assertTrue(np.isnan(outSrc[outSrc.schema.join(name, 'magErr')]))
+            if np.isnan(inSrc[instFluxErrName]):
+                self.assertTrue(np.isnan(outSrc[outSrc.schema.join(name, 'magErr')]))
+            else:
+                mag = self.calexp.getPhotoCalib().instFluxToMagnitude(inSrc[instFluxName],
+                                                                      inSrc[instFluxErrName])
+                self.assertEqual(outSrc[outSrc.schema.join(name, 'magErr')], mag.error)
 
 
 class CentroidTransformTestCase(TransformTestCase):

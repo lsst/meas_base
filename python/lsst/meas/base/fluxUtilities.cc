@@ -81,9 +81,8 @@ void declareMagResultKey(py::module &mod) {
     cls.def("get", &MagResultKey::get);
     cls.def("set",
             (void (MagResultKey::*)(afw::table::BaseRecord &, MagResult const &) const) & MagResultKey::set);
-    cls.def("set",
-            (void (MagResultKey::*)(afw::table::BaseRecord &, std::pair<double, double> const &) const) &
-                    MagResultKey::set);
+    cls.def("set", (void (MagResultKey::*)(afw::table::BaseRecord &, afw::image::Measurement const &) const) &
+                           MagResultKey::set);
     cls.def_static("addFields", &MagResultKey::addFields, "schema"_a, "name"_a);
 }
 

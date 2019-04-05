@@ -27,7 +27,7 @@
 #include "lsst/meas/base/constants.h"
 #include "lsst/geom/Point.h"
 #include "lsst/afw/geom/SkyWcs.h"
-#include "lsst/afw/image/Calib.h"
+#include "lsst/afw/image/PhotoCalib.h"
 #include "lsst/afw/table/aggregates.h"
 #include "lsst/meas/base/Transform.h"
 
@@ -41,8 +41,8 @@ namespace base {
 struct CentroidResult {
     CentroidElement x;   ///< x (column) coordinate of the measured position
     CentroidElement y;   ///< y (row) coordinate of the measured position
-    ErrElement xErr;   ///< standard deviation of x
-    ErrElement yErr;   ///< standard deviation of y
+    ErrElement xErr;     ///< standard deviation of x
+    ErrElement yErr;     ///< standard deviation of y
     ErrElement x_y_Cov;  ///< x,y term in the uncertainty convariance matrix
 
     /// Constructor; initializes everything to NaN.
@@ -175,12 +175,12 @@ public:
      * @param[in]     inputCatalog   Source of data to be transformed
      * @param[in,out] outputCatalog  Container for transformed results
      * @param[in]     wcs            World coordinate system under which transformation will take place
-     * @param[in]     calib          Photometric calibration under which transformation will take place
+     * @param[in]     photoCalib     Photometric calibration under which transformation will take place
      * @throws        LengthError    Catalog sizes do not match
      */
     virtual void operator()(afw::table::SourceCatalog const& inputCatalog,
                             afw::table::BaseCatalog& outputCatalog, afw::geom::SkyWcs const& wcs,
-                            afw::image::Calib const& calib) const;
+                            afw::image::PhotoCalib const& photoCalib) const;
 
 private:
     afw::table::CoordKey _coordKey;

@@ -71,9 +71,9 @@ void MagResultKey::set(afw::table::BaseRecord& record, MagResult const& magResul
     record.set(_magErrKey, magResult.magErr);
 }
 
-void MagResultKey::set(afw::table::BaseRecord& record, std::pair<double, double> const& magResult) const {
-    record.set(_magKey, magResult.first);
-    record.set(_magErrKey, magResult.second);
+void MagResultKey::set(afw::table::BaseRecord& record, afw::image::Measurement const& magResult) const {
+    record.set(_magKey, magResult.value);
+    record.set(_magErrKey, magResult.error);
 }
 
 FluxTransform::FluxTransform(std::string const& name, afw::table::SchemaMapper& mapper)
@@ -87,29 +87,18 @@ FluxTransform::FluxTransform(std::string const& name, afw::table::SchemaMapper& 
 
 void FluxTransform::operator()(afw::table::SourceCatalog const& inputCatalog,
                                afw::table::BaseCatalog& outputCatalog, afw::geom::SkyWcs const& wcs,
-                               afw::image::Calib const& calib) const {
+                               afw::image::PhotoCalib const& photoCalib) const {
     checkCatalogSize(inputCatalog, outputCatalog);
     FluxResultKey instFluxKey(inputCatalog.getSchema()[_name]);
     afw::table::SourceCatalog::const_iterator inSrc = inputCatalog.begin();
     afw::table::BaseCatalog::iterator outSrc = outputCatalog.begin();
     {
-        // While noThrow is in scope, converting a negative instFlux to a magnitude
-        // returns NaN rather than throwing.
-        NoThrowOnNegativeFluxContext noThrow;
         for (; inSrc != inputCatalog.end() && outSrc != outputCatalog.end(); ++inSrc, ++outSrc) {
             FluxResult instFluxResult = instFluxKey.get(*inSrc);
-            _magKey.set(*outSrc, calib.getMagnitude(instFluxResult.instFlux, instFluxResult.instFluxErr));
+            _magKey.set(*outSrc,
+                        photoCalib.instFluxToMagnitude(instFluxResult.instFlux, instFluxResult.instFluxErr));
         }
     }
-}
-
-NoThrowOnNegativeFluxContext::NoThrowOnNegativeFluxContext() {
-    _throwOnNegative = afw::image::Calib::getThrowOnNegativeFlux();
-    afw::image::Calib::setThrowOnNegativeFlux(false);
-}
-
-NoThrowOnNegativeFluxContext::~NoThrowOnNegativeFluxContext() {
-    afw::image::Calib::setThrowOnNegativeFlux(_throwOnNegative);
 }
 
 }  // namespace base
