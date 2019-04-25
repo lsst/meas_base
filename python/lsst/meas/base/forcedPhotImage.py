@@ -57,14 +57,14 @@ class ForcedPhotImageConfig(lsst.pipe.base.PipelineTaskConfig):
         nameTemplate="{inputCoaddName}Coadd",
         scalar=True,
         storageClass="ExposureF",
-        dimensions=["AbstractFilter", "SkyMap", "Tract", "Patch"],
+        dimensions=["abstract_filter", "skymap", "tract", "patch"],
     )
     refCat = lsst.pipe.base.InputDatasetField(
         doc="Catalog of shapes and positions at which to force photometry.",
         nameTemplate="{inputCoaddName}Coadd_ref",
         scalar=True,
         storageClass="SourceCatalog",
-        dimensions=["SkyMap", "Tract", "Patch"],
+        dimensions=["skymap", "tract", "patch"],
     )
     refWcs = lsst.pipe.base.InputDatasetField(
         doc="Reference world coordinate system.",
@@ -72,14 +72,14 @@ class ForcedPhotImageConfig(lsst.pipe.base.PipelineTaskConfig):
         scalar=True,
         manualLoad=True,
         storageClass="ExposureF",
-        dimensions=["AbstractFilter", "SkyMap", "Tract", "Patch"],
+        dimensions=["abstract_filter", "skymap", "tract", "patch"],
     )
     measCat = lsst.pipe.base.OutputDatasetField(
         doc="Output forced photometry catalog.",
         nameTemplate="{outputCoaddName}Coadd_forced_src",
         scalar=True,
         storageClass="SourceCatalog",
-        dimensions=["AbstractFilter", "SkyMap", "Tract", "Patch"],
+        dimensions=["abstract_filter", "skymap", "tract", "patch"],
     )
 
     # ForcedPhotImage options
@@ -120,7 +120,7 @@ class ForcedPhotImageConfig(lsst.pipe.base.PipelineTaskConfig):
         self.formatTemplateNames({"inputCoaddName": "deep",
                                   "outputCoaddName": "deep",
                                   "inputName": None})
-        self.quantum.dimensions = ("AbstractFilter", "SkyMap", "Tract", "Patch")
+        self.quantum.dimensions = ("abstract_filter", "skymap", "tract", "patch")
 
 
 class ForcedPhotImageTask(lsst.pipe.base.PipelineTask, lsst.pipe.base.CmdLineTask):
@@ -182,7 +182,7 @@ class ForcedPhotImageTask(lsst.pipe.base.PipelineTask, lsst.pipe.base.CmdLineTas
         inputData['measCat'] = self.generateMeasCat(inputDataIds['exposure'],
                                                     inputData['exposure'],
                                                     inputData['refCat'], inputData['refWcs'],
-                                                    "TractPatch", butler)
+                                                    "tract_patch", butler)
 
         return self.run(**inputData)
 

@@ -156,13 +156,13 @@ class ForcedPhotCcdConfig(ForcedPhotImageConfig):
         # the nameTemplate with nothing to substitute.
         self.outputSchema.nameTemplate = "forced_src_schema"
         self.exposure.nameTemplate = "{inputName}"
-        self.exposure.dimensions = ["Instrument", "Visit", "Detector"]
+        self.exposure.dimensions = ["instrument", "visit", "detector"]
         self.measCat.nameTemplate = "forced_src"
-        self.measCat.dimensions = ["Instrument", "Visit", "Detector", "SkyMap", "Tract"]
+        self.measCat.dimensions = ["instrument", "visit", "detector", "skymap", "tract"]
 
         self.formatTemplateNames({"inputName": "calexp",
                                   "inputCoaddName": "deep"})
-        self.quantum.dimensions = ("Instrument", "Visit", "Detector", "SkyMap", "Tract")
+        self.quantum.dimensions = ("instrument", "visit", "detector", "skymap", "tract")
 
 
 class ForcedPhotCcdTask(ForcedPhotImageTask):
@@ -212,7 +212,7 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
         inputData['measCat'] = self.generateMeasCat(inputDataIds['exposure'],
                                                     inputData['exposure'],
                                                     inputData['refCat'], inputData['refWcs'],
-                                                    "VisitDetector", butler)
+                                                    "visit_detector", butler)
 
         return self.run(**inputData)
 
