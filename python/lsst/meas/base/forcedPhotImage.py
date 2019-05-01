@@ -55,21 +55,18 @@ class ForcedPhotImageConfig(lsst.pipe.base.PipelineTaskConfig):
     exposure = lsst.pipe.base.InputDatasetField(
         doc="Input exposure to perform photometry on.",
         nameTemplate="{inputCoaddName}Coadd",
-        scalar=True,
         storageClass="ExposureF",
         dimensions=["abstract_filter", "skymap", "tract", "patch"],
     )
     refCat = lsst.pipe.base.InputDatasetField(
         doc="Catalog of shapes and positions at which to force photometry.",
         nameTemplate="{inputCoaddName}Coadd_ref",
-        scalar=True,
         storageClass="SourceCatalog",
         dimensions=["skymap", "tract", "patch"],
     )
     refWcs = lsst.pipe.base.InputDatasetField(
         doc="Reference world coordinate system.",
         nameTemplate="{inputCoaddName}Coadd",
-        scalar=True,
         manualLoad=True,
         storageClass="ExposureF",
         dimensions=["abstract_filter", "skymap", "tract", "patch"],
@@ -77,7 +74,6 @@ class ForcedPhotImageConfig(lsst.pipe.base.PipelineTaskConfig):
     measCat = lsst.pipe.base.OutputDatasetField(
         doc="Output forced photometry catalog.",
         nameTemplate="{outputCoaddName}Coadd_forced_src",
-        scalar=True,
         storageClass="SourceCatalog",
         dimensions=["abstract_filter", "skymap", "tract", "patch"],
     )
