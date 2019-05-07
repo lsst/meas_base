@@ -123,6 +123,7 @@ def directLog(log, file=None):
     log.configure_prop(props)
 
 
+@unittest.skipIf(lsst.meas.base.SincCoeffsD.DISABLED_AT_COMPILE_TIME, "Sinc photometry is disabled.")
 class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     """Test all registered Plugins to see if their logName is set as expected.
 

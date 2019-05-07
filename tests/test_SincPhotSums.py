@@ -108,6 +108,7 @@ def plantSources(bbox, kwid, sky, coordList, addPoissonNoise=True):
     return exposure
 
 
+@unittest.skipIf(measBase.SincCoeffsD.DISABLED_AT_COMPILE_TIME, "Sinc photometry is disabled.")
 class SincPhotSums(lsst.utils.tests.TestCase):
 
     def setUp(self):
@@ -208,6 +209,7 @@ class SincPhotSums(lsst.utils.tests.TestCase):
                                    (result2.instFlux-result1.instFlux)/instFlux, 4)
 
 
+@unittest.skipIf(measBase.SincCoeffsD.DISABLED_AT_COMPILE_TIME, "Sinc photometry is disabled.")
 class SincCoeffTestCase(lsst.utils.tests.TestCase):
 
     def setUp(self):

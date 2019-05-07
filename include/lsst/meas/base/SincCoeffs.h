@@ -29,6 +29,8 @@
 #include "lsst/afw/image/Image.h"
 #include "lsst/afw/geom/ellipses/Axes.h"
 
+#define LSST_DISABLE_SINC_PHOTOMETRY
+
 namespace lsst {
 namespace meas {
 namespace base {

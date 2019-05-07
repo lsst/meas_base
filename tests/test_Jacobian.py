@@ -28,8 +28,10 @@ import lsst.utils.tests
 
 from lsst.meas.base.tests import AlgorithmTestCase
 from lsst.meas.base.sfm import SingleFrameMeasurementConfig
+from lsst.meas.base import SincCoeffsD
 
 
+@unittest.skipIf(SincCoeffsD.DISABLED_AT_COMPILE_TIME, "Sinc photometry is disabled.")
 class JacobianTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):

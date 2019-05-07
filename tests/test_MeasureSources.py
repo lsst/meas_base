@@ -58,6 +58,7 @@ def makePluginAndCat(alg, name, control, metadata=False, centroid=None):
     return plugin, cat
 
 
+@unittest.skipIf(measBase.SincCoeffsD.DISABLED_AT_COMPILE_TIME, "Sinc photometry is disabled.")
 class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
 
     def setUp(self):

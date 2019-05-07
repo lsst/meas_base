@@ -25,7 +25,10 @@
 
 #include "boost/math/special_functions/bessel.hpp"
 #include "boost/shared_array.hpp"
+
+#ifndef LSST_DISABLE_SINC_PHOTOMETRY
 #include "fftw3.h"
+#endif
 
 #include "lsst/meas/base/SincCoeffs.h"
 #include "lsst/geom/Angle.h"
@@ -36,6 +39,9 @@
 namespace lsst {
 namespace meas {
 namespace base {
+
+#ifndef LSST_DISABLE_SINC_PHOTOMETRY
+
 namespace {
 
 // Convenient wrapper for a Bessel function
@@ -480,6 +486,8 @@ std::shared_ptr<afw::image::Image<PixelT>> calcImageKSpaceReal(double const rad1
 
 }  // namespace
 
+#endif // !LSST_DISABLE_SINC_PHOTOMETRY
+
 template <typename PixelT>
 SincCoeffs<PixelT>& SincCoeffs<PixelT>::getInstance() {
     static SincCoeffs<PixelT> instance;
@@ -488,6 +496,9 @@ SincCoeffs<PixelT>& SincCoeffs<PixelT>::getInstance() {
 
 template <typename PixelT>
 void SincCoeffs<PixelT>::cache(float r1, float r2) {
+#ifdef LSST_DISABLE_SINC_PHOTOMETRY
+    throw LSST_EXCEPT(pex::exceptions::LogicError, "Sinc photometry has been disabled at compile-time.");
+#else
     if (r1 < 0.0 || r2 < r1) {
         throw LSST_EXCEPT(pex::exceptions::InvalidParameterError,
                           (boost::format("Invalid r1,r2 = %f,%f") % r1 % r2).str());
@@ -499,18 +510,26 @@ void SincCoeffs<PixelT>::cache(float r1, float r2) {
         coeff->markPersistent();
         getInstance()._cache[r2][innerFactor] = coeff;
     }
+#endif
 }
 
 template <typename PixelT>
 CONST_PTR(typename SincCoeffs<PixelT>::CoeffT)
 SincCoeffs<PixelT>::get(afw::geom::ellipses::Axes const& axes, float const innerFactor) {
+#ifdef LSST_DISABLE_SINC_PHOTOMETRY
+    throw LSST_EXCEPT(pex::exceptions::LogicError, "Sinc photometry has been disabled at compile-time.");
+#else
     CONST_PTR(CoeffT) coeff = getInstance()._lookup(axes, innerFactor);
     return coeff ? coeff : calculate(axes, innerFactor);
+#endif
 }
 
 template <typename PixelT>
 CONST_PTR(typename SincCoeffs<PixelT>::CoeffT)
 SincCoeffs<PixelT>::_lookup(afw::geom::ellipses::Axes const& axes, double const innerFactor) const {
+#ifdef LSST_DISABLE_SINC_PHOTOMETRY
+    throw LSST_EXCEPT(pex::exceptions::LogicError, "Sinc photometry has been disabled at compile-time.");
+#else
     if (innerFactor < 0.0 || innerFactor > 1.0) {
         throw LSST_EXCEPT(pex::exceptions::InvalidParameterError,
                           (boost::format("innerFactor = %f is not between 0 and 1") % innerFactor).str());
@@ -528,11 +547,15 @@ SincCoeffs<PixelT>::_lookup(afw::geom::ellipses::Axes const& axes, double const 
     }
     typename CoeffMap::const_iterator iter2 = iter1->second.find(innerFactor);
     return (iter2 == iter1->second.end()) ? null : iter2->second;
+#endif
 }
 
 template <typename PixelT>
 PTR(typename SincCoeffs<PixelT>::CoeffT)
 SincCoeffs<PixelT>::calculate(afw::geom::ellipses::Axes const& axes, double const innerFactor) {
+#ifdef LSST_DISABLE_SINC_PHOTOMETRY
+    throw LSST_EXCEPT(pex::exceptions::LogicError, "Sinc photometry has been disabled at compile-time.");
+#else
     if (innerFactor < 0.0 || innerFactor > 1.0) {
         throw LSST_EXCEPT(pex::exceptions::InvalidParameterError,
                           (boost::format("innerFactor = %f is not between 0 and 1") % innerFactor).str());
@@ -552,6 +575,7 @@ SincCoeffs<PixelT>::calculate(afw::geom::ellipses::Axes const& axes, double cons
         double const ellipticity = 1.0 - axes.getB() / axes.getA();
         return calcImageKSpaceCplx<PixelT>(rad1, rad2, axes.getTheta(), ellipticity);
     }
+#endif
 }
 
 template class SincCoeffs<float>;

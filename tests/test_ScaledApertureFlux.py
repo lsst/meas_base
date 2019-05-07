@@ -25,11 +25,13 @@ import math
 import lsst.geom
 import lsst.afw.image
 import lsst.afw.table
+from lsst.meas.base import SincCoeffsD
 from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 import lsst.utils.tests
 
 
+@unittest.skipIf(SincCoeffsD.DISABLED_AT_COMPILE_TIME, "Sinc photometry is disabled.")
 class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):

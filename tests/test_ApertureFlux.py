@@ -27,11 +27,12 @@ import lsst.geom
 import lsst.afw.geom
 import lsst.afw.image
 import lsst.utils.tests
-from lsst.meas.base import ApertureFluxAlgorithm
+from lsst.meas.base import ApertureFluxAlgorithm, SincCoeffsD
 from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 
 
+@unittest.skipIf(SincCoeffsD.DISABLED_AT_COMPILE_TIME, "Sinc photometry is disabled.")
 class ApertureFluxTestCase(lsst.utils.tests.TestCase):
     """Test case for the ApertureFlux algorithm base class.
     """
@@ -148,6 +149,7 @@ class ApertureFluxTestCase(lsst.utils.tests.TestCase):
         self.assertFalse(np.isnan(invalid2.instFlux))
 
 
+@unittest.skipIf(SincCoeffsD.DISABLED_AT_COMPILE_TIME, "Sinc photometry is disabled.")
 class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     """Test case for the CircularApertureFlux algorithm/plugin.
     """
@@ -251,6 +253,7 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
                 self.assertLess(measRecord.get(measRecord.schema.join(prefix, "instFluxErr")), (n+1)*150.0)
 
 
+@unittest.skipIf(SincCoeffsD.DISABLED_AT_COMPILE_TIME, "Sinc photometry is disabled.")
 class ApertureFluxTransformTestCase(FluxTransformTestCase, SingleFramePluginTransformSetupHelper,
                                     lsst.utils.tests.TestCase):
 

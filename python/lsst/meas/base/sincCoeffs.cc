@@ -39,6 +39,13 @@ void declareSincCoeffs(py::module& mod, std::string const& suffix) {
 
     cls.def_static("cache", &SincCoeffs<T>::cache, "rInner"_a, "rOuter"_a);
     cls.def_static("get", &SincCoeffs<T>::get, "outerEllipse"_a, "innerRadiusFactor"_a);
+
+    cls.attr("DISABLED_AT_COMPILE_TIME") =
+#ifdef LSST_DISABLE_SINC_PHOTOMETRY
+        true;
+#else
+        false;
+#endif
 }
 
 }  // namespace

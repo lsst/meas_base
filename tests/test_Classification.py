@@ -29,6 +29,7 @@ import lsst.meas.base as measBase
 import lsst.meas.base.catalogCalculation as catCalc
 
 
+@unittest.skipIf(measBase.SincCoeffsD.DISABLED_AT_COMPILE_TIME, "Sinc photometry is disabled.")
 class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
