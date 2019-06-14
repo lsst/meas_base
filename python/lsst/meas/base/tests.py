@@ -198,7 +198,6 @@ class TestDataset:
             schema.getAliasMap().set("slot_Shape", "truth")
             schema.getAliasMap().set("slot_Centroid", "truth")
             schema.getAliasMap().set("slot_ModelFlux", "truth")
-            schema.getCitizen().markPersistent()
             cls._schema = schema
         schema = lsst.afw.table.Schema(cls._schema)
         schema.disconnectAliases()

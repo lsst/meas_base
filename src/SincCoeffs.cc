@@ -496,7 +496,6 @@ void SincCoeffs<PixelT>::cache(float r1, float r2) {
     afw::geom::ellipses::Axes axes(r2, r2, 0.0);
     if (!getInstance()._lookup(axes, innerFactor)) {
         PTR(typename SincCoeffs<PixelT>::CoeffT) coeff = calculate(axes, innerFactor);
-        coeff->markPersistent();
         getInstance()._cache[r2][innerFactor] = coeff;
     }
 }
