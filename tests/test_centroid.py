@@ -28,8 +28,7 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
 import lsst.meas.base as measBase
 import lsst.utils.tests as utilsTests
-import lsst.afw.detection.detectionLib as afwDetection
-import lsst.afw.detection
+import lsst.afw.detection as afwDetection
 
 try:
     type(verbose)
@@ -69,7 +68,7 @@ class CentroidTestCase(utilsTests.TestCase):
 
             # This fixed DoubleGaussianPsf replaces a computer generated one.
             # The values are not anything in particular, just a reasonable size.
-            psf = lsst.afw.detection.GaussianPsf(15, 15, 3.0)
+            psf = afwDetection.GaussianPsf(15, 15, 3.0)
             exp = afwImage.makeExposure(im)
             exp.setPsf(psf)
 
@@ -153,7 +152,7 @@ class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
         """
 
         self.exp = afwImage.ExposureF(100, 100)
-        psf = lsst.afw.detection.GaussianPsf(15, 15, 3.0)
+        psf = afwDetection.GaussianPsf(15, 15, 3.0)
         self.exp.setPsf(psf)
         self.I0, self.xcen, self.ycen = 1000.0, 50.5, 50.0
         im = self.exp.getMaskedImage().getImage()
