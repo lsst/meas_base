@@ -31,6 +31,8 @@ import lsst.afw.image
 import lsst.afw.table
 import lsst.sphgeom
 
+from lsst.pipe.base import PipelineTaskConnections
+import lsst.pipe.base.connectionTypes as cT
 from .forcedPhotImage import ForcedPhotImageTask, ForcedPhotImageConfig
 
 try:
@@ -138,31 +140,52 @@ def imageOverlapsTract(tract, imageWcs, imageBox):
     return tractPoly.intersects(imagePoly)  # "intersects" also covers "contains" or "is contained by"
 
 
-class ForcedPhotCcdConfig(ForcedPhotImageConfig):
+class ForcedPhotCcdConnections(PipelineTaskConnections,
+                               dimensions=("instrument", "visit", "detector", "skymap", "tract"),
+                               defaultTemplates={"inputCoaddName": "deep",
+                                                 "inputName": "calexp"}):
+    inputSchema = cT.InitInput(
+        doc="Schema for the input measurement catalogs.",
+        name="{inputCoaddName}Coadd_ref_schema",
+        storageClass="SourceCatalog",
+    )
+    outputSchema = cT.InitOutput(
+        doc="Schema for the output forced measurement catalogs.",
+        name="forced_src_schema",
+        storageClass="SourceCatalog",
+    )
+    exposure = cT.Input(
+        doc="Input exposure to perform photometry on.",
+        name="{inputName}",
+        storageClass="ExposureF",
+        dimensions=["instrument", "visit", "detector"],
+    )
+    refCat = cT.Input(
+        doc="Catalog of shapes and positions at which to force photometry.",
+        name="{inputCoaddName}Coadd_ref",
+        storageClass="SourceCatalog",
+        dimensions=["skymap", "tract", "patch"],
+    )
+    refWcs = cT.Input(
+        doc="Reference world coordinate system.",
+        name="{inputCoaddName}Coadd.wcs",
+        storageClass="Wcs",
+        dimensions=["abstract_filter", "skymap", "tract", "patch"],
+    )
+    measCat = cT.Output(
+        doc="Output forced photometry catalog.",
+        name="forced_src",
+        storageClass="SourceCatalog",
+        dimensions=["instrument", "visit", "detector", "skymap", "tract"],
+    )
+
+
+class ForcedPhotCcdConfig(ForcedPhotImageConfig, pipelineConnections=ForcedPhotCcdConnections):
     doApplyUberCal = lsst.pex.config.Field(
         dtype=bool,
         doc="Apply meas_mosaic ubercal results to input calexps?",
         default=False
     )
-
-    def setDefaults(self):
-        super().setDefaults()
-
-        # Override the Gen3 datasets from ForcedPhotImageTaskConfig.
-        # When these nameTemplate values are used in ForcedPhotCoadd,
-        # there is a coadd name that may change, depending on the
-        # coadd type.  For CCD forced photometry, there will likely
-        # only ever be a single calexp type, but for consistency, use
-        # the nameTemplate with nothing to substitute.
-        self.outputSchema.nameTemplate = "forced_src_schema"
-        self.exposure.nameTemplate = "{inputName}"
-        self.exposure.dimensions = ["instrument", "visit", "detector"]
-        self.measCat.nameTemplate = "forced_src"
-        self.measCat.dimensions = ["instrument", "visit", "detector", "skymap", "tract"]
-
-        self.formatTemplateNames({"inputName": "calexp",
-                                  "inputCoaddName": "deep"})
-        self.quantum.dimensions = ("instrument", "visit", "detector", "skymap", "tract")
 
 
 class ForcedPhotCcdTask(ForcedPhotImageTask):
@@ -205,16 +228,15 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
     _DefaultName = "forcedPhotCcd"
     dataPrefix = ""
 
-    def adaptArgsAndRun(self, inputData, inputDataIds, outputDataIds, butler):
-        inputData['refWcs'] = butler.get(f"{self.config.refWcs.name}.wcs", inputDataIds["refWcs"])
-        inputData['refCat'] = self.filterReferences(inputData['exposure'],
-                                                    inputData['refCat'], inputData['refWcs'])
-        inputData['measCat'] = self.generateMeasCat(inputDataIds['exposure'],
-                                                    inputData['exposure'],
-                                                    inputData['refCat'], inputData['refWcs'],
-                                                    "visit_detector", butler)
-
-        return self.run(**inputData)
+    def runQuantum(self, butlerQC, inputRefs, outputRefs):
+        inputs = butlerQC.get(inputRefs)
+        inputs['refCat'] = self.filterReferences(inputs['exposure'], inputs['refCat'], inputs['refWcs'])
+        inputs['measCat'] = self.generateMeasCat(inputRefs.exposure.dataId,
+                                                 inputs['exposure'],
+                                                 inputs['refCat'], inputs['refWcs'],
+                                                 "visit_detector", butlerQC.registry)
+        outputs = self.run(**inputs)
+        butlerQC.put(outputs, outputRefs)
 
     def filterReferences(self, exposure, refCat, refWcs):
         """Filter reference catalog so that all sources are within the
