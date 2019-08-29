@@ -45,8 +45,7 @@ __all__ = ("ForcedPhotImageConfig", "ForcedPhotImageTask", "ForcedPhotImageConne
 class ForcedPhotImageConnections(PipelineTaskConnections,
                                  dimensions=("abstract_filter", "skymap", "tract", "patch"),
                                  defaultTemplates={"inputCoaddName": "deep",
-                                                   "outputCoaddName": "deep",
-                                                   "inputName": None}):
+                                                   "outputCoaddName": "deep"}):
     inputSchema = cT.InitInput(
         doc="Schema for the input measurement catalogs.",
         name="{inputCoaddName}Coadd_ref_schema",
