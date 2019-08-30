@@ -24,12 +24,14 @@ import lsst.pipe.base
 import lsst.coadd.utils
 import lsst.afw.table
 
-from .forcedPhotImage import ForcedPhotImageConfig, ForcedPhotImageTask
+
+from .forcedPhotImage import ForcedPhotImageConfig, ForcedPhotImageTask, ForcedPhotImageConnections
+
 
 __all__ = ("ForcedPhotCoaddConfig", "ForcedPhotCoaddTask")
 
 
-class ForcedPhotCoaddConfig(ForcedPhotImageConfig):
+class ForcedPhotCoaddConfig(ForcedPhotImageConfig, pipelineConnections=ForcedPhotImageConnections):
     footprintDatasetName = lsst.pex.config.Field(
         doc="Dataset (without coadd prefix) that should be used to obtain (Heavy)Footprints for sources. "
             "Must have IDs that match those of the reference catalog."

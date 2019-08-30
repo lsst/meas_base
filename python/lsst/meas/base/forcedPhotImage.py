@@ -31,57 +31,59 @@ import lsst.daf.base
 import lsst.pipe.base
 import lsst.pex.config
 
+from lsst.pipe.base import PipelineTaskConnections, PipelineTaskConfig
+import lsst.pipe.base.connectionTypes as cT
+
 from .references import MultiBandReferencesTask
 from .forcedMeasurement import ForcedMeasurementTask
 from .applyApCorr import ApplyApCorrTask
 from .catalogCalculation import CatalogCalculationTask
 
-__all__ = ("ForcedPhotImageConfig", "ForcedPhotImageTask")
+__all__ = ("ForcedPhotImageConfig", "ForcedPhotImageTask", "ForcedPhotImageConnections")
 
 
-class ForcedPhotImageConfig(lsst.pipe.base.PipelineTaskConfig):
-    """Config class for forced measurement driver task."""
-    # Gen 3 options
-    inputSchema = lsst.pipe.base.InitInputDatasetField(
+class ForcedPhotImageConnections(PipelineTaskConnections,
+                                 dimensions=("abstract_filter", "skymap", "tract", "patch"),
+                                 defaultTemplates={"inputCoaddName": "deep",
+                                                   "outputCoaddName": "deep"}):
+    inputSchema = cT.InitInput(
         doc="Schema for the input measurement catalogs.",
-        nameTemplate="{inputCoaddName}Coadd_ref_schema",
+        name="{inputCoaddName}Coadd_ref_schema",
         storageClass="SourceCatalog",
     )
-    outputSchema = lsst.pipe.base.InitOutputDatasetField(
+    outputSchema = cT.InitOutput(
         doc="Schema for the output forced measurement catalogs.",
-        nameTemplate="{outputCoaddName}Coadd_forced_src_schema",
+        name="{outputCoaddName}Coadd_forced_src_schema",
         storageClass="SourceCatalog",
     )
-    exposure = lsst.pipe.base.InputDatasetField(
+    exposure = cT.Input(
         doc="Input exposure to perform photometry on.",
-        nameTemplate="{inputCoaddName}Coadd",
-        scalar=True,
+        name="{inputCoaddName}Coadd",
         storageClass="ExposureF",
         dimensions=["abstract_filter", "skymap", "tract", "patch"],
     )
-    refCat = lsst.pipe.base.InputDatasetField(
+    refCat = cT.Input(
         doc="Catalog of shapes and positions at which to force photometry.",
-        nameTemplate="{inputCoaddName}Coadd_ref",
-        scalar=True,
+        name="{inputCoaddName}Coadd_ref",
         storageClass="SourceCatalog",
         dimensions=["skymap", "tract", "patch"],
     )
-    refWcs = lsst.pipe.base.InputDatasetField(
+    refWcs = cT.Input(
         doc="Reference world coordinate system.",
-        nameTemplate="{inputCoaddName}Coadd",
-        scalar=True,
-        manualLoad=True,
-        storageClass="ExposureF",
+        name="{inputCoaddName}Coadd.wcs",
+        storageClass="Wcs",
         dimensions=["abstract_filter", "skymap", "tract", "patch"],
     )
-    measCat = lsst.pipe.base.OutputDatasetField(
+    measCat = cT.Output(
         doc="Output forced photometry catalog.",
-        nameTemplate="{outputCoaddName}Coadd_forced_src",
-        scalar=True,
+        name="{outputCoaddName}Coadd_forced_src",
         storageClass="SourceCatalog",
         dimensions=["abstract_filter", "skymap", "tract", "patch"],
     )
 
+
+class ForcedPhotImageConfig(PipelineTaskConfig, pipelineConnections=ForcedPhotImageConnections):
+    """Config class for forced measurement driver task."""
     # ForcedPhotImage options
     references = lsst.pex.config.ConfigurableField(
         target=MultiBandReferencesTask,
@@ -117,10 +119,6 @@ class ForcedPhotImageConfig(lsst.pipe.base.PipelineTaskConfig):
         super().setDefaults()
 
         self.catalogCalculation.plugins.names = []
-        self.formatTemplateNames({"inputCoaddName": "deep",
-                                  "outputCoaddName": "deep",
-                                  "inputName": None})
-        self.quantum.dimensions = ("abstract_filter", "skymap", "tract", "patch")
 
 
 class ForcedPhotImageTask(lsst.pipe.base.PipelineTask, lsst.pipe.base.CmdLineTask):
@@ -173,20 +171,18 @@ class ForcedPhotImageTask(lsst.pipe.base.PipelineTask, lsst.pipe.base.CmdLineTas
         if self.config.doApCorr:
             self.makeSubtask("applyApCorr", schema=self.measurement.schema)
         self.makeSubtask('catalogCalculation', schema=self.measurement.schema)
+        self.outputSchema = lsst.afw.table.SourceCatalog(self.measurement.schema)
 
-    def getInitOutputDatasets(self):
-        return {"outputSchema": lsst.afw.table.SourceCatalog(self.measurement.schema)}
+    def runQuantum(self, butlerQC, inputRefs, outputRefs):
+        inputs = butlerQC.get(inputRefs)
+        inputs['measCat'] = self.generateMeasCat(inputRefs.exposure.dataId,
+                                                 inputs['exposure'],
+                                                 inputs['refCat'], inputs['refWcs'],
+                                                 "tract_patch", butlerQC.registry)
+        outputs = self.run(**inputs)
+        butlerQC.put(outputs, outputRefs)
 
-    def adaptArgsAndRun(self, inputData, inputDataIds, outputDataIds, butler):
-        inputData['refWcs'] = butler.get(f"{self.config.refWcs.name}.wcs", inputDataIds["refWcs"])
-        inputData['measCat'] = self.generateMeasCat(inputDataIds['exposure'],
-                                                    inputData['exposure'],
-                                                    inputData['refCat'], inputData['refWcs'],
-                                                    "tract_patch", butler)
-
-        return self.run(**inputData)
-
-    def generateMeasCat(self, exposureDataId, exposure, refCat, refWcs, idPackerName, butler):
+    def generateMeasCat(self, exposureDataId, exposure, refCat, refWcs, idPackerName, registry):
         """Generate a measurement catalog for Gen3.
 
         Parameters
@@ -201,15 +197,15 @@ class ForcedPhotImageTask(lsst.pipe.base.PipelineTask, lsst.pipe.base.CmdLineTas
             Reference world coordinate system.
         idPackerName : `str`
             Type of ID packer to construct from the registry.
-        butler : `lsst.daf.persistence.butler.Butler`
-            Butler to use to construct id packer.
+        registry : `lsst.daf.persistence.butler.Registry`
+            Registry to use to construct id packer.
 
         Returns
         -------
         measCat : `lsst.afw.table.SourceCatalog`
             Catalog of forced sources to measure.
         """
-        packer = butler.registry.makeDataIdPacker(idPackerName, exposureDataId)
+        packer = registry.makeDataIdPacker(idPackerName, exposureDataId)
         expId = packer.pack(exposureDataId)
         expBits = packer.maxBits
         idFactory = lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
