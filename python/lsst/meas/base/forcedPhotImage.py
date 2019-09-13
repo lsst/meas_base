@@ -178,11 +178,11 @@ class ForcedPhotImageTask(lsst.pipe.base.PipelineTask, lsst.pipe.base.CmdLineTas
         inputs['measCat'] = self.generateMeasCat(inputRefs.exposure.dataId,
                                                  inputs['exposure'],
                                                  inputs['refCat'], inputs['refWcs'],
-                                                 "tract_patch", butlerQC.registry)
+                                                 "tract_patch")
         outputs = self.run(**inputs)
         butlerQC.put(outputs, outputRefs)
 
-    def generateMeasCat(self, exposureDataId, exposure, refCat, refWcs, idPackerName, registry):
+    def generateMeasCat(self, exposureDataId, exposure, refCat, refWcs, idPackerName):
         """Generate a measurement catalog for Gen3.
 
         Parameters
@@ -196,18 +196,15 @@ class ForcedPhotImageTask(lsst.pipe.base.PipelineTask, lsst.pipe.base.CmdLineTas
         refWcs : `lsst.afw.image.SkyWcs`
             Reference world coordinate system.
         idPackerName : `str`
-            Type of ID packer to construct from the registry.
-        registry : `lsst.daf.persistence.butler.Registry`
-            Registry to use to construct id packer.
+            Name of DimensionPacker to use to generate the packed version
+            of the data ID to mangle into source IDs.
 
         Returns
         -------
         measCat : `lsst.afw.table.SourceCatalog`
             Catalog of forced sources to measure.
         """
-        packer = registry.makeDataIdPacker(idPackerName, exposureDataId)
-        expId = packer.pack(exposureDataId)
-        expBits = packer.maxBits
+        expId, expBits = exposureDataId.pack(idPackerName, returnMaxBits=True)
         idFactory = lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
 
         measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,

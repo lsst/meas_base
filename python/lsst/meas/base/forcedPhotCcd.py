@@ -234,7 +234,7 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
         inputs['measCat'] = self.generateMeasCat(inputRefs.exposure.dataId,
                                                  inputs['exposure'],
                                                  inputs['refCat'], inputs['refWcs'],
-                                                 "visit_detector", butlerQC.registry)
+                                                 "visit_detector")
         outputs = self.run(**inputs)
         butlerQC.put(outputs, outputRefs)
 
