@@ -20,6 +20,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import collections
+from itertools import chain
 
 import lsst.pex.config
 import lsst.pex.exceptions
@@ -33,7 +34,13 @@ import lsst.sphgeom
 
 from lsst.pipe.base import PipelineTaskConnections
 import lsst.pipe.base.connectionTypes as cT
-from .forcedPhotImage import ForcedPhotImageTask, ForcedPhotImageConfig
+
+import lsst.pipe.base as pipeBase
+
+from .references import MultiBandReferencesTask
+from .forcedMeasurement import ForcedMeasurementTask
+from .applyApCorr import ApplyApCorrTask
+from .catalogCalculation import CatalogCalculationTask
 
 try:
     from lsst.meas.mosaic import applyMosaicResults
@@ -43,7 +50,7 @@ except ImportError:
 __all__ = ("PerTractCcdDataIdContainer", "ForcedPhotCcdConfig", "ForcedPhotCcdTask", "imageOverlapsTract")
 
 
-class PerTractCcdDataIdContainer(lsst.pipe.base.DataIdContainer):
+class PerTractCcdDataIdContainer(pipeBase.DataIdContainer):
     """A data ID container which combines raw data IDs with a tract.
 
     Notes
@@ -165,6 +172,7 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
         name="{inputCoaddName}Coadd_ref",
         storageClass="SourceCatalog",
         dimensions=["skymap", "tract", "patch"],
+        multiple=True
     )
     refWcs = cT.Input(
         doc="Reference world coordinate system.",
@@ -180,7 +188,36 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
     )
 
 
-class ForcedPhotCcdConfig(ForcedPhotImageConfig, pipelineConnections=ForcedPhotCcdConnections):
+class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
+                          pipelineConnections=ForcedPhotCcdConnections):
+    """Config class for forced measurement driver task."""
+    # ForcedPhotImage options
+    references = lsst.pex.config.ConfigurableField(
+        target=MultiBandReferencesTask,
+        doc="subtask to retrieve reference source catalog"
+    )
+    measurement = lsst.pex.config.ConfigurableField(
+        target=ForcedMeasurementTask,
+        doc="subtask to do forced measurement"
+    )
+    coaddName = lsst.pex.config.Field(
+        doc="coadd name: typically one of deep or goodSeeing",
+        dtype=str,
+        default="deep",
+    )
+    doApCorr = lsst.pex.config.Field(
+        dtype=bool,
+        default=True,
+        doc="Run subtask to apply aperture corrections"
+    )
+    applyApCorr = lsst.pex.config.ConfigurableField(
+        target=ApplyApCorrTask,
+        doc="Subtask to apply aperture corrections"
+    )
+    catalogCalculation = lsst.pex.config.ConfigurableField(
+        target=CatalogCalculationTask,
+        doc="Subtask to run catalogCalculation plugins on catalog"
+    )
     doApplyUberCal = lsst.pex.config.Field(
         dtype=bool,
         doc="Apply meas_mosaic ubercal results to input calexps?",
@@ -232,54 +269,79 @@ class ForcedPhotCcdConfig(ForcedPhotImageConfig, pipelineConnections=ForcedPhotC
         },
     )
 
+    def setDefaults(self):
+        # Docstring inherited.
+        # Make catalogCalculation a no-op by default as no modelFlux is setup by default in
+        # ForcedMeasurementTask
+        super().setDefaults()
 
-class ForcedPhotCcdTask(ForcedPhotImageTask):
+        self.catalogCalculation.plugins.names = []
+
+
+class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
     """A command-line driver for performing forced measurement on CCD images.
+
+    Parameters
+    ----------
+    butler : `lsst.daf.persistence.butler.Butler`, optional
+        A Butler which will be passed to the references subtask to allow it to
+        load its schema from disk. Optional, but must be specified if
+        ``refSchema`` is not; if both are specified, ``refSchema`` takes
+        precedence.
+    refSchema : `lsst.afw.table.Schema`, optional
+        The schema of the reference catalog, passed to the constructor of the
+        references subtask. Optional, but must be specified if ``butler`` is
+        not; if both are specified, ``refSchema`` takes precedence.
+    **kwds
+        Keyword arguments are passed to the supertask constructor.
 
     Notes
     -----
-    This task is a subclass of
-    :lsst-task:`lsst.meas.base.forcedPhotImage.ForcedPhotImageTask` which is
-    specifically for doing forced measurement on a single CCD exposure, using
-    as a reference catalog the detections which were made on overlapping
-    coadds.
-
-    The `run` method (inherited from `ForcedPhotImageTask`) takes a
-    `~lsst.daf.persistence.ButlerDataRef` argument that corresponds to a single
-    CCD. This should contain the data ID keys that correspond to the
-    ``forced_src`` dataset (the output dataset for this task), which are
-    typically all those used to specify the ``calexp`` dataset (``visit``,
-    ``raft``, ``sensor`` for LSST data) as well as a coadd tract. The tract is
-    used to look up the appropriate coadd measurement catalogs to use as
-    references (e.g. ``deepCoadd_src``; see
+    The `runDataRef` method takes a `~lsst.daf.persistence.ButlerDataRef` argument
+    that corresponds to a single CCD. This should contain the data ID keys that
+    correspond to the ``forced_src`` dataset (the output dataset for this
+    task), which are typically all those used to specify the ``calexp`` dataset
+    (``visit``, ``raft``, ``sensor`` for LSST data) as well as a coadd tract.
+    The tract is used to look up the appropriate coadd measurement catalogs to
+    use as references (e.g. ``deepCoadd_src``; see
     :lsst-task:`lsst.meas.base.references.CoaddSrcReferencesTask` for more
     information). While the tract must be given as part of the dataRef, the
     patches are determined automatically from the bounding box and WCS of the
     calexp to be measured, and the filter used to fetch references is set via
     the ``filter`` option in the configuration of
     :lsst-task:`lsst.meas.base.references.BaseReferencesTask`).
-
-    In addition to the `run` method, `ForcedPhotCcdTask` overrides several
-    methods of `ForcedPhotImageTask` to specialize it for single-CCD
-    processing, including `~ForcedPhotImageTask.makeIdFactory`,
-    `~ForcedPhotImageTask.fetchReferences`, and
-    `~ForcedPhotImageTask.getExposure`. None of these should be called
-    directly by the user, though it may be useful to override them further in
-    subclasses.
     """
 
     ConfigClass = ForcedPhotCcdConfig
-    RunnerClass = lsst.pipe.base.ButlerInitializedTaskRunner
+    RunnerClass = pipeBase.ButlerInitializedTaskRunner
     _DefaultName = "forcedPhotCcd"
     dataPrefix = ""
+
+    def __init__(self, butler=None, refSchema=None, initInputs=None, **kwds):
+        super().__init__(**kwds)
+
+        if initInputs is not None:
+            refSchema = initInputs['inputSchema'].schema
+
+        self.makeSubtask("references", butler=butler, schema=refSchema)
+        if refSchema is None:
+            refSchema = self.references.schema
+        self.makeSubtask("measurement", refSchema=refSchema)
+        # It is necessary to get the schema internal to the forced measurement task until such a time
+        # that the schema is not owned by the measurement task, but is passed in by an external caller
+        if self.config.doApCorr:
+            self.makeSubtask("applyApCorr", schema=self.measurement.schema)
+        self.makeSubtask('catalogCalculation', schema=self.measurement.schema)
+        self.outputSchema = lsst.afw.table.SourceCatalog(self.measurement.schema)
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
         inputs['refCat'] = self.filterReferences(inputs['exposure'], inputs['refCat'], inputs['refWcs'])
-        inputs['measCat'] = self.generateMeasCat(inputRefs.exposure.dataId,
-                                                 inputs['exposure'],
-                                                 inputs['refCat'], inputs['refWcs'],
-                                                 "visit_detector")
+        inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(inputRefs.exposure.dataId,
+                                                                       inputs['exposure'],
+                                                                       inputs['refCat'], inputs['refWcs'],
+                                                                       "visit_detector")
+        self.attachFootprints(inputs['measCat'], inputs['refCat'], inputs['exposure'], inputs['refWcs'])
         # TODO: apply external calibrations (DM-17062)
         outputs = self.run(**inputs)
         butlerQC.put(outputs, outputRefs)
@@ -324,8 +386,9 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
 
         # Step 2: Filter out reference catalog sources that are
         # not contained within the exposure boundaries.
-        sources = type(refCat)(refCat.table)
-        for record in refCat:
+        # refCat will be a list of at least one element
+        sources = type(refCat[0])(refCat[0].table)
+        for record in chain(*refCat):
             if expPolygon.contains(record.getCoord().getVector()):
                 sources.append(record)
         refCatIdDict = {ref.getId(): ref.getParent() for ref in sources}
@@ -333,8 +396,8 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
         # Step 3: Cull sources that do not have their parent
         # source in the filtered catalog.  Save two copies of each
         # source.
-        refSources = type(refCat)(refCat.table)
-        for record in refCat:
+        refSources = type(refCat[0])(refCat[0].table)
+        for record in chain(*refCat):
             if expPolygon.contains(record.getCoord().getVector()):
                 recordId = record.getId()
                 topId = recordId
@@ -353,6 +416,115 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
                                                                       expWcs, expRegion))
         # Step 5: Replace reference catalog with filtered source list.
         return refSources
+
+    def generateMeasCat(self, exposureDataId, exposure, refCat, refWcs, idPackerName):
+        """Generate a measurement catalog for Gen3.
+
+        Parameters
+        ----------
+        exposureDataId : `DataId`
+            Butler dataId for this exposure.
+        exposure : `lsst.afw.image.exposure.Exposure`
+            Exposure to generate the catalog for.
+        refCat : `lsst.afw.table.SourceCatalog`
+            Catalog of shapes and positions at which to force photometry.
+        refWcs : `lsst.afw.image.SkyWcs`
+            Reference world coordinate system.
+        idPackerName : `str`
+            Type of ID packer to construct from the registry.
+
+        Returns
+        -------
+        measCat : `lsst.afw.table.SourceCatalog`
+            Catalog of forced sources to measure.
+        expId : `int`
+            Unique binary id associated with the input exposure
+        """
+        expId, expBits = exposureDataId.pack(idPackerName, returnMaxBits=True)
+        idFactory = lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
+
+        measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
+                                                   idFactory=idFactory)
+        return measCat, expId
+
+    def runDataRef(self, dataRef, psfCache=None):
+        """Perform forced measurement on a single exposure.
+
+        Parameters
+        ----------
+        dataRef : `lsst.daf.persistence.ButlerDataRef`
+            Passed to the ``references`` subtask to obtain the reference WCS,
+            the ``getExposure`` method (implemented by derived classes) to
+            read the measurment image, and the ``fetchReferences`` method to
+            get the exposure and load the reference catalog (see
+            :lsst-task`lsst.meas.base.references.CoaddSrcReferencesTask`).
+            Refer to derived class documentation for details of the datasets
+            and data ID keys which are used.
+        psfCache : `int`, optional
+            Size of PSF cache, or `None`. The size of the PSF cache can have
+            a significant effect upon the runtime for complicated PSF models.
+
+        Notes
+        -----
+        Sources are generated with ``generateMeasCat`` in the ``measurement``
+        subtask. These are passed to ``measurement``'s ``run`` method, which
+        fills the source catalog with the forced measurement results. The
+        sources are then passed to the ``writeOutputs`` method (implemented by
+        derived classes) which writes the outputs.
+        """
+        refWcs = self.references.getWcs(dataRef)
+        exposure = self.getExposure(dataRef)
+        if psfCache is not None:
+            exposure.getPsf().setCacheSize(psfCache)
+        refCat = self.fetchReferences(dataRef, exposure)
+
+        measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
+                                                   idFactory=self.makeIdFactory(dataRef))
+        self.log.info("Performing forced measurement on %s" % (dataRef.dataId,))
+        self.attachFootprints(measCat, refCat, exposure, refWcs)
+
+        exposureId = self.getExposureId(dataRef)
+
+        forcedPhotResult = self.run(measCat, exposure, refCat, refWcs, exposureId=exposureId)
+
+        self.writeOutput(dataRef, forcedPhotResult.measCat)
+
+    def run(self, measCat, exposure, refCat, refWcs, exposureId=None):
+        """Perform forced measurement on a single exposure.
+
+        Parameters
+        ----------
+        measCat : `lsst.afw.table.SourceCatalog`
+            The measurement catalog, based on the sources listed in the
+            reference catalog.
+        exposure : `lsst.afw.image.Exposure`
+            The measurement image upon which to perform forced detection.
+        refCat : `lsst.afw.table.SourceCatalog`
+            The reference catalog of sources to measure.
+        refWcs : `lsst.afw.image.SkyWcs`
+            The WCS for the references.
+        exposureId : `int`
+            Optional unique exposureId used for random seed in measurement
+            task.
+
+        Returns
+        -------
+        result : `lsst.pipe.base.Struct`
+            Structure with fields:
+
+            ``measCat``
+                Catalog of forced measurement results
+                (`lsst.afw.table.SourceCatalog`).
+        """
+        self.measurement.run(measCat, exposure, refCat, refWcs, exposureId=exposureId)
+        if self.config.doApCorr:
+            self.applyApCorr.run(
+                catalog=measCat,
+                apCorrMap=exposure.getInfo().getApCorrMap()
+            )
+        self.catalogCalculation.run(measCat)
+
+        return lsst.pipe.base.Struct(measCat=measCat)
 
     def makeIdFactory(self, dataRef):
         """Create an object that generates globally unique source IDs.
@@ -419,6 +591,26 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
         references.sort(lsst.afw.table.SourceTable.getParentKey())
         return references
 
+    def attachFootprints(self, sources, refCat, exposure, refWcs):
+        r"""Attach footprints to blank sources prior to measurements.
+
+        Notes
+        -----
+        `~lsst.afw.detection.Footprint`\ s for forced photometry must be in the
+        pixel coordinate system of the image being measured, while the actual
+        detections may start out in a different coordinate system.
+
+        Subclasses of this class must implement this method to define how
+        those `~lsst.afw.detection.Footprint`\ s should be generated.
+
+        This default implementation transforms the
+        `~lsst.afw.detection.Footprint`\ s from the reference catalog from the
+        reference WCS to the exposure's WcS, which downgrades
+        `lsst.afw.detection.heavyFootprint.HeavyFootprint`\ s into regular
+        `~lsst.afw.detection.Footprint`\ s, destroying deblend information.
+        """
+        return self.measurement.attachTransformedFootprints(sources, refCat, exposure, refWcs)
+
     def getExposure(self, dataRef):
         """Read input exposure for measurement.
 
@@ -447,6 +639,37 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
             exposure.maskedImage -= skyCorr.getImage()
 
         return exposure
+
+    def writeOutput(self, dataRef, sources):
+        """Write forced source table
+
+        Parameters
+        ----------
+        dataRef : `lsst.daf.persistence.ButlerDataRef`
+            Butler data reference. The forced_src dataset (with
+            self.dataPrefix prepended) is all that will be modified.
+        sources : `lsst.afw.table.SourceCatalog`
+            Catalog of sources to save.
+        """
+        dataRef.put(sources, self.dataPrefix + "forced_src", flags=lsst.afw.table.SOURCE_IO_NO_FOOTPRINTS)
+
+    def getSchemaCatalogs(self):
+        """The schema catalogs that will be used by this task.
+
+        Returns
+        -------
+        schemaCatalogs : `dict`
+            Dictionary mapping dataset type to schema catalog.
+
+        Notes
+        -----
+        There is only one schema for each type of forced measurement. The
+        dataset type for this measurement is defined in the mapper.
+        """
+        catalog = lsst.afw.table.SourceCatalog(self.measurement.schema)
+        catalog.getTable().setMetadata(self.measurement.algMetadata)
+        datasetType = self.dataPrefix + "forced_src"
+        return {datasetType: catalog}
 
     def _getConfigName(self):
         # Documented in superclass.
