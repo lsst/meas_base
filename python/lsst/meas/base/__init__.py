@@ -63,5 +63,6 @@ from .plugins import *
 from .pluginsBase import *
 from .references import *
 from .sfm import *
+from .evaluateLocalCalibration import *
 from .transforms import *
 from .wrappers import *
