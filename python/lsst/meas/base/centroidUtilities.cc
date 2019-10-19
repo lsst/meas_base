@@ -107,6 +107,14 @@ void declareCentroidChecker(py::module &mod) {
     cls.def("__call__", &CentroidChecker::operator(), "record"_a);
 }
 
+void declareUncertaintyEnum(py::module &mod) {
+    py::enum_<UncertaintyEnum> enm(mod, "UncertaintyEnum");
+
+    enm.value("NO_UNCERTAINTY", UncertaintyEnum::NO_UNCERTAINTY);
+    enm.value("SIGMA_ONLY", UncertaintyEnum::SIGMA_ONLY);
+    enm.value("FULL_COVARIANCE", UncertaintyEnum::FULL_COVARIANCE);
+}
+
 }  // namespace
 
 PYBIND11_MODULE(centroidUtilities, mod) {
@@ -117,6 +125,7 @@ PYBIND11_MODULE(centroidUtilities, mod) {
     declareCentroidResultKey(mod);
     declareCentroidTransform(mod);
     declareCentroidChecker(mod);
+    declareUncertaintyEnum(mod);
 }
 
 }  // namespace base
