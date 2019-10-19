@@ -77,6 +77,8 @@ void declareCentroidResultKey(py::module &mod) {
             "centroid"_a, "uncertainty"_a);
     cls.def(py::init<afw::table::SubSchema const &>(), "subSchema"_a);
 
+    cls.def_static("addFields", &CentroidResultKey::addFields, "schema"_a, "name"_a, "doc"_a, "uncertainty"_a);
+
     cls.def("__eq__", &CentroidResultKey::operator==, py::is_operator());
     cls.def("__nq__", &CentroidResultKey::operator!=, py::is_operator());
 
