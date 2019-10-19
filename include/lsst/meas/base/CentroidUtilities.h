@@ -190,15 +190,20 @@ private:
 class CentroidChecker {
 public:
     /**
-     *  Check source record for an centroid algorithm called name, noting if the centroid
-     *  already set by the algorithm is outside the footprint attached to the record.
-     *  If that is the case, we should:
-     *     (1) set the general failure flag for the algorithm
-     *     (2) set the algorithmName + "_flag_resetToPeak" flag
-     *     (3) change the value of the centroid to the footprint Peak
+     *  Check source record produced by a centroid algorithm called "name".
      *
-     *  Secondly, check to see if the centroid is more than "dist" pixels from
-     *  the footprint peak, and similarly modify the centroi value to the peak in that case
+     *  If the centroid is accompanied by uncertainties (the xErr and yErr
+     *  fields), these should not be NaN. If they are, the algorithmName +
+     *  "_flag_badError" flag and the general failure flag for the algorithm
+     *  are both set.
+     *
+     *  If the centroid set by the algorithm lies outside the footprint attached
+     *  to the record, or the centroid is more than "dist" pixels from the
+     *  footprint peak:
+     *
+     *     (1) the general failure flag for the algorithm is set
+     *     (2) algorithmName + "_flag_resetToPeak" flag is set
+     *     (3) the position of the centroid is changed to that of the footprint Peak
      *
      *  @param[in,out] schema        Schema to which the flag_resetToPeak is to be added
      *  @param[in]  name             The name of the algorithm we will be checking
@@ -210,7 +215,9 @@ public:
 
     /**
      *  Set the centroid to the first footprint if the centroid is either more than _dist
-     *  pixels from the footprint center, or if it is outside the footprint.
+     *  pixels from the footprint center, or if it is outside the footprint. Set appropriate
+     *  flags to indicate any changes to the centroid, and to indicate if uncertainties
+     *  are set to invalid ("NaN") values.
      */
     bool operator()(afw::table::SourceRecord& record) const;
 
@@ -219,8 +226,11 @@ private:
     double _maxDistFromPeak;
     afw::table::Key<afw::table::Flag> _resetKey;
     afw::table::Key<afw::table::Flag> _failureKey;
+    afw::table::Key<afw::table::Flag> _badErrorKey;
     afw::table::Key<CentroidElement> _xKey;
     afw::table::Key<CentroidElement> _yKey;
+    afw::table::Key<ErrElement> _xErrKey;
+    afw::table::Key<ErrElement> _yErrKey;
 };
 }  // namespace base
 }  // namespace meas
