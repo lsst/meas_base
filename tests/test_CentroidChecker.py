@@ -19,8 +19,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import numpy as np
-
 import unittest
 
 import lsst.utils.tests
@@ -67,8 +65,9 @@ class Centroider(SingleFramePlugin):
         flagDefs.add("flag", "General Failure error")
         flagDefs.add("test_flag", "second flag")
         self.flagHandler = FlagHandler.addFields(schema, name, flagDefs)
-        self.xKey = schema.addField(schema.join(name, "x"), type=np.float64)
-        self.yKey = schema.addField(schema.join(name, "y"), type=np.float64)
+
+        self.centroidKey = lsst.meas.base.CentroidResultKey.addFields(schema, name, name, uncertainty)
+
         if self.config.dist is None:
             self.centroidChecker = lsst.meas.base.CentroidChecker(schema, name)
         else:
@@ -77,8 +76,8 @@ class Centroider(SingleFramePlugin):
     def measure(self, measRecord, exposure):
         """This measure routine moves the centroid by design to create an error.
         """
-        measRecord.set(self.xKey, measRecord.getX() + self.config.moveX)
-        measRecord.set(self.yKey, measRecord.getY() + self.config.moveY)
+        measRecord.set(self.centroidKey.getX(), measRecord.getX() + self.config.moveX)
+        measRecord.set(self.centroidKey.getY(), measRecord.getY() + self.config.moveY)
         self.centroidChecker(measRecord)
 
     def fail(self, measRecord, error=None):
