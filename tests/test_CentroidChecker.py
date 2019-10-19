@@ -93,7 +93,7 @@ class Centroider(SingleFramePlugin):
             self.flagHandler.handleFailure(measRecord, error.cpp)
 
 
-class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
+class CentroidCheckerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     # Setup a configuration and datasource to be used by the plugin tests
     def setUp(self):
