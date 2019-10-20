@@ -19,8 +19,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import numpy as np
-
 import unittest
 
 import lsst.utils.tests
@@ -42,6 +40,12 @@ class CentroiderConfig(SingleFramePluginConfig):
                                   doc="amount to re-position in Y")
     dist = lsst.pex.config.Field(dtype=int, default=None, optional=False,
                                  doc="distance to allow centroid to be off")
+    setErrors = lsst.pex.config.Field(dtype=bool, default=False, optional=False,
+                                      doc="set errors on measurement to errX, errY")
+    errX = lsst.pex.config.Field(dtype=float, default=0, optional=False,
+                                 doc="uncertainty on X measurement")
+    errY = lsst.pex.config.Field(dtype=float, default=0, optional=False,
+                                 doc="uncertainty on X measurement")
 
 
 @register("test_Centroider")
@@ -67,8 +71,14 @@ class Centroider(SingleFramePlugin):
         flagDefs.add("flag", "General Failure error")
         flagDefs.add("test_flag", "second flag")
         self.flagHandler = FlagHandler.addFields(schema, name, flagDefs)
-        self.xKey = schema.addField(schema.join(name, "x"), type=np.float64)
-        self.yKey = schema.addField(schema.join(name, "y"), type=np.float64)
+
+        if self.config.setErrors:
+            uncertainty = lsst.meas.base.UncertaintyEnum.SIGMA_ONLY
+        else:
+            uncertainty = lsst.meas.base.UncertaintyEnum.NO_UNCERTAINTY
+
+        self.centroidKey = lsst.meas.base.CentroidResultKey.addFields(schema, name, name, uncertainty)
+
         if self.config.dist is None:
             self.centroidChecker = lsst.meas.base.CentroidChecker(schema, name)
         else:
@@ -77,8 +87,13 @@ class Centroider(SingleFramePlugin):
     def measure(self, measRecord, exposure):
         """This measure routine moves the centroid by design to create an error.
         """
-        measRecord.set(self.xKey, measRecord.getX() + self.config.moveX)
-        measRecord.set(self.yKey, measRecord.getY() + self.config.moveY)
+        measRecord.set(self.centroidKey.getX(), measRecord.getX() + self.config.moveX)
+        measRecord.set(self.centroidKey.getY(), measRecord.getY() + self.config.moveY)
+        if self.centroidKey.getCentroidErr().isValid():
+            err = measRecord.get(self.centroidKey.getCentroidErr())
+            err[0][0] = self.config.errX
+            err[1][1] = self.config.errY
+            measRecord.set(self.centroidKey.getCentroidErr(), err)
         self.centroidChecker(measRecord)
 
     def fail(self, measRecord, error=None):
@@ -94,7 +109,7 @@ class Centroider(SingleFramePlugin):
             self.flagHandler.handleFailure(measRecord, error.cpp)
 
 
-class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
+class CentroidCheckerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     # Setup a configuration and datasource to be used by the plugin tests
     def setUp(self):
@@ -133,6 +148,41 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         source = cat[0]
         self.assertFalse(source.get("test_Centroider_flag"))
         self.assertFalse(source.get("test_Centroider_flag_resetToPeak"))
+
+    def testCheckErrors(self):
+        """Test that centroids with invalid (NaN) errors are flagged.
+        """
+        def runMeasurement(errX, errY):
+            schema = self.dataset.makeMinimalSchema()
+            config = self.makeConfig()
+            config.slots.centroid = "truth"
+            config.plugins[self.algName].setErrors = True
+            config.plugins[self.algName].errX = errX
+            config.plugins[self.algName].errY = errY
+            task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=config)
+            exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=0)
+            task.run(cat, exposure)
+            return cat[0]
+
+        # Errors are real numbers: flags should not be set.
+        source = runMeasurement(1.0, 1.0)
+        self.assertFalse(source.get("test_Centroider_flag"))
+        self.assertFalse(source.get("test_Centroider_flag_badError"))
+
+        # Error on X is NaN: flags should be set.
+        source = runMeasurement(float('nan'), 1.0)
+        self.assertTrue(source.get("test_Centroider_flag"))
+        self.assertTrue(source.get("test_Centroider_flag_badError"))
+
+        # Error on Y is NaN: flags should be set.
+        source = runMeasurement(1.0, float('nan'))
+        self.assertTrue(source.get("test_Centroider_flag"))
+        self.assertTrue(source.get("test_Centroider_flag_badError"))
+
+        # Error on both X and Y is NaN: flags should be set.
+        source = runMeasurement(float('nan'), float('nan'))
+        self.assertTrue(source.get("test_Centroider_flag"))
+        self.assertTrue(source.get("test_Centroider_flag_badError"))
 
     def testCentroidDistance(self):
         """Test that a slight centroid movement triggers the distance error.

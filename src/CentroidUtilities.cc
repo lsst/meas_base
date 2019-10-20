@@ -179,17 +179,38 @@ CentroidChecker::CentroidChecker(afw::table::Schema &schema, std::string const &
     _failureKey = schema.find<afw::table::Flag>(schema.join(name, "flag")).key;
     _xKey = schema.find<CentroidElement>(schema.join(name, "x")).key;
     _yKey = schema.find<CentroidElement>(schema.join(name, "y")).key;
+
+    // We only check errors on the centroid if they exist: not all measurement
+    // algorithms provide them.
+    try {
+        _xErrKey = schema.find<ErrElement>(schema.join(name, "xErr")).key;
+    } catch (pex::exceptions::NotFoundError &err) {}
+    try {
+        _yErrKey = schema.find<ErrElement>(schema.join(name, "yErr")).key;
+    } catch (pex::exceptions::NotFoundError &err) {}
+    if (_xErrKey.isValid() || _yErrKey.isValid()) {
+        _badErrorKey = schema.addField<afw::table::Flag>(schema.join(name, "flag_badError"),
+                                                         "Error on x and/or y position is NaN");
+    }
 }
 
-//  Set the centroid to the first footprint if the centroid is eithe more than _maxDistFromPeak
-//  pixels from the centroid, or if it is outside the footprint.
 bool CentroidChecker::operator()(afw::table::SourceRecord &record) const {
     CentroidElement x = record.get(_xKey);
     CentroidElement y = record.get(_yKey);
 
+    // Check any errors specified on the centroid position are valid.
+    if ((_xErrKey.isValid() && std::isnan(record.get(_xErrKey))) ||
+        (_yErrKey.isValid() && std::isnan(record.get(_yErrKey)))) {
+        record.set(_badErrorKey, true);
+        record.set(_failureKey, true);
+    }
+
+    // Only proceed with checking if appropriately configured.
     if (!_doFootprintCheck && _maxDistFromPeak < 0.0) {
         return false;
     }
+
+    // Check that the centroid has a footprint that we can validate; otherwise, give up.
     PTR(afw::detection::Footprint) footprint = record.getFootprint();
     if (!footprint) {
         throw LSST_EXCEPT(pex::exceptions::RuntimeError, "No Footprint attached to record");
@@ -197,6 +218,9 @@ bool CentroidChecker::operator()(afw::table::SourceRecord &record) const {
     if (footprint->getPeaks().empty()) {
         throw LSST_EXCEPT(pex::exceptions::RuntimeError, "Footprint has no peaks; cannot verify centroid.");
     }
+
+    // Set the centroid to the first footprint if the centroid is either more than
+    // _maxDistFromPeak pixels from the centroid, or if it is outside the footprint.
     CentroidElement footX = footprint->getPeaks().front().getFx();
     CentroidElement footY = footprint->getPeaks().front().getFy();
     double distsq = (x - footX) * (x - footX) + (y - footY) * (y - footY);

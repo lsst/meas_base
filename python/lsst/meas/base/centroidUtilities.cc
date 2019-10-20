@@ -77,6 +77,8 @@ void declareCentroidResultKey(py::module &mod) {
             "centroid"_a, "uncertainty"_a);
     cls.def(py::init<afw::table::SubSchema const &>(), "subSchema"_a);
 
+    cls.def_static("addFields", &CentroidResultKey::addFields, "schema"_a, "name"_a, "doc"_a, "uncertainty"_a);
+
     cls.def("__eq__", &CentroidResultKey::operator==, py::is_operator());
     cls.def("__nq__", &CentroidResultKey::operator!=, py::is_operator());
 
@@ -107,6 +109,14 @@ void declareCentroidChecker(py::module &mod) {
     cls.def("__call__", &CentroidChecker::operator(), "record"_a);
 }
 
+void declareUncertaintyEnum(py::module &mod) {
+    py::enum_<UncertaintyEnum> enm(mod, "UncertaintyEnum");
+
+    enm.value("NO_UNCERTAINTY", UncertaintyEnum::NO_UNCERTAINTY);
+    enm.value("SIGMA_ONLY", UncertaintyEnum::SIGMA_ONLY);
+    enm.value("FULL_COVARIANCE", UncertaintyEnum::FULL_COVARIANCE);
+}
+
 }  // namespace
 
 PYBIND11_MODULE(centroidUtilities, mod) {
@@ -117,6 +127,7 @@ PYBIND11_MODULE(centroidUtilities, mod) {
     declareCentroidResultKey(mod);
     declareCentroidTransform(mod);
     declareCentroidChecker(mod);
+    declareUncertaintyEnum(mod);
 }
 
 }  // namespace base
