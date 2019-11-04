@@ -190,9 +190,9 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
                 else:
                     self.assertTrue(record.schema.join(prefix, "flag_sincCoeffsTruncated")
                                     not in record.getSchema())
-                    self.assertEqual(record.get(record.schema.join(prefix, "flag")), radius > 50)
+                    self.assertEqual(record.get(record.schema.join(prefix, "flag")), radius >= 50)
                     self.assertEqual(record.get(record.schema.join(prefix, "flag_apertureTruncated")),
-                                     radius > 50)
+                                     radius >= 50)
                 # Test that the instFluxes and uncertainties increase as we
                 # increase the apertures, or that they match the true instFlux
                 # within 3 sigma.  This is just a test as to whether the
