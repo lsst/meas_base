@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from collections import Iterable
+from collections.abc import Iterable
 
 from lsst.afw.table import Schema, SourceCatalog
 from lsst.meas.base import NoiseReplacer, NoiseReplacerConfig
