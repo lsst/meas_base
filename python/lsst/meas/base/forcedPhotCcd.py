@@ -31,14 +31,9 @@ import lsst.afw.image
 import lsst.afw.table
 import lsst.sphgeom
 
-from lsst.pipe.base import PipelineTaskConnections
 import lsst.pipe.base.connectionTypes as cT
 from .forcedPhotImage import ForcedPhotImageTask, ForcedPhotImageConfig
-
-try:
-    from lsst.meas.mosaic import applyMosaicResults
-except ImportError:
-    applyMosaicResults = None
+from lsst.meas.base.recalibrateExposure import RecalibrateExposureTask, RecalibrateExposureConnections
 
 __all__ = ("PerTractCcdDataIdContainer", "ForcedPhotCcdConfig", "ForcedPhotCcdTask", "imageOverlapsTract")
 
@@ -140,7 +135,7 @@ def imageOverlapsTract(tract, imageWcs, imageBox):
     return tractPoly.intersects(imagePoly)  # "intersects" also covers "contains" or "is contained by"
 
 
-class ForcedPhotCcdConnections(PipelineTaskConnections,
+class ForcedPhotCcdConnections(RecalibrateExposureConnections,
                                dimensions=("instrument", "visit", "detector", "skymap", "tract"),
                                defaultTemplates={"inputCoaddName": "deep",
                                                  "inputName": "calexp"}):
@@ -181,10 +176,9 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
 
 
 class ForcedPhotCcdConfig(ForcedPhotImageConfig, pipelineConnections=ForcedPhotCcdConnections):
-    doApplyUberCal = lsst.pex.config.Field(
-        dtype=bool,
-        doc="Apply meas_mosaic ubercal results to input calexps?",
-        default=False
+    recalibrate = lsst.pex.config.ConfigurableField(
+        target=RecalibrateExposureTask,
+        doc="Recalibrate exposure",
     )
 
 
@@ -228,6 +222,10 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
     _DefaultName = "forcedPhotCcd"
     dataPrefix = ""
 
+    def __init__(self, *args, **kwargs):
+        ForcedPhotImageTask.__init__(self, *args, **kwargs)
+        self.makeSubtask("recalibrate")
+
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
         inputs['refCat'] = self.filterReferences(inputs['exposure'], inputs['refCat'], inputs['refWcs'])
@@ -235,6 +233,8 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
                                                  inputs['exposure'],
                                                  inputs['refCat'], inputs['refWcs'],
                                                  "visit_detector")
+        calibs = self.recalibrate.extractCalibs(inputs, single=True)
+        inputs["exposure"] = self.recalibrate.run(inputs["exposure"], **calibs)
         outputs = self.run(**inputs)
         butlerQC.put(outputs, outputRefs)
 
@@ -379,20 +379,10 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
         Parameters
         ----------
         dataRef : `lsst.daf.persistence.ButlerDataRef`
-            Butler data reference. Only the ``calexp`` dataset is used, unless
-            ``config.doApplyUberCal`` is `True`, in which case the
-            corresponding meas_mosaic outputs are used as well.
+            Butler data reference.
         """
-        exposure = ForcedPhotImageTask.getExposure(self, dataRef)
-        if not self.config.doApplyUberCal:
-            return exposure
-        if applyMosaicResults is None:
-            raise RuntimeError(
-                "Cannot use improved calibrations for %s because meas_mosaic could not be imported."
-                % (dataRef.dataId,))
-        else:
-            applyMosaicResults(dataRef, calexp=exposure)
-        return exposure
+        exposure = dataRef.get("calexp")
+        return self.recalibrate.runDataRef(dataRef, exposure)
 
     def _getConfigName(self):
         # Documented in superclass.
