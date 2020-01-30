@@ -66,3 +66,4 @@ from .sfm import *
 from .evaluateLocalCalibration import *
 from .transforms import *
 from .wrappers import *
+from .recalibrateExposure import *
