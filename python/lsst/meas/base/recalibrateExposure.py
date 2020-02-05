@@ -1,19 +1,10 @@
 from lsst.pex.config import Config, Field, ChoiceField
-from lsst.pipe.base import Task, Struct
+from lsst.pipe.base import Task, Struct, PipelineTaskConnections
 import lsst.pipe.base.connectionTypes as cT
 
 from lsst.afw.image import PhotoCalib
 
 __all__ = ("RecalibrateExposureConfig", "RecalibrateExposureTask")
-
-
-class MissingExposureError(Exception):
-    """Raised when data cannot be retrieved for an exposure.
-
-    When processing patches, sometimes one exposure is missing; this lets us
-    distinguish bewteen that case, and other errors.
-    """
-    pass
 
 
 class RecalibrateExposureConfig(Config):
@@ -63,6 +54,53 @@ class RecalibrateExposureConfig(Config):
     )
 
 
+class RecalibrateExposureConnections(PipelineTaskConnections,
+                                     dimensions=("instrument", "visit", "detector", "skymap", "tract"),
+                                     defaultTemplates={"calibSource": "jointcal"}):
+    photoCalib = cT.Input(
+        doc="Photometric calibration",
+        name="{calibSource}_photoCalib",
+        storageClass="PhotoCalib",
+        dimensions=["instrument", "visit", "detector", "tract"],
+        multiple=True,
+    )
+    skyWcs = cT.Input(
+        doc="Astrometric calibration",
+        name="{calibSource}_skyWcs",
+        storageClass="SkyWcs",
+        dimensions=["instrument", "visit", "detector", "tract"],
+        multiple=True,
+    )
+    skyCorr = cT.Input(
+        doc="Sky correction",
+        name="skyCorr",
+        storageClass="Background",
+        dimensions=["instrument", "visit", "detector"],
+        multiple=True,
+    )
+
+    def __init__(self, *args, recalibrate="recalibrate", **kwargs):
+        """Initialise
+
+        Filters connections based on run-time task configuration.
+
+        Parameters
+        ----------
+        recalibrate : `str`
+            Name of the `RecalibrateExposureTask` in the ``config``.
+        *args, **kwargs
+            Usual construction arguments for `PipelineTaskConnections`.
+        """
+        super().__init__(*args, **kwargs)
+        config = getattr(self.config, recalibrate)
+        if not config.doApplyExternalPhotoCalib:
+            self.inputs.discard("photoCalib")
+        if not config.doApplyExternalSkyWcs:
+            self.inputs.discard("skyWcs")
+        if not config.doApplySkyCorr:
+            self.inputs.discard("skyCorr")
+
+
 class RecalibrateExposureTask(Task):
     """Read and apply calibrations to a exposure
 
@@ -84,135 +122,30 @@ class RecalibrateExposureTask(Task):
     Use in Gen3
     -----------
 
-    Wrap your connections class in the decorator provided by
-    ``RecalibrateExposureTask.addConnections``, and add a template for
-    ``calibSource``. Then when in ``runQuantum`` you call
-    ``butlerQC.get(inputRefs)``, you will get the calibrations, and you can
-    use the ``extractCalibs`` and ``run`` methods to apply the calibrations.
-
         class FooConfig(lsst.pex.config.Config):
             recalibrate = lsst.pex.config.ConfigurableField(
                 target=RecalibrateExposureTask,
                 doc="Read calibrated exposure"
             )
 
-        @RecalibrateExposureTask.addConnections()
-        class FooTaskConnections(lsst.pipe.base.PipelineTaskConnections,
-                                dimensions=("instrument", "visit", "detector",
-                                            "skymap", "tract"),
-                                defaultTemplates={"calibSource": "jointcal"}):
+        class FooTaskConnections(RecalibrateExposureConnections):
             ...
 
         class FooTask(lsst.pipe.base.PipelineTask):
-            def runQuantum(self, butlerQC, inputRefs, outputRefs):
-                inputs = butlerQC.get(inputRefs)
-                calibs = self.recalibrate.extractCalibs(**inputs)
-                inputs["exposure"] = self.recalibrate.run(inputs["exposure"],
-                                                          **calibs)
-                outputs = self.run(**inputs)
-                butlerQC.put(outputs, outputRefs)
+            def run(self, **inputs):
+                calibs = self.recalibrate.extractCalibs(inputs, len(inputs["exposure"]))
+                self.recalibrate.runMultiple(inputs["exposure"], **calibs)
+                for exp in inputs["exposure"]:
+                    ...
     """
     ConfigClass = RecalibrateExposureConfig
 
-    @classmethod
-    def addConnections(cls, recalibrate="recalibrate", **kwargs):
-        """Return a decorator for subclasses of `PipelineTaskConnections` to
-        add connections for Gen3 middleware
-
-        This method is intended for use within the Gen3 middleware only.
-
-        Parameters
-        ----------
-        recalibrate : `str`
-            Name of the ``RecalibrateExposureTask`` in the task
-            configuration.
-        **kwargs : `dict`
-            Additional arguments to use for all the connections, e.g.,
-            ``multiple=True``.
-
-        Returns
-        -------
-        decorator : callable
-            Class decorator for `lsst.pipe.base.PipelineTaskConnections`
-            subclasses.
-        """
-        def decorator(ConnectionsClass):
-            """Class decorator to add connections required for
-            `RecalibrateExposureTask`
-
-            The ``__init__`` method is also wrapped to filter the connections
-            using the run-time task configuration.
-
-            Parameters
-            ----------
-            ConnectionsClass : subclass of `lsst.pipe.base.PipelineTaskConnections`
-                Class to which to add connections.
-
-            Returns
-            -------
-            ConnectionsClass : subclass of `lsst.pipe.base.PipelineTaskConnections`
-                Class with added connections.
-            """
-            connections = dict(
-                photoCalib=cT.Input(
-                    doc="Photometric calibration",
-                    name="{calibSource}_photoCalib",
-                    storageClass="PhotoCalib",
-                    dimensions=["instrument", "visit", "detector", "tract"],
-                    **kwargs
-                ),
-                skyWcs=cT.Input(
-                    doc="Astrometric calibration",
-                    name="{calibSource}_skyWcs",
-                    storageClass="SkyWcs",
-                    dimensions=["instrument", "visit", "detector", "tract"],
-                    **kwargs
-                ),
-                skyCorr=cT.Input(
-                    doc="Sky correction",
-                    name="skyCorr",
-                    storageClass="Background",
-                    dimensions=["instrument", "visit", "detector"],
-                    **kwargs
-                ),
-            )
-            for conn in connections:
-                setattr(ConnectionsClass, conn, connections[conn])
-
-            # Wrap the __init__ so it will run our 'filterConnnections' method
-            originalInit = ConnectionsClass.__init__
-
-            def init(self, *args, **kwargs):
-                originalInit(self, *args, **kwargs)
-                cls.filterConnections(self, getattr(self.config, recalibrate))
-
-            ConnectionsClass.__init__ = init
-
-            return ConnectionsClass
-        return decorator
-
-    @classmethod
-    def filterConnections(cls, connections, config):
-        """Filter connections based on run-time task configuration
-
-        This method is intended for use within the Gen3 middleware only.
-
-        Parameters
-        ----------
-        connections : subclass of `lsst.pipe.base.PipelineTaskConnections`
-            Declared datasets of interest.
-        config : subclass of `lsst.pex.config.Config`
-            Run-time task configuration.
-        """
-        if not config.doApplyExternalPhotoCalib:
-            connections.inputs.discard("photoCalib")
-        if not config.doApplyExternalSkyWcs:
-            connections.inputs.discard("skyWcs")
-        if not config.doApplySkyCorr:
-            connections.inputs.discard("skyCorr")
-
-    def extractCalibs(self, inputs):
+    def extractCalibs(self, inputs, number=None):
         """Extract only the datasets of interest
+
+        This is a convenience function for the Gen3 middleware. The calibs are
+        removed from the ``inputs``, so the ``inputs`` contains only those
+        datasets for further operations.
 
         The result can be provided to the ``run`` method.
 
@@ -221,6 +154,8 @@ class RecalibrateExposureTask(Task):
         inputs : `dict` mapping `str` to some data
             Datasets that have been read from the butler. Will be modified,
             removing the calibs.
+        number : `int`, optional
+            Expected number of each type of calib.
 
         Returns
         -------
@@ -235,8 +170,20 @@ class RecalibrateExposureTask(Task):
                 if not ``doApplyExternalSkyWcs``.
             ``skyCorr``
                 Sky correction to apply, or ``None`` if not ``doApplySkyCorr``.
+
+        Raises
+        ------
+        RuntimeError
+            If the declared ``number`` of calibs doesn't match what's present.
         """
-        return {name: inputs.pop(name, None) for name in ("photoCalib", "skyWcs", "skyCorr")}
+        calibs = {}
+        for dataset in ("photoCalib", "skyWcs", "skyCorr"):
+            data = inputs.pop(dataset, None)
+            if data is not None and number is not None and len(data) != number:
+                raise RuntimeError(f"Declared number of calibs ({number}) doesn't match actual number of "
+                                   f"{dataset} ({len(data)})")
+            calibs[dataset] = data
+        return calibs
 
     def readCalibs(self, dataRef):
         """Read all inputs
@@ -321,6 +268,22 @@ class RecalibrateExposureTask(Task):
             exposure.maskedImage -= skyCorr.getImage()
         return exposure
 
+    def runMultiple(self, exposure, photoCalib=None, skyWcs=None, skyCorr=None, rescale=True):
+        num = len(exposure)
+        if photoCalib is None:
+            photoCalib = [None]*num
+        if skyWcs is None:
+            skyWcs = [None]*num
+        if skyCorr is None:
+            skyCorr = [None]*num
+        lengths = (len(photoCalib), len(skyWcs), len(skyCorr))
+        if len(set(lengths)) != 1 or lengths[0] != num:
+            raise RuntimeError(f"Length mismatch between exposure ({num}) and "
+                               f"photoCalib, skyWcs, skyCorr {lengths}")
+        for args in zip(exposure, photoCalib, skyWcs, skyCorr):
+            self.run(*args, rescale=rescale)
+        return exposure
+
     def runDataRef(self, dataRef, exposure, rescale=True):
         """Return a re-calibrated exposure
 
@@ -339,11 +302,6 @@ class RecalibrateExposureTask(Task):
         -------
         exposure : `lsst.afw.image.Exposure`
             Re-calibrated exposure.
-
-        Raises
-        ------
-        MissingExposureError
-            If data for the exposure is not available.
         """
         calibs = self.readCalibs(dataRef)
         return self.run(exposure, rescale=rescale, **calibs.getDict())
