@@ -34,6 +34,67 @@ import lsst.utils.tests
 from lsst.meas.base import EvaluateLocalCalibrationTask
 
 
+class TestLocalPhotoCalibration(lsst.meas.base.tests.AlgorithmTestCase,
+                                lsst.utils.tests.TestCase):
+
+    def setUp(self):
+        self.center = lsst.geom.Point2D(50.1, 49.8)
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30),
+                                    lsst.geom.Extent2I(140, 160))
+        self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
+        self.dataset.addSource(100000.0, self.center)
+
+    def tearDown(self):
+        del self.center
+        del self.bbox
+        del self.dataset
+
+    def testNoFlags(self):
+        task = self.makeSingleFrameMeasurementTask("base_LocalPhotoCalib")
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
+        task.run(catalog, exposure)
+        record = catalog[0]
+
+        calib = exposure.getPhotoCalib().getLocalCalibration(self.center)
+        calibErr = exposure.getPhotoCalib().getCalibrationErr()
+        self.assertEqual(record.get("base_LocalPhotoCalib"), calib)
+        self.assertEqual(record.get("base_LocalPhotoCalibErr"), calibErr)
+
+
+class TestLocalWcs(lsst.meas.base.tests.AlgorithmTestCase,
+                   lsst.utils.tests.TestCase):
+
+    def setUp(self):
+        self.center = lsst.geom.Point2D(50.1, 49.8)
+        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30),
+                                    lsst.geom.Extent2I(140, 160))
+        self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
+        self.dataset.addSource(100000.0, self.center)
+
+    def tearDown(self):
+        del self.center
+        del self.bbox
+        del self.dataset
+
+    def testNoFlags(self):
+        task = self.makeSingleFrameMeasurementTask("base_LocalWcs")
+        exposure, catalog = self.dataset.realize(10.0,
+                                                 task.schema,
+                                                 randomSeed=0)
+        task.run(catalog, exposure)
+        record = catalog[0]
+
+        localCDMatrix = exposure.getWcs().getCdMatrix(self.center)
+        self.assertEqual(record.get("base_LocalWcs_CDMatrix_1_1"),
+                         localCDMatrix[0, 0])
+        self.assertEqual(record.get("base_LocalWcs_CDMatrix_2_1"),
+                         localCDMatrix[1, 0])
+        self.assertEqual(record.get("base_LocalWcs_CDMatrix_1_2"),
+                         localCDMatrix[0, 1])
+        self.assertEqual(record.get("base_LocalWcs_CDMatrix_2_2"),
+                         localCDMatrix[1, 1])
+
+
 class TestEvaluateLocalCalibrationTask(unittest.TestCase):
 
     def setUp(self):
