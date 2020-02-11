@@ -68,6 +68,8 @@ __all__ = (
     "ForcedPeakCentroidConfig", "ForcedPeakCentroidPlugin",
     "ForcedTransformedCentroidConfig", "ForcedTransformedCentroidPlugin",
     "ForcedTransformedShapeConfig", "ForcedTransformedShapePlugin",
+    "EvaluateLocalPhotoCalibPlugin", "EvaluateLocalPhotoCalibPluginConfig",
+    "EvaluateLocalWcsPlugin", "EvaluateLocalWcsPluginConfig",
 )
 
 
@@ -412,16 +414,7 @@ class EvaluateLocalPhotoCalibPlugin(GenericPlugin):
     The aim is to store the local calib value within the catalog for later
     use in the Science Data Model functors.
     """
-
-    ConfigClass = VarianceConfig
-
-    FAILURE_BAD_CENTROID = 1
-    """Denotes failures due to bad centroiding (`int`).
-    """
-
-    FAILURE_EMPTY_FOOTPRINT = 2
-    """Denotes failures due to a lack of usable pixels (`int`).
-    """
+    ConfigClass = EvaluateLocalPhotoCalibPluginConfig
 
     @classmethod
     def getExecutionOrder(cls):
@@ -430,12 +423,12 @@ class EvaluateLocalPhotoCalibPlugin(GenericPlugin):
     def __init__(self, config, name, schema, metadata):
         GenericPlugin.__init__(self, config, name, schema, metadata)
         self.photoKey = schema.addField(
-            "base_LocalPhotoCalib",
+            name,
             type="D",
             doc="Local approximation of the PhotoCalib calibration factor at "
                 "the location of the src.")
         self.photoErrKey = schema.addField(
-            "base_LocalPhotoCalibErr",
+            "%sErr" % name,
             type="D",
             doc="Error on the local approximation of the PhotoCalib "
                 "calibration factor at the location of the src.")
@@ -467,22 +460,13 @@ class EvaluateLocalWcsPluginConfig(BaseMeasurementPluginConfig):
     pass
 
 
-class EvaluateLocalWcs(GenericPlugin):
+class EvaluateLocalWcsPlugin(GenericPlugin):
     """Evaluate the local, linear approximation of the Wcs.
 
     The aim is to store the local calib value within the catalog for later
     use in the Science Data Model functors.
     """
-
-    ConfigClass = VarianceConfig
-
-    FAILURE_BAD_CENTROID = 1
-    """Denotes failures due to bad centroiding (`int`).
-    """
-
-    FAILURE_EMPTY_FOOTPRINT = 2
-    """Denotes failures due to a lack of usable pixels (`int`).
-    """
+    ConfigClass = EvaluateLocalWcsPluginConfig
 
     @classmethod
     def getExecutionOrder(cls):
@@ -491,22 +475,22 @@ class EvaluateLocalWcs(GenericPlugin):
     def __init__(self, config, name, schema, metadata):
         GenericPlugin.__init__(self, config, name, schema, metadata)
         self.cdMatrix11Key = schema.addField(
-            "base_LocalWcs_CDMatrix_1_1",
+            "%s_CDMatrix_1_1" % name,
             type="D",
             doc="(1, 1) element of the CDMatrix for the linear approximation "
                 "of the WCS at the src location.")
         self.cdMatrix12Key = schema.addField(
-            "base_LocalWcs_CDMatrix_1_2",
+            "%s_CDMatrix_1_2" % name,
             type="D",
             doc="(1, 2) element of the CDMatrix for the linear approximation "
                 "of the WCS at the src location.")
         self.cdMatrix21Key = schema.addField(
-            "base_LocalWcs_CDMatrix_2_1",
+            "%s_CDMatrix_2_1" % name,
             type="D",
             doc="(2, 1) element of the CDMatrix for the linear approximation "
                 "of the WCS at the src location.")
         self.cdMatrix22Key = schema.addField(
-            "base_LocalWcs_CDMatrix_2_2",
+            "%s_CDMatrix_2_2" % name,
             type="D",
             doc="(2, 2) element of the CDMatrix for the linear approximation "
                 "of the WCS at the src location.")
@@ -519,12 +503,12 @@ class EvaluateLocalWcs(GenericPlugin):
         measRecord.set(self.cdMatrix22Key, localCDMatrix[1, 1])
 
 
-SingleFrameEvaluateLocalWcsPlugin = EvaluateLocalWcs.makeSingleFramePlugin("base_LocalWcs")
-"""Single-frame version of `EvaluatePhotoCalibPlugin`.
+SingleFrameEvaluateLocalWcsPlugin = EvaluateLocalWcsPlugin.makeSingleFramePlugin("base_LocalWcs")
+"""Single-frame version of `EvaluateLocalWcsPlugin`.
 """
 
-ForcedEvaluateLocalWcsPlugin = EvaluateLocalWcs.makeForcedPlugin("base_LocalWcs")
-"""Forced version of `EvaluatePhotoCalibPlugin`.
+ForcedEvaluateLocalWcsPlugin = EvaluateLocalWcsPlugin.makeForcedPlugin("base_LocalWcs")
+"""Forced version of `EvaluateLocalWcsPlugin`.
 """
 
 
