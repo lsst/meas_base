@@ -184,7 +184,52 @@ class ForcedPhotCcdConfig(ForcedPhotImageConfig, pipelineConnections=ForcedPhotC
     doApplyUberCal = lsst.pex.config.Field(
         dtype=bool,
         doc="Apply meas_mosaic ubercal results to input calexps?",
-        default=False
+        default=False,
+        deprecated="Deprecated by DM-23352; use doApplyExternalPhotoCalib and doApplyExternalSkyWcs instead",
+    )
+    doApplyExternalPhotoCalib = lsst.pex.config.Field(
+        dtype=bool,
+        default=False,
+        doc=("Whether to apply external photometric calibration via an "
+             "`lsst.afw.image.PhotoCalib` object. Uses the "
+             "``externalPhotoCalibName`` field to determine which calibration "
+             "to load."),
+    )
+    doApplyExternalSkyWcs = lsst.pex.config.Field(
+        dtype=bool,
+        default=False,
+        doc=("Whether to apply external astrometric calibration via an "
+             "`lsst.afw.geom.SkyWcs` object. Uses ``externalSkyWcsName`` "
+             "field to determine which calibration to load."),
+    )
+    doApplySkyCorr = lsst.pex.config.Field(
+        dtype=bool,
+        default=False,
+        doc="Apply sky correction?",
+    )
+    includePhotoCalibVar = lsst.pex.config.Field(
+        dtype=bool,
+        default=False,
+        doc="Add photometric calibration variance to warp variance plane?",
+    )
+    externalPhotoCalibName = lsst.pex.config.ChoiceField(
+        dtype=str,
+        doc=("Type of external PhotoCalib if ``doApplyExternalPhotoCalib`` is True. "
+             "Unused for Gen3 middleware."),
+        default="jointcal",
+        allowed={
+            "jointcal": "Use jointcal_photoCalib",
+            "fgcm": "Use fgcm_photoCalib",
+            "fgcm_tract": "Use fgcm_tract_photoCalib"
+        },
+    )
+    externalSkyWcsName = lsst.pex.config.ChoiceField(
+        dtype=str,
+        doc="Type of external SkyWcs if ``doApplyExternalSkyWcs`` is True. Unused for Gen3 middleware.",
+        default="jointcal",
+        allowed={
+            "jointcal": "Use jointcal_wcs"
+        },
     )
 
 
@@ -235,6 +280,7 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
                                                  inputs['exposure'],
                                                  inputs['refCat'], inputs['refWcs'],
                                                  "visit_detector")
+        # TODO: apply external calibrations (DM-17062)
         outputs = self.run(**inputs)
         butlerQC.put(outputs, outputRefs)
 
@@ -379,19 +425,27 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
         Parameters
         ----------
         dataRef : `lsst.daf.persistence.ButlerDataRef`
-            Butler data reference. Only the ``calexp`` dataset is used, unless
-            ``config.doApplyUberCal`` is `True`, in which case the
-            corresponding meas_mosaic outputs are used as well.
+            Butler data reference.
         """
         exposure = ForcedPhotImageTask.getExposure(self, dataRef)
-        if not self.config.doApplyUberCal:
-            return exposure
-        if applyMosaicResults is None:
-            raise RuntimeError(
-                "Cannot use improved calibrations for %s because meas_mosaic could not be imported."
-                % (dataRef.dataId,))
-        else:
-            applyMosaicResults(dataRef, calexp=exposure)
+
+        if self.config.doApplyExternalPhotoCalib:
+            source = f"{self.config.externalPhotoCalibName}_photoCalib"
+            self.log.info("Applying external photoCalib from %s", source)
+            photoCalib = dataRef.get(source)
+            exposure.setPhotoCalib(photoCalib)  # No need for calibrateImage; having the photoCalib suffices
+
+        if self.config.doApplyExternalSkyWcs:
+            source = f"{self.config.externalSkyWcsName}_wcs"
+            self.log.info("Applying external skyWcs from %s", source)
+            skyWcs = dataRef.get(source)
+            exposure.setWcs(skyWcs)
+
+        if self.config.doApplySkyCorr:
+            self.log.info("Apply sky correction")
+            skyCorr = dataRef.get("skyCorr")
+            exposure.maskedImage -= skyCorr.getImage()
+
         return exposure
 
     def _getConfigName(self):
