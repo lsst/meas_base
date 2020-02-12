@@ -68,6 +68,8 @@ __all__ = (
     "ForcedPeakCentroidConfig", "ForcedPeakCentroidPlugin",
     "ForcedTransformedCentroidConfig", "ForcedTransformedCentroidPlugin",
     "ForcedTransformedShapeConfig", "ForcedTransformedShapePlugin",
+    "EvaluateLocalPhotoCalibPlugin", "EvaluateLocalPhotoCalibPluginConfig",
+    "EvaluateLocalWcsPlugin", "EvaluateLocalWcsPluginConfig",
 )
 
 
@@ -397,6 +399,116 @@ SingleFrameInputCountPlugin = InputCountPlugin.makeSingleFramePlugin("base_Input
 
 ForcedInputCountPlugin = InputCountPlugin.makeForcedPlugin("base_InputCount")
 """Forced version of `InputCoutPlugin`.
+"""
+
+
+class EvaluateLocalPhotoCalibPluginConfig(BaseMeasurementPluginConfig):
+    """Configuration for the variance calculation plugin.
+    """
+    pass
+
+
+class EvaluateLocalPhotoCalibPlugin(GenericPlugin):
+    """Evaluate the local value of the Photometric Calibration in the exposure.
+
+    The aim is to store the local calib value within the catalog for later
+    use in the Science Data Model functors.
+    """
+    ConfigClass = EvaluateLocalPhotoCalibPluginConfig
+
+    @classmethod
+    def getExecutionOrder(cls):
+        return BasePlugin.FLUX_ORDER
+
+    def __init__(self, config, name, schema, metadata):
+        GenericPlugin.__init__(self, config, name, schema, metadata)
+        self.photoKey = schema.addField(
+            name,
+            type="D",
+            doc="Local approximation of the PhotoCalib calibration factor at "
+                "the location of the src.")
+        self.photoErrKey = schema.addField(
+            "%sErr" % name,
+            type="D",
+            doc="Error on the local approximation of the PhotoCalib "
+                "calibration factor at the location of the src.")
+
+    def measure(self, measRecord, exposure, center):
+
+        photoCalib = exposure.getPhotoCalib()
+        calib = photoCalib.getLocalCalibration(center)
+        measRecord.set(self.photoKey, calib)
+
+        calibErr = photoCalib.getCalibrationErr()
+        measRecord.set(self.photoErrKey, calibErr)
+
+
+SingleFrameEvaluateLocalPhotoCalibPlugin = EvaluateLocalPhotoCalibPlugin.makeSingleFramePlugin(
+    "base_LocalPhotoCalib")
+"""Single-frame version of `EvaluatePhotoCalibPlugin`.
+"""
+
+ForcedEvaluateLocalPhotoCalibPlugin = EvaluateLocalPhotoCalibPlugin.makeForcedPlugin(
+    "base_LocalPhotoCalib")
+"""Forced version of `EvaluatePhotoCalibPlugin`.
+"""
+
+
+class EvaluateLocalWcsPluginConfig(BaseMeasurementPluginConfig):
+    """Configuration for the variance calculation plugin.
+    """
+    pass
+
+
+class EvaluateLocalWcsPlugin(GenericPlugin):
+    """Evaluate the local, linear approximation of the Wcs.
+
+    The aim is to store the local calib value within the catalog for later
+    use in the Science Data Model functors.
+    """
+    ConfigClass = EvaluateLocalWcsPluginConfig
+
+    @classmethod
+    def getExecutionOrder(cls):
+        return BasePlugin.FLUX_ORDER
+
+    def __init__(self, config, name, schema, metadata):
+        GenericPlugin.__init__(self, config, name, schema, metadata)
+        self.cdMatrix11Key = schema.addField(
+            "%s_CDMatrix_1_1" % name,
+            type="D",
+            doc="(1, 1) element of the CDMatrix for the linear approximation "
+                "of the WCS at the src location.")
+        self.cdMatrix12Key = schema.addField(
+            "%s_CDMatrix_1_2" % name,
+            type="D",
+            doc="(1, 2) element of the CDMatrix for the linear approximation "
+                "of the WCS at the src location.")
+        self.cdMatrix21Key = schema.addField(
+            "%s_CDMatrix_2_1" % name,
+            type="D",
+            doc="(2, 1) element of the CDMatrix for the linear approximation "
+                "of the WCS at the src location.")
+        self.cdMatrix22Key = schema.addField(
+            "%s_CDMatrix_2_2" % name,
+            type="D",
+            doc="(2, 2) element of the CDMatrix for the linear approximation "
+                "of the WCS at the src location.")
+
+    def measure(self, measRecord, exposure, center):
+        localCDMatrix = exposure.getWcs().getCdMatrix(center)
+        measRecord.set(self.cdMatrix11Key, localCDMatrix[0, 0])
+        measRecord.set(self.cdMatrix12Key, localCDMatrix[0, 1])
+        measRecord.set(self.cdMatrix21Key, localCDMatrix[1, 0])
+        measRecord.set(self.cdMatrix22Key, localCDMatrix[1, 1])
+
+
+SingleFrameEvaluateLocalWcsPlugin = EvaluateLocalWcsPlugin.makeSingleFramePlugin("base_LocalWcs")
+"""Single-frame version of `EvaluateLocalWcsPlugin`.
+"""
+
+ForcedEvaluateLocalWcsPlugin = EvaluateLocalWcsPlugin.makeForcedPlugin("base_LocalWcs")
+"""Forced version of `EvaluateLocalWcsPlugin`.
 """
 
 
