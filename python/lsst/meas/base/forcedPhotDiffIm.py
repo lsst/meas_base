@@ -42,7 +42,26 @@ class ForcedPhotDiffImTask(ForcedPhotCcdTask):
         dataRef : `lsst.daf.persistence.ButlerDataRef`
             Butler data reference.
         """
-        return dataRef.get(self.dataPrefix + "deepDiff_differenceExp", immediate=True)
+        exposure = dataRef.get(self.dataPrefix + "deepDiff_differenceExp", immediate=True)
+
+        if self.config.doApplyExternalPhotoCalib:
+            source = f"{self.config.externalPhotoCalibName}_photoCalib"
+            self.log.info("Applying external photoCalib from %s", source)
+            photoCalib = dataRef.get(source)
+            exposure.setPhotoCalib(photoCalib)
+
+        if self.config.doApplyExternalSkyWcs:
+            source = f"{self.config.externalSkyWcsName}_wcs"
+            self.log.info("Applying external skyWcs from %s", source)
+            skyWcs = dataRef.get(source)
+            exposure.setWcs(skyWcs)
+
+        if self.config.doApplySkyCorr:
+            self.log.info("Apply sky correction")
+            skyCorr = dataRef.get("skyCorr")
+            exposure.maskedImage -= skyCorr.getImage()
+
+        return exposure
 
     def writeOutput(self, dataRef, sources):
         """Write forced source table
