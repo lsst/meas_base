@@ -28,17 +28,28 @@ class ForcedPhotDiffImTask(ForcedPhotCcdTask):
     @classmethod
     def _makeArgumentParser(cls):
         parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
-        parser.add_id_argument("--id", "forced_src", help="data ID with raw CCD keys [+ tract optionally], "
+        parser.add_id_argument("--id", "forced_diaSrc",
+                               help="data ID with raw CCD keys [+ tract optionally], "
                                "e.g. --id visit=12345 ccd=1,2 [tract=0]",
                                ContainerClass=PerTractDiffImDataIdContainer)
         return parser
+
+    def getExposure(self, dataRef):
+        """Read input exposure on which measurement will be performed.
+
+        Parameters
+        ----------
+        dataRef : `lsst.daf.persistence.ButlerDataRef`
+            Butler data reference.
+        """
+        return dataRef.get(self.dataPrefix + "deepDiff_differenceExp", immediate=True)
 
     def writeOutput(self, dataRef, sources):
         """Write forced source table
         Parameters
         ----------
         dataRef : `lsst.daf.persistence.ButlerDataRef`
-            Butler data reference. The forced_src dataset (with
+            Butler data reference. The forced_diaSrc dataset (with
             self.dataPrefix prepended) is all that will be modified.
         sources : `lsst.afw.table.SourceCatalog`
             Catalog of sources to save.
@@ -66,7 +77,7 @@ class PerTractDiffImDataIdContainer(lsst.pipe.base.DataIdContainer):
         """
         if self.datasetType is None:
             raise RuntimeError("Must call setDatasetType first")
-        log = Log.getLogger("meas.base.forcedPhotDiffIm.PerTractCcdDataIdContainer")
+        log = Log.getLogger("meas.base.forcedPhotDiffIm.PerTractDiffImDataIdContainer")
         skymap = None
         visitTract = collections.defaultdict(set)   # Set of tracts for each visit
         visitRefs = collections.defaultdict(list)   # List of data references for each visit
@@ -106,6 +117,3 @@ class PerTractDiffImDataIdContainer(lsst.pipe.base.DataIdContainer):
             for tractSet in visitTract.values():
                 tractCounter.update(tractSet)
             log.info("Number of visits for each tract: %s", dict(tractCounter))
-
-
-
