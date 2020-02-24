@@ -254,6 +254,12 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         for refName, targetName in self.config.copyColumns.items():
             refItem = refSchema.find(refName)
             self.mapper.addMapping(refItem.key, targetName)
+        # Copy over all merge_measurement_FILTER and merge_peak_sky columns
+        mergeKeys = refSchema.extract("merge_measurement*")
+        mergeKeys.update(refSchema.extract("merge_peak_sky"))
+        for mergeName in mergeKeys.keys():
+            refItem = refSchema.find(mergeName)
+            self.mapper.addMapping(refItem.key, mergeName)
         self.config.slots.setupSchema(self.mapper.editOutputSchema())
         self.initializePlugins(schemaMapper=self.mapper)
         self.schema = self.mapper.getOutputSchema()
