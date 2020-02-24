@@ -194,7 +194,24 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
     copyColumns = lsst.pex.config.DictField(
         keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
         default={"id": "objectId", "parent": "parentObjectId", "deblend_nChild": "deblend_nChild",
-                 "coord_ra": "coord_ra", "coord_dec": "coord_dec"}
+                 "coord_ra": "coord_ra", "coord_dec": "coord_dec",
+                 "base_ClassificationExtendedness_value": "ref_base_ClassificationExtendedness_value",
+                 "base_ClassificationExtendedness_flag": "ref_base_ClassificationExtendedness_flag",
+                 "calib_psf_used": "ref_calib_psf_used", "calib_photometry_used": "ref_calib_photometry_used",
+                 "calib_astrometry_used": "ref_calib_astrometry_used",
+                 "base_PsfFlux_instFlux": "ref_base_PsfFlux_instFlux",
+                 "base_PsfFlux_instFluxErr": "ref_base_PsfFlux_instFluxErr",
+                 "base_PsfFlux_flag": "ref_base_PsfFlux_flag",
+                 "modelfit_CModel_instFlux": "ref_modelfit_CModel_instFlux",
+                 "modelfit_CModel_instFluxErr": "ref_modelfit_CModel_instFluxErr",
+                 "modelfit_CModel_flag": "ref_modelfit_CModel_flag",
+                 "base_CircularApertureFlux_12_0_instFlux": "ref_base_CircularApertureFlux_12_0_instFlux",
+                 "base_CircularApertureFlux_12_0_instFluxErr":
+                     "ref_base_CircularApertureFlux_12_0_instFluxErr",
+                 "base_CircularApertureFlux_12_0_flag":
+                     "ref_base_CircularApertureFlux_12_0_flag",
+                 "base_Blendedness_raw": "ref_base_Blendedness_raw",
+                 "detect_isPrimary": "ref_detect_isPrimary"}
     )
 
     checkUnitsParseStrict = lsst.pex.config.Field(
