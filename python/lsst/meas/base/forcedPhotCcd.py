@@ -433,7 +433,10 @@ class ForcedPhotCcdTask(ForcedPhotImageTask):
             source = f"{self.config.externalPhotoCalibName}_photoCalib"
             self.log.info("Applying external photoCalib from %s", source)
             photoCalib = dataRef.get(source)
-            exposure.setPhotoCalib(photoCalib)  # No need for calibrateImage; having the photoCalib suffices
+            exposure.setPhotoCalib(photoCalib)
+            exposure.maskedImage = photoCalib.calibrateImage(exposure.maskedImage,
+                                                             includeScaleUncertainty=False)
+            exposure.maskedImage /= photoCalib.getCalibrationMean()
 
         if self.config.doApplyExternalSkyWcs:
             source = f"{self.config.externalSkyWcsName}_wcs"
