@@ -19,6 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import numpy as np
 import unittest
 
 import lsst.geom
@@ -68,7 +69,7 @@ class TestLocalWcs(lsst.meas.base.tests.AlgorithmTestCase,
         del self.bbox
         del self.dataset
 
-    def testCDMatrix(self):
+    def testMatrix(self):
         task = self.makeSingleFrameMeasurementTask("base_LocalWcs")
         exposure, catalog = self.dataset.realize(10.0,
                                                  task.schema,
@@ -76,15 +77,22 @@ class TestLocalWcs(lsst.meas.base.tests.AlgorithmTestCase,
         task.run(catalog, exposure)
         record = catalog[0]
 
-        localCDMatrix = exposure.getWcs().getCdMatrix(self.center)
-        self.assertEqual(record.get("base_LocalWcs_CDMatrix_1_1"),
-                         localCDMatrix[0, 0])
-        self.assertEqual(record.get("base_LocalWcs_CDMatrix_2_1"),
-                         localCDMatrix[1, 0])
-        self.assertEqual(record.get("base_LocalWcs_CDMatrix_1_2"),
-                         localCDMatrix[0, 1])
-        self.assertEqual(record.get("base_LocalWcs_CDMatrix_2_2"),
-                         localCDMatrix[1, 1])
+        # Get CdMatrix from afw. Convert from degrees to radians.
+        trueCdMatrix = np.radians(exposure.getWcs().getCdMatrix())
+        self.assertAlmostEqual(record.get("base_LocalWcs_CDMatrix_1_1"),
+                               trueCdMatrix[0, 0])
+        self.assertAlmostEqual(record.get("base_LocalWcs_CDMatrix_2_1"),
+                               trueCdMatrix[1, 0])
+        self.assertAlmostEqual(record.get("base_LocalWcs_CDMatrix_1_2"),
+                               trueCdMatrix[0, 1])
+        self.assertAlmostEqual(record.get("base_LocalWcs_CDMatrix_2_2"),
+                               trueCdMatrix[1, 1])
+        self.assertAlmostEqual(
+            exposure.getWcs().getPixelScale(record.getCentroid()).asRadians(),
+            np.sqrt(np.fabs(record.get("base_LocalWcs_CDMatrix_1_1")
+                            * record.get("base_LocalWcs_CDMatrix_2_2")
+                            - record.get("base_LocalWcs_CDMatrix_2_1")
+                            * record.get("base_LocalWcs_CDMatrix_1_2"))))
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

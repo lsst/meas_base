@@ -467,6 +467,7 @@ class EvaluateLocalWcsPlugin(GenericPlugin):
     use in the Science Data Model functors.
     """
     ConfigClass = EvaluateLocalWcsPluginConfig
+    _scale = (1.0 * lsst.geom.arcseconds).asDegrees()
 
     @classmethod
     def getExecutionOrder(cls):
@@ -475,32 +476,64 @@ class EvaluateLocalWcsPlugin(GenericPlugin):
     def __init__(self, config, name, schema, metadata):
         GenericPlugin.__init__(self, config, name, schema, metadata)
         self.cdMatrix11Key = schema.addField(
-            "%s_CDMatrix_1_1" % name,
+            f"{name}_CDMatrix_1_1",
             type="D",
-            doc="(1, 1) element of the CDMatrix for the linear approximation "
-                "of the WCS at the src location.")
+            doc=f"(1, 1) element of the CDMatrix for the linear approximation "
+                 "of the WCS at the src location. Gives units in radians.")
         self.cdMatrix12Key = schema.addField(
-            "%s_CDMatrix_1_2" % name,
+            f"{name}_CDMatrix_1_2",
             type="D",
-            doc="(1, 2) element of the CDMatrix for the linear approximation "
-                "of the WCS at the src location.")
+            doc=f"(1, 2) element of the CDMatrix for the linear approximation "
+                 "of the WCS at the src location. Gives units in radians.")
         self.cdMatrix21Key = schema.addField(
-            "%s_CDMatrix_2_1" % name,
+            f"{name}_CDMatrix_2_1",
             type="D",
-            doc="(2, 1) element of the CDMatrix for the linear approximation "
-                "of the WCS at the src location.")
+            doc=f"(2, 1) element of the CDMatrix for the linear approximation "
+                 "of the WCS at the src location. Gives units in radians.")
         self.cdMatrix22Key = schema.addField(
-            "%s_CDMatrix_2_2" % name,
+            f"{name}_CDMatrix_2_2",
             type="D",
-            doc="(2, 2) element of the CDMatrix for the linear approximation "
-                "of the WCS at the src location.")
+            doc=f"(2, 2) element of the CDMatrix for the linear approximation "
+                 "of the WCS at the src location. Gives units in radians.")
 
     def measure(self, measRecord, exposure, center):
-        localCDMatrix = exposure.getWcs().getCdMatrix(center)
-        measRecord.set(self.cdMatrix11Key, localCDMatrix[0, 0])
-        measRecord.set(self.cdMatrix12Key, localCDMatrix[0, 1])
-        measRecord.set(self.cdMatrix21Key, localCDMatrix[1, 0])
-        measRecord.set(self.cdMatrix22Key, localCDMatrix[1, 1])
+        wcs = exposure.getWcs()
+        localMatrix = self.makeLocalTransformMatrix(wcs, center)
+        measRecord.set(self.cdMatrix11Key, localMatrix[0, 0])
+        measRecord.set(self.cdMatrix12Key, localMatrix[0, 1])
+        measRecord.set(self.cdMatrix21Key, localMatrix[1, 0])
+        measRecord.set(self.cdMatrix22Key, localMatrix[1, 1])
+
+    def makeLocalTransformMatrix(self, wcs, center):
+        """Create a local, linear approximation of the wcs transformation
+        matrix.
+
+        The approximation is created as if the center is at RA=0, DEC=0. All
+        comparing x,y coordinate are relative to the position of center. Matrix
+        is initially calculated with units arcseconds and then converted to
+        radians. This yields higher precision results due to quirks in AST.
+
+        Parameters
+        ----------
+        wcs : `lsst.afw.geom.SkyWcs`
+            Wcs to approximate
+        center : `lsst.geom.Point2D`
+            Point at which to evaluate the LocalWcs.
+
+        Returns
+        -------
+        localMatrix : `numpy.ndarray`
+            Matrix representation the local wcs approximation with units
+            radians.
+        """
+        skyCenter = wcs.pixelToSky(center)
+        localGnomonicWcs = lsst.afw.geom.makeSkyWcs(
+            center, skyCenter, np.diag((self._scale, self._scale)))
+        measurementToLocalGnomonic = wcs.getTransform().then(
+            localGnomonicWcs.getTransform().inverted()
+        )
+        localMatrix = measurementToLocalGnomonic.getJacobian(center)
+        return np.radians(localMatrix / 3600)
 
 
 SingleFrameEvaluateLocalWcsPlugin = EvaluateLocalWcsPlugin.makeSingleFramePlugin("base_LocalWcs")
