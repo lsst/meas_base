@@ -205,8 +205,8 @@ class CircularApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase)
                 currentFlux = record.get(record.schema.join(prefix, "instFlux"))
                 currentFluxErr = record.get(record.schema.join(prefix, "instFluxErr"))
                 if not record.get(record.schema.join(prefix, "flag")):
-                    self.assertTrue(currentFlux > lastFlux or
-                                    (record.get("truth_instFlux") - currentFlux) < 3*currentFluxErr)
+                    self.assertTrue(currentFlux > lastFlux
+                                    or (record.get("truth_instFlux") - currentFlux) < 3*currentFluxErr)
                     self.assertGreater(currentFluxErr, lastFluxErr)
                     lastFlux = currentFlux
                     lastFluxErr = currentFluxErr

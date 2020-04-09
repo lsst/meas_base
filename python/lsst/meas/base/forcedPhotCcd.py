@@ -131,8 +131,8 @@ def imageOverlapsTract(tract, imageWcs, imageBox):
         imageSkyCorners = imageWcs.pixelToSky(imagePixelCorners)
     except lsst.pex.exceptions.LsstCppException as e:
         # Protecting ourselves from awful Wcs solutions in input images
-        if (not isinstance(e.message, lsst.pex.exceptions.DomainErrorException) and
-                not isinstance(e.message, lsst.pex.exceptions.RuntimeErrorException)):
+        if (not isinstance(e.message, lsst.pex.exceptions.DomainErrorException)
+                and not isinstance(e.message, lsst.pex.exceptions.RuntimeErrorException)):
             raise
         return False
 
