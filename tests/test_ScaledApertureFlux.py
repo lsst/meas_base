@@ -73,8 +73,8 @@ class ScaledApertureFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         ctrl.scale = 1.0
         algorithm, schema = self.makeAlgorithm(ctrl)
         algorithm.measure(catalog[0], exposure)
-        self.assertAlmostEqual(catalog[0].get("base_ScaledApertureFlux_instFlux") /
-                               self.sourceFlux, 0.9375, 2)
+        self.assertAlmostEqual(catalog[0].get("base_ScaledApertureFlux_instFlux") / self.sourceFlux,
+                               0.9375, 2)
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag"))
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag_apertureTruncated"))
         self.assertFalse(catalog[0].get("base_ScaledApertureFlux_flag_sincCoeffsTruncated"))

@@ -83,8 +83,8 @@ def ccdVennDiagram(exp, showImage=True, legendLocation='best'):
     for i, ccd in enumerate(ccds):
         ccdBox = lsst.geom.Box2D(ccd.getBBox())
         ccdCorners = ccdBox.getCorners()
-        coaddCorners = [exp.getWcs().skyToPixel(ccd.getWcs().pixelToSky(point)) +
-                        (lsst.geom.PointD() - origin) for point in ccdCorners]
+        coaddCorners = [exp.getWcs().skyToPixel(ccd.getWcs().pixelToSky(point))
+                        + (lsst.geom.PointD() - origin) for point in ccdCorners]
         plt.gca().add_patch(patches.Rectangle(coaddCorners[0], *list(coaddCorners[2]-coaddCorners[0]),
                                               fill=False, color=pcomb[i][0], ls=pcomb[i][1],
                                               label="CCD{}".format(i)))
