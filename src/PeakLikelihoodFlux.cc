@@ -150,10 +150,10 @@ typename afw::image::MaskedImage<T>::SinglePixel computeShiftedValue(
 
     // warping kernels have even dimension and want the peak to the right of center
     if (fracShift[0] < 0) {
-        warpingKernelPtr->setCtrX(warpingKernelPtr->getCtrX() + 1);
+        warpingKernelPtr->setCtr(warpingKernelPtr->getCtr() + geom::Extent2I(1, 0));
     }
     if (fracShift[1] < 0) {
-        warpingKernelPtr->setCtrY(warpingKernelPtr->getCtrY() + 1);
+        warpingKernelPtr->setCtr(warpingKernelPtr->getCtr() + geom::Extent2I(0, 1));
     }
     geom::Box2I warpingOverlapBBox(parentInd - geom::Extent2I(warpingKernelPtr->getCtr()),
                                    warpingKernelPtr->getDimensions());
