@@ -23,7 +23,7 @@
 
 #include <numeric>
 
-#include "boost/algorithm/string/replace.hpp"
+#include "boost/algorithm/string.hpp"
 
 #include "ndarray/eigen.h"
 
@@ -75,7 +75,9 @@ ApertureFluxAlgorithm::ApertureFluxAlgorithm(Control const &ctrl, std::string co
         : _ctrl(ctrl), _centroidExtractor(schema, name) {
     _keys.reserve(ctrl.radii.size());
     for (std::size_t i = 0; i < ctrl.radii.size(); ++i) {
-        metadata.add(name + "_radii", ctrl.radii[i]);
+        std::string upperName(name);
+        boost::to_upper(upperName);
+        metadata.add(upperName + "_RADII", ctrl.radii[i]);
         std::string prefix = ApertureFluxAlgorithm::makeFieldPrefix(name, ctrl.radii[i]);
         std::string doc = (boost::format("instFlux within %f-pixel aperture") % ctrl.radii[i]).str();
         _keys.push_back(Keys(schema, prefix, doc, ctrl.radii[i] <= ctrl.maxSincRadius));
