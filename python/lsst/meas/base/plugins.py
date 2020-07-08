@@ -633,7 +633,7 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
         # this on a later ticket. Also, there should be a python Exception of
         # the appropriate type for this error
         if not exposure.hasWcs():
-            raise Exception("Wcs not attached to exposure.  Required for " + self.name + " algorithm")
+            raise RuntimeError("Wcs not attached to exposure.  Required for " + self.name + " algorithm")
         measRecord.updateCoord(exposure.getWcs())
 
     def fail(self, measRecord, error=None):
