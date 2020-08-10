@@ -61,26 +61,6 @@ namespace {  // anonymous
 
 typedef Eigen::Matrix<double, 4, 4, Eigen::DontAlign> Matrix4d;
 
-// Return multiplier that transforms I0 to a total instFlux
-double computeFluxScale(SdssShapeResult const &result) {
-    /*
-     * The shape is an ellipse that's axis-aligned in (u, v) [<uv> = 0] after rotation by theta:
-     * <x^2> + <y^2> = <u^2> + <v^2>
-     * <x^2> - <y^2> = cos(2 theta)*(<u^2> - <v^2>)
-     * 2*<xy>        = sin(2 theta)*(<u^2> - <v^2>)
-     */
-    double const Mxx = result.xx;  // <x^2>
-    double const Mxy = result.xy;  // <xy>
-    double const Myy = result.yy;  // <y^2>
-
-    double const Muu_p_Mvv = Mxx + Myy;                                        // <u^2> + <v^2>
-    double const Muu_m_Mvv = ::sqrt(::pow(Mxx - Myy, 2) + 4 * ::pow(Mxy, 2));  // <u^2> - <v^2>
-    double const Muu = 0.5 * (Muu_p_Mvv + Muu_m_Mvv);
-    double const Mvv = 0.5 * (Muu_p_Mvv - Muu_m_Mvv);
-
-    return geom::TWOPI * ::sqrt(Muu * Mvv);
-}
-
 /*****************************************************************************/
 /*
  * Error analysis, courtesy of David Johnston, University of Chicago
@@ -796,22 +776,30 @@ SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(ImageT const &image, 
         // even though they do produce some results.
         result.flags[FAILURE.number] = true;
     }
-    if (result.getQuadrupole().getIxx() * result.getQuadrupole().getIyy() <
-        (1.0 + 1.0e-6) * result.getQuadrupole().getIxy() * result.getQuadrupole().getIxy())
+    double IxxIyy = result.getQuadrupole().getIxx() * result.getQuadrupole().getIyy();
+    double Ixy_sq = result.getQuadrupole().getIxy();
+    Ixy_sq *= Ixy_sq;
+    double epsilon = 1.0e-6;
+    if (IxxIyy < (1.0 + epsilon) * Ixy_sq)
     // We are checking that Ixx*Iyy > (1 + epsilon)*Ixy*Ixy where epsilon is suitably small. The
-    // value of epsilon used here is a magic number. DM-5801 is supposed to figure out if we are
-    // to keep this value.
+    // value of epsilon used here is a magic number subject to future review (DM-5801 was marked won't fix).
     {
         if (!result.flags[FAILURE.number]) {
             throw LSST_EXCEPT(pex::exceptions::LogicError,
-                              "Should not get singular moments unless a flag is set");
+                              (boost::format("computeAdaptiveMoments IxxIxy %d < (1 + eps=%d)*(Ixy^2=%d);"
+                                             " implying singular moments without any flag set")
+                              % IxxIyy % epsilon % Ixy_sq).str());
         }
     }
 
     // getAdaptiveMoments() just computes the zeroth moment in result.instFlux (and its error in
     // result.instFluxErr, result.instFlux_xx_Cov, etc.)  That's related to the instFlux by some geometric
     // factors, which we apply here.
-    double instFluxScale = computeFluxScale(result);
+    // This scale factor is just the inverse of the normalization constant in a bivariate normal distribution:
+    // 2*pi*sigma_x*sigma_y*sqrt(1-rho^2), where rho is the correlation.
+    // This happens to be twice the ellipse area pi*sigma_maj*sigma_min, which is identically equal to:
+    // pi*sqrt(I_xx*I_yy - I_xy^2); i.e. pi*sqrt(determinant(I))
+    double instFluxScale = geom::TWOPI * std::sqrt(IxxIyy - Ixy_sq);
 
     result.instFlux *= instFluxScale;
     result.instFluxErr *= instFluxScale;
@@ -871,8 +859,8 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(ImageT const &image,
                                       .str());
         }
         double var = ImageAdaptor<ImageT>().getVariance(image, ix, iy);
-        double i0Err = std::sqrt(var / wArea);
-        result.instFluxErr = i0Err * 2 * wArea;
+        // 0th moment (i0) error = sqrt(var / wArea); instFlux (error) = 2 * wArea * i0 (error)
+        result.instFluxErr = 2 * std::sqrt(var * wArea);
     }
 
     return result;
