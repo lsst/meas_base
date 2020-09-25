@@ -170,7 +170,7 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
         doc="Reference world coordinate system.",
         name="{inputCoaddName}Coadd.wcs",
         storageClass="Wcs",
-        dimensions=["abstract_filter", "skymap", "tract", "patch"],
+        dimensions=["band", "skymap", "tract", "patch"],
     )
     measCat = cT.Output(
         doc="Output forced photometry catalog.",

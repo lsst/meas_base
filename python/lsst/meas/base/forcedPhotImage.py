@@ -43,7 +43,7 @@ __all__ = ("ForcedPhotImageConfig", "ForcedPhotImageTask", "ForcedPhotImageConne
 
 
 class ForcedPhotImageConnections(PipelineTaskConnections,
-                                 dimensions=("abstract_filter", "skymap", "tract", "patch"),
+                                 dimensions=("band", "skymap", "tract", "patch"),
                                  defaultTemplates={"inputCoaddName": "deep",
                                                    "outputCoaddName": "deep"}):
     inputSchema = cT.InitInput(
@@ -60,7 +60,7 @@ class ForcedPhotImageConnections(PipelineTaskConnections,
         doc="Input exposure to perform photometry on.",
         name="{inputCoaddName}Coadd",
         storageClass="ExposureF",
-        dimensions=["abstract_filter", "skymap", "tract", "patch"],
+        dimensions=["band", "skymap", "tract", "patch"],
     )
     refCat = cT.Input(
         doc="Catalog of shapes and positions at which to force photometry.",
@@ -72,13 +72,13 @@ class ForcedPhotImageConnections(PipelineTaskConnections,
         doc="Reference world coordinate system.",
         name="{inputCoaddName}Coadd.wcs",
         storageClass="Wcs",
-        dimensions=["abstract_filter", "skymap", "tract", "patch"],
+        dimensions=["band", "skymap", "tract", "patch"],
     )
     measCat = cT.Output(
         doc="Output forced photometry catalog.",
         name="{outputCoaddName}Coadd_forced_src",
         storageClass="SourceCatalog",
-        dimensions=["abstract_filter", "skymap", "tract", "patch"],
+        dimensions=["band", "skymap", "tract", "patch"],
     )
 
 
