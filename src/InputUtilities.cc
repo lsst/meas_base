@@ -132,7 +132,7 @@ geom::Point2D SafeCentroidExtractor::operator()(afw::table::SourceRecord& record
 
 SafeShapeExtractor::SafeShapeExtractor(afw::table::Schema& schema, std::string const& name) : _name(name) {
     // Instead of aliasing e.g. MyAlgorithm_flag_badShape->slot_Shape_flag, we actually
-    // look up the target of slot_Shape_flag, and alias that to MyAlgorithm_flag_badCentroid.
+    // look up the target of slot_Shape_flag, and alias that to MyAlgorithm_flag_badShape.
     // That way, if someone changes the slots later, after we've already done the measurement,
     // this alias still points to the right thing.
     std::string aliasedFlagName = schema.join("slot", "Shape", "flag");
