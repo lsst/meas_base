@@ -127,7 +127,7 @@ void PixelFlagsAlgorithm::measure(afw::table::SourceRecord& measRecord,
 
     // Check if the measRecord has a valid centroid key, i.e. it was centroided
     geom::Point2D center;
-    if (measRecord.getTable()->getCentroidKey().isValid()) {
+    if (measRecord.getTable()->getCentroidSlot().getMeasKey().isValid()) {
         center = measRecord.getCentroid();
         //  Catch NAN in centroid estimate
         if (std::isnan(center.getX()) || std::isnan(center.getY())) {

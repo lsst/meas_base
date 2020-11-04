@@ -83,7 +83,7 @@ geom::Point2D extractPeak(afw::table::SourceRecord const& record, std::string co
 
 geom::Point2D SafeCentroidExtractor::operator()(afw::table::SourceRecord& record,
                                                 FlagHandler const& flags) const {
-    if (!record.getTable()->getCentroidKey().isValid()) {
+    if (!record.getTable()->getCentroidSlot().getMeasKey().isValid()) {
         if (_isCentroider) {
             return extractPeak(record, _name);
         } else {
@@ -95,7 +95,7 @@ geom::Point2D SafeCentroidExtractor::operator()(afw::table::SourceRecord& record
     }
     geom::Point2D result = record.getCentroid();
     if (std::isnan(result.getX()) || std::isnan(result.getY())) {
-        if (!record.getTable()->getCentroidFlagKey().isValid()) {
+        if (!record.getTable()->getCentroidSlot().getFlagKey().isValid()) {
             if (_isCentroider) {
                 return extractPeak(record, _name);
             } else {
@@ -121,7 +121,7 @@ geom::Point2D SafeCentroidExtractor::operator()(afw::table::SourceRecord& record
             // set the general flag, because using the Peak might affect the current measurement
             flags.setValue(record, flags.getFailureFlagNumber(), true);
         }
-    } else if (!_isCentroider && record.getTable()->getCentroidFlagKey().isValid() &&
+    } else if (!_isCentroider && record.getTable()->getCentroidSlot().getFlagKey().isValid() &&
                record.getCentroidFlag()) {
         // we got a usable value, but the centroid flag is still be set, and that might affect
         // the current measurement
@@ -148,7 +148,7 @@ SafeShapeExtractor::SafeShapeExtractor(afw::table::Schema& schema, std::string c
 
 afw::geom::ellipses::Quadrupole SafeShapeExtractor::operator()(afw::table::SourceRecord& record,
                                                                FlagHandler const& flags) const {
-    if (!record.getTable()->getShapeKey().isValid()) {
+    if (!record.getTable()->getCentroidSlot().getMeasKey().isValid()) {
         throw LSST_EXCEPT(
                 FatalAlgorithmError,
                 (boost::format("%s requires a shape, but the shape slot is not defined") % _name).str());
@@ -160,7 +160,7 @@ afw::geom::ellipses::Quadrupole SafeShapeExtractor::operator()(afw::table::Sourc
         // value of epsilon used here is a magic number. DM-5801 is supposed to figure out if we are
         // to keep this value.
     ) {
-        if (!record.getTable()->getShapeFlagKey().isValid()) {
+        if (!record.getTable()->getShapeSlot().getFlagKey().isValid()) {
             throw LSST_EXCEPT(
                     pex::exceptions::RuntimeError,
                     (boost::format("%s: Shape slot value is NaN, but there is no Shape slot flag "
@@ -180,7 +180,7 @@ afw::geom::ellipses::Quadrupole SafeShapeExtractor::operator()(afw::table::Sourc
                 MeasurementError,
                 (boost::format("%s: Shape needed, and Shape slot measurement failed.") % _name).str(),
                 flags.getFailureFlagNumber());
-    } else if (record.getTable()->getShapeFlagKey().isValid() && record.getShapeFlag()) {
+    } else if (record.getTable()->getShapeSlot().getFlagKey().isValid() && record.getShapeFlag()) {
         // we got a usable value, but the shape flag might still be set, and that might affect
         // the current measurement
         flags.setValue(record, flags.getFailureFlagNumber(), true);

@@ -280,20 +280,20 @@ void BlendednessAlgorithm::_measureMoments(afw::image::MaskedImage<float> const&
                                            ShapeResultKey const& _shapeRawKey,
                                            ShapeResultKey const& _shapeAbsKey) const {
     if (_ctrl.doFlux || _ctrl.doShape) {
-        if (!child.getTable()->getCentroidKey().isValid()) {
+        if (!child.getTable()->getCentroidSlot().getMeasKey().isValid()) {
             throw LSST_EXCEPT(pex::exceptions::LogicError,
                               "Centroid Key must be defined to measure the blendedness instFlux");
         }
     }
     if (_ctrl.doShape) {
-        if (!child.getTable()->getShapeKey().isValid()) {
+        if (!child.getTable()->getCentroidSlot().getMeasKey().isValid()) {
             throw LSST_EXCEPT(pex::exceptions::LogicError,
                               "Shape Key must be defined to measure the blendedness shape");
         }
     }
     if (_ctrl.doShape || _ctrl.doFlux) {
         bool fatal = false;
-        if (child.getTable()->getCentroidFlagKey().isValid()) {
+        if (child.getTable()->getCentroidSlot().getFlagKey().isValid()) {
             if (child.getCentroidFlag()) {
                 // don't set general flag, because even a failed centroid should
                 // just fall back to the peak, and that should be fine for this
@@ -301,7 +301,7 @@ void BlendednessAlgorithm::_measureMoments(afw::image::MaskedImage<float> const&
                 _flagHandler.setValue(child, NO_CENTROID.number, true);
             }
         }
-        if (child.getTable()->getShapeFlagKey().isValid()) {
+        if (child.getTable()->getShapeSlot().getFlagKey().isValid()) {
             if (child.getShapeFlag()) {
                 _flagHandler.setValue(child, NO_SHAPE.number, true);
                 _flagHandler.setValue(child, FAILURE.number, true);
