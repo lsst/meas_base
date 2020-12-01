@@ -197,7 +197,7 @@ static int calcmom(ImageT const &image,                             // the image
                    float bkgd,                                      // data's background level
                    bool interpflag,                                 // interpolate within pixels?
                    double w11, double w12, double w22,              // weights
-                   double *pI0,                                     // amplitude of fit
+                   double *pI0,                                     // amplitude of fit (if !NULL)
                    double *psum,                                    // sum w*I (if !NULL)
                    double *psumx, double *psumy,                    // sum [xy]*w*I (if !instFluxOnly)
                    double *psumxx, double *psumxy, double *psumyy,  // sum [xy]^2*w*I (if !instFluxOnly)
@@ -329,9 +329,11 @@ static int calcmom(ImageT const &image,                             // the image
         }
     }
 
-    std::tuple<std::pair<bool, double>, double, double, double> const weights = getWeights(w11, w12, w22);
-    double const detW = std::get<1>(weights) * std::get<3>(weights) - std::pow(std::get<2>(weights), 2);
-    *pI0 = sum / (geom::PI * sqrt(detW));
+    if (pI0) {
+        std::tuple<std::pair<bool, double>, double, double, double> const weights = getWeights(w11, w12, w22);
+        double const detW = std::get<1>(weights) * std::get<3>(weights) - std::pow(std::get<2>(weights), 2);
+        *pI0 = sum / (geom::PI * sqrt(detW));
+    }
     if (psum) {
         *psum = sum;
     }
@@ -839,15 +841,13 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(ImageT const &image,
     double const w22 = std::get<3>(weights);
     bool const interp = shouldInterp(shape.getIxx(), shape.getIyy(), std::get<0>(weights).second);
 
-    double i0 = 0;  // amplitude of Gaussian
+    double sum0 = 0;  //  sum of pixel values weighted by a Gaussian
     if (calcmom<true>(ImageAdaptor<ImageT>().getImage(image), localCenter.getX(), localCenter.getY(), bbox,
-                      0.0, interp, w11, w12, w22, &i0, NULL, NULL, NULL, NULL, NULL, NULL, NULL) < 0) {
+                      0.0, interp, w11, w12, w22, NULL, &sum0, NULL, NULL, NULL, NULL, NULL, NULL) < 0) {
         throw LSST_EXCEPT(pex::exceptions::RuntimeError, "Error from calcmom");
     }
 
-    double const wArea = geom::PI * std::sqrt(shape.getDeterminant());
-
-    result.instFlux = i0 * 2 * wArea;
+    result.instFlux = sum0 * 2.0;
 
     if (ImageAdaptor<ImageT>::hasVariance) {
         int ix = static_cast<int>(center.getX() - image.getX0());
@@ -860,6 +860,7 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(ImageT const &image,
         }
         double var = ImageAdaptor<ImageT>().getVariance(image, ix, iy);
         // 0th moment (i0) error = sqrt(var / wArea); instFlux (error) = 2 * wArea * i0 (error)
+        double const wArea = geom::PI * std::sqrt(shape.getDeterminant());
         result.instFluxErr = 2 * std::sqrt(var * wArea);
     }
 
