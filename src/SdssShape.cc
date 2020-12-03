@@ -197,8 +197,7 @@ static int calcmom(ImageT const &image,                             // the image
                    float bkgd,                                      // data's background level
                    bool interpflag,                                 // interpolate within pixels?
                    double w11, double w12, double w22,              // weights
-                   double *pI0,                                     // amplitude of fit
-                   double *psum,                                    // sum w*I (if !NULL)
+                   double *psum,                                    // sum w*I
                    double *psumx, double *psumy,                    // sum [xy]*w*I (if !instFluxOnly)
                    double *psumxx, double *psumxy, double *psumyy,  // sum [xy]^2*w*I (if !instFluxOnly)
                    double *psums4,  // sum w*I*weight^2 (if !instFluxOnly && !NULL)
@@ -329,12 +328,8 @@ static int calcmom(ImageT const &image,                             // the image
         }
     }
 
-    std::tuple<std::pair<bool, double>, double, double, double> const weights = getWeights(w11, w12, w22);
-    double const detW = std::get<1>(weights) * std::get<3>(weights) - std::pow(std::get<2>(weights), 2);
-    *pI0 = sum / (geom::PI * sqrt(detW));
-    if (psum) {
-        *psum = sum;
-    }
+    *psum = sum;
+
     if (!instFluxOnly) {
         *psumx = sumx;
         *psumy = sumy;
@@ -371,7 +366,7 @@ static int calcmom(ImageT const &image,                             // the image
 template <typename ImageT>
 bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double ycen, double shiftmax,
                         SdssShapeResult *shape, int maxIter, float tol1, float tol2, bool negative) {
-    double I0 = 0;               // amplitude of best-fit Gaussian
+
     double sum;                  // sum of intensity*weight
     double sumx, sumy;           // sum ((int)[xy])*intensity*weight
     double sumxx, sumxy, sumyy;  // sum {x^2,xy,y^2}*intensity*weight
@@ -439,7 +434,7 @@ bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double y
             }
         }
 
-        if (calcmom<false>(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22, &I0, &sum, &sumx, &sumy,
+        if (calcmom<false>(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22, &sum, &sumx, &sumy,
                            &sumxx, &sumxy, &sumyy, &sums4, negative) < 0) {
             shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number] = true;
             break;
@@ -558,7 +553,7 @@ bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double y
      */
     if (shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number]) {
         w11 = w22 = w12 = 0;
-        if (calcmom<false>(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22, &I0, &sum, &sumx, &sumy,
+        if (calcmom<false>(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22, &sum, &sumx, &sumy,
                            &sumxx, &sumxy, &sumyy, NULL, negative) < 0 ||
             (!negative && sum <= 0) || (negative && sum >= 0)) {
             shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number] = false;
@@ -578,7 +573,7 @@ bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double y
         sigma22W = sumyy / sum;  //      at this point
     }
 
-    shape->instFlux = I0;
+    shape->instFlux = sum;
     shape->xx = sigma11W;
     shape->xy = sigma12W;
     shape->yy = sigma22W;
@@ -799,17 +794,25 @@ SdssShapeResult SdssShapeAlgorithm::computeAdaptiveMoments(ImageT const &image, 
     // 2*pi*sigma_x*sigma_y*sqrt(1-rho^2), where rho is the correlation.
     // This happens to be twice the ellipse area pi*sigma_maj*sigma_min, which is identically equal to:
     // pi*sqrt(I_xx*I_yy - I_xy^2); i.e. pi*sqrt(determinant(I))
-    double instFluxScale = geom::TWOPI * std::sqrt(IxxIyy - Ixy_sq);
+    double instFluxScale = geom::PI * std::sqrt(IxxIyy - Ixy_sq);
 
-    result.instFlux *= instFluxScale;
-    result.instFluxErr *= instFluxScale;
+    result.instFlux *= 2.;
+    result.instFluxErr *= 2. * instFluxScale;
     result.x += image.getX0();
     result.y += image.getY0();
 
+    // old-school print debugging
+    // std::cout << result.instFlux << "," << instFluxScale << "," << result.instFlux_xx_Cov  << ","
+    // << result.instFlux_yy_Cov << std::endl;
+
     if (ImageAdaptor<ImageT>::hasVariance) {
-        result.instFlux_xx_Cov *= instFluxScale;
-        result.instFlux_yy_Cov *= instFluxScale;
-        result.instFlux_xy_Cov *= instFluxScale;
+        double factor = 2 * instFluxScale * instFluxScale;
+        result.instFlux_xx_Cov *= factor;
+        result.instFlux_yy_Cov *= factor;
+        result.instFlux_xy_Cov *= factor;
+        result.xxErr *= instFluxScale;
+        result.xyErr *= instFluxScale;
+        result.yyErr *= instFluxScale;
     }
 
     return result;
@@ -839,15 +842,12 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(ImageT const &image,
     double const w22 = std::get<3>(weights);
     bool const interp = shouldInterp(shape.getIxx(), shape.getIyy(), std::get<0>(weights).second);
 
-    double i0 = 0;  // amplitude of Gaussian
+    double sum = 0;
     if (calcmom<true>(ImageAdaptor<ImageT>().getImage(image), localCenter.getX(), localCenter.getY(), bbox,
-                      0.0, interp, w11, w12, w22, &i0, NULL, NULL, NULL, NULL, NULL, NULL, NULL) < 0) {
+                      0.0, interp, w11, w12, w22, &sum, NULL, NULL, NULL, NULL, NULL, NULL) < 0) {
         throw LSST_EXCEPT(pex::exceptions::RuntimeError, "Error from calcmom");
     }
-
-    double const wArea = geom::PI * std::sqrt(shape.getDeterminant());
-
-    result.instFlux = i0 * 2 * wArea;
+    result.instFlux = sum * 2;
 
     if (ImageAdaptor<ImageT>::hasVariance) {
         int ix = static_cast<int>(center.getX() - image.getX0());
@@ -858,9 +858,9 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(ImageT const &image,
                                image.getWidth() % image.getHeight())
                                       .str());
         }
+        // 0th moment (i0) error = sqrt(var / area)
         double var = ImageAdaptor<ImageT>().getVariance(image, ix, iy);
-        // 0th moment (i0) error = sqrt(var / wArea); instFlux (error) = 2 * wArea * i0 (error)
-        result.instFluxErr = 2 * std::sqrt(var * wArea);
+        result.instFluxErr = 2 * std::sqrt(var * geom::PI * std::sqrt(shape.getDeterminant()));
     }
 
     return result;
