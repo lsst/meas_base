@@ -478,23 +478,23 @@ class EvaluateLocalWcsPlugin(GenericPlugin):
         self.cdMatrix11Key = schema.addField(
             f"{name}_CDMatrix_1_1",
             type="D",
-            doc=f"(1, 1) element of the CDMatrix for the linear approximation "
-                 "of the WCS at the src location. Gives units in radians.")
+            doc="(1, 1) element of the CDMatrix for the linear approximation "
+                "of the WCS at the src location. Gives units in radians.")
         self.cdMatrix12Key = schema.addField(
             f"{name}_CDMatrix_1_2",
             type="D",
-            doc=f"(1, 2) element of the CDMatrix for the linear approximation "
-                 "of the WCS at the src location. Gives units in radians.")
+            doc="(1, 2) element of the CDMatrix for the linear approximation "
+                "of the WCS at the src location. Gives units in radians.")
         self.cdMatrix21Key = schema.addField(
             f"{name}_CDMatrix_2_1",
             type="D",
-            doc=f"(2, 1) element of the CDMatrix for the linear approximation "
-                 "of the WCS at the src location. Gives units in radians.")
+            doc="(2, 1) element of the CDMatrix for the linear approximation "
+                "of the WCS at the src location. Gives units in radians.")
         self.cdMatrix22Key = schema.addField(
             f"{name}_CDMatrix_2_2",
             type="D",
-            doc=f"(2, 2) element of the CDMatrix for the linear approximation "
-                 "of the WCS at the src location. Gives units in radians.")
+            doc="(2, 2) element of the CDMatrix for the linear approximation "
+                "of the WCS at the src location. Gives units in radians.")
 
     def measure(self, measRecord, exposure, center):
         wcs = exposure.getWcs()
