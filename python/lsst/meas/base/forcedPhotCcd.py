@@ -20,7 +20,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import collections
-from itertools import chain
 
 import lsst.pex.config
 import lsst.pex.exceptions
@@ -36,6 +35,7 @@ from lsst.pipe.base import PipelineTaskConnections
 import lsst.pipe.base.connectionTypes as cT
 
 import lsst.pipe.base as pipeBase
+from lsst.skymap import BaseSkyMap
 
 from .references import MultiBandReferencesTask
 from .forcedMeasurement import ForcedMeasurementTask
@@ -174,11 +174,11 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
         dimensions=["skymap", "tract", "patch"],
         multiple=True
     )
-    refWcs = cT.Input(
-        doc="Reference world coordinate system.",
-        name="{inputCoaddName}Coadd.wcs",
-        storageClass="Wcs",
-        dimensions=["band", "skymap", "tract", "patch"],
+    skyMap = cT.Input(
+        doc="SkyMap dataset that defines the coordinate system of the reference catalog.",
+        name=BaseSkyMap.SKYMAP_DATASET_TYPE_NAME,
+        storageClass="SkyMap",
+        dimensions=["skymap"],
     )
     measCat = cT.Output(
         doc="Output forced photometry catalog.",
@@ -336,7 +336,14 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
-        inputs['refCat'] = self.filterReferences(inputs['exposure'], inputs['refCat'], inputs['refWcs'])
+
+        tract = butlerQC.quantum.dataId['tract']
+        skyMap = inputs.pop("skyMap")
+        inputs['refWcs'] = skyMap[tract].getWcs()
+
+        inputs['refCat'] = self.mergeAndFilterReferences(inputs['exposure'], inputs['refCat'],
+                                                         inputs['refWcs'])
+
         inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(inputRefs.exposure.dataId,
                                                                        inputs['exposure'],
                                                                        inputs['refCat'], inputs['refWcs'],
@@ -346,7 +353,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         outputs = self.run(**inputs)
         butlerQC.put(outputs, outputRefs)
 
-    def filterReferences(self, exposure, refCat, refWcs):
+    def mergeAndFilterReferences(self, exposure, refCats, refWcs):
         """Filter reference catalog so that all sources are within the
         boundaries of the exposure.
 
@@ -354,8 +361,8 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         ----------
         exposure : `lsst.afw.image.exposure.Exposure`
             Exposure to generate the catalog for.
-        refCat : `lsst.afw.table.SourceCatalog`
-            Catalog of shapes and positions at which to force photometry.
+        refCats : sequence of `lsst.afw.table.SourceCatalog`
+            Catalogs of shapes and positions at which to force photometry.
         refWcs : `lsst.afw.image.SkyWcs`
             Reference world coordinate system.
 
@@ -385,37 +392,20 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         expPolygon = lsst.sphgeom.ConvexPolygon(expSkyCorners)
 
         # Step 2: Filter out reference catalog sources that are
-        # not contained within the exposure boundaries.
-        # refCat will be a list of at least one element
-        sources = type(refCat[0])(refCat[0].table)
-        for record in chain(*refCat):
-            if expPolygon.contains(record.getCoord().getVector()):
-                sources.append(record)
-        refCatIdDict = {ref.getId(): ref.getParent() for ref in sources}
-
-        # Step 3: Cull sources that do not have their parent
-        # source in the filtered catalog.  Save two copies of each
-        # source.
-        refSources = type(refCat[0])(refCat[0].table)
-        for record in chain(*refCat):
-            if expPolygon.contains(record.getCoord().getVector()):
-                recordId = record.getId()
-                topId = recordId
-                while (topId > 0):
-                    if topId in refCatIdDict:
-                        topId = refCatIdDict[topId]
-                    else:
-                        break
-                if topId == 0:
-                    refSources.append(record)
-
-        # Step 4: Transform source footprints from the reference
-        # coordinates to the exposure coordinates.
-        for refRecord in refSources:
-            refRecord.setFootprint(refRecord.getFootprint().transform(refWcs,
-                                                                      expWcs, expRegion))
-        # Step 5: Replace reference catalog with filtered source list.
-        return refSources
+        # not contained within the exposure boundaries, or whose
+        # parents are not within the exposure boundaries.  Note
+        # that within a single input refCat, the parents always
+        # appear before the children.
+        mergedRefCat = lsst.afw.table.SourceCatalog(refCats[0].table)
+        for refCat in refCats:
+            containedIds = {0}  # zero as a parent ID means "this is a parent"
+            for record in refCat:
+                if expPolygon.contains(record.getCoord().getVector()) and record.getParent() in containedIds:
+                    record.setFootprint(record.getFootprint().transform(refWcs, expWcs, expRegion))
+                    mergedRefCat.append(record)
+                    containedIds.add(record.getId())
+        mergedRefCat.sort(lsst.afw.table.SourceTable.getParentKey())
+        return mergedRefCat
 
     def generateMeasCat(self, exposureDataId, exposure, refCat, refWcs, idPackerName):
         """Generate a measurement catalog for Gen3.
@@ -524,7 +514,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
             )
         self.catalogCalculation.run(measCat)
 
-        return lsst.pipe.base.Struct(measCat=measCat)
+        return pipeBase.Struct(measCat=measCat)
 
     def makeIdFactory(self, dataRef):
         """Create an object that generates globally unique source IDs.
@@ -619,7 +609,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         dataRef : `lsst.daf.persistence.ButlerDataRef`
             Butler data reference.
         """
-        exposure = ForcedPhotImageTask.getExposure(self, dataRef)
+        exposure = dataRef.get(self.dataPrefix + "calexp", immediate=True)
 
         if self.config.doApplyExternalPhotoCalib:
             source = f"{self.config.externalPhotoCalibName}_photoCalib"
@@ -681,7 +671,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
 
     @classmethod
     def _makeArgumentParser(cls):
-        parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
+        parser = pipeBase.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "forced_src", help="data ID with raw CCD keys [+ tract optionally], "
                                "e.g. --id visit=12345 ccd=1,2 [tract=0]",
                                ContainerClass=PerTractCcdDataIdContainer)

@@ -20,7 +20,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import lsst.pex.config
-import lsst.pipe.base
 import lsst.coadd.utils
 import lsst.afw.table
 
@@ -34,12 +33,12 @@ from .catalogCalculation import CatalogCalculationTask
 __all__ = ("ForcedPhotCoaddConfig", "ForcedPhotCoaddTask")
 
 
-class ForcedPhotCoaddRunner(lsst.pipe.base.ButlerInitializedTaskRunner):
+class ForcedPhotCoaddRunner(pipeBase.ButlerInitializedTaskRunner):
     """Get the psfCache setting into ForcedPhotCoaddTask"""
     @staticmethod
     def getTargetList(parsedCmd, **kwargs):
-        return lsst.pipe.base.ButlerInitializedTaskRunner.getTargetList(parsedCmd,
-                                                                        psfCache=parsedCmd.psfCache)
+        return pipeBase.ButlerInitializedTaskRunner.getTargetList(parsedCmd,
+                                                                  psfCache=parsedCmd.psfCache)
 
 
 class ForcedPhotCoaddConnections(pipeBase.PipelineTaskConnections,
@@ -79,7 +78,7 @@ class ForcedPhotCoaddConnections(pipeBase.PipelineTaskConnections,
         name="{inputCoaddName}Coadd.wcs",
         storageClass="Wcs",
         dimensions=["band", "skymap", "tract", "patch"],
-    )
+    )  # used in place of a skymap wcs because of DM-28880
     measCat = pipeBase.connectionTypes.Output(
         doc="Output forced photometry catalog.",
         name="{outputCoaddName}Coadd_forced_src",
@@ -196,6 +195,7 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
+
         refCatInBand = inputs.pop('refCatInBand')
         inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(inputRefs.exposure.dataId,
                                                                        inputs['exposure'],
@@ -217,6 +217,9 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
             Exposure to generate the catalog for.
         refCat : `lsst.afw.table.SourceCatalog`
             Catalog of shapes and positions at which to force photometry.
+        refCatInBand : `lsst.afw.table.SourceCatalog`
+            Catalog of shapes and position in the band forced photometry is
+            currently being performed
         refWcs : `lsst.afw.image.SkyWcs`
             Reference world coordinate system.
         idPackerName : `str`
@@ -228,6 +231,13 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
             Catalog of forced sources to measure.
         expId : `int`
             Unique binary id associated with the input exposure
+
+        Raises
+        ------
+        LookupError
+            Raised if a footprint with a given source id was in the reference
+            catalog but not in the reference catalog in band (meaning there
+            was some sort of mismatch in the two input catalogs)
         """
         expId, expBits = exposureDataId.pack(idPackerName, returnMaxBits=True)
         idFactory = lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
@@ -307,7 +317,7 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
 
         Returns
         -------
-        result : `lsst.pipe.base.Struct`
+        result : ~`lsst.pipe.base.Struct`
             Structure with fields:
 
             ``measCat``
@@ -322,7 +332,7 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
             )
         self.catalogCalculation.run(measCat)
 
-        return lsst.pipe.base.Struct(measCat=measCat)
+        return pipeBase.Struct(measCat=measCat)
 
     def makeIdFactory(self, dataRef):
         """Create an object that generates globally unique source IDs.
@@ -459,7 +469,7 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
 
     @classmethod
     def _makeArgumentParser(cls):
-        parser = lsst.pipe.base.ArgumentParser(name=cls._DefaultName)
+        parser = pipeBase.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "deepCoadd_forced_src", help="data ID, with raw CCD keys + tract",
                                ContainerClass=lsst.coadd.utils.CoaddDataIdContainer)
         parser.add_argument("--psfCache", type=int, default=100, help="Size of CoaddPsf cache")
