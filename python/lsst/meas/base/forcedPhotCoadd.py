@@ -79,7 +79,7 @@ class ForcedPhotCoaddConnections(pipeBase.PipelineTaskConnections,
         name="{inputCoaddName}Coadd.wcs",
         storageClass="Wcs",
         dimensions=["band", "skymap", "tract", "patch"],
-    )
+    )  # used in place of a skymap wcs because of DM-28880
     measCat = pipeBase.connectionTypes.Output(
         doc="Output forced photometry catalog.",
         name="{outputCoaddName}Coadd_forced_src",
@@ -196,6 +196,7 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
+
         refCatInBand = inputs.pop('refCatInBand')
         inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(inputRefs.exposure.dataId,
                                                                        inputs['exposure'],
