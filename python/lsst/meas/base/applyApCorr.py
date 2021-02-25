@@ -204,8 +204,8 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
         missingNameSet = ignoreSet - set(apCorrNameSet)
         if missingNameSet:
             self.log.warn("Fields in ignoreList that are not in fluxCorrectList: %s",
-                          sorted(list(missingNameSet)))
-        for name in sorted(list(apCorrNameSet - ignoreSet)):
+                          sorted(missingNameSet))
+        for name in sorted(apCorrNameSet - ignoreSet):
             if name + "_instFlux" not in schema:
                 # if a field in the registry is missing from the schema, silently ignore it.
                 continue
