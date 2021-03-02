@@ -56,7 +56,6 @@ from .footprintArea import *
 from .forcedMeasurement import *
 from .forcedPhotCcd import *
 from .forcedPhotCoadd import *
-from .forcedPhotImage import *
 from .noiseReplacer import *
 from .pluginRegistry import *
 from .plugins import *

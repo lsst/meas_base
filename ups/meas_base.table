@@ -1,6 +1,7 @@
 setupRequired(utils)
 setupRequired(geom)
 setupRequired(afw)
+setupRequired(skymap)
 setupRequired(coadd_utils)
 setupRequired(daf_base)
 setupRequired(sphgeom)
