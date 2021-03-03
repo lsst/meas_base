@@ -16,7 +16,7 @@ Each plugin defines the values that it measures (which correspond to columns in 
 See `ForcedPlugin` for details.
 This task intializes the set of plugins (thereby defining the catalog schema) from its configuration, then invokes each plugin on each source.
 
-Most of the time, `ForcedMeasurementTask` will be used via one of the subclasses of :lsst-task:`lsst.meas.base.forcedPhotImage.ForcedPhotImageTask`: :lsst-task:`lsst.meas.base.forcedPhotCcd.ForcedPhotCcdTask` or :lsst-task:`lsst.meas.base.forcedPhotCoadd.ForcedPhotCoaddTask`.
+Most of the time, `ForcedMeasurementTask` will be used via one of the subclasses of :lsst-task:`lsst.meas.base.forcedPhotCcd.ForcedPhotCcdTask` or :lsst-task:`lsst.meas.base.forcedPhotCoadd.ForcedPhotCoaddTask`.
 These combine this measurement subtask with a ``references`` subtask (see :lsst-task:`lsst.meas.base.references.BaseReferencesTask` and :lsst-task:`~lsst.meas.base.references.CoaddSrcReferencesTask`) to perform forced measurement using measurements performed on another image as the references.
 There is generally little reason to use `ForcedMeasurementTask` outside of one of these drivers, unless it is necessary to avoid using the Butler for I/O.
 
