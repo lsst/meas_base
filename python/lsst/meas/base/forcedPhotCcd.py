@@ -191,7 +191,6 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
 class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
                           pipelineConnections=ForcedPhotCcdConnections):
     """Config class for forced measurement driver task."""
-    # ForcedPhotImage options
     references = lsst.pex.config.ConfigurableField(
         target=MultiBandReferencesTask,
         doc="subtask to retrieve reference source catalog"

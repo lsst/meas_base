@@ -51,7 +51,7 @@ position of the reference object before any other plugins are run, and hence
 avoid using the reference catalog at all.
 
 Command-line driver tasks for forced measurement include
-`ForcedPhotImageTask`, `ForcedPhotCcdTask`, and `ForcedPhotCoaddTask`.
+`ForcedPhotCcdTask`, and `ForcedPhotCoaddTask`.
 """
 
 import lsst.pex.config
@@ -434,11 +434,6 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         catalog from the WCS to the exposure's WCS, which downgrades
         ``HeavyFootprint``\s into regular `~lsst.afw.detection.Footprint`\s,
         destroying deblend information.
-
-        Note that `ForcedPhotImageTask` delegates to this method in its own
-        `~ForcedPhotImageTask.attachFootprints` method.  This method can be
-        overridden by its subclasses to define how their
-        `~lsst.afw.detection.Footprint`\s should be generated.
 
         See the documentation for `run` for information about the
         relationships between `run`, `generateMeasCat`, and
