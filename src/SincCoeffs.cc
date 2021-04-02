@@ -146,7 +146,7 @@ private:
 };
 
 template <typename CoordT>
-class CircApPolar : public std::unary_function<CoordT, CoordT> {
+class CircApPolar {
 public:
     CircApPolar(double radius, double taperwidth) : _ap(CircularAperture<CoordT>(0.0, radius, taperwidth)) {}
     CoordT operator()(double r) const { return r * _ap(r, 0.0); }
@@ -159,7 +159,7 @@ private:
  * Define a Sinc functor to be integrated over for Sinc interpolation
  */
 template <typename IntegrandT>
-class SincAperture : public std::binary_function<IntegrandT, IntegrandT, IntegrandT> {
+class SincAperture {
 public:
     SincAperture(CircularAperture<IntegrandT> const& ap,
                  int const ix,  // sinc center x
@@ -181,7 +181,7 @@ private:
     double _ix, _iy;
 };
 
-class GaussPowerFunctor : public std::binary_function<double, double, double> {
+class GaussPowerFunctor {
 public:
     GaussPowerFunctor(double sigma) : _sigma(sigma) {}
 
