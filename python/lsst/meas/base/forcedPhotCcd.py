@@ -34,6 +34,7 @@ import lsst.afw.image
 import lsst.afw.table
 import lsst.sphgeom
 
+from lsst.obs.base import ExposureIdInfo
 from lsst.pipe.base import PipelineTaskConnections
 import lsst.pipe.base.connectionTypes as cT
 
@@ -456,12 +457,12 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         expId : `int`
             Unique binary id associated with the input exposure
         """
-        expId, expBits = exposureDataId.pack(idPackerName, returnMaxBits=True)
-        idFactory = lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
+        exposureIdInfo = ExposureIdInfo.fromDataId(exposureDataId, idPackerName)
+        idFactory = exposureIdInfo.makeSourceIdFactory()
 
         measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
                                                    idFactory=idFactory)
-        return measCat, expId
+        return measCat, exposureIdInfo.expId
 
     def runDataRef(self, dataRef, psfCache=None):
         """Perform forced measurement on a single exposure.
@@ -556,9 +557,8 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
             same as those that correspond to ``calexp`` (``visit``, ``raft``,
             ``sensor`` for LSST data).
         """
-        expBits = dataRef.get("ccdExposureId_bits")
-        expId = int(dataRef.get("ccdExposureId"))
-        return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
+        exposureIdInfo = ExposureIdInfo(int(dataRef.get("ccdExposureId")), dataRef.get("ccdExposureId_bits"))
+        return exposureIdInfo.makeSourceIdFactory()
 
     def getExposureId(self, dataRef):
         return int(dataRef.get("ccdExposureId", immediate=True))
