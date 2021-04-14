@@ -24,6 +24,7 @@ import lsst.coadd.utils
 import lsst.afw.table
 
 import lsst.pipe.base as pipeBase
+from lsst.obs.base import ExposureIdInfo
 
 from .references import MultiBandReferencesTask
 from .forcedMeasurement import ForcedMeasurementTask
@@ -239,8 +240,8 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
             catalog but not in the reference catalog in band (meaning there
             was some sort of mismatch in the two input catalogs)
         """
-        expId, expBits = exposureDataId.pack(idPackerName, returnMaxBits=True)
-        idFactory = lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
+        exposureIdInfo = ExposureIdInfo.fromDataId(exposureDataId, idPackerName)
+        idFactory = exposureIdInfo.makeSourceIdFactory()
 
         measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
                                                    idFactory=idFactory)
