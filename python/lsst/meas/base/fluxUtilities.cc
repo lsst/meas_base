@@ -37,6 +37,7 @@ using PyFluxResult = py::class_<FluxResult, std::shared_ptr<FluxResult>>;
 using PyFluxResultKey = py::class_<FluxResultKey, std::shared_ptr<FluxResultKey>>;
 using PyMagResult = py::class_<MagResult, std::shared_ptr<MagResult>>;
 using PyMagResultKey = py::class_<MagResultKey, std::shared_ptr<MagResultKey>>;
+using PyFluxTransform = py::class_<FluxTransform, std::shared_ptr<FluxTransform>, BaseTransform>;
 
 void declareFluxResult(py::module &mod) {
     PyFluxResult cls(mod, "FluxResult");
@@ -86,6 +87,14 @@ void declareMagResultKey(py::module &mod) {
     cls.def_static("addFields", &MagResultKey::addFields, "schema"_a, "name"_a);
 }
 
+void declareFluxTransform(py::module &mod) {
+    PyFluxTransform cls(mod, "FluxTransform");
+
+    cls.def(py::init<std::string const &, afw::table::SchemaMapper &>(), "name"_a, "mapper"_a);
+    cls.def("__call__", &FluxTransform::operator(), "inputCatalog"_a, "outputCatalog"_a, "wcs"_a,
+            "photoCalib"_a);
+}
+
 }  // namespace
 
 PYBIND11_MODULE(fluxUtilities, mod) {
@@ -95,6 +104,7 @@ PYBIND11_MODULE(fluxUtilities, mod) {
     declareFluxResultKey(mod);
     declareMagResult(mod);
     declareMagResultKey(mod);
+    declareFluxTransform(mod);
 }
 
 }  // namespace base
