@@ -614,8 +614,9 @@ class GenericPlugin(BasePlugin):
             def getExecutionOrder():
                 return cls.getExecutionOrder()
 
-            def getTransformClass(self):
-                return self._generic.getTransformClass()
+            @staticmethod
+            def getTransformClass():
+                return cls.getTransformClass()
 
         return SingleFrameFromGenericPlugin
 
@@ -656,7 +657,8 @@ class GenericPlugin(BasePlugin):
             def getExecutionOrder():
                 return cls.getExecutionOrder()
 
-            def getTransformClass(self):
-                return self._generic.getTransformClass()
+            @staticmethod
+            def getTransformClass():
+                return cls.getTransformClass()
 
         return ForcedFromGenericPlugin
