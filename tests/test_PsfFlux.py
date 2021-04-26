@@ -148,7 +148,7 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             instFluxErrMean = np.mean(instFluxErrs)
             instFluxStandardDeviation = np.std(instFluxes)
             self.assertFloatsAlmostEqual(instFluxErrMean, instFluxStandardDeviation, rtol=0.10)
-            self.assertLess(instFluxMean - instFlux, 2.0*instFluxErrMean / nSamples**0.5)
+            self.assertLess(abs(instFluxMean - instFlux), 2.0*instFluxErrMean / nSamples**0.5)
 
     def testSingleFramePlugin(self):
         task = self.makeSingleFrameMeasurementTask("base_PsfFlux")
