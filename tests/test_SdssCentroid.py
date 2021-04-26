@@ -116,8 +116,8 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             yStandardDeviation = np.std(yList)
             self.assertFloatsAlmostEqual(xErrMean, xStandardDeviation, rtol=0.2)   # rng dependent
             self.assertFloatsAlmostEqual(yErrMean, yStandardDeviation, rtol=0.2)   # rng dependent
-            self.assertLess(xMean - x, 3.0*xErrMean / nSamples**0.5)   # rng dependent
-            self.assertLess(yMean - y, 3.0*yErrMean / nSamples**0.5)   # rng dependent
+            self.assertLess(abs(xMean - x), 3.0*xErrMean / nSamples**0.5)   # rng dependent
+            self.assertLess(abs(yMean - y), 3.0*yErrMean / nSamples**0.5)   # rng dependent
 
     def testEdge(self):
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
