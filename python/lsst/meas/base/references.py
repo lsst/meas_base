@@ -202,9 +202,9 @@ class BaseReferencesTask(lsst.pipe.base.Task):
         parentSources = catalog.getChildren(0)
         skyCoordList = [source.getCoord() for source in parentSources]
         pixelPosList = wcs.skyToPixel(skyCoordList)
-        parents = (parent for parent, pixel in zip(parentSources, pixelPosList) if boxD.contains(pixel))
-        childrenIter = catalog.getChildren((parent.getId() for parent in parentSources))
-        for parent, children in zip(parents, childrenIter):
+        parentList = [parent for parent, pixel in zip(parentSources, pixelPosList) if boxD.contains(pixel)]
+        childrenIter = catalog.getChildren((parent.getId() for parent in parentList))
+        for parent, children in zip(parentList, childrenIter):
             yield parent
             yield from children
 
