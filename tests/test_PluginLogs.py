@@ -140,6 +140,8 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         registry = SingleFramePlugin.registry
         dependencies = registry.keys()
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid", dependencies=dependencies)
+        if not isinstance(task.log, lsst.log.Log):
+            raise unittest.SkipTest("Test requires lsst logger to be used by the task")
         exposure, catalog = dataset.realize(noise=100.0, schema=task.schema, randomSeed=0)
         task.log.setLevel(lsst.log.ERROR)
         task.run(catalog, exposure)
@@ -165,6 +167,8 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         dependencies = registry.keys()
 
         task = self.makeForcedMeasurementTask("base_SdssCentroid", dependencies=dependencies)
+        if not isinstance(task.log, lsst.log.Log):
+            raise unittest.SkipTest("Test requires lsst logger to be used by the task")
         measWcs = dataset.makePerturbedWcs(dataset.exposure.getWcs(), randomSeed=1)
         measDataset = dataset.transform(measWcs)
         exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema(), randomSeed=1)
@@ -213,6 +217,8 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         schema = self.dataset.makeMinimalSchema()
         self.config.plugins = [algName]
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
+        if not isinstance(task.log, lsst.log.Log):
+            raise unittest.SkipTest("Test requires lsst logger to be used by the task")
         #  test that the plugin's logName has been propagated to the plugin
         self.assertTrue(task.plugins[algName].getLogName(), task.getPluginLogName(algName))
         log = lsst.log.Log.getLogger(task.getPluginLogName(algName))
@@ -235,6 +241,8 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
+        if not isinstance(task.log, lsst.log.Log):
+            raise unittest.SkipTest("Test requires lsst logger to be used by the task")
         log = lsst.log.Log.getLogger(task.getPluginLogName(algName))
         log.setLevel(lsst.log.ERROR)
 
@@ -269,6 +277,8 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(1000000.0, self.center)
         self.task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
+        if not isinstance(self.task.log, lsst.log.Log):
+            raise unittest.SkipTest("Test requires lsst logger to be used by the task")
         self.log = lsst.log.Log.getLogger(self.task.getPluginLogName("base_SdssCentroid"))
         self.exposure, self.catalog = self.dataset.realize(10.0, self.task.schema, randomSeed=4)
 
@@ -328,6 +338,8 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(1000000.0, self.center)
         self.task = self.makeForcedMeasurementTask("base_SdssCentroid")
+        if not isinstance(self.task.log, lsst.log.Log):
+            raise unittest.SkipTest("Test requires lsst logger to be used by the task")
         self.log = lsst.log.Log.getLogger(self.task.getPluginLogName("base_SdssCentroid"))
         measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs(), randomSeed=5)
         measDataset = self.dataset.transform(measWcs)
