@@ -353,11 +353,10 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         # Create parent cat which slices both the refCat and measCat (sources)
         # first, get the reference and source records which have no parent
         refParentCat, measParentCat = refCat.getChildren(0, measCat)
-        childrenIter = refCat.getChildren((refParentRecord.getId() for refParentRecord in refCat), measCat)
-        for parentIdx, records in enumerate(zip(refParentCat, measParentCat, childrenIter)):
-            # Unpack records
-            refParentRecord, measParentRecord, (refChildCat, measChildCat) = records
-            # First process the records which have the current parent as children
+        for parentIdx, (refParentRecord, measParentRecord) in enumerate(zip(refParentCat, measParentCat)):
+
+            # first process the records which have the current parent as children
+            refChildCat, measChildCat = refCat.getChildren(refParentRecord.getId(), measCat)
             # TODO: skip this loop if there are no plugins configured for single-object mode
             for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
                 noiseReplacer.insertSource(refChildRecord.getId())
@@ -365,14 +364,14 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                                  beginOrder=beginOrder, endOrder=endOrder)
                 noiseReplacer.removeSource(refChildRecord.getId())
 
-            # Then process the parent record
+            # then process the parent record
             noiseReplacer.insertSource(refParentRecord.getId())
             self.callMeasure(measParentRecord, exposure, refParentRecord, refWcs,
                              beginOrder=beginOrder, endOrder=endOrder)
             self.callMeasureN(measParentCat[parentIdx:parentIdx+1], exposure,
                               refParentCat[parentIdx:parentIdx+1],
                               beginOrder=beginOrder, endOrder=endOrder)
-            # Measure all the children simultaneously
+            # measure all the children simultaneously
             self.callMeasureN(measChildCat, exposure, refChildCat,
                               beginOrder=beginOrder, endOrder=endOrder)
             noiseReplacer.removeSource(refParentRecord.getId())
