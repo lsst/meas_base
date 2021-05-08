@@ -292,10 +292,10 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
                       nMeasParentCat, ("" if nMeasParentCat == 1 else "s"),
                       nMeasCat - nMeasParentCat, ("" if nMeasCat - nMeasParentCat == 1 else "ren"))
 
-        childrenIter = measCat.getChildren([measParentRecord.getId() for measParentRecord in measParentCat])
-        for parentIdx, (measParentRecord, measChildCat) in enumerate(zip(measParentCat, childrenIter)):
+        for parentIdx, measParentRecord in enumerate(measParentCat):
             # first get all the children of this parent, insert footprint in
             # turn, and measure
+            measChildCat = measCat.getChildren(measParentRecord.getId())
             # TODO: skip this loop if there are no plugins configured for
             # single-object mode
             for measChildRecord in measChildCat:

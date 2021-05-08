@@ -202,11 +202,11 @@ class BaseReferencesTask(lsst.pipe.base.Task):
         parentSources = catalog.getChildren(0)
         skyCoordList = [source.getCoord() for source in parentSources]
         pixelPosList = wcs.skyToPixel(skyCoordList)
-        parents = (parent for parent, pixel in zip(parentSources, pixelPosList) if boxD.contains(pixel))
-        childrenIter = catalog.getChildren((parent.getId() for parent in parentSources))
-        for parent, children in zip(parents, childrenIter):
-            yield parent
-            yield from children
+        for parent, pixel in zip(parentSources, pixelPosList):
+            if boxD.contains(pixel):
+                yield parent
+                for child in catalog.getChildren(parent.getId()):
+                    yield child
 
 
 class CoaddSrcReferencesConfig(BaseReferencesTask.ConfigClass):
