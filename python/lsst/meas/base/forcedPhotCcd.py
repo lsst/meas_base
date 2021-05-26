@@ -172,7 +172,8 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
         name="{inputCoaddName}Coadd_ref",
         storageClass="SourceCatalog",
         dimensions=["skymap", "tract", "patch"],
-        multiple=True
+        multiple=True,
+        deferLoad=True,
     )
     skyMap = cT.Input(
         doc="SkyMap dataset that defines the coordinate system of the reference catalog.",
@@ -360,8 +361,9 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         ----------
         exposure : `lsst.afw.image.exposure.Exposure`
             Exposure to generate the catalog for.
-        refCats : sequence of `lsst.afw.table.SourceCatalog`
-            Catalogs of shapes and positions at which to force photometry.
+        refCats : sequence of `lsst.daf.butler.DeferredDatasetHandle`
+            Handles for catalogs of shapes and positions at which to force
+            photometry.
         refWcs : `lsst.afw.image.SkyWcs`
             Reference world coordinate system.
 
@@ -395,14 +397,19 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         # parents are not within the exposure boundaries.  Note
         # that within a single input refCat, the parents always
         # appear before the children.
-        mergedRefCat = lsst.afw.table.SourceCatalog(refCats[0].table)
+        mergedRefCat = None
         for refCat in refCats:
+            refCat = refCat.get()
+            if mergedRefCat is None:
+                mergedRefCat = lsst.afw.table.SourceCatalog(refCat.table)
             containedIds = {0}  # zero as a parent ID means "this is a parent"
             for record in refCat:
                 if expPolygon.contains(record.getCoord().getVector()) and record.getParent() in containedIds:
                     record.setFootprint(record.getFootprint().transform(refWcs, expWcs, expRegion))
                     mergedRefCat.append(record)
                     containedIds.add(record.getId())
+        if mergedRefCat is None:
+            raise RuntimeError("No reference objects for forced photometry.")
         mergedRefCat.sort(lsst.afw.table.SourceTable.getParentKey())
         return mergedRefCat
 
