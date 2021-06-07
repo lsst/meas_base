@@ -52,6 +52,8 @@ from .baseMeasurement import *
 from .baseMeasurement import *
 from .catalogCalculation import *
 from .classification import *
+from .diaCalculation import *
+from .diaCalculationPlugins import *
 from .footprintArea import *
 from .forcedMeasurement import *
 from .forcedPhotCcd import *
