@@ -96,9 +96,9 @@ class DiaObjectCalculationPlugin(CatalogCalculationPlugin):
     """
 
     needsFilter = True
-    """This pluggin requires a filter to be specified. Pluggin's using filter
+    """This plugin requires a filter to be specified. Plugin's using filter
     names usually deal with fluxes and only a sub-set of the DiaSource
-    catalog. Pluggins that to not use the filter name usually run over a value
+    catalog. Plugins that to not use the filter name usually run over a value
     common across all observations/detections such as position.
     """
 
@@ -389,6 +389,8 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
         """
         # DiaObjects will be updated in place.
         diaObjectsToUpdate = diaObjectCat.loc[updatedDiaObjectIds, :]
+        self.log.info("Calculating summary stats for %i DiaObjects" %
+                      len(diaObjectsToUpdate))
 
         updatingDiaSources = diaSourceCat.loc[updatedDiaObjectIds, :]
         diaSourcesGB = updatingDiaSources.groupby(level=0)
