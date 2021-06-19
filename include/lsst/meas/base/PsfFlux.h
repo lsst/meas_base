@@ -89,7 +89,9 @@ public:
 private:
     Control _ctrl;
     FluxResultKey _instFluxResultKey;
-    afw::table::Key<float> _areaKey;
+    afw::table::Key<float> _areaKey;   // effective area of PSF
+    afw::table::Key<float> _chi2Key;   // chi2 of the fitted PSF
+    afw::table::Key<int> _npixelsKey;  // number of pixels that were included in the PSF fit
     FlagHandler _flagHandler;
     SafeCentroidExtractor _centroidExtractor;
 };
