@@ -151,7 +151,7 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                 if hasattr(plugin, "cpp"):
                     self.assertEqual(plugin.cpp.getLogName(), plugin.getLogName())
             else:
-                self.assertEqual(plugin.getLogName(), None)
+                self.assertIsNone(plugin.getLogName())
 
     def testForcedPlugins(self):
         # Test all the ForcedPlugins registered to see if their logName is set
@@ -183,7 +183,7 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                 if hasattr(plugin, "cpp"):
                     self.assertEqual(plugin.cpp.getLogName(), task.log.getName() + "." + pluginName)
             else:
-                self.assertEqual(plugin.getLogName(), None)
+                self.assertIsNone(plugin.getLogName())
 
 
 class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
@@ -226,7 +226,7 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                 lines = fin.read()
         # test that the sample plugin has correctly logged to where we
         # expected it to.
-        self.assertTrue(lines.find("measuring") >= 0)
+        self.assertGreaterEqual(lines.find("measuring"), 0)
 
     def testLoggingCppPlugin(self):
         # PsfFlux is known to log an ``ERROR`` if a Psf is not attached
@@ -256,7 +256,7 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                 lines = fin.read()
         # test that the sample plugin has correctly logged to where we
         # expected it to.
-        self.assertTrue(lines.find("ERROR") >= 0)
+        self.assertGreaterEqual(lines.find("ERROR"), 0)
 
 
 class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
@@ -297,10 +297,10 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             with open(taskLogName) as fin:
                 lines = fin.read()
             os.unlink(taskLogName)
-            self.assertTrue(lines.find("Testing") >= 0)
+            self.assertGreaterEqual(lines.find("Testing"), 0)
             with open(pluginLogName) as fin:
                 lines = fin.read()
-        self.assertTrue(lines.find("MeasurementError") >= 0)
+        self.assertGreaterEqual(lines.find("MeasurementError"), 0)
 
     def testSetPluginLevel(self):
         """Test setting the plugin log level.
@@ -315,7 +315,7 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             directLog(self.log, None)
             with open(pluginLogName) as fin:
                 lines = fin.read()
-        self.assertTrue(lines.find("MeasurementError") < 0)
+        self.assertLess(lines.find("MeasurementError"), 0)
 
 
 class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
@@ -364,10 +364,10 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             with open(taskLogName) as fin:
                 lines = fin.read()
             os.unlink(taskLogName)
-            self.assertTrue(lines.find("Testing") >= 0)
+            self.assertGreaterEqual(lines.find("Testing"), 0)
             with open(pluginLogName) as fin:
                 lines = fin.read()
-        self.assertTrue(lines.find("MeasurementError") >= 0)
+        self.assertGreaterEqual(lines.find("MeasurementError"), 0)
 
     def testSetPluginLevel(self):
         """Test setting the plugin log level.
@@ -382,7 +382,7 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             directLog(self.log, None)
             with open(pluginLogName) as fin:
                 lines = fin.read()
-        self.assertTrue(lines.find("MeasurementError") < 0)
+        self.assertLess(lines.find("MeasurementError"), 0)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
