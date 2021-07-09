@@ -148,7 +148,7 @@ class CCContext:
         elif exc_type is MeasurementError:
             self.plugin.fail(self.cat, exc_value)
         else:
-            self.log.warning("Error in {}.calculate: {}".format(self.plugin.name, exc_value))
+            self.log.warning("Error in %s.calculate: %s", self.plugin.name, exc_value)
         return True
 
 

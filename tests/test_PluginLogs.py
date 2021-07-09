@@ -78,7 +78,7 @@ class LoggingPlugin(SingleFramePlugin):
         is called. If a `MeasurementError` is raised during this method, the
         `fail` method will be called to set the error flags.
         """
-        lsst.log.Log.getLogger(self.getLogName()).info("%s plugin measuring."%(self.name,))
+        lsst.log.Log.getLogger(self.getLogName()).info("%s plugin measuring.", self.name)
         # Sum the pixels inside the bounding box
         centerPoint = lsst.geom.Point2I(int(measRecord.getX()), int(measRecord.getY()))
         bbox = lsst.geom.Box2I(centerPoint, lsst.geom.Extent2I(1, 1))

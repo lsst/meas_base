@@ -315,7 +315,7 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
                 if self.config.skipMissing:
                     continue
                 raise lsst.pipe.base.TaskError("Reference %s doesn't exist" % (dataId,))
-            self.log.info("Getting references in %s" % (dataId,))
+            self.log.info("Getting references in %s", dataId)
             catalog = butler.get(dataset, dataId, immediate=True)
             if self.config.removePatchOverlaps:
                 bbox = lsst.geom.Box2D(patch.getInnerBBox())
@@ -354,7 +354,7 @@ class CoaddSrcReferencesTask(BaseReferencesTask):
         skyMap = dataRef.get(self.config.coaddName + "Coadd_skyMap", immediate=True)
         tract = skyMap[dataRef.dataId["tract"]]
         coordList = [wcs.pixelToSky(corner) for corner in lsst.geom.Box2D(bbox).getCorners()]
-        self.log.info("Getting references in region with corners %s [degrees]" %
+        self.log.info("Getting references in region with corners %s [degrees]",
                       ", ".join("(%s)" % (coord.getPosition(lsst.geom.degrees),) for coord in coordList))
         patchList = tract.findPatchList(coordList)
         # After figuring out which patch catalogs to read from the bbox, pad out the bbox if desired

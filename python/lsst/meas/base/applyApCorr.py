@@ -247,8 +247,8 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
             if None in (apCorrModel, apCorrErrModel):
                 missingNames = [(apCorrInfo.modelName, apCorrInfo.modelSigmaName)[i]
                                 for i, model in enumerate((apCorrModel, apCorrErrModel)) if model is None]
-                self.log.warning("Cannot aperture correct %s because could not find %s in apCorrMap" %
-                                 (apCorrInfo.name, " or ".join(missingNames),))
+                self.log.warning("Cannot aperture correct %s because could not find %s in apCorrMap",
+                                 apCorrInfo.name, " or ".join(missingNames))
                 for source in catalog:
                     source.set(apCorrInfo.apCorrFlagKey, True)
                 continue
