@@ -291,7 +291,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                 if self.config.doFlagApCorrFailures:
                     source.set(apCorrInfo.fluxFlagKey, oldFluxFlagState)
 
-            if self.log.getLevel() <= self.log.DEBUG:
+            if self.log.isEnabledFor(self.log.DEBUG):
                 # log statistics on the effects of aperture correction
                 apCorrArr = np.array([s.get(apCorrInfo.apCorrKey) for s in catalog])
                 apCorrErrArr = np.array([s.get(apCorrInfo.apCorrErrKey) for s in catalog])
