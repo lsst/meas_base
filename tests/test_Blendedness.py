@@ -19,7 +19,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from contextlib import contextmanager
 import unittest
 
 import lsst.geom
@@ -28,22 +27,6 @@ import lsst.meas.base
 import lsst.utils.tests
 
 from lsst.meas.base.tests import AlgorithmTestCase
-
-
-@contextmanager
-def onlyLogFatal(log):
-    """For the duration of this context, only log ``FATAL`` errors.
-
-    This is convenient when testing algorithms under failure conditions: we
-    want to be able to check that they have set appropriate flags without
-    spewing alarming & confusing error messages to the console.
-    """
-    oldLevel = log.getThreshold()
-    log.setThreshold(log.FATAL)
-    try:
-        yield
-    finally:
-        log.setThreshold(oldLevel)
 
 
 class BlendednessTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
