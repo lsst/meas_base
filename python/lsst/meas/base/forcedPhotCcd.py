@@ -576,10 +576,10 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         for record in unfiltered:
             if record.getFootprint() is None or record.getFootprint().getArea() == 0:
                 if record.getParent() != 0:
-                    self.log.warn("Skipping reference %s (child of %s) with bad Footprint",
-                                  record.getId(), record.getParent())
+                    self.log.warning("Skipping reference %s (child of %s) with bad Footprint",
+                                     record.getId(), record.getParent())
                 else:
-                    self.log.warn("Skipping reference parent %s with bad Footprint", record.getId())
+                    self.log.warning("Skipping reference parent %s with bad Footprint", record.getId())
                     badParents.add(record.getId())
             elif record.getParent() not in badParents:
                 references.append(record)

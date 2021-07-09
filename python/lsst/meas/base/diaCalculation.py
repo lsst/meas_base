@@ -315,7 +315,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
         if diaObjectCat.index.name is None:
             diaObjectCat.set_index("diaObjectId", inplace=True, drop=False)
         elif diaObjectCat.index.name != "diaObjectId":
-            self.log.warn(
+            self.log.warning(
                 "Input diaObjectCat is indexed on column(s) incompatible with "
                 "this task. Should be indexed on 'diaObjectId'. Trying to set "
                 "index regardless")
@@ -330,7 +330,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                 drop=False)
         elif (diaSourceCat.index.names
               != ["diaObjectId", "filterName", "diaSourceId"]):
-            self.log.warn(
+            self.log.warning(
                 "Input diaSourceCat is indexed on column(s) incompatible with "
                 "this task. Should be indexed on 'multi-index, "
                 "['diaObjectId', 'filterName', 'diaSourceId']. Trying to set "
@@ -428,8 +428,8 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                     (slice(None), filterName), :
                 ]
             except KeyError:
-                self.log.warn(f"No DiaSource data with fitler={filterName}. "
-                              "Continuing...")
+                self.log.warning(f"No DiaSource data with fitler={filterName}. "
+                                 "Continuing...")
                 continue
             # Level=0 here groups by diaObjectId.
             filterDiaSourcesGB = updatingFilterDiaSources.groupby(level=0)
@@ -447,7 +447,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                         try:
                             filterObjDiaSources = objDiaSources.loc[filterName]
                         except KeyError:
-                            self.log.warn(
+                            self.log.warning(
                                 "DiaObjectId={updatedDiaObjectId} has no "
                                 "DiaSources for filter={filterName}. "
                                 "Continuing...")

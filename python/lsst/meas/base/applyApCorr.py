@@ -203,8 +203,8 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
         ignoreSet = set(self.config.ignoreList)
         missingNameSet = ignoreSet - set(apCorrNameSet)
         if missingNameSet:
-            self.log.warn("Fields in ignoreList that are not in fluxCorrectList: %s",
-                          sorted(missingNameSet))
+            self.log.warning("Fields in ignoreList that are not in fluxCorrectList: %s",
+                             sorted(missingNameSet))
         for name in sorted(apCorrNameSet - ignoreSet):
             if name + "_instFlux" not in schema:
                 # if a field in the registry is missing from the schema, silently ignore it.
@@ -247,8 +247,8 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
             if None in (apCorrModel, apCorrErrModel):
                 missingNames = [(apCorrInfo.modelName, apCorrInfo.modelSigmaName)[i]
                                 for i, model in enumerate((apCorrModel, apCorrErrModel)) if model is None]
-                self.log.warn("Cannot aperture correct %s because could not find %s in apCorrMap" %
-                              (apCorrInfo.name, " or ".join(missingNames),))
+                self.log.warning("Cannot aperture correct %s because could not find %s in apCorrMap" %
+                                 (apCorrInfo.name, " or ".join(missingNames),))
                 for source in catalog:
                     source.set(apCorrInfo.apCorrFlagKey, True)
                 continue
