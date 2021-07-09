@@ -146,7 +146,7 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         for pluginName in dependencies:
             plugin = task.plugins[pluginName]
             if hasattr(plugin, "hasLogName") and plugin.hasLogName:
-                self.assertEqual(plugin.getLogName(), task.getPluginLogName(pluginName))
+                self.assertEqual(plugin.getLogName(), task.log.getChild(pluginName).getName())
                 # if the plugin is cpp, check the cpp Algorithm as well
                 if hasattr(plugin, "cpp"):
                     self.assertEqual(plugin.cpp.getLogName(), plugin.getLogName())
@@ -178,7 +178,7 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         for pluginName in dependencies:
             plugin = task.plugins[pluginName]
             if hasattr(plugin, "hasLogName") and plugin.hasLogName:
-                self.assertEqual(plugin.getLogName(), task.getPluginLogName(pluginName))
+                self.assertEqual(plugin.getLogName(), task.log.getChild(pluginName).getName())
                 # if the plugin is cpp, check the cpp Algorithm as well
                 if hasattr(plugin, "cpp"):
                     self.assertEqual(plugin.cpp.getLogName(), task.log.getName() + "." + pluginName)
@@ -214,8 +214,8 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.config.plugins = [algName]
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
         #  test that the plugin's logName has been propagated to the plugin
-        self.assertTrue(task.plugins[algName].getLogName(), task.getPluginLogName(algName))
-        log = lsst.log.Log.getLogger(task.getPluginLogName(algName))
+        self.assertEqual(task.plugins[algName].getLogName(), task.log.getChild(algName).getName())
+        log = task.log.getChild(algName)
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(log, pluginLogName)
             exposure, cat = self.dataset.realize(noise=0.0, schema=schema, randomSeed=2)
@@ -235,12 +235,12 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
-        log = lsst.log.Log.getLogger(task.getPluginLogName(algName))
+        log = task.log.getChild(algName)
         log.setLevel(lsst.log.ERROR)
 
         # test that the plugin's logName has been propagated to the plugin
-        self.assertTrue(task.plugins[algName].getLogName(), task.getPluginLogName(algName))
-        self.assertTrue(task.plugins[algName].cpp.getLogName(), task.getPluginLogName(algName))
+        self.assertEqual(task.plugins[algName].getLogName(), task.log.getChild(algName).getName())
+        self.assertEqual(task.plugins[algName].cpp.getLogName(), task.log.getChild(algName).getName())
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(log, pluginLogName)
             exposure, cat = self.dataset.realize(noise=0.0, schema=schema, randomSeed=3)
@@ -269,7 +269,7 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(1000000.0, self.center)
         self.task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
-        self.log = lsst.log.Log.getLogger(self.task.getPluginLogName("base_SdssCentroid"))
+        self.log = self.task.log.getChild("base_SdssCentroid")
         self.exposure, self.catalog = self.dataset.realize(10.0, self.task.schema, randomSeed=4)
 
     def tearDown(self):
@@ -328,7 +328,7 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(1000000.0, self.center)
         self.task = self.makeForcedMeasurementTask("base_SdssCentroid")
-        self.log = lsst.log.Log.getLogger(self.task.getPluginLogName("base_SdssCentroid"))
+        self.log = self.task.log.getChild("base_SdssCentroid")
         measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs(), randomSeed=5)
         measDataset = self.dataset.transform(measWcs)
         self.exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema(), randomSeed=5)
