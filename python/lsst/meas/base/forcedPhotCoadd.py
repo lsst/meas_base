@@ -288,7 +288,7 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
 
         measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
                                                    idFactory=self.makeIdFactory(dataRef))
-        self.log.info("Performing forced measurement on %s" % (dataRef.dataId,))
+        self.log.info("Performing forced measurement on %s", dataRef.dataId)
         self.attachFootprints(measCat, refCat, exposure, refWcs, dataRef)
 
         exposureId = self.getExposureId(dataRef)
@@ -400,8 +400,8 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         if self.config.footprintDatasetName is None:
             return self.measurement.attachTransformedFootprints(sources, refCat, exposure, refWcs)
 
-        self.log.info("Loading deblended footprints for sources from %s, %s" %
-                      (self.config.footprintDatasetName, dataRef.dataId))
+        self.log.info("Loading deblended footprints for sources from %s, %s",
+                      self.config.footprintDatasetName, dataRef.dataId)
         fpCat = dataRef.get("%sCoadd_%s" % (self.config.coaddName, self.config.footprintDatasetName),
                             immediate=True)
         for refRecord, srcRecord in zip(refCat, sources):

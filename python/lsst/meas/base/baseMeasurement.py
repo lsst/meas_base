@@ -236,9 +236,6 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
             algMetadata = lsst.daf.base.PropertyList()
         self.algMetadata = algMetadata
 
-    def getPluginLogName(self, pluginName):
-        return self.log.getName() + '.' + pluginName
-
     def initializePlugins(self, **kwds):
         """Initialize plugins (and slots) according to configuration.
 
@@ -271,7 +268,7 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
             #   The task will use this name to log plugin errors, regardless.
             if hasattr(PluginClass, "hasLogName") and PluginClass.hasLogName:
                 self.plugins[name] = PluginClass(config, name, metadata=self.algMetadata,
-                                                 logName=self.getPluginLogName(name), **kwds)
+                                                 logName=self.log.getChild(name).getName(), **kwds)
             else:
                 self.plugins[name] = PluginClass(config, name, metadata=self.algMetadata, **kwds)
 
@@ -362,14 +359,14 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         except FATAL_EXCEPTIONS:
             raise
         except MeasurementError as error:
-            lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).debug(
-                "MeasurementError in %s.measure on record %s: %s"
-                % (plugin.name, measRecord.getId(), error))
+            self.log.getChild(plugin.name).debug(
+                "MeasurementError in %s.measure on record %s: %s",
+                plugin.name, measRecord.getId(), error)
             plugin.fail(measRecord, error)
         except Exception as error:
-            lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).debug(
-                "Exception in %s.measure on record %s: %s"
-                % (plugin.name, measRecord.getId(), error))
+            self.log.getChild(plugin.name).debug(
+                "Exception in %s.measure on record %s: %s",
+                plugin.name, measRecord.getId(), error)
             plugin.fail(measRecord)
 
     def callMeasureN(self, measCat, *args, **kwds):
@@ -449,13 +446,13 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
 
         except MeasurementError as error:
             for measRecord in measCat:
-                lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).debug(
-                    "MeasurementError in %s.measureN on records %s-%s: %s"
-                    % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
+                self.log.getChild(plugin.name).debug(
+                    "MeasurementError in %s.measureN on records %s-%s: %s",
+                    plugin.name, measCat[0].getId(), measCat[-1].getId(), error)
                 plugin.fail(measRecord, error)
         except Exception as error:
             for measRecord in measCat:
                 plugin.fail(measRecord)
-                lsst.log.Log.getLogger(self.getPluginLogName(plugin.name)).debug(
-                    "Exception in %s.measureN on records %s-%s: %s"
-                    % (plugin.name, measCat[0].getId(), measCat[-1].getId(), error))
+                self.log.getChild(plugin.name).debug(
+                    "Exception in %s.measureN on records %s-%s: %s",
+                    plugin.name, measCat[0].getId(), measCat[-1].getId(), error)

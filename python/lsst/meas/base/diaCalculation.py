@@ -315,7 +315,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
         if diaObjectCat.index.name is None:
             diaObjectCat.set_index("diaObjectId", inplace=True, drop=False)
         elif diaObjectCat.index.name != "diaObjectId":
-            self.log.warn(
+            self.log.warning(
                 "Input diaObjectCat is indexed on column(s) incompatible with "
                 "this task. Should be indexed on 'diaObjectId'. Trying to set "
                 "index regardless")
@@ -330,7 +330,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                 drop=False)
         elif (diaSourceCat.index.names
               != ["diaObjectId", "filterName", "diaSourceId"]):
-            self.log.warn(
+            self.log.warning(
                 "Input diaSourceCat is indexed on column(s) incompatible with "
                 "this task. Should be indexed on 'multi-index, "
                 "['diaObjectId', 'filterName', 'diaSourceId']. Trying to set "
@@ -389,7 +389,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
         """
         # DiaObjects will be updated in place.
         diaObjectsToUpdate = diaObjectCat.loc[updatedDiaObjectIds, :]
-        self.log.info("Calculating summary stats for %i DiaObjects" %
+        self.log.info("Calculating summary stats for %i DiaObjects",
                       len(diaObjectsToUpdate))
 
         updatingDiaSources = diaSourceCat.loc[updatedDiaObjectIds, :]
@@ -428,8 +428,8 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                     (slice(None), filterName), :
                 ]
             except KeyError:
-                self.log.warn(f"No DiaSource data with fitler={filterName}. "
-                              "Continuing...")
+                self.log.warning("No DiaSource data with fitler=%s. "
+                                 "Continuing...", filterName)
                 continue
             # Level=0 here groups by diaObjectId.
             filterDiaSourcesGB = updatingFilterDiaSources.groupby(level=0)
@@ -447,10 +447,10 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                         try:
                             filterObjDiaSources = objDiaSources.loc[filterName]
                         except KeyError:
-                            self.log.warn(
+                            self.log.warning(
                                 "DiaObjectId={updatedDiaObjectId} has no "
-                                "DiaSources for filter={filterName}. "
-                                "Continuing...")
+                                "DiaSources for filter=%s. "
+                                "Continuing...", filterName)
                         with CCContext(plug, updatedDiaObjectId, self.log):
                             # We feed the catalog we need to update and the id
                             # so as to get a few into the catalog and not a copy.

@@ -21,6 +21,7 @@ python/lsst/meas/base/version.py
 pytest_session.txt
 tests/.tests
 tests/.cache
+tests/*.log
 ups/*.cfgc
 bin/forcedPhotCcd.py
 bin/forcedPhotCoadd.py
