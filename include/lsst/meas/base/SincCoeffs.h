@@ -58,11 +58,11 @@ public:
      *
      * Coefficients are retrieved from the cache, if available; otherwise they will be generated.
      */
-    static PTR(CoeffT const)
+    static std::shared_ptr<CoeffT const>
             get(afw::geom::ellipses::Axes const& outerEllipse, float const innerRadiusFactor = 0.0);
 
     /// Calculate the coefficients for an aperture
-    static PTR(CoeffT)
+    static std::shared_ptr<CoeffT>
             calculate(afw::geom::ellipses::Axes const& outerEllipse, double const innerFactor = 0.0);
 
 private:
@@ -78,7 +78,7 @@ private:
         bool isEqual(T x, T y) const { return ::fabs(x - y) < std::numeric_limits<T>::epsilon(); }
     };
 
-    typedef std::map<float, PTR(CoeffT), FuzzyCompare<float> > CoeffMap;
+    typedef std::map<float, std::shared_ptr<CoeffT>, FuzzyCompare<float> > CoeffMap;
     typedef std::map<float, CoeffMap, FuzzyCompare<float> > CoeffMapMap;
     SincCoeffs() : _cache(){};
     SincCoeffs(SincCoeffs const&);      // unimplemented: singleton
@@ -91,7 +91,7 @@ private:
      *
      * If the coefficients are not cached, a null shared_ptr will be returned.
      */
-    PTR(CoeffT const)
+    std::shared_ptr<CoeffT const>
     _lookup(afw::geom::ellipses::Axes const& outerEllipse, double const innerRadiusFactor = 0.0) const;
 
     CoeffMapMap _cache;  //< Cache of coefficients

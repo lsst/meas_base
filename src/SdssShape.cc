@@ -888,7 +888,7 @@ void SdssShapeAlgorithm::measure(afw::table::SourceRecord &measRecord,
         // by making the measurements stored with shape.sdss always computed via the
         // SdssShapeAlgorithm instead of delegating to the Psf class.
         try {
-            PTR(afw::detection::Psf const) psf = exposure.getPsf();
+            std::shared_ptr<afw::detection::Psf const> psf = exposure.getPsf();
             if (!psf) {
                 result.flags[PSF_SHAPE_BAD.number] = true;
             } else {

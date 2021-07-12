@@ -73,20 +73,20 @@ public:
         BICKERTON          ///< Weight \<r^2> by I^2 to avoid negative instFluxes
     };
 
-    PsfAttributes(CONST_PTR(afw::detection::Psf) psf, int const iX, int const iY);
-    PsfAttributes(CONST_PTR(afw::detection::Psf) psf, geom::Point2I const &cen);
+    PsfAttributes(std::shared_ptr<afw::detection::Psf const> psf, int const iX, int const iY);
+    PsfAttributes(std::shared_ptr<afw::detection::Psf const> psf, geom::Point2I const &cen);
 
     double computeGaussianWidth(Method how = ADAPTIVE_MOMENT) const;
     double computeEffectiveArea() const;
 
 private:
-    PTR(afw::image::Image<double>) _psfImage;
+    std::shared_ptr<afw::image::Image<double>> _psfImage;
 };
 
 /**
  * @brief Constructor for PsfAttributes
  */
-PsfAttributes::PsfAttributes(CONST_PTR(afw::detection::Psf) psf,  ///< The psf whose attributes we want
+PsfAttributes::PsfAttributes(std::shared_ptr<afw::detection::Psf const> psf,  ///< The psf whose attributes we want
                              int const iX,  ///< the x position in the frame we want the attributes at
                              int const iY   ///< the y position in the frame we want the attributes at
                              ) {
@@ -98,7 +98,7 @@ PsfAttributes::PsfAttributes(CONST_PTR(afw::detection::Psf) psf,  ///< The psf w
  * @brief Constructor for PsfAttributes
  */
 PsfAttributes::PsfAttributes(
-        CONST_PTR(afw::detection::Psf) psf,  ///< The psf whose attributes we want
+        std::shared_ptr<afw::detection::Psf const> psf,  ///< The psf whose attributes we want
         geom::Point2I const &cen             ///< the position in the frame we want the attributes at
         )
         :  // N.b. cen is a PointI so that we know this image is centered in the central pixel of _psfImage
@@ -140,7 +140,7 @@ typename afw::image::MaskedImage<T>::SinglePixel computeShiftedValue(
     typedef typename afw::image::Exposure<T>::MaskedImageT MaskedImageT;
     typedef typename afw::image::Image<double> KernelImageT;
 
-    PTR(afw::math::SeparableKernel) warpingKernelPtr = afw::math::makeWarpingKernel(warpingKernelName);
+std::shared_ptr<afw::math::SeparableKernel> warpingKernelPtr = afw::math::makeWarpingKernel(warpingKernelName);
 
     if ((std::abs(fracShift[0]) >= 1) || (std::abs(fracShift[1]) >= 1)) {
         std::ostringstream os;
@@ -206,7 +206,7 @@ void PeakLikelihoodFluxAlgorithm::measure(afw::table::SourceRecord &measRecord,
     if (!exposure.hasPsf()) {
         throw LSST_EXCEPT(pex::exceptions::InvalidParameterError, "exposure has no PSF");
     }
-    PTR(afw::detection::Psf const) psfPtr = exposure.getPsf();
+    std::shared_ptr<afw::detection::Psf const> psfPtr = exposure.getPsf();
     if (!geom::Box2D(mimage.getBBox()).contains(center)) {
         std::ostringstream os;
         os << "Center = " << center << " not in exposure bbox" << mimage.getBBox();

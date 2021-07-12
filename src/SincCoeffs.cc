@@ -495,27 +495,27 @@ void SincCoeffs<PixelT>::cache(float r1, float r2) {
     double const innerFactor = r1 / r2;
     afw::geom::ellipses::Axes axes(r2, r2, 0.0);
     if (!getInstance()._lookup(axes, innerFactor)) {
-        PTR(typename SincCoeffs<PixelT>::CoeffT) coeff = calculate(axes, innerFactor);
+        std::shared_ptr<typename SincCoeffs<PixelT>::CoeffT> coeff = calculate(axes, innerFactor);
         getInstance()._cache[r2][innerFactor] = coeff;
     }
 }
 
 template <typename PixelT>
-CONST_PTR(typename SincCoeffs<PixelT>::CoeffT)
+std::shared_ptr<typename SincCoeffs<PixelT>::CoeffT const>
 SincCoeffs<PixelT>::get(afw::geom::ellipses::Axes const& axes, float const innerFactor) {
-    CONST_PTR(CoeffT) coeff = getInstance()._lookup(axes, innerFactor);
+    std::shared_ptr<CoeffT const> coeff = getInstance()._lookup(axes, innerFactor);
     return coeff ? coeff : calculate(axes, innerFactor);
 }
 
 template <typename PixelT>
-CONST_PTR(typename SincCoeffs<PixelT>::CoeffT)
+std::shared_ptr<typename SincCoeffs<PixelT>::CoeffT const>
 SincCoeffs<PixelT>::_lookup(afw::geom::ellipses::Axes const& axes, double const innerFactor) const {
     if (innerFactor < 0.0 || innerFactor > 1.0) {
         throw LSST_EXCEPT(pex::exceptions::InvalidParameterError,
                           (boost::format("innerFactor = %f is not between 0 and 1") % innerFactor).str());
     }
 
-    CONST_PTR(typename SincCoeffs<PixelT>::CoeffT) const null = CONST_PTR(SincCoeffs<PixelT>::CoeffT)();
+    std::shared_ptr<typename SincCoeffs<PixelT>::CoeffT const> const null = std::shared_ptr<SincCoeffs<PixelT>::CoeffT const>();
 
     // We only cache circular apertures
     if (!FuzzyCompare<float>().isEqual(axes.getA(), axes.getB())) {
@@ -530,7 +530,7 @@ SincCoeffs<PixelT>::_lookup(afw::geom::ellipses::Axes const& axes, double const 
 }
 
 template <typename PixelT>
-PTR(typename SincCoeffs<PixelT>::CoeffT)
+std::shared_ptr<typename SincCoeffs<PixelT>::CoeffT>
 SincCoeffs<PixelT>::calculate(afw::geom::ellipses::Axes const& axes, double const innerFactor) {
     if (innerFactor < 0.0 || innerFactor > 1.0) {
         throw LSST_EXCEPT(pex::exceptions::InvalidParameterError,

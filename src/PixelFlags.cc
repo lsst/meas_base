@@ -143,7 +143,7 @@ void PixelFlagsAlgorithm::measure(afw::table::SourceRecord& measRecord,
         // footprint (supplied by the measurement framework) should be the
         // highest peak so that one will be used as a proxy for the central
         // tendency of the distribution of flux for the record.
-        PTR(afw::detection::Footprint) footprint = measRecord.getFootprint();
+        std::shared_ptr<afw::detection::Footprint> footprint = measRecord.getFootprint();
         // If there is no footprint or the footprint contains no peaks, throw
         // a runtime error.
         if (!footprint || footprint->getPeaks().empty()) {
