@@ -170,7 +170,7 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         dependencies = registry.keys()
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid", dependencies=dependencies)
         exposure, catalog = dataset.realize(noise=100.0, schema=task.schema, randomSeed=0)
-        task.log.setLevel(lsst.log.ERROR)
+        task.log.setLevel(task.log.ERROR)
         task.run(catalog, exposure)
         for pluginName in dependencies:
             plugin = task.plugins[pluginName]
@@ -202,7 +202,7 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         measCat = task.generateMeasCat(exposure, refCat, refWcs)
         task.attachTransformedFootprints(measCat, refCat, exposure, refWcs)
 
-        task.log.setLevel(lsst.log.ERROR)
+        task.log.setLevel(task.log.ERROR)
         task.run(measCat, exposure, refCat, refWcs)
         for pluginName in dependencies:
             plugin = task.plugins[pluginName]
@@ -266,7 +266,7 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
         log = task.log.getChild(algName)
-        log.setLevel(lsst.log.ERROR)
+        log.setLevel(log.ERROR)
 
         # test that the plugin's logName has been propagated to the plugin
         self.assertEqual(task.plugins[algName].getLogName(), log.name)
@@ -320,7 +320,7 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.task.log.info("Testing")
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(self.log, pluginLogName)
-            self.log.setLevel(lsst.log.DEBUG)
+            self.log.setLevel(self.log.DEBUG)
             self.task.run(self.catalog, self.exposure)
             # direct back to console, closing log files
             directLog(self.log, None)
@@ -340,7 +340,7 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(self.log, pluginLogName)
-            self.log.setLevel(lsst.log.ERROR)
+            self.log.setLevel(self.log.ERROR)
             self.task.run(self.catalog, self.exposure)
             # direct back to console, closing log files
             directLog(self.log, None)
@@ -387,7 +387,7 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.task.log.info("Testing")
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(self.log, pluginLogName)
-            self.log.setLevel(lsst.log.DEBUG)
+            self.log.setLevel(self.log.DEBUG)
             self.task.run(self.measCat, self.exposure, self.refCat, self.refWcs)
             # direct back to console, closing log files
             directLog(self.log, None)
@@ -407,7 +407,7 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(self.log, pluginLogName)
-            self.log.setLevel(lsst.log.ERROR)
+            self.log.setLevel(self.log.ERROR)
             self.task.run(self.measCat, self.exposure, self.refCat, self.refWcs)
             # direct back to console, closing log files
             directLog(self.log, None)
