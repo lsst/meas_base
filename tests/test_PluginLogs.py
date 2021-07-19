@@ -22,6 +22,8 @@
 import unittest
 import os
 import numpy
+import logging
+from logging import FileHandler, StreamHandler, Formatter
 
 import lsst.geom
 import lsst.afw.table
@@ -109,18 +111,45 @@ class LoggingPlugin(SingleFramePlugin):
 def directLog(log, file=None):
     """Direct the log given to a file or to the console if ``file`` is `None`.
     """
-    props = "log4j.rootLogger=INFO, FA\n"
-    if file is None:
-        props += "log4j.appender.FA=ConsoleAppender\n"
+    if isinstance(log, lsst.log.Log):
+        props = "log4j.rootLogger=INFO, FA\n"
+        if file is None:
+            props += "log4j.appender.FA=ConsoleAppender\n"
+        else:
+            props += "log4j.appender.FA=FileAppender\n"
+            props += "log4j.appender.FA.Append=false\n"
+            props += "log4j.appender.FA.file=%s\n"%(file,)
+            props += "log4j.appender.FA.Append=false\n"
+        props += "log4j.appender.FA.layout=PatternLayout\n"
+        props += "log4j.appender.FA.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss.SSS} %p %c %m %X%n\n"
+        props += "log4j.logger.main.a=DEBUG\n"
+        log.configure_prop(props)
     else:
-        props += "log4j.appender.FA=FileAppender\n"
-        props += "log4j.appender.FA.Append=false\n"
-        props += "log4j.appender.FA.file=%s\n"%(file,)
-        props += "log4j.appender.FA.Append=false\n"
-    props += "log4j.appender.FA.layout=PatternLayout\n"
-    props += "log4j.appender.FA.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss.SSS} %p %c %m %X%n\n"
-    props += "log4j.logger.main.a=DEBUG\n"
-    log.configure_prop(props)
+        log.setLevel(logging.INFO)
+
+        # Remove existing handlers
+        for handler in log.handlers:
+            log.removeHandler(handler)
+            if isinstance(handler, FileHandler):
+                handler.close()
+
+        # Ignore parent handlers.
+        log.propagate = 0
+
+        if file is None:
+            handler = StreamHandler()
+        else:
+            handler = FileHandler(file)
+
+        # Tests check for level name so ensure it is included.
+        formatter = Formatter(fmt="{name} {levelname}: {message}", style="{")
+        handler.setFormatter(formatter)
+        log.addHandler(handler)
+
+        # Configure lsst.log to forward all log messages to python.
+        # This is needed to forward the C++ log test messages to these
+        # python handlers.
+        lsst.log.configure_pylog_MDC("INFO", MDC_class=None)
 
 
 class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
