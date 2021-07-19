@@ -227,7 +227,7 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                 lines = fin.read()
         # test that the sample plugin has correctly logged to where we
         # expected it to.
-        self.assertGreaterEqual(lines.find("measuring"), 0)
+        self.assertGreaterEqual(lines.find("measuring"), 0, lines)
 
     def testLoggingCppPlugin(self):
         # PsfFlux is known to log an ``ERROR`` if a Psf is not attached
@@ -255,9 +255,10 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             # direct back to console, closing log files
             with open(pluginLogName) as fin:
                 lines = fin.read()
+
         # test that the sample plugin has correctly logged to where we
         # expected it to.
-        self.assertGreaterEqual(lines.find("ERROR"), 0)
+        self.assertGreaterEqual(lines.find("ERROR"), 0, lines)
 
 
 class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
