@@ -146,7 +146,7 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         for pluginName in dependencies:
             plugin = task.plugins[pluginName]
             if hasattr(plugin, "hasLogName") and plugin.hasLogName:
-                self.assertEqual(plugin.getLogName(), task.log.getChild(pluginName).getName())
+                self.assertEqual(plugin.getLogName(), task.log.getChild(pluginName).name)
                 # if the plugin is cpp, check the cpp Algorithm as well
                 if hasattr(plugin, "cpp"):
                     self.assertEqual(plugin.cpp.getLogName(), plugin.getLogName())
@@ -178,10 +178,11 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         for pluginName in dependencies:
             plugin = task.plugins[pluginName]
             if hasattr(plugin, "hasLogName") and plugin.hasLogName:
-                self.assertEqual(plugin.getLogName(), task.log.getChild(pluginName).getName())
+                child_log = task.log.getChild(pluginName)
+                self.assertEqual(plugin.getLogName(), child_log.name)
                 # if the plugin is cpp, check the cpp Algorithm as well
                 if hasattr(plugin, "cpp"):
-                    self.assertEqual(plugin.cpp.getLogName(), task.log.getName() + "." + pluginName)
+                    self.assertEqual(plugin.cpp.getLogName(), child_log.name)
             else:
                 self.assertIsNone(plugin.getLogName())
 
@@ -214,7 +215,7 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.config.plugins = [algName]
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
         #  test that the plugin's logName has been propagated to the plugin
-        self.assertEqual(task.plugins[algName].getLogName(), task.log.getChild(algName).getName())
+        self.assertEqual(task.plugins[algName].getLogName(), task.log.getChild(algName).name)
         log = task.log.getChild(algName)
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(log, pluginLogName)
@@ -239,8 +240,8 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         log.setLevel(lsst.log.ERROR)
 
         # test that the plugin's logName has been propagated to the plugin
-        self.assertEqual(task.plugins[algName].getLogName(), task.log.getChild(algName).getName())
-        self.assertEqual(task.plugins[algName].cpp.getLogName(), task.log.getChild(algName).getName())
+        self.assertEqual(task.plugins[algName].getLogName(), log.name)
+        self.assertEqual(task.plugins[algName].cpp.getLogName(), log.name)
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(log, pluginLogName)
             exposure, cat = self.dataset.realize(noise=0.0, schema=schema, randomSeed=3)
