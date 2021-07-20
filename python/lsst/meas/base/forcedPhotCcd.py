@@ -332,13 +332,17 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         inputs['refCat'] = self.mergeAndFilterReferences(inputs['exposure'], inputs['refCat'],
                                                          inputs['refWcs'])
 
-        inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(inputRefs.exposure.dataId,
-                                                                       inputs['exposure'],
-                                                                       inputs['refCat'], inputs['refWcs'],
-                                                                       "visit_detector")
-        self.attachFootprints(inputs['measCat'], inputs['refCat'], inputs['exposure'], inputs['refWcs'])
-        outputs = self.run(**inputs)
-        butlerQC.put(outputs, outputRefs)
+        if inputs['refCat'] is None:
+            self.log.info("No WCS for exposure %s.  No %s catalog will be written.",
+                          butlerQC.quantum.dataId, outputRefs.measCat.datasetType.name)
+        else:
+            inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(inputRefs.exposure.dataId,
+                                                                           inputs['exposure'],
+                                                                           inputs['refCat'], inputs['refWcs'],
+                                                                           "visit_detector")
+            self.attachFootprints(inputs['measCat'], inputs['refCat'], inputs['exposure'], inputs['refWcs'])
+            outputs = self.run(**inputs)
+            butlerQC.put(outputs, outputRefs)
 
     def prepareCalibratedExposure(self, exposure, skyCorr=None, externalSkyWcsCatalog=None,
                                   externalPhotoCalibCatalog=None, finalizedPsfApCorrCatalog=None):
@@ -442,36 +446,40 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         lsst.meas.algorithms.loadReferenceObjects.ReferenceObjectLoader
 
         """
+        mergedRefCat = None
 
         # Step 1: Determine bounds of the exposure photometry will
         # be performed on.
         expWcs = exposure.getWcs()
-        expRegion = exposure.getBBox(lsst.afw.image.PARENT)
-        expBBox = lsst.geom.Box2D(expRegion)
-        expBoxCorners = expBBox.getCorners()
-        expSkyCorners = [expWcs.pixelToSky(corner).getVector() for
-                         corner in expBoxCorners]
-        expPolygon = lsst.sphgeom.ConvexPolygon(expSkyCorners)
+        if expWcs is None:
+            self.log.info("Exposure has no WCS.  Returning None for mergedRefCat.")
+        else:
+            expRegion = exposure.getBBox(lsst.afw.image.PARENT)
+            expBBox = lsst.geom.Box2D(expRegion)
+            expBoxCorners = expBBox.getCorners()
+            expSkyCorners = [expWcs.pixelToSky(corner).getVector() for
+                             corner in expBoxCorners]
+            expPolygon = lsst.sphgeom.ConvexPolygon(expSkyCorners)
 
-        # Step 2: Filter out reference catalog sources that are
-        # not contained within the exposure boundaries, or whose
-        # parents are not within the exposure boundaries.  Note
-        # that within a single input refCat, the parents always
-        # appear before the children.
-        mergedRefCat = None
-        for refCat in refCats:
-            refCat = refCat.get()
+            # Step 2: Filter out reference catalog sources that are
+            # not contained within the exposure boundaries, or whose
+            # parents are not within the exposure boundaries.  Note
+            # that within a single input refCat, the parents always
+            # appear before the children.
+            for refCat in refCats:
+                refCat = refCat.get()
+                if mergedRefCat is None:
+                    mergedRefCat = lsst.afw.table.SourceCatalog(refCat.table)
+                    containedIds = {0}  # zero as a parent ID means "this is a parent"
+                for record in refCat:
+                    if (expPolygon.contains(record.getCoord().getVector()) and record.getParent()
+                            in containedIds):
+                        record.setFootprint(record.getFootprint())
+                        mergedRefCat.append(record)
+                        containedIds.add(record.getId())
             if mergedRefCat is None:
-                mergedRefCat = lsst.afw.table.SourceCatalog(refCat.table)
-            containedIds = {0}  # zero as a parent ID means "this is a parent"
-            for record in refCat:
-                if expPolygon.contains(record.getCoord().getVector()) and record.getParent() in containedIds:
-                    record.setFootprint(record.getFootprint())
-                    mergedRefCat.append(record)
-                    containedIds.add(record.getId())
-        if mergedRefCat is None:
-            raise RuntimeError("No reference objects for forced photometry.")
-        mergedRefCat.sort(lsst.afw.table.SourceTable.getParentKey())
+                raise RuntimeError("No reference objects for forced photometry.")
+            mergedRefCat.sort(lsst.afw.table.SourceTable.getParentKey())
         return mergedRefCat
 
     def generateMeasCat(self, exposureDataId, exposure, refCat, refWcs, idPackerName):
@@ -757,21 +765,24 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
         )
 
         self.log.info("Filtering ref cats: %s", ','.join([str(i.dataId) for i in inputs['refCat']]))
-        refCat = self.df2RefCat([i.get(parameters={"columns": ['diaObjectId', 'ra', 'decl']})
-                                 for i in inputs['refCat']],
-                                inputs['exposure'].getBBox(), inputs['exposure'].getWcs())
-        inputs['refCat'] = refCat
-        # generateMeasCat does not use the refWcs.
-        inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(inputRefs.exposure.dataId,
-                                                                       inputs['exposure'], inputs['refCat'],
-                                                                       inputs['refWcs'],
-                                                                       "visit_detector")
-        # attachFootprints only uses refWcs in ``transformed`` mode, which is not
-        # supported in the DataFrame-backed task.
-        self.attachFootprints(inputs["measCat"], inputs["refCat"], inputs["exposure"], inputs["refWcs"])
-        outputs = self.run(**inputs)
+        if inputs["exposure"].getWcs() is not None:
+            refCat = self.df2RefCat([i.get(parameters={"columns": ['diaObjectId', 'ra', 'decl']})
+                                     for i in inputs['refCat']],
+                                    inputs['exposure'].getBBox(), inputs['exposure'].getWcs())
+            inputs['refCat'] = refCat
+            # generateMeasCat does not use the refWcs.
+            inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(
+                inputRefs.exposure.dataId, inputs['exposure'], inputs['refCat'], inputs['refWcs'],
+                "visit_detector")
+            # attachFootprints only uses refWcs in ``transformed`` mode, which is not
+            # supported in the DataFrame-backed task.
+            self.attachFootprints(inputs["measCat"], inputs["refCat"], inputs["exposure"], inputs["refWcs"])
+            outputs = self.run(**inputs)
 
-        butlerQC.put(outputs, outputRefs)
+            butlerQC.put(outputs, outputRefs)
+        else:
+            self.log.info("No WCS for %s.  Skipping and no %s catalog will be written.",
+                          butlerQC.quantum.dataId, outputRefs.measCat.datasetType.name)
 
     def df2RefCat(self, dfList, exposureBBox, exposureWcs):
         """Convert list of DataFrames to reference catalog
