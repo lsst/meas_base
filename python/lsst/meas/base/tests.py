@@ -153,12 +153,12 @@ class TestDataset:
         bbox = lsst.geom.Box2I(lsst.geom.Point2I(0,0), lsst.geom.Point2I(100,
                                                                          100))
         dataset = TestDataset(bbox)
-        dataset.addSource(flux=1E5, centroid=lsst.geom.Point2D(25, 26))
-        dataset.addSource(flux=2E5, centroid=lsst.geom.Point2D(75, 24),
+        dataset.addSource(instFlux=1E5, centroid=lsst.geom.Point2D(25, 26))
+        dataset.addSource(instFlux=2E5, centroid=lsst.geom.Point2D(75, 24),
                         shape=lsst.afw.geom.Quadrupole(8, 7, 2))
         with dataset.addBlend() as family:
-            family.addChild(flux=2E5, centroid=lsst.geom.Point2D(50, 72))
-            family.addChild(flux=1.5E5, centroid=lsst.geom.Point2D(51, 74))
+            family.addChild(instFlux=2E5, centroid=lsst.geom.Point2D(50, 72))
+            family.addChild(instFlux=1.5E5, centroid=lsst.geom.Point2D(51, 74))
         exposure, catalog = dataset.realize(noise=100.0,
                                             schema=TestDataset.makeMinimalSchema())
     """
