@@ -119,10 +119,8 @@ def directLog(log, file=None):
             props += "log4j.appender.FA=FileAppender\n"
             props += "log4j.appender.FA.Append=false\n"
             props += "log4j.appender.FA.file=%s\n"%(file,)
-            props += "log4j.appender.FA.Append=false\n"
         props += "log4j.appender.FA.layout=PatternLayout\n"
         props += "log4j.appender.FA.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss.SSS} %p %c %m %X%n\n"
-        props += "log4j.logger.main.a=DEBUG\n"
         log.configure_prop(props)
     else:
         log.setLevel(logging.INFO)
