@@ -32,6 +32,40 @@ from lsst.meas.base.tests import (AlgorithmTestCase, FluxTransformTestCase,
                                   SingleFramePluginTransformSetupHelper)
 
 
+def compute_chi2(exposure, centroid, instFlux, maskPlane=None):
+    """Return the chi2 for the exposure PSF at the given position.
+
+    Parameters
+    ----------
+    exposure : `lsst.afw.image.Exposure`
+        Exposure to calculate the PSF chi2 on.
+    centroid : `lsst::geom::Point2D`
+        Center of the source on the exposure to calculate the PSF at.
+    instFlux : `float`
+        Total flux of this source, as computed by the fitting algorithm.
+    maskPlane : `lsst.afw.image.Image`, optional
+        Pixels to mask out of the calculation.
+
+    Returns
+    -------
+    chi2, nPixels: `float`, `float`
+        The computed chi2 and number of pixels included in the calculation.
+    """
+    psfImage = exposure.getPsf().computeImage(centroid)
+    scaledPsf = psfImage.array*instFlux
+    # Get a sub-image the same size as the returned PSF image.
+    sub = exposure.Factory(exposure, psfImage.getBBox(), lsst.afw.image.LOCAL)
+    if maskPlane is not None:
+        unmasked = np.logical_not(sub.mask.array & sub.mask.getPlaneBitMask(maskPlane))
+        chi2 = np.sum((sub.image.array[unmasked] - scaledPsf[unmasked])**2
+                      / sub.variance.array[unmasked])
+        nPixels = unmasked.sum()
+    else:
+        chi2 = np.sum((sub.image.array - scaledPsf)**2 / sub.variance.array)
+        nPixels = np.prod(sub.mask.array.shape)
+    return chi2, nPixels
+
+
 class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
@@ -78,12 +112,17 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFloatsAlmostEqual(record.get("base_PsfFlux_instFlux"),
                                      record.get("truth_instFlux"),
                                      atol=3*record.get("base_PsfFlux_instFluxErr"))
+        chi2, nPixels = compute_chi2(exposure, record.getCentroid(),
+                                     record.get("base_PsfFlux_instFlux"),
+                                     "BAD")
+        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_chi2"), chi2, rtol=1e-7)
         # If we mask the whole image, we should get a MeasurementError
         maskArray[:, :] |= badMask
         with self.assertRaises(lsst.meas.base.MeasurementError) as context:
             algorithm.measure(record, exposure)
         self.assertEqual(context.exception.getFlagBit(),
                          lsst.meas.base.PsfFluxAlgorithm.NO_GOOD_PIXELS.number)
+        self.assertEqual(record.get("base_PsfFlux_npixels"), nPixels)
 
     def testSubImage(self):
         """Test measurement on sub-images.
@@ -100,10 +139,20 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         bbox = psfImage.getBBox()
         bbox.grow(-1)
         subExposure = exposure.Factory(exposure, bbox, lsst.afw.image.LOCAL)
+
         algorithm.measure(record, subExposure)
         self.assertFloatsAlmostEqual(record.get("base_PsfFlux_instFlux"), record.get("truth_instFlux"),
                                      atol=3*record.get("base_PsfFlux_instFluxErr"))
         self.assertTrue(record.get("base_PsfFlux_flag_edge"))
+
+        # Calculating chi2 requires trimming the PSF image by one pixel per side
+        # to match the subExposure created above, so we can't use compute_chi2()
+        # directly here.
+        scaledPsf = psfImage.array[1:-1, 1:-1]*record.get("base_PsfFlux_instFlux")
+        chi2 = np.sum((subExposure.image.array - scaledPsf)**2 / subExposure.variance.array)
+        nPixels = np.prod(subExposure.image.array.shape)
+        self.assertFloatsAlmostEqual(record.get("base_PsfFlux_chi2"), chi2, rtol=1e-7)
+        self.assertEqual(record.get("base_PsfFlux_npixels"), nPixels)
 
     def testNoPsf(self):
         """Test that we raise `FatalAlgorithmError` when there's no PSF.
@@ -131,24 +180,38 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         algorithm.measure(record, exposure)
         self.assertFloatsAlmostEqual(record.get("base_PsfFlux_instFlux"), instFlux, rtol=1E-3)
         self.assertFloatsAlmostEqual(record.get("base_PsfFlux_instFluxErr"), 0.0, rtol=1E-3)
+        # no noise, so infinite chi2 on this one
+        self.assertEqual(record.get("base_PsfFlux_chi2"), np.inf)
         for noise in (0.001, 0.01, 0.1):
-            instFluxes = []
-            instFluxErrs = []
             nSamples = 1000
-            for repeat in range(nSamples):
-                # By using ``repeat`` to seed the RNG, we get results which
+            instFluxes = np.zeros(nSamples, dtype=np.float64)
+            instFluxErrs = np.zeros(nSamples, dtype=np.float64)
+            expectedChi2s = np.zeros(nSamples, dtype=np.float64)
+            expectedNPixels = -100
+            measuredChi2s = np.zeros(nSamples, dtype=np.float64)
+            measuredNPixels = np.zeros(nSamples, dtype=np.float64)
+            for i in range(nSamples):
+                # By using ``i`` to seed the RNG, we get results which
                 # fall within the tolerances defined below. If we allow this
                 # test to be truly random, passing becomes RNG-dependent.
-                exposure, catalog = self.dataset.realize(noise*instFlux, schema, randomSeed=repeat)
+                exposure, catalog = self.dataset.realize(noise*instFlux, schema, randomSeed=i)
                 record = catalog[0]
                 algorithm.measure(record, exposure)
-                instFluxes.append(record.get("base_PsfFlux_instFlux"))
-                instFluxErrs.append(record.get("base_PsfFlux_instFluxErr"))
+                instFluxes[i] = record.get("base_PsfFlux_instFlux")
+                instFluxErrs[i] = record.get("base_PsfFlux_instFluxErr")
+                measuredChi2s[i] = record.get("base_PsfFlux_chi2")
+                measuredNPixels[i] = record.get("base_PsfFlux_npixels")
+                chi2, nPixels = compute_chi2(exposure, record.getCentroid(), instFluxes[i])
+                expectedChi2s[i] = chi2
+                expectedNPixels = nPixels  # should be the same each time
             instFluxMean = np.mean(instFluxes)
             instFluxErrMean = np.mean(instFluxErrs)
             instFluxStandardDeviation = np.std(instFluxes)
             self.assertFloatsAlmostEqual(instFluxErrMean, instFluxStandardDeviation, rtol=0.10)
             self.assertLess(abs(instFluxMean - instFlux), 2.0*instFluxErrMean / nSamples**0.5)
+            self.assertFloatsAlmostEqual(measuredChi2s, expectedChi2s, rtol=1e-7)
+            # Should have the exact same number of pixels used every time.
+            self.assertTrue(np.all(measuredNPixels == expectedNPixels))
 
     def testSingleFramePlugin(self):
         task = self.makeSingleFrameMeasurementTask("base_PsfFlux")

@@ -56,6 +56,9 @@ PsfFluxAlgorithm::PsfFluxAlgorithm(Control const& ctrl, std::string const& name,
           _instFluxResultKey(FluxResultKey::addFields(
                   schema, name, "instFlux derived from linear least-squares fit of PSF model")),
           _areaKey(schema.addField<float>(name + "_area", "effective area of PSF", "pixel")),
+          _chi2Key(schema.addField<float>(name + "_chi2", "chi2 of the fitted PSF")),
+          _npixelsKey(schema.addField<int>(name + "_npixels",
+                                           "number of pixels that were included in the PSF fit", "pixel")),
           _centroidExtractor(schema, name) {
     _logName = logName.size() ? logName : name;
     _flagHandler = FlagHandler::addFields(schema, name, getFlagDefinitions());
@@ -110,10 +113,15 @@ void PsfFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
     // variance as if we had, so we'll apply the weights to the model now, and update alpha.
     result.instFluxErr = std::sqrt(model.array().square().matrix().dot(variance.cast<PsfPixel>())) / alpha;
     measRecord.set(_areaKey, model.sum() / alpha);
+    measRecord.set(_npixelsKey, fitRegion.getSpans()->getArea());
     if (!std::isfinite(result.instFlux) || !std::isfinite(result.instFluxErr)) {
         throw LSST_EXCEPT(PixelValueError, "Invalid pixel value detected in image.");
     }
     measRecord.set(_instFluxResultKey, result);
+    auto chi2 = ((data.cast<PsfPixel>() - result.instFlux * model).array().square() /
+                 variance.cast<PsfPixel>().array())
+                        .sum();
+    measRecord.set(_chi2Key, chi2);
 }
 
 void PsfFluxAlgorithm::fail(afw::table::SourceRecord& measRecord, MeasurementError* error) const {
