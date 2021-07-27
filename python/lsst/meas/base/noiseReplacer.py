@@ -73,7 +73,7 @@ class NoiseReplacer:
     noiseImage : `lsst.afw.image.ImageF`
         An image used as a predictable noise replacement source. Used during
         testing only.
-    log : `lsst.log.log.log.Log`, optional
+    log : `lsst.log.log.log.Log` or `logging.Logger`, optional
         Logger to use for status messages; no status messages will be recorded
         if `None`.
 
