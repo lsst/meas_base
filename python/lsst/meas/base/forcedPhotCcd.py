@@ -20,10 +20,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import collections
+import logging
 
 import lsst.pex.config
 import lsst.pex.exceptions
-from lsst.log import Log
 import lsst.pipe.base
 import lsst.geom
 import lsst.afw.geom
@@ -72,7 +72,7 @@ class PerTractCcdDataIdContainer(pipeBase.DataIdContainer):
         """
         if self.datasetType is None:
             raise RuntimeError("Must call setDatasetType first")
-        log = Log.getLogger("meas.base.forcedPhotCcd.PerTractCcdDataIdContainer")
+        log = logging.getLogger("meas.base.forcedPhotCcd.PerTractCcdDataIdContainer")
         skymap = None
         visitTract = collections.defaultdict(set)   # Set of tracts for each visit
         visitRefs = collections.defaultdict(list)   # List of data references for each visit

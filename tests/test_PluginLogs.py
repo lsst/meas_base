@@ -22,6 +22,8 @@
 import unittest
 import os
 import numpy
+import logging
+from logging import FileHandler, StreamHandler, Formatter
 
 import lsst.geom
 import lsst.afw.table
@@ -78,7 +80,7 @@ class LoggingPlugin(SingleFramePlugin):
         is called. If a `MeasurementError` is raised during this method, the
         `fail` method will be called to set the error flags.
         """
-        lsst.log.Log.getLogger(self.getLogName()).info("%s plugin measuring.", self.name)
+        logging.getLogger(self.getLogName()).info("%s plugin measuring.", self.name)
         # Sum the pixels inside the bounding box
         centerPoint = lsst.geom.Point2I(int(measRecord.getX()), int(measRecord.getY()))
         bbox = lsst.geom.Box2I(centerPoint, lsst.geom.Extent2I(1, 1))
@@ -109,18 +111,43 @@ class LoggingPlugin(SingleFramePlugin):
 def directLog(log, file=None):
     """Direct the log given to a file or to the console if ``file`` is `None`.
     """
-    props = "log4j.rootLogger=INFO, FA\n"
-    if file is None:
-        props += "log4j.appender.FA=ConsoleAppender\n"
+    if isinstance(log, lsst.log.Log):
+        props = "log4j.rootLogger=INFO, FA\n"
+        if file is None:
+            props += "log4j.appender.FA=ConsoleAppender\n"
+        else:
+            props += "log4j.appender.FA=FileAppender\n"
+            props += "log4j.appender.FA.Append=false\n"
+            props += "log4j.appender.FA.file=%s\n"%(file,)
+        props += "log4j.appender.FA.layout=PatternLayout\n"
+        props += "log4j.appender.FA.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss.SSS} %p %c %m %X%n\n"
+        log.configure_prop(props)
     else:
-        props += "log4j.appender.FA=FileAppender\n"
-        props += "log4j.appender.FA.Append=false\n"
-        props += "log4j.appender.FA.file=%s\n"%(file,)
-        props += "log4j.appender.FA.Append=false\n"
-    props += "log4j.appender.FA.layout=PatternLayout\n"
-    props += "log4j.appender.FA.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss.SSS} %p %c %m %X%n\n"
-    props += "log4j.logger.main.a=DEBUG\n"
-    log.configure_prop(props)
+        log.setLevel(logging.INFO)
+
+        # Remove existing handlers
+        for handler in log.handlers:
+            log.removeHandler(handler)
+            if isinstance(handler, FileHandler):
+                handler.close()
+
+        # Ignore parent handlers.
+        log.propagate = 0
+
+        if file is None:
+            handler = StreamHandler()
+        else:
+            handler = FileHandler(file)
+
+        # Tests check for level name so ensure it is included.
+        formatter = Formatter(fmt="{name} {levelname}: {message}", style="{")
+        handler.setFormatter(formatter)
+        log.addHandler(handler)
+
+        # Configure lsst.log to forward all log messages to python.
+        # This is needed to forward the C++ log test messages to these
+        # python handlers.
+        lsst.log.configure_pylog_MDC("INFO", MDC_class=None)
 
 
 class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
@@ -141,12 +168,12 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         dependencies = registry.keys()
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid", dependencies=dependencies)
         exposure, catalog = dataset.realize(noise=100.0, schema=task.schema, randomSeed=0)
-        task.log.setLevel(lsst.log.ERROR)
+        task.log.setLevel(task.log.ERROR)
         task.run(catalog, exposure)
         for pluginName in dependencies:
             plugin = task.plugins[pluginName]
             if hasattr(plugin, "hasLogName") and plugin.hasLogName:
-                self.assertEqual(plugin.getLogName(), task.log.getChild(pluginName).getName())
+                self.assertEqual(plugin.getLogName(), task.log.getChild(pluginName).name)
                 # if the plugin is cpp, check the cpp Algorithm as well
                 if hasattr(plugin, "cpp"):
                     self.assertEqual(plugin.cpp.getLogName(), plugin.getLogName())
@@ -173,15 +200,16 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         measCat = task.generateMeasCat(exposure, refCat, refWcs)
         task.attachTransformedFootprints(measCat, refCat, exposure, refWcs)
 
-        task.log.setLevel(lsst.log.ERROR)
+        task.log.setLevel(task.log.ERROR)
         task.run(measCat, exposure, refCat, refWcs)
         for pluginName in dependencies:
             plugin = task.plugins[pluginName]
             if hasattr(plugin, "hasLogName") and plugin.hasLogName:
-                self.assertEqual(plugin.getLogName(), task.log.getChild(pluginName).getName())
+                child_log = task.log.getChild(pluginName)
+                self.assertEqual(plugin.getLogName(), child_log.name)
                 # if the plugin is cpp, check the cpp Algorithm as well
                 if hasattr(plugin, "cpp"):
-                    self.assertEqual(plugin.cpp.getLogName(), task.log.getName() + "." + pluginName)
+                    self.assertEqual(plugin.cpp.getLogName(), child_log.name)
             else:
                 self.assertIsNone(plugin.getLogName())
 
@@ -214,7 +242,7 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.config.plugins = [algName]
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
         #  test that the plugin's logName has been propagated to the plugin
-        self.assertEqual(task.plugins[algName].getLogName(), task.log.getChild(algName).getName())
+        self.assertEqual(task.plugins[algName].getLogName(), task.log.getChild(algName).name)
         log = task.log.getChild(algName)
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(log, pluginLogName)
@@ -226,7 +254,7 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                 lines = fin.read()
         # test that the sample plugin has correctly logged to where we
         # expected it to.
-        self.assertGreaterEqual(lines.find("measuring"), 0)
+        self.assertGreaterEqual(lines.find("measuring"), 0, lines)
 
     def testLoggingCppPlugin(self):
         # PsfFlux is known to log an ``ERROR`` if a Psf is not attached
@@ -236,11 +264,11 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         schema = self.dataset.makeMinimalSchema()
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
         log = task.log.getChild(algName)
-        log.setLevel(lsst.log.ERROR)
+        log.setLevel(log.ERROR)
 
         # test that the plugin's logName has been propagated to the plugin
-        self.assertEqual(task.plugins[algName].getLogName(), task.log.getChild(algName).getName())
-        self.assertEqual(task.plugins[algName].cpp.getLogName(), task.log.getChild(algName).getName())
+        self.assertEqual(task.plugins[algName].getLogName(), log.name)
+        self.assertEqual(task.plugins[algName].cpp.getLogName(), log.name)
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(log, pluginLogName)
             exposure, cat = self.dataset.realize(noise=0.0, schema=schema, randomSeed=3)
@@ -254,9 +282,10 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
             # direct back to console, closing log files
             with open(pluginLogName) as fin:
                 lines = fin.read()
+
         # test that the sample plugin has correctly logged to where we
         # expected it to.
-        self.assertGreaterEqual(lines.find("ERROR"), 0)
+        self.assertGreaterEqual(lines.find("ERROR"), 0, lines)
 
 
 class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
@@ -289,7 +318,7 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.task.log.info("Testing")
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(self.log, pluginLogName)
-            self.log.setLevel(lsst.log.DEBUG)
+            self.log.setLevel(self.log.DEBUG)
             self.task.run(self.catalog, self.exposure)
             # direct back to console, closing log files
             directLog(self.log, None)
@@ -309,7 +338,7 @@ class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(self.log, pluginLogName)
-            self.log.setLevel(lsst.log.ERROR)
+            self.log.setLevel(self.log.ERROR)
             self.task.run(self.catalog, self.exposure)
             # direct back to console, closing log files
             directLog(self.log, None)
@@ -356,7 +385,7 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.task.log.info("Testing")
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(self.log, pluginLogName)
-            self.log.setLevel(lsst.log.DEBUG)
+            self.log.setLevel(self.log.DEBUG)
             self.task.run(self.measCat, self.exposure, self.refCat, self.refWcs)
             # direct back to console, closing log files
             directLog(self.log, None)
@@ -376,7 +405,7 @@ class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """
         with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
             directLog(self.log, pluginLogName)
-            self.log.setLevel(lsst.log.ERROR)
+            self.log.setLevel(self.log.ERROR)
             self.task.run(self.measCat, self.exposure, self.refCat, self.refWcs)
             # direct back to console, closing log files
             directLog(self.log, None)

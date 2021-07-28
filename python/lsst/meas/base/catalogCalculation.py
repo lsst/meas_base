@@ -128,7 +128,7 @@ class CCContext:
     cat : `lsst.afw.table.SourceCatalog` or `lsst.afw.table.SourceRecord`
         May either be a `~lsst.afw.table.SourceCatalog` or a single
         `~lsst.afw.table.SourceRecord`, depending on the plugin type.
-    log : `lsst.log.Log`
+    log : `lsst.log.Log` or `logging.Logger`
         A logger. Generally, this should be the logger of the object in which
         the context manager is being used.
     """

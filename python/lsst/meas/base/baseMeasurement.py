@@ -268,7 +268,7 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
             #   The task will use this name to log plugin errors, regardless.
             if hasattr(PluginClass, "hasLogName") and PluginClass.hasLogName:
                 self.plugins[name] = PluginClass(config, name, metadata=self.algMetadata,
-                                                 logName=self.log.getChild(name).getName(), **kwds)
+                                                 logName=self.log.getChild(name).name, **kwds)
             else:
                 self.plugins[name] = PluginClass(config, name, metadata=self.algMetadata, **kwds)
 

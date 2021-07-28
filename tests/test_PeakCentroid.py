@@ -39,7 +39,7 @@ def onlyLogFatal(log):
     want to be able to check that they have set appropriate flags without
     spewing alarming & confusing error messages to the console.
     """
-    oldLevel = log.getLevel()
+    oldLevel = log.level
     log.setLevel(log.FATAL)
     try:
         yield
