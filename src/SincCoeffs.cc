@@ -423,12 +423,13 @@ std::shared_ptr<afw::image::Image<PixelT>> calcImageKSpaceReal(double const rad1
     int xcen = wid / 2, ycen = wid / 2;
     FftShifter fftshift(wid);
 
-    boost::shared_array<double> cimg(new double[wid * wid]);
-    double* c = cimg.get();
+    boost::shared_array<std::complex<double>> cimg(new std::complex<double>[wid * wid]);
+    std::complex<double>* c = cimg.get();
     // fftplan args: nx, ny, *in, *out, kindx, kindy, flags
     // - done in-situ if *in == *out
-    fftw_plan plan = fftw_plan_r2r_2d(wid, wid, c, c, FFTW_R2HC, FFTW_R2HC, FFTW_ESTIMATE);
 
+    fftw_plan plan = fftw_plan_dft_2d(wid, wid, reinterpret_cast<fftw_complex*>(c),
+                                      reinterpret_cast<fftw_complex*>(c), FFTW_BACKWARD, FFTW_ESTIMATE);
     // compute the k-space values and put them in the cimg array
     double const twoPiRad1 = geom::TWOPI * rad1;
     double const twoPiRad2 = geom::TWOPI * rad2;
@@ -451,7 +452,7 @@ std::shared_ptr<afw::image::Image<PixelT>> calcImageKSpaceReal(double const rad1
         }
     }
     int fxy = fftshift.shift(wid / 2);
-    c[fxy * wid + fxy] = geom::PI * (rad2 * rad2 - rad1 * rad1);
+    c[fxy * wid + fxy] = {geom::PI * (rad2 * rad2 - rad1 * rad1), 0.};
 
     // perform the fft and clean up after ourselves
     fftw_execute(plan);
@@ -468,7 +469,7 @@ std::shared_ptr<afw::image::Image<PixelT>> calcImageKSpaceReal(double const rad1
             // now need to reflect the quadrant we solved to the other three
             int fX = iX < hwid ? hwid - iX - 1 : iX - hwid + 1;
             int fY = iY < hwid ? hwid - iY - 1 : iY - hwid + 1;
-            *ptr = static_cast<PixelT>(c[fY * wid + fX] / (wid * wid));
+            *ptr = static_cast<PixelT>(c[fY * wid + fX].real() / (wid * wid));
             iX++;
         }
     }
