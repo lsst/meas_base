@@ -269,7 +269,7 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
             #   Pass logName to the plugin if the plugin is marked as using it
             #   The task will use this name to log plugin errors, regardless.
-            if hasattr(PluginClass, "hasLogName") and PluginClass.hasLogName:
+            if getattr(PluginClass, "hasLogName", False):
                 self.plugins[name] = PluginClass(config, name, metadata=self.algMetadata,
                                                  logName=self.log.getChild(name).name, **kwds)
             else:
@@ -283,8 +283,14 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         # Initialize the plugins to run on the undeblended image
         for executionOrder, name, config, PluginClass in sorted(self.config.undeblended.apply()):
             undeblendedName = self.config.undeblendedPrefix + name
-            self.undeblendedPlugins[name] = PluginClass(config, undeblendedName, metadata=self.algMetadata,
-                                                        **kwds)
+            if getattr(PluginClass, "hasLogName", False):
+                self.undeblendedPlugins[name] = PluginClass(config, undeblendedName,
+                                                            metadata=self.algMetadata,
+                                                            logName=self.log.getChild(undeblendedName).name,
+                                                            **kwds)
+            else:
+                self.undeblendedPlugins[name] = PluginClass(config, undeblendedName,
+                                                            metadata=self.algMetadata, **kwds)
 
     def callMeasure(self, measRecord, *args, **kwds):
         """Call ``measure`` on all plugins and consistently handle exceptions.
