@@ -34,7 +34,8 @@ from .noiseReplacer import NoiseReplacerConfig
 __all__ = ("BaseMeasurementPluginConfig", "BaseMeasurementPlugin",
            "BaseMeasurementConfig", "BaseMeasurementTask")
 
-# Exceptions that the measurement tasks should always propagate up to their callers
+# Exceptions that the measurement tasks should always propagate up to their
+# callers
 FATAL_EXCEPTIONS = (MemoryError, FatalAlgorithmError)
 
 
@@ -257,12 +258,14 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         Keyword arguments are forwarded directly to plugin constructors,
         allowing derived classes to use plugins with different signatures.
         """
-        # Make a place at the beginning for the centroid plugin to run first (because it's an OrderedDict,
-        # adding an empty element in advance means it will get run first when it's reassigned to the
-        # actual Plugin).
+        # Make a place at the beginning for the centroid plugin to run first
+        # (because it's an OrderedDict, adding an empty element in advance
+        # means it will get run first when it's reassigned to the actual
+        # Plugin).
         if self.config.slots.centroid is not None:
             self.plugins[self.config.slots.centroid] = None
-        # Init the plugins, sorted by execution order.  At the same time add to the schema
+        # Init the plugins, sorted by execution order.  At the same time add to
+        # the schema
         for executionOrder, name, config, PluginClass in sorted(self.config.plugins.apply()):
             #   Pass logName to the plugin if the plugin is marked as using it
             #   The task will use this name to log plugin errors, regardless.
@@ -272,9 +275,9 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
             else:
                 self.plugins[name] = PluginClass(config, name, metadata=self.algMetadata, **kwds)
 
-        # In rare circumstances (usually tests), the centroid slot not be coming from an algorithm,
-        # which means we'll have added something we don't want to the plugins map, and we should
-        # remove it.
+        # In rare circumstances (usually tests), the centroid slot not be
+        # coming from an algorithm, which means we'll have added something we
+        # don't want to the plugins map, and we should remove it.
         if self.config.slots.centroid is not None and self.plugins[self.config.slots.centroid] is None:
             del self.plugins[self.config.slots.centroid]
         # Initialize the plugins to run on the undeblended image
