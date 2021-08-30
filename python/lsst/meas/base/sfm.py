@@ -32,6 +32,8 @@ indicated in the field documentation).
 """
 
 import lsst.pipe.base as pipeBase
+import lsst.pex.config
+import time
 
 from .pluginRegistry import PluginRegistry
 from .baseMeasurement import (BaseMeasurementPluginConfig, BaseMeasurementPlugin,
@@ -153,6 +155,11 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
         multi=True,
         default=[],
         doc="Plugins to run on undeblended image"
+    )
+    loggingInterval = lsst.pex.config.Field(
+        dtype=int,
+        default=600,
+        doc="Interval (in seconds) to log messages (at VERBOSE level) while running measurement plugins."
     )
 
 
@@ -291,6 +298,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
                       nMeasCat, ("" if nMeasCat == 1 else "s"),
                       nMeasParentCat, ("" if nMeasParentCat == 1 else "s"),
                       nMeasCat - nMeasParentCat, ("" if nMeasCat - nMeasParentCat == 1 else "ren"))
+        nextLogTime = time.time() + self.config.loggingInterval
 
         childrenIter = measCat.getChildren([measParentRecord.getId() for measParentRecord in measParentCat])
         for parentIdx, (measParentRecord, measChildCat) in enumerate(zip(measParentCat, childrenIter)):
@@ -319,6 +327,11 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
                               beginOrder=beginOrder, endOrder=endOrder)
             self.callMeasureN(measChildCat, exposure, beginOrder=beginOrder, endOrder=endOrder)
             noiseReplacer.removeSource(measParentRecord.getId())
+            # Log a message if it has been a while since the last log.
+            if (currentTime := time.time()) > nextLogTime:
+                self.log.verbose("Measurement complete for %d parents (and their children) out of %d",
+                                 parentIdx + 1, nMeasParentCat)
+                nextLogTime = currentTime + self.config.loggingInterval
 
         # When done, restore the exposure to its original state
         noiseReplacer.end()
