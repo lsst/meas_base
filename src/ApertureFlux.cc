@@ -112,13 +112,13 @@ namespace {
 // Helper function for computeSincFlux get Sinc instFlux coefficients, and handle cases where the coeff
 // image needs to be clipped to fit in the measurement image
 template <typename T>
-CONST_PTR(afw::image::Image<T>)
+std::shared_ptr<afw::image::Image<T> const>
 getSincCoeffs(geom::Box2I const &bbox,                      // measurement image bbox we need to fit inside
               afw::geom::ellipses::Ellipse const &ellipse,  // ellipse that defines the aperture
               ApertureFluxAlgorithm::Result &result,        // result object where we set flags if we do clip
               ApertureFluxAlgorithm::Control const &ctrl    // configuration
 ) {
-    CONST_PTR(afw::image::Image<T>) cImage = SincCoeffs<T>::get(ellipse.getCore(), 0.0);
+std::shared_ptr<afw::image::Image<T> const> cImage = SincCoeffs<T>::get(ellipse.getCore(), 0.0);
     cImage = afw::math::offsetImage(*cImage, ellipse.getCenter().getX(), ellipse.getCenter().getY(),
                                     ctrl.shiftKernel);
     if (!bbox.contains(cImage->getBBox())) {
@@ -146,7 +146,7 @@ template <typename T>
 ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux(
         afw::image::Image<T> const &image, afw::geom::ellipses::Ellipse const &ellipse, Control const &ctrl) {
     Result result;
-    CONST_PTR(afw::image::Image<T>) cImage = getSincCoeffs<T>(image.getBBox(), ellipse, result, ctrl);
+    std::shared_ptr<afw::image::Image<T> const> cImage = getSincCoeffs<T>(image.getBBox(), ellipse, result, ctrl);
     if (result.getFlag(APERTURE_TRUNCATED.number)) return result;
     afw::image::Image<T> subImage(image, cImage->getBBox());
     result.instFlux =
@@ -159,7 +159,7 @@ ApertureFluxAlgorithm::Result ApertureFluxAlgorithm::computeSincFlux(
         afw::image::MaskedImage<T> const &image, afw::geom::ellipses::Ellipse const &ellipse,
         Control const &ctrl) {
     Result result;
-    CONST_PTR(afw::image::Image<T>) cImage = getSincCoeffs<T>(image.getBBox(), ellipse, result, ctrl);
+    std::shared_ptr<afw::image::Image<T> const> cImage = getSincCoeffs<T>(image.getBBox(), ellipse, result, ctrl);
     if (result.getFlag(APERTURE_TRUNCATED.number)) return result;
     afw::image::MaskedImage<T> subImage(image, cImage->getBBox(afw::image::PARENT), afw::image::PARENT);
     result.instFlux = (ndarray::asEigenArray(subImage.getImage()->getArray()) *

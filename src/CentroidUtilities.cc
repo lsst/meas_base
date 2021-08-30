@@ -211,7 +211,7 @@ bool CentroidChecker::operator()(afw::table::SourceRecord &record) const {
     }
 
     // Check that the centroid has a footprint that we can validate; otherwise, give up.
-    PTR(afw::detection::Footprint) footprint = record.getFootprint();
+    std::shared_ptr<afw::detection::Footprint> footprint = record.getFootprint();
     if (!footprint) {
         throw LSST_EXCEPT(pex::exceptions::RuntimeError, "No Footprint attached to record");
     }

@@ -357,7 +357,7 @@ void doMeasureCentroidImpl(double *xCenter,                 // output; x-positio
 }
 
 template <typename MaskedImageT>
-std::pair<MaskedImageT, double> smoothAndBinImage(CONST_PTR(afw::detection::Psf) psf, int const x,
+std::pair<MaskedImageT, double> smoothAndBinImage(std::shared_ptr<afw::detection::Psf const> psf, int const x,
                                                   const int y, MaskedImageT const &mimage, int binX, int binY,
                                                   FlagHandler _flagHandler) {
     geom::Point2D const center(x + mimage.getX0(), y + mimage.getY0());
@@ -377,14 +377,14 @@ std::pair<MaskedImageT, double> smoothAndBinImage(CONST_PTR(afw::detection::Psf)
                     geom::ExtentI(binX * (3 + kWidth + 1), binY * (3 + kHeight + 1)));
 
     // image to smooth, a shallow copy
-    PTR(MaskedImageT) subImage;
+    std::shared_ptr<MaskedImageT> subImage;
     try {
         subImage.reset(new MaskedImageT(mimage, bbox, afw::image::LOCAL));
     } catch (pex::exceptions::LengthError &err) {
         throw LSST_EXCEPT(MeasurementError, SdssCentroidAlgorithm::EDGE.doc,
                           SdssCentroidAlgorithm::EDGE.number);
     }
-    PTR(MaskedImageT) binnedImage = afw::math::binImage(*subImage, binX, binY, afw::math::MEAN);
+    std::shared_ptr<MaskedImageT> binnedImage = afw::math::binImage(*subImage, binX, binY, afw::math::MEAN);
     binnedImage->setXY0(subImage->getXY0());
     // image to smooth into, a deep copy.
     MaskedImageT smoothedImage = MaskedImageT(*binnedImage, true);
@@ -428,7 +428,7 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
 
     MaskedImageT const &mimage = exposure.getMaskedImage();
     ImageT const &image = *mimage.getImage();
-    CONST_PTR(afw::detection::Psf) psf = exposure.getPsf();
+    std::shared_ptr<afw::detection::Psf const> psf = exposure.getPsf();
 
     int const x = image.positionToIndex(center.getX(), afw::image::X).first;
     int const y = image.positionToIndex(center.getY(), afw::image::Y).first;

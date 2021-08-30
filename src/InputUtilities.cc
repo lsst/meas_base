@@ -62,7 +62,7 @@ namespace {
 
 geom::Point2D extractPeak(afw::table::SourceRecord const& record, std::string const& name) {
     geom::Point2D result;
-    PTR(afw::detection::Footprint) footprint = record.getFootprint();
+    std::shared_ptr<afw::detection::Footprint> footprint = record.getFootprint();
     if (!footprint) {
         throw LSST_EXCEPT(
                 pex::exceptions::RuntimeError,

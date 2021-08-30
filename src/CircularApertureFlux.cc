@@ -43,7 +43,7 @@ CircularApertureFluxAlgorithm::CircularApertureFluxAlgorithm(Control const& ctrl
 void CircularApertureFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
                                             afw::image::Exposure<float> const& exposure) const {
     afw::geom::ellipses::Ellipse ellipse(afw::geom::ellipses::Axes(1.0, 1.0, 0.0));
-    PTR(afw::geom::ellipses::Axes)
+    std::shared_ptr<afw::geom::ellipses::Axes>
     axes = std::static_pointer_cast<afw::geom::ellipses::Axes>(ellipse.getCorePtr());
     for (std::size_t i = 0; i < _ctrl.radii.size(); ++i) {
         // Each call to _centroidExtractor within this loop goes through exactly the same error-checking

@@ -66,13 +66,13 @@ PsfFluxAlgorithm::PsfFluxAlgorithm(Control const& ctrl, std::string const& name,
 
 void PsfFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
                                afw::image::Exposure<float> const& exposure) const {
-    PTR(afw::detection::Psf const) psf = exposure.getPsf();
+    std::shared_ptr<afw::detection::Psf const> psf = exposure.getPsf();
     if (!psf) {
         LOGL_ERROR(getLogName(), "PsfFlux: no psf attached to exposure");
         throw LSST_EXCEPT(FatalAlgorithmError, "PsfFlux algorithm requires a Psf with every exposure");
     }
     geom::Point2D position = _centroidExtractor(measRecord, _flagHandler);
-    PTR(afw::detection::Psf::Image) psfImage = psf->computeImage(position);
+    std::shared_ptr<afw::detection::Psf::Image> psfImage = psf->computeImage(position);
     geom::Box2I fitBBox = psfImage->getBBox();
     fitBBox.clip(exposure.getBBox());
     if (fitBBox != psfImage->getBBox()) {

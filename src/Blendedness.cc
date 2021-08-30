@@ -50,13 +50,13 @@ FlagDefinitionList const& BlendednessAlgorithm::getFlagDefinitions() { return fl
 
 namespace {
 
-double computeOldBlendedness(PTR(afw::detection::Footprint const) childFootprint,
+double computeOldBlendedness(std::shared_ptr<afw::detection::Footprint const> childFootprint,
                              afw::image::Image<float> const& parentImage) {
     if (!childFootprint) {
         throw LSST_EXCEPT(pex::exceptions::LogicError, "blendedness_old requires a Footprint.");
     }
 
-    PTR(afw::detection::HeavyFootprint<float> const)
+    std::shared_ptr<afw::detection::HeavyFootprint<float> const>
     childHeavy = std::dynamic_pointer_cast<afw::detection::HeavyFootprint<float> const>(childFootprint);
 
     if (!childHeavy) {
