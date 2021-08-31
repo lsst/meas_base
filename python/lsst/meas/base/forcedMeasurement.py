@@ -56,6 +56,7 @@ Command-line driver tasks for forced measurement include
 
 import lsst.pex.config
 import lsst.pipe.base
+import time
 
 from .pluginRegistry import PluginRegistry
 from .baseMeasurement import (BaseMeasurementPluginConfig, BaseMeasurementPlugin,
@@ -190,17 +191,20 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         default=[],
         doc="Plugins to run on undeblended image"
     )
-
     copyColumns = lsst.pex.config.DictField(
         keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
         default={"id": "objectId", "parent": "parentObjectId", "deblend_nChild": "deblend_nChild",
                  "coord_ra": "coord_ra", "coord_dec": "coord_dec"}
     )
-
     checkUnitsParseStrict = lsst.pex.config.Field(
         doc="Strictness of Astropy unit compatibility check, can be 'raise', 'warn' or 'silent'",
         dtype=str,
         default="raise",
+    )
+    loggingInterval = lsst.pex.config.Field(
+        dtype=int,
+        default=600,
+        doc="Interval (in seconds) to log messages (at VERBOSE level) while running measurement plugins."
     )
 
     def setDefaults(self):
@@ -336,6 +340,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
         self.log.info("Performing forced measurement on %d source%s", len(refCat),
                       "" if len(refCat) == 1 else "s")
+        nextLogTime = time.time() + self.config.loggingInterval
 
         if self.config.doReplaceWithNoise:
             noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure,
@@ -376,13 +381,22 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             self.callMeasureN(measChildCat, exposure, refChildCat,
                               beginOrder=beginOrder, endOrder=endOrder)
             noiseReplacer.removeSource(refParentRecord.getId())
+            # Log a message if it has been a while since the last log.
+            if (currentTime := time.time()) > nextLogTime:
+                self.log.verbose("Forced measurement complete for %d parents (and their children) out of %d",
+                                 parentIdx + 1, len(refParentCat))
+                nextLogTime = currentTime + self.config.loggingInterval
         noiseReplacer.end()
 
         # Undeblended plugins only fire if we're running everything
         if endOrder is None:
-            for measRecord, refRecord in zip(measCat, refCat):
+            for recordIndex, (measRecord, refRecord) in enumerate(zip(measCat, refCat)):
                 for plugin in self.undeblendedPlugins.iter():
                     self.doMeasurement(plugin, measRecord, exposure, refRecord, refWcs)
+                if (currentTime := time.time()) > nextLogTime:
+                    self.log.verbose("Undeblended forced measurement complete for %d sources out of %d",
+                                     recordIndex + 1, len(refCat))
+                    nextLogTime = currentTime + self.config.loggingInterval
 
     def generateMeasCat(self, exposure, refCat, refWcs, idFactory=None):
         r"""Initialize an output catalog from the reference catalog.
