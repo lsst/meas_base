@@ -338,9 +338,14 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
 
         # Undeblended plugins only fire if we're running everything
         if endOrder is None:
-            for source in measCat:
+            for sourceIndex, source in enumerate(measCat):
                 for plugin in self.undeblendedPlugins.iter():
                     self.doMeasurement(plugin, source, exposure)
+                if (currentTime := time.time()) > nextLogTime:
+                    self.log.verbose("Undeblended measurement complete for %d sources out of %d",
+                                     sourceIndex + 1, nMeasCat)
+                    nextLogTime = currentTime + self.config.loggingInterval
+
         # Now we loop over all of the sources one more time to compute the
         # blendedness metrics
         if self.doBlendedness:

@@ -390,9 +390,13 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
         # Undeblended plugins only fire if we're running everything
         if endOrder is None:
-            for measRecord, refRecord in zip(measCat, refCat):
+            for recordIndex, (measRecord, refRecord) in enumerate(zip(measCat, refCat)):
                 for plugin in self.undeblendedPlugins.iter():
                     self.doMeasurement(plugin, measRecord, exposure, refRecord, refWcs)
+                if (currentTime := time.time()) > nextLogTime:
+                    self.log.verbose("Undeblended forced measurement complete for %d sources out of %d",
+                                     recordIndex + 1, len(refCat))
+                    nextLogTime = currentTime + self.config.loggingInterval
 
     def generateMeasCat(self, exposure, refCat, refWcs, idFactory=None):
         r"""Initialize an output catalog from the reference catalog.
