@@ -167,7 +167,7 @@ The plugin may then get the logger:
 
 .. code-block:: py
 
-   logger = lsst.log.Log.getLogger(self.getLogName())
+   logger = logging.getLogger(self.getLogName())
 
 Setup for Python plugins which log
 ----------------------------------
@@ -191,7 +191,7 @@ Though it might be overly verbose, a plugin could log at the ``INFO`` level each
 
 .. code-block:: py
 
-   lsst.log.Log.getLogger(self.getLogName()).info("Staring a measurement.")
+   logging.getLogger(self.getLogName()).info("Starting a measurement.")
 
 Setup for C++ algorithms which log
 ----------------------------------
@@ -236,11 +236,11 @@ In C++, an algorithm may then log to this ``logName`` as follows:
 
    LOGL_INFO(logger, message...)
 
-where ``logger`` can either be the ``logName`` string itself, or a `lsst.log.Log` object returned by
+where ``logger`` can either be the ``logName`` string itself, or a :mode:`logging.Logger` object returned by
 
 .. code-block:: py
 
-   logger = lsst.log.Log.getLogger(getLogName());
+   logger = logging.getLogger(getLogName());
 
 Using a `FlagHandler` with Python plugins
 =========================================
