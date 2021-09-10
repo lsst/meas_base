@@ -21,6 +21,8 @@
 
 import collections
 import logging
+import pandas as pd
+import numpy as np
 
 import lsst.pex.config
 import lsst.pex.exceptions
@@ -47,7 +49,8 @@ try:
 except ImportError:
     applyMosaicResults = None
 
-__all__ = ("PerTractCcdDataIdContainer", "ForcedPhotCcdConfig", "ForcedPhotCcdTask", "imageOverlapsTract")
+__all__ = ("PerTractCcdDataIdContainer", "ForcedPhotCcdConfig", "ForcedPhotCcdTask", "imageOverlapsTract",
+           "ForcedPhotCcdFromDataFrameTask", "ForcedPhotCcdFromDataFrameConfig")
 
 
 class PerTractCcdDataIdContainer(pipeBase.DataIdContainer):
@@ -274,7 +277,7 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
         # Make catalogCalculation a no-op by default as no modelFlux is setup by default in
         # ForcedMeasurementTask
         super().setDefaults()
-
+        self.measurement.plugins.names |= ['base_LocalPhotoCalib', 'base_LocalWcs']
         self.catalogCalculation.plugins.names = []
 
 
@@ -682,3 +685,140 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
                                "e.g. --id visit=12345 ccd=1,2 [tract=0]",
                                ContainerClass=PerTractCcdDataIdContainer)
         return parser
+
+
+class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
+                                            dimensions=("instrument", "visit", "detector", "skymap", "tract"),
+                                            defaultTemplates={"inputCoaddName": "goodSeeing",
+                                                              "inputName": "calexp"}):
+    refCat = cT.Input(
+        doc="Catalog of positions at which to force photometry.",
+        name="{inputCoaddName}Diff_fullDiaObjTable",
+        storageClass="DataFrame",
+        dimensions=["skymap", "tract", "patch"],
+        multiple=True,
+        deferLoad=True,
+    )
+    exposure = cT.Input(
+        doc="Input exposure to perform photometry on.",
+        name="{inputName}",
+        storageClass="ExposureF",
+        dimensions=["instrument", "visit", "detector"],
+    )
+    measCat = cT.Output(
+        doc="Output forced photometry catalog.",
+        name="forced_src_diaObject",
+        storageClass="SourceCatalog",
+        dimensions=["instrument", "visit", "detector", "skymap", "tract"],
+    )
+    outputSchema = cT.InitOutput(
+        doc="Schema for the output forced measurement catalogs.",
+        name="forced_src_diaObject_schema",
+        storageClass="SourceCatalog",
+    )
+
+
+class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
+                                       pipelineConnections=ForcedPhotCcdFromDataFrameConnections):
+    def setDefaults(self):
+        self.measurement.doReplaceWithNoise = False
+        self.measurement.plugins = ["base_TransformedCentroidFromCoord", "base_PsfFlux"]
+        self.measurement.copyColumns = {'id': 'diaObjectId', 'coord_ra': 'coord_ra', 'coord_dec': 'coord_dec'}
+        self.measurement.slots.centroid = "base_TransformedCentroidFromCoord"
+        self.measurement.slots.psfFlux = "base_PsfFlux"
+        self.measurement.slots.shape = None
+        self.catalogCalculation.plugins.names = []
+
+
+class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
+    """Force Photometry on a per-detector exposure with coords from a DataFrame
+
+    Uses input from a DataFrame instead of SourceCatalog
+    like the base class ForcedPhotCcd does.
+    Writes out a SourceCatalog so that the downstream WriteForcedSourceTableTask
+    can be reused with output from this Task.
+    """
+    _DefaultName = "forcedPhotCcdFromDataFrame"
+    ConfigClass = ForcedPhotCcdFromDataFrameConfig
+
+    def __init__(self, butler=None, refSchema=None, initInputs=None, **kwds):
+        # Parent's init assumes that we have a reference schema; Cannot reuse
+        pipeBase.PipelineTask.__init__(self, **kwds)
+
+        self.makeSubtask("measurement", refSchema=lsst.afw.table.SourceTable.makeMinimalSchema())
+
+        if self.config.doApCorr:
+            self.makeSubtask("applyApCorr", schema=self.measurement.schema)
+        self.makeSubtask('catalogCalculation', schema=self.measurement.schema)
+        self.outputSchema = lsst.afw.table.SourceCatalog(self.measurement.schema)
+
+    def runQuantum(self, butlerQC, inputRefs, outputRefs):
+        inputs = butlerQC.get(inputRefs)
+        self.log.info("Filtering ref cats: %s", ','.join([str(i.dataId) for i in inputs['refCat']]))
+        refCat = self.df2RefCat([i.get(parameters={"columns": ['diaObjectId', 'ra', 'decl']})
+                                 for i in inputs['refCat']],
+                                inputs['exposure'].getBBox(), inputs['exposure'].getWcs())
+        inputs['refCat'] = refCat
+        inputs['refWcs'] = inputs['exposure'].getWcs()
+        inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(inputRefs.exposure.dataId,
+                                                                       inputs['exposure'], inputs['refCat'],
+                                                                       inputs['refWcs'],
+                                                                       "visit_detector")
+        outputs = self.run(**inputs)
+        butlerQC.put(outputs, outputRefs)
+
+    def df2RefCat(self, dfList, exposureBBox, exposureWcs):
+        """Convert list of DataFrames to reference catalog
+
+        Concatenate list of DataFrames presumably from multiple patches and
+        downselect rows that overlap the exposureBBox using the exposureWcs.
+
+        Parameters
+        ----------
+        dfList : `list` of `pandas.DataFrame`
+            Each element containst diaObjects with ra/decl position in degrees
+            Columns 'diaObjectId', 'ra', 'decl' are expected
+        exposureBBox :   `lsst.geom.Box2I`
+            Bounding box on which to select rows that overlap
+        exposureWcs : `lsst.afw.geom.SkyWcs`
+            World coordinate system to convert sky coords in ref cat to
+            pixel coords with which to compare with exposureBBox
+
+        Returns
+        -------
+        refCat : `lsst.afw.table.SourceTable`
+            Source Catalog with minimal schema that overlaps exposureBBox
+        """
+        df = pd.concat(dfList)
+        # translate ra/decl coords in dataframe to detector pixel coords
+        # to down select rows that overlap the detector bbox
+        mapping = exposureWcs.getTransform().getMapping()
+        x, y = mapping.applyInverse(np.array(df[['ra', 'decl']].values*2*np.pi/360).T)
+        inBBox = exposureBBox.contains(x, y)
+        refCat = self.df2SourceCat(df[inBBox])
+        return refCat
+
+    def df2SourceCat(self, df):
+        """Create minimal schema SourceCatalog from a pandas DataFrame.
+
+        The forced measurement subtask expects this as input.
+
+        Parameters
+        ----------
+        df : `pandas.DataFrame`
+            DiaObjects with locations and ids.
+
+        Returns
+        -------
+        outputCatalog : `lsst.afw.table.SourceTable`
+            Output catalog with minimal schema.
+        """
+        schema = lsst.afw.table.SourceTable.makeMinimalSchema()
+        outputCatalog = lsst.afw.table.SourceCatalog(schema)
+        outputCatalog.reserve(len(df))
+
+        for id, diaObjectId, ra, decl in df[['diaObjectId', 'ra', 'decl']].itertuples():
+            outputRecord = outputCatalog.addNew()
+            outputRecord.setId(diaObjectId)
+            outputRecord.setCoord(lsst.geom.SpherePoint(ra, decl, lsst.geom.degrees))
+        return outputCatalog
