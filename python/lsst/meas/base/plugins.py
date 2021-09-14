@@ -67,6 +67,8 @@ __all__ = (
     "SingleFrameSkyCoordConfig", "SingleFrameSkyCoordPlugin",
     "ForcedPeakCentroidConfig", "ForcedPeakCentroidPlugin",
     "ForcedTransformedCentroidConfig", "ForcedTransformedCentroidPlugin",
+    "ForcedTransformedCentroidFromCoordConfig",
+    "ForcedTransformedCentroidFromCoordPlugin",
     "ForcedTransformedShapeConfig", "ForcedTransformedShapePlugin",
     "EvaluateLocalPhotoCalibPlugin", "EvaluateLocalPhotoCalibPluginConfig",
     "EvaluateLocalWcsPlugin", "EvaluateLocalWcsPluginConfig",
@@ -762,6 +764,50 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
             measRecord.set(self.centroidKey, targetPos)
         else:
             measRecord.set(self.centroidKey, refRecord.getCentroid())
+        if self.flagKey is not None:
+            measRecord.set(self.flagKey, refRecord.getCentroidFlag())
+
+
+class ForcedTransformedCentroidFromCoordConfig(ForcedTransformedCentroidConfig):
+    """Configuration for the forced transformed coord algorithm.
+    """
+    pass
+
+
+@register("base_TransformedCentroidFromCoord")
+class ForcedTransformedCentroidFromCoordPlugin(ForcedTransformedCentroidPlugin):
+    """Record the transformation of the reference catalog coord.
+
+    The coord recorded in the reference catalog is tranformed to the
+    measurement coordinate system and stored.
+
+    Parameters
+    ----------
+    config : `ForcedTransformedCentroidFromCoordConfig`
+        Plugin configuration
+    name : `str`
+        Plugin name
+    schemaMapper : `lsst.afw.table.SchemaMapper`
+        A mapping from reference catalog fields to output
+        catalog fields. Output fields are added to the output schema.
+    metadata : `lsst.daf.base.PropertySet`
+        Plugin metadata that will be attached to the output catalog.
+
+    Notes
+    -----
+    This can be used as the slot centroid in forced measurement when only a
+    reference coord exist, allowing subsequent measurements to simply refer to
+    the slot value just as they would in single-frame measurement.
+    """
+
+    ConfigClass = ForcedTransformedCentroidFromCoordConfig
+
+    def measure(self, measRecord, exposure, refRecord, refWcs):
+        targetWcs = exposure.getWcs()
+
+        targetPos = targetWcs.skyToPixel(refRecord.getCoord())
+        measRecord.set(self.centroidKey, targetPos)
+
         if self.flagKey is not None:
             measRecord.set(self.flagKey, refRecord.getCentroidFlag())
 
