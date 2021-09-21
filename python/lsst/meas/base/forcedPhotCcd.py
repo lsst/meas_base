@@ -727,7 +727,7 @@ class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
         self.measurement.slots.centroid = "base_TransformedCentroidFromCoord"
         self.measurement.slots.psfFlux = "base_PsfFlux"
         self.measurement.slots.shape = None
-        self.catalogCalculation.plugins.names = []
+        super().setDefaults()
 
 
 class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
