@@ -28,6 +28,7 @@ import lsst.pex.config
 import lsst.pex.exceptions
 import lsst.pipe.base
 import lsst.geom
+import lsst.afw.detection
 import lsst.afw.geom
 import lsst.afw.image
 import lsst.afw.table
@@ -408,7 +409,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
             containedIds = {0}  # zero as a parent ID means "this is a parent"
             for record in refCat:
                 if expPolygon.contains(record.getCoord().getVector()) and record.getParent() in containedIds:
-                    record.setFootprint(record.getFootprint().transform(refWcs, expWcs, expRegion))
+                    record.setFootprint(record.getFootprint())
                     mergedRefCat.append(record)
                     containedIds.add(record.getId())
         if mergedRefCat is None:
@@ -476,7 +477,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         if psfCache is not None:
             exposure.getPsf().setCacheSize(psfCache)
         refCat = self.fetchReferences(dataRef, exposure)
-
         measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
                                                    idFactory=self.makeIdFactory(dataRef))
         self.log.info("Performing forced measurement on %s", dataRef.dataId)
@@ -757,7 +757,7 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
         self.log.info("Filtering ref cats: %s", ','.join([str(i.dataId) for i in inputs['refCat']]))
         refCat = self.df2RefCat([i.get(parameters={"columns": ['diaObjectId', 'ra', 'decl']})
                                  for i in inputs['refCat']],
-                                inputs['exposure'].getBBox(), inputs['exposure'].getWcs())
+                                inputs['exposure'])
         inputs['refCat'] = refCat
         inputs['refWcs'] = inputs['exposure'].getWcs()
         inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(inputRefs.exposure.dataId,
@@ -767,7 +767,7 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
         outputs = self.run(**inputs)
         butlerQC.put(outputs, outputRefs)
 
-    def df2RefCat(self, dfList, exposureBBox, exposureWcs):
+    def df2RefCat(self, dfList, exposure, exposureWcs=None):
         """Convert list of DataFrames to reference catalog
 
         Concatenate list of DataFrames presumably from multiple patches and
@@ -778,11 +778,11 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
         dfList : `list` of `pandas.DataFrame`
             Each element containst diaObjects with ra/decl position in degrees
             Columns 'diaObjectId', 'ra', 'decl' are expected
-        exposureBBox :   `lsst.geom.Box2I`
-            Bounding box on which to select rows that overlap
-        exposureWcs : `lsst.afw.geom.SkyWcs`
-            World coordinate system to convert sky coords in ref cat to
-            pixel coords with which to compare with exposureBBox
+        exposure :  `~lsst.afw.image.Exposure`
+            An exposure object
+        exposureWcs : `~lsst.afw.geom.SkyWcs`, optional
+            A reference WCS object. If not provided, the WCS attached to the
+            ``exposure`` object is used.
 
         Returns
         -------
@@ -792,13 +792,16 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
         df = pd.concat(dfList)
         # translate ra/decl coords in dataframe to detector pixel coords
         # to down select rows that overlap the detector bbox
+        if exposureWcs is None:
+            exposureWcs = exposure.getWcs()
+        exposureBBox = exposure.getBBox()
         mapping = exposureWcs.getTransform().getMapping()
         x, y = mapping.applyInverse(np.array(df[['ra', 'decl']].values*2*np.pi/360).T)
         inBBox = exposureBBox.contains(x, y)
-        refCat = self.df2SourceCat(df[inBBox])
+        refCat = self.df2SourceCat(df[inBBox], exposure)
         return refCat
 
-    def df2SourceCat(self, df):
+    def df2SourceCat(self, df, exposure, exposureWcs=None):
         """Create minimal schema SourceCatalog from a pandas DataFrame.
 
         The forced measurement subtask expects this as input.
@@ -807,6 +810,11 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
         ----------
         df : `pandas.DataFrame`
             DiaObjects with locations and ids.
+        exposure : `~lsst.afw.image.Exposure`
+            An exposure object.
+        exposureWcs : `~lsst.afw.geom.SkyWcs`, optional
+            A WCS object. If not provided, the WCS attached to the
+            ``exposure`` object is used.
 
         Returns
         -------
@@ -817,8 +825,20 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
         outputCatalog = lsst.afw.table.SourceCatalog(schema)
         outputCatalog.reserve(len(df))
 
+        psf = exposure.getPsf()
+        if exposureWcs is None:
+            exposureWcs = exposure.getWcs()
+
         for id, diaObjectId, ra, decl in df[['diaObjectId', 'ra', 'decl']].itertuples():
+            centerSky = lsst.geom.SpherePoint(ra, decl, lsst.geom.degrees)
             outputRecord = outputCatalog.addNew()
             outputRecord.setId(diaObjectId)
-            outputRecord.setCoord(lsst.geom.SpherePoint(ra, decl, lsst.geom.degrees))
+            outputRecord.setCoord(centerSky)
+            footprint = lsst.afw.detection.Footprint()
+            localPoint = lsst.geom.Point2I(exposureWcs.skyToPixel(centerSky))
+            ellipse = lsst.afw.geom.ellipses.Ellipse(psf.computeShape(localPoint), localPoint)
+            footprint.setSpans(lsst.afw.geom.SpanSet.fromShape(ellipse))
+            footprint.addPeak(localPoint.getX(), localPoint.getY(),
+                              exposure.image._get(localPoint, lsst.afw.image.PARENT))
+            outputRecord.setFootprint(footprint)
         return outputCatalog
