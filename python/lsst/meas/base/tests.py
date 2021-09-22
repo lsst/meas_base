@@ -383,7 +383,7 @@ class TestDataset:
             exposure = self.makeEmptyExposure(bbox, **kwds)
         self.threshold = lsst.afw.detection.Threshold(threshold, lsst.afw.detection.Threshold.VALUE)
         self.exposure = exposure
-        self.psfShape = self.exposure.getPsf().computeShape()
+        self.psfShape = self.exposure.getPsf().computeShape(bbox.getCenter())
         self.schema = self.makeMinimalSchema()
         self.catalog = lsst.afw.table.SourceCatalog(self.schema)
 
@@ -492,7 +492,7 @@ class TestDataset:
         result = TestDataset(bbox=bboxI, wcs=wcs, **kwds)
         oldPhotoCalib = self.exposure.getPhotoCalib()
         newPhotoCalib = result.exposure.getPhotoCalib()
-        oldPsfShape = self.exposure.getPsf().computeShape()
+        oldPsfShape = self.exposure.getPsf().computeShape(bboxD.getCenter())
         for record in self.catalog:
             if record.get(self.keys["nChild"]):
                 raise NotImplementedError("Transforming blended sources in TestDatasets is not supported")
