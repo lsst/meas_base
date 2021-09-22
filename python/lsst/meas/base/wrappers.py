@@ -643,7 +643,12 @@ class GenericPlugin(BasePlugin):
                 self._generic = cls(config, name, schema, metadata)
 
             def measure(self, measRecord, exposure, refRecord, refWcs):
-                center = exposure.getWcs().skyToPixel(refWcs.pixelToSky(refRecord.getCentroid()))
+                # Forced photometry tasks should almost be configured with a
+                # centroider (populating measRecord.getCentroid()) that
+                # transforms the reference centroid, but we respect their
+                # decision if they decided to re-centroid (or do something more
+                # unusual) on the image being measured.
+                center = measRecord.getCentroid()
                 return self._generic.measure(measRecord, exposure, center)
 
             def measureN(self, measCat, exposure, refCat, refWcs):
