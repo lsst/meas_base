@@ -735,8 +735,8 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
 
     Uses input from a DataFrame instead of SourceCatalog
     like the base class ForcedPhotCcd does.
-    Writes out a SourceCatalog so that the downstream WriteForcedSourceTableTask
-    can be reused with output from this Task.
+    Writes out a SourceCatalog so that the downstream
+    WriteForcedSourceTableTask can be reused with output from this Task.
     """
     _DefaultName = "forcedPhotCcdFromDataFrame"
     ConfigClass = ForcedPhotCcdFromDataFrameConfig
