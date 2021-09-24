@@ -408,7 +408,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
             containedIds = {0}  # zero as a parent ID means "this is a parent"
             for record in refCat:
                 if expPolygon.contains(record.getCoord().getVector()) and record.getParent() in containedIds:
-                    record.setFootprint(record.getFootprint().transform(refWcs, expWcs, expRegion))
+                    record.setFootprint(record.getFootprint())
                     mergedRefCat.append(record)
                     containedIds.add(record.getId())
         if mergedRefCat is None:
