@@ -842,7 +842,7 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
         outputCatalog = lsst.afw.table.SourceCatalog(schema)
         outputCatalog.reserve(len(df))
 
-        for id, diaObjectId, ra, decl in df[['diaObjectId', 'ra', 'decl']].itertuples():
+        for diaObjectId, ra, decl in df[['ra', 'decl']].itertuples():
             outputRecord = outputCatalog.addNew()
             outputRecord.setId(diaObjectId)
             outputRecord.setCoord(lsst.geom.SpherePoint(ra, decl, lsst.geom.degrees))
