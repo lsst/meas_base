@@ -438,7 +438,8 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         return measCat
 
     def attachTransformedFootprints(self, sources, refCat, exposure, refWcs):
-        r"""Attach Footprints to blank sources prior to measurement.
+        r"""Attach Footprints to blank sources prior to measurement, by
+        transforming Footprints attached to the reference catalog.
 
         Notes
         -----
@@ -458,3 +459,44 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         region = exposure.getBBox(lsst.afw.image.PARENT)
         for srcRecord, refRecord in zip(sources, refCat):
             srcRecord.setFootprint(refRecord.getFootprint().transform(refWcs, exposureWcs, region))
+
+    def attachPsfShapeFootprints(self, sources, exposure, scaling=3):
+        """Attach Footprints to blank sources prior to measurement, by
+        creating elliptical Footprints from the PSF moments.
+
+        Parameters
+        ----------
+        sources : `lsst.afw.table.SourceCatalog`
+            Blank catalog (with all rows and columns, but values other than
+            ``coord_ra``, ``coord_dec`` unpopulated).
+            to which footprints should be attached.
+        exposure : `lsst.afw.image.Exposure`
+            Image object from which peak values and the PSF are obtained.
+        scaling : `int`, optional
+            Scaling factor to apply to the PSF second-moments ellipse in order
+            to determine the footprint boundary.
+
+        Notes
+        -----
+        This is a utility function for use by parent tasks; see
+        `attachTransformedFootprints` for more information.
+        """
+        psf = exposure.getPsf()
+        if psf is None:
+            raise RuntimeError("Cannot construct Footprints from PSF shape without a PSF.")
+        bbox = exposure.getBBox()
+        wcs = exposure.getWcs()
+        for record in sources:
+            localPoint = wcs.skyToPixel(record.getCoord())
+            localIntPoint = lsst.geom.Point2I(localPoint)
+            assert bbox.contains(localIntPoint), (
+                f"Center for record {record.getId()} is not in exposure; this should be guaranteed by "
+                "generateMeasCat."
+            )
+            ellipse = lsst.afw.geom.ellipses.Ellipse(psf.computeShape(localPoint), localPoint)
+            ellipse.getCore().scale(scaling)
+            spans = lsst.afw.geom.SpanSet.fromShape(ellipse)
+            footprint = lsst.afw.detection.Footprint(spans.clippedTo(bbox), bbox)
+            footprint.addPeak(localIntPoint.getX(), localIntPoint.getY(),
+                              exposure.image._get(localIntPoint, lsst.afw.image.PARENT))
+            record.setFootprint(footprint)
