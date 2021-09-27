@@ -738,6 +738,7 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
 class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
                                        pipelineConnections=ForcedPhotCcdFromDataFrameConnections):
     def setDefaults(self):
+        super().setDefaults()
         self.footprintSource = "psf"
         self.measurement.doReplaceWithNoise = False
         self.measurement.plugins = ["base_TransformedCentroidFromCoord", "base_PsfFlux", "base_PixelFlags"]
@@ -745,7 +746,6 @@ class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
         self.measurement.slots.centroid = "base_TransformedCentroidFromCoord"
         self.measurement.slots.psfFlux = "base_PsfFlux"
         self.measurement.slots.shape = None
-        super().setDefaults()
 
     def validate(self):
         super().validate()
