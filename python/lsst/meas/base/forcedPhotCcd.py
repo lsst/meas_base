@@ -819,7 +819,7 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
         # to down select rows that overlap the detector bbox
         mapping = exposureWcs.getTransform().getMapping()
         x, y = mapping.applyInverse(np.array(df[['ra', 'decl']].values*2*np.pi/360).T)
-        inBBox = exposureBBox.contains(x, y)
+        inBBox = lsst.geom.Box2D(exposureBBox).contains(x, y)
         refCat = self.df2SourceCat(df[inBBox])
         return refCat
 
