@@ -161,8 +161,15 @@ void PixelFlagsAlgorithm::measure(afw::table::SourceRecord& measRecord,
     }
 
     // Check for bits set in the source's Footprint
-    afw::detection::Footprint const& footprint(*measRecord.getFootprint());
-    footprint.getSpans()->clippedTo(mimage.getBBox())->applyFunctor(func, *(mimage.getMask()));
+    auto footprint = measRecord.getFootprint();
+    if (!footprint) {
+        throw LSST_EXCEPT(pex::exceptions::RuntimeError, "No footprint present.");
+    }
+    auto fullSpans = footprint->getSpans();
+    if (!fullSpans) {
+        throw LSST_EXCEPT(pex::exceptions::RuntimeError, "No spans in footprint.");
+    }
+    fullSpans->clippedTo(mimage.getBBox())->applyFunctor(func, *(mimage.getMask()));
 
     // Set the EDGE flag if the bitmask has NO_DATA set
     try {

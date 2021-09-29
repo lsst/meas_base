@@ -28,11 +28,13 @@ import lsst.pex.config
 import lsst.pex.exceptions
 import lsst.pipe.base
 import lsst.geom
+import lsst.afw.detection
 import lsst.afw.geom
 import lsst.afw.image
 import lsst.afw.table
 import lsst.sphgeom
 
+from lsst.obs.base import ExposureIdInfo
 from lsst.pipe.base import PipelineTaskConnections
 import lsst.pipe.base.connectionTypes as cT
 
@@ -271,6 +273,22 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
             "jointcal": "Use jointcal_wcs"
         },
     )
+    footprintSource = lsst.pex.config.ChoiceField(
+        dtype=str,
+        doc="Where to obtain footprints to install in the measurement catalog, prior to measurement.",
+        allowed={
+            "transformed": "Transform footprints from the reference catalog (downgrades HeavyFootprints).",
+            "psf": ("Use the scaled shape of the PSF at the position of each source (does not generate "
+                    "HeavyFootprints)."),
+        },
+        optional=True,
+        default="transformed",
+    )
+    psfFootprintScaling = lsst.pex.config.Field(
+        dtype=float,
+        doc="Scaling factor to apply to the PSF shape when footprintSource='psf' (ignored otherwise).",
+        default=3.0,
+    )
 
     def setDefaults(self):
         # Docstring inherited.
@@ -408,7 +426,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
             containedIds = {0}  # zero as a parent ID means "this is a parent"
             for record in refCat:
                 if expPolygon.contains(record.getCoord().getVector()) and record.getParent() in containedIds:
-                    record.setFootprint(record.getFootprint().transform(refWcs, expWcs, expRegion))
+                    record.setFootprint(record.getFootprint())
                     mergedRefCat.append(record)
                     containedIds.add(record.getId())
         if mergedRefCat is None:
@@ -439,12 +457,12 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         expId : `int`
             Unique binary id associated with the input exposure
         """
-        expId, expBits = exposureDataId.pack(idPackerName, returnMaxBits=True)
-        idFactory = lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
+        exposureIdInfo = ExposureIdInfo.fromDataId(exposureDataId, idPackerName)
+        idFactory = exposureIdInfo.makeSourceIdFactory()
 
         measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
                                                    idFactory=idFactory)
-        return measCat, expId
+        return measCat, exposureIdInfo.expId
 
     def runDataRef(self, dataRef, psfCache=None):
         """Perform forced measurement on a single exposure.
@@ -476,7 +494,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         if psfCache is not None:
             exposure.getPsf().setCacheSize(psfCache)
         refCat = self.fetchReferences(dataRef, exposure)
-
         measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
                                                    idFactory=self.makeIdFactory(dataRef))
         self.log.info("Performing forced measurement on %s", dataRef.dataId)
@@ -540,9 +557,8 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
             same as those that correspond to ``calexp`` (``visit``, ``raft``,
             ``sensor`` for LSST data).
         """
-        expBits = dataRef.get("ccdExposureId_bits")
-        expId = int(dataRef.get("ccdExposureId"))
-        return lsst.afw.table.IdFactory.makeSource(expId, 64 - expBits)
+        exposureIdInfo = ExposureIdInfo(int(dataRef.get("ccdExposureId")), dataRef.get("ccdExposureId_bits"))
+        return exposureIdInfo.makeSourceIdFactory()
 
     def getExposureId(self, dataRef):
         return int(dataRef.get("ccdExposureId", immediate=True))
@@ -599,16 +615,17 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         pixel coordinate system of the image being measured, while the actual
         detections may start out in a different coordinate system.
 
-        Subclasses of this class must implement this method to define how
+        Subclasses of this class may implement this method to define how
         those `~lsst.afw.detection.Footprint`\ s should be generated.
 
-        This default implementation transforms the
-        `~lsst.afw.detection.Footprint`\ s from the reference catalog from the
-        reference WCS to the exposure's WcS, which downgrades
-        `lsst.afw.detection.heavyFootprint.HeavyFootprint`\ s into regular
-        `~lsst.afw.detection.Footprint`\ s, destroying deblend information.
+        This default implementation transforms depends on the
+        ``footprintSource`` configuration parameter.
         """
-        return self.measurement.attachTransformedFootprints(sources, refCat, exposure, refWcs)
+        if self.config.footprintSource == "transformed":
+            return self.measurement.attachTransformedFootprints(sources, refCat, exposure, refWcs)
+        elif self.config.footprintSource == "psf":
+            return self.measurement.attachPsfShapeFootprints(sources, exposure,
+                                                             scaling=self.config.psfFootprintScaling)
 
     def getExposure(self, dataRef):
         """Read input exposure for measurement.
@@ -721,13 +738,20 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
 class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
                                        pipelineConnections=ForcedPhotCcdFromDataFrameConnections):
     def setDefaults(self):
+        super().setDefaults()
+        self.footprintSource = "psf"
         self.measurement.doReplaceWithNoise = False
-        self.measurement.plugins = ["base_TransformedCentroidFromCoord", "base_PsfFlux"]
+        self.measurement.plugins = ["base_TransformedCentroidFromCoord", "base_PsfFlux", "base_PixelFlags"]
         self.measurement.copyColumns = {'id': 'diaObjectId', 'coord_ra': 'coord_ra', 'coord_dec': 'coord_dec'}
         self.measurement.slots.centroid = "base_TransformedCentroidFromCoord"
         self.measurement.slots.psfFlux = "base_PsfFlux"
         self.measurement.slots.shape = None
-        self.catalogCalculation.plugins.names = []
+
+    def validate(self):
+        super().validate()
+        if self.footprintSource == "transformed":
+            raise ValueError("Cannot transform footprints from reference catalog, "
+                             "because DataFrames can't hold footprints.")
 
 
 class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
@@ -735,8 +759,8 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
 
     Uses input from a DataFrame instead of SourceCatalog
     like the base class ForcedPhotCcd does.
-    Writes out a SourceCatalog so that the downstream WriteForcedSourceTableTask
-    can be reused with output from this Task.
+    Writes out a SourceCatalog so that the downstream
+    WriteForcedSourceTableTask can be reused with output from this Task.
     """
     _DefaultName = "forcedPhotCcdFromDataFrame"
     ConfigClass = ForcedPhotCcdFromDataFrameConfig
@@ -764,6 +788,7 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
                                                                        inputs['exposure'], inputs['refCat'],
                                                                        inputs['refWcs'],
                                                                        "visit_detector")
+        self.attachFootprints(inputs["measCat"], inputs["refCat"], inputs["exposure"], inputs["refWcs"])
         outputs = self.run(**inputs)
         butlerQC.put(outputs, outputRefs)
 
@@ -794,7 +819,7 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
         # to down select rows that overlap the detector bbox
         mapping = exposureWcs.getTransform().getMapping()
         x, y = mapping.applyInverse(np.array(df[['ra', 'decl']].values*2*np.pi/360).T)
-        inBBox = exposureBBox.contains(x, y)
+        inBBox = lsst.geom.Box2D(exposureBBox).contains(x, y)
         refCat = self.df2SourceCat(df[inBBox])
         return refCat
 
