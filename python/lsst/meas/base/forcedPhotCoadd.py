@@ -20,9 +20,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import lsst.pex.config
-import lsst.coadd.utils
 import lsst.afw.table
 
+import lsst.coadd.utils as coaddUtils
 import lsst.pipe.base as pipeBase
 from lsst.obs.base import ExposureIdInfo
 
@@ -287,12 +287,12 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
             exposure.getPsf().setCacheCapacity(psfCache)
         refCat = self.fetchReferences(dataRef, exposure)
 
-        measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
-                                                   idFactory=self.makeIdFactory(dataRef))
+        exposureId = coaddUtils.getGen3CoaddExposureId(dataRef, coaddName=self.config.coaddName,
+                                                       includeBand=False, log=self.log)
+        measCat = self.measurement.generateMeasCat(
+            exposure, refCat, refWcs, idFactory=self.makeIdFactory(dataRef, exposureId=exposureId))
         self.log.info("Performing forced measurement on %s", dataRef.dataId)
         self.attachFootprints(measCat, refCat, exposure, refWcs, dataRef)
-
-        exposureId = self.getExposureId(dataRef)
 
         forcedPhotResult = self.run(measCat, exposure, refCat, refWcs, exposureId=exposureId)
 
@@ -335,7 +335,7 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
 
         return pipeBase.Struct(measCat=measCat)
 
-    def makeIdFactory(self, dataRef):
+    def makeIdFactory(self, dataRef, exposureId):
         """Create an object that generates globally unique source IDs.
 
         Source IDs are created based on a per-CCD ID and the ID of the CCD
@@ -354,12 +354,8 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         # allow us to revert back to the old behavior of generating new forced
         # source IDs, just by renaming the ID in config.copyColumns to
         # "object_id".
-        exposureIdInfo = ExposureIdInfo(int(dataRef.get(self.config.coaddName + "CoaddId")),
-                                        dataRef.get(self.config.coaddName + "CoaddId_bits"))
+        exposureIdInfo = ExposureIdInfo(exposureId, dataRef.get(self.config.coaddName + "CoaddId_bits"))
         return exposureIdInfo.makeSourceIdFactory()
-
-    def getExposureId(self, dataRef):
-        return int(dataRef.get(self.config.coaddName + "CoaddId"))
 
     def fetchReferences(self, dataRef, exposure):
         """Return an iterable of reference sources which overlap the exposure.
@@ -472,6 +468,6 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
     def _makeArgumentParser(cls):
         parser = pipeBase.ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", "deepCoadd_forced_src", help="data ID, with raw CCD keys + tract",
-                               ContainerClass=lsst.coadd.utils.CoaddDataIdContainer)
+                               ContainerClass=coaddUtils.CoaddDataIdContainer)
         parser.add_argument("--psfCache", type=int, default=100, help="Size of CoaddPsf cache")
         return parser
