@@ -57,6 +57,8 @@ Command-line driver tasks for forced measurement include
 import lsst.pex.config
 import lsst.pipe.base
 import time
+from metadetect.lsst_measure_scarlet import ModelSubtractor
+from metadetect.util import get_mbexp
 
 from .pluginRegistry import PluginRegistry
 from .baseMeasurement import (BaseMeasurementPluginConfig, BaseMeasurementPlugin,
@@ -342,6 +344,40 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                       "" if len(refCat) == 1 else "s")
         nextLogTime = time.time() + self.config.loggingInterval
 
+        # Subtraction code from metadetect
+        mbexp = get_mbexp([exposure])
+
+        subtractor = ModelSubtractor(mbexp=mbexp, sources={exposure.getFilterLabel().bandLabel: measCat})
+
+        # So subtractor.mbexp has all the things subtracted...
+
+        refParentCat, measParentCat = refCat.getChildren(0, measCat)
+
+        meas_exposure = exposure.clone()
+
+        for parent_idx, (ref_parent_record, meas_parent_record) in enumerate(zip(refParentCat, measParentCat)):
+            parent_id = meas_parent_record.getId()
+            meas_children = measCat.getChildren(parent_id)
+            ref_children = refCat.getChildren(parent_id)
+            for ref_child, meas_child in zip(ref_children, meas_children):
+                source_id = ref_child.getId()
+
+                with subtractor.add_source(source_id):
+                    meas_exposure.image.array[:, :] = subtractor.mbexp.singles[0].image.array[:, :]
+                    self.callMeasure(meas_child, meas_exposure, ref_child, refWcs,
+                                     beginOrder=beginOrder, endOrder=endOrder)
+
+            source_id = ref_parent_record.getId()
+            with subtractor.add_source(source_id):
+                meas_exposure.image.array[:, :] = subtractor.mbexp.singles[0].image.array[:, :]
+                self.callMeasure(meas_parent_record, meas_exposure, ref_parent_record, refWcs,
+                                 beginOrder=beginOrder, endOrder=endOrder)
+                self.callMeasureN(measParentCat[parent_idx: parent_idx + 1], meas_exposure,
+                                  refParentCat[parent_idx: parent_idx + 1],
+                                  beginOrder=beginOrder, endOrder=endOrder)
+                # I don't know what to do with the last callMeasureN so I'm skipping it
+
+        """
         if self.config.doReplaceWithNoise:
             noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure,
                                           footprints, log=self.log, exposureId=exposureId)
@@ -387,7 +423,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                                  parentIdx + 1, len(refParentCat))
                 nextLogTime = currentTime + self.config.loggingInterval
         noiseReplacer.end()
-
+        """
         # Undeblended plugins only fire if we're running everything
         if endOrder is None:
             for recordIndex, (measRecord, refRecord) in enumerate(zip(measCat, refCat)):
