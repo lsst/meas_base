@@ -56,9 +56,8 @@ Command-line driver tasks for forced measurement include
 
 import lsst.pex.config
 import lsst.pipe.base
+import lsst.afw.image
 import time
-from metadetect.lsst_measure_scarlet import ModelSubtractor
-from metadetect.util import get_mbexp
 
 from .pluginRegistry import PluginRegistry
 from .baseMeasurement import (BaseMeasurementPluginConfig, BaseMeasurementPlugin,
@@ -344,7 +343,13 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                       "" if len(refCat) == 1 else "s")
         nextLogTime = time.time() + self.config.loggingInterval
 
+        from metadetect.lsst_measure_scarlet import ModelSubtractor
+        from metadetect.util import get_mbexp
+
         # Subtraction code from metadetect
+        if exposure.getFilterLabel() is None:
+            exposure.setFilterLabel(lsst.afw.image.FilterLabel(band='N'))
+
         mbexp = get_mbexp([exposure])
 
         subtractor = ModelSubtractor(mbexp=mbexp, sources={exposure.getFilterLabel().bandLabel: measCat})
