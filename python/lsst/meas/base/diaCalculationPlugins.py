@@ -147,6 +147,13 @@ class HTMIndexDiaPositionConfig(DiaObjectCalculationPluginConfig):
 @register("ap_HTMIndex")
 class HTMIndexDiaPosition(DiaObjectCalculationPlugin):
     """Compute the mean position of a DiaObject given a set of DiaSources.
+
+    Notes
+    -----
+    This plugin was implemented to satisfy requirements of old APDB interface
+    which required ``pixelId`` column in DiaObject with HTM20 index. APDB
+    interface had migrated to not need that information, but we keep this
+    plugin in case it may be useful for something else.
     """
     ConfigClass = HTMIndexDiaPositionConfig
 
