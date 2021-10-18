@@ -29,6 +29,8 @@ import lsst.afw.detection
 import lsst.afw.table
 import lsst.meas.base.tests
 import lsst.utils.tests
+from lsst.daf.base import PropertyList
+from lsst.utils.tests import methodParameters
 
 
 @lsst.meas.base.register("test_NoiseReplacer")
@@ -75,16 +77,22 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.t
             family.addChild(140000.0, lsst.geom.Point2D(72.3, 149.1))
             family.addChild(90000.0, lsst.geom.Point2D(68.5, 156.9))
 
-    def testSingleFrameMeasurement(self):
-        """Test noise replacement in single frame measurement.
+    @methodParameters(noiseSource=['measure', 'variance', 'meta', 'variance_median'],
+                      variance=[1.0, 1.0, 2.0, 1.0])
+    def testNoiseReplacer(self, noiseSource, variance):
+        """Test noise replacement in SFM with ''measure'' mode.
 
         We compare the instFlux inside and outside source Footprints on an
         extremely high S/N image.
         """
-
         # We choose a random seed which causes the test to pass.
         task = self.makeSingleFrameMeasurementTask("test_NoiseReplacer")
-        exposure, catalog = self.dataset.realize(1.0, task.schema, randomSeed=0)
+        task.config.noiseReplacer.noiseSource = noiseSource
+        exposure, catalog = self.dataset.realize(variance, task.schema, randomSeed=0)
+        if noiseSource == 'meta':
+            md = PropertyList()
+            md['BGMEAN'] = variance
+            exposure.setMetadata(md)
         task.run(catalog, exposure)
         sumVariance = exposure.getMaskedImage().getVariance().getArray().sum()
         for record in catalog:

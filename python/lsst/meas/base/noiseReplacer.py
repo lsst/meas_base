@@ -39,6 +39,7 @@ class NoiseReplacerConfig(lsst.pex.config.Config):
             'measure': 'Measure clipped mean and variance from the whole image',
             'meta': 'Mean = 0, variance = the "BGMEAN" metadata entry',
             'variance': "Mean = 0, variance = the image's variance",
+            'variance_median': "Mean = 0, variance = median(variance plane)"
         },
         default='measure', optional=False
     )
@@ -195,9 +196,6 @@ class NoiseReplacer:
         # We'll put the noise footprints in a dict heavyNoise = {id:heavyNoiseFootprint}
         self.heavyNoise = {}
         noisegen = self.getNoiseGenerator(exposure, noiseImage, noiseMeanVar, exposureId=exposureId)
-        #  The noiseGenMean and Std are used by the unit tests
-        self.noiseGenMean = noisegen.mean
-        self.noiseGenStd = noisegen.std
         if self.log:
             self.log.debug('Using noise generator: %s', str(noisegen))
         for id in self.heavies:
@@ -351,6 +349,17 @@ class NoiseReplacer:
                 self.log.debug('Will draw noise according to the variance plane.')
             var = exposure.getMaskedImage().getVariance()
             return VariancePlaneNoiseGenerator(var, mean=offset, rand=rand)
+
+        if noiseSource == 'variance_median':
+            if self.log:
+                self.log.debug('Will draw noise using the median of the variance plane.')
+            var = exposure.getMaskedImage().getVariance()
+            s = afwMath.makeStatistics(var, afwMath.MEDIAN)
+            varMedian = s.getValue(afwMath.MEDIAN)
+            if self.log:
+                self.log.debug("Measured from variance: median variance = %g",
+                               varMedian)
+            return FixedGaussianNoiseGenerator(offset, math.sqrt(varMedian), rand=rand)
 
         # Compute an image-wide clipped variance.
         im = exposure.getMaskedImage().getImage()
