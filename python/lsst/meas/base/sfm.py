@@ -31,9 +31,9 @@ systems if necessary to avoid information loss (this should, of course, be
 indicated in the field documentation).
 """
 
-import lsst.pipe.base as pipeBase
 import lsst.pex.config
 import time
+from lsst.utils.timer import timeMethod
 
 from .pluginRegistry import PluginRegistry
 from .baseMeasurement import (BaseMeasurementPluginConfig, BaseMeasurementPlugin,
@@ -210,7 +210,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         else:
             self.doBlendedness = False
 
-    @pipeBase.timeMethod
+    @timeMethod
     def run(self, measCat, exposure, noiseImage=None, exposureId=None, beginOrder=None, endOrder=None):
         r"""Run single frame measurement over an exposure and source catalog.
 

@@ -24,6 +24,7 @@ from collections import namedtuple
 import lsst.pipe.base
 import lsst.pex.config
 import lsst.daf.base
+from lsst.utils.timer import timeMethod
 
 from .pluginsBase import BasePlugin, BasePluginConfig
 from .pluginRegistry import PluginRegistry, PluginMap
@@ -226,7 +227,7 @@ class CatalogCalculationTask(lsst.pipe.base.Task):
                 raise ValueError("{} has an execution order less than the minimum for an catalogCalculation "
                                  "plugin. Value {} : Minimum {}".format(*errorTuple))
 
-    @lsst.pipe.base.timeMethod
+    @timeMethod
     def run(self, measCat):
         """The entry point for the catalog calculation task.
 
