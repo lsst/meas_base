@@ -597,18 +597,16 @@ bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double y
                 if (!(shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number])) {
                     Matrix4d fisher = calc_fisher(*shape, bkgd_var);  // Fisher matrix
                     Matrix4d cov = fisher.inverse();
-                    // convention in afw::geom::ellipses is to order moments (xx, yy, xy),
-                    // but the older algorithmic code uses (xx, xy, yy) - the order of
-                    // indices here is not a bug.
+                    // convention is to order moments (xx, yy, xy)
                     shape->instFluxErr = std::sqrt(cov(0, 0));
                     shape->xxErr = std::sqrt(cov(1, 1));
-                    shape->xyErr = std::sqrt(cov(2, 2));
-                    shape->yyErr = std::sqrt(cov(3, 3));
+                    shape->yyErr = std::sqrt(cov(2, 2));
+                    shape->xyErr = std::sqrt(cov(3, 3));
                     shape->instFlux_xx_Cov = cov(0, 1);
-                    shape->instFlux_xy_Cov = cov(0, 2);
-                    shape->instFlux_yy_Cov = cov(0, 3);
-                    shape->xx_yy_Cov = cov(1, 3);
-                    shape->xx_xy_Cov = cov(1, 2);
+                    shape->instFlux_yy_Cov = cov(0, 2);
+                    shape->instFlux_xy_Cov = cov(0, 3);
+                    shape->xx_yy_Cov = cov(1, 2);
+                    shape->xx_xy_Cov = cov(1, 3);
                     shape->yy_xy_Cov = cov(2, 3);
                 }
             }
