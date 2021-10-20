@@ -31,6 +31,7 @@ from .catalogCalculation import (CatalogCalculationPluginConfig,
 from .pluginsBase import BasePlugin
 from .pluginRegistry import (PluginRegistry, PluginMap)
 import lsst.pipe.base
+from lsst.utils.timer import timeMethod
 
 # Enforce an error for unsafe column/array value setting in pandas.
 pd.options.mode.chained_assignment = 'raise'
@@ -273,7 +274,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
             else:
                 self.outputCols.append(outputName)
 
-    @lsst.pipe.base.timeMethod
+    @timeMethod
     def run(self,
             diaObjectCat,
             diaSourceCat,
@@ -341,7 +342,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                                 updatedDiaObjectIds,
                                 filterNames)
 
-    @lsst.pipe.base.timeMethod
+    @timeMethod
     def callCompute(self,
                     diaObjectCat,
                     diaSourceCat,
