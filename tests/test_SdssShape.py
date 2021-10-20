@@ -96,7 +96,7 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         """
         exposure, catalog = self._runMeasurementTask()
         key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
-        psfTruth = exposure.getPsf().computeShape()
+        psfTruth = exposure.getPsf().computeShape(catalog[0].getCentroid())
         for record in catalog:
             result = record.get(key)
             self._checkShape(result, record)
