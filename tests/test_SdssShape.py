@@ -25,6 +25,7 @@ import numpy as np
 
 import lsst.geom
 import lsst.afw.geom
+import lsst.afw.table
 import lsst.meas.base
 import lsst.meas.base.tests
 import lsst.utils.tests
@@ -47,6 +48,15 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         del self.bbox
         del self.dataset
         del self.config
+
+    def makeAlgorithm(self, ctrl=None):
+        """Construct an algorithm and return both it and its schema.
+        """
+        if ctrl is None:
+            ctrl = lsst.meas.base.SdssShapeControl()
+        schema = lsst.meas.base.tests.TestDataset.makeMinimalSchema()
+        algorithm = lsst.meas.base.SdssShapeAlgorithm(ctrl, "base_SdssShape", schema)
+        return algorithm, schema
 
     def assertFinite(self, value):
         self.assertTrue(np.isfinite(value), msg="%s is not finite" % (value,))
@@ -96,7 +106,7 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
         """
         exposure, catalog = self._runMeasurementTask()
         key = lsst.meas.base.SdssShapeResultKey(catalog.schema["base_SdssShape"])
-        psfTruth = exposure.getPsf().computeShape()
+        psfTruth = exposure.getPsf().computeShape(catalog[0].getCentroid())
         for record in catalog:
             result = record.get(key)
             self._checkShape(result, record)
@@ -128,6 +138,47 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
             result = record.get(key)
             self._checkShape(result, record)
             self.assertTrue(result.getFlag(lsst.meas.base.SdssShapeAlgorithm.PSF_SHAPE_BAD.number))
+
+    def testMonteCarlo(self):
+        """Test an ideal simulation, with deterministic noise.
+
+        Demonstrate that:
+
+        - We get the right answer, and
+        - The reported uncertainty agrees with a Monte Carlo test of the noise.
+        """
+        algorithm, schema = self.makeAlgorithm()
+        # Results are RNG dependent; we choose a seed that is known to pass.
+        exposure, cat = self.dataset.realize(0.0, schema, randomSeed=3)
+        record = cat[1]
+        instFlux = record["truth_instFlux"]
+        algorithm.measure(record, exposure)
+        for suffix in ["xx", "yy", "xy"]:
+            self.assertFloatsAlmostEqual(record.get("truth_"+suffix),
+                                         record.get("base_SdssShape_"+suffix), rtol=1E-4)
+
+        for noise in (0.0001, 0.001,):
+            nSamples = 1000
+            catalog = lsst.afw.table.SourceCatalog(cat.schema)
+            for i in range(nSamples):
+                # By using ``i`` to seed the RNG, we get results which
+                # fall within the tolerances defined below. If we allow this
+                # test to be truly random, passing becomes RNG-dependent.
+                exposure, cat = self.dataset.realize(noise*instFlux, schema, randomSeed=i)
+                record = cat[1]
+                algorithm.measure(record, exposure)
+                catalog.append(record)
+
+            catalog = catalog.copy(deep=True)
+            for suffix in ["xx", "yy", "xy"]:
+                shapeMean = np.mean(catalog["base_SdssShape_"+suffix])
+                shapeErrMean = np.nanmean(catalog["base_SdssShape_"+suffix+"Err"])
+                shapeInterval68 = 0.5*(np.nanpercentile(catalog["base_SdssShape_"+suffix], 84)
+                                       - np.nanpercentile(catalog["base_SdssShape_"+suffix], 16))
+                self.assertFloatsAlmostEqual(np.nanstd(catalog["base_SdssShape_"+suffix]),
+                                             shapeInterval68, rtol=0.03)
+                self.assertFloatsAlmostEqual(shapeErrMean, shapeInterval68, rtol=0.03)
+                self.assertLess(abs(shapeMean - record.get("truth_"+suffix)), 2.0*shapeErrMean/nSamples**0.5)
 
 
 class SdssShapeTransformTestCase(lsst.meas.base.tests.FluxTransformTestCase,
