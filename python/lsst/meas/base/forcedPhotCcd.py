@@ -77,7 +77,7 @@ class PerTractCcdDataIdContainer(pipeBase.DataIdContainer):
         """
         if self.datasetType is None:
             raise RuntimeError("Must call setDatasetType first")
-        log = logging.getLogger("meas.base.forcedPhotCcd.PerTractCcdDataIdContainer")
+        log = logging.getLogger(__name__).getChild("PerTractCcdDataIdContainer")
         skymap = None
         visitTract = collections.defaultdict(set)   # Set of tracts for each visit
         visitRefs = collections.defaultdict(list)   # List of data references for each visit
