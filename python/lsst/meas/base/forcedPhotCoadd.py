@@ -58,7 +58,7 @@ class ForcedPhotCoaddConnections(pipeBase.PipelineTaskConnections,
     )
     exposure = pipeBase.connectionTypes.Input(
         doc="Input exposure to perform photometry on.",
-        name="{inputCoaddName}Coadd",
+        name="{inputCoaddName}Coadd_calexp",
         storageClass="ExposureF",
         dimensions=["band", "skymap", "tract", "patch"],
     )
