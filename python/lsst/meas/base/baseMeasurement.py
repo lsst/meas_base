@@ -178,7 +178,7 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
     )
 
     def validate(self):
-        lsst.pex.config.Config.validate(self)
+        super().validate()
         if self.slots.centroid is not None and self.slots.centroid not in self.plugins.names:
             raise ValueError("source centroid slot algorithm is not being run.")
         if self.slots.shape is not None and self.slots.shape not in self.plugins.names:
