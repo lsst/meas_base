@@ -34,17 +34,17 @@ from lsst.meas.base import FlagDefinitionList, FlagHandler
 
 class CentroiderConfig(SingleFramePluginConfig):
 
-    moveX = lsst.pex.config.Field(dtype=int, default=0, optional=False,
+    moveX = lsst.pex.config.Field(dtype=int, default=0,
                                   doc="amount to re-position in X")
-    moveY = lsst.pex.config.Field(dtype=int, default=0, optional=False,
+    moveY = lsst.pex.config.Field(dtype=int, default=0,
                                   doc="amount to re-position in Y")
-    dist = lsst.pex.config.Field(dtype=int, default=None, optional=False,
+    dist = lsst.pex.config.Field(dtype=int, default=0,
                                  doc="distance to allow centroid to be off")
-    setErrors = lsst.pex.config.Field(dtype=bool, default=False, optional=False,
+    setErrors = lsst.pex.config.Field(dtype=bool, default=False,
                                       doc="set errors on measurement to errX, errY")
-    errX = lsst.pex.config.Field(dtype=float, default=0, optional=False,
+    errX = lsst.pex.config.Field(dtype=float, default=0,
                                  doc="uncertainty on X measurement")
-    errY = lsst.pex.config.Field(dtype=float, default=0, optional=False,
+    errY = lsst.pex.config.Field(dtype=float, default=0,
                                  doc="uncertainty on X measurement")
 
 
