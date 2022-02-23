@@ -118,21 +118,6 @@ class CentroidCheckerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.dataset = lsst.meas.base.tests.TestDataset(bbox)
         self.dataset.addSource(instFlux=1E5, centroid=lsst.geom.Point2D(25, 26))
 
-    def makeConfig(self, algName=None):
-        if algName is None:
-            algName = self.algName
-        config = lsst.meas.base.SingleFrameMeasurementConfig()
-        config.plugins = [algName]
-        config.slots.centroid = None
-        config.slots.apFlux = None
-        config.slots.calibFlux = None
-        config.slots.gaussianFlux = None
-        config.slots.modelFlux = None
-        config.slots.psfFlux = None
-        config.slots.shape = None
-        config.slots.psfShape = None
-        return config
-
     def tearDown(self):
         del self.dataset
 
@@ -140,8 +125,7 @@ class CentroidCheckerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """Test that the ``resetToPeak`` flag is not set when no error seen.
         """
         schema = self.dataset.makeMinimalSchema()
-        config = self.makeConfig()
-        config.slots.centroid = "truth"
+        config = self.makeSingleFrameMeasurementConfig(plugin=self.algName)
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=config)
         exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=0)
         task.run(cat, exposure)
@@ -154,8 +138,7 @@ class CentroidCheckerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """
         def runMeasurement(errX, errY):
             schema = self.dataset.makeMinimalSchema()
-            config = self.makeConfig()
-            config.slots.centroid = "truth"
+            config = self.makeSingleFrameMeasurementConfig(plugin=self.algName)
             config.plugins[self.algName].setErrors = True
             config.plugins[self.algName].errX = errX
             config.plugins[self.algName].errY = errY
@@ -188,8 +171,7 @@ class CentroidCheckerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """Test that a slight centroid movement triggers the distance error.
         """
         schema = self.dataset.makeMinimalSchema()
-        config = self.makeConfig()
-        config.slots.centroid = "truth"
+        config = self.makeSingleFrameMeasurementConfig(plugin=self.algName)
         config.plugins[self.algName].moveX = -2
         config.plugins[self.algName].dist = 1
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=config)
@@ -204,8 +186,7 @@ class CentroidCheckerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """A large centroid movement should trigger a move back to first peak.
         """
         schema = self.dataset.makeMinimalSchema()
-        config = self.makeConfig()
-        config.slots.centroid = "truth"
+        config = self.makeSingleFrameMeasurementConfig(plugin=self.algName)
         config.plugins[self.algName].moveX = -30
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=config)
         exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=2)
@@ -219,8 +200,9 @@ class CentroidCheckerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """Test the `NaiveCentroid` works with the ``maxDistance`` check.
         """
         schema = self.dataset.makeMinimalSchema()
-        config = self.makeConfig("base_NaiveCentroid")
-        config.plugins["base_NaiveCentroid"].maxDistToPeak = .0001
+        self.algName = "base_NaiveCentroid"
+        config = self.makeSingleFrameMeasurementConfig(plugin=self.algName)
+        config.plugins[self.algName].maxDistToPeak = .0001
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=config)
         exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=3)
         source = cat[0]
@@ -232,8 +214,9 @@ class CentroidCheckerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         """Test the `SdssCentroid` works with the ``maxDistance`` check.
         """
         schema = self.dataset.makeMinimalSchema()
-        config = self.makeConfig("base_SdssCentroid")
-        config.plugins["base_SdssCentroid"].maxDistToPeak = .0001
+        self.algName = "base_SdssCentroid"
+        config = self.makeSingleFrameMeasurementConfig(plugin=self.algName)
+        config.plugins[self.algName].maxDistToPeak = .0001
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=config)
         exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=4)
         source = cat[0]
