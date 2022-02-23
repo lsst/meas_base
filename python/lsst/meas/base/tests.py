@@ -601,7 +601,8 @@ class TestDataset:
 
 
 class AlgorithmTestCase:
-
+    """Base class for tests of measurement tasks.
+    """
     def makeSingleFrameMeasurementConfig(self, plugin=None, dependencies=()):
         """Create an instance of `SingleFrameMeasurementTask.ConfigClass`.
 
