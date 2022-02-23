@@ -20,6 +20,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
+import warnings
 
 import lsst.utils.tests
 import lsst.geom
@@ -46,7 +47,9 @@ class ClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
         del self.dataset
 
     def testSingleFramePlugin(self):
-        config = measBase.SingleFrameMeasurementConfig()
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="ignoreSlotPluginChecks", category=FutureWarning)
+            config = measBase.SingleFrameMeasurementConfig(ignoreSlotPluginChecks=True)
         # n.b. we use the truth value as ModelFlux
         config.slots.psfFlux = "base_PsfFlux"
         config.slots.modelFlux = "truth"

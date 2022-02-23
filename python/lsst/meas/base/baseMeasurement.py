@@ -22,6 +22,7 @@
 """Base measurement task, which subclassed by the single frame and forced
 measurement tasks.
 """
+import warnings
 
 import lsst.pipe.base
 import lsst.pex.config
@@ -138,6 +139,15 @@ class SourceSlotConfig(lsst.pex.config.Config):
 class BaseMeasurementConfig(lsst.pex.config.Config):
     """Base configuration for all measurement driver tasks.
 
+    Parameters
+    ----------
+    ignoreSlotPluginChecks : `bool`, optional
+        Do not check that all slots have an associated plugin to run when
+        validating this config. This is primarily for tests that were written
+        before we made Tasks always call `config.validate()` on init.
+        DEPRECATED DM-35949: this is a temporary workaround while we better
+        define how config/schema validation works for measurement tasks.
+
     Examples
     --------
     Subclasses should define the 'plugins' and 'undeblended' registries, e.g.
@@ -158,6 +168,14 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
     where ``PluginBaseClass`` is the appropriate base class of the plugin
     (e.g., `SingleFramePlugin` or `ForcedPlugin`).
     """
+    def __new__(cls, *args, ignoreSlotPluginChecks=False, **kwargs):
+        instance = super().__new__(cls, *args, **kwargs)
+        if ignoreSlotPluginChecks:
+            msg = ("ignoreSlotPluginChecks is deprecated and should only be used in tests."
+                   " No removal date has been set; see DM-35949.")
+            warnings.warn(msg, category=FutureWarning, stacklevel=2)
+        object.__setattr__(instance, "_ignoreSlotPluginChecks", ignoreSlotPluginChecks)
+        return instance
 
     slots = lsst.pex.config.ConfigField(
         dtype=SourceSlotConfig,
@@ -179,6 +197,8 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
 
     def validate(self):
         super().validate()
+        if self._ignoreSlotPluginChecks:
+            return
         if self.slots.centroid is not None and self.slots.centroid not in self.plugins.names:
             raise ValueError("source centroid slot algorithm is not being run.")
         if self.slots.shape is not None and self.slots.shape not in self.plugins.names:

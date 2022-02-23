@@ -19,6 +19,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import warnings
+
 import numpy as np
 
 import lsst.geom
@@ -620,6 +622,9 @@ class AlgorithmTestCase:
             The resulting task configuration.
         """
         config = SingleFrameMeasurementTask.ConfigClass()
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="ignoreSlotPluginChecks", category=FutureWarning)
+            config = SingleFrameMeasurementTask.ConfigClass(ignoreSlotPluginChecks=True)
         config.slots.centroid = "truth"
         config.slots.shape = "truth"
         config.slots.modelFlux = None

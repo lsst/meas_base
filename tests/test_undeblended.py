@@ -24,6 +24,7 @@
 
 import sys
 import unittest
+import warnings
 
 import numpy as np
 
@@ -61,7 +62,9 @@ class UndeblendedTestCase(lsst.utils.tests.TestCase):
         schema.addField("centroid_flag", type='Flag')
         schema.getAliasMap().set("slot_Centroid", "centroid")
 
-        sfmConfig = measBase.SingleFrameMeasurementConfig()
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="ignoreSlotPluginChecks", category=FutureWarning)
+            sfmConfig = measBase.SingleFrameMeasurementConfig(ignoreSlotPluginChecks=True)
         algName = "base_CircularApertureFlux"
 
         for subConfig in (sfmConfig.plugins, sfmConfig.undeblended):
