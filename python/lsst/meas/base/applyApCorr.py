@@ -20,8 +20,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import math
-
 import numpy as np
+import time
 
 import lsst.pex.config
 import lsst.pex.exceptions
@@ -183,6 +183,11 @@ class ApplyApCorrConfig(lsst.pex.config.Config):
         itemtype=str,
         default={},
     )
+    loggingInterval = lsst.pex.config.Field(
+        doc="Interval (in seconds) to log messages (at VERBOSE level) while aperture correction is running",
+        dtype=int,
+        default=600,
+    )
 
 
 class ApplyApCorrTask(lsst.pipe.base.Task):
@@ -241,6 +246,10 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
         else:
             self.log.debug("Use complex instFlux sigma computation that double-counts photon noise "
                            "and thus over-estimates instFlux uncertainty")
+
+        # Calculate the time to log the next heartbeat log message.
+        nextLogTime = time.time() + self.config.loggingInterval
+
         for apCorrInfo in self.apCorrInfoDict.values():
             apCorrModel = apCorrMap.get(apCorrInfo.modelName)
             apCorrErrModel = apCorrMap.get(apCorrInfo.modelSigmaName)
@@ -253,7 +262,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                     source.set(apCorrInfo.apCorrFlagKey, True)
                 continue
 
-            for source in catalog:
+            for sourceIndex, source in enumerate(catalog):
                 center = source.getCentroid()
                 # say we've failed when we start; we'll unset these flags when we succeed
                 source.set(apCorrInfo.apCorrFlagKey, True)
@@ -290,6 +299,12 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                 source.set(apCorrInfo.apCorrFlagKey, False)
                 if self.config.doFlagApCorrFailures:
                     source.set(apCorrInfo.fluxFlagKey, oldFluxFlagState)
+
+                # Log a message if it has been a while since the last log.
+                if (currentTime := time.time()) > nextLogTime:
+                    self.log.verbose("Aperture corrections applied to %d sources out of %d",
+                                     sourceIndex + 1, len(catalog))
+                    nextLogTime = currentTime + self.config.loggingInterval
 
             if self.log.isEnabledFor(self.log.DEBUG):
                 # log statistics on the effects of aperture correction
