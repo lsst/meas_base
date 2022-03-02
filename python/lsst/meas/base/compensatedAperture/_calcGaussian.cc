@@ -63,6 +63,7 @@ py::tuple gaussian_filt_inner_product(py::array_t<double, py::array::c_style | p
     double sum_weights = 0;
     double weighted_sum = 0;
     double weight_square_sum = 0;
+    
 
     // calculate the x profile
     for (int j = 0; j < stop; ++j) {
@@ -82,8 +83,7 @@ py::tuple gaussian_filt_inner_product(py::array_t<double, py::array::c_style | p
         y_component = (1 / (sig * sqrt(2 * M_PI))) * exp(tmp_y_div);
         y_component_out = (1 / (sig * t * sqrt(2 * M_PI))) * exp(tmp_y_div / t_sq);
         for (int j = 0; j < stop; ++j){
-            double weight = 4*M_PI*((t_sq+1)/(t_sq-1))*
-                (y_component*x_container[j] - y_component_out*x_container_out[j]);
+            double weight = (y_component*x_container[j] - y_component_out*x_container_out[j]);
             double weighted_value = weight*array_unchecked(i, j);
             result += weighted_value;
             if (weight < 0)  {
@@ -122,7 +122,7 @@ t : `float`
 
 Returns
 -------
-result : `float`
+result : `tuple` of `float`
     Compensated aperture flux
 
 Raises

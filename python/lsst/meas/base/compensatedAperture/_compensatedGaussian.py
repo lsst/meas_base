@@ -28,6 +28,7 @@ class CompensatedGaussianAperturePluginConfig(CompensatedAperturePluginConfig):
         dtype=float,
         default=2,
     )
+    alpha = Field(doc="Approximate width of the psf if it were a symmetric gaussian", dtype=float, default=3)
 
 
 @register("base_CompensatedGaussianAp")
@@ -68,8 +69,14 @@ class CompensatedGaussianAperturePlugin(CompensatedAperturePlugin):
             self.width_keys[width] = (flux_key, uncert_key, mask_key)
             self._rads[width] = math.ceil(sps.norm.ppf((0.995,), scale=width * config.t)[0])
 
-            self._flux_corrections[width] = 4 * np.pi * width**2 * (self._t**2 + 1) / (self._t**2 - 1)
-            self._variance_corrections[width] = 4 * np.pi * width * (self._t**2 + 1) / self._t**2
+            alpha = self.config.alpha
+            self._flux_corrections[width] = (
+                2
+                * np.pi
+                * (alpha**4 + alpha**2 * width**2 * (self._t**2 + 1) + width**4 * self._t**2)
+                / (width**2 * (self._t**2 - 1))
+            )
+            self._variance_corrections[width] = 4 * np.pi * width**2 * (self._t**2 + 1) / self._t**2
 
         self._max_rad = max(self._rads)
 

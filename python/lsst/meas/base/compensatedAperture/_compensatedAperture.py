@@ -18,7 +18,7 @@ class CompensatedAperturePluginConfig(SingleFramePluginConfig):
         doc="The widths of the kernels for which to " "measure compensated apertures",
         dtype=int,
         minLength=1,
-        default=[3, 5, 7, 9, 11, 13]
+        default=[1, 2, 3, 4, 7, 11, 17, 23, 27, 50]
     )
 
     # commented out until I can create a ticket, since this actually breaks
