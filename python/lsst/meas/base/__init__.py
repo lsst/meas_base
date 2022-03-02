@@ -45,6 +45,7 @@ from .sdssCentroid import *
 from .sdssShape import *
 from .sincCoeffs import *
 from .transform import *
+from .compensatedAperture import *
 
 from .apCorrRegistry import *
 from .applyApCorr import *
