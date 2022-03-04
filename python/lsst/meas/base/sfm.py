@@ -159,7 +159,8 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
     loggingInterval = lsst.pex.config.Field(
         dtype=int,
         default=600,
-        doc="Interval (in seconds) to log messages (at VERBOSE level) while running measurement plugins."
+        doc="Interval (in seconds) to log messages (at VERBOSE level) while running measurement plugins.",
+        deprecated="This field is no longer used and will be removed in v25.",
     )
 
 

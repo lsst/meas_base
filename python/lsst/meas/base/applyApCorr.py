@@ -187,6 +187,7 @@ class ApplyApCorrConfig(lsst.pex.config.Config):
         doc="Interval (in seconds) to log messages (at VERBOSE level) while aperture correction is running",
         dtype=int,
         default=600,
+        deprecated="This field is no longer used and will be removed in v25",
     )
 
 
