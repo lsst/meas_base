@@ -56,7 +56,7 @@ Command-line driver tasks for forced measurement include
 
 import lsst.pex.config
 import lsst.pipe.base
-import time
+from lsst.utils.logging import PeriodicLogger
 
 from .pluginRegistry import PluginRegistry
 from .baseMeasurement import (BaseMeasurementPluginConfig, BaseMeasurementPlugin,
@@ -340,7 +340,9 @@ class ForcedMeasurementTask(BaseMeasurementTask):
 
         self.log.info("Performing forced measurement on %d source%s", len(refCat),
                       "" if len(refCat) == 1 else "s")
-        nextLogTime = time.time() + self.config.loggingInterval
+
+        # Wrap the task logger into a periodic logger.
+        periodicLog = PeriodicLogger(self.log)
 
         if self.config.doReplaceWithNoise:
             noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure,
@@ -382,10 +384,8 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                               beginOrder=beginOrder, endOrder=endOrder)
             noiseReplacer.removeSource(refParentRecord.getId())
             # Log a message if it has been a while since the last log.
-            if (currentTime := time.time()) > nextLogTime:
-                self.log.verbose("Forced measurement complete for %d parents (and their children) out of %d",
-                                 parentIdx + 1, len(refParentCat))
-                nextLogTime = currentTime + self.config.loggingInterval
+            periodicLog.log("Forced measurement complete for %d parents (and their children) out of %d",
+                            parentIdx + 1, len(refParentCat))
         noiseReplacer.end()
 
         # Undeblended plugins only fire if we're running everything
@@ -393,10 +393,8 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             for recordIndex, (measRecord, refRecord) in enumerate(zip(measCat, refCat)):
                 for plugin in self.undeblendedPlugins.iter():
                     self.doMeasurement(plugin, measRecord, exposure, refRecord, refWcs)
-                if (currentTime := time.time()) > nextLogTime:
-                    self.log.verbose("Undeblended forced measurement complete for %d sources out of %d",
-                                     recordIndex + 1, len(refCat))
-                    nextLogTime = currentTime + self.config.loggingInterval
+                    periodicLog.log("Undeblended forced measurement complete for %d sources out of %d",
+                                    recordIndex + 1, len(refCat))
 
     def generateMeasCat(self, exposure, refCat, refWcs, idFactory=None):
         r"""Initialize an output catalog from the reference catalog.

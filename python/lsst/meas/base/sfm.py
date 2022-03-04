@@ -32,7 +32,7 @@ indicated in the field documentation).
 """
 
 import lsst.pex.config
-import time
+from lsst.utils.logging import PeriodicLogger
 from lsst.utils.timer import timeMethod
 
 from .pluginRegistry import PluginRegistry
@@ -298,7 +298,9 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
                       nMeasCat, ("" if nMeasCat == 1 else "s"),
                       nMeasParentCat, ("" if nMeasParentCat == 1 else "s"),
                       nMeasCat - nMeasParentCat, ("" if nMeasCat - nMeasParentCat == 1 else "ren"))
-        nextLogTime = time.time() + self.config.loggingInterval
+
+        # Wrap the task logger into a period logger
+        periodicLog = PeriodicLogger(self.log)
 
         childrenIter = measCat.getChildren([measParentRecord.getId() for measParentRecord in measParentCat])
         for parentIdx, (measParentRecord, measChildCat) in enumerate(zip(measParentCat, childrenIter)):
@@ -328,10 +330,8 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
             self.callMeasureN(measChildCat, exposure, beginOrder=beginOrder, endOrder=endOrder)
             noiseReplacer.removeSource(measParentRecord.getId())
             # Log a message if it has been a while since the last log.
-            if (currentTime := time.time()) > nextLogTime:
-                self.log.verbose("Measurement complete for %d parents (and their children) out of %d",
-                                 parentIdx + 1, nMeasParentCat)
-                nextLogTime = currentTime + self.config.loggingInterval
+            periodicLog.log("Measurement complete for %d parents (and their children) out of %d",
+                            parentIdx + 1, nMeasParentCat)
 
         # When done, restore the exposure to its original state
         noiseReplacer.end()
@@ -341,10 +341,9 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
             for sourceIndex, source in enumerate(measCat):
                 for plugin in self.undeblendedPlugins.iter():
                     self.doMeasurement(plugin, source, exposure)
-                if (currentTime := time.time()) > nextLogTime:
-                    self.log.verbose("Undeblended measurement complete for %d sources out of %d",
-                                     sourceIndex + 1, nMeasCat)
-                    nextLogTime = currentTime + self.config.loggingInterval
+                # Log a message if it has been a while since the last log.
+                periodicLog.log("Undeblended measurement complete for %d sources out of %d",
+                                sourceIndex + 1, nMeasCat)
 
         # Now we loop over all of the sources one more time to compute the
         # blendedness metrics
