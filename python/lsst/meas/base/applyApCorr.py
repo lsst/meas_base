@@ -21,12 +21,12 @@
 
 import math
 import numpy as np
-import time
 
+import lsst.afw.image
 import lsst.pex.config
 import lsst.pex.exceptions
-import lsst.afw.image
 import lsst.pipe.base
+from lsst.utils.logging import PeriodicLogger
 from .apCorrRegistry import getApCorrNameSet
 
 # If True then scale instFlux error by apCorr; if False then use a more complex computation
@@ -187,6 +187,7 @@ class ApplyApCorrConfig(lsst.pex.config.Config):
         doc="Interval (in seconds) to log messages (at VERBOSE level) while aperture correction is running",
         dtype=int,
         default=600,
+        deprecated="This field is no longer used and will be removed in v25",
     )
 
 
@@ -247,8 +248,8 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
             self.log.debug("Use complex instFlux sigma computation that double-counts photon noise "
                            "and thus over-estimates instFlux uncertainty")
 
-        # Calculate the time to log the next heartbeat log message.
-        nextLogTime = time.time() + self.config.loggingInterval
+        # Wrap the task logger to a periodic logger.
+        periodicLog = PeriodicLogger(self.log)
 
         for apCorrInfo in self.apCorrInfoDict.values():
             apCorrModel = apCorrMap.get(apCorrInfo.modelName)
@@ -301,10 +302,8 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                     source.set(apCorrInfo.fluxFlagKey, oldFluxFlagState)
 
                 # Log a message if it has been a while since the last log.
-                if (currentTime := time.time()) > nextLogTime:
-                    self.log.verbose("Aperture corrections applied to %d sources out of %d",
-                                     sourceIndex + 1, len(catalog))
-                    nextLogTime = currentTime + self.config.loggingInterval
+                periodicLog.log("Aperture corrections applied to %d sources out of %d",
+                                sourceIndex + 1, len(catalog))
 
             if self.log.isEnabledFor(self.log.DEBUG):
                 # log statistics on the effects of aperture correction
