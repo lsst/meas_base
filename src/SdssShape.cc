@@ -215,8 +215,7 @@ static int calcmom(ImageT const &image,                             // the image
     wsum = wsumxx = wsumxy = wsumyy = 0;
 #endif
 
-    assert(w11 >= 0);  // i.e. it was set
-    if (fabs(w11) > 1e6 || fabs(w12) > 1e6 || fabs(w22) > 1e6) {
+    if (w11 < 0 ||  w11 > 1e6 || fabs(w12) > 1e6 || fabs(w22) > 1e6) {
         return (-1);
     }
 
@@ -412,11 +411,7 @@ bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double y
 
         double const detW = std::get<0>(weights).second;
 
-#if 0  // this form was numerically unstable on my G4 powerbook
-        assert(detW >= 0.0);
-#else
-        assert(sigma11W * sigma22W >= sigma12W * sigma12W - std::numeric_limits<float>::epsilon());
-#endif
+        if( sigma11W * sigma22W < sigma12W * sigma12W - std::numeric_limits<float>::epsilon()) return false;
 
         {
             const double ow11 = w11;  // old

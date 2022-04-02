@@ -84,7 +84,9 @@ void LocalBackgroundAlgorithm::measure(afw::table::SourceRecord& measRecord,
     // Extract from ndarray::Array into std::vector because of limitations in afw::math::makeStatistics
     std::vector<float> values;
     values.reserve(imageValues.getNumElements());
-    assert(imageValues.getNumElements() == maskValues.getNumElements());  // constructed from the same spans
+    if(imageValues.getNumElements() != maskValues.getNumElements()) {
+        throw LSST_EXCEPT(MeasurementError, NO_GOOD_PIXELS.doc, NO_GOOD_PIXELS.number);
+    }  // constructed from the same spans
     auto maskIter = maskValues.begin();
     for (auto imageIter = imageValues.begin(); imageIter != imageValues.end(); ++imageIter, ++maskIter) {
         if ((*maskIter & badMask) == 0) {
