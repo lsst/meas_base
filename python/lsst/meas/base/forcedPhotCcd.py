@@ -251,8 +251,8 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
 
     def setDefaults(self):
         # Docstring inherited.
-        # Make catalogCalculation a no-op by default as no modelFlux is setup by default in
-        # ForcedMeasurementTask
+        # Make catalogCalculation a no-op by default as no modelFlux is setup
+        # by default in ForcedMeasurementTask.
         super().setDefaults()
         self.measurement.plugins.names |= ['base_LocalPhotoCalib', 'base_LocalWcs']
         self.catalogCalculation.plugins.names = []
@@ -295,8 +295,9 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
             raise ValueError("No reference schema provided.")
 
         self.makeSubtask("measurement", refSchema=refSchema)
-        # It is necessary to get the schema internal to the forced measurement task until such a time
-        # that the schema is not owned by the measurement task, but is passed in by an external caller
+        # It is necessary to get the schema internal to the forced measurement
+        # task until such a time that the schema is not owned by the
+        # measurement task, but is passed in by an external caller.
         if self.config.doApCorr:
             self.makeSubtask("applyApCorr", schema=self.measurement.schema)
         self.makeSubtask('catalogCalculation', schema=self.measurement.schema)
@@ -551,16 +552,16 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         return pipeBase.Struct(measCat=measCat)
 
     def attachFootprints(self, sources, refCat, exposure, refWcs):
-        r"""Attach footprints to blank sources prior to measurements.
+        """Attach footprints to blank sources prior to measurements.
 
         Notes
         -----
-        `~lsst.afw.detection.Footprint`\ s for forced photometry must be in the
-        pixel coordinate system of the image being measured, while the actual
-        detections may start out in a different coordinate system.
+        `~lsst.afw.detection.Footprint` objects for forced photometry must
+        be in the pixel coordinate system of the image being measured, while
+        the actual detections may start out in a different coordinate system.
 
         Subclasses of this class may implement this method to define how
-        those `~lsst.afw.detection.Footprint`\ s should be generated.
+        those `~lsst.afw.detection.Footprint` objects should be generated.
 
         This default implementation transforms depends on the
         ``footprintSource`` configuration parameter.
