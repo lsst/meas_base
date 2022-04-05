@@ -155,7 +155,9 @@ def imageOverlapsTract(tract, imageWcs, imageBox):
 class ForcedPhotCcdConnections(PipelineTaskConnections,
                                dimensions=("instrument", "visit", "detector", "skymap", "tract"),
                                defaultTemplates={"inputCoaddName": "deep",
-                                                 "inputName": "calexp"}):
+                                                 "inputName": "calexp",
+                                                 "skyWcsName": "jointcal",
+                                                 "photoCalibName": "fgcm"}):
     inputSchema = cT.InitInput(
         doc="Schema for the input measurement catalogs.",
         name="{inputCoaddName}Coadd_ref_schema",
@@ -186,12 +188,79 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
         storageClass="SkyMap",
         dimensions=["skymap"],
     )
+    skyCorr = cT.Input(
+        doc="Input Sky Correction to be subtracted from the calexp if doApplySkyCorr=True",
+        name="skyCorr",
+        storageClass="Background",
+        dimensions=("instrument", "visit", "detector"),
+    )
+    externalSkyWcsTractCatalog = cT.Input(
+        doc=("Per-tract, per-visit wcs calibrations.  These catalogs use the detector "
+             "id for the catalog id, sorted on id for fast lookup."),
+        name="{skyWcsName}SkyWcsCatalog",
+        storageClass="ExposureCatalog",
+        dimensions=["instrument", "visit", "tract"],
+    )
+    externalSkyWcsGlobalCatalog = cT.Input(
+        doc=("Per-visit wcs calibrations computed globally (with no tract information). "
+             "These catalogs use the detector id for the catalog id, sorted on id for "
+             "fast lookup."),
+        name="{skyWcsName}SkyWcsCatalog",
+        storageClass="ExposureCatalog",
+        dimensions=["instrument", "visit"],
+    )
+    externalPhotoCalibTractCatalog = cT.Input(
+        doc=("Per-tract, per-visit photometric calibrations.  These catalogs use the "
+             "detector id for the catalog id, sorted on id for fast lookup."),
+        name="{photoCalibName}PhotoCalibCatalog",
+        storageClass="ExposureCatalog",
+        dimensions=["instrument", "visit", "tract"],
+    )
+    externalPhotoCalibGlobalCatalog = cT.Input(
+        doc=("Per-visit photometric calibrations computed globally (with no tract "
+             "information).  These catalogs use the detector id for the catalog id, "
+             "sorted on id for fast lookup."),
+        name="{photoCalibName}PhotoCalibCatalog",
+        storageClass="ExposureCatalog",
+        dimensions=["instrument", "visit"],
+    )
+    finalizedPsfApCorrCatalog = cT.Input(
+        doc=("Per-visit finalized psf models and aperture correction maps. "
+             "These catalogs use the detector id for the catalog id, "
+             "sorted on id for fast lookup."),
+        name="finalized_psf_ap_corr_catalog",
+        storageClass="ExposureCatalog",
+        dimensions=["instrument", "visit"],
+    )
     measCat = cT.Output(
         doc="Output forced photometry catalog.",
         name="forced_src",
         storageClass="SourceCatalog",
         dimensions=["instrument", "visit", "detector", "skymap", "tract"],
     )
+
+    def __init__(self, *, config=None):
+        super().__init__(config=config)
+        if not config.doApplySkyCorr:
+            self.inputs.remove("skyCorr")
+        if config.doApplyExternalSkyWcs:
+            if config.useGlobalExternalSkyWcs:
+                self.inputs.remove("externalSkyWcsTractCatalog")
+            else:
+                self.inputs.remove("externalSkyWcsGlobalCatalog")
+        else:
+            self.inputs.remove("externalSkyWcsTractCatalog")
+            self.inputs.remove("externalSkyWcsGlobalCatalog")
+        if config.doApplyExternalPhotoCalib:
+            if config.useGlobalExternalPhotoCalib:
+                self.inputs.remove("externalPhotoCalibTractCatalog")
+            else:
+                self.inputs.remove("externalPhotoCalibGlobalCatalog")
+        else:
+            self.inputs.remove("externalPhotoCalibTractCatalog")
+            self.inputs.remove("externalPhotoCalibGlobalCatalog")
+        if not config.doApplyFinalizedPsf:
+            self.inputs.remove("finalizedPsfApCorrCatalog")
 
 
 class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
@@ -237,12 +306,31 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
              "``externalPhotoCalibName`` field to determine which calibration "
              "to load."),
     )
+    useGlobalExternalPhotoCalib = lsst.pex.config.Field(
+        dtype=bool,
+        default=True,
+        doc=("When using doApplyExternalPhotoCalib, use 'global' calibrations "
+             "that are not run per-tract.  When False, use per-tract photometric "
+             "calibration files.")
+    )
     doApplyExternalSkyWcs = lsst.pex.config.Field(
         dtype=bool,
         default=False,
         doc=("Whether to apply external astrometric calibration via an "
              "`lsst.afw.geom.SkyWcs` object. Uses ``externalSkyWcsName`` "
              "field to determine which calibration to load."),
+    )
+    useGlobalExternalSkyWcs = lsst.pex.config.Field(
+        dtype=bool,
+        default=False,
+        doc=("When using doApplyExternalSkyWcs, use 'global' calibrations "
+             "that are not run per-tract.  When False, use per-tract wcs "
+             "files.")
+    )
+    doApplyFinalizedPsf = lsst.pex.config.Field(
+        dtype=bool,
+        default=False,
+        doc="Whether to apply finalized psf models and aperture correction map.",
     )
     doApplySkyCorr = lsst.pex.config.Field(
         dtype=bool,
@@ -359,8 +447,28 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         inputs = butlerQC.get(inputRefs)
 
         tract = butlerQC.quantum.dataId['tract']
-        skyMap = inputs.pop("skyMap")
+        skyMap = inputs.pop('skyMap')
         inputs['refWcs'] = skyMap[tract].getWcs()
+
+        # Connections only exist if they are configured to be used.
+        skyCorr = inputs.pop('skyCorr', None)
+        if self.config.useGlobalExternalSkyWcs:
+            externalSkyWcsCatalog = inputs.pop('externalSkyWcsGlobalCatalog', None)
+        else:
+            externalSkyWcsCatalog = inputs.pop('externalSkyWcsTractCatalog', None)
+        if self.config.useGlobalExternalPhotoCalib:
+            externalPhotoCalibCatalog = inputs.pop('externalPhotoCalibGlobalCatalog', None)
+        else:
+            externalPhotoCalibCatalog = inputs.pop('externalPhotoCalibTractCatalog', None)
+        finalizedPsfApCorrCatalog = inputs.pop('finalizedPsfApCorrCatalog', None)
+
+        inputs['exposure'] = self.prepareCalibratedExposure(
+            inputs['exposure'],
+            skyCorr=skyCorr,
+            externalSkyWcsCatalog=externalSkyWcsCatalog,
+            externalPhotoCalibCatalog=externalPhotoCalibCatalog,
+            finalizedPsfApCorrCatalog=finalizedPsfApCorrCatalog
+        )
 
         inputs['refCat'] = self.mergeAndFilterReferences(inputs['exposure'], inputs['refCat'],
                                                          inputs['refWcs'])
@@ -370,9 +478,85 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
                                                                        inputs['refCat'], inputs['refWcs'],
                                                                        "visit_detector")
         self.attachFootprints(inputs['measCat'], inputs['refCat'], inputs['exposure'], inputs['refWcs'])
-        # TODO: apply external calibrations (DM-17062)
         outputs = self.run(**inputs)
         butlerQC.put(outputs, outputRefs)
+
+    def prepareCalibratedExposure(self, exposure, skyCorr=None, externalSkyWcsCatalog=None,
+                                  externalPhotoCalibCatalog=None, finalizedPsfApCorrCatalog=None):
+        """Prepare a calibrated exposure and apply external calibrations
+        and sky corrections if so configured.
+
+        Parameters
+        ----------
+        exposure : `lsst.afw.image.exposure.Exposure`
+            Input exposure to adjust calibrations.
+        skyCorr : `lsst.afw.math.backgroundList`, optional
+            Sky correction frame to apply if doApplySkyCorr=True.
+        externalSkyWcsCatalog :  `lsst.afw.table.ExposureCatalog`, optional
+            Exposure catalog with external skyWcs to be applied
+            if config.doApplyExternalSkyWcs=True.  Catalog uses the detector id
+            for the catalog id, sorted on id for fast lookup.
+        externalPhotoCalibCatalog : `lsst.afw.table.ExposureCatalog`, optional
+            Exposure catalog with external photoCalib to be applied
+            if config.doApplyExternalPhotoCalib=True.  Catalog uses the detector
+            id for the catalog id, sorted on id for fast lookup.
+        finalizedPsfApCorrCatalog : `lsst.afw.table.ExposureCatalog`, optional
+            Exposure catalog with finalized psf models and aperture correction
+            maps to be applied if config.doApplyFinalizedPsf=True.  Catalog uses
+            the detector id for the catalog id, sorted on id for fast lookup.
+
+        Returns
+        -------
+        exposure : `lsst.afw.image.exposure.Exposure`
+            Exposure with adjusted calibrations.
+        """
+        detectorId = exposure.getInfo().getDetector().getId()
+
+        if externalPhotoCalibCatalog is not None:
+            row = externalPhotoCalibCatalog.find(detectorId)
+            if row is None:
+                self.log.warning("Detector id %s not found in externalPhotoCalibCatalog; "
+                                 "Using original photoCalib.", detectorId)
+            else:
+                photoCalib = row.getPhotoCalib()
+                if photoCalib is None:
+                    self.log.warning("Detector id %s has None for photoCalib in externalPhotoCalibCatalog; "
+                                     "Using original photoCalib.", detectorId)
+                else:
+                    exposure.setPhotoCalib(photoCalib)
+
+        if externalSkyWcsCatalog is not None:
+            row = externalSkyWcsCatalog.find(detectorId)
+            if row is None:
+                self.log.warning("Detector id %s not found in externalSkyWcsCatalog; "
+                                 "Using original skyWcs.", detectorId)
+            else:
+                skyWcs = row.getWcs()
+                if skyWcs is None:
+                    self.log.warning("Detector id %s has None for skyWcs in externalSkyWcsCatalog; "
+                                     "Using original skyWcs.", detectorId)
+                else:
+                    exposure.setWcs(skyWcs)
+
+        if finalizedPsfApCorrCatalog is not None:
+            row = finalizedPsfApCorrCatalog.find(detectorId)
+            if row is None:
+                self.log.warning("Detector id %s not found in finalizedPsfApCorrCatalog; "
+                                 "Using original psf.", detectorId)
+            else:
+                psf = row.getPsf()
+                apCorrMap = row.getApCorrMap()
+                if psf is None or apCorrMap is None:
+                    self.log.warning("Detector id %s has None for psf/apCorrMap in "
+                                     "finalizedPsfApCorrCatalog; Using original psf.", detectorId)
+                else:
+                    exposure.setPsf(psf)
+                    exposure.setApCorrMap(apCorrMap)
+
+        if skyCorr is not None:
+            exposure.maskedImage -= skyCorr.getImage()
+
+        return exposure
 
     def mergeAndFilterReferences(self, exposure, refCats, refWcs):
         """Filter reference catalog so that all sources are within the
@@ -447,6 +631,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
             Catalog of shapes and positions at which to force photometry.
         refWcs : `lsst.afw.image.SkyWcs`
             Reference world coordinate system.
+            This parameter is not currently used.
         idPackerName : `str`
             Type of ID packer to construct from the registry.
 
@@ -707,7 +892,9 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
 class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
                                             dimensions=("instrument", "visit", "detector", "skymap", "tract"),
                                             defaultTemplates={"inputCoaddName": "goodSeeing",
-                                                              "inputName": "calexp"}):
+                                                              "inputName": "calexp",
+                                                              "skyWcsName": "jointcal",
+                                                              "photoCalibName": "fgcm"}):
     refCat = cT.Input(
         doc="Catalog of positions at which to force photometry.",
         name="{inputCoaddName}Diff_fullDiaObjTable",
@@ -722,6 +909,50 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
         storageClass="ExposureF",
         dimensions=["instrument", "visit", "detector"],
     )
+    skyCorr = cT.Input(
+        doc="Input Sky Correction to be subtracted from the calexp if doApplySkyCorr=True",
+        name="skyCorr",
+        storageClass="Background",
+        dimensions=("instrument", "visit", "detector"),
+    )
+    externalSkyWcsTractCatalog = cT.Input(
+        doc=("Per-tract, per-visit wcs calibrations.  These catalogs use the detector "
+             "id for the catalog id, sorted on id for fast lookup."),
+        name="{skyWcsName}SkyWcsCatalog",
+        storageClass="ExposureCatalog",
+        dimensions=["instrument", "visit", "tract"],
+    )
+    externalSkyWcsGlobalCatalog = cT.Input(
+        doc=("Per-visit wcs calibrations computed globally (with no tract information). "
+             "These catalogs use the detector id for the catalog id, sorted on id for "
+             "fast lookup."),
+        name="{skyWcsName}SkyWcsCatalog",
+        storageClass="ExposureCatalog",
+        dimensions=["instrument", "visit"],
+    )
+    externalPhotoCalibTractCatalog = cT.Input(
+        doc=("Per-tract, per-visit photometric calibrations.  These catalogs use the "
+             "detector id for the catalog id, sorted on id for fast lookup."),
+        name="{photoCalibName}PhotoCalibCatalog",
+        storageClass="ExposureCatalog",
+        dimensions=["instrument", "visit", "tract"],
+    )
+    externalPhotoCalibGlobalCatalog = cT.Input(
+        doc=("Per-visit photometric calibrations computed globally (with no tract "
+             "information).  These catalogs use the detector id for the catalog id, "
+             "sorted on id for fast lookup."),
+        name="{photoCalibName}PhotoCalibCatalog",
+        storageClass="ExposureCatalog",
+        dimensions=["instrument", "visit"],
+    )
+    finalizedPsfApCorrCatalog = cT.Input(
+        doc=("Per-visit finalized psf models and aperture correction maps. "
+             "These catalogs use the detector id for the catalog id, "
+             "sorted on id for fast lookup."),
+        name="finalized_psf_ap_corr_catalog",
+        storageClass="ExposureCatalog",
+        dimensions=["instrument", "visit"],
+    )
     measCat = cT.Output(
         doc="Output forced photometry catalog.",
         name="forced_src_diaObject",
@@ -733,6 +964,29 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
         name="forced_src_diaObject_schema",
         storageClass="SourceCatalog",
     )
+
+    def __init__(self, *, config=None):
+        super().__init__(config=config)
+        if not config.doApplySkyCorr:
+            self.inputs.remove("skyCorr")
+        if config.doApplyExternalSkyWcs:
+            if config.useGlobalExternalSkyWcs:
+                self.inputs.remove("externalSkyWcsTractCatalog")
+            else:
+                self.inputs.remove("externalSkyWcsGlobalCatalog")
+        else:
+            self.inputs.remove("externalSkyWcsTractCatalog")
+            self.inputs.remove("externalSkyWcsGlobalCatalog")
+        if config.doApplyExternalPhotoCalib:
+            if config.useGlobalExternalPhotoCalib:
+                self.inputs.remove("externalPhotoCalibTractCatalog")
+            else:
+                self.inputs.remove("externalPhotoCalibGlobalCatalog")
+        else:
+            self.inputs.remove("externalPhotoCalibTractCatalog")
+            self.inputs.remove("externalPhotoCalibGlobalCatalog")
+        if not config.doApplyFinalizedPsf:
+            self.inputs.remove("finalizedPsfApCorrCatalog")
 
 
 class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
@@ -778,18 +1032,45 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
+
+        # When run with dataframes, we do not need a reference wcs.
+        inputs['refWcs'] = None
+
+        # Connections only exist if they are configured to be used.
+        skyCorr = inputs.pop('skyCorr', None)
+        if self.config.useGlobalExternalSkyWcs:
+            externalSkyWcsCatalog = inputs.pop('externalSkyWcsGlobalCatalog', None)
+        else:
+            externalSkyWcsCatalog = inputs.pop('externalSkyWcsTractCatalog', None)
+        if self.config.useGlobalExternalPhotoCalib:
+            externalPhotoCalibCatalog = inputs.pop('externalPhotoCalibGlobalCatalog', None)
+        else:
+            externalPhotoCalibCatalog = inputs.pop('externalPhotoCalibTractCatalog', None)
+        finalizedPsfApCorrCatalog = inputs.pop('finalizedPsfApCorrCatalog', None)
+
+        inputs['exposure'] = self.prepareCalibratedExposure(
+            inputs['exposure'],
+            skyCorr=skyCorr,
+            externalSkyWcsCatalog=externalSkyWcsCatalog,
+            externalPhotoCalibCatalog=externalPhotoCalibCatalog,
+            finalizedPsfApCorrCatalog=finalizedPsfApCorrCatalog
+        )
+
         self.log.info("Filtering ref cats: %s", ','.join([str(i.dataId) for i in inputs['refCat']]))
         refCat = self.df2RefCat([i.get(parameters={"columns": ['diaObjectId', 'ra', 'decl']})
                                  for i in inputs['refCat']],
                                 inputs['exposure'].getBBox(), inputs['exposure'].getWcs())
         inputs['refCat'] = refCat
-        inputs['refWcs'] = inputs['exposure'].getWcs()
+        # generateMeasCat does not use the refWcs.
         inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(inputRefs.exposure.dataId,
                                                                        inputs['exposure'], inputs['refCat'],
                                                                        inputs['refWcs'],
                                                                        "visit_detector")
+        # attachFootprints only uses refWcs in ``transformed`` mode, which is not
+        # supported in the DataFrame-backed task.
         self.attachFootprints(inputs["measCat"], inputs["refCat"], inputs["exposure"], inputs["refWcs"])
         outputs = self.run(**inputs)
+
         butlerQC.put(outputs, outputRefs)
 
     def df2RefCat(self, dfList, exposureBBox, exposureWcs):

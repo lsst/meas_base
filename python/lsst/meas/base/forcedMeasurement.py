@@ -408,6 +408,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             Catalog of reference sources.
         refWcs : `lsst.afw.geom.SkyWcs`
             Defines the X,Y coordinate system of ``refCat``.
+            This parameter is not currently used.
         idFactory : `lsst.afw.table.IdFactory`, optional
             Factory for creating IDs for sources.
 
