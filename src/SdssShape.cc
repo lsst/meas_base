@@ -215,8 +215,7 @@ static int calcmom(ImageT const &image,                             // the image
     wsum = wsumxx = wsumxy = wsumyy = 0;
 #endif
 
-    assert(w11 >= 0);  // i.e. it was set
-    if (fabs(w11) > 1e6 || fabs(w12) > 1e6 || fabs(w22) > 1e6) {
+    if ( w11 < 0 || w11 > 1e6 || fabs(w12) > 1e6 || w22 < 0 || w22 > 1e6) {
         return (-1);
     }
 
