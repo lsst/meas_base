@@ -24,7 +24,7 @@
 #include <cmath>
 #include <tuple>
 
-#include "boost/tuple/tuple.hpp"
+#include "boost/format.hpp"
 #include "Eigen/LU"
 #include "lsst/geom/Angle.h"
 #include "lsst/geom/Box.h"
@@ -190,33 +190,23 @@ geom::Box2I computeAdaptiveMomentsBBox(geom::Box2I const &bbox,      // full ima
 /*
  * Calculate weighted moments of an object up to 2nd order
  */
-template <bool instFluxOnly, typename ImageT>
-static int calcmom(ImageT const &image,                             // the image data
+template <typename ImageT>
+static void calcmom(ImageT const &image,                             // the image data
                    float xcen, float ycen,                          // centre of object
-                   geom::BoxI bbox,                                 // bounding box to consider
+                   const geom::BoxI &bbox,                          // bounding box to consider
                    float bkgd,                                      // data's background level
                    bool interpflag,                                 // interpolate within pixels?
                    double w11, double w12, double w22,              // weights
-                   double *pI0,                                     // amplitude of fit (if !NULL)
-                   double *psum,                                    // sum w*I (if !NULL)
-                   double *psumx, double *psumy,                    // sum [xy]*w*I (if !instFluxOnly)
-                   double *psumxx, double *psumxy, double *psumyy,  // sum [xy]^2*w*I (if !instFluxOnly)
-                   double *psums4,  // sum w*I*weight^2 (if !instFluxOnly && !NULL)
-                   bool negative = false) {
+                   double &psum) {                                    // sum w*I
+
     float tmod, ymod;
     float X, Y;  // sub-pixel interpolated [xy]
     float weight;
     float tmp;
     double sum, sumx, sumy, sumxx, sumyy, sumxy, sums4;
-#define RECALC_W 0  // estimate sigmaXX_w within BBox?
-#if RECALC_W
-    double wsum, wsumxx, wsumxy, wsumyy;
 
-    wsum = wsumxx = wsumxy = wsumyy = 0;
-#endif
-
-    if ( w11 < 0 || w11 > 1e6 || fabs(w12) > 1e6 || w22 < 0 || w22 > 1e6) {
-        return (-1);
+    if (w11 < 0 ||  w11 > 1e6 || fabs(w12) > 1E6 || w22 < 0 || w22 > 1e6) {
+        throw LSST_EXCEPT(pex::exceptions::InvalidParameterError, "Invalid weight parameter(s)");
     }
 
     sum = sumx = sumy = sumxx = sumxy = sumyy = sums4 = 0;
@@ -227,7 +217,7 @@ static int calcmom(ImageT const &image,                             // the image
     int const iy1 = bbox.getMaxY();
 
     if (ix0 < 0 || ix1 >= image.getWidth() || iy0 < 0 || iy1 >= image.getHeight()) {
-        return -1;
+        throw LSST_EXCEPT(pex::exceptions::LengthError, "Invalid image dimensions");
     }
 
     for (int i = iy0; i <= iy1; ++i) {
@@ -262,30 +252,6 @@ static int calcmom(ImageT const &image,                             // the image
 
                             ymod = tmod * weight;
                             sum += ymod;
-                            if (!instFluxOnly) {
-                                sumx += ymod * (X + xcen);
-                                sumy += ymod * (Y + ycen);
-#if RECALC_W
-                                wsum += weight;
-
-                                tmp = interpX2 * weight;
-                                wsumxx += tmp;
-                                sumxx += tmod * tmp;
-
-                                tmp = interpXy * weight;
-                                wsumxy += tmp;
-                                sumxy += tmod * tmp;
-
-                                tmp = interpY2 * weight;
-                                wsumyy += tmp;
-                                sumyy += tmod * tmp;
-#else
-                                sumxx += interpX2 * ymod;
-                                sumxy += interpXy * ymod;
-                                sumyy += interpY2 * ymod;
-#endif
-                                sums4 += expon * expon * ymod;
-                            }
                         }
                     }
                 }
@@ -299,68 +265,131 @@ static int calcmom(ImageT const &image,                             // the image
                     tmod = *ptr - bkgd;
                     ymod = tmod * weight;
                     sum += ymod;
-                    if (!instFluxOnly) {
-                        sumx += ymod * j;
-                        sumy += ymod * i;
-#if RECALC_W
-                        wsum += weight;
-
-                        tmp = x2 * weight;
-                        wsumxx += tmp;
-                        sumxx += tmod * tmp;
-
-                        tmp = xy * weight;
-                        wsumxy += tmp;
-                        sumxy += tmod * tmp;
-
-                        tmp = y2 * weight;
-                        wsumyy += tmp;
-                        sumyy += tmod * tmp;
-#else
-                        sumxx += x2 * ymod;
-                        sumxy += xy * ymod;
-                        sumyy += y2 * ymod;
-#endif
-                        sums4 += expon * expon * ymod;
-                    }
                 }
             }
         }
     }
 
-    if (pI0) {
-        std::tuple<std::pair<bool, double>, double, double, double> const weights = getWeights(w11, w12, w22);
-        double const detW = std::get<1>(weights) * std::get<3>(weights) - std::pow(std::get<2>(weights), 2);
-        *pI0 = sum / (geom::PI * sqrt(detW));
+    psum = sum;
+
+}
+
+template <typename ImageT>
+static int calcmom(ImageT const &image,                             // the image data
+                   float xcen, float ycen,                          // centre of object
+                   const geom::BoxI& bbox,                                 // bounding box to consider
+                   float bkgd,                                      // data's background level
+                   bool interpflag,                                 // interpolate within pixels?
+                   double w11, double w12, double w22,              // weights
+                   double &pI0,                                     // amplitude of fit (if !NULL)
+                   double &psum,                                    // sum w*I (if !NULL)
+                   double &psumx, double &psumy,                    // sum [xy]*w*I (if !instFluxOnly)
+                   double &psumxx, double &psumxy, double &psumyy,  // sum [xy]^2*w*I (if !instFluxOnly)
+                   double &psums4,  // sum w*I*weight^2 (if !instFluxOnly && !NULL)
+                   bool negative = false) {
+    float tmod, ymod;
+    float X, Y;  // sub-pixel interpolated [xy]
+    float weight;
+    float tmp;
+    double sum, sumx, sumy, sumxx, sumyy, sumxy, sums4;
+
+    if (w11 < 0 ||  w11 > 1e6 || fabs(w12) > 1E6 || w22 < 0 || w22 > 1e6) {
+        throw LSST_EXCEPT(pex::exceptions::InvalidParameterError, "Invalid weight parameter(s)");
     }
-    if (psum) {
-        *psum = sum;
+
+    sum = sumx = sumy = sumxx = sumxy = sumyy = sums4 = 0;
+
+    int const ix0 = bbox.getMinX();  // corners of the box being analyzed
+    int const ix1 = bbox.getMaxX();
+    int const iy0 = bbox.getMinY();  // corners of the box being analyzed
+    int const iy1 = bbox.getMaxY();
+
+    if (ix0 < 0 || ix1 >= image.getWidth() || iy0 < 0 || iy1 >= image.getHeight()) {
+        throw LSST_EXCEPT(pex::exceptions::LengthError, "Invalid image dimensions");
     }
-    if (!instFluxOnly) {
-        *psumx = sumx;
-        *psumy = sumy;
-        *psumxx = sumxx;
-        *psumxy = sumxy;
-        *psumyy = sumyy;
-        if (psums4 != NULL) {
-            *psums4 = sums4;
+
+    for (int i = iy0; i <= iy1; ++i) {
+        typename ImageT::x_iterator ptr = image.x_at(ix0, i);
+        float const y = i - ycen;
+        float const y2 = y * y;
+        float const yl = y - 0.375;
+        float const yh = y + 0.375;
+        for (int j = ix0; j <= ix1; ++j, ++ptr) {
+            float x = j - xcen;
+            if (interpflag) {
+                float const xl = x - 0.375;
+                float const xh = x + 0.375;
+
+                float expon = xl * xl * w11 + yl * yl * w22 + 2.0 * xl * yl * w12;
+                tmp = xh * xh * w11 + yh * yh * w22 + 2.0 * xh * yh * w12;
+                expon = (expon > tmp) ? expon : tmp;
+                tmp = xl * xl * w11 + yh * yh * w22 + 2.0 * xl * yh * w12;
+                expon = (expon > tmp) ? expon : tmp;
+                tmp = xh * xh * w11 + yl * yl * w22 + 2.0 * xh * yl * w12;
+                expon = (expon > tmp) ? expon : tmp;
+
+                if (expon <= 9.0) {
+                    tmod = *ptr - bkgd;
+                    for (Y = yl; Y <= yh; Y += 0.25) {
+                        double const interpY2 = Y * Y;
+                        for (X = xl; X <= xh; X += 0.25) {
+                            double const interpX2 = X * X;
+                            double const interpXy = X * Y;
+                            expon = interpX2 * w11 + 2 * interpXy * w12 + interpY2 * w22;
+                            weight = std::exp(-0.5 * expon);
+
+                            ymod = tmod * weight;
+                            sum += ymod;
+                            sumx += ymod * (X + xcen);
+                            sumy += ymod * (Y + ycen);
+                            sumxx += interpX2 * ymod;
+                            sumxy += interpXy * ymod;
+                            sumyy += interpY2 * ymod;
+                            sums4 += expon * expon * ymod;
+                        }
+                    }
+                }
+            } else {
+                float x2 = x * x;
+                float xy = x * y;
+                float expon = x2 * w11 + 2 * xy * w12 + y2 * w22;
+
+                if (expon <= 14.0) {
+                    weight = std::exp(-0.5 * expon);
+                    tmod = *ptr - bkgd;
+                    ymod = tmod * weight;
+                    sum += ymod;
+                    sumx += ymod * j;
+                    sumy += ymod * i;
+                    sumxx += x2 * ymod;
+                    sumxy += xy * ymod;
+                    sumyy += y2 * ymod;
+                    sums4 += expon * expon * ymod;
+                }
+            }
         }
     }
 
-#if RECALC_W
-    if (wsum > 0 && !instFluxOnly) {
-        double det = w11 * w22 - w12 * w12;
-        wsumxx /= wsum;
-        wsumxy /= wsum;
-        wsumyy /= wsum;
-        printf("%g %g %g  %g %g %g\n", w22 / det, -w12 / det, w11 / det, wsumxx, wsumxy, wsumyy);
-    }
-#endif
+
+    std::tuple<std::pair<bool, double>, double, double, double> const weights = getWeights(w11, w12, w22);
+    double const detW = std::get<1>(weights) * std::get<3>(weights) - std::pow(std::get<2>(weights), 2);
+    pI0 = sum / (geom::PI * sqrt(detW));
+
+
+    psum = sum;
+
+    psumx = sumx;
+    psumy = sumy;
+    psumxx = sumxx;
+    psumxy = sumxy;
+    psumyy = sumyy;
+
+    psums4 = sums4;
 
     if (negative) {
-        return (instFluxOnly || (sum < 0 && sumxx < 0 && sumyy < 0)) ? 0 : -1;
+        return (sum < 0 && sumxx < 0 && sumyy < 0) ? 0 : -1;
     } else {
-        return (instFluxOnly || (sum > 0 && sumxx > 0 && sumyy > 0)) ? 0 : -1;
+        return (sum > 0 && sumxx > 0 && sumyy > 0) ? 0 : -1;
     }
 }
 
@@ -411,11 +440,7 @@ bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double y
 
         double const detW = std::get<0>(weights).second;
 
-#if 0  // this form was numerically unstable on my G4 powerbook
-        assert(detW >= 0.0);
-#else
-        assert(sigma11W * sigma22W >= sigma12W * sigma12W - std::numeric_limits<float>::epsilon());
-#endif
+        if( sigma11W * sigma22W < sigma12W * sigma12W - std::numeric_limits<float>::epsilon()) return false;
 
         {
             const double ow11 = w11;  // old
@@ -439,22 +464,12 @@ bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double y
                 }
             }
         }
-
-        if (calcmom<false>(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22, &I0, &sum, &sumx, &sumy,
-                           &sumxx, &sumxy, &sumyy, &sums4, negative) < 0) {
+         if (calcmom(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22, I0, sum, sumx, sumy,
+                           sumxx, sumxy, sumyy, sums4, negative) < 0) {
             shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number] = true;
             break;
         }
 
-#if 0
-/*
- * Find new centre
- *
- * This is only needed if we update the centre; if we use the input position we've already done the work
- */
-        xcen = sumx/sum;
-        ycen = sumy/sum;
-#endif
         shape->x = sumx / sum;  // update centroid.  N.b. we're not setting errors here
         shape->y = sumy / sum;
 
@@ -559,8 +574,9 @@ bool getAdaptiveMoments(ImageT const &mimage, double bkgd, double xcen, double y
      */
     if (shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number]) {
         w11 = w22 = w12 = 0;
-        if (calcmom<false>(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22, &I0, &sum, &sumx, &sumy,
-                           &sumxx, &sumxy, &sumyy, NULL, negative) < 0 ||
+        double ignored;
+        if (calcmom(image, xcen, ycen, bbox, bkgd, interpflag, w11, w12, w22, I0, sum, sumx, sumy,
+                           sumxx, sumxy, sumyy, ignored, negative) < 0 ||
             (!negative && sum <= 0) || (negative && sum >= 0)) {
             shape->flags[SdssShapeAlgorithm::UNWEIGHTED.number] = false;
             shape->flags[SdssShapeAlgorithm::UNWEIGHTED_BAD.number] = true;
@@ -839,10 +855,8 @@ FluxResult SdssShapeAlgorithm::computeFixedMomentsFlux(ImageT const &image,
     bool const interp = shouldInterp(shape.getIxx(), shape.getIyy(), std::get<0>(weights).second);
 
     double sum0 = 0;  //  sum of pixel values weighted by a Gaussian
-    if (calcmom<true>(ImageAdaptor<ImageT>().getImage(image), localCenter.getX(), localCenter.getY(), bbox,
-                      0.0, interp, w11, w12, w22, NULL, &sum0, NULL, NULL, NULL, NULL, NULL, NULL) < 0) {
-        throw LSST_EXCEPT(pex::exceptions::RuntimeError, "Error from calcmom");
-    }
+    calcmom(ImageAdaptor<ImageT>().getImage(image), localCenter.getX(), localCenter.getY(), bbox,
+                      0.0, interp, w11, w12, w22, sum0);
 
     result.instFlux = sum0 * 2.0;
 
