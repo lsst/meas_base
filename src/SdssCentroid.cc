@@ -388,8 +388,10 @@ std::pair<MaskedImageT, double> smoothAndBinImage(std::shared_ptr<afw::detection
     binnedImage->setXY0(subImage->getXY0());
     // image to smooth into, a deep copy.
     MaskedImageT smoothedImage = MaskedImageT(*binnedImage, true);
-    assert(smoothedImage.getWidth() / 2 == kWidth / 2 + 2);  // assumed by the code that uses smoothedImage
-    assert(smoothedImage.getHeight() / 2 == kHeight / 2 + 2);
+    if(smoothedImage.getWidth() / 2 != kWidth / 2 + 2 ||   // assumed by the code that uses smoothedImage
+        smoothedImage.getHeight() / 2 != kHeight / 2 + 2) {
+        throw LSST_EXCEPT(lsst::pex::exceptions::LengthError, "invalid image dimensions");
+    }
 
     afw::math::convolve(smoothedImage, *binnedImage, *kernel, afw::math::ConvolutionControl());
     *smoothedImage.getVariance() *= binX * binY * nEffective;  // We want the per-pixel variance, so undo the
