@@ -63,7 +63,7 @@ class ShapeTransformMatrixTestCase(lsst.utils.tests.TestCase):
 
         self.assertEqual(m[2, 0], lt[0, 0]*lt[1, 0])
         self.assertEqual(m[2, 1], lt[0, 1]*lt[1, 1])
-        self.assertEqual(m[2, 2], lt[0, 0]*lt[1, 1] + lt[0, 1]*lt[1, 0])
+        self.assertAlmostEqual(m[2, 2], lt[0, 0]*lt[1, 1] + lt[0, 1]*lt[1, 0], places=14)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
