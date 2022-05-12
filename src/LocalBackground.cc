@@ -67,7 +67,7 @@ void LocalBackgroundAlgorithm::measure(afw::table::SourceRecord& measRecord,
     if (!psf) {
         throw LSST_EXCEPT(MeasurementError, NO_PSF.doc, NO_PSF.number);
     }
-    float const psfSigma = psf->computeShape().getDeterminantRadius();
+    float const psfSigma = psf->computeShape(center).getDeterminantRadius();
 
     float const innerRadius = _ctrl.annulusInner * psfSigma;
     afw::geom::ellipses::Axes const innerCircle{innerRadius, innerRadius};
