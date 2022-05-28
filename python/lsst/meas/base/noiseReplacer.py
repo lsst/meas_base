@@ -153,12 +153,12 @@ class NoiseReplacer:
         self.removeplanes = []
         bitmasks = []
         for maskname in ['THISDET', 'OTHERDET']:
-            try:
+            if maskname in mask.getMaskPlaneDict():
                 # does it already exist?
                 plane = mask.getMaskPlane(maskname)
                 if self.log:
                     self.log.debug('Mask plane "%s" already existed', maskname)
-            except Exception:
+            else:
                 # if not, add it; we should delete it when done.
                 plane = mask.addMaskPlane(maskname)
                 self.removeplanes.append(maskname)
