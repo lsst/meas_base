@@ -146,25 +146,28 @@ void doMeasureCentroidImpl(double *xCenter,                 // output; x-positio
     double const sy = 0.5 * (im(0, 1) - im(0, -1));
 
     if (d2x == 0.0 || d2y == 0.0) {
-        throw LSST_EXCEPT(MeasurementError, SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.doc,
-                          SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.number);
+        //throw LSST_EXCEPT(MeasurementError, SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.doc,
+        //                  SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.number);
+        throw std::runtime_error("NO_SECOND_DERIVATIVE");
     }
     if (d2x < 0.0 || d2y < 0.0) {
-        throw LSST_EXCEPT(MeasurementError,
-                          SdssCentroidAlgorithm::NOT_AT_MAXIMUM.doc +
-                                  (boost::format(": d2I/dx2, d2I/dy2 = %g %g") % d2x % d2y).str(),
-                          SdssCentroidAlgorithm::NOT_AT_MAXIMUM.number);
+        //throw LSST_EXCEPT(MeasurementError,
+        //                  SdssCentroidAlgorithm::NOT_AT_MAXIMUM.doc +
+        //                          (boost::format(": d2I/dx2, d2I/dy2 = %g %g") % d2x % d2y).str(),
+        //                  SdssCentroidAlgorithm::NOT_AT_MAXIMUM.number);
+        throw std::runtime_error("NOT_AT_MAXIMUM");
     }
 
     double const dx0 = sx / d2x;
     double const dy0 = sy / d2y;  // first guess
 
     if (fabs(dx0) > 10.0 || fabs(dy0) > 10.0) {
-        throw LSST_EXCEPT(
-                MeasurementError,
-                SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE.doc +
-                        (boost::format(": sx, d2x, sy, d2y = %f %f %f %f") % sx % d2x % sy % d2y).str(),
-                SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE.number);
+        //throw LSST_EXCEPT(
+        //        MeasurementError,
+        //        SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE.doc +
+        //                (boost::format(": sx, d2x, sy, d2y = %f %f %f %f") % sx % d2x % sy % d2y).str(),
+        //        SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE.number);
+        throw std::runtime_error("ALMOST_NO_SECOND_DERIVATIVE");
     }
 
     double vpk = im(0, 0) + 0.5 * (sx * dx0 + sy * dy0);  // height of peak in image
@@ -259,25 +262,28 @@ void doMeasureCentroidImpl(double *xCenter,                 // output; x-positio
     double const sy = 0.5 * (mim.image(0, 1) - mim.image(0, -1));
 
     if (d2x == 0.0 || d2y == 0.0) {
-        throw LSST_EXCEPT(MeasurementError, SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.doc,
-                          SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.number);
+        //throw LSST_EXCEPT(MeasurementError, SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.doc,
+        //                  SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.number);
+        throw std::runtime_error("NO_SECOND_DERIVATIVE");
     }
     if ((!negative && (d2x < 0.0 || d2y < 0.0)) || (negative && (d2x > 0.0 || d2y > 0.0))) {
-        throw LSST_EXCEPT(MeasurementError,
-                          SdssCentroidAlgorithm::NOT_AT_MAXIMUM.doc +
-                                  (boost::format(": d2I/dx2, d2I/dy2 = %g %g") % d2x % d2y).str(),
-                          SdssCentroidAlgorithm::NOT_AT_MAXIMUM.number);
+        //throw LSST_EXCEPT(MeasurementError,
+        //                  SdssCentroidAlgorithm::NOT_AT_MAXIMUM.doc +
+        //                          (boost::format(": d2I/dx2, d2I/dy2 = %g %g") % d2x % d2y).str(),
+        //                  SdssCentroidAlgorithm::NOT_AT_MAXIMUM.number);
+        throw std::runtime_error("NOT_AT_MAXIMUM");
     }
 
     double const dx0 = sx / d2x;
     double const dy0 = sy / d2y;  // first guess
 
     if (fabs(dx0) > 10.0 || fabs(dy0) > 10.0) {
-        throw LSST_EXCEPT(
-                MeasurementError,
-                SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.doc +
-                        (boost::format(": sx, d2x, sy, d2y = %f %f %f %f") % sx % d2x % sy % d2y).str(),
-                SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE.number);
+        //throw LSST_EXCEPT(
+        //        MeasurementError,
+        //        SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.doc +
+        //                (boost::format(": sx, d2x, sy, d2y = %f %f %f %f") % sx % d2x % sy % d2y).str(),
+        //        SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE.number);
+        throw std::runtime_error("ALMOST_NO_SECOND_DERIVATIVE");
     }
 
     double vpk = mim.image(0, 0) + 0.5 * (sx * dx0 + sy * dy0);  // height of peak in image
