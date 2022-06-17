@@ -65,7 +65,9 @@ void LocalBackgroundAlgorithm::measure(afw::table::SourceRecord& measRecord,
     // Define pixels in annulus
     auto const psf = exposure.getPsf();
     if (!psf) {
-        throw LSST_EXCEPT(MeasurementError, NO_PSF.doc, NO_PSF.number);
+        _flagHandler.setValue(measRecord, NO_PSF.number, true);
+        _flagHandler.setValue(measRecord, LocalBackgroundAlgorithm::FAILURE.number, true);
+        return;
     }
     float const psfSigma = psf->computeShape(center).getDeterminantRadius();
 
@@ -95,7 +97,9 @@ void LocalBackgroundAlgorithm::measure(afw::table::SourceRecord& measRecord,
     }
 
     if (values.size() == 0) {
-        throw LSST_EXCEPT(MeasurementError, NO_GOOD_PIXELS.doc, NO_GOOD_PIXELS.number);
+        _flagHandler.setValue(measRecord, NO_GOOD_PIXELS.number, true);
+        _flagHandler.setValue(measRecord, LocalBackgroundAlgorithm::FAILURE.number, true);
+        return;
     }
 
     // Measure the background

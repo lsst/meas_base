@@ -93,7 +93,9 @@ void PsfFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
                                    ->clippedTo(exposure.getMaskedImage().getMask()->getBBox()));
     }
     if (fitRegion.getArea() == 0) {
-        throw LSST_EXCEPT(MeasurementError, NO_GOOD_PIXELS.doc, NO_GOOD_PIXELS.number);
+        _flagHandler.setValue(measRecord, NO_GOOD_PIXELS.number, true);
+        _flagHandler.setValue(measRecord, FAILURE.number, true);
+        return;
     }
     typedef afw::detection::Psf::Pixel PsfPixel;
     // SpanSet::flatten returns a new ndarray::Array, which must stay in scope
