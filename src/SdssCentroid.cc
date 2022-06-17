@@ -128,7 +128,7 @@ float astrom_errors(float skyVar,      // variance of pixels at the sky level
  */
 
 template <typename ImageXy_locatorT, typename VarImageXy_locatorT>
-void doMeasureCentroidImpl(double *xCenter,                 // output; x-position of object
+bool doMeasureCentroidImpl(double *xCenter,                 // output; x-position of object
                            double *dxc,                     // output; error in xCenter
                            double *yCenter,                 // output; y-position of object
                            double *dyc,                     // output; error in yCenter
@@ -136,7 +136,8 @@ void doMeasureCentroidImpl(double *xCenter,                 // output; x-positio
                            ImageXy_locatorT im,             // Locator for the pixel values
                            VarImageXy_locatorT vim,         // Locator for the image containing the variance
                            double smoothingSigma,  // Gaussian sigma of already-applied smoothing filter
-                           FlagHandler flagHandler) {
+                           FlagHandler flagHandler,
+                           afw::table::SourceRecord &measRecord) {
     /*
      * find a first quadratic estimate
      */
@@ -146,25 +147,23 @@ void doMeasureCentroidImpl(double *xCenter,                 // output; x-positio
     double const sy = 0.5 * (im(0, 1) - im(0, -1));
 
     if (d2x == 0.0 || d2y == 0.0) {
-        throw LSST_EXCEPT(MeasurementError, SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.doc,
-                          SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.number);
+        flagHandler.setValue(measRecord, SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.number, true);
+        flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
+        return true;
     }
     if (d2x < 0.0 || d2y < 0.0) {
-        throw LSST_EXCEPT(MeasurementError,
-                          SdssCentroidAlgorithm::NOT_AT_MAXIMUM.doc +
-                                  (boost::format(": d2I/dx2, d2I/dy2 = %g %g") % d2x % d2y).str(),
-                          SdssCentroidAlgorithm::NOT_AT_MAXIMUM.number);
+        flagHandler.setValue(measRecord, SdssCentroidAlgorithm::NOT_AT_MAXIMUM.number, true);
+        flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
+        return true;
     }
 
     double const dx0 = sx / d2x;
     double const dy0 = sy / d2y;  // first guess
 
     if (fabs(dx0) > 10.0 || fabs(dy0) > 10.0) {
-        throw LSST_EXCEPT(
-                MeasurementError,
-                SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE.doc +
-                        (boost::format(": sx, d2x, sy, d2y = %f %f %f %f") % sx % d2x % sy % d2y).str(),
-                SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE.number);
+        flagHandler.setValue(measRecord, SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.number, true);
+        flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
+        return true;
     }
 
     double vpk = im(0, 0) + 0.5 * (sx * dx0 + sy * dy0);  // height of peak in image
@@ -238,10 +237,11 @@ void doMeasureCentroidImpl(double *xCenter,                 // output; x-positio
 
     *sizeX2 = tauX2;  // return the estimates of the (object size)^2
     *sizeY2 = tauY2;
+    return false;
 }
 
 template <typename MaskedImageXy_locatorT>
-void doMeasureCentroidImpl(double *xCenter,                 // output; x-position of object
+bool doMeasureCentroidImpl(double *xCenter,                 // output; x-position of object
                            double *dxc,                     // output; error in xCenter
                            double *yCenter,                 // output; y-position of object
                            double *dyc,                     // output; error in yCenter
@@ -249,7 +249,8 @@ void doMeasureCentroidImpl(double *xCenter,                 // output; x-positio
                            double *peakVal,                 // output; peak of object
                            MaskedImageXy_locatorT mim,      // Locator for the pixel values
                            double smoothingSigma,  // Gaussian sigma of already-applied smoothing filter
-                           bool negative, FlagHandler flagHandler) {
+                           bool negative, FlagHandler flagHandler,
+                           afw::table::SourceRecord &measRecord) {
     /*
      * find a first quadratic estimate
      */
@@ -259,25 +260,23 @@ void doMeasureCentroidImpl(double *xCenter,                 // output; x-positio
     double const sy = 0.5 * (mim.image(0, 1) - mim.image(0, -1));
 
     if (d2x == 0.0 || d2y == 0.0) {
-        throw LSST_EXCEPT(MeasurementError, SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.doc,
-                          SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.number);
+        flagHandler.setValue(measRecord, SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.number, true);
+        flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
+        return true;
     }
     if ((!negative && (d2x < 0.0 || d2y < 0.0)) || (negative && (d2x > 0.0 || d2y > 0.0))) {
-        throw LSST_EXCEPT(MeasurementError,
-                          SdssCentroidAlgorithm::NOT_AT_MAXIMUM.doc +
-                                  (boost::format(": d2I/dx2, d2I/dy2 = %g %g") % d2x % d2y).str(),
-                          SdssCentroidAlgorithm::NOT_AT_MAXIMUM.number);
+        flagHandler.setValue(measRecord, SdssCentroidAlgorithm::NOT_AT_MAXIMUM.number, true);
+        flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
+        return true;
     }
 
     double const dx0 = sx / d2x;
     double const dy0 = sy / d2y;  // first guess
 
     if (fabs(dx0) > 10.0 || fabs(dy0) > 10.0) {
-        throw LSST_EXCEPT(
-                MeasurementError,
-                SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.doc +
-                        (boost::format(": sx, d2x, sy, d2y = %f %f %f %f") % sx % d2x % sy % d2y).str(),
-                SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE.number);
+        flagHandler.setValue(measRecord, SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE.number, true);
+        flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
+        return true;
     }
 
     double vpk = mim.image(0, 0) + 0.5 * (sx * dx0 + sy * dy0);  // height of peak in image
@@ -354,6 +353,7 @@ void doMeasureCentroidImpl(double *xCenter,                 // output; x-positio
     *sizeY2 = tauY2;
 
     *peakVal = vpk;
+    return false;
 }
 
 template <typename MaskedImageT>
@@ -436,7 +436,8 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
     int const y = image.positionToIndex(center.getY(), afw::image::Y).first;
 
     if (!image.getBBox().contains(geom::Extent2I(x, y) + image.getXY0())) {
-        throw LSST_EXCEPT(meas::base::MeasurementError, EDGE.doc, EDGE.number);
+        _flagHandler.setValue(measRecord, EDGE.number, true);
+        return;
     }
 
     // Algorithm uses a least-squares fit (implemented via a convolution) to a symmetrized PSF model.
@@ -447,12 +448,18 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
 
     int binX = 1;
     int binY = 1;
+    std::pair<MaskedImageT, double> smoothResult;
     double xc = 0., yc = 0., dxc = 0., dyc = 0.;  // estimated centre and error therein
     for (int binsize = 1; binsize <= _ctrl.binmax; binsize *= 2) {
-        std::pair<MaskedImageT, double> result =
-                smoothAndBinImage(psf, x, y, mimage, binX, binY, _flagHandler);
-        MaskedImageT const smoothedImage = result.first;
-        double const smoothingSigma = result.second;
+        try {
+            smoothResult = smoothAndBinImage(psf, x, y, mimage, binX, binY, _flagHandler);
+        } catch (MeasurementError &err) {
+            _flagHandler.setValue(measRecord, err.getFlagBit(), true);
+            _flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
+            return;
+        }
+        MaskedImageT const smoothedImage = smoothResult.first;
+        double const smoothingSigma = smoothResult.second;
 
         MaskedImageT::xy_locator mim =
                 smoothedImage.xy_at(smoothedImage.getWidth() / 2, smoothedImage.getHeight() / 2);
@@ -460,8 +467,9 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
         double sizeX2, sizeY2;  // object widths^2 in x and y directions
         double peakVal;         // peak intensity in image
 
-        doMeasureCentroidImpl(&xc, &dxc, &yc, &dyc, &sizeX2, &sizeY2, &peakVal, mim, smoothingSigma, negative,
-                              _flagHandler);
+        bool failed = doMeasureCentroidImpl(&xc, &dxc, &yc, &dyc, &sizeX2, &sizeY2, &peakVal, mim, smoothingSigma, negative,
+                                            _flagHandler, measRecord);
+        if (failed) return;
 
         if (binsize > 1) {
             // dilate from the lower left corner of central pixel
