@@ -364,11 +364,10 @@ std::tuple<MaskedImageT, double, int> smoothAndBinImage(std::shared_ptr<afw::det
 
     // image to smooth, a shallow copy
     std::shared_ptr<MaskedImageT> subImage;
-    try {
-        subImage.reset(new MaskedImageT(mimage, bbox, afw::image::LOCAL));
-    } catch (pex::exceptions::LengthError &err) {
+    if (!mimage.getBBox(afw::image::LOCAL).contains(bbox)) {
         return std::make_tuple(mimage, 0, SdssCentroidAlgorithm::EDGE.number);
     }
+    subImage.reset(new MaskedImageT(mimage, bbox, afw::image::LOCAL));
     std::shared_ptr<MaskedImageT> binnedImage = afw::math::binImage(*subImage, binX, binY, afw::math::MEAN);
     binnedImage->setXY0(subImage->getXY0());
     // image to smooth into, a deep copy.
