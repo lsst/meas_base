@@ -116,12 +116,10 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                                      record.get("base_PsfFlux_instFlux"),
                                      "BAD")
         self.assertFloatsAlmostEqual(record.get("base_PsfFlux_chi2"), chi2, rtol=1e-7)
-        # If we mask the whole image, we should get a MeasurementError
+        # If we mask the whole image, we should get a failure flag.
         maskArray[:, :] |= badMask
-        with self.assertRaises(lsst.meas.base.MeasurementError) as context:
-            algorithm.measure(record, exposure)
-        self.assertEqual(context.exception.getFlagBit(),
-                         lsst.meas.base.PsfFluxAlgorithm.NO_GOOD_PIXELS.number)
+        algorithm.measure(record, exposure)
+        self.assertEqual(record.get("base_PsfFlux_flag_noGoodPixels"), 1)
         self.assertEqual(record.get("base_PsfFlux_npixels"), nPixels)
 
     def testSubImage(self):

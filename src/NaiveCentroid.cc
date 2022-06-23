@@ -66,7 +66,9 @@ void NaiveCentroidAlgorithm::measure(afw::table::SourceRecord& measRecord,
     y -= image.getY0();
 
     if (x < 1 || x >= image.getWidth() - 1 || y < 1 || y >= image.getHeight() - 1) {
-        throw LSST_EXCEPT(MeasurementError, EDGE.doc, EDGE.number);
+        _flagHandler.setValue(measRecord, EDGE.number, true);
+        _flagHandler.setValue(measRecord, NaiveCentroidAlgorithm::FAILURE.number, true);
+        return;
     }
 
     ImageT::xy_locator im = image.xy_at(x, y);
@@ -76,7 +78,9 @@ void NaiveCentroidAlgorithm::measure(afw::table::SourceRecord& measRecord,
                        9 * _ctrl.background;
 
     if (sum == 0.0) {
-        throw LSST_EXCEPT(MeasurementError, NO_COUNTS.doc, NO_COUNTS.number);
+        _flagHandler.setValue(measRecord, NO_COUNTS.number, true);
+        _flagHandler.setValue(measRecord, NaiveCentroidAlgorithm::FAILURE.number, true);
+        return;
     }
 
     double const sum_x = -im(-1, 1) + im(1, 1) + -im(-1, 0) + im(1, 0) + -im(-1, -1) + im(1, -1);

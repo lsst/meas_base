@@ -23,7 +23,6 @@ import unittest
 import os
 import numpy
 import logging
-from logging import FileHandler, StreamHandler, Formatter
 
 import lsst.geom
 import lsst.afw.table
@@ -108,48 +107,6 @@ class LoggingPlugin(SingleFramePlugin):
             self.flagHandler.handleFailure(measRecord, error.cpp)
 
 
-def directLog(log, file=None):
-    """Direct the log given to a file or to the console if ``file`` is `None`.
-    """
-    if isinstance(log, lsst.log.Log):
-        props = "log4j.rootLogger=INFO, FA\n"
-        if file is None:
-            props += "log4j.appender.FA=ConsoleAppender\n"
-        else:
-            props += "log4j.appender.FA=FileAppender\n"
-            props += "log4j.appender.FA.Append=false\n"
-            props += "log4j.appender.FA.file=%s\n"%(file,)
-        props += "log4j.appender.FA.layout=PatternLayout\n"
-        props += "log4j.appender.FA.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss.SSS} %p %c %m %X%n\n"
-        log.configure_prop(props)
-    else:
-        log.setLevel(logging.INFO)
-
-        # Remove existing handlers
-        for handler in log.handlers:
-            log.removeHandler(handler)
-            if isinstance(handler, FileHandler):
-                handler.close()
-
-        # Ignore parent handlers.
-        log.propagate = 0
-
-        if file is None:
-            handler = StreamHandler()
-        else:
-            handler = FileHandler(file)
-
-        # Tests check for level name so ensure it is included.
-        formatter = Formatter(fmt="{name} {levelname}: {message}", style="{")
-        handler.setFormatter(formatter)
-        log.addHandler(handler)
-
-        # Configure lsst.log to forward all log messages to python.
-        # This is needed to forward the C++ log test messages to these
-        # python handlers.
-        lsst.log.configure_pylog_MDC("INFO", MDC_class=None)
-
-
 class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
     """Test all registered Plugins to see if their logName is set as expected.
 
@@ -231,6 +188,8 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         config.slots.shape = None
         config.slots.psfShape = None
         self.config = config
+        # Ensure that the C++ logs are forwarded to Python.
+        lsst.log.configure_pylog_MDC("INFO", MDC_class=None)
 
     def tearDown(self):
         del self.config
@@ -244,17 +203,11 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         #  test that the plugin's logName has been propagated to the plugin
         self.assertEqual(task.plugins[algName].getLogName(), task.log.getChild(algName).name)
         log = task.log.getChild(algName)
-        with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
-            directLog(log, pluginLogName)
+        with self.assertLogs(log.name) as cm:
             exposure, cat = self.dataset.realize(noise=0.0, schema=schema, randomSeed=2)
             task.run(cat, exposure)
-            directLog(log, None)
-            # direct back to console, closing log files
-            with open(pluginLogName) as fin:
-                lines = fin.read()
-        # test that the sample plugin has correctly logged to where we
-        # expected it to.
-        self.assertGreaterEqual(lines.find("measuring"), 0, lines)
+        lines = "\n".join(cm.output)
+        self.assertIn("measuring", lines)
 
     def testLoggingCppPlugin(self):
         # PsfFlux is known to log an ``ERROR`` if a Psf is not attached
@@ -266,11 +219,7 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         log = task.log.getChild(algName)
         log.setLevel(log.ERROR)
 
-        # test that the plugin's logName has been propagated to the plugin
-        self.assertEqual(task.plugins[algName].getLogName(), log.name)
-        self.assertEqual(task.plugins[algName].cpp.getLogName(), log.name)
-        with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
-            directLog(log, pluginLogName)
+        with self.assertLogs(log.name, level="ERROR"):
             exposure, cat = self.dataset.realize(noise=0.0, schema=schema, randomSeed=3)
             exposure.setPsf(None)
             # This call throws an error, so be prepared for it
@@ -278,140 +227,6 @@ class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
                 task.run(cat, exposure)
             except Exception:
                 pass
-            directLog(log, None)
-            # direct back to console, closing log files
-            with open(pluginLogName) as fin:
-                lines = fin.read()
-
-        # test that the sample plugin has correctly logged to where we
-        # expected it to.
-        self.assertGreaterEqual(lines.find("ERROR"), 0, lines)
-
-
-class SingleFrameTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
-
-    def setUp(self):
-        # object in corner to trigger EDGE error
-        self.center = lsst.geom.Point2D(5, 5)
-        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
-                                    lsst.geom.Extent2I(100, 100))
-        self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
-        self.dataset.addSource(1000000.0, self.center)
-        self.task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
-        self.log = self.task.log.getChild("base_SdssCentroid")
-        self.exposure, self.catalog = self.dataset.realize(10.0, self.task.schema, randomSeed=4)
-
-    def tearDown(self):
-        del self.center
-        del self.bbox
-        del self.dataset
-        del self.task
-        del self.log
-        del self.exposure
-        del self.catalog
-
-    def testSeparatePluginLogs(self):
-        """Check that the task log and the plugin log are truly separate.
-        """
-        taskLogName = os.path.join(ROOT, 'testSeparatePluginLogs-task.log')
-        directLog(self.task.log, taskLogName)
-        self.task.log.info("Testing")
-        with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
-            directLog(self.log, pluginLogName)
-            self.log.setLevel(self.log.DEBUG)
-            self.task.run(self.catalog, self.exposure)
-            # direct back to console, closing log files
-            directLog(self.log, None)
-            directLog(self.task.log, None)
-            with open(taskLogName) as fin:
-                lines = fin.read()
-            os.unlink(taskLogName)
-            self.assertGreaterEqual(lines.find("Testing"), 0)
-            with open(pluginLogName) as fin:
-                lines = fin.read()
-        self.assertGreaterEqual(lines.find("MeasurementError"), 0)
-
-    def testSetPluginLevel(self):
-        """Test setting the plugin log level.
-
-        Specifically, we set it to the ``ERROR`` level.
-        """
-        with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
-            directLog(self.log, pluginLogName)
-            self.log.setLevel(self.log.ERROR)
-            self.task.run(self.catalog, self.exposure)
-            # direct back to console, closing log files
-            directLog(self.log, None)
-            with open(pluginLogName) as fin:
-                lines = fin.read()
-        self.assertLess(lines.find("MeasurementError"), 0)
-
-
-class ForcedTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
-
-    def setUp(self):
-        # object in corner to trigger EDGE error
-        self.center = lsst.geom.Point2D(0, 0)
-        self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0),
-                                    lsst.geom.Extent2I(100, 100))
-        self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
-        self.dataset.addSource(1000000.0, self.center)
-        self.task = self.makeForcedMeasurementTask("base_SdssCentroid")
-        self.log = self.task.log.getChild("base_SdssCentroid")
-        measWcs = self.dataset.makePerturbedWcs(self.dataset.exposure.getWcs(), randomSeed=5)
-        measDataset = self.dataset.transform(measWcs)
-        self.exposure, truthCatalog = measDataset.realize(10.0, measDataset.makeMinimalSchema(), randomSeed=5)
-        self.refCat = self.dataset.catalog
-        self.refWcs = self.dataset.exposure.getWcs()
-        self.measCat = self.task.generateMeasCat(self.exposure, self.refCat, self.refWcs)
-        self.task.attachTransformedFootprints(self.measCat, self.refCat, self.exposure, self.refWcs)
-
-    def tearDown(self):
-        del self.center
-        del self.bbox
-        del self.dataset
-        del self.task
-        del self.log
-        del self.exposure
-        del self.measCat
-        del self.refCat
-        del self.refWcs
-
-    def testSeparatePluginLog(self):
-        """Check that the task log and the plugin log are truly separate.
-        """
-        taskLogName = os.path.join(ROOT, 'testSeparatePluginLog-task.log')
-        directLog(self.task.log, taskLogName)
-        self.task.log.info("Testing")
-        with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
-            directLog(self.log, pluginLogName)
-            self.log.setLevel(self.log.DEBUG)
-            self.task.run(self.measCat, self.exposure, self.refCat, self.refWcs)
-            # direct back to console, closing log files
-            directLog(self.log, None)
-            directLog(self.task.log, None)
-            with open(taskLogName) as fin:
-                lines = fin.read()
-            os.unlink(taskLogName)
-            self.assertGreaterEqual(lines.find("Testing"), 0)
-            with open(pluginLogName) as fin:
-                lines = fin.read()
-        self.assertGreaterEqual(lines.find("MeasurementError"), 0)
-
-    def testSetPluginLevel(self):
-        """Test setting the plugin log level.
-
-        Specifically, we set it to the ``ERROR`` level.
-        """
-        with lsst.utils.tests.getTempFilePath(".log") as pluginLogName:
-            directLog(self.log, pluginLogName)
-            self.log.setLevel(self.log.ERROR)
-            self.task.run(self.measCat, self.exposure, self.refCat, self.refWcs)
-            # direct back to console, closing log files
-            directLog(self.log, None)
-            with open(pluginLogName) as fin:
-                lines = fin.read()
-        self.assertLess(lines.find("MeasurementError"), 0)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
