@@ -387,13 +387,22 @@ class TestDataset:
         self.schema = self.makeMinimalSchema()
         self.catalog = lsst.afw.table.SourceCatalog(self.schema)
 
-    def _installFootprint(self, record, image):
+    def _installFootprint(self, record, image, setPeakSignificance=True):
         """Create simulated Footprint and add it to a truth catalog record.
         """
+        schema = lsst.afw.detection.PeakTable.makeMinimalSchema()
+        if setPeakSignificance:
+            schema.addField("significance", type=float,
+                            doc="Ratio of peak value to configured standard deviation.")
         # Run detection on the single-source image
-        fpSet = lsst.afw.detection.FootprintSet(image, self.threshold)
+        fpSet = lsst.afw.detection.FootprintSet(image, self.threshold, peakSchema=schema)
         # the call below to the FootprintSet ctor is actually a grow operation
         fpSet = lsst.afw.detection.FootprintSet(fpSet, int(self.psfShape.getDeterminantRadius() + 1.0), True)
+        if setPeakSignificance:
+            # This isn't a traditional significance, since we're using the VALUE
+            # threshold type, but it's the best we can do in that case.
+            for footprint in fpSet.getFootprints():
+                footprint.updatePeakSignificance(self.threshold.getValue())
         # Update the full exposure's mask plane to indicate the detection
         fpSet.setMask(self.exposure.getMaskedImage().getMask(), "DETECTED")
         # Attach the new footprint to the exposure
@@ -403,7 +412,7 @@ class TestDataset:
             raise RuntimeError("Threshold value results in zero Footprints for object")
         record.setFootprint(fpSet.getFootprints()[0])
 
-    def addSource(self, instFlux, centroid, shape=None):
+    def addSource(self, instFlux, centroid, shape=None, setPeakSignificance=True):
         """Add a source to the simulation.
 
         Parameters
@@ -416,6 +425,10 @@ class TestDataset:
             Second moments of the source before PSF convolution. Note that the
             truth catalog records post-convolution moments. If `None`, a point
             source will be added.
+        setPeakSignificance : `bool`
+            Set the ``significance`` field for peaks in the footprints?
+            See ``lsst.meas.algorithms.SourceDetectionTask.setPeakSignificance``
+            for how this field is computed for real datasets.
 
         Returns
         -------
@@ -442,7 +455,7 @@ class TestDataset:
         image = self.drawGaussian(self.exposure.getBBox(), instFlux,
                                   lsst.afw.geom.Ellipse(fullShape, centroid))
         # Generate a footprint for this source
-        self._installFootprint(record, image)
+        self._installFootprint(record, image, setPeakSignificance)
         # Actually add the source to the full exposure
         self.exposure.getMaskedImage().getImage().getArray()[:, :] += image.getArray()
         return record, image
