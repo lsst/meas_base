@@ -105,7 +105,6 @@ class ForcedPhotCoaddConnections(pipeBase.PipelineTaskConnections,
             self.inputs.remove("scarletModels")
         if config.footprintDatasetName != "DeblendedFlux":
             self.inputs.remove("footprintCatInBand")
-        print("forced_src inputs\n", self.inputs)
 
 
 class ForcedPhotCoaddConfig(pipeBase.PipelineTaskConfig,
