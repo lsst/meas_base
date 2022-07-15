@@ -995,7 +995,9 @@ class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
         super().setDefaults()
         self.footprintSource = "psf"
         self.measurement.doReplaceWithNoise = False
-        self.measurement.plugins = ["base_TransformedCentroidFromCoord", "base_PsfFlux", "base_PixelFlags"]
+        self.measurement.plugins.names = ["base_LocalPhotoCalib", "base_LocalWcs", "base_LocalBackground",
+                                          "base_TransformedCentroidFromCoord", "base_PsfFlux",
+                                          "base_PixelFlags"]
         self.measurement.copyColumns = {'id': 'diaObjectId', 'coord_ra': 'coord_ra', 'coord_dec': 'coord_dec'}
         self.measurement.slots.centroid = "base_TransformedCentroidFromCoord"
         self.measurement.slots.psfFlux = "base_PsfFlux"
