@@ -55,11 +55,11 @@ class CompensatedGaussianAperturePlugin(CompensatedAperturePlugin):
             base_key = f"{name}_{width}"
 
             # flux
-            flux_str = f"{base_key}_flux"
+            flux_str = f"{base_key}_instFlux"
             flux_key = schema.addField(flux_str, type="D", doc="Compensated flux measurement")
 
             # uncertainty
-            uncert_str = f"{base_key}_uncert"
+            uncert_str = f"{base_key}_instFluxErr"
             uncert_key = schema.addField(uncert_str, type="D", doc="Compensated flux uncertainty")
 
             # mask bits
@@ -102,5 +102,5 @@ class CompensatedGaussianAperturePlugin(CompensatedAperturePlugin):
                 exposure.image.array[y_slice, x_slice], x_mean, y_mean, width, self._t
             )
             measRecord.set(flux_key, flux_uncal * self._flux_corrections[width])
-            measRecord.set(uncert_key, uncert_uncal * self._variance_corrections[width])
+            measRecord.set(uncert_key, np.sqrt(uncert_uncal * self._variance_corrections[width]))
             measRecord.set(mask_key, np.bitwise_or.reduce(exposure.mask.array, axis=None))
