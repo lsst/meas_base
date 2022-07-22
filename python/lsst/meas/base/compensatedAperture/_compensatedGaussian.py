@@ -108,4 +108,4 @@ class CompensatedGaussianAperturePlugin(CompensatedAperturePlugin):
             measRecord.set(flux_key, flux_uncal * self._flux_corrections[width])
             measRecord.set(uncert_key, np.sqrt(uncert_uncal * self._variance_corrections[width]))
             measRecord.set(mask_key, np.bitwise_or.reduce(exposure.mask.array, axis=None))
-            measRecord.set(norm_key, 1.0)
+            measRecord.set(norm_key, self._flux_corrections[width])
