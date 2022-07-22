@@ -66,7 +66,11 @@ class CompensatedGaussianAperturePlugin(CompensatedAperturePlugin):
             mask_str = f"{base_key}_mask_bits"
             mask_key = schema.addField(mask_str, type=np.int32, doc="Mask bits set within Aperture")
 
-            self.width_keys[width] = (flux_key, uncert_key, mask_key)
+            # normalization, set to 1.0 here and modified later
+            norm_str = f"{base_key}_normalization"
+            norm_key = schema.addField(norm_str, type="D", doc="Compensated flux normalization; set later")
+
+            self.width_keys[width] = (flux_key, uncert_key, mask_key, norm_key)
             self._rads[width] = math.ceil(sps.norm.ppf((0.995,), scale=width * config.t)[0])
 
             alpha = self.config.alpha
@@ -92,7 +96,7 @@ class CompensatedGaussianAperturePlugin(CompensatedAperturePlugin):
         y_floor = math.floor(y)
         x_floor = math.floor(x)
 
-        for width, (flux_key, uncert_key, mask_key) in self.width_keys.items():
+        for width, (flux_key, uncert_key, mask_key, norm_key) in self.width_keys.items():
             rad = self._rads[width]
             y_slice = slice(y_floor - rad, y_floor + rad + 1, 1)
             x_slice = slice(x_floor - rad, x_floor + rad + 1, 1)
@@ -104,3 +108,4 @@ class CompensatedGaussianAperturePlugin(CompensatedAperturePlugin):
             measRecord.set(flux_key, flux_uncal * self._flux_corrections[width])
             measRecord.set(uncert_key, np.sqrt(uncert_uncal * self._variance_corrections[width]))
             measRecord.set(mask_key, np.bitwise_or.reduce(exposure.mask.array, axis=None))
+            measRecord.set(norm_key, 1.0)
