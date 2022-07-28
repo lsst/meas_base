@@ -10,9 +10,11 @@ namespace meas {
 namespace base {
 
 py::tuple gaussian_filt_inner_product(py::array_t<double, py::array::c_style | py::array::forcecast> & array,
-                                   double x_mean, double y_mean, double sig, double t) {
+                                      py::array_t<double, py::array::c_style | py::array::forcecast> & variance_array,
+                                      double x_mean, double y_mean, double sig, double t) {
     //Verify the input array is conditioned in an appropriate manner.
     py::buffer_info buffer = array.request();
+    py::buffer_info variance_buffer = variance_array.request();
 
     if (buffer.ndim != 2) {
         throw std::runtime_error("Number of dimensions for array must be 2");
@@ -24,11 +26,19 @@ py::tuple gaussian_filt_inner_product(py::array_t<double, py::array::c_style | p
         throw std::runtime_error("Number of pixels along array side must be odd");
     }
 
+    if (variance_buffer.ndim != buffer.ndim) {
+        throw std::runtime_error("Variance array must have same dimensions as image array");
+    }
+    if (variance_buffer.shape[0] != buffer.shape[0] || variance_buffer.shape[1] != buffer.shape[1]) {
+        throw std::runtime_error("Variance array must have same dimensions as image array");
+    }
+
     double sig_sq = sig*sig;
     double t_sq = t*t;
 
     // fast access to array since we know all the bounds are appropriate
     auto array_unchecked = array.unchecked<2>();
+    auto variance_array_unchecked = variance_array.unchecked<2>();
 
     // declare most variables that will be used
     double result = 0;
@@ -44,7 +54,7 @@ py::tuple gaussian_filt_inner_product(py::array_t<double, py::array::c_style | p
     int stop = buffer.shape[0];
 
     double inner_norm = 1/(sig*sqrt(2*M_PI));
-    double outer_norm = inner_norm/t;
+    // double outer_norm = inner_norm/t;
 
     // adjust the x and y center to be centered about the middle of the array
     x_mean -= (double) half_domain;
@@ -53,17 +63,18 @@ py::tuple gaussian_filt_inner_product(py::array_t<double, py::array::c_style | p
     /*
     create containers to store the 1 dimensional x calculations, these will be
     accessed for each loop in y, no need to do the same calculations each time
-    */ 
+    */
     std::vector<float> x_container;
     std::vector<float> x_container_out;
     x_container.reserve(stop);
     x_container_out.reserve(stop);
 
     // for weighted variance calculation
-    double sum_weights = 0;
-    double weighted_sum = 0;
-    double weight_square_sum = 0;
-    
+    // double sum_weights = 0;
+    // double weighted_sum = 0;
+    // double weight_square_sum = 0;
+    double variance = 0;
+    double var_norm = 0;
 
     // calculate the x profile
     for (int j = 0; j < stop; ++j) {
@@ -86,19 +97,14 @@ py::tuple gaussian_filt_inner_product(py::array_t<double, py::array::c_style | p
             double weight = (y_component*x_container[j] - y_component_out*x_container_out[j]);
             double weighted_value = weight*array_unchecked(i, j);
             result += weighted_value;
-            if (weight < 0)  {
-                // this block is used to calculate weighted variance
-                weight *= -1;
-                sum_weights += weight;
-                weighted_sum += -1 * weighted_value;
-                weight_square_sum += -1* weighted_value * array_unchecked(i, j);
-            }
+
+            variance += weight*weight*variance_array_unchecked(i, j);
+            var_norm += weight*weight;
         }
     }
-    double variance = weight_square_sum/sum_weights - (weighted_sum*weighted_sum)/(sum_weights*sum_weights);
-    //return result;
-    return py::make_tuple(result, variance);
+    return py::make_tuple(result, variance / var_norm);
 }
+
 
 PYBIND11_MODULE(_calcGaussian, mod) {
     mod.def("_gaussianFiltInnerProduct", &gaussian_filt_inner_product,
