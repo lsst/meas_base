@@ -22,7 +22,6 @@
 import lsst.pex.config
 import lsst.afw.table
 
-import lsst.coadd.utils as coaddUtils
 import lsst.pipe.base as pipeBase
 from lsst.obs.base import ExposureIdInfo
 
@@ -32,14 +31,6 @@ from .applyApCorr import ApplyApCorrTask
 from .catalogCalculation import CatalogCalculationTask
 
 __all__ = ("ForcedPhotCoaddConfig", "ForcedPhotCoaddTask")
-
-
-class ForcedPhotCoaddRunner(pipeBase.ButlerInitializedTaskRunner):
-    """Get the psfCache setting into ForcedPhotCoaddTask"""
-    @staticmethod
-    def getTargetList(parsedCmd, **kwargs):
-        return pipeBase.ButlerInitializedTaskRunner.getTargetList(parsedCmd,
-                                                                  psfCache=parsedCmd.psfCache)
 
 
 class ForcedPhotCoaddConnections(pipeBase.PipelineTaskConnections,
@@ -185,7 +176,7 @@ class ForcedPhotCoaddConfig(pipeBase.PipelineTaskConfig,
                              "sources may be rejected while their children are not.")
 
 
-class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
+class ForcedPhotCoaddTask(pipeBase.PipelineTask):
     """A command-line driver for performing forced measurement on coadd images.
 
     Parameters
@@ -204,7 +195,6 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
     """
 
     ConfigClass = ForcedPhotCoaddConfig
-    RunnerClass = ForcedPhotCoaddRunner
     _DefaultName = "forcedPhotCoadd"
     dataPrefix = "deepCoadd_"
 
@@ -294,8 +284,7 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
 
         measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
                                                    idFactory=idFactory)
-        # attach footprints here, as the attachFootprints method is geared for gen2
-        # and is not worth modifying, as this can naturally live inside this method
+        # attach footprints here as this can naturally live inside this method
         if self.config.footprintDatasetName == "ScarletModelData":
             # Load the scarlet models
             self._attachScarletFootprints(
@@ -317,48 +306,6 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
                                       .format(srcRecord.getId(), footprintCat))
                 srcRecord.setFootprint(fpRecord.getFootprint())
         return measCat, exposureIdInfo.expId
-
-    def runDataRef(self, dataRef, psfCache=None):
-        """Perform forced measurement on a single exposure.
-
-        Parameters
-        ----------
-        dataRef : `lsst.daf.persistence.ButlerDataRef`
-            Passed to the ``references`` subtask to obtain the reference WCS,
-            the ``getExposure`` method (implemented by derived classes) to
-            read the measurment image, and the ``fetchReferences`` method to
-            get the exposure and load the reference catalog (see
-            :lsst-task`lsst.meas.base.references.CoaddSrcReferencesTask`).
-            Refer to derived class documentation for details of the datasets
-            and data ID keys which are used.
-        psfCache : `int`, optional
-            Size of PSF cache, or `None`. The size of the PSF cache can have
-            a significant effect upon the runtime for complicated PSF models.
-
-        Notes
-        -----
-        Sources are generated with ``generateMeasCat`` in the ``measurement``
-        subtask. These are passed to ``measurement``'s ``run`` method, which
-        fills the source catalog with the forced measurement results. The
-        sources are then passed to the ``writeOutputs`` method (implemented by
-        derived classes) which writes the outputs.
-        """
-        refWcs = self.references.getWcs(dataRef)
-        exposure = self.getExposure(dataRef)
-        if psfCache is not None:
-            exposure.getPsf().setCacheCapacity(psfCache)
-        refCat = self.fetchReferences(dataRef, exposure)
-
-        exposureId = coaddUtils.getGen3CoaddExposureId(dataRef, coaddName=self.config.coaddName,
-                                                       includeBand=False, log=self.log)
-        measCat = self.measurement.generateMeasCat(
-            exposure, refCat, refWcs, idFactory=self.makeIdFactory(dataRef, exposureId=exposureId))
-        self.log.info("Performing forced measurement on %s", dataRef.dataId)
-        self.attachFootprints(measCat, refCat, exposure, refWcs, dataRef)
-
-        forcedPhotResult = self.run(measCat, exposure, refCat, refWcs, exposureId=exposureId)
-
-        self.writeOutput(dataRef, forcedPhotResult.measCat)
 
     def run(self, measCat, exposure, refCat, refWcs, exposureId=None):
         """Perform forced measurement on a single exposure.
@@ -397,88 +344,6 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
 
         return pipeBase.Struct(measCat=measCat)
 
-    def makeIdFactory(self, dataRef, exposureId):
-        """Create an object that generates globally unique source IDs.
-
-        Source IDs are created based on a per-CCD ID and the ID of the CCD
-        itself.
-
-        Parameters
-        ----------
-        dataRef : `lsst.daf.persistence.ButlerDataRef`
-            Butler data reference. The "CoaddId_bits" and "CoaddId" datasets
-            are accessed. The data ID must have tract and patch keys.
-        """
-        # With the default configuration, this IdFactory doesn't do anything,
-        # because the IDs it generates are immediately overwritten by the ID
-        # from the reference catalog (since that's in
-        # config.measurement.copyColumns).  But we create one here anyway, to
-        # allow us to revert back to the old behavior of generating new forced
-        # source IDs, just by renaming the ID in config.copyColumns to
-        # "object_id".
-        exposureIdInfo = ExposureIdInfo(exposureId, dataRef.get(self.config.coaddName + "CoaddId_bits"))
-        return exposureIdInfo.makeSourceIdFactory()
-
-    def fetchReferences(self, dataRef, exposure):
-        """Return an iterable of reference sources which overlap the exposure.
-
-        Parameters
-        ----------
-        dataRef : `lsst.daf.persistence.ButlerDataRef`
-            Butler data reference corresponding to the image to be measured;
-            should have tract, patch, and filter keys.
-
-        exposure : `lsst.afw.image.Exposure`
-            Unused.
-
-        Notes
-        -----
-        All work is delegated to the references subtask; see
-        `CoaddSrcReferencesTask` for information about the default behavior.
-        """
-        skyMap = dataRef.get(self.dataPrefix + "skyMap", immediate=True)
-        tractInfo = skyMap[dataRef.dataId["tract"]]
-        patch = tuple(int(v) for v in dataRef.dataId["patch"].split(","))
-        patchInfo = tractInfo.getPatchInfo(patch)
-        references = lsst.afw.table.SourceCatalog(self.references.schema)
-        references.extend(self.references.fetchInPatches(dataRef, patchList=[patchInfo]))
-        return references
-
-    def attachFootprints(self, sources, refCat, exposure, refWcs, dataRef):
-        r"""Attach Footprints to source records.
-
-        For coadd forced photometry, we use the deblended "heavy"
-        `~lsst.afw.detection.Footprint`\ s from the single-band measurements
-        of the same band - because we've guaranteed that the peaks (and hence
-        child sources) will be consistent across all bands before we get to
-        measurement, this should yield reasonable deblending for most sources.
-        It's most likely limitation is that it will not provide good flux
-        upper limits for sources that were not detected in this band but were
-        blended with sources that were.
-        """
-        if self.config.footprintDatasetName is None:
-            return self.measurement.attachTransformedFootprints(sources, refCat, exposure, refWcs)
-
-        self.log.info("Loading deblended footprints for sources from %s, %s",
-                      self.config.footprintDatasetName, dataRef.dataId)
-
-        if self.config.footprintDatasetName == "ScarletModelData":
-            # Load the scarlet models
-            dataModel = dataRef.get("%sCoadd_%s" % (self.config.coaddName, self.config.footprintDatasetName),
-                                    immediate=True)
-            self._attachScarletFootprints(refCat, dataModel, exposure, dataRef.dataId["band"])
-        else:
-            fpCat = dataRef.get("%sCoadd_%s" % (self.config.coaddName, self.config.footprintDatasetName),
-                                immediate=True)
-            for refRecord, srcRecord in zip(refCat, sources):
-                fpRecord = fpCat.find(refRecord.getId())
-                if fpRecord is None:
-                    raise LookupError("Cannot find Footprint for source %s; please check that %sCoadd_%s "
-                                      "IDs are compatible with reference source IDs" %
-                                      (srcRecord.getId(), self.config.coaddName,
-                                       self.config.footprintDatasetName))
-                srcRecord.setFootprint(fpRecord.getFootprint())
-
     def _attachScarletFootprints(self, catalog, modelData, exposure, band):
         """Attach scarlet models as HeavyFootprints
         """
@@ -495,34 +360,6 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
             removeScarletData=True,
             updateFluxColumns=False,
         )
-
-    def getExposure(self, dataRef):
-        """Read input exposure on which measurement will be performed.
-
-        Parameters
-        ----------
-        dataRef : `lsst.daf.persistence.ButlerDataRef`
-            Butler data reference.
-        """
-        if self.config.hasFakes:
-            name = "fakes_" + self.config.coaddName + "Coadd_calexp"
-        else:
-            name = self.config.coaddName + "Coadd_calexp"
-
-        return dataRef.get(name) if dataRef.datasetExists(name) else None
-
-    def writeOutput(self, dataRef, sources):
-        """Write forced source table
-
-        Parameters
-        ----------
-        dataRef : `lsst.daf.persistence.ButlerDataRef`
-            Butler data reference. The forced_src dataset (with
-            self.dataPrefix prepended) is all that will be modified.
-        sources : `lsst.afw.table.SourceCatalog`
-            Catalog of sources to save.
-        """
-        dataRef.put(sources, self.dataPrefix + "forced_src", flags=lsst.afw.table.SOURCE_IO_NO_FOOTPRINTS)
 
     def getSchemaCatalogs(self):
         """The schema catalogs that will be used by this task.
@@ -541,19 +378,3 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         catalog.getTable().setMetadata(self.measurement.algMetadata)
         datasetType = self.dataPrefix + "forced_src"
         return {datasetType: catalog}
-
-    def _getConfigName(self):
-        # Documented in superclass
-        return self.dataPrefix + "forced_config"
-
-    def _getMetadataName(self):
-        # Documented in superclass
-        return self.dataPrefix + "forced_metadata"
-
-    @classmethod
-    def _makeArgumentParser(cls):
-        parser = pipeBase.ArgumentParser(name=cls._DefaultName)
-        parser.add_id_argument("--id", "deepCoadd_forced_src", help="data ID, with raw CCD keys + tract",
-                               ContainerClass=coaddUtils.CoaddDataIdContainer)
-        parser.add_argument("--psfCache", type=int, default=100, help="Size of CoaddPsf cache")
-        return parser
