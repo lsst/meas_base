@@ -19,8 +19,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import collections
-import logging
 import pandas as pd
 import numpy as np
 
@@ -46,77 +44,8 @@ from .forcedMeasurement import ForcedMeasurementTask
 from .applyApCorr import ApplyApCorrTask
 from .catalogCalculation import CatalogCalculationTask
 
-try:
-    from lsst.meas.mosaic import applyMosaicResults
-except ImportError:
-    applyMosaicResults = None
-
-__all__ = ("PerTractCcdDataIdContainer", "ForcedPhotCcdConfig", "ForcedPhotCcdTask", "imageOverlapsTract",
+__all__ = ("ForcedPhotCcdConfig", "ForcedPhotCcdTask", "imageOverlapsTract",
            "ForcedPhotCcdFromDataFrameTask", "ForcedPhotCcdFromDataFrameConfig")
-
-
-class PerTractCcdDataIdContainer(pipeBase.DataIdContainer):
-    """A data ID container which combines raw data IDs with a tract.
-
-    Notes
-    -----
-    Required because we need to add "tract" to the raw data ID keys (defined as
-    whatever we use for ``src``) when no tract is provided (so that the user is
-    not required to know which tracts are spanned by the raw data ID).
-
-    This subclass of `~lsst.pipe.base.DataIdContainer` assumes that a calexp is
-    being measured using the detection information, a set of reference
-    catalogs, from the set of coadds which intersect with the calexp.  It needs
-    the calexp id (e.g.  visit, raft, sensor), but is also uses the tract to
-    decide what set of coadds to use.  The references from the tract whose
-    patches intersect with the calexp are used.
-    """
-
-    def makeDataRefList(self, namespace):
-        """Make self.refList from self.idList
-        """
-        if self.datasetType is None:
-            raise RuntimeError("Must call setDatasetType first")
-        log = logging.getLogger(__name__).getChild("PerTractCcdDataIdContainer")
-        skymap = None
-        visitTract = collections.defaultdict(set)   # Set of tracts for each visit
-        visitRefs = collections.defaultdict(list)   # List of data references for each visit
-        for dataId in self.idList:
-            if "tract" not in dataId:
-                # Discover which tracts the data overlaps
-                log.info("Reading WCS for components of dataId=%s to determine tracts", dict(dataId))
-                if skymap is None:
-                    skymap = namespace.butler.get(namespace.config.coaddName + "Coadd_skyMap")
-
-                for ref in namespace.butler.subset("calexp", dataId=dataId):
-                    if not ref.datasetExists("calexp"):
-                        continue
-
-                    visit = ref.dataId["visit"]
-                    visitRefs[visit].append(ref)
-
-                    md = ref.get("calexp_md", immediate=True)
-                    wcs = lsst.afw.geom.makeSkyWcs(md)
-                    box = lsst.geom.Box2D(lsst.afw.image.bboxFromMetadata(md))
-                    # Going with just the nearest tract.  Since we're throwing all tracts for the visit
-                    # together, this shouldn't be a problem unless the tracts are much smaller than a CCD.
-                    tract = skymap.findTract(wcs.pixelToSky(box.getCenter()))
-                    if imageOverlapsTract(tract, wcs, box):
-                        visitTract[visit].add(tract.getId())
-            else:
-                self.refList.extend(ref for ref in namespace.butler.subset(self.datasetType, dataId=dataId))
-
-        # Ensure all components of a visit are kept together by putting them all in the same set of tracts
-        for visit, tractSet in visitTract.items():
-            for ref in visitRefs[visit]:
-                for tract in tractSet:
-                    self.refList.append(namespace.butler.dataRef(datasetType=self.datasetType,
-                                                                 dataId=ref.dataId, tract=tract))
-        if visitTract:
-            tractCounter = collections.Counter()
-            for tractSet in visitTract.values():
-                tractCounter.update(tractSet)
-            log.info("Number of visits for each tract: %s", dict(tractCounter))
 
 
 def imageOverlapsTract(tract, imageWcs, imageBox):
@@ -387,7 +316,7 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
         self.catalogCalculation.plugins.names = []
 
 
-class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
+class ForcedPhotCcdTask(pipeBase.PipelineTask):
     """A command-line driver for performing forced measurement on CCD images.
 
     Parameters
@@ -422,7 +351,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
     """
 
     ConfigClass = ForcedPhotCcdConfig
-    RunnerClass = pipeBase.ButlerInitializedTaskRunner
     _DefaultName = "forcedPhotCcd"
     dataPrefix = ""
 
@@ -649,47 +577,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
                                                    idFactory=idFactory)
         return measCat, exposureIdInfo.expId
 
-    def runDataRef(self, dataRef, psfCache=None):
-        """Perform forced measurement on a single exposure.
-
-        Parameters
-        ----------
-        dataRef : `lsst.daf.persistence.ButlerDataRef`
-            Passed to the ``references`` subtask to obtain the reference WCS,
-            the ``getExposure`` method (implemented by derived classes) to
-            read the measurment image, and the ``fetchReferences`` method to
-            get the exposure and load the reference catalog (see
-            :lsst-task`lsst.meas.base.references.CoaddSrcReferencesTask`).
-            Refer to derived class documentation for details of the datasets
-            and data ID keys which are used.
-        psfCache : `int`, optional
-            Size of PSF cache, or `None`. The size of the PSF cache can have
-            a significant effect upon the runtime for complicated PSF models.
-
-        Notes
-        -----
-        Sources are generated with ``generateMeasCat`` in the ``measurement``
-        subtask. These are passed to ``measurement``'s ``run`` method, which
-        fills the source catalog with the forced measurement results. The
-        sources are then passed to the ``writeOutputs`` method (implemented by
-        derived classes) which writes the outputs.
-        """
-        refWcs = self.references.getWcs(dataRef)
-        exposure = self.getExposure(dataRef)
-        if psfCache is not None:
-            exposure.getPsf().setCacheSize(psfCache)
-        refCat = self.fetchReferences(dataRef, exposure)
-        measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
-                                                   idFactory=self.makeIdFactory(dataRef))
-        self.log.info("Performing forced measurement on %s", dataRef.dataId)
-        self.attachFootprints(measCat, refCat, exposure, refWcs)
-
-        exposureId = self.getExposureId(dataRef)
-
-        forcedPhotResult = self.run(measCat, exposure, refCat, refWcs, exposureId=exposureId)
-
-        self.writeOutput(dataRef, forcedPhotResult.measCat)
-
     def run(self, measCat, exposure, refCat, refWcs, exposureId=None):
         """Perform forced measurement on a single exposure.
 
@@ -727,70 +614,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
 
         return pipeBase.Struct(measCat=measCat)
 
-    def makeIdFactory(self, dataRef):
-        """Create an object that generates globally unique source IDs.
-
-        Source IDs are created based on a per-CCD ID and the ID of the CCD
-        itself.
-
-        Parameters
-        ----------
-        dataRef : `lsst.daf.persistence.ButlerDataRef`
-            Butler data reference. The ``ccdExposureId_bits`` and
-            ``ccdExposureId`` datasets are accessed. The data ID must have the
-            keys that correspond to ``ccdExposureId``, which are generally the
-            same as those that correspond to ``calexp`` (``visit``, ``raft``,
-            ``sensor`` for LSST data).
-        """
-        exposureIdInfo = ExposureIdInfo(int(dataRef.get("ccdExposureId")), dataRef.get("ccdExposureId_bits"))
-        return exposureIdInfo.makeSourceIdFactory()
-
-    def getExposureId(self, dataRef):
-        return int(dataRef.get("ccdExposureId", immediate=True))
-
-    def fetchReferences(self, dataRef, exposure):
-        """Get sources that overlap the exposure.
-
-        Parameters
-        ----------
-        dataRef : `lsst.daf.persistence.ButlerDataRef`
-            Butler data reference corresponding to the image to be measured;
-            should have ``tract``, ``patch``, and ``filter`` keys.
-        exposure : `lsst.afw.image.Exposure`
-            The image to be measured (used only to obtain a WCS and bounding
-            box).
-
-        Returns
-        -------
-        referencs : `lsst.afw.table.SourceCatalog`
-            Catalog of sources that overlap the exposure
-
-        Notes
-        -----
-        The returned catalog is sorted by ID and guarantees that all included
-        children have their parent included and that all Footprints are valid.
-
-        All work is delegated to the references subtask; see
-        :lsst-task:`lsst.meas.base.references.CoaddSrcReferencesTask`
-        for information about the default behavior.
-        """
-        references = lsst.afw.table.SourceCatalog(self.references.schema)
-        badParents = set()
-        unfiltered = self.references.fetchInBox(dataRef, exposure.getBBox(), exposure.getWcs())
-        for record in unfiltered:
-            if record.getFootprint() is None or record.getFootprint().getArea() == 0:
-                if record.getParent() != 0:
-                    self.log.warning("Skipping reference %s (child of %s) with bad Footprint",
-                                     record.getId(), record.getParent())
-                else:
-                    self.log.warning("Skipping reference parent %s with bad Footprint", record.getId())
-                    badParents.add(record.getId())
-            elif record.getParent() not in badParents:
-                references.append(record)
-        # catalog must be sorted by parent ID for lsst.afw.table.getChildren to work
-        references.sort(lsst.afw.table.SourceTable.getParentKey())
-        return references
-
     def attachFootprints(self, sources, refCat, exposure, refWcs):
         r"""Attach footprints to blank sources prior to measurements.
 
@@ -812,48 +635,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
             return self.measurement.attachPsfShapeFootprints(sources, exposure,
                                                              scaling=self.config.psfFootprintScaling)
 
-    def getExposure(self, dataRef):
-        """Read input exposure for measurement.
-
-        Parameters
-        ----------
-        dataRef : `lsst.daf.persistence.ButlerDataRef`
-            Butler data reference.
-        """
-        exposure = dataRef.get(self.dataPrefix + "calexp", immediate=True)
-
-        if self.config.doApplyExternalPhotoCalib:
-            source = f"{self.config.externalPhotoCalibName}_photoCalib"
-            self.log.info("Applying external photoCalib from %s", source)
-            photoCalib = dataRef.get(source)
-            exposure.setPhotoCalib(photoCalib)  # No need for calibrateImage; having the photoCalib suffices
-
-        if self.config.doApplyExternalSkyWcs:
-            source = f"{self.config.externalSkyWcsName}_wcs"
-            self.log.info("Applying external skyWcs from %s", source)
-            skyWcs = dataRef.get(source)
-            exposure.setWcs(skyWcs)
-
-        if self.config.doApplySkyCorr:
-            self.log.info("Apply sky correction")
-            skyCorr = dataRef.get("skyCorr")
-            exposure.maskedImage -= skyCorr.getImage()
-
-        return exposure
-
-    def writeOutput(self, dataRef, sources):
-        """Write forced source table
-
-        Parameters
-        ----------
-        dataRef : `lsst.daf.persistence.ButlerDataRef`
-            Butler data reference. The forced_src dataset (with
-            self.dataPrefix prepended) is all that will be modified.
-        sources : `lsst.afw.table.SourceCatalog`
-            Catalog of sources to save.
-        """
-        dataRef.put(sources, self.dataPrefix + "forced_src", flags=lsst.afw.table.SOURCE_IO_NO_FOOTPRINTS)
-
     def getSchemaCatalogs(self):
         """The schema catalogs that will be used by this task.
 
@@ -871,22 +652,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask, pipeBase.CmdLineTask):
         catalog.getTable().setMetadata(self.measurement.algMetadata)
         datasetType = self.dataPrefix + "forced_src"
         return {datasetType: catalog}
-
-    def _getConfigName(self):
-        # Documented in superclass.
-        return self.dataPrefix + "forcedPhotCcd_config"
-
-    def _getMetadataName(self):
-        # Documented in superclass
-        return self.dataPrefix + "forcedPhotCcd_metadata"
-
-    @classmethod
-    def _makeArgumentParser(cls):
-        parser = pipeBase.ArgumentParser(name=cls._DefaultName)
-        parser.add_id_argument("--id", "forced_src", help="data ID with raw CCD keys [+ tract optionally], "
-                               "e.g. --id visit=12345 ccd=1,2 [tract=0]",
-                               ContainerClass=PerTractCcdDataIdContainer)
-        return parser
 
 
 class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
