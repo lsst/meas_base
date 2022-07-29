@@ -39,7 +39,6 @@ import lsst.pipe.base.connectionTypes as cT
 import lsst.pipe.base as pipeBase
 from lsst.skymap import BaseSkyMap
 
-from .references import MultiBandReferencesTask
 from .forcedMeasurement import ForcedMeasurementTask
 from .applyApCorr import ApplyApCorrTask
 from .catalogCalculation import CatalogCalculationTask
@@ -195,10 +194,6 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
 class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
                           pipelineConnections=ForcedPhotCcdConnections):
     """Config class for forced measurement driver task."""
-    references = lsst.pex.config.ConfigurableField(
-        target=MultiBandReferencesTask,
-        doc="subtask to retrieve reference source catalog"
-    )
     measurement = lsst.pex.config.ConfigurableField(
         target=ForcedMeasurementTask,
         doc="subtask to do forced measurement"
@@ -332,17 +327,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         schema. If present will override the value of ``refSchema``.
     **kwds
         Keyword arguments are passed to the supertask constructor.
-
-    Notes
-    -----
-    The tract is used to look up the appropriate coadd measurement catalogs to
-    use as references (e.g. ``deepCoadd_src``; see
-    :lsst-task:`lsst.meas.base.references.CoaddSrcReferencesTask` for more
-    information). While the tract must be given as part of the dataRef, the
-    patches are determined automatically from the bounding box and WCS of the
-    calexp to be measured, and the filter used to fetch references is set via
-    the ``filter`` option in the configuration of
-    :lsst-task:`lsst.meas.base.references.BaseReferencesTask`).
     """
 
     ConfigClass = ForcedPhotCcdConfig
@@ -358,9 +342,9 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         if initInputs is not None:
             refSchema = initInputs['inputSchema'].schema
 
-        self.makeSubtask("references", butler=butler, schema=refSchema)
         if refSchema is None:
-            refSchema = self.references.schema
+            raise ValueError("No reference schema provided.")
+
         self.makeSubtask("measurement", refSchema=refSchema)
         # It is necessary to get the schema internal to the forced measurement task until such a time
         # that the schema is not owned by the measurement task, but is passed in by an external caller

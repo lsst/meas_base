@@ -25,7 +25,6 @@ import lsst.afw.table
 import lsst.pipe.base as pipeBase
 from lsst.obs.base import ExposureIdInfo
 
-from .references import MultiBandReferencesTask
 from .forcedMeasurement import ForcedMeasurementTask
 from .applyApCorr import ApplyApCorrTask
 from .catalogCalculation import CatalogCalculationTask
@@ -100,10 +99,6 @@ class ForcedPhotCoaddConnections(pipeBase.PipelineTaskConnections,
 
 class ForcedPhotCoaddConfig(pipeBase.PipelineTaskConfig,
                             pipelineConnections=ForcedPhotCoaddConnections):
-    references = lsst.pex.config.ConfigurableField(
-        target=MultiBandReferencesTask,
-        doc="subtask to retrieve reference source catalog"
-    )
     measurement = lsst.pex.config.ConfigurableField(
         target=ForcedMeasurementTask,
         doc="subtask to do forced measurement"
@@ -161,19 +156,11 @@ class ForcedPhotCoaddConfig(pipeBase.PipelineTaskConfig,
         self.catalogCalculation.plugins.names = []
         self.measurement.copyColumns["id"] = "id"
         self.measurement.copyColumns["parent"] = "parent"
-        self.references.removePatchOverlaps = False  # see validate() for why
         self.measurement.plugins.names |= ['base_InputCount', 'base_Variance']
         self.measurement.plugins['base_PixelFlags'].masksFpAnywhere = ['CLIPPED', 'SENSOR_EDGE',
                                                                        'REJECTED', 'INEXACT_PSF']
         self.measurement.plugins['base_PixelFlags'].masksFpCenter = ['CLIPPED', 'SENSOR_EDGE',
                                                                      'REJECTED', 'INEXACT_PSF']
-
-    def validate(self):
-        super().validate()
-        if (self.measurement.doReplaceWithNoise and self.footprintDatasetName is not None
-                and self.references.removePatchOverlaps):
-            raise ValueError("Cannot use removePatchOverlaps=True with deblended footprints, as parent "
-                             "sources may be rejected while their children are not.")
 
 
 class ForcedPhotCoaddTask(pipeBase.PipelineTask):
@@ -207,9 +194,8 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask):
         if initInputs is not None:
             refSchema = initInputs['inputSchema'].schema
 
-        self.makeSubtask("references", butler=butler, schema=refSchema)
         if refSchema is None:
-            refSchema = self.references.schema
+            raise ValueError("No reference schema provided.")
         self.makeSubtask("measurement", refSchema=refSchema)
         # It is necessary to get the schema internal to the forced measurement task until such a time
         # that the schema is not owned by the measurement task, but is passed in by an external caller
