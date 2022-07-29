@@ -321,25 +321,20 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
 
     Parameters
     ----------
-    butler : `lsst.daf.persistence.butler.Butler`, optional
-        A Butler which will be passed to the references subtask to allow it to
-        load its schema from disk. Optional, but must be specified if
-        ``refSchema`` is not; if both are specified, ``refSchema`` takes
-        precedence.
+    butler : `None`
+        Compatibility parameter. Should always be `None`.
     refSchema : `lsst.afw.table.Schema`, optional
         The schema of the reference catalog, passed to the constructor of the
         references subtask. Optional, but must be specified if ``butler`` is
         not; if both are specified, ``refSchema`` takes precedence.
+    initInputs : `dict`
+        Dictionary that can contain a key ``inputSchema`` containing the
+        schema. If present will override the value of ``refSchema``.
     **kwds
         Keyword arguments are passed to the supertask constructor.
 
     Notes
     -----
-    The `runDataRef` method takes a `~lsst.daf.persistence.ButlerDataRef` argument
-    that corresponds to a single CCD. This should contain the data ID keys that
-    correspond to the ``forced_src`` dataset (the output dataset for this
-    task), which are typically all those used to specify the ``calexp`` dataset
-    (``visit``, ``raft``, ``sensor`` for LSST data) as well as a coadd tract.
     The tract is used to look up the appropriate coadd measurement catalogs to
     use as references (e.g. ``deepCoadd_src``; see
     :lsst-task:`lsst.meas.base.references.CoaddSrcReferencesTask` for more
@@ -356,6 +351,9 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
 
     def __init__(self, butler=None, refSchema=None, initInputs=None, **kwds):
         super().__init__(**kwds)
+
+        if butler is not None:
+            raise ValueError("A Gen2 butler can no longer be used in the constructor.")
 
         if initInputs is not None:
             refSchema = initInputs['inputSchema'].schema
