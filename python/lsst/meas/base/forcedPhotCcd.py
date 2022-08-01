@@ -721,6 +721,11 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
         # Parent's init assumes that we have a reference schema; Cannot reuse
         pipeBase.PipelineTask.__init__(self, **kwds)
 
+        if butler is not None:
+            warnings.warn("The 'butler' parameter is no longer used and can be safely removed.",
+                          category=FutureWarning, stacklevel=2)
+            butler = None
+
         self.makeSubtask("measurement", refSchema=lsst.afw.table.SourceTable.makeMinimalSchema())
 
         if self.config.doApCorr:
