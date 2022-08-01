@@ -23,6 +23,8 @@
 Subtasks for creating the reference catalogs used in forced measurement.
 """
 
+import warnings
+
 import lsst.geom
 import lsst.pex.config
 import lsst.pipe.base
@@ -68,7 +70,10 @@ class BaseReferencesTask(lsst.pipe.base.Task):
 
     def __init__(self, butler=None, schema=None, **kwargs):
         if butler is not None:
-            raise ValueError("Gen2 butler parameter is no longer supported.")
+            warnings.warn("The 'butler' parameter is no longer used and can be safely removed.",
+                          category=FutureWarning, stacklevel=2)
+            butler = None
+
         if schema is None:
             raise ValueError("A schema parameter must be provided.")
         lsst.pipe.base.Task.__init__(self, **kwargs)

@@ -19,6 +19,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import warnings
+
 import lsst.pex.config
 import lsst.afw.table
 
@@ -189,7 +191,9 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask):
         super().__init__(**kwds)
 
         if butler is not None:
-            raise ValueError("A Gen2 butler can no longer be used in the constructor.")
+            warnings.warn("The 'butler' parameter is no longer used and can be safely removed.",
+                          category=FutureWarning, stacklevel=2)
+            butler = None
 
         if initInputs is not None:
             refSchema = initInputs['inputSchema'].schema
