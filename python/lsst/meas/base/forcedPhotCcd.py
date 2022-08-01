@@ -45,41 +45,8 @@ from .forcedMeasurement import ForcedMeasurementTask
 from .applyApCorr import ApplyApCorrTask
 from .catalogCalculation import CatalogCalculationTask
 
-__all__ = ("ForcedPhotCcdConfig", "ForcedPhotCcdTask", "imageOverlapsTract",
+__all__ = ("ForcedPhotCcdConfig", "ForcedPhotCcdTask",
            "ForcedPhotCcdFromDataFrameTask", "ForcedPhotCcdFromDataFrameConfig")
-
-
-def imageOverlapsTract(tract, imageWcs, imageBox):
-    """Return whether the given bounding box overlaps the tract given a WCS.
-
-    Parameters
-    ----------
-    tract : `lsst.skymap.TractInfo`
-        TractInfo specifying a tract.
-    imageWcs : `lsst.afw.geom.SkyWcs`
-        World coordinate system for the image.
-    imageBox : `lsst.geom.Box2I`
-        Bounding box for the image.
-
-    Returns
-    -------
-    overlap : `bool`
-        `True` if the bounding box overlaps the tract; `False` otherwise.
-    """
-    tractPoly = tract.getOuterSkyPolygon()
-
-    imagePixelCorners = lsst.geom.Box2D(imageBox).getCorners()
-    try:
-        imageSkyCorners = imageWcs.pixelToSky(imagePixelCorners)
-    except lsst.pex.exceptions.LsstCppException as e:
-        # Protecting ourselves from awful Wcs solutions in input images
-        if (not isinstance(e.message, lsst.pex.exceptions.DomainErrorException)
-                and not isinstance(e.message, lsst.pex.exceptions.RuntimeErrorException)):
-            raise
-        return False
-
-    imagePoly = lsst.sphgeom.ConvexPolygon.convexHull([coord.getVector() for coord in imageSkyCorners])
-    return tractPoly.intersects(imagePoly)  # "intersects" also covers "contains" or "is contained by"
 
 
 class ForcedPhotCcdConnections(PipelineTaskConnections,
