@@ -577,7 +577,7 @@ class TestSkewDiaPsFlux(unittest.TestCase):
         run_multi_plugin(diaObjects, diaSources, "u", plug)
         self.assertAlmostEqual(
             diaObjects.loc[objId, "uPSFluxSkew"],
-            skew(fluxes, bias=False, nan_policy="omit"))
+            skew_wrapper(fluxes))
 
         # Test expected skew value with a nan set.
         fluxes[4] = np.nan
@@ -589,11 +589,10 @@ class TestSkewDiaPsFlux(unittest.TestCase):
                   "psFlux": fluxes,
                   "psFluxErr": np.ones(n_sources)})
         run_multi_plugin(diaObjects, diaSources, "r", plug)
-        # Skew returns a named tuple when called on an array
-        # with nan values.
+
         self.assertAlmostEqual(
             diaObjects.at[objId, "rPSFluxSkew"],
-            skew(fluxes, bias=False, nan_policy="omit").data)
+            skew_wrapper(fluxes))
 
 
 class TestMinMaxDiaPsFlux(unittest.TestCase):
@@ -929,6 +928,27 @@ class TestSigmaDiaTotFlux(unittest.TestCase):
         run_multi_plugin(diaObjects, diaSources, "r", plug)
         self.assertAlmostEqual(diaObjects.at[objId, "rTOTFluxSigma"],
                                np.nanstd(fluxes, ddof=1))
+
+
+def skew_wrapper(values):
+    """Compute scipy skew, omitting nans.
+
+    This version works with both scipy<1.9 (where it erroneously returns a
+    masked array) and scipy>=1.9 (where it correctly returns a float).
+
+    Parameters
+    ----------
+    values : `np.ndarray`
+
+    Returns
+    -------
+    skew_value : `float`
+    """
+    value = skew(values, bias=False, nan_policy="omit")
+    if isinstance(value, np.ma.masked_array):
+        return value.data
+    else:
+        return value
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
