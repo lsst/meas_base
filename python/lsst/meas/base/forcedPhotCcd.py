@@ -281,7 +281,7 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
 
 
 class ForcedPhotCcdTask(pipeBase.PipelineTask):
-    """A command-line driver for performing forced measurement on CCD images.
+    """A pipeline task for performing forced measurement on CCD images.
 
     Parameters
     ----------

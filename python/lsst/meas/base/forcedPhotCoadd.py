@@ -166,7 +166,7 @@ class ForcedPhotCoaddConfig(pipeBase.PipelineTaskConfig,
 
 
 class ForcedPhotCoaddTask(pipeBase.PipelineTask):
-    """A command-line driver for performing forced measurement on coadd images.
+    """A pipeline task for performing forced measurement on coadd images.
 
     Parameters
     ----------
