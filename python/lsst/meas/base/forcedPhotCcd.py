@@ -286,7 +286,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
     Parameters
     ----------
     butler : `None`
-        Compatibility parameter. Should always be `None`.
+        Deprecated and unused. Should always be `None`.
     refSchema : `lsst.afw.table.Schema`, optional
         The schema of the reference catalog, passed to the constructor of the
         references subtask. Optional, but must be specified if ``butler`` is
