@@ -195,9 +195,7 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
         dtype=bool,
         default=False,
         doc=("Whether to apply external photometric calibration via an "
-             "`lsst.afw.image.PhotoCalib` object. Uses the "
-             "``externalPhotoCalibName`` field to determine which calibration "
-             "to load."),
+             "`lsst.afw.image.PhotoCalib` object."),
     )
     useGlobalExternalPhotoCalib = lsst.pex.config.Field(
         dtype=bool,
@@ -210,8 +208,7 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
         dtype=bool,
         default=False,
         doc=("Whether to apply external astrometric calibration via an "
-             "`lsst.afw.geom.SkyWcs` object. Uses ``externalSkyWcsName`` "
-             "field to determine which calibration to load."),
+             "`lsst.afw.geom.SkyWcs` object."),
     )
     useGlobalExternalSkyWcs = lsst.pex.config.Field(
         dtype=bool,
@@ -234,25 +231,6 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
         dtype=bool,
         default=False,
         doc="Add photometric calibration variance to warp variance plane?",
-    )
-    externalPhotoCalibName = lsst.pex.config.ChoiceField(
-        dtype=str,
-        doc=("Type of external PhotoCalib if ``doApplyExternalPhotoCalib`` is True. "
-             "Unused for Gen3 middleware."),
-        default="jointcal",
-        allowed={
-            "jointcal": "Use jointcal_photoCalib",
-            "fgcm": "Use fgcm_photoCalib",
-            "fgcm_tract": "Use fgcm_tract_photoCalib"
-        },
-    )
-    externalSkyWcsName = lsst.pex.config.ChoiceField(
-        dtype=str,
-        doc="Type of external SkyWcs if ``doApplyExternalSkyWcs`` is True. Unused for Gen3 middleware.",
-        default="jointcal",
-        allowed={
-            "jointcal": "Use jointcal_wcs"
-        },
     )
     footprintSource = lsst.pex.config.ChoiceField(
         dtype=str,
