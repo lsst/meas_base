@@ -235,7 +235,7 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask):
 
     def generateMeasCat(self, exposureDataId, exposure, refCat, refCatInBand, refWcs, idPackerName,
                         footprintData):
-        """Generate a measurement catalog for Gen3.
+        """Generate a measurement catalog.
 
         Parameters
         ----------

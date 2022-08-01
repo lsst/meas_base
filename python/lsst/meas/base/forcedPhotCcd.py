@@ -438,10 +438,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
 
         Notes
         -----
-        Filtering the reference catalog is currently handled by Gen2
-        specific methods.  To function for Gen3, this method copies
-        code segments to do the filtering and transformation.  The
-        majority of this code is based on the methods of
+        The majority of this code is based on the methods of
         lsst.meas.algorithms.loadReferenceObjects.ReferenceObjectLoader
 
         """
@@ -478,7 +475,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         return mergedRefCat
 
     def generateMeasCat(self, exposureDataId, exposure, refCat, refWcs, idPackerName):
-        """Generate a measurement catalog for Gen3.
+        """Generate a measurement catalog.
 
         Parameters
         ----------
