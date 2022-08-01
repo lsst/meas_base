@@ -174,8 +174,8 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask):
         Deprecated and unused. Should always be `None`.
     refSchema : `lsst.afw.table.Schema`, optional
         The schema of the reference catalog, passed to the constructor of the
-        references subtask. Optional, but must be specified if ``butler`` is
-        not; if both are specified, ``refSchema`` takes precedence.
+        references subtask. Optional, but must be specified if ``initInputs``
+        is not; if both are specified, ``initInputs`` takes precedence.
     initInputs : `dict`
         Dictionary that can contain a key ``inputSchema`` containing the
         schema. If present will override the value of ``refSchema``.
