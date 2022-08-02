@@ -20,7 +20,7 @@ processed ci-hsc dataset.
 .. code-block:: python
 
     from lsst.meas.base.measurementInvestigationLib import rebuildNoiseReplacer
-    from lsst.daf.persistence import Butler
+    from lsst.daf.butler import Butler
 
     ciHscDataPath = "" # Set this to the path to a ci-hsc data repository.
     ciHscDataPath = "/ssd/nlust/repos_lsst/ci_hsc/DATA/rerun/ci_hsc/"
@@ -29,11 +29,11 @@ processed ci-hsc dataset.
     butler = Butler(ciHscDataPath)
 
     # Create a data Id for a single ccd.
-    dataId = {"visit":903334, "ccd":16, "filter":"HSC-R"}
+    dataId = {"visit": 903334, "detector": 16, "physical_filter": "HSC-R"}
 
     # Load in the calibrated exposure, and the associated source catalog.
-    exposure = butler.get("calexp", dataId)
-    srcCat = butler.get("src", dataId)
+    exposure = butler.get("calexp", dataId=dataId)
+    srcCat = butler.get("src", dataId=dataId)
 
     # Reconstruct a noise replacer from the loaded data.
     noiseReplacer = rebuildNoiseReplacer(exposure, srcCat)
@@ -122,4 +122,3 @@ included in the idList, effectively turning them into parents. The
     measTask.runPlugins(rebuildNoiseReplacer(exposure, srcCat), newSrcCatalog, exposure)
     # None of the objects have nan centroids and the catalog is larger than above
     print(len(newSrcCatalog), np.sum(np.isnan(newSrcCatalog["base_NaiveCentroid_x"])))
-

@@ -62,7 +62,6 @@ from .noiseReplacer import *
 from .pluginRegistry import *
 from .plugins import *
 from .pluginsBase import *
-from .references import *
 from .sfm import *
 from .transforms import *
 from .wrappers import *
