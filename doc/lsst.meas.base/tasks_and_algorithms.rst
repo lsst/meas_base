@@ -81,7 +81,7 @@ Heavy footprints for child sources are necessary in order to correctly replace n
 In addition to the :lsst-task:`lsst.meas.base.forcedMeasurement.ForcedMeasurementTask` subtask and its plugins, the forced measurement framework also contains a pair of command-line driver tasks, :lsst-task:`lsst.meas.base.forcedPhotCcd.ForcedPhotCcdTask` and :lsst-task:`lsst.meas.base.forcedPhotCoadd.ForcedPhotCoaddTask`.
 These run forced measurement on CCD-level images and coadd patch images, respectively, using the outputs of a previous single-frame measurement run on coadds as the reference catalog in both cases.
 These delegate the work of loading (and as necessary, filtering and merging) the appropriate reference catalog for the measurement image to a ``references`` subtask.
-The interface for the reference subtask is defined by :lsst-task:`lsst.meas.base.references.BaseReferencesTask`, with the concrete implementation that utilizes coadd processing outputs in :lsst-task:`lsst.meas.base.references.CoaddSrcReferencesTask`.
+The interface for the reference subtask is defined by ``lsst.meas.base.references.BaseReferencesTask``, with the concrete implementation that utilizes coadd processing outputs in ``lsst.meas.base.references.CoaddSrcReferencesTask``.
 In general, to use a reference catalog from another source, one should implement a new references subtask, and reuse :lsst-task:`lsst.meas.base.forcedPhotCcd.ForcedPhotCcdTask` and/or :lsst-task:`lsst.meas.base.forcedPhotCoadd.ForcedPhotCoaddTask`.
 It should only be necessary to replace these and use :lsst-task:`lsst.meas.base.forcedMeasurement.ForcedMeasurementTask` directly if you need to run forced photometry on data that isn't organized by the Butler or doesn't correspond to CCD- or patch-level images.
 

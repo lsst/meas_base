@@ -15,7 +15,7 @@ Input datasets
 A ``Coadd_src`` variant (e.g. ``deepCoadd_src``)
    Used as the reference catalog.
    This is not loaded directly from the provided ``dataRef``; only the patch and tract are used, while the filter is set by the configuration of the references subtask.
-   See :lsst-task:`lsst.meas.base.references.CoaddSrcReferencesTask`.
+   See ``lsst.meas.base.references.CoaddSrcReferencesTask``.
 
 A ``Coadd_calexp`` variant (e.g. ``deepCoadd_calexp``)
    Used as the measurement image.
