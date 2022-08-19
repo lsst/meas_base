@@ -40,11 +40,11 @@ class PythonPluginConfig(SingleFramePluginConfig):
     """Configuration for a sample plugin with a `FlagHandler`.
     """
 
-    edgeLimit = lsst.pex.config.Field(dtype=int, default=0, optional=False,
+    edgeLimit = lsst.pex.config.Field(dtype=int, default=0,
                                       doc="How close to the edge can the object be?")
-    size = lsst.pex.config.Field(dtype=int, default=1, optional=False,
+    size = lsst.pex.config.Field(dtype=int, default=1,
                                  doc="size of aperture to measure around the center?")
-    flux0 = lsst.pex.config.Field(dtype=float, default=None, optional=False,
+    flux0 = lsst.pex.config.Field(dtype=float, default=None, optional=True,
                                   doc="Flux for zero mag, used to set mag if defined")
 
 
