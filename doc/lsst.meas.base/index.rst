@@ -29,10 +29,10 @@ You can find Jira issues for this module under the `meas_base <https://jira.lsst
 Task reference
 ==============
 
-Command-line tasks
-------------------
+Pipeline tasks
+--------------
 
-.. lsst-cmdlinetasks::
+.. lsst-pipelinetasks::
    :root: lsst.meas.base
 
 Tasks

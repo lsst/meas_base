@@ -236,7 +236,7 @@ In C++, an algorithm may then log to this ``logName`` as follows:
 
    LOGL_INFO(logger, message...)
 
-where ``logger`` can either be the ``logName`` string itself, or a :mode:`logging.Logger` object returned by
+where ``logger`` can either be the ``logName`` string itself, or a :mod:`logging.Logger` object returned by
 
 .. code-block:: py
 
