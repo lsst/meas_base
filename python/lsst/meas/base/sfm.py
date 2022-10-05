@@ -31,7 +31,6 @@ systems if necessary to avoid information loss (this should, of course, be
 indicated in the field documentation).
 """
 
-import lsst.pex.config
 from lsst.utils.logging import PeriodicLogger
 from lsst.utils.timer import timeMethod
 
@@ -155,12 +154,6 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
         multi=True,
         default=[],
         doc="Plugins to run on undeblended image"
-    )
-    loggingInterval = lsst.pex.config.Field(
-        dtype=int,
-        default=600,
-        doc="Interval (in seconds) to log messages (at VERBOSE level) while running measurement plugins.",
-        deprecated="This field is no longer used and will be removed in v25.",
     )
 
 
