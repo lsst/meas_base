@@ -572,24 +572,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
             return self.measurement.attachPsfShapeFootprints(sources, exposure,
                                                              scaling=self.config.psfFootprintScaling)
 
-    def getSchemaCatalogs(self):
-        """The schema catalogs that will be used by this task.
-
-        Returns
-        -------
-        schemaCatalogs : `dict`
-            Dictionary mapping dataset type to schema catalog.
-
-        Notes
-        -----
-        There is only one schema for each type of forced measurement. The
-        dataset type for this measurement is defined in the mapper.
-        """
-        catalog = lsst.afw.table.SourceCatalog(self.measurement.schema)
-        catalog.getTable().setMetadata(self.measurement.algMetadata)
-        datasetType = self.dataPrefix + "forced_src"
-        return {datasetType: catalog}
-
 
 class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
                                             dimensions=("instrument", "visit", "detector", "skymap", "tract"),
