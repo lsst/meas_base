@@ -110,8 +110,8 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         sigma = fwhm/FwhmPerSigma
         convolutionControl = afwMath.ConvolutionControl()
         psf = afwDetection.GaussianPsf(kernelWidth, kernelWidth, sigma)
-        psfKernel = psf.getLocalKernel()
-        psfImage = psf.computeKernelImage()
+        psfKernel = psf.getLocalKernel(psf.getAveragePosition())
+        psfImage = psf.computeKernelImage(psf.getAveragePosition())
         sumPsfSq = np.sum(psfImage.getArray()**2)
         psfSqArr = psfImage.getArray()**2
 
