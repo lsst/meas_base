@@ -214,11 +214,12 @@ void PeakLikelihoodFluxAlgorithm::measure(afw::table::SourceRecord &measRecord,
     }
 
     // compute parent index and fractional offset of ctrPix: the pixel closest to "center",
-    // the centroid of the source
+    // the centroid of the source. This assumes that the image's XY0 is (0, 0).
     std::pair<int, double> const xCtrPixParentIndFrac = afw::image::positionToIndex(center.getX(), true);
     std::pair<int, double> const yCtrPixParentIndFrac = afw::image::positionToIndex(center.getY(), true);
 
-    geom::Point2I ctrPixParentInd(xCtrPixParentIndFrac.first, yCtrPixParentIndFrac.first);
+    geom::Point2I ctrPixParentInd(xCtrPixParentIndFrac.first + mimage.getX0(),
+                                  yCtrPixParentIndFrac.first + mimage.getY0());
     geom::Point2D ctrPixPos(afw::image::indexToPosition(ctrPixParentInd[0]),
                             afw::image::indexToPosition(ctrPixParentInd[1]));
 
