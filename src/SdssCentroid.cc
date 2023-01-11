@@ -442,7 +442,7 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
         std::tuple<MaskedImageT, double, int> smoothResult =
             smoothAndBinImage(psf, x, y, mimage, binX, binY, _flagHandler);
         int errorFlag = std::get<2>(smoothResult);
-        if (errorFlag == EDGE.number) {
+        if (errorFlag == static_cast<int>(EDGE.number)) {
             psf = std::make_shared<afw::detection::GaussianPsf>(5, 5, 0.5);
             smoothResult = smoothAndBinImage(psf, x, y, mimage, binX, binY, _flagHandler);
             stopBinning = true;
@@ -451,11 +451,11 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
                 errorFlag = NEAR_EDGE.number;
             }
         }
-        if (errorFlag > 0 && errorFlag != NEAR_EDGE.number) {
+        if (errorFlag > 0) {
             _flagHandler.setValue(measRecord, errorFlag, true);
+            _flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
             // if NEAR_EDGE is not a fatal error we continue otherwise return
-            if (errorFlag != NEAR_EDGE.number) {
-                _flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
+            if (errorFlag != static_cast<int>(NEAR_EDGE.number)) {
                 return;
             }
         }
