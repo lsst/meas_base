@@ -49,8 +49,8 @@ void declareBaseAlgorithm(lsst::utils::python::WrapperCollection &wrappers) {
 
 void declareSingleFrameAlgorithm(lsst::utils::python::WrapperCollection &wrappers) {
     wrappers.wrapType(
-            py::class_<SingleFrameAlgorithm, std::shared_ptr<SingleFrameAlgorithm>>(wrappers.module,
-                                                                                    "SingleFrameAlgorithm"),
+            py::class_<SingleFrameAlgorithm, std::shared_ptr<SingleFrameAlgorithm>, BaseAlgorithm>(wrappers.module,
+                                                                                                   "SingleFrameAlgorithm"),
             [](auto &mod, auto &cls) {
                 cls.def("measure", &SingleFrameAlgorithm::measure, "record"_a, "exposure"_a);
     });
@@ -58,8 +58,9 @@ void declareSingleFrameAlgorithm(lsst::utils::python::WrapperCollection &wrapper
 
 void declareSimpleAlgorithm(lsst::utils::python::WrapperCollection &wrappers) {
     wrappers.wrapType(
-            py::class_<SimpleAlgorithm, std::shared_ptr<SimpleAlgorithm>>(wrappers.module,
-                                                                                    "SimpleAlgorithm"),
+            py::class_<SimpleAlgorithm, std::shared_ptr<SimpleAlgorithm>, SingleFrameAlgorithm>(wrappers.module,
+                                                                                                "SimpleAlgorithm",
+                                                                                                py::multiple_inheritance()),
             [](auto &mod, auto &cls) {
                 cls.def("measureForced", &SimpleAlgorithm::measureForced, "measRecord"_a, "exposure"_a,
                            "refRecord"_a, "refWcs"_a);
