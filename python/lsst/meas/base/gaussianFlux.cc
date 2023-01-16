@@ -21,6 +21,7 @@
  */
 
 #include "pybind11/pybind11.h"
+#include "lsst/utils/python.h"
 
 #include <memory>
 
@@ -44,49 +45,43 @@ using PyFluxControl = py::class_<GaussianFluxControl>;
 using PyFluxTransform =
         py::class_<GaussianFluxTransform, std::shared_ptr<GaussianFluxTransform>, BaseTransform>;
 
-PyFluxControl declareFluxControl(py::module &mod) {
-    PyFluxControl cls(mod, "GaussianFluxControl");
-
-    LSST_DECLARE_CONTROL_FIELD(cls, GaussianFluxControl, background);
-
-    return cls;
+PyFluxControl declareFluxControl(lsst::utils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyFluxControl(wrappers.module, "GaussianFluxControl"), [](auto &mod, auto &cls) {
+        LSST_DECLARE_CONTROL_FIELD(cls, GaussianFluxControl, background);
+    });
 }
 
-PyFluxAlgorithm declareFluxAlgorithm(py::module &mod) {
-    PyFluxAlgorithm cls(mod, "GaussianFluxAlgorithm");
+PyFluxAlgorithm declareFluxAlgorithm(lsst::utils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyFluxAlgorithm(wrappers.module, "GaussianFluxAlgorithm"), [](auto &mod, auto &cls) {
+        cls.def(py::init<GaussianFluxAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
+                "ctrl"_a, "name"_a, "schema"_a);
 
-    cls.def(py::init<GaussianFluxAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
-            "ctrl"_a, "name"_a, "schema"_a);
+        cls.attr("FAILURE") = py::cast(GaussianFluxAlgorithm::FAILURE);
 
-    cls.attr("FAILURE") = py::cast(GaussianFluxAlgorithm::FAILURE);
-
-    cls.def("measure", &GaussianFluxAlgorithm::measure, "measRecord"_a, "exposure"_a);
-    cls.def("fail", &GaussianFluxAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
-
-    return cls;
+        cls.def("measure", &GaussianFluxAlgorithm::measure, "measRecord"_a, "exposure"_a);
+        cls.def("fail", &GaussianFluxAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
+    });
 }
 
-PyFluxTransform declareFluxTransform(py::module &mod) {
-    PyFluxTransform cls(mod, "GaussianFluxTransform");
-
-    cls.def(py::init<GaussianFluxTransform::Control const &, std::string const &,
-                     afw::table::SchemaMapper &>(),
-            "ctrl"_a, "name"_a, "mapper"_a);
-
-    return cls;
+PyFluxTransform declareFluxTransform(lsst::utils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyFluxTransform(wrappers.module, "GaussianFluxTransform"), [](auto &mod, auto &cls) {
+        cls.def(py::init<GaussianFluxTransform::Control const &, std::string const &,
+                afw::table::SchemaMapper &>(),
+                "ctrl"_a, "name"_a, "mapper"_a);
+    });
 }
 
 }  // namespace
 
-PYBIND11_MODULE(gaussianFlux, mod) {
-    py::module::import("lsst.afw.table");
-    py::module::import("lsst.meas.base.algorithm");
-    py::module::import("lsst.meas.base.flagHandler");
-    py::module::import("lsst.meas.base.transform");
+void wrapGaussianFlux(lsst::utils::python::WrapperCollection &wrappers) {
+    wrappers.addInheritanceDependency("lsst.afw.table");
+    // Depends on algorithm
+    // Depends on flagHandler
+    // Depends on transform
 
-    auto clsFluxControl = declareFluxControl(mod);
-    auto clsFluxAlgorithm = declareFluxAlgorithm(mod);
-    auto clsFluxTransform = declareFluxTransform(mod);
+    auto clsFluxControl = declareFluxControl(wrappers);
+    auto clsFluxAlgorithm = declareFluxAlgorithm(wrappers);
+    auto clsFluxTransform = declareFluxTransform(wrappers);
 
     clsFluxAlgorithm.attr("Control") = clsFluxControl;
     clsFluxTransform.attr("Control") = clsFluxControl;

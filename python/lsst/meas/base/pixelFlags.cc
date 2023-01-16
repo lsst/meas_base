@@ -22,6 +22,7 @@
 
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include "lsst/utils/python.h"
 
 #include <memory>
 
@@ -37,24 +38,42 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_MODULE(pixelFlags, mod) {
-    py::module::import("lsst.afw.table");
+namespace {
 
-    py::class_<PixelFlagsAlgorithm, std::shared_ptr<PixelFlagsAlgorithm>, SimpleAlgorithm>
-            clsPixelFlagsAlgorithm(mod, "PixelFlagsAlgorithm");
-    py::class_<PixelFlagsControl> clsPixelFlagsControl(mod, "PixelFlagsControl");
+using PyAlgorithm =
+        py::class_<PixelFlagsAlgorithm, std::shared_ptr<PixelFlagsAlgorithm>, SimpleAlgorithm>;
+using PyControl = py::class_<PixelFlagsControl>;
 
-    clsPixelFlagsAlgorithm.def(
-            py::init<PixelFlagsAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
-            "ctrl"_a, "name"_a, "schema"_a);
+void declareControl(lsst::utils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyControl(wrappers.module, "PixelFlagsControl"), [](auto &mod, auto &cls) {
+        LSST_DECLARE_CONTROL_FIELD(cls, PixelFlagsControl, masksFpAnywhere);
+        LSST_DECLARE_CONTROL_FIELD(cls, PixelFlagsControl, masksFpCenter);
 
-    clsPixelFlagsControl.def(py::init<>());
+        cls.def(py::init<>());
+    });
+}
 
-    clsPixelFlagsAlgorithm.def("measure", &PixelFlagsAlgorithm::measure, "measRecord"_a, "exposure"_a);
-    clsPixelFlagsAlgorithm.def("fail", &PixelFlagsAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
+void declareAlgorithm(lsst::utils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyAlgorithm(wrappers.module, "PixelFlagsAlgorithm"), [](auto &mod, auto &cls) {
+        cls.def(
+                py::init<PixelFlagsAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
+                "ctrl"_a, "name"_a, "schema"_a);
 
-    LSST_DECLARE_CONTROL_FIELD(clsPixelFlagsControl, PixelFlagsControl, masksFpAnywhere);
-    LSST_DECLARE_CONTROL_FIELD(clsPixelFlagsControl, PixelFlagsControl, masksFpCenter);
+        cls.def("measure", &PixelFlagsAlgorithm::measure, "measRecord"_a, "exposure"_a);
+        cls.def("fail", &PixelFlagsAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
+    });
+}
+
+}  // namespace
+
+void wrapPixelFlags(lsst::utils::python::WrapperCollection &wrappers) {
+    wrappers.addSignatureDependency("lsst.afw.table");
+    // Depends on algorithm
+
+    declareControl(wrappers);
+    declareAlgorithm(wrappers);
+
+    // The original code did not have a python::declareAlgorithm call.  Was this a bug?
 }
 
 }  // namespace base

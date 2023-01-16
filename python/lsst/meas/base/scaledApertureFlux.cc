@@ -21,6 +21,7 @@
  */
 
 #include "pybind11/pybind11.h"
+#include "lsst/utils/python.h"
 
 #include <memory>
 
@@ -44,51 +45,45 @@ using PyFluxControl = py::class_<ScaledApertureFluxControl>;
 using PyFluxTransform =
         py::class_<ScaledApertureFluxTransform, std::shared_ptr<ScaledApertureFluxTransform>, BaseTransform>;
 
-PyFluxControl declareFluxControl(py::module &mod) {
-    PyFluxControl cls(mod, "ScaledApertureFluxControl");
+PyFluxControl declareFluxControl(lsst::utils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyFluxControl(wrappers.module, "ScaledApertureFluxControl"), [](auto &mod, auto &cls) {
+        LSST_DECLARE_CONTROL_FIELD(cls, ScaledApertureFluxControl, scale);
+        LSST_DECLARE_CONTROL_FIELD(cls, ScaledApertureFluxControl, shiftKernel);
 
-    LSST_DECLARE_CONTROL_FIELD(cls, ScaledApertureFluxControl, scale);
-    LSST_DECLARE_CONTROL_FIELD(cls, ScaledApertureFluxControl, shiftKernel);
-
-    cls.def(py::init<>());
-
-    return cls;
+        cls.def(py::init<>());
+    });
 }
 
-PyFluxAlgorithm declareFluxAlgorithm(py::module &mod) {
-    PyFluxAlgorithm cls(mod, "ScaledApertureFluxAlgorithm");
+PyFluxAlgorithm declareFluxAlgorithm(lsst::utils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyFluxAlgorithm(wrappers.module, "ScaledApertureFluxAlgorithm"), [](auto &mod, auto &cls) {
+        cls.def(py::init<ScaledApertureFluxAlgorithm::Control const &, std::string const &,
+                afw::table::Schema &>(),
+                "ctrl"_a, "name"_a, "schema"_a);
 
-    cls.def(py::init<ScaledApertureFluxAlgorithm::Control const &, std::string const &,
-                     afw::table::Schema &>(),
-            "ctrl"_a, "name"_a, "schema"_a);
-
-    cls.def("measure", &ScaledApertureFluxAlgorithm::measure, "measRecord"_a, "exposure"_a);
-    cls.def("fail", &ScaledApertureFluxAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
-
-    return cls;
+        cls.def("measure", &ScaledApertureFluxAlgorithm::measure, "measRecord"_a, "exposure"_a);
+        cls.def("fail", &ScaledApertureFluxAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
+    });
 }
 
-PyFluxTransform declareFluxTransform(py::module &mod) {
-    PyFluxTransform cls(mod, "ScaledApertureFluxTransform");
-
-    cls.def(py::init<ScaledApertureFluxTransform::Control const &, std::string const &,
-                     afw::table::SchemaMapper &>(),
-            "ctrl"_a, "name"_a, "mapper"_a);
-
-    return cls;
+PyFluxTransform declareFluxTransform(lsst::utils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyFluxTransform(wrappers.module, "ScaledApertureFluxTransform"), [](auto &mod, auto &cls) {
+        cls.def(py::init<ScaledApertureFluxTransform::Control const &, std::string const &,
+                afw::table::SchemaMapper &>(),
+                "ctrl"_a, "name"_a, "mapper"_a);
+    });
 }
 
 }  // namespace
 
-PYBIND11_MODULE(scaledApertureFlux, mod) {
-    py::module::import("lsst.afw.table");
-    py::module::import("lsst.meas.base.algorithm");
-    py::module::import("lsst.meas.base.fluxUtilities");
-    py::module::import("lsst.meas.base.transform");
+void wrapScaledApertureFlux(lsst::utils::python::WrapperCollection &wrappers) {
+    wrappers.addInheritanceDependency("lsst.afw.table");
+    // Depends on algorithm
+    // Depends on fluxUtilities
+    // Depends on transform
 
-    auto clsFluxControl = declareFluxControl(mod);
-    auto clsFluxAlgorithm = declareFluxAlgorithm(mod);
-    auto clsFluxTransform = declareFluxTransform(mod);
+    auto clsFluxControl = declareFluxControl(wrappers);
+    auto clsFluxAlgorithm = declareFluxAlgorithm(wrappers);
+    auto clsFluxTransform = declareFluxTransform(wrappers);
 
     clsFluxAlgorithm.attr("Control") = clsFluxControl;
     clsFluxTransform.attr("Control") = clsFluxControl;

@@ -21,6 +21,7 @@
  */
 
 #include "pybind11/pybind11.h"
+#include "lsst/utils/python.h"
 
 #include <memory>
 
@@ -44,59 +45,53 @@ using PyCentroidControl = py::class_<SdssCentroidControl>;
 using PyCentroidTransform =
         py::class_<SdssCentroidTransform, std::shared_ptr<SdssCentroidTransform>, BaseTransform>;
 
-PyCentroidControl declareCentroidControl(py::module &mod) {
-    PyCentroidControl cls(mod, "SdssCentroidControl");
+PyCentroidControl declareCentroidControl(lsst::utils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyCentroidControl(wrappers.module, "SdssCentroidControl"), [](auto &mod, auto &cls) {
+        LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, binmax);
+        LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, peakMin);
+        LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, wfac);
+        LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, doFootprintCheck);
+        LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, maxDistToPeak);
 
-    LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, binmax);
-    LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, peakMin);
-    LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, wfac);
-    LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, doFootprintCheck);
-    LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, maxDistToPeak);
-
-    cls.def(py::init<>());
-
-    return cls;
+        cls.def(py::init<>());
+    });
 }
 
-PyCentroidAlgorithm declareCentroidAlgorithm(py::module &mod) {
-    PyCentroidAlgorithm cls(mod, "SdssCentroidAlgorithm");
+PyCentroidAlgorithm declareCentroidAlgorithm(lsst::utils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyCentroidAlgorithm(wrappers.module, "SdssCentroidAlgorithm"), [](auto &mod, auto &cls) {
+        cls.attr("FAILURE") = py::cast(SdssCentroidAlgorithm::FAILURE);
+        cls.attr("EDGE") = py::cast(SdssCentroidAlgorithm::EDGE);
+        cls.attr("NO_SECOND_DERIVATIVE") = py::cast(SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE);
+        cls.attr("ALMOST_NO_SECOND_DERIVATIVE") = py::cast(SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE);
+        cls.attr("NOT_AT_MAXIMUM") = py::cast(SdssCentroidAlgorithm::NOT_AT_MAXIMUM);
 
-    cls.attr("FAILURE") = py::cast(SdssCentroidAlgorithm::FAILURE);
-    cls.attr("EDGE") = py::cast(SdssCentroidAlgorithm::EDGE);
-    cls.attr("NO_SECOND_DERIVATIVE") = py::cast(SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE);
-    cls.attr("ALMOST_NO_SECOND_DERIVATIVE") = py::cast(SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE);
-    cls.attr("NOT_AT_MAXIMUM") = py::cast(SdssCentroidAlgorithm::NOT_AT_MAXIMUM);
+        cls.def(py::init<SdssCentroidAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
+                "ctrl"_a, "name"_a, "schema"_a);
 
-    cls.def(py::init<SdssCentroidAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
-            "ctrl"_a, "name"_a, "schema"_a);
-
-    cls.def("measure", &SdssCentroidAlgorithm::measure, "measRecord"_a, "exposure"_a);
-    cls.def("fail", &SdssCentroidAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
-
-    return cls;
+        cls.def("measure", &SdssCentroidAlgorithm::measure, "measRecord"_a, "exposure"_a);
+        cls.def("fail", &SdssCentroidAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
+    });
 }
 
-PyCentroidTransform declareCentroidTransform(py::module &mod) {
-    PyCentroidTransform cls(mod, "SdssCentroidTransform");
-
-    cls.def(py::init<SdssCentroidTransform::Control const &, std::string const &,
-                     afw::table::SchemaMapper &>(),
-            "ctrl"_a, "name"_a, "mapper"_a);
-
-    return cls;
+PyCentroidTransform declareCentroidTransform(lsst::utils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyCentroidTransform(wrappers.module, "SdssCentroidTransform"), [](auto &mod, auto &cls) {
+        cls.def(py::init<SdssCentroidTransform::Control const &, std::string const &,
+                afw::table::SchemaMapper &>(),
+                "ctrl"_a, "name"_a, "mapper"_a);
+    });
 }
 
 }  // namespace
 
-PYBIND11_MODULE(sdssCentroid, mod) {
-    py::module::import("lsst.afw.table");
-    py::module::import("lsst.meas.base.algorithm");
-    py::module::import("lsst.meas.base.flagHandler");
-    py::module::import("lsst.meas.base.transform");
+void wrapSdssCentroid(lsst::utils::python::WrapperCollection &wrappers) {
+    wrappers.addInheritanceDependency("lsst.afw.table");
+    // Depends on algorithm
+    // Depends on flagHandler
+    // Depends on transform
 
-    auto clsCentroidControl = declareCentroidControl(mod);
-    auto clsCentroidAlgorithm = declareCentroidAlgorithm(mod);
-    auto clsCentroidTransform = declareCentroidTransform(mod);
+    auto clsCentroidControl = declareCentroidControl(wrappers);
+    auto clsCentroidAlgorithm = declareCentroidAlgorithm(wrappers);
+    auto clsCentroidTransform = declareCentroidTransform(wrappers);
 
     clsCentroidAlgorithm.attr("Control") = clsCentroidControl;
     clsCentroidTransform.attr("Control") = clsCentroidControl;

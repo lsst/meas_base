@@ -41,22 +41,22 @@ from .forcedMeasurement import ForcedPluginConfig, ForcedPlugin
 from .wrappers import wrapSimpleAlgorithm, wrapTransform, GenericPlugin
 from .transforms import SimpleCentroidTransform
 
-from .apertureFlux import ApertureFluxControl, ApertureFluxTransform
-from .transform import BaseTransform
-from .blendedness import BlendednessAlgorithm, BlendednessControl
-from .circularApertureFlux import CircularApertureFluxAlgorithm
-from .gaussianFlux import GaussianFluxAlgorithm, GaussianFluxControl, GaussianFluxTransform
-from .exceptions import MeasurementError
-from .localBackground import LocalBackgroundControl, LocalBackgroundAlgorithm, LocalBackgroundTransform
-from .naiveCentroid import NaiveCentroidAlgorithm, NaiveCentroidControl, NaiveCentroidTransform
-from .peakLikelihoodFlux import PeakLikelihoodFluxAlgorithm, PeakLikelihoodFluxControl, \
+from ._measBaseLib import ApertureFluxControl, ApertureFluxTransform
+from ._measBaseLib import BaseTransform
+from ._measBaseLib import BlendednessAlgorithm, BlendednessControl
+from ._measBaseLib import CircularApertureFluxAlgorithm
+from ._measBaseLib import GaussianFluxAlgorithm, GaussianFluxControl, GaussianFluxTransform
+from ._measBaseLib import MeasurementError
+from ._measBaseLib import LocalBackgroundControl, LocalBackgroundAlgorithm, LocalBackgroundTransform
+from ._measBaseLib import NaiveCentroidAlgorithm, NaiveCentroidControl, NaiveCentroidTransform
+from ._measBaseLib import PeakLikelihoodFluxAlgorithm, PeakLikelihoodFluxControl, \
     PeakLikelihoodFluxTransform
-from .pixelFlags import PixelFlagsAlgorithm, PixelFlagsControl
-from .psfFlux import PsfFluxAlgorithm, PsfFluxControl, PsfFluxTransform
-from .scaledApertureFlux import ScaledApertureFluxAlgorithm, ScaledApertureFluxControl, \
+from ._measBaseLib import PixelFlagsAlgorithm, PixelFlagsControl
+from ._measBaseLib import PsfFluxAlgorithm, PsfFluxControl, PsfFluxTransform
+from ._measBaseLib import ScaledApertureFluxAlgorithm, ScaledApertureFluxControl, \
     ScaledApertureFluxTransform
-from .sdssCentroid import SdssCentroidAlgorithm, SdssCentroidControl, SdssCentroidTransform
-from .sdssShape import SdssShapeAlgorithm, SdssShapeControl, SdssShapeTransform
+from ._measBaseLib import SdssCentroidAlgorithm, SdssCentroidControl, SdssCentroidTransform
+from ._measBaseLib import SdssShapeAlgorithm, SdssShapeControl, SdssShapeTransform
 
 __all__ = (
     "SingleFrameFPPositionConfig", "SingleFrameFPPositionPlugin",

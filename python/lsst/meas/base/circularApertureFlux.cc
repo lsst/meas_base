@@ -20,9 +20,11 @@
  * see <https://www.lsstcorp.org/LegalNotices/>.
  */
 #include "pybind11/pybind11.h"
+#include "lsst/utils/python.h"
 
 #include <memory>
 
+#include "lsst/meas/base/ApertureFlux.h"
 #include "lsst/meas/base/CircularApertureFlux.h"
 
 namespace py = pybind11;
@@ -37,20 +39,24 @@ namespace {
 using PyApertureFluxClass = py::class_<CircularApertureFluxAlgorithm,
                                        std::shared_ptr<CircularApertureFluxAlgorithm>, ApertureFluxAlgorithm>;
 
-}  // <anonymous>
+void declareCircularApertureFluxAlgorithm(lsst::utils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyApertureFluxClass(wrappers.module, "CircularApertureFluxAlgorithm"), [](auto &mod, auto &cls) {
+        cls.def(py::init<CircularApertureFluxAlgorithm::Control const &, std::string const &,
+                         afw::table::Schema &, daf::base::PropertySet &>(),
+                "ctrl"_a, "name"_a, "schema"_a, "metadata"_a);
 
-PYBIND11_MODULE(circularApertureFlux, mod) {
-    py::module::import("lsst.daf.base");
-    py::module::import("lsst.afw.table");
-    py::module::import("lsst.meas.base.algorithm");
+        cls.def("measure", &CircularApertureFluxAlgorithm::measure, "measRecord"_a, "exposure"_a);
+    });
+}
 
-    PyApertureFluxClass cls(mod, "CircularApertureFluxAlgorithm");
+}  // namespace
 
-    cls.def(py::init<CircularApertureFluxAlgorithm::Control const &, std::string const &,
-                     afw::table::Schema &, daf::base::PropertySet &>(),
-            "ctrl"_a, "name"_a, "schema"_a, "metadata"_a);
+void wrapCircularApertureFlux(lsst::utils::python::WrapperCollection &wrappers) {
+    wrappers.addInheritanceDependency("lsst.daf.base");
+    wrappers.addInheritanceDependency("lsst.afw.table");
+    // Depends on algorithm
 
-    cls.def("measure", &CircularApertureFluxAlgorithm::measure, "measRecord"_a, "exposure"_a);
+    declareCircularApertureFluxAlgorithm(wrappers);
 }
 
 }  // namespace base

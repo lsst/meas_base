@@ -21,6 +21,7 @@
  */
 
 #include "pybind11/pybind11.h"
+#include "lsst/utils/python.h"
 
 #include "lsst/meas/base/exceptions.h"
 #include "lsst/pex/exceptions/Runtime.h"
@@ -33,19 +34,15 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_MODULE(exceptions, mod) {
-    using pex::exceptions::python::declareException;
+void wrapExceptions(lsst::utils::python::WrapperCollection &wrappers) {
     using pex::exceptions::DomainError;
     using pex::exceptions::RuntimeError;
 
-    py::module::import("lsst.pex.exceptions");
+    wrappers.addSignatureDependency("lsst.pex.exceptions");
 
-    auto clsFatalAlgorithmError =
-            declareException<FatalAlgorithmError, RuntimeError>(mod, "FatalAlgorithmError", "RuntimeError");
-    auto clsMeasurementError =
-            declareException<MeasurementError, RuntimeError>(mod, "MeasurementError", "RuntimeError");
-    auto clsPixelValueError =
-            declareException<PixelValueError, DomainError>(mod, "PixelValueError", "DomainError");
+    auto clsFatalAlgorithmError = wrappers.wrapException<FatalAlgorithmError, RuntimeError>("FatalAlgorithmError", "RuntimeError");
+    auto clsMeasurementError = wrappers.wrapException<MeasurementError, RuntimeError>("MeasurementError", "RuntimeError");
+    auto clsPixelValueError = wrappers.wrapException<PixelValueError, DomainError>("PixelValueError", "DomainError");
 
     clsMeasurementError.def(py::init<std::string const &, std::size_t>(), "message"_a, "flagBit"_a);
     clsFatalAlgorithmError.def(py::init<std::string const &>(), "message"_a);

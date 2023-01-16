@@ -21,6 +21,7 @@
  */
 
 #include "pybind11/pybind11.h"
+#include "lsst/utils/python.h"
 
 #include <memory>
 
@@ -49,38 +50,36 @@ using PyShapeResult = py::class_<SdssShapeResult, std::shared_ptr<SdssShapeResul
 using PyShapeAlgorithm = py::class_<SdssShapeAlgorithm, std::shared_ptr<SdssShapeAlgorithm>, SimpleAlgorithm>;
 using PyShapeTransform = py::class_<SdssShapeTransform, std::shared_ptr<SdssShapeTransform>, BaseTransform>;
 
-PyShapeControl declareShapeControl(py::module &mod) {
-    PyShapeControl cls(mod, "SdssShapeControl");
+PyShapeControl declareShapeControl(lsst::utils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyShapeControl(wrappers.module, "SdssShapeControl"), [](auto &mod, auto &cls) {
+        LSST_DECLARE_CONTROL_FIELD(cls, SdssShapeControl, background);
+        LSST_DECLARE_CONTROL_FIELD(cls, SdssShapeControl, maxIter);
+        LSST_DECLARE_CONTROL_FIELD(cls, SdssShapeControl, maxShift);
+        LSST_DECLARE_CONTROL_FIELD(cls, SdssShapeControl, tol1);
+        LSST_DECLARE_CONTROL_FIELD(cls, SdssShapeControl, tol2);
+        LSST_DECLARE_CONTROL_FIELD(cls, SdssShapeControl, doMeasurePsf);
 
-    LSST_DECLARE_CONTROL_FIELD(cls, SdssShapeControl, background);
-    LSST_DECLARE_CONTROL_FIELD(cls, SdssShapeControl, maxIter);
-    LSST_DECLARE_CONTROL_FIELD(cls, SdssShapeControl, maxShift);
-    LSST_DECLARE_CONTROL_FIELD(cls, SdssShapeControl, tol1);
-    LSST_DECLARE_CONTROL_FIELD(cls, SdssShapeControl, tol2);
-    LSST_DECLARE_CONTROL_FIELD(cls, SdssShapeControl, doMeasurePsf);
-
-    cls.def(py::init<>());
-
-    return cls;
+        cls.def(py::init<>());
+    });
 }
 
-void declareShapeResultKey(py::module &mod) {
-    PyShapeResultKey cls(mod, "SdssShapeResultKey");
+void declareShapeResultKey(lsst::utils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyShapeResultKey(wrappers.module, "SdssShapeResultKey"), [](auto &mod, auto &cls) {
+        // TODO decide whether to wrap default constructor and do it or document why not
+        cls.def(py::init<afw::table::SubSchema const &>(), "subSchema"_a);
 
-    // TODO decide whether to wrap default constructor and do it or document why not
-    cls.def(py::init<afw::table::SubSchema const &>(), "subSchema"_a);
+        cls.def_static("addFields", &FluxResultKey::addFields, "schema"_a, "name"_a, "doMeasurePsf"_a);
 
-    cls.def_static("addFields", &FluxResultKey::addFields, "schema"_a, "name"_a, "doMeasurePsf"_a);
+        cls.def("__eq__", &SdssShapeResultKey::operator==, py::is_operator());
+        cls.def("__ne__", &SdssShapeResultKey::operator!=, py::is_operator());
 
-    cls.def("__eq__", &SdssShapeResultKey::operator==, py::is_operator());
-    cls.def("__ne__", &SdssShapeResultKey::operator!=, py::is_operator());
-
-    cls.def("get", &SdssShapeResultKey::get, "record"_a);
-    cls.def("set", &SdssShapeResultKey::set, "record"_a, "value"_a);
-    cls.def("getPsfShape", &SdssShapeResultKey::getPsfShape, "record"_a);
-    cls.def("setPsfShape", &SdssShapeResultKey::setPsfShape, "record"_a, "value"_a);
-    cls.def("isValid", &SdssShapeResultKey::isValid);
-    cls.def("getFlagHandler", &SdssShapeResultKey::getFlagHandler);
+        cls.def("get", &SdssShapeResultKey::get, "record"_a);
+        cls.def("set", &SdssShapeResultKey::set, "record"_a, "value"_a);
+        cls.def("getPsfShape", &SdssShapeResultKey::getPsfShape, "record"_a);
+        cls.def("setPsfShape", &SdssShapeResultKey::setPsfShape, "record"_a, "value"_a);
+        cls.def("isValid", &SdssShapeResultKey::isValid);
+        cls.def("getFlagHandler", &SdssShapeResultKey::getFlagHandler);
+    });
 }
 
 template <typename ImageT>
@@ -97,77 +96,74 @@ static void declareComputeMethods(PyShapeAlgorithm &cls) {
             "image"_a, "shape"_a, "position"_a);
 }
 
-PyShapeAlgorithm declareShapeAlgorithm(py::module &mod) {
-    PyShapeAlgorithm cls(mod, "SdssShapeAlgorithm");
+PyShapeAlgorithm declareShapeAlgorithm(lsst::utils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyShapeAlgorithm(wrappers.module, "SdssShapeAlgorithm"), [](auto &mod, auto &cls) {
+        cls.attr("FAILURE") = py::cast(SdssShapeAlgorithm::FAILURE);
+        cls.attr("UNWEIGHTED_BAD") = py::cast(SdssShapeAlgorithm::UNWEIGHTED_BAD);
+        cls.attr("UNWEIGHTED") = py::cast(SdssShapeAlgorithm::UNWEIGHTED);
+        cls.attr("SHIFT") = py::cast(SdssShapeAlgorithm::SHIFT);
+        cls.attr("MAXITER") = py::cast(SdssShapeAlgorithm::MAXITER);
+        cls.attr("PSF_SHAPE_BAD") = py::cast(SdssShapeAlgorithm::PSF_SHAPE_BAD);
 
-    cls.attr("FAILURE") = py::cast(SdssShapeAlgorithm::FAILURE);
-    cls.attr("UNWEIGHTED_BAD") = py::cast(SdssShapeAlgorithm::UNWEIGHTED_BAD);
-    cls.attr("UNWEIGHTED") = py::cast(SdssShapeAlgorithm::UNWEIGHTED);
-    cls.attr("SHIFT") = py::cast(SdssShapeAlgorithm::SHIFT);
-    cls.attr("MAXITER") = py::cast(SdssShapeAlgorithm::MAXITER);
-    cls.attr("PSF_SHAPE_BAD") = py::cast(SdssShapeAlgorithm::PSF_SHAPE_BAD);
+        cls.def(py::init<SdssShapeAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
+                "ctrl"_a, "name"_a, "schema"_a);
 
-    cls.def(py::init<SdssShapeAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
-            "ctrl"_a, "name"_a, "schema"_a);
+        declareComputeMethods<afw::image::Image<int>>(cls);
+        declareComputeMethods<afw::image::Image<float>>(cls);
+        declareComputeMethods<afw::image::Image<double>>(cls);
+        declareComputeMethods<afw::image::MaskedImage<int>>(cls);
+        declareComputeMethods<afw::image::MaskedImage<float>>(cls);
+        declareComputeMethods<afw::image::MaskedImage<double>>(cls);
 
-    declareComputeMethods<afw::image::Image<int>>(cls);
-    declareComputeMethods<afw::image::Image<float>>(cls);
-    declareComputeMethods<afw::image::Image<double>>(cls);
-    declareComputeMethods<afw::image::MaskedImage<int>>(cls);
-    declareComputeMethods<afw::image::MaskedImage<float>>(cls);
-    declareComputeMethods<afw::image::MaskedImage<double>>(cls);
-
-    cls.def("measure", &SdssShapeAlgorithm::measure, "measRecord"_a, "exposure"_a);
-    cls.def("fail", &SdssShapeAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
-
-    return cls;
+        cls.def("measure", &SdssShapeAlgorithm::measure, "measRecord"_a, "exposure"_a);
+        cls.def("fail", &SdssShapeAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
+    });
 }
 
-void declareShapeResult(py::module &mod) {
-    PyShapeResult cls(mod, "SdssShapeResult");
+void declareShapeResult(lsst::utils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyShapeResult(wrappers.module, "SdssShapeResult"), [](auto &mod, auto &cls) {
+        cls.def(py::init<>());
 
-    cls.def(py::init<>());
+        cls.def_readwrite("instFlux_xx_Cov", &SdssShapeResult::instFlux_xx_Cov);
+        cls.def_readwrite("instFlux_yy_Cov", &SdssShapeResult::instFlux_yy_Cov);
+        cls.def_readwrite("instFlux_xy_Cov", &SdssShapeResult::instFlux_xy_Cov);
+        cls.def_readwrite("flags", &SdssShapeResult::flags);
 
-    cls.def_readwrite("instFlux_xx_Cov", &SdssShapeResult::instFlux_xx_Cov);
-    cls.def_readwrite("instFlux_yy_Cov", &SdssShapeResult::instFlux_yy_Cov);
-    cls.def_readwrite("instFlux_xy_Cov", &SdssShapeResult::instFlux_xy_Cov);
-    cls.def_readwrite("flags", &SdssShapeResult::flags);
-
-    // TODO this method says it's a workaround for Swig which doesn't understand std::bitset
-    cls.def("getFlag", (bool (SdssShapeResult::*)(unsigned int) const) & SdssShapeResult::getFlag, "index"_a);
-    cls.def("getFlag", (bool (SdssShapeResult::*)(std::string const &name) const) & SdssShapeResult::getFlag,
-            "name"_a);
+        // TODO this method says it's a workaround for Swig which doesn't understand std::bitset
+        cls.def("getFlag", (bool (SdssShapeResult::*)(unsigned int) const) & SdssShapeResult::getFlag, "index"_a);
+        cls.def("getFlag", (bool (SdssShapeResult::*)(std::string const &name) const) & SdssShapeResult::getFlag,
+                "name"_a);
+    });
 }
 
-PyShapeTransform declareShapeTransform(py::module &mod) {
-    PyShapeTransform cls(mod, "SdssShapeTransform");
+PyShapeTransform declareShapeTransform(lsst::utils::python::WrapperCollection &wrappers) {
+    return  wrappers.wrapType(PyShapeTransform(wrappers.module, "SdssShapeTransform"), [](auto &mod, auto &cls) {
+        cls.def(py::init<SdssShapeTransform::Control const &, std::string const &, afw::table::SchemaMapper &>(),
+                "ctrl"_a, "name"_a, "mapper"_a);
 
-    cls.def(py::init<SdssShapeTransform::Control const &, std::string const &, afw::table::SchemaMapper &>(),
-            "ctrl"_a, "name"_a, "mapper"_a);
+        cls.def("__call__", &SdssShapeTransform::operator(), "inputCatalog"_a, "outputCatalog"_a, "wcs"_a,
+                "photoCalib"_a);
 
-    cls.def("__call__", &SdssShapeTransform::operator(), "inputCatalog"_a, "outputCatalog"_a, "wcs"_a,
-            "photoCalib"_a);
-
-    return cls;
+    });
 }
 
 }  // namespace
 
-PYBIND11_MODULE(sdssShape, mod) {
-    py::module::import("lsst.afw.geom");
-    py::module::import("lsst.afw.table");
-    py::module::import("lsst.meas.base.algorithm");
-    py::module::import("lsst.meas.base.flagHandler");
-    py::module::import("lsst.meas.base.centroidUtilities");  // for CentroidResult
-    py::module::import("lsst.meas.base.fluxUtilities");      // for FluxResult
-    py::module::import("lsst.meas.base.shapeUtilities");
-    py::module::import("lsst.meas.base.transform");
+void wrapSdssShape(lsst::utils::python::WrapperCollection &wrappers) {
+    wrappers.addInheritanceDependency("lsst.afw.geom");
+    wrappers.addInheritanceDependency("lsst.afw.table");
+    // Depends on algorithm
+    // Depends on flagHandler
+    // Depends on centroidUtilities (for CentroidResult)
+    // Depends on fluxUtilities (for FluxResult)
+    // Depends on shapeUtilities
+    // Depends on transform
 
-    auto clsShapeControl = declareShapeControl(mod);
-    declareShapeResultKey(mod);
-    auto clsShapeAlgorithm = declareShapeAlgorithm(mod);
-    declareShapeResult(mod);
-    auto clsShapeTransform = declareShapeTransform(mod);
+    auto clsShapeControl = declareShapeControl(wrappers);
+    declareShapeResultKey(wrappers);
+    auto clsShapeAlgorithm = declareShapeAlgorithm(wrappers);
+    declareShapeResult(wrappers);
+    auto clsShapeTransform = declareShapeTransform(wrappers);
 
     clsShapeAlgorithm.attr("Control") = clsShapeControl;
     clsShapeTransform.attr("Control") = clsShapeControl;
