@@ -33,30 +33,31 @@ import lsst.geom
 import lsst.afw.detection
 import lsst.afw.geom
 
+from ._measBaseLib import (ApertureFluxControl, ApertureFluxTransform,
+                           BaseTransform, BlendednessAlgorithm,
+                           BlendednessControl, CircularApertureFluxAlgorithm,
+                           GaussianFluxAlgorithm, GaussianFluxControl,
+                           GaussianFluxTransform, LocalBackgroundAlgorithm,
+                           LocalBackgroundControl, LocalBackgroundTransform,
+                           MeasurementError, NaiveCentroidAlgorithm,
+                           NaiveCentroidControl, NaiveCentroidTransform,
+                           PeakLikelihoodFluxAlgorithm,
+                           PeakLikelihoodFluxControl,
+                           PeakLikelihoodFluxTransform, PixelFlagsAlgorithm,
+                           PixelFlagsControl, PsfFluxAlgorithm, PsfFluxControl,
+                           PsfFluxTransform, ScaledApertureFluxAlgorithm,
+                           ScaledApertureFluxControl,
+                           ScaledApertureFluxTransform, SdssCentroidAlgorithm,
+                           SdssCentroidControl, SdssCentroidTransform,
+                           SdssShapeAlgorithm, SdssShapeControl,
+                           SdssShapeTransform)
+from .baseMeasurement import BaseMeasurementPluginConfig
+from .forcedMeasurement import ForcedPlugin, ForcedPluginConfig
 from .pluginRegistry import register
 from .pluginsBase import BasePlugin
-from .baseMeasurement import BaseMeasurementPluginConfig
-from .sfm import SingleFramePluginConfig, SingleFramePlugin
-from .forcedMeasurement import ForcedPluginConfig, ForcedPlugin
-from .wrappers import wrapSimpleAlgorithm, wrapTransform, GenericPlugin
+from .sfm import SingleFramePlugin, SingleFramePluginConfig
 from .transforms import SimpleCentroidTransform
-
-from .apertureFlux import ApertureFluxControl, ApertureFluxTransform
-from .transform import BaseTransform
-from .blendedness import BlendednessAlgorithm, BlendednessControl
-from .circularApertureFlux import CircularApertureFluxAlgorithm
-from .gaussianFlux import GaussianFluxAlgorithm, GaussianFluxControl, GaussianFluxTransform
-from .exceptions import MeasurementError
-from .localBackground import LocalBackgroundControl, LocalBackgroundAlgorithm, LocalBackgroundTransform
-from .naiveCentroid import NaiveCentroidAlgorithm, NaiveCentroidControl, NaiveCentroidTransform
-from .peakLikelihoodFlux import PeakLikelihoodFluxAlgorithm, PeakLikelihoodFluxControl, \
-    PeakLikelihoodFluxTransform
-from .pixelFlags import PixelFlagsAlgorithm, PixelFlagsControl
-from .psfFlux import PsfFluxAlgorithm, PsfFluxControl, PsfFluxTransform
-from .scaledApertureFlux import ScaledApertureFluxAlgorithm, ScaledApertureFluxControl, \
-    ScaledApertureFluxTransform
-from .sdssCentroid import SdssCentroidAlgorithm, SdssCentroidControl, SdssCentroidTransform
-from .sdssShape import SdssShapeAlgorithm, SdssShapeControl, SdssShapeTransform
+from .wrappers import GenericPlugin, wrapSimpleAlgorithm, wrapTransform
 
 __all__ = (
     "SingleFrameFPPositionConfig", "SingleFrameFPPositionPlugin",

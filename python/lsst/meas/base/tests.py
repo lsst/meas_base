@@ -32,7 +32,7 @@ import lsst.pex.exceptions
 
 from .sfm import SingleFrameMeasurementTask
 from .forcedMeasurement import ForcedMeasurementTask
-from . import CentroidResultKey
+from ._measBaseLib import CentroidResultKey
 
 __all__ = ("BlendContext", "TestDataset", "AlgorithmTestCase", "TransformTestCase",
            "SingleFramePluginTransformSetupHelper", "ForcedPluginTransformSetupHelper",

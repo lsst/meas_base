@@ -21,6 +21,7 @@
  */
 
 #include "pybind11/pybind11.h"
+#include "lsst/cpputils/python.h"
 
 #include "lsst/meas/base/SincCoeffs.h"
 
@@ -34,21 +35,19 @@ namespace base {
 namespace {
 
 template <typename T>
-void declareSincCoeffs(py::module& mod, std::string const& suffix) {
-    py::class_<SincCoeffs<T>> cls(mod, ("SincCoeffs" + suffix).c_str());
-
-    cls.def_static("cache", &SincCoeffs<T>::cache, "rInner"_a, "rOuter"_a);
-    cls.def_static("get", &SincCoeffs<T>::get, "outerEllipse"_a, "innerRadiusFactor"_a);
+void declareSincCoeffs(lsst::cpputils::python::WrapperCollection &wrappers, std::string const& suffix) {
+    std::string className = "SincCoeffs" + suffix;
+    wrappers.wrapType(py::class_<SincCoeffs<T>>(wrappers.module, className.c_str()), [](auto &mod, auto &cls) {
+        cls.def_static("cache", &SincCoeffs<T>::cache, "rInner"_a, "rOuter"_a);
+        cls.def_static("get", &SincCoeffs<T>::get, "outerEllipse"_a, "innerRadiusFactor"_a);
+    });
 }
 
 }  // namespace
 
-PYBIND11_MODULE(sincCoeffs, mod) {
-    py::module::import("lsst.afw.geom");
-    py::module::import("lsst.afw.image");
-
-    declareSincCoeffs<float>(mod, "F");
-    declareSincCoeffs<double>(mod, "D");
+void wrapSincCoeffs(lsst::cpputils::python::WrapperCollection &wrappers) {
+    declareSincCoeffs<float>(wrappers, "F");
+    declareSincCoeffs<double>(wrappers, "D");
 }
 
 }  // namespace base

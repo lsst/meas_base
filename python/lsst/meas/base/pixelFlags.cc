@@ -22,6 +22,7 @@
 
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include "lsst/cpputils/python.h"
 
 #include <memory>
 
@@ -37,24 +38,24 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_MODULE(pixelFlags, mod) {
-    py::module::import("lsst.afw.table");
+void wrapPixelFLags(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrap([](auto &mod) {
+        py::class_<PixelFlagsAlgorithm, std::shared_ptr<PixelFlagsAlgorithm>, SimpleAlgorithm>
+                clsPixelFlagsAlgorithm(mod, "PixelFlagsAlgorithm");
+        py::class_<PixelFlagsControl> clsPixelFlagsControl(mod, "PixelFlagsControl");
 
-    py::class_<PixelFlagsAlgorithm, std::shared_ptr<PixelFlagsAlgorithm>, SimpleAlgorithm>
-            clsPixelFlagsAlgorithm(mod, "PixelFlagsAlgorithm");
-    py::class_<PixelFlagsControl> clsPixelFlagsControl(mod, "PixelFlagsControl");
+        clsPixelFlagsAlgorithm.def(
+                py::init<PixelFlagsAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
+                "ctrl"_a, "name"_a, "schema"_a);
 
-    clsPixelFlagsAlgorithm.def(
-            py::init<PixelFlagsAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
-            "ctrl"_a, "name"_a, "schema"_a);
+        clsPixelFlagsControl.def(py::init<>());
 
-    clsPixelFlagsControl.def(py::init<>());
+        clsPixelFlagsAlgorithm.def("measure", &PixelFlagsAlgorithm::measure, "measRecord"_a, "exposure"_a);
+        clsPixelFlagsAlgorithm.def("fail", &PixelFlagsAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
 
-    clsPixelFlagsAlgorithm.def("measure", &PixelFlagsAlgorithm::measure, "measRecord"_a, "exposure"_a);
-    clsPixelFlagsAlgorithm.def("fail", &PixelFlagsAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
-
-    LSST_DECLARE_CONTROL_FIELD(clsPixelFlagsControl, PixelFlagsControl, masksFpAnywhere);
-    LSST_DECLARE_CONTROL_FIELD(clsPixelFlagsControl, PixelFlagsControl, masksFpCenter);
+        LSST_DECLARE_CONTROL_FIELD(clsPixelFlagsControl, PixelFlagsControl, masksFpAnywhere);
+        LSST_DECLARE_CONTROL_FIELD(clsPixelFlagsControl, PixelFlagsControl, masksFpCenter);
+    });
 }
 
 }  // namespace base

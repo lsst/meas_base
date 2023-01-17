@@ -22,6 +22,7 @@
 
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include "lsst/cpputils/python.h"
 
 #include <memory>
 
@@ -46,57 +47,45 @@ using PyControl = py::class_<LocalBackgroundControl>;
 using PyTransform =
         py::class_<LocalBackgroundTransform, std::shared_ptr<LocalBackgroundTransform>, BaseTransform>;
 
-PyControl declareControl(py::module &mod) {
-    PyControl cls(mod, "LocalBackgroundControl");
-
-    LSST_DECLARE_CONTROL_FIELD(cls, LocalBackgroundControl, badMaskPlanes);
-    LSST_DECLARE_CONTROL_FIELD(cls, LocalBackgroundControl, annulusInner);
-    LSST_DECLARE_CONTROL_FIELD(cls, LocalBackgroundControl, annulusOuter);
-    LSST_DECLARE_CONTROL_FIELD(cls, LocalBackgroundControl, bgRej);
-    LSST_DECLARE_CONTROL_FIELD(cls, LocalBackgroundControl, bgIter);
-
-    cls.def(py::init<>());
-
-    return cls;
+PyControl declareControl(lsst::cpputils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyControl(wrappers.module, "LocalBackgroundControl"), [](auto &mod, auto &cls) {
+        LSST_DECLARE_CONTROL_FIELD(cls, LocalBackgroundControl, badMaskPlanes);
+        LSST_DECLARE_CONTROL_FIELD(cls, LocalBackgroundControl, annulusInner);
+        LSST_DECLARE_CONTROL_FIELD(cls, LocalBackgroundControl, annulusOuter);
+        LSST_DECLARE_CONTROL_FIELD(cls, LocalBackgroundControl, bgRej);
+        LSST_DECLARE_CONTROL_FIELD(cls, LocalBackgroundControl, bgIter);
+        cls.def(py::init<>());
+    });
 }
 
-PyAlgorithm declareAlgorithm(py::module &mod) {
-    PyAlgorithm cls(mod, "LocalBackgroundAlgorithm");
+PyAlgorithm declareAlgorithm(lsst::cpputils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyAlgorithm(wrappers.module, "LocalBackgroundAlgorithm"), [](auto &mod, auto &cls) {
+        cls.attr("FAILURE") = py::cast(LocalBackgroundAlgorithm::FAILURE);
+        cls.attr("NO_GOOD_PIXELS") = py::cast(LocalBackgroundAlgorithm::NO_GOOD_PIXELS);
 
-    cls.attr("FAILURE") = py::cast(LocalBackgroundAlgorithm::FAILURE);
-    cls.attr("NO_GOOD_PIXELS") = py::cast(LocalBackgroundAlgorithm::NO_GOOD_PIXELS);
+        cls.def(py::init<LocalBackgroundAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
+                "ctrl"_a, "name"_a, "schema"_a);
 
-    cls.def(py::init<LocalBackgroundAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
-            "ctrl"_a, "name"_a, "schema"_a);
-
-    cls.def(py::init<LocalBackgroundAlgorithm::Control const &, std::string const &, afw::table::Schema &,
-                     std::string const &>(),
-            "ctrl"_a, "name"_a, "schema"_a, "logName"_a);
-    return cls;
+        cls.def(py::init<LocalBackgroundAlgorithm::Control const &, std::string const &, afw::table::Schema &,
+                        std::string const &>(),
+                "ctrl"_a, "name"_a, "schema"_a, "logName"_a);
+    });
 }
 
-PyTransform declareTransform(py::module &mod) {
-    PyTransform cls(mod, "LocalBackgroundTransform");
-
-    cls.def(py::init<LocalBackgroundTransform::Control const &, std::string const &,
-                     afw::table::SchemaMapper &>(),
-            "ctrl"_a, "name"_a, "mapper"_a);
-
-    return cls;
+PyTransform declareTransform(lsst::cpputils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyTransform(wrappers.module, "LocalBackgroundTransform"), [](auto &mod, auto &cls) {
+        cls.def(py::init<LocalBackgroundTransform::Control const &, std::string const &,
+                        afw::table::SchemaMapper &>(),
+                "ctrl"_a, "name"_a, "mapper"_a);
+    });
 }
 
 }  // namespace
 
-PYBIND11_MODULE(localBackground, mod) {
-    py::module::import("lsst.afw.table");
-    py::module::import("lsst.meas.base.algorithm");
-    py::module::import("lsst.meas.base.flagHandler");
-    py::module::import("lsst.meas.base.fluxUtilities");
-    py::module::import("lsst.meas.base.transform");
-
-    auto clsControl = declareControl(mod);
-    auto clsAlgorithm = declareAlgorithm(mod);
-    auto clsTransform = declareTransform(mod);
+void wrapLocalBackground(lsst::cpputils::python::WrapperCollection &wrappers) {
+    auto clsControl = declareControl(wrappers);
+    auto clsAlgorithm = declareAlgorithm(wrappers);
+    auto clsTransform = declareTransform(wrappers);
 
     clsAlgorithm.attr("Control") = clsControl;
     clsTransform.attr("Control") = clsControl;

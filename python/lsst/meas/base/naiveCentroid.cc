@@ -21,6 +21,7 @@
  */
 
 #include "pybind11/pybind11.h"
+#include "lsst/cpputils/python.h"
 
 #include <memory>
 
@@ -44,55 +45,43 @@ using PyCentroidControl = py::class_<NaiveCentroidControl>;
 using PyCentroidTransform =
         py::class_<NaiveCentroidTransform, std::shared_ptr<NaiveCentroidTransform>, CentroidTransform>;
 
-PyCentroidControl declareCentroidControl(py::module &mod) {
-    PyCentroidControl cls(mod, "NaiveCentroidControl");
-
-    cls.def(py::init<>());
-
-    LSST_DECLARE_CONTROL_FIELD(cls, NaiveCentroidControl, background);
-    LSST_DECLARE_CONTROL_FIELD(cls, NaiveCentroidControl, doFootprintCheck);
-    LSST_DECLARE_CONTROL_FIELD(cls, NaiveCentroidControl, maxDistToPeak);
-
-    return cls;
+PyCentroidControl declareCentroidControl(lsst::cpputils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyCentroidControl(wrappers.module, "NaiveCentroidControl"), [](auto &mod, auto &cls) {
+        cls.def(py::init<>());
+        LSST_DECLARE_CONTROL_FIELD(cls, NaiveCentroidControl, background);
+        LSST_DECLARE_CONTROL_FIELD(cls, NaiveCentroidControl, doFootprintCheck);
+        LSST_DECLARE_CONTROL_FIELD(cls, NaiveCentroidControl, maxDistToPeak);
+    });
 }
 
-PyCentroidAlgorithm declareCentroidAlgorithm(py::module &mod) {
-    PyCentroidAlgorithm cls(mod, "NaiveCentroidAlgorithm");
+PyCentroidAlgorithm declareCentroidAlgorithm(lsst::cpputils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyCentroidAlgorithm(wrappers.module, "NaiveCentroidAlgorithm"), [](auto &mod, auto &cls) {
+        cls.attr("FAILURE") = py::cast(NaiveCentroidAlgorithm::FAILURE);
+        cls.attr("NO_COUNTS") = py::cast(NaiveCentroidAlgorithm::NO_COUNTS);
+        cls.attr("EDGE") = py::cast(NaiveCentroidAlgorithm::EDGE);
 
-    cls.attr("FAILURE") = py::cast(NaiveCentroidAlgorithm::FAILURE);
-    cls.attr("NO_COUNTS") = py::cast(NaiveCentroidAlgorithm::NO_COUNTS);
-    cls.attr("EDGE") = py::cast(NaiveCentroidAlgorithm::EDGE);
+        cls.def(py::init<NaiveCentroidAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
+                "ctrl"_a, "name"_a, "schema"_a);
 
-    cls.def(py::init<NaiveCentroidAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
-            "ctrl"_a, "name"_a, "schema"_a);
-
-    cls.def("measure", &NaiveCentroidAlgorithm::measure, "measRecord"_a, "exposure"_a);
-    cls.def("fail", &NaiveCentroidAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
-
-    return cls;
+        cls.def("measure", &NaiveCentroidAlgorithm::measure, "measRecord"_a, "exposure"_a);
+        cls.def("fail", &NaiveCentroidAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
+    });
 }
 
-PyCentroidTransform declareCentroidTransform(py::module &mod) {
-    PyCentroidTransform cls(mod, "NaiveCentroidTransform");
-
-    cls.def(py::init<NaiveCentroidTransform::Control const &, std::string const &,
-                     afw::table::SchemaMapper &>(),
-            "ctrl"_a, "name"_a, "mapper"_a);
-
-    return cls;
+PyCentroidTransform declareCentroidTransform(lsst::cpputils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyCentroidTransform(wrappers.module, "NaiveCentroidTransform"), [](auto &mod, auto &cls) {
+        cls.def(py::init<NaiveCentroidTransform::Control const &, std::string const &,
+                        afw::table::SchemaMapper &>(),
+                "ctrl"_a, "name"_a, "mapper"_a);
+    });
 }
 
 }  // namespace
 
-PYBIND11_MODULE(naiveCentroid, mod) {
-    py::module::import("lsst.afw.table");
-    py::module::import("lsst.meas.base.algorithm");
-    py::module::import("lsst.meas.base.flagHandler");
-    py::module::import("lsst.meas.base.transform");
-
-    auto clsCentroidControl = declareCentroidControl(mod);
-    auto clsCentroidAlgorithm = declareCentroidAlgorithm(mod);
-    auto clsCentroidTransform = declareCentroidTransform(mod);
+void wrapNaiveCentroid(lsst::cpputils::python::WrapperCollection &wrappers) {
+    auto clsCentroidControl = declareCentroidControl(wrappers);
+    auto clsCentroidAlgorithm = declareCentroidAlgorithm(wrappers);
+    auto clsCentroidTransform = declareCentroidTransform(wrappers);
 
     clsCentroidAlgorithm.attr("Control") = clsCentroidControl;
     clsCentroidTransform.attr("Control") = clsCentroidControl;

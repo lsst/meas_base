@@ -61,7 +61,7 @@ public:
      */
     virtual void fail(afw::table::SourceRecord& measRecord, MeasurementError* error = nullptr) const = 0;
 
-    virtual ~BaseAlgorithm() {}
+    virtual ~BaseAlgorithm() = default;
 
     std::string getLogName() const { return _logName; }
 
@@ -169,17 +169,17 @@ public:
  */
 class SimpleAlgorithm : public SingleFrameAlgorithm, public ForcedAlgorithm {
 public:
-    virtual void measureForced(afw::table::SourceRecord& measRecord,
+    void measureForced(afw::table::SourceRecord& measRecord,
                                afw::image::Exposure<float> const& exposure,
                                afw::table::SourceRecord const& refRecord,
-                               afw::geom::SkyWcs const& refWcs) const {
+                               afw::geom::SkyWcs const& refWcs) const override {
         measure(measRecord, exposure);
     }
 
-    virtual void measureNForced(afw::table::SourceCatalog const& measCat,
+    void measureNForced(afw::table::SourceCatalog const& measCat,
                                 afw::image::Exposure<float> const& exposure,
                                 afw::table::SourceCatalog const& refRecord,
-                                afw::geom::SkyWcs const& refWcs) const {
+                                afw::geom::SkyWcs const& refWcs) const override {
         measureN(measCat, exposure);
     }
 };

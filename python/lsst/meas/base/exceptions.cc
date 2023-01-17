@@ -21,6 +21,7 @@
  */
 
 #include "pybind11/pybind11.h"
+#include "lsst/cpputils/python.h"
 
 #include "lsst/meas/base/exceptions.h"
 #include "lsst/pex/exceptions/Runtime.h"
@@ -32,28 +33,29 @@ using namespace pybind11::literals;
 namespace lsst {
 namespace meas {
 namespace base {
-
-PYBIND11_MODULE(exceptions, mod) {
+void wrapExceptions(lsst::cpputils::python::WrapperCollection &wrappers) {
     using pex::exceptions::python::declareException;
     using pex::exceptions::DomainError;
     using pex::exceptions::RuntimeError;
 
-    py::module::import("lsst.pex.exceptions");
 
-    auto clsFatalAlgorithmError =
-            declareException<FatalAlgorithmError, RuntimeError>(mod, "FatalAlgorithmError", "RuntimeError");
-    auto clsMeasurementError =
-            declareException<MeasurementError, RuntimeError>(mod, "MeasurementError", "RuntimeError");
-    auto clsPixelValueError =
-            declareException<PixelValueError, DomainError>(mod, "PixelValueError", "DomainError");
-
-    clsMeasurementError.def(py::init<std::string const &, std::size_t>(), "message"_a, "flagBit"_a);
-    clsFatalAlgorithmError.def(py::init<std::string const &>(), "message"_a);
-    clsPixelValueError.def(py::init<std::string const &>(), "message"_a);
-
-    clsMeasurementError.def("getFlagBit", &MeasurementError::getFlagBit);
+    wrappers.wrapType(
+            declareException<FatalAlgorithmError, RuntimeError>(wrappers.module, "FatalAlgorithmError", "RuntimeError"),
+            [](auto &mod, auto &cls) {
+                cls.def(py::init<std::string const &>(), "message"_a);
+            });
+    wrappers.wrapType(
+            declareException<MeasurementError, RuntimeError>(wrappers.module, "MeasurementError", "RuntimeError"),
+            [](auto &mod, auto &cls) {
+                cls.def(py::init<std::string const &, std::size_t>(), "message"_a, "flagBit"_a);
+                cls.def("getFlagBit", &MeasurementError::getFlagBit);
+            });
+    wrappers.wrapType(
+            declareException<PixelValueError, DomainError>(wrappers.module, "PixelValueError", "DomainError"),
+            [](auto &mod, auto &cls) {
+                cls.def(py::init<std::string const &>(), "message"_a);
+             });
 }
-
 }  // namespace base
 }  // namespace meas
 }  // namespace lsst

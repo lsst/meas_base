@@ -24,27 +24,7 @@ from .version import *
 from lsst.afw.image import PhotoCalib
 from lsst.afw.geom import SkyWcs
 
-from .flagHandler import *
-from .centroidUtilities import *
-from .fluxUtilities import *
-from .inputUtilities import *
-from .shapeUtilities import *
-from .algorithm import *
-from .apertureFlux import *
-from .blendedness import *
-from .circularApertureFlux import *
-from .exceptions import *
-from .gaussianFlux import *
-from .localBackground import *
-from .naiveCentroid import *
-from .peakLikelihoodFlux import *
-from .pixelFlags import *
-from .psfFlux import *
-from .scaledApertureFlux import *
-from .sdssCentroid import *
-from .sdssShape import *
-from .sincCoeffs import *
-from .transform import *
+from ._measBaseLib import *
 
 from .apCorrRegistry import *
 from .applyApCorr import *

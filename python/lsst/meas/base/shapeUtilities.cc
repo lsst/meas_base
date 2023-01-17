@@ -22,10 +22,9 @@
 
 #include "pybind11/pybind11.h"
 #include "pybind11/eigen.h"
+#include "lsst/cpputils/python.h"
 
 #include <memory>
-
-#include "ndarray/pybind11.h"
 
 #include "lsst/afw/table/BaseRecord.h"
 #include "lsst/meas/base/ShapeUtilities.h"
@@ -42,69 +41,66 @@ namespace {
 using PyShapeResult = py::class_<ShapeResult, std::shared_ptr<ShapeResult>>;
 using PyShapeResultKey = py::class_<ShapeResultKey, std::shared_ptr<ShapeResultKey>>;
 
-void declareShapeResult(py::module &mod) {
-    PyShapeResult cls(mod, "ShapeResult");
-
-    cls.def(py::init<>());
-    cls.def(py::init<ShapeElement, ShapeElement, ShapeElement, ShapeCov const &>(), "xx"_a, "yy"_a, "xy"_a,
-            "matrix"_a);
-    cls.def(py::init<ShapeElement, ShapeElement, ShapeElement, ErrElement, ErrElement, ErrElement>(), "xx"_a,
-            "yy"_a, "xy"_a, "xxErr"_a, "yyErr"_a, "xyErr"_a);
-
-    cls.def("getShape", &ShapeResult::getShape);
-    cls.def("getQuadrupole", &ShapeResult::getQuadrupole);
-    cls.def("setShape", &ShapeResult::setShape, "shape"_a);
-    cls.def("getShapeErr", &ShapeResult::getShapeErr);
-    cls.def("setShapeErr", (void (ShapeResult::*)(ShapeCov const &)) & ShapeResult::setShapeErr, "matrix"_a);
-    cls.def("setShapeErr",
-            (void (ShapeResult::*)(ErrElement, ErrElement, ErrElement)) & ShapeResult::setShapeErr,
-            "xxErr"_a, "yyErr"_a, "xyErr"_a);
-
-    cls.def_readwrite("xx", &ShapeResult::xx);
-    cls.def_readwrite("yy", &ShapeResult::yy);
-    cls.def_readwrite("xy", &ShapeResult::xy);
-    cls.def_readwrite("xxErr", &ShapeResult::xxErr);
-    cls.def_readwrite("yyErr", &ShapeResult::yyErr);
-    cls.def_readwrite("xyErr", &ShapeResult::xyErr);
-    cls.def_readwrite("xx_yy_Cov", &ShapeResult::xx_yy_Cov);
-    cls.def_readwrite("xx_xy_Cov", &ShapeResult::xx_xy_Cov);
-    cls.def_readwrite("yy_xy_Cov", &ShapeResult::yy_xy_Cov);
+void declareShapeResult(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyShapeResult(wrappers.module, "ShapeResult"), [](auto &mod, auto &cls) {
+        cls.def(py::init<>());
+        cls.def(py::init<ShapeElement, ShapeElement, ShapeElement, ShapeCov const &>(), "xx"_a, "yy"_a, "xy"_a,
+                "matrix"_a);
+        cls.def(py::init<ShapeElement, ShapeElement, ShapeElement, ErrElement, ErrElement, ErrElement>(), "xx"_a,
+                "yy"_a, "xy"_a, "xxErr"_a, "yyErr"_a, "xyErr"_a);
+        cls.def("getShape", &ShapeResult::getShape);
+        cls.def("getQuadrupole", &ShapeResult::getQuadrupole);
+        cls.def("setShape", &ShapeResult::setShape, "shape"_a);
+        cls.def("getShapeErr", &ShapeResult::getShapeErr);
+        cls.def("setShapeErr", (void (ShapeResult::*)(ShapeCov const &)) &ShapeResult::setShapeErr, "matrix"_a);
+        cls.def("setShapeErr",
+                (void (ShapeResult::*)(ErrElement, ErrElement, ErrElement)) &ShapeResult::setShapeErr,
+                "xxErr"_a, "yyErr"_a, "xyErr"_a);
+        cls.def_readwrite("xx", &ShapeResult::xx);
+        cls.def_readwrite("yy", &ShapeResult::yy);
+        cls.def_readwrite("xy", &ShapeResult::xy);
+        cls.def_readwrite("xxErr", &ShapeResult::xxErr);
+        cls.def_readwrite("yyErr", &ShapeResult::yyErr);
+        cls.def_readwrite("xyErr", &ShapeResult::xyErr);
+        cls.def_readwrite("xx_yy_Cov", &ShapeResult::xx_yy_Cov);
+        cls.def_readwrite("xx_xy_Cov", &ShapeResult::xx_xy_Cov);
+        cls.def_readwrite("yy_xy_Cov", &ShapeResult::yy_xy_Cov);
+    });
 }
 
-void declareShapeResultKey(py::module &mod) {
-    PyShapeResultKey cls(mod, "ShapeResultKey");
+void declareShapeResultKey(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyShapeResultKey(wrappers.module, "ShapeResultKey"), [](auto &mod, auto &cls) {
+        cls.def_static("addFields", &ShapeResultKey::addFields, "schema"_a, "name"_a, "doc"_a, "uncertainty"_a,
+                       "coordType"_a = afw::table::CoordinateType::PIXEL);
 
-    cls.def_static("addFields", &ShapeResultKey::addFields, "schema"_a, "name"_a, "doc"_a, "uncertainty"_a,
-                   "coordType"_a = afw::table::CoordinateType::PIXEL);
+        cls.def(py::init<>());
+        cls.def(py::init<afw::table::QuadrupoleKey const &,
+                        afw::table::CovarianceMatrixKey<ErrElement, 3> const &>(),
+                "shape"_a, "shapeErr"_a);
+        cls.def(py::init<afw::table::SubSchema const &>(), "subSchema"_a);
 
-    cls.def(py::init<>());
-    cls.def(py::init<afw::table::QuadrupoleKey const &,
-                     afw::table::CovarianceMatrixKey<ErrElement, 3> const &>(),
-            "shape"_a, "shapeErr"_a);
-    cls.def(py::init<afw::table::SubSchema const &>(), "subSchema"_a);
+        cls.def("__eq__", &ShapeResultKey::operator==, py::is_operator());
+        cls.def("__ne__", &ShapeResultKey::operator!=, py::is_operator());
 
-    cls.def("__eq__", &ShapeResultKey::operator==, py::is_operator());
-    cls.def("__ne__", &ShapeResultKey::operator!=, py::is_operator());
-
-    cls.def("get", &ShapeResultKey::get, "record"_a);
-    cls.def("set", &ShapeResultKey::set, "record"_a, "value"_a);
-    cls.def("isValid", &ShapeResultKey::isValid);
-    cls.def("getShape", &ShapeResultKey::getShape);
-    cls.def("getShapeErr", &ShapeResultKey::getShapeErr);
-    cls.def("getIxx", &ShapeResultKey::getIxx);
-    cls.def("getIyy", &ShapeResultKey::getIyy);
-    cls.def("getIxy", &ShapeResultKey::getIxy);
+        cls.def("get", &ShapeResultKey::get, "record"_a);
+        cls.def("set", &ShapeResultKey::set, "record"_a, "value"_a);
+        cls.def("isValid", &ShapeResultKey::isValid);
+        cls.def("getShape", &ShapeResultKey::getShape);
+        cls.def("getShapeErr", &ShapeResultKey::getShapeErr);
+        cls.def("getIxx", &ShapeResultKey::getIxx);
+        cls.def("getIyy", &ShapeResultKey::getIyy);
+        cls.def("getIxy", &ShapeResultKey::getIxy);
+    });
 }
 
 }  // namespace
 
-PYBIND11_MODULE(shapeUtilities, mod) {
-    py::module::import("lsst.afw.table");
-
-    declareShapeResult(mod);
-    declareShapeResultKey(mod);
-
-    mod.def("makeShapeTransformMatrix", &makeShapeTransformMatrix, "xform"_a);
+void wrapShapeUtilities(lsst::cpputils::python::WrapperCollection &wrappers) {
+    declareShapeResult(wrappers);
+    declareShapeResultKey(wrappers);
+    wrappers.wrap([](auto &mod) {
+        mod.def("makeShapeTransformMatrix", &makeShapeTransformMatrix, "xform"_a);
+    });
 }
 
 }  // namespace base

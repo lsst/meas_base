@@ -22,6 +22,7 @@
 
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include "lsst/cpputils/python.h"
 
 #include <memory>
 
@@ -44,54 +45,43 @@ using PyFluxAlgorithm = py::class_<PsfFluxAlgorithm, std::shared_ptr<PsfFluxAlgo
 using PyFluxControl = py::class_<PsfFluxControl>;
 using PyFluxTransform = py::class_<PsfFluxTransform, std::shared_ptr<PsfFluxTransform>, BaseTransform>;
 
-PyFluxControl declareFluxControl(py::module &mod) {
-    PyFluxControl cls(mod, "PsfFluxControl");
+PyFluxControl declareFluxControl(lsst::cpputils::python::WrapperCollection &wrappers) {
+     return wrappers.wrapType(PyFluxControl(wrappers.module, "PsfFluxControl"), [](auto &mod, auto &cls) {
 
-    LSST_DECLARE_CONTROL_FIELD(cls, PsfFluxControl, badMaskPlanes);
+         LSST_DECLARE_CONTROL_FIELD(cls, PsfFluxControl, badMaskPlanes);
 
-    cls.def(py::init<>());
-
-    return cls;
+         cls.def(py::init<>());
+     });
 }
 
-PyFluxAlgorithm declareFluxAlgorithm(py::module &mod) {
-    PyFluxAlgorithm cls(mod, "PsfFluxAlgorithm");
+PyFluxAlgorithm declareFluxAlgorithm(lsst::cpputils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyFluxAlgorithm(wrappers.module, "PsfFluxAlgorithm"), [](auto &mod, auto &cls) {
+        cls.attr("FAILURE") = py::cast(PsfFluxAlgorithm::FAILURE);
+        cls.attr("NO_GOOD_PIXELS") = py::cast(PsfFluxAlgorithm::NO_GOOD_PIXELS);
+        cls.attr("EDGE") = py::cast(PsfFluxAlgorithm::EDGE);
 
-    cls.attr("FAILURE") = py::cast(PsfFluxAlgorithm::FAILURE);
-    cls.attr("NO_GOOD_PIXELS") = py::cast(PsfFluxAlgorithm::NO_GOOD_PIXELS);
-    cls.attr("EDGE") = py::cast(PsfFluxAlgorithm::EDGE);
+        cls.def(py::init<PsfFluxAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
+                "ctrl"_a, "name"_a, "schema"_a);
 
-    cls.def(py::init<PsfFluxAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
-            "ctrl"_a, "name"_a, "schema"_a);
-
-    cls.def(py::init<PsfFluxAlgorithm::Control const &, std::string const &, afw::table::Schema &,
-                     std::string const &>(),
-            "ctrl"_a, "name"_a, "schema"_a, "logName"_a);
-    return cls;
+        cls.def(py::init<PsfFluxAlgorithm::Control const &, std::string const &, afw::table::Schema &,
+                        std::string const &>(),
+                "ctrl"_a, "name"_a, "schema"_a, "logName"_a);
+    });
 }
 
-PyFluxTransform declareFluxTransform(py::module &mod) {
-    PyFluxTransform cls(mod, "PsfFluxTransform");
-
-    cls.def(py::init<PsfFluxTransform::Control const &, std::string const &, afw::table::SchemaMapper &>(),
-            "ctrl"_a, "name"_a, "mapper"_a);
-
-    return cls;
+PyFluxTransform declareFluxTransform(lsst::cpputils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyFluxTransform(wrappers.module, "PsfFluxTransform"), [](auto &mod, auto &cls) {
+        cls.def(py::init<PsfFluxTransform::Control const &, std::string const &, afw::table::SchemaMapper &>(),
+                "ctrl"_a, "name"_a, "mapper"_a);
+    });
 }
 
 }  // namespace
 
-PYBIND11_MODULE(psfFlux, mod) {
-    py::module::import("lsst.afw.table");
-    py::module::import("lsst.meas.base.algorithm");
-    py::module::import("lsst.meas.base.flagHandler");
-    py::module::import("lsst.meas.base.fluxUtilities");
-    py::module::import("lsst.meas.base.transform");
-
-    auto clsFluxControl = declareFluxControl(mod);
-    auto clsFluxAlgorithm = declareFluxAlgorithm(mod);
-    auto clsFluxTransform = declareFluxTransform(mod);
-
+void wrapPsfFlux(lsst::cpputils::python::WrapperCollection &wrappers) {
+    auto clsFluxControl = declareFluxControl(wrappers);
+    auto clsFluxAlgorithm = declareFluxAlgorithm(wrappers);
+    auto clsFluxTransform = declareFluxTransform(wrappers);
     clsFluxAlgorithm.attr("Control") = clsFluxControl;
     clsFluxTransform.attr("Control") = clsFluxControl;
 

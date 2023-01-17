@@ -47,7 +47,7 @@ from `MeasurementTransform`, following its interface.
 
 from lsst.afw.table import CoordKey
 from lsst.pex.exceptions import LengthError
-from . import CentroidResultKey
+from ._measBaseLib import CentroidResultKey
 
 __all__ = ("MeasurementTransform", "NullTransform", "PassThroughTransform", "SimpleCentroidTransform")
 
