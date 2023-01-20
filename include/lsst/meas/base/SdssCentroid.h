@@ -75,6 +75,7 @@ public:
     static FlagDefinition const NO_SECOND_DERIVATIVE;
     static FlagDefinition const ALMOST_NO_SECOND_DERIVATIVE;
     static FlagDefinition const NOT_AT_MAXIMUM;
+    static FlagDefinition const NEAR_EDGE;
 
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.

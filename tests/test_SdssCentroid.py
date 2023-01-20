@@ -140,6 +140,27 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertTrue(record.get("base_SdssCentroid_flag"))
         self.assertTrue(record.get("base_SdssCentroid_flag_edge"))
 
+    def testNearEdge(self):
+        task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=2)
+        psfImage = exposure.getPsf().computeImage(self.center)
+        # construct a box that won't fit the full PSF model
+        bbox = psfImage.getBBox()
+        bbox.grow(-3)
+        subImage = lsst.afw.image.ExposureF(exposure, bbox)
+        # we also need to install a smaller footprint, or NoiseReplacer
+        # complains before we even get to measuring the centroid
+        record = catalog[0]
+        spanSet = lsst.afw.geom.SpanSet(bbox)
+        newFootprint = lsst.afw.detection.Footprint(spanSet)
+        peak = record.getFootprint().getPeaks()[0]
+        newFootprint.addPeak(peak.getFx(), peak.getFy(), peak.getPeakValue())
+        record.setFootprint(newFootprint)
+        # just measure the one object we've prepared for
+        task.measure(catalog, subImage)
+        self.assertTrue(record.get("base_SdssCentroid_flag_near_edge"))
+        self.assertTrue(record.get("base_SdssCentroid_flag"))
+
     def testNo2ndDerivative(self):
         task = self.makeSingleFrameMeasurementTask("base_SdssCentroid")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=3)

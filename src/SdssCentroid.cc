@@ -26,6 +26,7 @@
 #include "ndarray/eigen.h"
 #include "lsst/geom/Angle.h"
 #include "lsst/afw/detection/Psf.h"
+#include "lsst/afw/detection/GaussianPsf.h"
 #include "lsst/pex/exceptions.h"
 #include "lsst/afw/math/ConvolveImage.h"
 #include "lsst/afw/math/offsetImage.h"
@@ -41,13 +42,15 @@ FlagDefinitionList flagDefinitions;
 
 FlagDefinition const SdssCentroidAlgorithm::FAILURE = flagDefinitions.addFailureFlag();
 FlagDefinition const SdssCentroidAlgorithm::EDGE =
-        flagDefinitions.add("flag_edge", "Object too close to edge");
+        flagDefinitions.add("flag_edge", "Object too close to edge; peak used.");
 FlagDefinition const SdssCentroidAlgorithm::NO_SECOND_DERIVATIVE =
         flagDefinitions.add("flag_noSecondDerivative", "Vanishing second derivative");
 FlagDefinition const SdssCentroidAlgorithm::ALMOST_NO_SECOND_DERIVATIVE =
         flagDefinitions.add("flag_almostNoSecondDerivative", "Almost vanishing second derivative");
 FlagDefinition const SdssCentroidAlgorithm::NOT_AT_MAXIMUM =
         flagDefinitions.add("flag_notAtMaximum", "Object is not at a maximum");
+FlagDefinition const SdssCentroidAlgorithm::NEAR_EDGE =
+        flagDefinitions.add("flag_near_edge", "Object close to edge; fallback kernel used.");
 
 FlagDefinitionList const &SdssCentroidAlgorithm::getFlagDefinitions() { return flagDefinitions; }
 
@@ -434,14 +437,27 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
     int binX = 1;
     int binY = 1;
     double xc = 0., yc = 0., dxc = 0., dyc = 0.;  // estimated centre and error therein
+    bool stopBinning = false;
     for (int binsize = 1; binsize <= _ctrl.binmax; binsize *= 2) {
         std::tuple<MaskedImageT, double, int> smoothResult =
             smoothAndBinImage(psf, x, y, mimage, binX, binY, _flagHandler);
         int errorFlag = std::get<2>(smoothResult);
+        if (errorFlag == static_cast<int>(EDGE.number)) {
+            psf = std::make_shared<afw::detection::GaussianPsf>(5, 5, 0.5);
+            smoothResult = smoothAndBinImage(psf, x, y, mimage, binX, binY, _flagHandler);
+            stopBinning = true;
+            errorFlag = std::get<2>(smoothResult);
+            if (errorFlag == 0) {
+                errorFlag = NEAR_EDGE.number;
+            }
+        }
         if (errorFlag > 0) {
             _flagHandler.setValue(measRecord, errorFlag, true);
             _flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
-            return;
+            // if NEAR_EDGE is not a fatal error we continue otherwise return
+            if (errorFlag != static_cast<int>(NEAR_EDGE.number)) {
+                return;
+            }
         }
         MaskedImageT const smoothedImage = std::get<0>(smoothResult);
         double const smoothingSigma = std::get<1>(smoothResult);
@@ -473,6 +489,10 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
 
         xc += x;  // xc, yc are measured relative to pixel (x, y)
         yc += y;
+
+        if (stopBinning) {
+            break;
+        }
 
         double const fac = _ctrl.wfac * (1 + smoothingSigma * smoothingSigma);
         double const facX2 = fac * binX * binX;
