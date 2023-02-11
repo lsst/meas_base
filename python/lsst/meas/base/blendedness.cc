@@ -21,6 +21,7 @@
  */
 
 #include "pybind11/pybind11.h"
+#include "lsst/cpputils/python.h"
 
 #include <memory>
 
@@ -42,50 +43,40 @@ using PyBlendenessAlgorithm =
         py::class_<BlendednessAlgorithm, std::shared_ptr<BlendednessAlgorithm>, SimpleAlgorithm>;
 using PyBlendenessControl = py::class_<BlendednessControl>;
 
-PyBlendenessControl declareBlendednessControl(py::module &mod) {
-    PyBlendenessControl cls(mod, "BlendednessControl");
-
-    LSST_DECLARE_CONTROL_FIELD(cls, BlendednessControl, doOld);
-    LSST_DECLARE_CONTROL_FIELD(cls, BlendednessControl, doFlux);
-    LSST_DECLARE_CONTROL_FIELD(cls, BlendednessControl, doShape);
-    LSST_DECLARE_CONTROL_FIELD(cls, BlendednessControl, nSigmaWeightMax);
-
-    cls.def(py::init<>());
-
-    return cls;
+PyBlendenessControl declareBlendednessControl(lsst::cpputils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyBlendenessControl(wrappers.module, "BlendednessControl"), [](auto &mod, auto &cls) {
+        LSST_DECLARE_CONTROL_FIELD(cls, BlendednessControl, doOld);
+        LSST_DECLARE_CONTROL_FIELD(cls, BlendednessControl, doFlux);
+        LSST_DECLARE_CONTROL_FIELD(cls, BlendednessControl, doShape);
+        LSST_DECLARE_CONTROL_FIELD(cls, BlendednessControl, nSigmaWeightMax);
+        cls.def(py::init<>());
+    });
 }
 
-PyBlendenessAlgorithm declareBlendednessAlgorithm(py::module &mod) {
-    PyBlendenessAlgorithm cls(mod, "BlendednessAlgorithm");
+PyBlendenessAlgorithm declareBlendednessAlgorithm(lsst::cpputils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyBlendenessAlgorithm(wrappers.module, "BlendednessAlgorithm"), [](auto &mod, auto &cls) {
+        cls.def(py::init<BlendednessAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
+                "ctrl"_a, "name"_a, "schema"_a);
 
-    cls.def(py::init<BlendednessAlgorithm::Control const &, std::string const &, afw::table::Schema &>(),
-            "ctrl"_a, "name"_a, "schema"_a);
+        cls.attr("FAILURE") = py::cast(BlendednessAlgorithm::FAILURE);
+        cls.attr("NO_CENTROID") = py::cast(BlendednessAlgorithm::NO_CENTROID);
+        cls.attr("NO_SHAPE") = py::cast(BlendednessAlgorithm::NO_SHAPE);
 
-    cls.attr("FAILURE") = py::cast(BlendednessAlgorithm::FAILURE);
-    cls.attr("NO_CENTROID") = py::cast(BlendednessAlgorithm::NO_CENTROID);
-    cls.attr("NO_SHAPE") = py::cast(BlendednessAlgorithm::NO_SHAPE);
-
-    cls.def_static("computeAbsExpectation", &BlendednessAlgorithm::computeAbsExpectation, "data"_a,
-                   "variance"_a);
-    cls.def_static("computeAbsBias", &BlendednessAlgorithm::computeAbsBias, "mu"_a, "variance"_a);
-    cls.def("measureChildPixels", &BlendednessAlgorithm::measureChildPixels, "image"_a, "child"_a);
-    cls.def("measureParentPixels", &BlendednessAlgorithm::measureParentPixels, "image"_a, "child"_a);
-    cls.def("measure", &BlendednessAlgorithm::measure, "measRecord"_a, "exposure"_a);
-    cls.def("fail", &BlendednessAlgorithm::measure, "measRecord"_a, "error"_a = nullptr);
-
-    return cls;
+        cls.def_static("computeAbsExpectation", &BlendednessAlgorithm::computeAbsExpectation, "data"_a,
+                       "variance"_a);
+        cls.def_static("computeAbsBias", &BlendednessAlgorithm::computeAbsBias, "mu"_a, "variance"_a);
+        cls.def("measureChildPixels", &BlendednessAlgorithm::measureChildPixels, "image"_a, "child"_a);
+        cls.def("measureParentPixels", &BlendednessAlgorithm::measureParentPixels, "image"_a, "child"_a);
+        cls.def("measure", &BlendednessAlgorithm::measure, "measRecord"_a, "exposure"_a);
+        cls.def("fail", &BlendednessAlgorithm::measure, "measRecord"_a, "error"_a = nullptr);
+    });
 }
 
 }  // namespace
 
-PYBIND11_MODULE(blendedness, mod) {
-    py::module::import("lsst.afw.table");
-    py::module::import("lsst.meas.base.algorithm");
-    py::module::import("lsst.meas.base.flagHandler");
-
-    auto clsBlendednessControl = declareBlendednessControl(mod);
-    auto clsBlendednessAlgorithm = declareBlendednessAlgorithm(mod);
-
+void wrapBlendedness(lsst::cpputils::python::WrapperCollection &wrappers) {
+    auto clsBlendednessControl = declareBlendednessControl(wrappers);
+    auto clsBlendednessAlgorithm = declareBlendednessAlgorithm(wrappers);
     clsBlendednessAlgorithm.attr("Control") = clsBlendednessControl;
 
     python::declareAlgorithm<BlendednessAlgorithm, BlendednessControl>(clsBlendednessAlgorithm,

@@ -21,6 +21,7 @@
  */
 
 #include "pybind11/pybind11.h"
+#include "lsst/cpputils/python.h"
 
 #include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/Algorithm.h"
@@ -32,25 +33,40 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_MODULE(algorithm, mod) {
-    py::module::import("lsst.afw.image");
-    py::module::import("lsst.afw.table");
+namespace {
 
-    py::class_<BaseAlgorithm, std::shared_ptr<BaseAlgorithm>> clsBaseAlgorithm(mod, "BaseAlgorithm");
-    py::class_<SingleFrameAlgorithm, std::shared_ptr<SingleFrameAlgorithm>, BaseAlgorithm>
-            clsSingleFrameAlgorithm(mod, "SingleFrameAlgorithm");
-    py::class_<SimpleAlgorithm, std::shared_ptr<SimpleAlgorithm>, SingleFrameAlgorithm> clsSimpleAlgorithm(
-            mod, "SimpleAlgorithm", py::multiple_inheritance());
+using PyBaseAlgorithm = py::class_<BaseAlgorithm, std::shared_ptr<BaseAlgorithm>>;
+using PySingleFrameAlgorithm = py::class_<SingleFrameAlgorithm, std::shared_ptr<SingleFrameAlgorithm>, BaseAlgorithm>;
+using PySimpleAlgorithm = py::class_<SimpleAlgorithm, std::shared_ptr<SimpleAlgorithm>, SingleFrameAlgorithm>;
 
-    clsBaseAlgorithm.def("fail", &BaseAlgorithm::fail, "measRecord"_a, "error"_a = NULL);
-    clsBaseAlgorithm.def("getLogName", &SimpleAlgorithm::getLogName);
-
-    clsSingleFrameAlgorithm.def("measure", &SingleFrameAlgorithm::measure, "record"_a, "exposure"_a);
-
-    clsSimpleAlgorithm.def("measureForced", &SimpleAlgorithm::measureForced, "measRecord"_a, "exposure"_a,
-                           "refRecord"_a, "refWcs"_a);
+void declareBaseAlgorithm(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyBaseAlgorithm(wrappers.module, "BaseAlgorithm"), [](auto &mod, auto &cls) {
+        cls.def("fail", &BaseAlgorithm::fail, "measRecord"_a, "error"_a = NULL);
+        cls.def("getLogName", &SimpleAlgorithm::getLogName);
+    });
 }
 
+void declareSimpleAlgorithm(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PySimpleAlgorithm(wrappers.module, "SimpleAlgorithm", py::multiple_inheritance()),
+                      [](auto &mod, auto &cls) {
+                          cls.def("measureForced", &SimpleAlgorithm::measureForced, "measRecord"_a, "exposure"_a,
+                                  "refRecord"_a, "refWcs"_a);
+                      });
+}
+
+void declareSingleFrameAlgorithm(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PySingleFrameAlgorithm(wrappers.module, "SingleFrameAlgorithm"), [](auto &mod, auto &cls) {
+        cls.def("measure", &SingleFrameAlgorithm::measure, "record"_a, "exposure"_a);
+    });
+}
+
+}  // namespave
+
+void wrapAlgorithm(lsst::cpputils::python::WrapperCollection &wrappers) {
+    declareBaseAlgorithm(wrappers);
+    declareSingleFrameAlgorithm(wrappers);
+    declareSimpleAlgorithm(wrappers);
+}
 }  // namespace base
 }  // namespace meas
 }  // namespace lsst

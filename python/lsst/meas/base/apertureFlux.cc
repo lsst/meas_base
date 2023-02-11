@@ -22,6 +22,7 @@
 
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include "lsst/cpputils/python.h"
 
 #include <memory>
 
@@ -37,7 +38,6 @@ using namespace pybind11::literals;
 namespace lsst {
 namespace meas {
 namespace base {
-
 namespace {
 
 using PyFluxAlgorithm =
@@ -47,23 +47,20 @@ using PyFluxResult = py::class_<ApertureFluxResult, std::shared_ptr<ApertureFlux
 using PyFluxTransform =
         py::class_<ApertureFluxTransform, std::shared_ptr<ApertureFluxTransform>, BaseTransform>;
 
-PyFluxControl declareFluxControl(py::module &mod) {
-    PyFluxControl cls(mod, "ApertureFluxControl");
+PyFluxControl declareFluxControl(lsst::cpputils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyFluxControl(wrappers.module, "ApertureFluxControl"), [](auto &mod, auto &cls) {
+        LSST_DECLARE_CONTROL_FIELD(cls, ApertureFluxControl, radii);
+        LSST_DECLARE_CONTROL_FIELD(cls, ApertureFluxControl, maxSincRadius);
+        LSST_DECLARE_CONTROL_FIELD(cls, ApertureFluxControl, shiftKernel);
 
-    LSST_DECLARE_CONTROL_FIELD(cls, ApertureFluxControl, radii);
-    LSST_DECLARE_CONTROL_FIELD(cls, ApertureFluxControl, maxSincRadius);
-    LSST_DECLARE_CONTROL_FIELD(cls, ApertureFluxControl, shiftKernel);
-
-    cls.def(py::init<>());
-
-    return cls;
+        cls.def(py::init<>());
+    });
 }
 
 template <typename Image, class PyClass>
 void declareComputeFluxes(PyClass &cls) {
     using Control = ApertureFluxAlgorithm::Control;
     using Result = ApertureFluxAlgorithm::Result;
-
     cls.def_static("computeSincFlux",
                    (Result(*)(Image const &, afw::geom::ellipses::Ellipse const &, Control const &)) &
                            ApertureFluxAlgorithm::computeSincFlux,
@@ -78,67 +75,55 @@ void declareComputeFluxes(PyClass &cls) {
                    "image"_a, "ellipse"_a, "ctrl"_a = Control());
 }
 
-PyFluxAlgorithm declareFluxAlgorithm(py::module &mod) {
-    PyFluxAlgorithm cls(mod, "ApertureFluxAlgorithm");
+PyFluxAlgorithm declareFluxAlgorithm(lsst::cpputils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyFluxAlgorithm(wrappers.module, "ApertureFluxAlgorithm"), [](auto &mod, auto &cls) {
+        cls.attr("FAILURE") = py::cast(ApertureFluxAlgorithm::FAILURE);
+        cls.attr("APERTURE_TRUNCATED") = py::cast(ApertureFluxAlgorithm::APERTURE_TRUNCATED);
+        cls.attr("SINC_COEFFS_TRUNCATED") = py::cast(ApertureFluxAlgorithm::SINC_COEFFS_TRUNCATED);
 
-    cls.attr("FAILURE") = py::cast(ApertureFluxAlgorithm::FAILURE);
-    cls.attr("APERTURE_TRUNCATED") = py::cast(ApertureFluxAlgorithm::APERTURE_TRUNCATED);
-    cls.attr("SINC_COEFFS_TRUNCATED") = py::cast(ApertureFluxAlgorithm::SINC_COEFFS_TRUNCATED);
+        // constructor not wrapped because class is abstract
 
-    // constructor not wrapped because class is abstract
+        declareComputeFluxes<afw::image::Image<double>>(cls);
+        declareComputeFluxes<afw::image::MaskedImage<double>>(cls);
+        declareComputeFluxes<afw::image::Image<float>>(cls);
+        declareComputeFluxes<afw::image::MaskedImage<float>>(cls);
 
-    declareComputeFluxes<afw::image::Image<double>>(cls);
-    declareComputeFluxes<afw::image::MaskedImage<double>>(cls);
-    declareComputeFluxes<afw::image::Image<float>>(cls);
-    declareComputeFluxes<afw::image::MaskedImage<float>>(cls);
-
-    cls.def("measure", &ApertureFluxAlgorithm::measure, "measRecord"_a, "exposure"_a);
-    cls.def("fail", &ApertureFluxAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
-    cls.def_static("makeFieldPrefix", &ApertureFluxAlgorithm::makeFieldPrefix, "name"_a, "radius"_a);
-
-    return cls;
+        cls.def("measure", &ApertureFluxAlgorithm::measure, "measRecord"_a, "exposure"_a);
+        cls.def("fail", &ApertureFluxAlgorithm::fail, "measRecord"_a, "error"_a = nullptr);
+        cls.def_static("makeFieldPrefix", &ApertureFluxAlgorithm::makeFieldPrefix, "name"_a, "radius"_a);
+    });
 }
 
-void declareFluxResult(py::module &mod) {
-    PyFluxResult cls(mod, "ApertureFluxResult");
-
-    cls.def("getFlag", (bool (ApertureFluxResult::*)(unsigned int) const) & ApertureFluxResult::getFlag,
-            "bit"_a);
-    cls.def("getFlag",
-            (bool (ApertureFluxResult::*)(std::string const &name) const) & ApertureFluxResult::getFlag,
-            "name"_a);
-    cls.def("setFlag", &ApertureFluxResult::setFlag, "index"_a, "value"_a);
-    cls.def("unsetFlag", &ApertureFluxResult::unsetFlag, "index"_a);
+void declareFluxResult(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyFluxResult(wrappers.module, "ApertureFluxResult"), [](auto &mod, auto &cls) {
+        cls.def("getFlag", (bool (ApertureFluxResult::*)(unsigned int) const) &ApertureFluxResult::getFlag,
+                "bit"_a);
+        cls.def("getFlag",
+                (bool (ApertureFluxResult::*)(std::string const &name) const) &ApertureFluxResult::getFlag,
+                "name"_a);
+        cls.def("setFlag", &ApertureFluxResult::setFlag, "index"_a, "value"_a);
+        cls.def("unsetFlag", &ApertureFluxResult::unsetFlag, "index"_a);
+    });
 }
 
-PyFluxTransform declareFluxTransform(py::module &mod) {
-    PyFluxTransform cls(mod, "ApertureFluxTransform");
+PyFluxTransform declareFluxTransform(lsst::cpputils::python::WrapperCollection &wrappers) {
+    return wrappers.wrapType(PyFluxTransform(wrappers.module, "ApertureFluxTransform"), [](auto &mod, auto &cls) {
+        cls.def(py::init<ApertureFluxTransform::Control const &, std::string const &,
+                        afw::table::SchemaMapper &>(),
+                "ctrl"_a, "name"_a, "mapper"_a);
 
-    cls.def(py::init<ApertureFluxTransform::Control const &, std::string const &,
-                     afw::table::SchemaMapper &>(),
-            "ctrl"_a, "name"_a, "mapper"_a);
-
-    cls.def("__call__", &ApertureFluxTransform::operator(), "inputCatalog"_a, "outputCatalog"_a, "wcs"_a,
-            "photoCalib"_a);
-
-    return cls;
+        cls.def("__call__", &ApertureFluxTransform::operator(), "inputCatalog"_a, "outputCatalog"_a, "wcs"_a,
+                "photoCalib"_a);
+    });
 }
 
 }  // namespace
 
-PYBIND11_MODULE(apertureFlux, mod) {
-    py::module::import("lsst.afw.geom");
-    py::module::import("lsst.afw.image");
-    py::module::import("lsst.afw.table");
-    py::module::import("lsst.meas.base.algorithm");
-    py::module::import("lsst.meas.base.flagHandler");
-    py::module::import("lsst.meas.base.fluxUtilities");
-    py::module::import("lsst.meas.base.transform");
-
-    auto clsFluxControl = declareFluxControl(mod);
-    auto clsFluxAlgorithm = declareFluxAlgorithm(mod);
-    declareFluxResult(mod);
-    auto clsFluxTransform = declareFluxTransform(mod);
+void wrapApertureFlow(lsst::cpputils::python::WrapperCollection &wrappers) {
+    auto clsFluxControl = declareFluxControl(wrappers);
+    auto clsFluxAlgorithm = declareFluxAlgorithm(wrappers);
+    declareFluxResult(wrappers);
+    auto clsFluxTransform = declareFluxTransform(wrappers);
 
     clsFluxAlgorithm.attr("Control") = clsFluxControl;
     // no need to make ApertureFluxControl::Result visible to Python

@@ -21,6 +21,7 @@
  */
 
 #include "pybind11/pybind11.h"
+#include "lsst/cpputils/python.h"
 
 #include <memory>
 
@@ -33,11 +34,12 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_MODULE(transform, mod) {
-    py::class_<BaseTransform, std::shared_ptr<BaseTransform>> cls(mod, "BaseTransform");
-
-    cls.def("__call__", &BaseTransform::operator(), "inputCatalog"_a, "outputCatalog"_a, "wcs"_a,
-            "photoCalib"_a);
+void wrapTransform(lsst::cpputils::python::WrapperCollection &wrappers) {
+    using PyBaseTransform = py::class_<BaseTransform, std::shared_ptr<BaseTransform>>;
+    wrappers.wrapType(PyBaseTransform(wrappers.module, "BaseTransform"), [](auto &mod, auto &cls) {
+        cls.def("__call__", &BaseTransform::operator(), "inputCatalog"_a, "outputCatalog"_a, "wcs"_a,
+                "photoCalib"_a);
+    });
 }
 
 }  // namespace base

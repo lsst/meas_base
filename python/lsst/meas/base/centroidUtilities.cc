@@ -22,10 +22,10 @@
 
 #include "pybind11/pybind11.h"
 #include "pybind11/eigen.h"
+#include "lsst/cpputils/python.h"
 
 #include <memory>
 
-#include "ndarray/pybind11.h"
 
 #include "lsst/meas/base/CentroidUtilities.h"
 
@@ -43,91 +43,88 @@ using PyCentroidResult = py::class_<CentroidResult, std::shared_ptr<CentroidResu
 using PyCentroidResultKey = py::class_<CentroidResultKey>;
 using PyCentroidTransform = py::class_<CentroidTransform, std::shared_ptr<CentroidTransform>, BaseTransform>;
 
-void declareCentroidResult(py::module &mod) {
-    PyCentroidResult cls(mod, "CentroidResult");
+void declareCentroidResult(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyCentroidResult(wrappers.module, "CentroidResult"), [](auto &mod, auto &cls) {
+        cls.def_readwrite("x", &CentroidResult::x);
+        cls.def_readwrite("y", &CentroidResult::y);
+        cls.def_readwrite("xErr", &CentroidResult::xErr);
+        cls.def_readwrite("yErr", &CentroidResult::yErr);
+        cls.def_readwrite("x_y_Cov", &CentroidResult::x_y_Cov);
 
-    cls.def_readwrite("x", &CentroidResult::x);
-    cls.def_readwrite("y", &CentroidResult::y);
-    cls.def_readwrite("xErr", &CentroidResult::xErr);
-    cls.def_readwrite("yErr", &CentroidResult::yErr);
-    cls.def_readwrite("x_y_Cov", &CentroidResult::x_y_Cov);
+        cls.def(py::init<>());
+        cls.def(py::init<CentroidElement, CentroidElement, CentroidCov const &>(), "x"_a, "y"_a, "matrix"_a);
+        cls.def(py::init<CentroidElement, CentroidElement, ErrElement, ErrElement>(), "x"_a, "y"_a, "xErr"_a,
+                "yErr"_a);
 
-    cls.def(py::init<>());
-    cls.def(py::init<CentroidElement, CentroidElement, CentroidCov const &>(), "x"_a, "y"_a, "matrix"_a);
-    cls.def(py::init<CentroidElement, CentroidElement, ErrElement, ErrElement>(), "x"_a, "y"_a, "xErr"_a,
-            "yErr"_a);
-
-    cls.def("getCentroid", &CentroidResult::getCentroid);
-    cls.def("setCentroid", &CentroidResult::setCentroid, "centroid"_a);
-    cls.def("getPoint", &CentroidResult::getPoint);
-    cls.def("getCentroidErr", &CentroidResult::getCentroidErr);
-    cls.def("setCentroidErr",
-            (void (CentroidResult::*)(CentroidCov const &)) & CentroidResult::setCentroidErr, "matrix"_a);
-    cls.def("setCentroidErr",
-            (void (CentroidResult::*)(ErrElement, ErrElement)) & CentroidResult::setCentroidErr, "xErr"_a,
-            "yErr"_a);
+        cls.def("getCentroid", &CentroidResult::getCentroid);
+        cls.def("setCentroid", &CentroidResult::setCentroid, "centroid"_a);
+        cls.def("getPoint", &CentroidResult::getPoint);
+        cls.def("getCentroidErr", &CentroidResult::getCentroidErr);
+        cls.def("setCentroidErr",
+                (void (CentroidResult::*)(CentroidCov const &)) &CentroidResult::setCentroidErr, "matrix"_a);
+        cls.def("setCentroidErr",
+                (void (CentroidResult::*)(ErrElement, ErrElement)) &CentroidResult::setCentroidErr, "xErr"_a,
+                "yErr"_a);
+    });
 }
 
-void declareCentroidResultKey(py::module &mod) {
-    PyCentroidResultKey cls(mod, "CentroidResultKey");
+void declareCentroidResultKey(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyCentroidResultKey(wrappers.module, "CentroidResultKey"), [](auto &mod, auto &cls) {
+        cls.def(py::init<>());
+        cls.def(py::init<afw::table::PointKey<CentroidElement> const &,
+                        afw::table::CovarianceMatrixKey<ErrElement, 2> const &>(),
+                "centroid"_a, "uncertainty"_a);
+        cls.def(py::init<afw::table::SubSchema const &>(), "subSchema"_a);
 
-    cls.def(py::init<>());
-    cls.def(py::init<afw::table::PointKey<CentroidElement> const &,
-                     afw::table::CovarianceMatrixKey<ErrElement, 2> const &>(),
-            "centroid"_a, "uncertainty"_a);
-    cls.def(py::init<afw::table::SubSchema const &>(), "subSchema"_a);
+        cls.def_static("addFields", &CentroidResultKey::addFields, "schema"_a, "name"_a, "doc"_a, "uncertainty"_a);
 
-    cls.def_static("addFields", &CentroidResultKey::addFields, "schema"_a, "name"_a, "doc"_a, "uncertainty"_a);
+        cls.def("__eq__", &CentroidResultKey::operator==, py::is_operator());
+        cls.def("__nq__", &CentroidResultKey::operator!=, py::is_operator());
 
-    cls.def("__eq__", &CentroidResultKey::operator==, py::is_operator());
-    cls.def("__nq__", &CentroidResultKey::operator!=, py::is_operator());
-
-    cls.def("get", &CentroidResultKey::get, "record"_a);
-    cls.def("set", &CentroidResultKey::set, "record"_a, "value"_a);
-    cls.def("isValid", &CentroidResultKey::isValid);
-    cls.def("getCentroid", &CentroidResultKey::getCentroid);
-    cls.def("getCentroidErr", &CentroidResultKey::getCentroidErr);
-    cls.def("getX", &CentroidResultKey::getX);
-    cls.def("getY", &CentroidResultKey::getY);
+        cls.def("get", &CentroidResultKey::get, "record"_a);
+        cls.def("set", &CentroidResultKey::set, "record"_a, "value"_a);
+        cls.def("isValid", &CentroidResultKey::isValid);
+        cls.def("getCentroid", &CentroidResultKey::getCentroid);
+        cls.def("getCentroidErr", &CentroidResultKey::getCentroidErr);
+        cls.def("getX", &CentroidResultKey::getX);
+        cls.def("getY", &CentroidResultKey::getY);
+    });
 }
 
-void declareCentroidTransform(py::module &mod) {
-    PyCentroidTransform cls(mod, "CentroidTransform");
+void declareCentroidTransform(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyCentroidTransform(wrappers.module, "CentroidTransform"), [](auto &mod, auto &cls) {
+        cls.def(py::init<std::string const &, afw::table::SchemaMapper &>(), "name"_a, "mapper"_a);
 
-    cls.def(py::init<std::string const &, afw::table::SchemaMapper &>(), "name"_a, "mapper"_a);
-
-    cls.def("__call__", &CentroidTransform::operator(), "inputCatalog"_a, "outputCatalog"_a, "wcs"_a,
-            "photoCalib"_a);
+        cls.def("__call__", &CentroidTransform::operator(), "inputCatalog"_a, "outputCatalog"_a, "wcs"_a,
+                "photoCalib"_a);
+    });
 }
 
-void declareCentroidChecker(py::module &mod) {
-    PyCentroidChecker cls(mod, "CentroidChecker");
+void declareCentroidChecker(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyCentroidChecker(wrappers.module, "CentroidChecker"), [](auto &mod, auto &cls) {
+        cls.def(py::init<afw::table::Schema &, std::string const &, bool, double>(), "schema"_a, "name"_a,
+                "inside"_a = true, "maxDistFromPeak"_a = -1.0);
 
-    cls.def(py::init<afw::table::Schema &, std::string const &, bool, double>(), "schema"_a, "name"_a,
-            "inside"_a = true, "maxDistFromPeak"_a = -1.0);
-
-    cls.def("__call__", &CentroidChecker::operator(), "record"_a);
+        cls.def("__call__", &CentroidChecker::operator(), "record"_a);
+    });
 }
 
-void declareUncertaintyEnum(py::module &mod) {
-    py::enum_<UncertaintyEnum> enm(mod, "UncertaintyEnum");
-
-    enm.value("NO_UNCERTAINTY", UncertaintyEnum::NO_UNCERTAINTY);
-    enm.value("SIGMA_ONLY", UncertaintyEnum::SIGMA_ONLY);
-    enm.value("FULL_COVARIANCE", UncertaintyEnum::FULL_COVARIANCE);
+void declareUncertaintyEnum(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(py::enum_<UncertaintyEnum>(wrappers.module, "UncertaintyEnum"), [](auto &mod, auto &enm) {
+        enm.value("NO_UNCERTAINTY", UncertaintyEnum::NO_UNCERTAINTY);
+        enm.value("SIGMA_ONLY", UncertaintyEnum::SIGMA_ONLY);
+        enm.value("FULL_COVARIANCE", UncertaintyEnum::FULL_COVARIANCE);
+    });
 }
 
 }  // namespace
 
-PYBIND11_MODULE(centroidUtilities, mod) {
-    py::module::import("lsst.afw.table");
-    py::module::import("lsst.meas.base.transform");
-
-    declareCentroidResult(mod);
-    declareCentroidResultKey(mod);
-    declareCentroidTransform(mod);
-    declareCentroidChecker(mod);
-    declareUncertaintyEnum(mod);
+void wrapCentroidUtilities(lsst::cpputils::python::WrapperCollection &wrappers) {
+    declareCentroidResult(wrappers);
+    declareCentroidResultKey(wrappers);
+    declareCentroidTransform(wrappers);
+    declareCentroidChecker(wrappers);
+    declareUncertaintyEnum(wrappers);
 }
 
 }  // namespace base

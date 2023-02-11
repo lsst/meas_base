@@ -21,6 +21,7 @@
  */
 
 #include "pybind11/pybind11.h"
+#include "lsst/cpputils/python.h"
 
 #include "lsst/afw/table/Source.h"
 #include "lsst/meas/base/InputUtilities.h"
@@ -32,18 +33,16 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-PYBIND11_MODULE(inputUtilities, mod) {
-    py::module::import("lsst.afw.table");
-
-    py::class_<SafeCentroidExtractor> clsSafeCentroidExtractor(mod, "SafeCentroidExtractor");
-
-    clsSafeCentroidExtractor.def(py::init<afw::table::Schema &, std::string const &, bool>(), "schema"_a,
-                                 "name"_a, "isCentroider"_a = false);
-
-    clsSafeCentroidExtractor.def("__call__",
-                                 [](SafeCentroidExtractor const &self, afw::table::SourceRecord &record,
-                                    FlagHandler const &flags) { return self(record, flags); },
-                                 "record"_a, "flags"_a);
+void wrapInputUtilities(lsst::cpputils::python::WrapperCollection &wrappers) {
+    using PySafeCentroidExtractor = py::class_<SafeCentroidExtractor>;
+    wrappers.wrapType(PySafeCentroidExtractor(wrappers.module, "SafeCentroidExtractor"), [](auto &mod, auto &cls) {
+        cls.def(py::init<afw::table::Schema &, std::string const &, bool>(), "schema"_a,
+                "name"_a, "isCentroider"_a = false);
+        cls.def("__call__",
+                [](SafeCentroidExtractor const &self, afw::table::SourceRecord &record,
+                   FlagHandler const &flags) { return self(record, flags); },
+                "record"_a, "flags"_a);
+    });
 }
 
 }  // namespace base

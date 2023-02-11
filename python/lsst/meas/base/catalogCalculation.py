@@ -28,7 +28,7 @@ from lsst.utils.timer import timeMethod
 
 from .pluginsBase import BasePlugin, BasePluginConfig
 from .pluginRegistry import PluginRegistry, PluginMap
-from . import FatalAlgorithmError, MeasurementError
+from ._measBaseLib import FatalAlgorithmError, MeasurementError
 
 # Exceptions that the measurement tasks should always propagate up to their
 # callers

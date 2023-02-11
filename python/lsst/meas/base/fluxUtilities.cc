@@ -21,6 +21,7 @@
  */
 
 #include "pybind11/pybind11.h"
+#include "lsst/cpputils/python.h"
 
 #include "lsst/meas/base/ApertureFlux.h"
 
@@ -38,63 +39,60 @@ using PyFluxResultKey = py::class_<FluxResultKey, std::shared_ptr<FluxResultKey>
 using PyMagResult = py::class_<MagResult, std::shared_ptr<MagResult>>;
 using PyMagResultKey = py::class_<MagResultKey, std::shared_ptr<MagResultKey>>;
 
-void declareFluxResult(py::module &mod) {
-    PyFluxResult cls(mod, "FluxResult");
-
-    cls.def_readwrite("instFlux", &FluxResult::instFlux);
-    cls.def_readwrite("instFluxErr", &FluxResult::instFluxErr);
+void declareFluxResult(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyFluxResult(wrappers.module, "FluxResult"), [](auto &mod, auto &cls) {
+        cls.def_readwrite("instFlux", &FluxResult::instFlux);
+        cls.def_readwrite("instFluxErr", &FluxResult::instFluxErr);
+    });
 }
 
-void declareFluxResultKey(py::module &mod) {
-    PyFluxResultKey cls(mod, "FluxResultKey");
+void declareFluxResultKey(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyFluxResultKey(wrappers.module, "FluxResultKey"), [](auto &mod, auto &cls) {
+        cls.def(py::init<>());
+        cls.def(py::init<afw::table::Key<meas::base::Flux> const &,
+                        afw::table::Key<meas::base::FluxErrElement> const &>(),
+                "instFlux"_a, "instFluxErr"_a);
+        cls.def(py::init<afw::table::SubSchema const &>());
 
-    cls.def(py::init<>());
-    cls.def(py::init<afw::table::Key<meas::base::Flux> const &,
-                     afw::table::Key<meas::base::FluxErrElement> const &>(),
-            "instFlux"_a, "instFluxErr"_a);
-    cls.def(py::init<afw::table::SubSchema const &>());
+        cls.def("__eq__", &FluxResultKey::operator==, py::is_operator());
+        cls.def("__ne__", &FluxResultKey::operator!=, py::is_operator());
 
-    cls.def("__eq__", &FluxResultKey::operator==, py::is_operator());
-    cls.def("__ne__", &FluxResultKey::operator!=, py::is_operator());
-
-    cls.def("get", &FluxResultKey::get);
-    cls.def("set", &FluxResultKey::set);
-    cls.def_static("addFields", &FluxResultKey::addFields, "schema"_a, "name"_a, "doc"_a);
-    cls.def("isValid", &FluxResultKey::isValid);
-    cls.def("getInstFlux", &FluxResultKey::getInstFlux);
-    cls.def("getInstFluxErr", &FluxResultKey::getInstFluxErr);
+        cls.def("get", &FluxResultKey::get);
+        cls.def("set", &FluxResultKey::set);
+        cls.def_static("addFields", &FluxResultKey::addFields, "schema"_a, "name"_a, "doc"_a);
+        cls.def("isValid", &FluxResultKey::isValid);
+        cls.def("getInstFlux", &FluxResultKey::getInstFlux);
+        cls.def("getInstFluxErr", &FluxResultKey::getInstFluxErr);
+    });
 }
 
-void declareMagResult(py::module &mod) {
-    PyMagResult cls(mod, "MagResult");
-
-    cls.def_readwrite("mag", &MagResult::mag);
-    cls.def_readwrite("magErr", &MagResult::magErr);
+void declareMagResult(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyMagResult(wrappers.module, "MagResult"), [](auto &mod, auto &cls) {
+        cls.def_readwrite("mag", &MagResult::mag);
+        cls.def_readwrite("magErr", &MagResult::magErr);
+    });
 }
 
-void declareMagResultKey(py::module &mod) {
-    PyMagResultKey cls(mod, "MagResultKey");
+void declareMagResultKey(lsst::cpputils::python::WrapperCollection &wrappers) {
+    wrappers.wrapType(PyMagResultKey(wrappers.module, "MagResultKey"), [](auto &mod, auto &cls) {
+        cls.def(py::init<>());
+        cls.def(py::init<afw::table::SubSchema const &>());
 
-    cls.def(py::init<>());
-    cls.def(py::init<afw::table::SubSchema const &>());
-
-    cls.def("get", &MagResultKey::get);
-    cls.def("set",
-            (void (MagResultKey::*)(afw::table::BaseRecord &, MagResult const &) const) & MagResultKey::set);
-    cls.def("set", (void (MagResultKey::*)(afw::table::BaseRecord &, afw::image::Measurement const &) const) &
-                           MagResultKey::set);
-    cls.def_static("addFields", &MagResultKey::addFields, "schema"_a, "name"_a);
+        cls.def("get", &MagResultKey::get);
+        cls.def("set",
+                (void (MagResultKey::*)(afw::table::BaseRecord &, MagResult const &) const) &MagResultKey::set);
+        cls.def("set", (void (MagResultKey::*)(afw::table::BaseRecord &, afw::image::Measurement const &) const) &
+                MagResultKey::set);
+        cls.def_static("addFields", &MagResultKey::addFields, "schema"_a, "name"_a);
+    });
 }
-
 }  // namespace
 
-PYBIND11_MODULE(fluxUtilities, mod) {
-    py::module::import("lsst.afw.table");
-
-    declareFluxResult(mod);
-    declareFluxResultKey(mod);
-    declareMagResult(mod);
-    declareMagResultKey(mod);
+void wrapFluxUtilities(lsst::cpputils::python::WrapperCollection &wrappers) {
+    declareFluxResult(wrappers);
+    declareFluxResultKey(wrappers);
+    declareMagResult(wrappers);
+    declareMagResultKey(wrappers);
 }
 
 }  // namespace base
