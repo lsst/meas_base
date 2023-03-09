@@ -53,7 +53,7 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
                                dimensions=("instrument", "visit", "detector", "skymap", "tract"),
                                defaultTemplates={"inputCoaddName": "deep",
                                                  "inputName": "calexp",
-                                                 "skyWcsName": "jointcal",
+                                                 "skyWcsName": "gbdesAstrometricFit",
                                                  "photoCalibName": "fgcm"}):
     inputSchema = cT.InitInput(
         doc="Schema for the input measurement catalogs.",
@@ -577,7 +577,7 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
                                             dimensions=("instrument", "visit", "detector", "skymap", "tract"),
                                             defaultTemplates={"inputCoaddName": "goodSeeing",
                                                               "inputName": "calexp",
-                                                              "skyWcsName": "jointcal",
+                                                              "skyWcsName": "gbdesAstrometricFit",
                                                               "photoCalibName": "fgcm"}):
     refCat = cT.Input(
         doc="Catalog of positions at which to force photometry.",
