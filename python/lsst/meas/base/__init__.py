@@ -45,3 +45,4 @@ from .pluginsBase import *
 from .sfm import *
 from .transforms import *
 from .wrappers import *
+from .compensatedGaussian import *

@@ -1,3 +1,27 @@
 # -*- python -*-
 from lsst.sconsUtils import scripts
-scripts.BasicSConscript.python(['_measBaseLib'])
+scripts.BasicSConscript.python(['_measBaseLib'], [
+    '_measBaseLib.cc',
+    'algorithm.cc',
+    'apertureFlux.cc',
+    'blendedness.cc',
+    'centroidUtilities.cc',
+    'circularApertureFlux.cc',
+    'exceptions.cc',
+    'flagHandler.cc',
+    'fluxUtilities.cc',
+    'gaussianFlux.cc',
+    'inputUtilities.cc',
+    'localBackground.cc',
+    'naiveCentroid.cc',
+    'peakLikelihoodFlux.cc',
+    'pixelFlags.cc',
+    'psfFlux.cc',
+    'scaledApertureFlux.cc',
+    'sdssCentroid.cc',
+    'sdssShape.cc',
+    'shapeUtilities.cc',
+    'sincCoeffs.cc',
+    'transform.cc',
+    'compensatedGaussian/_calcCompensatedGaussian.cc',
+])
