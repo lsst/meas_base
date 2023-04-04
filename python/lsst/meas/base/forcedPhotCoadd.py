@@ -25,8 +25,8 @@ import lsst.pex.config
 import lsst.afw.table
 
 import lsst.pipe.base as pipeBase
-from lsst.obs.base import ExposureIdInfo
 
+from ._id_generator import SkyMapIdGeneratorConfig
 from .forcedMeasurement import ForcedMeasurementTask
 from .applyApCorr import ApplyApCorrTask
 from .catalogCalculation import CatalogCalculationTask
@@ -148,6 +148,7 @@ class ForcedPhotCoaddConfig(pipeBase.PipelineTaskConfig,
         default=False,
         doc="Should be set to True if fake sources have been inserted into the input data."
     )
+    idGenerator = SkyMapIdGeneratorConfig.make_field()
 
     def setDefaults(self):
         # Docstring inherited.
@@ -223,7 +224,6 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask):
                                                                        inputs['refCat'],
                                                                        refCatInBand,
                                                                        inputs['refWcs'],
-                                                                       "tract_patch",
                                                                        footprintData)
         outputs = self.run(**inputs)
         # Strip HeavyFootprints to save space on disk
@@ -233,14 +233,13 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask):
                 source.setFootprint(None)
         butlerQC.put(outputs, outputRefs)
 
-    def generateMeasCat(self, exposureDataId, exposure, refCat, refCatInBand, refWcs, idPackerName,
-                        footprintData):
+    def generateMeasCat(self, dataId, exposure, refCat, refCatInBand, refWcs, footprintData):
         """Generate a measurement catalog.
 
         Parameters
         ----------
-        exposureDataId : `DataId`
-            Butler dataId for this exposure.
+        dataId : `lsst.daf.butler.DataCoordinate`
+            Butler data ID for this image, with ``{tract, patch, band}`` keys.
         exposure : `lsst.afw.image.exposure.Exposure`
             Exposure to generate the catalog for.
         refCat : `lsst.afw.table.SourceCatalog`
@@ -250,13 +249,10 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask):
             currently being performed
         refWcs : `lsst.afw.image.SkyWcs`
             Reference world coordinate system.
-        idPackerName : `str`
-            Type of ID packer to construct from the registry.
         footprintData : `ScarletDataModel` or `lsst.afw.table.SourceCatalog`
-            Either the scarlet data models or the deblended catalog
-            containing footprints.
-            If `footprintData` is `None` then the footprints contained
-            in `refCatInBand` are used.
+            Either the scarlet data models or the deblended catalog containing
+            footprints. If `footprintData` is `None` then the footprints
+            contained in `refCatInBand` are used.
 
         Returns
         -------
@@ -269,14 +265,12 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask):
         ------
         LookupError
             Raised if a footprint with a given source id was in the reference
-            catalog but not in the reference catalog in band (meaning there
-            was some sort of mismatch in the two input catalogs)
+            catalog but not in the reference catalog in band (meaning there was
+            some sort of mismatch in the two input catalogs)
         """
-        exposureIdInfo = ExposureIdInfo.fromDataId(exposureDataId, idPackerName)
-        idFactory = exposureIdInfo.makeSourceIdFactory()
-
+        id_generator = self.config.idGenerator.apply(dataId)
         measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
-                                                   idFactory=idFactory)
+                                                   idFactory=id_generator.make_table_id_factory())
         # attach footprints here as this can naturally live inside this method
         if self.config.footprintDatasetName == "ScarletModelData":
             # Load the scarlet models
@@ -284,7 +278,7 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask):
                 catalog=measCat,
                 modelData=footprintData,
                 exposure=exposure,
-                band=exposureDataId["band"]
+                band=dataId["band"]
             )
         else:
             if self.config.footprintDatasetName is None:
@@ -298,7 +292,7 @@ class ForcedPhotCoaddTask(pipeBase.PipelineTask):
                                       "IDs are compatible with reference source IDs"
                                       .format(srcRecord.getId(), footprintCat))
                 srcRecord.setFootprint(fpRecord.getFootprint())
-        return measCat, exposureIdInfo.expId
+        return measCat, id_generator.catalog_id
 
     def run(self, measCat, exposure, refCat, refWcs, exposureId=None):
         """Perform forced measurement on a single exposure.
