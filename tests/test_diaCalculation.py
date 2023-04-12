@@ -210,13 +210,23 @@ class TestDiaCalcluation(unittest.TestCase):
              "totFlux": 0., "totFluxErr": 1.,
              "midPointTai": 0, "filterName": "g"}
             for objId in range(1000)])
-        unindexedDiaSources = unindexedDiaSources.append(
-            pd.DataFrame(data=[{"diaSourceId": objId + 1000,
-                                "diaObjectId": 0,
-                                "psFlux": 0., "psFluxErr": 1.,
-                                "totFlux": 0., "totFluxErr": 1.,
-                                "midPointTai": 0, "filterName": "g"}
-                               for objId in range(10)]))
+        unindexedDiaSources = pd.concat(
+            (
+                unindexedDiaSources,
+                pd.DataFrame(
+                    data=[
+                        {
+                            "diaSourceId": objId + 1000,
+                            "diaObjectId": 0,
+                            "psFlux": 0., "psFluxErr": 1.,
+                            "totFlux": 0., "totFluxErr": 1.,
+                            "midPointTai": 0, "filterName": "g",
+                        }
+                        for objId in range(10)
+                    ]
+                )
+            )
+        )
 
         conf = DiaObjectCalculationConfig()
         conf.plugins = ["testCount"]
