@@ -745,7 +745,7 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
 
         self.log.info("Filtering ref cats: %s", ','.join([str(i.dataId) for i in inputs['refCat']]))
         if inputs["exposure"].getWcs() is not None:
-            refCat = self.df2RefCat([i.get(parameters={"columns": ['diaObjectId', 'ra', 'decl']})
+            refCat = self.df2RefCat([i.get(parameters={"columns": ['diaObjectId', 'ra', 'dec']})
                                      for i in inputs['refCat']],
                                     inputs['exposure'].getBBox(), inputs['exposure'].getWcs())
             inputs['refCat'] = refCat
@@ -772,8 +772,8 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
         Parameters
         ----------
         dfList : `list` of `pandas.DataFrame`
-            Each element containst diaObjects with ra/decl position in degrees
-            Columns 'diaObjectId', 'ra', 'decl' are expected
+            Each element containst diaObjects with ra/dec position in degrees
+            Columns 'diaObjectId', 'ra', 'dec' are expected
         exposureBBox :   `lsst.geom.Box2I`
             Bounding box on which to select rows that overlap
         exposureWcs : `lsst.afw.geom.SkyWcs`
@@ -786,10 +786,10 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
             Source Catalog with minimal schema that overlaps exposureBBox
         """
         df = pd.concat(dfList)
-        # translate ra/decl coords in dataframe to detector pixel coords
+        # translate ra/dec coords in dataframe to detector pixel coords
         # to down select rows that overlap the detector bbox
         mapping = exposureWcs.getTransform().getMapping()
-        x, y = mapping.applyInverse(np.array(df[['ra', 'decl']].values*2*np.pi/360).T)
+        x, y = mapping.applyInverse(np.array(df[['ra', 'dec']].values*2*np.pi/360).T)
         inBBox = lsst.geom.Box2D(exposureBBox).contains(x, y)
         refCat = self.df2SourceCat(df[inBBox])
         return refCat
@@ -813,8 +813,8 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
         outputCatalog = lsst.afw.table.SourceCatalog(schema)
         outputCatalog.reserve(len(df))
 
-        for diaObjectId, ra, decl in df[['ra', 'decl']].itertuples():
+        for diaObjectId, ra, dec in df[['ra', 'dec']].itertuples():
             outputRecord = outputCatalog.addNew()
             outputRecord.setId(diaObjectId)
-            outputRecord.setCoord(lsst.geom.SpherePoint(ra, decl, lsst.geom.degrees))
+            outputRecord.setCoord(lsst.geom.SpherePoint(ra, dec, lsst.geom.degrees))
         return outputCatalog

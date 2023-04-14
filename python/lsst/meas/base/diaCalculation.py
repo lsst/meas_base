@@ -86,14 +86,14 @@ class DiaObjectCalculationPlugin(CatalogCalculationPlugin):
     plugin is instantiated without the needed column available. Input columns
     should be defined in the DPDD/cat/Apdb schema. Filter dependent columns
     should be specified without the filter name perpended to them. eg
-    ``PSFluxMean`` instead of ``uPSFluxMean``.
+    ``psfFluxMean`` instead of ``u_psfFluxMean``.
     """
     outputCols = []
     """DiaObject column names output by the plugin. DiaCalculationTask should
     raise an error if another pluging is run output to the same column.
     Output columns should be defined in the DPDD/cat/Apdb schema. Filter
     dependent columns should be specified without the filter name perpended to
-    them. eg ``PSFluxMean`` instead of ``uPSFluxMean``.
+    them. eg ``psfFluxMean`` instead of ``u_psfFluxMean``.
     """
 
     needsFilter = True
@@ -110,7 +110,7 @@ class DiaObjectCalculationPlugin(CatalogCalculationPlugin):
                   diaObject,
                   diaSources,
                   filterDiaFluxes=None,
-                  filterName=None,
+                  band=None,
                   **kwargs):
         """Perform the calculation specified by this plugin.
 
@@ -130,8 +130,8 @@ class DiaObjectCalculationPlugin(CatalogCalculationPlugin):
             diaObject.
         filterDiaFluxes : `pandas.DataFrame`
             DataFrame representing diaSources associated with this
-            diaObject that are observed in the band pass ``filterName``.
-        filterName : `str`
+            diaObject that are observed in the band pass ``band``.
+        band : `str`
             Simple name of the filter for the flux being calculated.
         **kwargs
             Any additional keyword arguments that may be passed to the plugin.
@@ -295,7 +295,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
         diaSourceCat : `pandas.DataFrame`
             DiaSources associated with the DiaObjects in diaObjectCat.
             DataFrame should be indexed on
-            `["diaObjectId", "filterName", "diaSourceId"]`
+            `["diaObjectId", "band", "diaSourceId"]`
         updatedDiaObjectIds : `numpy.ndarray`
             Integer ids of the DiaObjects to update and create.
         filterNames : `list` of `str`
@@ -326,14 +326,14 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
         # element and test for None.
         if diaSourceCat.index.names[0] is None:
             diaSourceCat.set_index(
-                ["diaObjectId", "filterName", "diaSourceId"],
+                ["diaObjectId", "band", "diaSourceId"],
                 inplace=True,
                 drop=False)
         elif (diaSourceCat.index.names
-              != ["diaObjectId", "filterName", "diaSourceId"]):
+              != ["diaObjectId", "band", "diaSourceId"]):
             diaSourceCat.reset_index(inplace=True)
             diaSourceCat.set_index(
-                ["diaObjectId", "filterName", "diaSourceId"],
+                ["diaObjectId", "band", "diaSourceId"],
                 inplace=True,
                 drop=False)
 
@@ -361,7 +361,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
         diaSourceCat : `pandas.DataFrame`
             DiaSources associated with the DiaObjects in diaObjectCat.
             DataFrame must be indexed on
-            ["diaObjectId", "filterName", "diaSourceId"]`
+            ["diaObjectId", "band", "diaSourceId"]`
         updatedDiaObjectIds : `numpy.ndarray`
             Integer ids of the DiaObjects to update and create.
         filterNames : `list` of `str`
@@ -409,7 +409,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                                        diaObjectId=updatedDiaObjectId,
                                        diaSources=objDiaSources,
                                        filterDiaSources=None,
-                                       filterName=None)
+                                       band=None)
             for plug in self.executionDict[runlevel].multi:
                 if plug.needsFilter:
                     continue
@@ -417,16 +417,16 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                     plug.calculate(diaObjects=diaObjectsToUpdate,
                                    diaSources=diaSourcesGB,
                                    filterDiaSources=None,
-                                   filterName=None)
+                                   band=None)
 
-        for filterName in filterNames:
+        for band in filterNames:
             try:
                 updatingFilterDiaSources = updatingDiaSources.loc[
-                    (slice(None), filterName), :
+                    (slice(None), band), :
                 ]
             except KeyError:
                 self.log.warning("No DiaSource data with fitler=%s. "
-                                 "Continuing...", filterName)
+                                 "Continuing...", band)
                 continue
             # Level=0 here groups by diaObjectId.
             filterDiaSourcesGB = updatingFilterDiaSources.groupby(level=0)
@@ -442,12 +442,12 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
 
                         # Sub-select on diaSources observed in the current filter.
                         try:
-                            filterObjDiaSources = objDiaSources.loc[filterName]
+                            filterObjDiaSources = objDiaSources.loc[band]
                         except KeyError:
                             self.log.warning(
                                 "DiaObjectId={updatedDiaObjectId} has no "
                                 "DiaSources for filter=%s. "
-                                "Continuing...", filterName)
+                                "Continuing...", band)
                         with CCContext(plug, updatedDiaObjectId, self.log):
                             # We feed the catalog we need to update and the id
                             # so as to get a few into the catalog and not a copy.
@@ -456,7 +456,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                                            diaObjectId=updatedDiaObjectId,
                                            diaSources=objDiaSources,
                                            filterDiaSources=filterObjDiaSources,
-                                           filterName=filterName)
+                                           band=band)
                 for plug in self.executionDict[runlevel].multi:
                     if not plug.needsFilter:
                         continue
@@ -464,7 +464,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                         plug.calculate(diaObjects=diaObjectsToUpdate,
                                        diaSources=diaSourcesGB,
                                        filterDiaSources=filterDiaSourcesGB,
-                                       filterName=filterName)
+                                       band=band)
         # Need to store the newly updated diaObjects directly as the editing
         # a view into diaObjectsToUpdate does not update the values of
         # diaObjectCat.
@@ -497,7 +497,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                 Id of the a nearbyObject in the Object table (`int`).
             ``nearbyObj3``
                 Id of the a nearbyObject in the Object table (`int`).
-            ``?PSFluxData``
+            ``?_psfFluxNdata``
                 Number of data points used to calculate point source flux
                 summary statistics in each bandpass (`int`).
         """
@@ -507,5 +507,5 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                           "nearbyObj2": 0,
                           "nearbyObj3": 0}
         for f in ["u", "g", "r", "i", "z", "y"]:
-            new_dia_object["%sPSFluxNdata" % f] = 0
+            new_dia_object["%s_psfFluxNdata" % f] = 0
         return new_dia_object
