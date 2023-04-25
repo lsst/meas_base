@@ -230,20 +230,24 @@ class IdGenerator:
 
         from lsst.meas.base import DetectorVisitIdGeneratorConfig
         from lsst.pex.config import Config
-        from lsst.pipe.base import Task
+        from lsst.pipe.base import PipelineTask
 
-        class SomeTaskConfig(Config):
+        class SomeTaskConfig(PipelineTaskConfig, ...):
             id_generator = DetectorVisitIdGeneratorConfig.make_field()
 
-        class SomeTask(Task):
+        class SomeTask(PipelineTaskTask):
 
             ConfigClass = SomeTaskConfig
 
             ...
 
-            def run(self, ..., data_id: DataCoordinate):
+            def runQuantum(self, ..., data_id: DataCoordinate):
                 id_generator = self.config.apply(data_id)
                 catalog = id_generator.make_source_catalog(self.schema) ...
+
+    There is no requirement that `IdGenerator` instances be constructed in
+    `PipelineTask.runQuantum` methods and passed to the ``run`` method, but
+    this is the most common approach.
 
     Code that wishes to instead unpack these record IDs to obtain the release
     ID, data ID and counter value should use the same config (often loaded from
