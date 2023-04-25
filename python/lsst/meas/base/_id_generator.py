@@ -271,6 +271,10 @@ class IdGenerator:
 
     These IDs may not be unpacked, but they also don't need to be, because
     they're just the per-catalog "counter" integer already.
+
+    See Also
+    --------
+    :ref:`lsst.meas.base-generating-source-and-object-ids`
     """
 
     # TODO: remove this method on DM-38687.
