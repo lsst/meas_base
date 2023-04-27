@@ -24,6 +24,7 @@ from .version import *
 from lsst.afw.image import PhotoCalib
 from lsst.afw.geom import SkyWcs
 
+from ._id_generator import *
 from ._measBaseLib import *
 
 from .apCorrRegistry import *

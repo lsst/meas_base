@@ -34,7 +34,6 @@ import lsst.afw.image
 import lsst.afw.table
 import lsst.sphgeom
 
-from lsst.obs.base import ExposureIdInfo
 from lsst.pipe.base import PipelineTaskConnections
 import lsst.pipe.base.connectionTypes as cT
 
@@ -44,6 +43,7 @@ from lsst.skymap import BaseSkyMap
 from .forcedMeasurement import ForcedMeasurementTask
 from .applyApCorr import ApplyApCorrTask
 from .catalogCalculation import CatalogCalculationTask
+from ._id_generator import DetectorVisitIdGeneratorConfig
 
 __all__ = ("ForcedPhotCcdConfig", "ForcedPhotCcdTask",
            "ForcedPhotCcdFromDataFrameTask", "ForcedPhotCcdFromDataFrameConfig")
@@ -248,6 +248,7 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
         doc="Scaling factor to apply to the PSF shape when footprintSource='psf' (ignored otherwise).",
         default=3.0,
     )
+    idGenerator = DetectorVisitIdGeneratorConfig.make_field()
 
     def setDefaults(self):
         # Docstring inherited.
@@ -339,8 +340,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         else:
             inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(inputRefs.exposure.dataId,
                                                                            inputs['exposure'],
-                                                                           inputs['refCat'], inputs['refWcs'],
-                                                                           "visit_detector")
+                                                                           inputs['refCat'], inputs['refWcs'])
             self.attachFootprints(inputs['measCat'], inputs['refCat'], inputs['exposure'], inputs['refWcs'])
             outputs = self.run(**inputs)
             butlerQC.put(outputs, outputRefs)
@@ -483,13 +483,13 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
             mergedRefCat.sort(lsst.afw.table.SourceTable.getParentKey())
         return mergedRefCat
 
-    def generateMeasCat(self, exposureDataId, exposure, refCat, refWcs, idPackerName):
+    def generateMeasCat(self, dataId, exposure, refCat, refWcs):
         """Generate a measurement catalog.
 
         Parameters
         ----------
-        exposureDataId : `DataId`
-            Butler dataId for this exposure.
+        dataId : `lsst.daf.butler.DataCoordinate`
+            Butler data ID for this image, with ``{visit, detector}`` keys.
         exposure : `lsst.afw.image.exposure.Exposure`
             Exposure to generate the catalog for.
         refCat : `lsst.afw.table.SourceCatalog`
@@ -497,8 +497,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         refWcs : `lsst.afw.image.SkyWcs`
             Reference world coordinate system.
             This parameter is not currently used.
-        idPackerName : `str`
-            Type of ID packer to construct from the registry.
 
         Returns
         -------
@@ -507,12 +505,10 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         expId : `int`
             Unique binary id associated with the input exposure
         """
-        exposureIdInfo = ExposureIdInfo.fromDataId(exposureDataId, idPackerName)
-        idFactory = exposureIdInfo.makeSourceIdFactory()
-
+        id_generator = self.config.idGenerator.apply(dataId)
         measCat = self.measurement.generateMeasCat(exposure, refCat, refWcs,
-                                                   idFactory=idFactory)
-        return measCat, exposureIdInfo.expId
+                                                   idFactory=id_generator.make_table_id_factory())
+        return measCat, id_generator.catalog_id
 
     def run(self, measCat, exposure, refCat, refWcs, exposureId=None):
         """Perform forced measurement on a single exposure.
@@ -755,8 +751,8 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
             inputs['refCat'] = refCat
             # generateMeasCat does not use the refWcs.
             inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(
-                inputRefs.exposure.dataId, inputs['exposure'], inputs['refCat'], inputs['refWcs'],
-                "visit_detector")
+                inputRefs.exposure.dataId, inputs['exposure'], inputs['refCat'], inputs['refWcs']
+            )
             # attachFootprints only uses refWcs in ``transformed`` mode, which is not
             # supported in the DataFrame-backed task.
             self.attachFootprints(inputs["measCat"], inputs["refCat"], inputs["exposure"], inputs["refWcs"])

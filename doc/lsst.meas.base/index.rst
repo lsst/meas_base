@@ -18,6 +18,7 @@ Using lsst.meas.base
 
    intro
    tasks_and_algorithms
+   generating_source_and_object_ids
    reconstructing_measurements
 
 Contributing
