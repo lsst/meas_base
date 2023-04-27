@@ -54,6 +54,7 @@ void wrapShapeUtilities(WrapperCollection&);
 void wrapSincCoeffs(WrapperCollection&);
 void wrapSsdsShape(WrapperCollection&);
 void wrapTransform(WrapperCollection&);
+void wrapCalcCompensatedGaussian(WrapperCollection&);
 
 PYBIND11_MODULE(_measBaseLib, mod) {
     lsst::cpputils::python::WrapperCollection wrappers(mod, "lsst.meas.base");
@@ -86,6 +87,7 @@ PYBIND11_MODULE(_measBaseLib, mod) {
     wrapShapeUtilities(wrappers);
     wrapSincCoeffs(wrappers);
     wrapSsdsShape(wrappers);
+    wrapCalcCompensatedGaussian(wrappers);
     wrappers.finish();
 }
 }  // namespace base
