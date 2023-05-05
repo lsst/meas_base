@@ -184,6 +184,8 @@ class TestDataset:
             cls.keys["nChild"] = schema.addField("deblend_nChild", type=np.int32)
             cls.keys["instFlux"] = schema.addField("truth_instFlux", type=np.float64,
                                                    doc="true instFlux", units="count")
+            cls.keys["instFluxErr"] = schema.addField("truth_instFluxErr", type=np.float64,
+                                                      doc="true instFluxErr", units="count")
             cls.keys["centroid"] = lsst.afw.table.Point2DKey.addFields(
                 schema, "truth", "true simulated centroid", "pixel"
             )
@@ -442,6 +444,7 @@ class TestDataset:
         # Create and set the truth catalog fields
         record = self.catalog.addNew()
         record.set(self.keys["instFlux"], instFlux)
+        record.set(self.keys["instFluxErr"], 0)
         record.set(self.keys["centroid"], centroid)
         covariance = np.random.normal(0, 0.1, 4).reshape(2, 2)
         covariance[0, 1] = covariance[1, 0]  # CovarianceMatrixKey assumes symmetric x_y_Cov
