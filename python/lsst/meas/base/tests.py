@@ -567,7 +567,7 @@ class TestDataset:
         mapper.addMinimalSchema(self.schema, True)
         exposure = self.exposure.clone()
         exposure.variance.array[:, :] = noise**2
-        exposure.image.array[:, :] += random_state.randn(exposure.getHeight(), exposure.getWidth())*noise
+        exposure.image.array[:, :] += random_state.randn(exposure.height, exposure.width)*noise
         catalog = lsst.afw.table.SourceCatalog(schema)
         catalog.extend(self.catalog, mapper=mapper)
         # Loop over sources and generate new HeavyFootprints that divide up
@@ -582,13 +582,9 @@ class TestDataset:
             parent = catalog.find(record.getParent())
             footprint = parent.getFootprint()
             parentFluxArrayNoNoise = np.zeros(footprint.getArea(), dtype=np.float32)
-            footprint.spans.flatten(parentFluxArrayNoNoise,
-                                    self.exposure.image.array,
-                                    self.exposure.getXY0())
+            footprint.spans.flatten(parentFluxArrayNoNoise, self.exposure.image.array, self.exposure.getXY0())
             parentFluxArrayNoisy = np.zeros(footprint.getArea(), dtype=np.float32)
-            footprint.spans.flatten(parentFluxArrayNoisy,
-                                    exposure.image.array,
-                                    exposure.getXY0())
+            footprint.spans.flatten(parentFluxArrayNoisy, exposure.image.array, exposure.getXY0())
             oldHeavy = record.getFootprint()
             fraction = (oldHeavy.getImageArray() / parentFluxArrayNoNoise)
             # N.B. this isn't a copy ctor - it's a copy from a vanilla
