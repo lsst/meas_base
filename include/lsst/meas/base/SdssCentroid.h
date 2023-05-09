@@ -52,7 +52,8 @@ public:
     LSST_CONTROL_FIELD(wfac, double, "fiddle factor for adjusting the binning");
     LSST_CONTROL_FIELD(doFootprintCheck, bool, "Do check that the centroid is contained in footprint.");
     LSST_CONTROL_FIELD(maxDistToPeak, double,
-                       "If set > 0, Centroid Check also checks distance from footprint peak.");
+                       "If >0; maximum distance in pixels between the footprint peak and centroid allowed before "
+                       "resetToPeak flag is set.");
     /**
      *  @brief Default constructor
      *
