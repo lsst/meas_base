@@ -208,7 +208,8 @@ public:
      *  @param[in,out] schema        Schema to which the flag_resetToPeak is to be added
      *  @param[in]  name             The name of the algorithm we will be checking
      *  @param[in]  doFootprintCheck Check if centroid is within footprint
-     *  @param[in]  maxDistFromPeak Check if centroid is more than dist from footprint peak
+     *  @param[in]  maxDistFromPeak  If >0; maximum distance in pixels between the footprint
+     *                                peak and centroid allowed before resetToPeak flag is set.
      */
     CentroidChecker(afw::table::Schema& schema, std::string const& name, bool inside = true,
                     double maxDistFromPeak = -1.0);
