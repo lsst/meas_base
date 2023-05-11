@@ -251,6 +251,9 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
     def setDefaults(self):
         # Docstring inherited.
         super().setDefaults()
+        # Footprints here will not be entirely correct, so don't try to make
+        # a biased correction for blended neighbors.
+        self.measurement.doReplaceWithNoise = False
         # Only run a minimal set of plugins, as these measurements are only
         # needed for PSF-like sources.
         self.measurement.plugins.names = ["base_PixelFlags",
