@@ -250,10 +250,15 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
 
     def setDefaults(self):
         # Docstring inherited.
+        super().setDefaults()
+        # Only run a minimal set of plugins, as these measurements are only
+        # needed for PSF-like sources.
+        self.measurement.plugins.names = ["base_PixelFlags",
+                                          "base_TransformedCentroid",
+                                          "base_PsfFlux"]
+        self.measurement.slots.shape = None
         # Make catalogCalculation a no-op by default as no modelFlux is setup
         # by default in ForcedMeasurementTask.
-        super().setDefaults()
-        self.measurement.plugins.names |= ['base_LocalPhotoCalib', 'base_LocalWcs']
         self.catalogCalculation.plugins.names = []
 
 
@@ -666,13 +671,19 @@ class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
         super().setDefaults()
         self.footprintSource = "psf"
         self.measurement.doReplaceWithNoise = False
-        self.measurement.plugins.names = ["base_LocalPhotoCalib", "base_LocalWcs", "base_LocalBackground",
-                                          "base_TransformedCentroidFromCoord", "base_PsfFlux",
-                                          "base_PixelFlags"]
+        # Only run a minimal set of plugins, as these measurements are only
+        # needed for PSF-like sources.
+        self.measurement.plugins.names = ["base_PixelFlags",
+                                          "base_TransformedCentroidFromCoord",
+                                          "base_PsfFlux"]
+        self.measurement.slots.shape = None
+        # Make catalogCalculation a no-op by default as no modelFlux is setup
+        # by default in ForcedMeasurementTask.
+        self.catalogCalculation.plugins.names = []
+
         self.measurement.copyColumns = {'id': 'diaObjectId', 'coord_ra': 'coord_ra', 'coord_dec': 'coord_dec'}
         self.measurement.slots.centroid = "base_TransformedCentroidFromCoord"
         self.measurement.slots.psfFlux = "base_PsfFlux"
-        self.measurement.slots.shape = None
 
     def validate(self):
         super().validate()
