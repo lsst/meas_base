@@ -258,7 +258,11 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
         # needed for PSF-like sources.
         self.measurement.plugins.names = ["base_PixelFlags",
                                           "base_TransformedCentroid",
-                                          "base_PsfFlux"]
+                                          "base_PsfFlux",
+                                          "base_LocalBackground",
+                                          "base_LocalPhotoCalib",
+                                          "base_LocalWcs",
+                                          ]
         self.measurement.slots.shape = None
         # Make catalogCalculation a no-op by default as no modelFlux is setup
         # by default in ForcedMeasurementTask.
@@ -678,7 +682,11 @@ class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
         # needed for PSF-like sources.
         self.measurement.plugins.names = ["base_PixelFlags",
                                           "base_TransformedCentroidFromCoord",
-                                          "base_PsfFlux"]
+                                          "base_PsfFlux",
+                                          "base_LocalBackground",
+                                          "base_LocalPhotoCalib",
+                                          "base_LocalWcs",
+                                          ]
         self.measurement.slots.shape = None
         # Make catalogCalculation a no-op by default as no modelFlux is setup
         # by default in ForcedMeasurementTask.
