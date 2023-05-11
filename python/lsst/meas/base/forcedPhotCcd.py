@@ -19,8 +19,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import warnings
-
 import pandas as pd
 import numpy as np
 
@@ -264,8 +262,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
 
     Parameters
     ----------
-    butler : `None`
-        Deprecated and unused. Should always be `None`.
     refSchema : `lsst.afw.table.Schema`, optional
         The schema of the reference catalog, passed to the constructor of the
         references subtask. Optional, but must be specified if ``initInputs``
@@ -281,13 +277,8 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
     _DefaultName = "forcedPhotCcd"
     dataPrefix = ""
 
-    def __init__(self, butler=None, refSchema=None, initInputs=None, **kwds):
+    def __init__(self, refSchema=None, initInputs=None, **kwds):
         super().__init__(**kwds)
-
-        if butler is not None:
-            warnings.warn("The 'butler' parameter is no longer used and can be safely removed.",
-                          category=FutureWarning, stacklevel=2)
-            butler = None
 
         if initInputs is not None:
             refSchema = initInputs['inputSchema'].schema
@@ -701,14 +692,9 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
     _DefaultName = "forcedPhotCcdFromDataFrame"
     ConfigClass = ForcedPhotCcdFromDataFrameConfig
 
-    def __init__(self, butler=None, refSchema=None, initInputs=None, **kwds):
+    def __init__(self, refSchema=None, initInputs=None, **kwds):
         # Parent's init assumes that we have a reference schema; Cannot reuse
         pipeBase.PipelineTask.__init__(self, **kwds)
-
-        if butler is not None:
-            warnings.warn("The 'butler' parameter is no longer used and can be safely removed.",
-                          category=FutureWarning, stacklevel=2)
-            butler = None
 
         self.makeSubtask("measurement", refSchema=lsst.afw.table.SourceTable.makeMinimalSchema())
 
