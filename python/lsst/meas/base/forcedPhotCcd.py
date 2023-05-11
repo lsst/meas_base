@@ -269,7 +269,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
     initInputs : `dict`
         Dictionary that can contain a key ``inputSchema`` containing the
         schema. If present will override the value of ``refSchema``.
-    **kwds
+    **kwargs
         Keyword arguments are passed to the supertask constructor.
     """
 
@@ -277,8 +277,8 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
     _DefaultName = "forcedPhotCcd"
     dataPrefix = ""
 
-    def __init__(self, refSchema=None, initInputs=None, **kwds):
-        super().__init__(**kwds)
+    def __init__(self, refSchema=None, initInputs=None, **kwargs):
+        super().__init__(**kwargs)
 
         if initInputs is not None:
             refSchema = initInputs['inputSchema'].schema
@@ -692,9 +692,9 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
     _DefaultName = "forcedPhotCcdFromDataFrame"
     ConfigClass = ForcedPhotCcdFromDataFrameConfig
 
-    def __init__(self, refSchema=None, initInputs=None, **kwds):
+    def __init__(self, refSchema=None, initInputs=None, **kwargs):
         # Parent's init assumes that we have a reference schema; Cannot reuse
-        pipeBase.PipelineTask.__init__(self, **kwds)
+        pipeBase.PipelineTask.__init__(self, **kwargs)
 
         self.makeSubtask("measurement", refSchema=lsst.afw.table.SourceTable.makeMinimalSchema())
 
