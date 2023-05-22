@@ -38,7 +38,6 @@ from .diaCalculationPlugins import *
 from .footprintArea import *
 from .forcedMeasurement import *
 from .forcedPhotCcd import *
-from .forcedPhotCoadd import *
 from .noiseReplacer import *
 from .pluginRegistry import *
 from .plugins import *
