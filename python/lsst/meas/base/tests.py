@@ -419,6 +419,11 @@ class TestDataset:
     def addSource(self, instFlux, centroid, shape=None, setPeakSignificance=True):
         """Add a source to the simulation.
 
+        To insert a point source with a given signal-to-noise (sn), the total
+        ``instFlux`` should be: ``sn*noise*psf_scale``, where ``noise`` is the
+        noise you will pass to ``realize()``, and
+        ``psf_scale=sqrt(4*pi*r^2)``, where ``r`` is the width of the PSF.
+
         Parameters
         ----------
         instFlux : `float`
