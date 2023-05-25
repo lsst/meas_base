@@ -328,12 +328,12 @@ class InputCountConfig(BaseMeasurementPluginConfig):
 
 
 class InputCountPlugin(GenericPlugin):
-    """Count the number of input images which contributed to a a source.
+    """Count the number of input images which contributed to a source.
 
     Parameters
     ----------
     config : `InputCountConfig`
-        Plugin configuraion.
+        Plugin configuration.
     name : `str`
         Plugin name.
     schema : `lsst.afw.table.Schema`
