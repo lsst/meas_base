@@ -165,6 +165,15 @@ class TestDataset:
                                             schema=TestDataset.makeMinimalSchema())
     """
 
+    def __init__(self, bbox, threshold=10.0, exposure=None, **kwds):
+        if exposure is None:
+            exposure = self.makeEmptyExposure(bbox, **kwds)
+        self.threshold = lsst.afw.detection.Threshold(threshold, lsst.afw.detection.Threshold.VALUE)
+        self.exposure = exposure
+        self.psfShape = self.exposure.getPsf().computeShape(bbox.getCenter())
+        self.schema = self.makeMinimalSchema()
+        self.catalog = lsst.afw.table.SourceCatalog(self.schema)
+
     @classmethod
     def makeMinimalSchema(cls):
         """Return the minimal schema needed to hold truth catalog fields.
@@ -381,15 +390,6 @@ class TestDataset:
         image = lsst.afw.image.ImageF(bbox)
         image.array[:, :] = np.exp(-0.5*(xt**2 + yt**2))*instFlux/(2.0*ellipse.getCore().getArea())
         return image
-
-    def __init__(self, bbox, threshold=10.0, exposure=None, **kwds):
-        if exposure is None:
-            exposure = self.makeEmptyExposure(bbox, **kwds)
-        self.threshold = lsst.afw.detection.Threshold(threshold, lsst.afw.detection.Threshold.VALUE)
-        self.exposure = exposure
-        self.psfShape = self.exposure.getPsf().computeShape(bbox.getCenter())
-        self.schema = self.makeMinimalSchema()
-        self.catalog = lsst.afw.table.SourceCatalog(self.schema)
 
     def _installFootprint(self, record, image, setPeakSignificance=True):
         """Create simulated Footprint and add it to a truth catalog record.
