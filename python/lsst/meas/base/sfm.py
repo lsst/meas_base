@@ -146,7 +146,8 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
                  "base_Variance",
                  "base_Blendedness",
                  "base_LocalBackground",
-                 "base_CompensatedGaussianFlux"
+                 "base_CompensatedGaussianFlux",
+                 "base_ClassificationSizeExtendedness",
                  ],
         doc="Plugins to be run and their configuration"
     )

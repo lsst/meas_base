@@ -66,6 +66,7 @@ __all__ = (
     "InputCountConfig", "SingleFrameInputCountPlugin", "ForcedInputCountPlugin",
     "SingleFramePeakCentroidConfig", "SingleFramePeakCentroidPlugin",
     "SingleFrameSkyCoordConfig", "SingleFrameSkyCoordPlugin",
+    "SingleFrameMomentsClassifierConfig", "SingleFrameMomentsClassifierPlugin",
     "ForcedPeakCentroidConfig", "ForcedPeakCentroidPlugin",
     "ForcedTransformedCentroidConfig", "ForcedTransformedCentroidPlugin",
     "ForcedTransformedCentroidFromCoordConfig",
@@ -638,6 +639,84 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
         # don't allocate any fields.  Should consider fixing as part of
         # DM-1011
         pass
+
+
+class SingleFrameMomentsClassifierConfig(SingleFramePluginConfig):
+    """Configuration for moments-based star-galaxy classifier."""
+
+    exponent = lsst.pex.config.Field[float](
+        doc="Exponent to raise the PSF size squared (Ixx + Iyy) to, "
+            "in the likelihood normalization",
+        default=0.5,
+    )
+
+
+@register("base_ClassificationSizeExtendedness")
+class SingleFrameMomentsClassifierPlugin(SingleFramePlugin):
+    """Classify objects by comparing their moments-based trace radius to PSF's.
+
+    The plugin computes chi^2 as ((T_obj - T_psf)/T_psf^exponent)^2, where
+    T_obj is the sum of Ixx and Iyy moments of the object, and T_psf is the
+    sum of Ixx and Iyy moments of the PSF. The exponent is configurable.
+    The measure of being a galaxy is then 1 - exp(-0.5*chi^2).
+
+    Parameters
+    ----------
+    config : `MomentsClassifierConfig`
+        Plugin configuration.
+    name : `str`
+        Plugin name.
+    schema : `~lsst.afw.table.Schema`
+        The schema for the measurement output catalog. New fields will be
+        added to hold measurements produced by this plugin.
+    metadata : `~lsst.daf.base.PropertySet`
+        Plugin metadata that will be attached to the output catalog.
+
+    Notes
+    -----
+    The ``measure`` method of the plugin requires a value for the ``exposure``
+    argument to maintain consistent API, but it is not used in the measurement.
+    """
+
+    ConfigClass = SingleFrameMomentsClassifierConfig
+
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.FLUX_ORDER
+
+    def __init__(self, config, name, schema, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
+        self.key = schema.addField(name + "_value",
+                                   type="D",
+                                   doc="Measure of being a galaxy based on trace of second order moments",
+                                   )
+        self.flag = schema.addField(name + "_flag", type="Flag", doc="Moments-based classification failed")
+
+    def measure(self, measRecord, exposure) -> None:
+        # Docstring inherited.
+
+        if measRecord.getShapeFlag():
+            raise MeasurementError("Shape flag is set.  Required for " + self.name + " algorithm")
+
+        shape = measRecord.getShape()
+        psf_shape = measRecord.getPsfShape()
+
+        ixx = shape.getIxx()
+        iyy = shape.getIyy()
+        ixx_psf = psf_shape.getIxx()
+        iyy_psf = psf_shape.getIyy()
+
+        object_t = ixx + iyy
+        psf_t = ixx_psf + iyy_psf
+
+        chi_sq = ((object_t - psf_t)/(psf_t**self.config.exponent))**2.
+        likelihood = 1. - np.exp(-0.5*chi_sq)
+        measRecord.set(self.key, likelihood)
+
+    def fail(self, measRecord, error=None) -> None:
+        # Docstring inherited.
+        measRecord.set(self.key, np.nan)
+        measRecord.set(self.flag, True)
 
 
 class ForcedPeakCentroidConfig(ForcedPluginConfig):
