@@ -119,7 +119,15 @@ class SingleFrameCompensatedGaussianFluxPlugin(SingleFramePlugin):
             mask_str = f"{base_key}_mask_bits"
             mask_key = schema.addField(mask_str, type=np.int32, doc="Mask bits set within aperture.")
 
-            self.width_keys[width] = (flux_key, err_key, mask_key)
+            # individual failure flags
+            flag_str = f"{base_key}_flag"
+            flag_key = schema.addField(
+                flag_str,
+                type="Flag",
+                doc="Failure flag for Compensated Gaussian flux.",
+            )
+
+            self.width_keys[width] = (flux_key, err_key, mask_key, flag_key)
             self._rads[width] = math.ceil(sps.norm.ppf((0.995,), scale=width * config.t)[0])
 
         self._max_rad = max(self._rads)
@@ -142,7 +150,7 @@ class SingleFrameCompensatedGaussianFluxPlugin(SingleFramePlugin):
         y_floor = math.floor(y)
         x_floor = math.floor(x)
 
-        for width, (flux_key, err_key, mask_key) in self.width_keys.items():
+        for width, (flux_key, err_key, mask_key, flag_key) in self.width_keys.items():
             rad = self._rads[width]
             y_slice = slice(y_floor - rad, y_floor + rad + 1, 1)
             x_slice = slice(x_floor - rad, x_floor + rad + 1, 1)
@@ -160,3 +168,4 @@ class SingleFrameCompensatedGaussianFluxPlugin(SingleFramePlugin):
             measRecord.set(flux_key, flux)
             measRecord.set(err_key, np.sqrt(var))
             measRecord.set(mask_key, np.bitwise_or.reduce(exposure.mask.array[y_slice, x_slice], axis=None))
+            measRecord.set(flag_key, False)
