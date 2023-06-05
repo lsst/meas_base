@@ -46,11 +46,11 @@ class CountDiaPlugin(DiaObjectCalculationPlugin):
                   diaObjectId,
                   diaSources,
                   filterDiaSources,
-                  filterName,
+                  band,
                   **kwargs):
         """
         """
-        diaObjects.at[diaObjectId, "count"] = len(diaSources["psFlux"])
+        diaObjects.at[diaObjectId, "count"] = len(diaSources["psfFlux"])
 
 
 @register("testDiaPlugin")
@@ -69,14 +69,14 @@ class DiaPlugin(DiaObjectCalculationPlugin):
                   diaObjects,
                   diaSources,
                   filterDiaSources,
-                  filterName,
+                  band,
                   **kwargs):
         """
         """
-        diaObjects.loc[:, "%sMeanFlux" % filterName] = \
-            filterDiaSources.psFlux.agg(np.nanmean)
-        diaObjects.loc[:, "%sStdFlux" % filterName] = \
-            filterDiaSources.psFlux.agg(np.nanstd)
+        diaObjects.loc[:, "%sMeanFlux" % band] = \
+            filterDiaSources.psfFlux.agg(np.nanmean)
+        diaObjects.loc[:, "%sStdFlux" % band] = \
+            filterDiaSources.psfFlux.agg(np.nanstd)
 
 
 @register("testDependentDiaPlugin")
@@ -95,12 +95,12 @@ class DependentDiaPlugin(DiaObjectCalculationPlugin):
                   diaObjectId,
                   diaSources,
                   filterDiaSources,
-                  filterName,
+                  band,
                   **kwargs):
-        diaObjects.at[diaObjectId, "%sChiFlux" % filterName] = np.sum(
-            ((filterDiaSources["psFlux"]
-              - diaObjects.at[diaObjectId, "%sMeanFlux" % filterName])
-             / filterDiaSources["psFluxErr"]) ** 2)
+        diaObjects.at[diaObjectId, "%sChiFlux" % band] = np.sum(
+            ((filterDiaSources["psfFlux"]
+              - diaObjects.at[diaObjectId, "%sMeanFlux" % band])
+             / filterDiaSources["psfFluxErr"]) ** 2)
 
 
 @register("testCollidingDiaPlugin")
@@ -118,9 +118,9 @@ class CollidingDiaPlugin(DiaObjectCalculationPlugin):
                   diaObjectId,
                   diaSources,
                   filterDiaSources,
-                  filterName,
+                  band,
                   **kwargs):
-        diaObjects.at[diaObjectId, "%sMeanFlux" % filterName] = 0.0
+        diaObjects.at[diaObjectId, "%sMeanFlux" % band] = 0.0
 
 
 class TestDiaCalcluation(unittest.TestCase):
@@ -134,32 +134,32 @@ class TestDiaCalcluation(unittest.TestCase):
 
         # Create diaSources from "previous runs" and newly created ones.
         diaSources = [{"diaSourceId": objId, "diaObjectId": objId,
-                       "psFlux": 0., "psFluxErr": 1.,
-                       "totFlux": 0., "totFluxErr": 1.,
-                       "midPointTai": 0, "filterName": "g"}
+                       "psfFlux": 0., "psfFluxErr": 1.,
+                       "scienceFlux": 0., "scienceFluxErr": 1.,
+                       "midpointMjdTai": 0, "band": "g"}
                       for objId in range(5)]
         diaSources.extend([{"diaSourceId": 5 + objId, "diaObjectId": objId,
-                            "psFlux": 0., "psFluxErr": 1.,
-                            "totFlux": 0., "totFluxErr": 1.,
-                            "midPointTai": 0, "filterName": "r"}
+                            "psfFlux": 0., "psfFluxErr": 1.,
+                            "scienceFlux": 0., "scienceFluxErr": 1.,
+                            "midpointMjdTai": 0, "band": "r"}
                            for objId in range(5)])
         diaSources.extend([{"diaSourceId": 10, "diaObjectId": 0,
-                            "psFlux": 1., "psFluxErr": 1.,
-                            "totFlux": 0., "totFluxErr": 0.,
-                            "midPointTai": 0, "filterName": "g"},
+                            "psfFlux": 1., "psfFluxErr": 1.,
+                            "scienceFlux": 0., "scienceFluxErr": 0.,
+                            "midpointMjdTai": 0, "band": "g"},
                            {"diaSourceId": 11, "diaObjectId": 1,
-                            "psFlux": 1., "psFluxErr": 1.,
-                            "totFlux": 0., "totFluxErr": 0.,
-                            "midPointTai": 0, "filterName": "g"},
+                            "psfFlux": 1., "psfFluxErr": 1.,
+                            "scienceFlux": 0., "scienceFluxErr": 0.,
+                            "midpointMjdTai": 0, "band": "g"},
                            {"diaSourceId": 12, "diaObjectId": 2,
-                            "psFlux": np.nan, "psFluxErr": 1.,
-                            "totFlux": 0., "totFluxErr": 0.,
-                            "midPointTai": 0, "filterName": "g"},
+                            "psfFlux": np.nan, "psfFluxErr": 1.,
+                            "scienceFlux": 0., "scienceFluxErr": 0.,
+                            "midpointMjdTai": 0, "band": "g"},
                            {"diaSourceId": self.newDiaObjectId,
                             "diaObjectId": self.newDiaObjectId,
-                            "psFlux": 1., "psFluxErr": 1.,
-                            "totFlux": 0., "totFluxErr": 0.,
-                            "midPointTai": 0, "filterName": "g"}])
+                            "psfFlux": 1., "psfFluxErr": 1.,
+                            "scienceFlux": 0., "scienceFluxErr": 0.,
+                            "midpointMjdTai": 0, "band": "g"}])
         self.diaSources = pd.DataFrame(data=diaSources)
 
         self.updatedDiaObjectIds = np.array([0, 1, 2, self.newDiaObjectId],
@@ -206,9 +206,9 @@ class TestDiaCalcluation(unittest.TestCase):
         """
         unindexedDiaSources = pd.DataFrame(data=[
             {"diaSourceId": objId, "diaObjectId": 0,
-             "psFlux": 0., "psFluxErr": 1.,
-             "totFlux": 0., "totFluxErr": 1.,
-             "midPointTai": 0, "filterName": "g"}
+             "psfFlux": 0., "psfFluxErr": 1.,
+             "scienceFlux": 0., "scienceFluxErr": 1.,
+             "midpointMjdTai": 0, "band": "g"}
             for objId in range(1000)])
         unindexedDiaSources = pd.concat(
             (
@@ -218,9 +218,9 @@ class TestDiaCalcluation(unittest.TestCase):
                         {
                             "diaSourceId": objId + 1000,
                             "diaObjectId": 0,
-                            "psFlux": 0., "psFluxErr": 1.,
-                            "totFlux": 0., "totFluxErr": 1.,
-                            "midPointTai": 0, "filterName": "g",
+                            "psfFlux": 0., "psfFluxErr": 1.,
+                            "scienceFlux": 0., "scienceFluxErr": 1.,
+                            "midpointMjdTai": 0, "band": "g",
                         }
                         for objId in range(10)
                     ]
