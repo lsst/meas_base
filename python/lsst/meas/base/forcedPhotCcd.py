@@ -19,8 +19,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import warnings
-
 import pandas as pd
 import numpy as np
 
@@ -252,10 +250,22 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
 
     def setDefaults(self):
         # Docstring inherited.
+        super().setDefaults()
+        # Footprints here will not be entirely correct, so don't try to make
+        # a biased correction for blended neighbors.
+        self.measurement.doReplaceWithNoise = False
+        # Only run a minimal set of plugins, as these measurements are only
+        # needed for PSF-like sources.
+        self.measurement.plugins.names = ["base_PixelFlags",
+                                          "base_TransformedCentroid",
+                                          "base_PsfFlux",
+                                          "base_LocalBackground",
+                                          "base_LocalPhotoCalib",
+                                          "base_LocalWcs",
+                                          ]
+        self.measurement.slots.shape = None
         # Make catalogCalculation a no-op by default as no modelFlux is setup
         # by default in ForcedMeasurementTask.
-        super().setDefaults()
-        self.measurement.plugins.names |= ['base_LocalPhotoCalib', 'base_LocalWcs']
         self.catalogCalculation.plugins.names = []
 
 
@@ -264,8 +274,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
 
     Parameters
     ----------
-    butler : `None`
-        Deprecated and unused. Should always be `None`.
     refSchema : `lsst.afw.table.Schema`, optional
         The schema of the reference catalog, passed to the constructor of the
         references subtask. Optional, but must be specified if ``initInputs``
@@ -273,7 +281,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
     initInputs : `dict`
         Dictionary that can contain a key ``inputSchema`` containing the
         schema. If present will override the value of ``refSchema``.
-    **kwds
+    **kwargs
         Keyword arguments are passed to the supertask constructor.
     """
 
@@ -281,13 +289,8 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
     _DefaultName = "forcedPhotCcd"
     dataPrefix = ""
 
-    def __init__(self, butler=None, refSchema=None, initInputs=None, **kwds):
-        super().__init__(**kwds)
-
-        if butler is not None:
-            warnings.warn("The 'butler' parameter is no longer used and can be safely removed.",
-                          category=FutureWarning, stacklevel=2)
-            butler = None
+    def __init__(self, refSchema=None, initInputs=None, **kwargs):
+        super().__init__(**kwargs)
 
         if initInputs is not None:
             refSchema = initInputs['inputSchema'].schema
@@ -675,13 +678,23 @@ class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
         super().setDefaults()
         self.footprintSource = "psf"
         self.measurement.doReplaceWithNoise = False
-        self.measurement.plugins.names = ["base_LocalPhotoCalib", "base_LocalWcs", "base_LocalBackground",
-                                          "base_TransformedCentroidFromCoord", "base_PsfFlux",
-                                          "base_PixelFlags"]
+        # Only run a minimal set of plugins, as these measurements are only
+        # needed for PSF-like sources.
+        self.measurement.plugins.names = ["base_PixelFlags",
+                                          "base_TransformedCentroidFromCoord",
+                                          "base_PsfFlux",
+                                          "base_LocalBackground",
+                                          "base_LocalPhotoCalib",
+                                          "base_LocalWcs",
+                                          ]
+        self.measurement.slots.shape = None
+        # Make catalogCalculation a no-op by default as no modelFlux is setup
+        # by default in ForcedMeasurementTask.
+        self.catalogCalculation.plugins.names = []
+
         self.measurement.copyColumns = {'id': 'diaObjectId', 'coord_ra': 'coord_ra', 'coord_dec': 'coord_dec'}
         self.measurement.slots.centroid = "base_TransformedCentroidFromCoord"
         self.measurement.slots.psfFlux = "base_PsfFlux"
-        self.measurement.slots.shape = None
 
     def validate(self):
         super().validate()
@@ -701,14 +714,9 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
     _DefaultName = "forcedPhotCcdFromDataFrame"
     ConfigClass = ForcedPhotCcdFromDataFrameConfig
 
-    def __init__(self, butler=None, refSchema=None, initInputs=None, **kwds):
+    def __init__(self, refSchema=None, initInputs=None, **kwargs):
         # Parent's init assumes that we have a reference schema; Cannot reuse
-        pipeBase.PipelineTask.__init__(self, **kwds)
-
-        if butler is not None:
-            warnings.warn("The 'butler' parameter is no longer used and can be safely removed.",
-                          category=FutureWarning, stacklevel=2)
-            butler = None
+        pipeBase.PipelineTask.__init__(self, **kwargs)
 
         self.makeSubtask("measurement", refSchema=lsst.afw.table.SourceTable.makeMinimalSchema())
 
