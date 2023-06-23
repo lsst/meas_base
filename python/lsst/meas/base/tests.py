@@ -28,6 +28,8 @@ import lsst.afw.table
 import lsst.afw.image
 import lsst.afw.detection
 import lsst.afw.geom
+import lsst.afw.coord
+import lsst.daf.base
 import lsst.pex.exceptions
 
 from .sfm import SingleFrameMeasurementTask
@@ -358,9 +360,16 @@ class TestDataset:
         exposure = lsst.afw.image.ExposureF(bbox)
         psf = lsst.afw.detection.GaussianPsf(psfDim, psfDim, psfSigma)
         photoCalib = lsst.afw.image.PhotoCalib(calibration)
+        visitInfo = lsst.afw.image.VisitInfo(id=1234,
+                                             exposureTime=30.0,
+                                             date=lsst.daf.base.DateTime(60000.0),
+                                             observatory=lsst.afw.coord.Observatory(11.1*lsst.geom.degrees,
+                                                                                    22.2*lsst.geom.degrees,
+                                                                                    0.333))
         exposure.setWcs(wcs)
         exposure.setPsf(psf)
         exposure.setPhotoCalib(photoCalib)
+        exposure.info.setVisitInfo(visitInfo)
         return exposure
 
     @staticmethod
