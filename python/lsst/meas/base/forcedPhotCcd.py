@@ -19,6 +19,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import warnings
+
 import pandas as pd
 import numpy as np
 
@@ -32,6 +34,7 @@ import lsst.afw.image
 import lsst.afw.table
 import lsst.sphgeom
 
+from lsst.utils.introspection import find_outside_stacklevel
 from lsst.pipe.base import PipelineTaskConnections
 import lsst.pipe.base.connectionTypes as cT
 
@@ -52,7 +55,11 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
                                defaultTemplates={"inputCoaddName": "deep",
                                                  "inputName": "calexp",
                                                  "skyWcsName": "gbdesAstrometricFit",
-                                                 "photoCalibName": "fgcm"}):
+                                                 "photoCalibName": "fgcm"},
+                               # TODO: remove on DM-39854
+                               deprecatedTemplates={"skyWcsName": "Deprecated; will be removed after v27.",
+                                                    "photoCalibName": "Deprecated; will be removed after v27."
+                                                    }):
     inputSchema = cT.InitInput(
         doc="Schema for the input measurement catalogs.",
         name="{inputCoaddName}Coadd_ref_schema",
@@ -101,6 +108,8 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
         name="{skyWcsName}SkyWcsCatalog",
         storageClass="ExposureCatalog",
         dimensions=["instrument", "visit", "tract"],
+        # TODO: remove on DM-39854
+        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v27."
     )
     externalSkyWcsGlobalCatalog = cT.Input(
         doc=("Per-visit wcs calibrations computed globally (with no tract information). "
@@ -109,6 +118,8 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
         name="finalVisitSummary",
         storageClass="ExposureCatalog",
         dimensions=["instrument", "visit"],
+        # TODO: remove on DM-39854
+        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v27."
     )
     externalPhotoCalibTractCatalog = cT.Input(
         doc=("Per-tract, per-visit photometric calibrations.  These catalogs use the "
@@ -116,6 +127,8 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
         name="{photoCalibName}PhotoCalibCatalog",
         storageClass="ExposureCatalog",
         dimensions=["instrument", "visit", "tract"],
+        # TODO: remove on DM-39854
+        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v27."
     )
     externalPhotoCalibGlobalCatalog = cT.Input(
         doc=("Per-visit photometric calibrations computed globally (with no tract "
@@ -124,6 +137,8 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
         name="finalVisitSummary",
         storageClass="ExposureCatalog",
         dimensions=["instrument", "visit"],
+        # TODO: remove on DM-39854
+        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v27."
     )
     finalizedPsfApCorrCatalog = cT.Input(
         doc=("Per-visit finalized psf models and aperture correction maps. "
@@ -132,6 +147,8 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
         name="finalized_psf_ap_corr_catalog",
         storageClass="ExposureCatalog",
         dimensions=["instrument", "visit"],
+        # TODO: remove on DM-39854
+        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v27."
     )
     measCat = cT.Output(
         doc="Output forced photometry catalog.",
@@ -194,31 +211,41 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
         default=False,
         doc=("Whether to apply external photometric calibration via an "
              "`lsst.afw.image.PhotoCalib` object."),
+        # TODO: remove on DM-39854
+        deprecated="Removed in favor of the 'visitSummary' connection; will be removed after v27.",
     )
     useGlobalExternalPhotoCalib = lsst.pex.config.Field(
         dtype=bool,
-        default=True,
+        default=False,
         doc=("When using doApplyExternalPhotoCalib, use 'global' calibrations "
              "that are not run per-tract.  When False, use per-tract photometric "
-             "calibration files.")
+             "calibration files."),
+        # TODO: remove on DM-39854
+        deprecated="Removed in favor of the 'visitSummary' connection; will be removed after v27.",
     )
     doApplyExternalSkyWcs = lsst.pex.config.Field(
         dtype=bool,
         default=False,
         doc=("Whether to apply external astrometric calibration via an "
              "`lsst.afw.geom.SkyWcs` object."),
+        # TODO: remove on DM-39854
+        deprecated="Removed in favor of the 'visitSummary' connection; will be removed after v27.",
     )
     useGlobalExternalSkyWcs = lsst.pex.config.Field(
         dtype=bool,
-        default=True,
+        default=False,
         doc=("When using doApplyExternalSkyWcs, use 'global' calibrations "
              "that are not run per-tract.  When False, use per-tract wcs "
-             "files.")
+             "files."),
+        # TODO: remove on DM-39854
+        deprecated="Removed in favor of the 'visitSummary' connection; will be removed after v27.",
     )
     doApplyFinalizedPsf = lsst.pex.config.Field(
         dtype=bool,
         default=False,
         doc="Whether to apply finalized psf models and aperture correction map.",
+        # TODO: remove on DM-39854
+        deprecated="Removed in favor of the 'visitSummary' connection; will be removed after v27.",
     )
     doApplySkyCorr = lsst.pex.config.Field(
         dtype=bool,
@@ -362,21 +389,25 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         skyCorr : `lsst.afw.math.backgroundList`, optional
             Sky correction frame to apply if doApplySkyCorr=True.
         externalSkyWcsCatalog :  `lsst.afw.table.ExposureCatalog`, optional
-            Exposure catalog with external skyWcs to be applied
-            if config.doApplyExternalSkyWcs=True.  Catalog uses the detector id
-            for the catalog id, sorted on id for fast lookup.
+            Exposure catalog with external skyWcs to be applied if
+            config.doApplyExternalSkyWcs=True.  Catalog uses the detector id
+            for the catalog id, sorted on id for fast lookup. Deprecated in
+            favor of ``visitSummary`` and will be removed after v27.
         externalPhotoCalibCatalog : `lsst.afw.table.ExposureCatalog`, optional
-            Exposure catalog with external photoCalib to be applied
-            if config.doApplyExternalPhotoCalib=True.  Catalog uses the detector
-            id for the catalog id, sorted on id for fast lookup.
+            Exposure catalog with external photoCalib to be applied if
+            config.doApplyExternalPhotoCalib=True.  Catalog uses the detector
+            id for the catalog id, sorted on id for fast lookup. Deprecated in
+            favor of ``visitSummary`` and will be removed after v27.
         finalizedPsfApCorrCatalog : `lsst.afw.table.ExposureCatalog`, optional
             Exposure catalog with finalized psf models and aperture correction
-            maps to be applied if config.doApplyFinalizedPsf=True.  Catalog uses
-            the detector id for the catalog id, sorted on id for fast lookup.
+            maps to be applied if config.doApplyFinalizedPsf=True.  Catalog
+            uses the detector id for the catalog id, sorted on id for fast
+            lookup. Deprecated in favor of ``visitSummary`` and will be removed
+            after v27.
         visitSummary : `lsst.afw.table.ExposureCatalog`, optional
             Exposure catalog with update calibrations; any not-None calibration
-            objects attached will be used.  These are applied first and may
-            be overridden by other arguments.
+            objects attached will be used.  These are applied first and may be
+            overridden by other arguments.
 
         Returns
         -------
@@ -399,6 +430,13 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
                 exposure.info.setApCorrMap(apCorrMap)
 
         if externalPhotoCalibCatalog is not None:
+            # TODO: remove on DM-39854
+            warnings.warn(
+                "The 'externalPhotoCalibCatalog' argument is deprecated in favor of 'visitSummary' and will "
+                "be removed after v27.",
+                FutureWarning,
+                stacklevel=find_outside_stacklevel("lsst.meas.base"),
+            )
             row = externalPhotoCalibCatalog.find(detectorId)
             if row is None:
                 self.log.warning("Detector id %s not found in externalPhotoCalibCatalog; "
@@ -412,6 +450,13 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
                     exposure.setPhotoCalib(photoCalib)
 
         if externalSkyWcsCatalog is not None:
+            # TODO: remove on DM-39854
+            warnings.warn(
+                "The 'externalSkyWcsCatalog' argument is deprecated in favor of 'visitSummary' and will "
+                "be removed after v27.",
+                FutureWarning,
+                stacklevel=find_outside_stacklevel("lsst.meas.base"),
+            )
             row = externalSkyWcsCatalog.find(detectorId)
             if row is None:
                 self.log.warning("Detector id %s not found in externalSkyWcsCatalog; "
@@ -425,6 +470,13 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
                     exposure.setWcs(skyWcs)
 
         if finalizedPsfApCorrCatalog is not None:
+            # TODO: remove on DM-39854
+            warnings.warn(
+                "The 'finalizedPsfApCorrCatalog' argument is deprecated in favor of 'visitSummary' and will "
+                "be removed after v27.",
+                FutureWarning,
+                stacklevel=find_outside_stacklevel("lsst.meas.base"),
+            )
             row = finalizedPsfApCorrCatalog.find(detectorId)
             if row is None:
                 self.log.warning("Detector id %s not found in finalizedPsfApCorrCatalog; "
@@ -596,7 +648,12 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
                                             defaultTemplates={"inputCoaddName": "goodSeeing",
                                                               "inputName": "calexp",
                                                               "skyWcsName": "gbdesAstrometricFit",
-                                                              "photoCalibName": "fgcm"}):
+                                                              "photoCalibName": "fgcm"},
+                                            # TODO: remove on DM-39854
+                                            deprecatedTemplates={
+                                                "skyWcsName": "Deprecated; will be removed after v27.",
+                                                "photoCalibName": "Deprecated; will be removed after v27."
+                                            }):
     refCat = cT.Input(
         doc="Catalog of positions at which to force photometry.",
         name="{inputCoaddName}Diff_fullDiaObjTable",
@@ -629,6 +686,8 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
         name="{skyWcsName}SkyWcsCatalog",
         storageClass="ExposureCatalog",
         dimensions=["instrument", "visit", "tract"],
+        # TODO: remove on DM-39854
+        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v27."
     )
     externalSkyWcsGlobalCatalog = cT.Input(
         doc=("Per-visit wcs calibrations computed globally (with no tract information). "
@@ -637,6 +696,8 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
         name="{skyWcsName}SkyWcsCatalog",
         storageClass="ExposureCatalog",
         dimensions=["instrument", "visit"],
+        # TODO: remove on DM-39854
+        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v27."
     )
     externalPhotoCalibTractCatalog = cT.Input(
         doc=("Per-tract, per-visit photometric calibrations.  These catalogs use the "
@@ -644,6 +705,8 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
         name="{photoCalibName}PhotoCalibCatalog",
         storageClass="ExposureCatalog",
         dimensions=["instrument", "visit", "tract"],
+        # TODO: remove on DM-39854
+        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v27."
     )
     externalPhotoCalibGlobalCatalog = cT.Input(
         doc=("Per-visit photometric calibrations computed globally (with no tract "
@@ -652,6 +715,8 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
         name="{photoCalibName}PhotoCalibCatalog",
         storageClass="ExposureCatalog",
         dimensions=["instrument", "visit"],
+        # TODO: remove on DM-39854
+        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v27."
     )
     finalizedPsfApCorrCatalog = cT.Input(
         doc=("Per-visit finalized psf models and aperture correction maps. "
@@ -660,6 +725,8 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
         name="finalized_psf_ap_corr_catalog",
         storageClass="ExposureCatalog",
         dimensions=["instrument", "visit"],
+        # TODO: remove on DM-39854
+        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v27."
     )
     measCat = cT.Output(
         doc="Output forced photometry catalog.",
