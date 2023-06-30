@@ -89,6 +89,12 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
         storageClass="Background",
         dimensions=("instrument", "visit", "detector"),
     )
+    visitSummary = cT.Input(
+        doc="Input visit-summary catalog with updated calibration objects.",
+        name="finalVisitSummary",
+        storageClass="ExposureCatalog",
+        dimensions=("instrument", "visit"),
+    )
     externalSkyWcsTractCatalog = cT.Input(
         doc=("Per-tract, per-visit wcs calibrations.  These catalogs use the detector "
              "id for the catalog id, sorted on id for fast lookup."),
@@ -331,7 +337,8 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
             skyCorr=skyCorr,
             externalSkyWcsCatalog=externalSkyWcsCatalog,
             externalPhotoCalibCatalog=externalPhotoCalibCatalog,
-            finalizedPsfApCorrCatalog=finalizedPsfApCorrCatalog
+            finalizedPsfApCorrCatalog=finalizedPsfApCorrCatalog,
+            visitSummary=inputs.pop("visitSummary"),
         )
 
         inputs['refCat'] = self.mergeAndFilterReferences(inputs['exposure'], inputs['refCat'],
@@ -349,7 +356,8 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
             butlerQC.put(outputs, outputRefs)
 
     def prepareCalibratedExposure(self, exposure, skyCorr=None, externalSkyWcsCatalog=None,
-                                  externalPhotoCalibCatalog=None, finalizedPsfApCorrCatalog=None):
+                                  externalPhotoCalibCatalog=None, finalizedPsfApCorrCatalog=None,
+                                  visitSummary=None):
         """Prepare a calibrated exposure and apply external calibrations
         and sky corrections if so configured.
 
@@ -371,6 +379,10 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
             Exposure catalog with finalized psf models and aperture correction
             maps to be applied if config.doApplyFinalizedPsf=True.  Catalog uses
             the detector id for the catalog id, sorted on id for fast lookup.
+        visitSummary : `lsst.afw.table.ExposureCatalog`, optional
+            Exposure catalog with update calibrations; any not-None calibration
+            objects attached will be used.  These are applied first and may
+            be overridden by other arguments.
 
         Returns
         -------
@@ -378,6 +390,19 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
             Exposure with adjusted calibrations.
         """
         detectorId = exposure.getInfo().getDetector().getId()
+
+        if visitSummary is not None:
+            row = visitSummary.find(detectorId)
+            if row is None:
+                raise RuntimeError(f"Detector id {detectorId} not found in visitSummary.")
+            if (photoCalib := row.getPhotoCalib()) is not None:
+                exposure.setPhotoCalib(photoCalib)
+            if (skyWcs := row.getWcs()) is not None:
+                exposure.setWcs(skyWcs)
+            if (psf := row.getPsf()) is not None:
+                exposure.setPsf(psf)
+            if (apCorrMap := row.getApCorrMap()) is not None:
+                exposure.info.setApCorrMap(apCorrMap)
 
         if externalPhotoCalibCatalog is not None:
             row = externalPhotoCalibCatalog.find(detectorId)
@@ -598,6 +623,12 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
         storageClass="Background",
         dimensions=("instrument", "visit", "detector"),
     )
+    visitSummary = cT.Input(
+        doc="Input visit-summary catalog with updated calibration objects.",
+        name="finalVisitSummary",
+        storageClass="ExposureCatalog",
+        dimensions=("instrument", "visit"),
+    )
     externalSkyWcsTractCatalog = cT.Input(
         doc=("Per-tract, per-visit wcs calibrations.  These catalogs use the detector "
              "id for the catalog id, sorted on id for fast lookup."),
@@ -748,7 +779,8 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
             skyCorr=skyCorr,
             externalSkyWcsCatalog=externalSkyWcsCatalog,
             externalPhotoCalibCatalog=externalPhotoCalibCatalog,
-            finalizedPsfApCorrCatalog=finalizedPsfApCorrCatalog
+            finalizedPsfApCorrCatalog=finalizedPsfApCorrCatalog,
+            visitSummary=inputs.pop("visitSummary"),
         )
 
         self.log.info("Filtering ref cats: %s", ','.join([str(i.dataId) for i in inputs['refCat']]))
