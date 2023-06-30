@@ -189,12 +189,6 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
         target=CatalogCalculationTask,
         doc="Subtask to run catalogCalculation plugins on catalog"
     )
-    doApplyUberCal = lsst.pex.config.Field(
-        dtype=bool,
-        doc="Apply meas_mosaic ubercal results to input calexps?",
-        default=False,
-        deprecated="Deprecated by DM-23352; use doApplyExternalPhotoCalib and doApplyExternalSkyWcs instead",
-    )
     doApplyExternalPhotoCalib = lsst.pex.config.Field(
         dtype=bool,
         default=False,
