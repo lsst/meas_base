@@ -19,8 +19,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import warnings
-
 import pandas as pd
 import numpy as np
 
@@ -34,7 +32,6 @@ import lsst.afw.image
 import lsst.afw.table
 import lsst.sphgeom
 
-from lsst.utils.introspection import find_outside_stacklevel
 from lsst.pipe.base import PipelineTaskConnections
 import lsst.pipe.base.connectionTypes as cT
 
@@ -53,13 +50,7 @@ __all__ = ("ForcedPhotCcdConfig", "ForcedPhotCcdTask",
 class ForcedPhotCcdConnections(PipelineTaskConnections,
                                dimensions=("instrument", "visit", "detector", "skymap", "tract"),
                                defaultTemplates={"inputCoaddName": "deep",
-                                                 "inputName": "calexp",
-                                                 "skyWcsName": "gbdesAstrometricFit",
-                                                 "photoCalibName": "fgcm"},
-                               # TODO: remove on DM-39854
-                               deprecatedTemplates={"skyWcsName": "Deprecated; will be removed after v26.",
-                                                    "photoCalibName": "Deprecated; will be removed after v26."
-                                                    }):
+                                                 "inputName": "calexp"}):
     inputSchema = cT.InitInput(
         doc="Schema for the input measurement catalogs.",
         name="{inputCoaddName}Coadd_ref_schema",
@@ -102,54 +93,6 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
         storageClass="ExposureCatalog",
         dimensions=("instrument", "visit"),
     )
-    externalSkyWcsTractCatalog = cT.Input(
-        doc=("Per-tract, per-visit wcs calibrations.  These catalogs use the detector "
-             "id for the catalog id, sorted on id for fast lookup."),
-        name="{skyWcsName}SkyWcsCatalog",
-        storageClass="ExposureCatalog",
-        dimensions=["instrument", "visit", "tract"],
-        # TODO: remove on DM-39854
-        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v26."
-    )
-    externalSkyWcsGlobalCatalog = cT.Input(
-        doc=("Per-visit wcs calibrations computed globally (with no tract information). "
-             "These catalogs use the detector id for the catalog id, sorted on id for "
-             "fast lookup."),
-        name="finalVisitSummary",
-        storageClass="ExposureCatalog",
-        dimensions=["instrument", "visit"],
-        # TODO: remove on DM-39854
-        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v26."
-    )
-    externalPhotoCalibTractCatalog = cT.Input(
-        doc=("Per-tract, per-visit photometric calibrations.  These catalogs use the "
-             "detector id for the catalog id, sorted on id for fast lookup."),
-        name="{photoCalibName}PhotoCalibCatalog",
-        storageClass="ExposureCatalog",
-        dimensions=["instrument", "visit", "tract"],
-        # TODO: remove on DM-39854
-        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v26."
-    )
-    externalPhotoCalibGlobalCatalog = cT.Input(
-        doc=("Per-visit photometric calibrations computed globally (with no tract "
-             "information).  These catalogs use the detector id for the catalog id, "
-             "sorted on id for fast lookup."),
-        name="finalVisitSummary",
-        storageClass="ExposureCatalog",
-        dimensions=["instrument", "visit"],
-        # TODO: remove on DM-39854
-        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v26."
-    )
-    finalizedPsfApCorrCatalog = cT.Input(
-        doc=("Per-visit finalized psf models and aperture correction maps. "
-             "These catalogs use the detector id for the catalog id, "
-             "sorted on id for fast lookup."),
-        name="finalized_psf_ap_corr_catalog",
-        storageClass="ExposureCatalog",
-        dimensions=["instrument", "visit"],
-        # TODO: remove on DM-39854
-        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v26."
-    )
     measCat = cT.Output(
         doc="Output forced photometry catalog.",
         name="forced_src",
@@ -161,24 +104,6 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
         super().__init__(config=config)
         if not config.doApplySkyCorr:
             self.inputs.remove("skyCorr")
-        if config.doApplyExternalSkyWcs:
-            if config.useGlobalExternalSkyWcs:
-                self.inputs.remove("externalSkyWcsTractCatalog")
-            else:
-                self.inputs.remove("externalSkyWcsGlobalCatalog")
-        else:
-            self.inputs.remove("externalSkyWcsTractCatalog")
-            self.inputs.remove("externalSkyWcsGlobalCatalog")
-        if config.doApplyExternalPhotoCalib:
-            if config.useGlobalExternalPhotoCalib:
-                self.inputs.remove("externalPhotoCalibTractCatalog")
-            else:
-                self.inputs.remove("externalPhotoCalibGlobalCatalog")
-        else:
-            self.inputs.remove("externalPhotoCalibTractCatalog")
-            self.inputs.remove("externalPhotoCalibGlobalCatalog")
-        if not config.doApplyFinalizedPsf:
-            self.inputs.remove("finalizedPsfApCorrCatalog")
 
 
 class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
@@ -205,47 +130,6 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
     catalogCalculation = lsst.pex.config.ConfigurableField(
         target=CatalogCalculationTask,
         doc="Subtask to run catalogCalculation plugins on catalog"
-    )
-    doApplyExternalPhotoCalib = lsst.pex.config.Field(
-        dtype=bool,
-        default=False,
-        doc=("Whether to apply external photometric calibration via an "
-             "`lsst.afw.image.PhotoCalib` object."),
-        # TODO: remove on DM-39854
-        deprecated="Removed in favor of the 'visitSummary' connection; will be removed after v26.",
-    )
-    useGlobalExternalPhotoCalib = lsst.pex.config.Field(
-        dtype=bool,
-        default=False,
-        doc=("When using doApplyExternalPhotoCalib, use 'global' calibrations "
-             "that are not run per-tract.  When False, use per-tract photometric "
-             "calibration files."),
-        # TODO: remove on DM-39854
-        deprecated="Removed in favor of the 'visitSummary' connection; will be removed after v26.",
-    )
-    doApplyExternalSkyWcs = lsst.pex.config.Field(
-        dtype=bool,
-        default=False,
-        doc=("Whether to apply external astrometric calibration via an "
-             "`lsst.afw.geom.SkyWcs` object."),
-        # TODO: remove on DM-39854
-        deprecated="Removed in favor of the 'visitSummary' connection; will be removed after v26.",
-    )
-    useGlobalExternalSkyWcs = lsst.pex.config.Field(
-        dtype=bool,
-        default=False,
-        doc=("When using doApplyExternalSkyWcs, use 'global' calibrations "
-             "that are not run per-tract.  When False, use per-tract wcs "
-             "files."),
-        # TODO: remove on DM-39854
-        deprecated="Removed in favor of the 'visitSummary' connection; will be removed after v26.",
-    )
-    doApplyFinalizedPsf = lsst.pex.config.Field(
-        dtype=bool,
-        default=False,
-        doc="Whether to apply finalized psf models and aperture correction map.",
-        # TODO: remove on DM-39854
-        deprecated="Removed in favor of the 'visitSummary' connection; will be removed after v26.",
     )
     doApplySkyCorr = lsst.pex.config.Field(
         dtype=bool,
@@ -346,22 +230,10 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
 
         # Connections only exist if they are configured to be used.
         skyCorr = inputs.pop('skyCorr', None)
-        if self.config.useGlobalExternalSkyWcs:
-            externalSkyWcsCatalog = inputs.pop('externalSkyWcsGlobalCatalog', None)
-        else:
-            externalSkyWcsCatalog = inputs.pop('externalSkyWcsTractCatalog', None)
-        if self.config.useGlobalExternalPhotoCalib:
-            externalPhotoCalibCatalog = inputs.pop('externalPhotoCalibGlobalCatalog', None)
-        else:
-            externalPhotoCalibCatalog = inputs.pop('externalPhotoCalibTractCatalog', None)
-        finalizedPsfApCorrCatalog = inputs.pop('finalizedPsfApCorrCatalog', None)
 
         inputs['exposure'] = self.prepareCalibratedExposure(
             inputs['exposure'],
             skyCorr=skyCorr,
-            externalSkyWcsCatalog=externalSkyWcsCatalog,
-            externalPhotoCalibCatalog=externalPhotoCalibCatalog,
-            finalizedPsfApCorrCatalog=finalizedPsfApCorrCatalog,
             visitSummary=inputs.pop("visitSummary"),
         )
 
@@ -379,9 +251,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
             outputs = self.run(**inputs)
             butlerQC.put(outputs, outputRefs)
 
-    def prepareCalibratedExposure(self, exposure, skyCorr=None, externalSkyWcsCatalog=None,
-                                  externalPhotoCalibCatalog=None, finalizedPsfApCorrCatalog=None,
-                                  visitSummary=None):
+    def prepareCalibratedExposure(self, exposure, skyCorr=None, visitSummary=None):
         """Prepare a calibrated exposure and apply external calibrations
         and sky corrections if so configured.
 
@@ -391,22 +261,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
             Input exposure to adjust calibrations.
         skyCorr : `lsst.afw.math.backgroundList`, optional
             Sky correction frame to apply if doApplySkyCorr=True.
-        externalSkyWcsCatalog :  `lsst.afw.table.ExposureCatalog`, optional
-            Exposure catalog with external skyWcs to be applied if
-            config.doApplyExternalSkyWcs=True.  Catalog uses the detector id
-            for the catalog id, sorted on id for fast lookup. Deprecated in
-            favor of ``visitSummary`` and will be removed after v26.
-        externalPhotoCalibCatalog : `lsst.afw.table.ExposureCatalog`, optional
-            Exposure catalog with external photoCalib to be applied if
-            config.doApplyExternalPhotoCalib=True.  Catalog uses the detector
-            id for the catalog id, sorted on id for fast lookup. Deprecated in
-            favor of ``visitSummary`` and will be removed after v26.
-        finalizedPsfApCorrCatalog : `lsst.afw.table.ExposureCatalog`, optional
-            Exposure catalog with finalized psf models and aperture correction
-            maps to be applied if config.doApplyFinalizedPsf=True.  Catalog
-            uses the detector id for the catalog id, sorted on id for fast
-            lookup. Deprecated in favor of ``visitSummary`` and will be removed
-            after v26.
         visitSummary : `lsst.afw.table.ExposureCatalog`, optional
             Exposure catalog with update calibrations; any not-None calibration
             objects attached will be used.  These are applied first and may be
@@ -431,68 +285,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
                 exposure.setPsf(psf)
             if (apCorrMap := row.getApCorrMap()) is not None:
                 exposure.info.setApCorrMap(apCorrMap)
-
-        if externalPhotoCalibCatalog is not None:
-            # TODO: remove on DM-39854
-            warnings.warn(
-                "The 'externalPhotoCalibCatalog' argument is deprecated in favor of 'visitSummary' and will "
-                "be removed after v26.",
-                FutureWarning,
-                stacklevel=find_outside_stacklevel("lsst.meas.base"),
-            )
-            row = externalPhotoCalibCatalog.find(detectorId)
-            if row is None:
-                self.log.warning("Detector id %s not found in externalPhotoCalibCatalog; "
-                                 "Using original photoCalib.", detectorId)
-            else:
-                photoCalib = row.getPhotoCalib()
-                if photoCalib is None:
-                    self.log.warning("Detector id %s has None for photoCalib in externalPhotoCalibCatalog; "
-                                     "Using original photoCalib.", detectorId)
-                else:
-                    exposure.setPhotoCalib(photoCalib)
-
-        if externalSkyWcsCatalog is not None:
-            # TODO: remove on DM-39854
-            warnings.warn(
-                "The 'externalSkyWcsCatalog' argument is deprecated in favor of 'visitSummary' and will "
-                "be removed after v26.",
-                FutureWarning,
-                stacklevel=find_outside_stacklevel("lsst.meas.base"),
-            )
-            row = externalSkyWcsCatalog.find(detectorId)
-            if row is None:
-                self.log.warning("Detector id %s not found in externalSkyWcsCatalog; "
-                                 "Using original skyWcs.", detectorId)
-            else:
-                skyWcs = row.getWcs()
-                if skyWcs is None:
-                    self.log.warning("Detector id %s has None for skyWcs in externalSkyWcsCatalog; "
-                                     "Using original skyWcs.", detectorId)
-                else:
-                    exposure.setWcs(skyWcs)
-
-        if finalizedPsfApCorrCatalog is not None:
-            # TODO: remove on DM-39854
-            warnings.warn(
-                "The 'finalizedPsfApCorrCatalog' argument is deprecated in favor of 'visitSummary' and will "
-                "be removed after v26.",
-                FutureWarning,
-                stacklevel=find_outside_stacklevel("lsst.meas.base"),
-            )
-            row = finalizedPsfApCorrCatalog.find(detectorId)
-            if row is None:
-                self.log.warning("Detector id %s not found in finalizedPsfApCorrCatalog; "
-                                 "Using original psf.", detectorId)
-            else:
-                psf = row.getPsf()
-                apCorrMap = row.getApCorrMap()
-                if psf is None or apCorrMap is None:
-                    self.log.warning("Detector id %s has None for psf/apCorrMap in "
-                                     "finalizedPsfApCorrCatalog; Using original psf.", detectorId)
-                else:
-                    exposure.setPsf(psf)
-                    exposure.setApCorrMap(apCorrMap)
 
         if skyCorr is not None:
             exposure.maskedImage -= skyCorr.getImage()
@@ -654,13 +446,7 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
                                             dimensions=("instrument", "visit", "detector", "skymap", "tract"),
                                             defaultTemplates={"inputCoaddName": "goodSeeing",
                                                               "inputName": "calexp",
-                                                              "skyWcsName": "gbdesAstrometricFit",
-                                                              "photoCalibName": "fgcm"},
-                                            # TODO: remove on DM-39854
-                                            deprecatedTemplates={
-                                                "skyWcsName": "Deprecated; will be removed after v26.",
-                                                "photoCalibName": "Deprecated; will be removed after v26."
-                                            }):
+                                                              }):
     refCat = cT.Input(
         doc="Catalog of positions at which to force photometry.",
         name="{inputCoaddName}Diff_fullDiaObjTable",
@@ -687,54 +473,6 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
         storageClass="ExposureCatalog",
         dimensions=("instrument", "visit"),
     )
-    externalSkyWcsTractCatalog = cT.Input(
-        doc=("Per-tract, per-visit wcs calibrations.  These catalogs use the detector "
-             "id for the catalog id, sorted on id for fast lookup."),
-        name="{skyWcsName}SkyWcsCatalog",
-        storageClass="ExposureCatalog",
-        dimensions=["instrument", "visit", "tract"],
-        # TODO: remove on DM-39854
-        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v26."
-    )
-    externalSkyWcsGlobalCatalog = cT.Input(
-        doc=("Per-visit wcs calibrations computed globally (with no tract information). "
-             "These catalogs use the detector id for the catalog id, sorted on id for "
-             "fast lookup."),
-        name="{skyWcsName}SkyWcsCatalog",
-        storageClass="ExposureCatalog",
-        dimensions=["instrument", "visit"],
-        # TODO: remove on DM-39854
-        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v26."
-    )
-    externalPhotoCalibTractCatalog = cT.Input(
-        doc=("Per-tract, per-visit photometric calibrations.  These catalogs use the "
-             "detector id for the catalog id, sorted on id for fast lookup."),
-        name="{photoCalibName}PhotoCalibCatalog",
-        storageClass="ExposureCatalog",
-        dimensions=["instrument", "visit", "tract"],
-        # TODO: remove on DM-39854
-        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v26."
-    )
-    externalPhotoCalibGlobalCatalog = cT.Input(
-        doc=("Per-visit photometric calibrations computed globally (with no tract "
-             "information).  These catalogs use the detector id for the catalog id, "
-             "sorted on id for fast lookup."),
-        name="{photoCalibName}PhotoCalibCatalog",
-        storageClass="ExposureCatalog",
-        dimensions=["instrument", "visit"],
-        # TODO: remove on DM-39854
-        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v26."
-    )
-    finalizedPsfApCorrCatalog = cT.Input(
-        doc=("Per-visit finalized psf models and aperture correction maps. "
-             "These catalogs use the detector id for the catalog id, "
-             "sorted on id for fast lookup."),
-        name="finalized_psf_ap_corr_catalog",
-        storageClass="ExposureCatalog",
-        dimensions=["instrument", "visit"],
-        # TODO: remove on DM-39854
-        deprecated="Deprecated in favor of 'visitSummary'; will be removed after v26."
-    )
     measCat = cT.Output(
         doc="Output forced photometry catalog.",
         name="forced_src_diaObject",
@@ -751,24 +489,6 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
         super().__init__(config=config)
         if not config.doApplySkyCorr:
             self.inputs.remove("skyCorr")
-        if config.doApplyExternalSkyWcs:
-            if config.useGlobalExternalSkyWcs:
-                self.inputs.remove("externalSkyWcsTractCatalog")
-            else:
-                self.inputs.remove("externalSkyWcsGlobalCatalog")
-        else:
-            self.inputs.remove("externalSkyWcsTractCatalog")
-            self.inputs.remove("externalSkyWcsGlobalCatalog")
-        if config.doApplyExternalPhotoCalib:
-            if config.useGlobalExternalPhotoCalib:
-                self.inputs.remove("externalPhotoCalibTractCatalog")
-            else:
-                self.inputs.remove("externalPhotoCalibGlobalCatalog")
-        else:
-            self.inputs.remove("externalPhotoCalibTractCatalog")
-            self.inputs.remove("externalPhotoCalibGlobalCatalog")
-        if not config.doApplyFinalizedPsf:
-            self.inputs.remove("finalizedPsfApCorrCatalog")
 
 
 class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
@@ -835,22 +555,10 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
 
         # Connections only exist if they are configured to be used.
         skyCorr = inputs.pop('skyCorr', None)
-        if self.config.useGlobalExternalSkyWcs:
-            externalSkyWcsCatalog = inputs.pop('externalSkyWcsGlobalCatalog', None)
-        else:
-            externalSkyWcsCatalog = inputs.pop('externalSkyWcsTractCatalog', None)
-        if self.config.useGlobalExternalPhotoCalib:
-            externalPhotoCalibCatalog = inputs.pop('externalPhotoCalibGlobalCatalog', None)
-        else:
-            externalPhotoCalibCatalog = inputs.pop('externalPhotoCalibTractCatalog', None)
-        finalizedPsfApCorrCatalog = inputs.pop('finalizedPsfApCorrCatalog', None)
 
         inputs['exposure'] = self.prepareCalibratedExposure(
             inputs['exposure'],
             skyCorr=skyCorr,
-            externalSkyWcsCatalog=externalSkyWcsCatalog,
-            externalPhotoCalibCatalog=externalPhotoCalibCatalog,
-            finalizedPsfApCorrCatalog=finalizedPsfApCorrCatalog,
             visitSummary=inputs.pop("visitSummary"),
         )
 
