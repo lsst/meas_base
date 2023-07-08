@@ -95,9 +95,9 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         exposure, catalog = self.dataset.realize(10.0, schema, randomSeed=0)
         record = catalog[0]
         badPoint = lsst.geom.Point2I(self.center) + lsst.geom.Extent2I(3, 4)
-        imageArray = exposure.getMaskedImage().getImage().getArray()
-        maskArray = exposure.getMaskedImage().getMask().getArray()
-        badMask = exposure.getMaskedImage().getMask().getPlaneBitMask("BAD")
+        imageArray = exposure.image.array
+        maskArray = exposure.mask.array
+        badMask = exposure.mask.getPlaneBitMask("BAD")
         imageArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] = np.inf
         maskArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] |= badMask
         # Should get an infinite value exception, because we didn't mask that

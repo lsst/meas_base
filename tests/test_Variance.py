@@ -55,12 +55,12 @@ class VarianceTest(lsst.utils.tests.TestCase):
 
         # Initial setup of an image
         exp = afwImage.ExposureF(size, size)
-        image = exp.getMaskedImage().getImage()
-        mask = exp.getMaskedImage().getMask()
-        var = exp.getMaskedImage().getVariance()
+        image = exp.image
+        mask = exp.mask
+        var = exp.variance
         image.set(0.0)
         mask.set(0)
-        var.getArray()[:, :] = variancePlane
+        var.array[:, :] = variancePlane
 
         # Put down a PSF
         psfSize = int(6*width + 1)  # Size of PSF image; must be odd
@@ -74,17 +74,17 @@ class VarianceTest(lsst.utils.tests.TestCase):
         # Put in some bad pixels to ensure they're ignored
         for i in range(-5, 6):
             bad = size//2 + i*width
-            var.getArray()[bad, :] = float("nan")
-            mask.getArray()[bad, :] = mask.getPlaneBitMask("BAD")
-            var.getArray()[:, bad] = float("nan")
-            mask.getArray()[:, bad] = mask.getPlaneBitMask("BAD")
+            var.array[bad, :] = float("nan")
+            mask.array[bad, :] = mask.getPlaneBitMask("BAD")
+            var.array[:, bad] = float("nan")
+            mask.array[:, bad] = mask.getPlaneBitMask("BAD")
 
         # Put in some unmasked bad pixels outside the expected aperture, to
         # ensure the aperture is working
-        var.getArray()[0, 0] = float("nan")
-        var.getArray()[0, -1] = float("nan")
-        var.getArray()[-1, 0] = float("nan")
-        var.getArray()[-1, -1] = float("nan")
+        var.array[0, 0] = float("nan")
+        var.array[0, -1] = float("nan")
+        var.array[-1, 0] = float("nan")
+        var.array[-1, -1] = float("nan")
 
         if display:
             import lsst.afw.display as afwDisplay
@@ -149,7 +149,7 @@ class VarianceTest(lsst.utils.tests.TestCase):
 
     def testEmptyFootprint(self):
         # Set the pixel mask for all pixels to ``BAD`` and remeasure.
-        self.mask.getArray()[:, :] = self.mask.getPlaneBitMask("BAD")
+        self.mask.array[:, :] = self.mask.getPlaneBitMask("BAD")
         self.task.run(self.catalog, self.exp)
 
         # The computed variance should be NaN and flag_emptyFootprint should

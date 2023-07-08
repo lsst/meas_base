@@ -83,7 +83,7 @@ class LoggingPlugin(SingleFramePlugin):
         # Sum the pixels inside the bounding box
         centerPoint = lsst.geom.Point2I(int(measRecord.getX()), int(measRecord.getY()))
         bbox = lsst.geom.Box2I(centerPoint, lsst.geom.Extent2I(1, 1))
-        instFlux = lsst.afw.image.ImageF(exposure.getMaskedImage().getImage(), bbox).getArray().sum()
+        instFlux = lsst.afw.image.ImageF(exposure.image, bbox).array.sum()
         measRecord.set(self.instFluxKey, instFlux)
 
         # If there was a NaN inside the bounding box, the instFlux will still

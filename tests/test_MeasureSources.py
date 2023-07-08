@@ -112,8 +112,8 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         psf = afwDetection.GaussianPsf(kernelWidth, kernelWidth, sigma)
         psfKernel = psf.getLocalKernel(psf.getAveragePosition())
         psfImage = psf.computeKernelImage(psf.getAveragePosition())
-        sumPsfSq = np.sum(psfImage.getArray()**2)
-        psfSqArr = psfImage.getArray()**2
+        sumPsfSq = np.sum(psfImage.array**2)
+        psfSqArr = psfImage.array**2
 
         for instFlux in (1000, 10000):
             ctrInd = lsst.geom.Point2I(50, 51)
@@ -142,8 +142,8 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
             # = sqrt(sum(unfiltered variance * PSF^2)) / sum(PSF^2)
             # and compare to that derived from filtered pixels;
             # again, this is a test of the algorithm
-            varView = afwImage.ImageF(unshMImage.getVariance(), kernelBBox)
-            varArr = varView.getArray()
+            varView = afwImage.ImageF(unshMImage.variance, kernelBBox)
+            varArr = varView.array
             unfiltPredFluxErr = math.sqrt(np.sum(varArr*psfSqArr)) / sumPsfSq
             self.assertLess(abs(unfiltPredFluxErr - predFluxErr), predFluxErr * 0.01)
 
@@ -213,8 +213,8 @@ class MeasureSourcesTestCase(lsst.utils.tests.TestCase):
         width, height = 100, 100
         mi = afwImage.MaskedImageF(width, height)
         exp = afwImage.makeExposure(mi)
-        mi.getImage().set(0)
-        mask = mi.getMask()
+        mi.image.set(0)
+        mask = mi.mask
         sat = mask.getPlaneBitMask('SAT')
         interp = mask.getPlaneBitMask('INTRP')
         edge = mask.getPlaneBitMask('EDGE')
@@ -378,10 +378,10 @@ def makeFakeImage(bbox, centerList, instFluxList, fwhm, var):
     if len(centerList) != len(instFluxList):
         raise RuntimeError("len(centerList) != len(instFluxList)")
     maskedImage = afwImage.MaskedImageF(bbox)
-    image = maskedImage.getImage()
+    image = maskedImage.image
     for center, instFlux in zip(centerList, instFluxList):
         addStar(image, center=center, instFlux=instFlux, fwhm=fwhm)
-    variance = maskedImage.getVariance()
+    variance = maskedImage.variance
     variance[:] = image
     variance += var
     return maskedImage
