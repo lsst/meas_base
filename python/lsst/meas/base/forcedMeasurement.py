@@ -321,7 +321,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         for ref in refCat:
             refId = ref.getId()
             topId = refId
-            while(topId > 0):
+            while topId > 0:
                 if topId not in refCatIdDict:
                     raise RuntimeError("Reference catalog contains a child for which at least "
                                        "one parent in its parent chain is not in the catalog.")

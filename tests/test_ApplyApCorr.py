@@ -43,7 +43,7 @@ def initializeSourceCatalog(schema=None, name=None, instFlux=None, sigma=None, c
     source.set(instFluxKey, instFlux)
     source.set(instFluxErrName, sigma)
     source.set(centroidKey, centroid)
-    return(sourceCat)
+    return sourceCat
 
 
 class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
