@@ -613,10 +613,14 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         """
         self.measurement.run(measCat, exposure, refCat, refWcs, exposureId=exposureId)
         if self.config.doApCorr:
-            self.applyApCorr.run(
-                catalog=measCat,
-                apCorrMap=exposure.getInfo().getApCorrMap()
-            )
+            apCorrMap = exposure.getInfo().getApCorrMap()
+            if apCorrMap is None:
+                self.log.warning("Forced exposure image does not have valid aperture correction; skipping.")
+            else:
+                self.applyApCorr.run(
+                    catalog=measCat,
+                    apCorrMap=apCorrMap,
+                )
         self.catalogCalculation.run(measCat)
 
         return pipeBase.Struct(measCat=measCat)
