@@ -91,7 +91,7 @@ def ccdVennDiagram(exp, showImage=True, legendLocation='best'):
     # If showImage is true, plot the data contained in exp as well as the
     # boundaries
     if showImage:
-        plt.imshow(exp.getMaskedImage().getArrays()[0], cmap='Greys', origin='lower')
+        plt.imshow(exp.image.array, cmap='Greys', origin='lower')
         plt.colorbar()
     # Adjust plot parameters and plot
     plt.gca().relim()

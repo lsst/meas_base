@@ -114,9 +114,9 @@ class BlendContext:
         self.owner._installFootprint(self.parentRecord, self.parentImage)
         # Create perfect HeavyFootprints for all children; these will need to
         # be modified later to account for the noise we'll add to the image.
-        deblend = lsst.afw.image.MaskedImageF(self.owner.exposure.getMaskedImage(), True)
+        deblend = lsst.afw.image.MaskedImageF(self.owner.exposure.maskedImage, True)
         for record, image in self.children:
-            deblend.getImage().getArray()[:, :] = image.getArray()
+            deblend.image.array[:, :] = image.array
             heavyFootprint = lsst.afw.detection.HeavyFootprintF(self.parentRecord.getFootprint(), deblend)
             record.setFootprint(heavyFootprint)
 
@@ -377,7 +377,7 @@ class TestDataset:
         xt = t[t.XX] * x + t[t.XY] * y + t[t.X]
         yt = t[t.YX] * x + t[t.YY] * y + t[t.Y]
         image = lsst.afw.image.ImageF(bbox)
-        image.getArray()[:, :] = np.exp(-0.5*(xt**2 + yt**2))*instFlux/(2.0*ellipse.getCore().getArea())
+        image.array[:, :] = np.exp(-0.5*(xt**2 + yt**2))*instFlux/(2.0*ellipse.getCore().getArea())
         return image
 
     def __init__(self, bbox, threshold=10.0, exposure=None, **kwds):
@@ -406,7 +406,7 @@ class TestDataset:
             for footprint in fpSet.getFootprints():
                 footprint.updatePeakSignificance(self.threshold.getValue())
         # Update the full exposure's mask plane to indicate the detection
-        fpSet.setMask(self.exposure.getMaskedImage().getMask(), "DETECTED")
+        fpSet.setMask(self.exposure.mask, "DETECTED")
         # Attach the new footprint to the exposure
         if len(fpSet.getFootprints()) > 1:
             raise RuntimeError("Threshold value results in multiple Footprints for a single object")
@@ -459,7 +459,7 @@ class TestDataset:
         # Generate a footprint for this source
         self._installFootprint(record, image, setPeakSignificance)
         # Actually add the source to the full exposure
-        self.exposure.getMaskedImage().getImage().getArray()[:, :] += image.getArray()
+        self.exposure.image.array[:, :] += image.array
         return record, image
 
     def addBlend(self):
@@ -563,9 +563,8 @@ class TestDataset:
         mapper = lsst.afw.table.SchemaMapper(self.schema)
         mapper.addMinimalSchema(self.schema, True)
         exposure = self.exposure.clone()
-        exposure.getMaskedImage().getVariance().getArray()[:, :] = noise**2
-        exposure.getMaskedImage().getImage().getArray()[:, :] \
-            += random_state.randn(exposure.getHeight(), exposure.getWidth())*noise
+        exposure.variance.array[:, :] = noise**2
+        exposure.image.array[:, :] += random_state.randn(exposure.getHeight(), exposure.getWidth())*noise
         catalog = lsst.afw.table.SourceCatalog(schema)
         catalog.extend(self.catalog, mapper=mapper)
         # Loop over sources and generate new HeavyFootprints that divide up
@@ -581,11 +580,11 @@ class TestDataset:
             footprint = parent.getFootprint()
             parentFluxArrayNoNoise = np.zeros(footprint.getArea(), dtype=np.float32)
             footprint.spans.flatten(parentFluxArrayNoNoise,
-                                    self.exposure.getMaskedImage().getImage().getArray(),
+                                    self.exposure.image.array,
                                     self.exposure.getXY0())
             parentFluxArrayNoisy = np.zeros(footprint.getArea(), dtype=np.float32)
             footprint.spans.flatten(parentFluxArrayNoisy,
-                                    exposure.getMaskedImage().getImage().getArray(),
+                                    exposure.image.array,
                                     exposure.getXY0())
             oldHeavy = record.getFootprint()
             fraction = (oldHeavy.getImageArray() / parentFluxArrayNoNoise)

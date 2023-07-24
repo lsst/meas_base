@@ -169,7 +169,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         bbox.grow(20)
         subImage = lsst.afw.image.ExposureF(exposure, bbox)
         # A completely flat image will trigger the no 2nd derivative error
-        subImage.getMaskedImage().getImage().getArray()[:] = 0
+        subImage.image.array[:] = 0
         task.measure(catalog, subImage)
         self.assertTrue(catalog[0].get("base_SdssCentroid_flag"))
         self.assertTrue(catalog[0].get("base_SdssCentroid_flag_noSecondDerivative"))
@@ -182,7 +182,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         bbox.grow(20)
         subImage = lsst.afw.image.ExposureF(exposure, bbox)
         # zero out the central region, which will destroy the maximum
-        subImage.getMaskedImage().getImage().getArray()[18:22, 18:22] = 0
+        subImage.image.array[18:22, 18:22] = 0
         task.measure(catalog, subImage)
         self.assertTrue(catalog[0].get("base_SdssCentroid_flag"))
         self.assertTrue(catalog[0].get("base_SdssCentroid_flag_notAtMaximum"))

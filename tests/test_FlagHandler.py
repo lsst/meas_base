@@ -114,7 +114,7 @@ class PythonPlugin(SingleFramePlugin):
             raise MeasurementError(self.EDGE.doc, self.EDGE.number)
 
         # Sum the pixels inside the bounding box
-        instFlux = lsst.afw.image.ImageF(exposure.getMaskedImage().getImage(), bbox).getArray().sum()
+        instFlux = lsst.afw.image.ImageF(exposure.image, bbox).array.sum()
         measRecord.set(self.instFluxKey, instFlux)
 
         # If there was a NaN inside the bounding box, the instFlux will still
@@ -289,7 +289,7 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=self.config)
         exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=2)
         source = cat[0]
-        exposure.getMaskedImage().getImage().getArray()[int(source.getY()), int(source.getX())] = np.nan
+        exposure.image.array[int(source.getY()), int(source.getX())] = np.nan
         task.run(cat, exposure)
         self.assertTrue(source.get(self.algName + "_flag"))
         self.assertTrue(source.get(self.algName + "_flag_containsNan"))

@@ -51,7 +51,7 @@ class NoiseReplacerTestPlugin(lsst.meas.base.SingleFramePlugin):
 
     def measure(self, measRecord, exposure):
         footprint = measRecord.getFootprint()
-        fullArray = exposure.getMaskedImage().getImage().getArray()
+        fullArray = exposure.image.array
         insideArray = np.zeros(footprint.getArea(), dtype=fullArray.dtype)
         footprint.spans.flatten(insideArray, fullArray, exposure.getXY0())
         insideFlux = float(insideArray.sum())
@@ -94,7 +94,7 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.t
             md['BGMEAN'] = variance
             exposure.setMetadata(md)
         task.run(catalog, exposure)
-        sumVariance = exposure.getMaskedImage().getVariance().getArray().sum()
+        sumVariance = exposure.variance.array.sum()
         for record in catalog:
             self.assertFloatsAlmostEqual(record.get("test_NoiseReplacer_inside"),
                                          record.get("truth_instFlux"), rtol=1E-3)

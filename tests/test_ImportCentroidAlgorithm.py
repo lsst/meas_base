@@ -89,7 +89,7 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
 
         im = afwImage.MaskedImageF(lsst.geom.ExtentI(512, 512))
         im.set(0)
-        arr = im.getImage().getArray()
+        arr = im.image.array
         arr[y, x] = 1000
         exp = afwImage.makeExposure(im)
 
