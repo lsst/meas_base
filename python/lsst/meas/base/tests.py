@@ -28,6 +28,8 @@ import lsst.afw.table
 import lsst.afw.image
 import lsst.afw.detection
 import lsst.afw.geom
+import lsst.afw.coord
+import lsst.daf.base
 import lsst.pex.exceptions
 
 from .sfm import SingleFrameMeasurementTask
@@ -165,6 +167,15 @@ class TestDataset:
                                             schema=TestDataset.makeMinimalSchema())
     """
 
+    def __init__(self, bbox, threshold=10.0, exposure=None, **kwds):
+        if exposure is None:
+            exposure = self.makeEmptyExposure(bbox, **kwds)
+        self.threshold = lsst.afw.detection.Threshold(threshold, lsst.afw.detection.Threshold.VALUE)
+        self.exposure = exposure
+        self.psfShape = self.exposure.getPsf().computeShape(bbox.getCenter())
+        self.schema = self.makeMinimalSchema()
+        self.catalog = lsst.afw.table.SourceCatalog(self.schema)
+
     @classmethod
     def makeMinimalSchema(cls):
         """Return the minimal schema needed to hold truth catalog fields.
@@ -184,6 +195,8 @@ class TestDataset:
             cls.keys["nChild"] = schema.addField("deblend_nChild", type=np.int32)
             cls.keys["instFlux"] = schema.addField("truth_instFlux", type=np.float64,
                                                    doc="true instFlux", units="count")
+            cls.keys["instFluxErr"] = schema.addField("truth_instFluxErr", type=np.float64,
+                                                      doc="true instFluxErr", units="count")
             cls.keys["centroid"] = lsst.afw.table.Point2DKey.addFields(
                 schema, "truth", "true simulated centroid", "pixel"
             )
@@ -347,9 +360,16 @@ class TestDataset:
         exposure = lsst.afw.image.ExposureF(bbox)
         psf = lsst.afw.detection.GaussianPsf(psfDim, psfDim, psfSigma)
         photoCalib = lsst.afw.image.PhotoCalib(calibration)
+        visitInfo = lsst.afw.image.VisitInfo(id=1234,
+                                             exposureTime=30.0,
+                                             date=lsst.daf.base.DateTime(60000.0),
+                                             observatory=lsst.afw.coord.Observatory(11.1*lsst.geom.degrees,
+                                                                                    22.2*lsst.geom.degrees,
+                                                                                    0.333))
         exposure.setWcs(wcs)
         exposure.setPsf(psf)
         exposure.setPhotoCalib(photoCalib)
+        exposure.info.setVisitInfo(visitInfo)
         return exposure
 
     @staticmethod
@@ -380,15 +400,6 @@ class TestDataset:
         image.array[:, :] = np.exp(-0.5*(xt**2 + yt**2))*instFlux/(2.0*ellipse.getCore().getArea())
         return image
 
-    def __init__(self, bbox, threshold=10.0, exposure=None, **kwds):
-        if exposure is None:
-            exposure = self.makeEmptyExposure(bbox, **kwds)
-        self.threshold = lsst.afw.detection.Threshold(threshold, lsst.afw.detection.Threshold.VALUE)
-        self.exposure = exposure
-        self.psfShape = self.exposure.getPsf().computeShape(bbox.getCenter())
-        self.schema = self.makeMinimalSchema()
-        self.catalog = lsst.afw.table.SourceCatalog(self.schema)
-
     def _installFootprint(self, record, image, setPeakSignificance=True):
         """Create simulated Footprint and add it to a truth catalog record.
         """
@@ -417,6 +428,11 @@ class TestDataset:
     def addSource(self, instFlux, centroid, shape=None, setPeakSignificance=True):
         """Add a source to the simulation.
 
+        To insert a point source with a given signal-to-noise (sn), the total
+        ``instFlux`` should be: ``sn*noise*psf_scale``, where ``noise`` is the
+        noise you will pass to ``realize()``, and
+        ``psf_scale=sqrt(4*pi*r^2)``, where ``r`` is the width of the PSF.
+
         Parameters
         ----------
         instFlux : `float`
@@ -442,6 +458,7 @@ class TestDataset:
         # Create and set the truth catalog fields
         record = self.catalog.addNew()
         record.set(self.keys["instFlux"], instFlux)
+        record.set(self.keys["instFluxErr"], 0)
         record.set(self.keys["centroid"], centroid)
         covariance = np.random.normal(0, 0.1, 4).reshape(2, 2)
         covariance[0, 1] = covariance[1, 0]  # CovarianceMatrixKey assumes symmetric x_y_Cov
@@ -564,7 +581,7 @@ class TestDataset:
         mapper.addMinimalSchema(self.schema, True)
         exposure = self.exposure.clone()
         exposure.variance.array[:, :] = noise**2
-        exposure.image.array[:, :] += random_state.randn(exposure.getHeight(), exposure.getWidth())*noise
+        exposure.image.array[:, :] += random_state.randn(exposure.height, exposure.width)*noise
         catalog = lsst.afw.table.SourceCatalog(schema)
         catalog.extend(self.catalog, mapper=mapper)
         # Loop over sources and generate new HeavyFootprints that divide up
@@ -579,13 +596,9 @@ class TestDataset:
             parent = catalog.find(record.getParent())
             footprint = parent.getFootprint()
             parentFluxArrayNoNoise = np.zeros(footprint.getArea(), dtype=np.float32)
-            footprint.spans.flatten(parentFluxArrayNoNoise,
-                                    self.exposure.image.array,
-                                    self.exposure.getXY0())
+            footprint.spans.flatten(parentFluxArrayNoNoise, self.exposure.image.array, self.exposure.getXY0())
             parentFluxArrayNoisy = np.zeros(footprint.getArea(), dtype=np.float32)
-            footprint.spans.flatten(parentFluxArrayNoisy,
-                                    exposure.image.array,
-                                    exposure.getXY0())
+            footprint.spans.flatten(parentFluxArrayNoisy, exposure.image.array, exposure.getXY0())
             oldHeavy = record.getFootprint()
             fraction = (oldHeavy.getImageArray() / parentFluxArrayNoNoise)
             # N.B. this isn't a copy ctor - it's a copy from a vanilla
