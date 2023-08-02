@@ -37,7 +37,7 @@ class CatalogCalculationClassificationConfig(CatalogCalculationPluginConfig):
     """Configuration for catalog classification plugin.
     """
 
-    fluxRatio = lsst.pex.config.Field(dtype=float, default=.925, optional=True,
+    fluxRatio = lsst.pex.config.Field(dtype=float, default=.95, optional=True,
                                       doc="critical ratio of model to psf flux")
     modelErrFactor = lsst.pex.config.Field(dtype=float, default=0.0, optional=True,
                                            doc="correction factor for modelFlux error")
