@@ -99,11 +99,21 @@ class SingleFrameCompensatedGaussianFluxPlugin(SingleFramePlugin):
 
             # flux
             flux_str = f"{base_key}_instFlux"
-            flux_key = schema.addField(flux_str, type="D", doc="Compensated Gaussian flux measurement.")
+            flux_key = schema.addField(
+                flux_str,
+                type="D",
+                doc="Compensated Gaussian flux measurement.",
+                units="count",
+            )
 
             # flux error
             err_str = f"{base_key}_instFluxErr"
-            err_key = schema.addField(err_str, type="D", doc="Compensated Gaussian flux error.")
+            err_key = schema.addField(
+                err_str,
+                type="D",
+                doc="Compensated Gaussian flux error.",
+                units="count",
+            )
 
             # mask bits
             mask_str = f"{base_key}_mask_bits"
