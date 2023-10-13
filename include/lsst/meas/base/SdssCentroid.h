@@ -61,7 +61,7 @@ public:
      */
 
     SdssCentroidControl()
-            : binmax(16), peakMin(-1.0), wfac(1.5), doFootprintCheck(true), maxDistToPeak(-1.0) {}
+            : binmax(16), peakMin(-1.0), wfac(1.5), doFootprintCheck(true), maxDistToPeak(1.) {}
 };
 
 /**

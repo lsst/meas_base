@@ -54,7 +54,7 @@ public:
      *
      *  All control classes should define a default constructor that sets all fields to their default values.
      */
-    NaiveCentroidControl() : background(0.0), doFootprintCheck(true), maxDistToPeak(-1.0) {}
+    NaiveCentroidControl() : background(0.0), doFootprintCheck(true), maxDistToPeak(5.) {}
 };
 
 /**
