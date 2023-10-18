@@ -45,16 +45,17 @@ class NaiveCentroidControl {
 public:
     LSST_CONTROL_FIELD(background, double, "Value to subtract from the image pixel values");
     LSST_CONTROL_FIELD(doFootprintCheck, bool, "Do check that the centroid is contained in footprint.");
-    LSST_CONTROL_FIELD(maxDistToPeak, double,
-                       "If >0; maximum distance in pixels between the footprint peak and centroid allowed before "
-                       "resetToPeak flag is set.");
+    LSST_CONTROL_FIELD(
+            maxDistToPeak, double,
+            "If >0; maximum distance in pixels between the footprint peak and centroid allowed before "
+            "resetToPeak flag is set.");
 
     /**
      *  @brief Default constructor
      *
      *  All control classes should define a default constructor that sets all fields to their default values.
      */
-    NaiveCentroidControl() : background(0.0), doFootprintCheck(true), maxDistToPeak(-1.0) {}
+    NaiveCentroidControl() : background(0.0), doFootprintCheck(true), maxDistToPeak(5.) {}
 };
 
 /**

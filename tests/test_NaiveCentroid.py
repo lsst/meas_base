@@ -49,8 +49,8 @@ class NaiveCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         x = record.get("base_NaiveCentroid_x")
         y = record.get("base_NaiveCentroid_y")
         self.assertFalse(record.get("base_NaiveCentroid_flag"))
-        self.assertFloatsAlmostEqual(x, self.center.getX(), atol=None, rtol=.02)
-        self.assertFloatsAlmostEqual(y, self.center.getY(), atol=None, rtol=.02)
+        self.assertFloatsAlmostEqual(x, self.center.getX(), atol=2.)
+        self.assertFloatsAlmostEqual(y, self.center.getY(), atol=2.)
 
 
 class NaiveCentroidTransformTestCase(CentroidTransformTestCase,

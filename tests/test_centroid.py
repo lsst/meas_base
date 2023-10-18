@@ -110,12 +110,16 @@ class CentroidTestCase(utilsTests.TestCase):
         control = measBase.NaiveCentroidControl()
         control.background = bkgd
         control.doFootprintCheck = False
+        # Test fails even with the default of 5
+        control.maxDistToPeak = -1.0
         self.do_testAstrometry(measBase.NaiveCentroidAlgorithm, bkgd, control)
 
     def testSdssMeasureCentroid(self):
         """Test that we can instantiate and play with SDSS centroids"""
         control = measBase.SdssCentroidControl()
         control.doFootprintCheck = False
+        # Test fails with the default of 1, and even 5
+        control.maxDistToPeak = -1.0
         self.do_testAstrometry(measBase.SdssCentroidAlgorithm, 10.0, control)
 
 

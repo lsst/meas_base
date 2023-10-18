@@ -51,9 +51,10 @@ public:
     LSST_CONTROL_FIELD(peakMin, double, "if the peak's less than this insist on binning at least once");
     LSST_CONTROL_FIELD(wfac, double, "fiddle factor for adjusting the binning");
     LSST_CONTROL_FIELD(doFootprintCheck, bool, "Do check that the centroid is contained in footprint.");
-    LSST_CONTROL_FIELD(maxDistToPeak, double,
-                       "If >0; maximum distance in pixels between the footprint peak and centroid allowed before "
-                       "resetToPeak flag is set.");
+    LSST_CONTROL_FIELD(
+            maxDistToPeak, double,
+            "If >0; maximum distance in pixels between the footprint peak and centroid allowed before "
+            "resetToPeak flag is set.");
     /**
      *  @brief Default constructor
      *
@@ -61,7 +62,7 @@ public:
      */
 
     SdssCentroidControl()
-            : binmax(16), peakMin(-1.0), wfac(1.5), doFootprintCheck(true), maxDistToPeak(-1.0) {}
+            : binmax(16), peakMin(-1.0), wfac(1.5), doFootprintCheck(true), maxDistToPeak(1.) {}
 };
 
 /**
