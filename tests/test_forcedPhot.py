@@ -51,7 +51,6 @@ class ForcedPhotometryTests:
 
         schema = dataset.makeMinimalSchema()
         self.exposure, self.refCat = dataset.realize(noise=10, schema=schema)
-        lsst.afw.table.updateSourceCoords(self.exposure.wcs, self.refCat)
         # Simple aperture correction map in case the task needs it.
         apCorrMap = lsst.afw.image.ApCorrMap()
         apCorrMap["base_PsfFlux_instFlux"] = ChebyshevBoundedField(bbox, np.array([[2.0]]))

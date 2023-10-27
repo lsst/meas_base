@@ -610,6 +610,7 @@ class TestDataset:
             newHeavy.getMaskArray()[:] = oldHeavy.getMaskArray()
             newHeavy.getVarianceArray()[:] = oldHeavy.getVarianceArray()
             record.setFootprint(newHeavy)
+        lsst.afw.table.updateSourceCoords(exposure.wcs, catalog)
         return exposure, catalog
 
 
