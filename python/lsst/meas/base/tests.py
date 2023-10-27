@@ -191,6 +191,7 @@ class TestDataset:
         if not hasattr(cls, "_schema"):
             schema = lsst.afw.table.SourceTable.makeMinimalSchema()
             cls.keys = {}
+            cls.keys["coordErr"] = lsst.afw.table.CoordKey.addErrorFields(schema)
             cls.keys["parent"] = schema.find("parent").key
             cls.keys["nChild"] = schema.addField("deblend_nChild", type=np.int32)
             cls.keys["instFlux"] = schema.addField("truth_instFlux", type=np.float64,
