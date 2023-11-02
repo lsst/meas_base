@@ -31,7 +31,6 @@ import numpy as np
 
 import lsst.afw.image
 from lsst.afw.math import ChebyshevBoundedField
-from lsst.afw.table import CoordKey
 from lsst.meas.base import ForcedPhotCcdTask, ForcedPhotCcdFromDataFrameTask
 import lsst.meas.base.tests
 import lsst.utils.tests
@@ -51,10 +50,7 @@ class ForcedPhotometryTests:
         dataset.addSource(instFlux=10000, centroid=lsst.geom.Point2D(60, 70))
 
         schema = dataset.makeMinimalSchema()
-        # Add coordinate error fields needed by updateSourceCoords below:
-        CoordKey.addErrorFields(schema)
         self.exposure, self.refCat = dataset.realize(noise=10, schema=schema)
-        lsst.afw.table.updateSourceCoords(self.exposure.wcs, self.refCat)
         # Simple aperture correction map in case the task needs it.
         apCorrMap = lsst.afw.image.ApCorrMap()
         apCorrMap["base_PsfFlux_instFlux"] = ChebyshevBoundedField(bbox, np.array([[2.0]]))
