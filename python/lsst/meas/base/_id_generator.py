@@ -144,7 +144,7 @@ class BaseIdGeneratorConfig(Config):
         packer = self._make_dimension_packer(data_id)
         return FullIdGenerator(
             packer,
-            DataCoordinate.standardize(data_id, **kwargs, graph=packer.dimensions),
+            DataCoordinate.standardize(data_id, **kwargs, dimensions=packer.dimensions),
             release_id=self.release_id,
             n_releases=self.n_releases,
         )
