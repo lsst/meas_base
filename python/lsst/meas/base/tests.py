@@ -371,7 +371,8 @@ class TestDataset:
                                              date=lsst.daf.base.DateTime(mjd),
                                              observatory=lsst.afw.coord.Observatory(11.1*lsst.geom.degrees,
                                                                                     22.2*lsst.geom.degrees,
-                                                                                    0.333))
+                                                                                    0.333),
+                                             hasSimulatedContent=True)
         exposure.setWcs(wcs)
         exposure.setPsf(psf)
         exposure.setPhotoCalib(photoCalib)
