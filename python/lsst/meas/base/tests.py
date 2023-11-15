@@ -323,7 +323,8 @@ class TestDataset:
         return lsst.afw.geom.makeSkyWcs(crpix=newPixOrigin, crval=newSkyOrigin, cdMatrix=matrix)
 
     @staticmethod
-    def makeEmptyExposure(bbox, wcs=None, crval=None, cdelt=None, psfSigma=2.0, psfDim=17, calibration=4):
+    def makeEmptyExposure(bbox, wcs=None, crval=None, cdelt=None, psfSigma=2.0, psfDim=17, calibration=4,
+                          visitId=1234, mjd=60000.0):
         """Create an Exposure, with a PhotoCalib, Wcs, and Psf, but no pixel values.
 
         Parameters
@@ -344,6 +345,10 @@ class TestDataset:
         calibration : `float`, optional
             The spatially-constant calibration (in nJy/count) to set the
             PhotoCalib of the exposure.
+        visitId : `int`, optional
+            Visit id to store in VisitInfo.
+        mjd : `float`, optional
+            Modified Julian Date of this exposure to store in VisitInfo.
 
         Returns
         -------
@@ -361,9 +366,9 @@ class TestDataset:
         exposure = lsst.afw.image.ExposureF(bbox)
         psf = lsst.afw.detection.GaussianPsf(psfDim, psfDim, psfSigma)
         photoCalib = lsst.afw.image.PhotoCalib(calibration)
-        visitInfo = lsst.afw.image.VisitInfo(id=1234,
+        visitInfo = lsst.afw.image.VisitInfo(id=visitId,
                                              exposureTime=30.0,
-                                             date=lsst.daf.base.DateTime(60000.0),
+                                             date=lsst.daf.base.DateTime(mjd),
                                              observatory=lsst.afw.coord.Observatory(11.1*lsst.geom.degrees,
                                                                                     22.2*lsst.geom.degrees,
                                                                                     0.333))
