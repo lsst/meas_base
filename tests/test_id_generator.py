@@ -71,7 +71,7 @@ class IdGeneratorTestCase(unittest.TestCase):
         self.check_invariants(
             id_generator,
             unpacker=IdGenerator.unpacker_from_config(
-                config.visit, data_id.subset(self.universe.extract(["instrument"]))
+                config.visit, data_id.subset(self.universe.conform(["instrument"]))
             ),
             expected_release_id=2,
         )
@@ -94,7 +94,7 @@ class IdGeneratorTestCase(unittest.TestCase):
         self.check_invariants(
             id_generator,
             unpacker=IdGenerator.unpacker_from_config(
-                config.exposure, data_id.subset(self.universe.extract(["instrument"]))
+                config.exposure, data_id.subset(self.universe.conform(["instrument"]))
             ),
             expected_release_id=3,
         )
@@ -111,7 +111,7 @@ class IdGeneratorTestCase(unittest.TestCase):
         self.check_invariants(
             id_generator,
             unpacker=IdGenerator.unpacker_from_config(
-                config.skymap, data_id.subset(self.universe.extract(["skymap"]))
+                config.skymap, data_id.subset(self.universe.conform(["skymap"]))
             ),
         )
 
