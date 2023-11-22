@@ -102,6 +102,8 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(Control const& ctrl, std::string const&
             name + "_flag_saturatedCenter", "Saturated pixel in the 3x3 region around the centroid.");
     _centerKeys["CR"] = schema.addField<afw::table::Flag>(
             name + "_flag_crCenter", "Cosmic ray in the 3x3 region around the centroid.");
+    _centerKeys["BAD"] = schema.addField<afw::table::Flag>(name + "_flag_badCenter",
+                                                           "Bad pixel in the 3x3 region around the centroid");
     _centerKeys["SUSPECT"] = schema.addField<afw::table::Flag>(
             name + "_flag_suspectCenter", "Suspect pixel in the 3x3 region around the centroid.");
 

@@ -54,6 +54,7 @@ class PixelFlagsTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.test
         self.assertFalse(record.get("base_PixelFlags_flag_cr"))
         self.assertFalse(record.get("base_PixelFlags_flag_crCenter"))
         self.assertFalse(record.get("base_PixelFlags_flag_bad"))
+        self.assertFalse(record.get("base_PixelFlags_flag_badCenter"))
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
