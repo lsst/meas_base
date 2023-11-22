@@ -41,20 +41,27 @@ namespace {
 template <typename MaskedImageT>
 class FootprintBits {
 public:
-    explicit FootprintBits() : _bits(0) {}
+    explicit FootprintBits() : _anyBits(0), _allBits(~static_cast<typename MaskedImageT::Mask::Pixel>(0x0)) {}
 
     /// \brief Reset everything for a new Footprint
-    void reset() { _bits = 0x0; }
-
-    void operator()(geom::Point2I const& point, typename MaskedImageT::Mask::Pixel const& value) {
-        _bits |= value;
+    void reset() {
+        _anyBits = 0x0;
+        _allBits = ~static_cast<typename MaskedImageT::Mask::Pixel>(0x0);
     }
 
-    /// Return the union of the bits set anywhere in the Footprint
-    typename MaskedImageT::Mask::Pixel getBits() const { return _bits; }
+    void operator()(geom::Point2I const& point, typename MaskedImageT::Mask::Pixel const& value) {
+        _anyBits |= value;
+        _allBits &= value;
+    }
+
+    /// Return the union of the bits set anywhere in the Footprint.
+    typename MaskedImageT::Mask::Pixel getAnyBits() const { return _anyBits; }
+    /// Return the union of the bits set everywhere in the Footprint.
+    typename MaskedImageT::Mask::Pixel getAllBits() const { return _allBits; }
 
 private:
-    typename MaskedImageT::Mask::Pixel _bits;
+    typename MaskedImageT::Mask::Pixel _anyBits;
+    typename MaskedImageT::Mask::Pixel _allBits;
 };
 
 typedef afw::image::MaskedImage<float> MaskedImageF;
@@ -64,7 +71,7 @@ void updateFlags(PixelFlagsAlgorithm::KeyMap const& maskFlagToPixelFlag,
                  const FootprintBits<MaskedImageF>& func, afw::table::SourceRecord& measRecord) {
     for (auto const& i : maskFlagToPixelFlag) {
         try {
-            if (func.getBits() & MaskedImageF::Mask::getPlaneBitMask(i.first)) {
+            if (func.getAnyBits() & MaskedImageF::Mask::getPlaneBitMask(i.first)) {
                 measRecord.set(i.second, true);
             }
         } catch (pex::exceptions::InvalidParameterError& err) {
@@ -72,6 +79,21 @@ void updateFlags(PixelFlagsAlgorithm::KeyMap const& maskFlagToPixelFlag,
         }
     }
 }
+
+// Set flags when all pixels in func have the mask bit set.
+void updateFlagsAll(PixelFlagsAlgorithm::KeyMap const& maskFlagToPixelFlag,
+                    const FootprintBits<MaskedImageF>& func, afw::table::SourceRecord& measRecord) {
+    for (auto const& i : maskFlagToPixelFlag) {
+        try {
+            if (func.getAllBits() & MaskedImageF::Mask::getPlaneBitMask(i.first)) {
+                measRecord.set(i.second, true);
+            }
+        } catch (pex::exceptions::InvalidParameterError& err) {
+            throw LSST_EXCEPT(FatalAlgorithmError, err.what());
+        }
+    }
+}
+
 }  // end anonymous namespace
 
 PixelFlagsAlgorithm::PixelFlagsAlgorithm(Control const& ctrl, std::string const& name,
@@ -107,12 +129,34 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(Control const& ctrl, std::string const&
     _centerKeys["SUSPECT"] = schema.addField<afw::table::Flag>(
             name + "_flag_suspectCenter", "Suspect pixel in the 3x3 region around the centroid.");
 
+    // Flags that correspond to mask bits which are set on all of the 3x3 central pixels of the object.
+    _centerAllKeys["INTRP"] = schema.addField<afw::table::Flag>(
+            name + "_flag_interpolatedCenterAll",
+            "All pixels in the 3x3 region around the centroid are interpolated.");
+    _centerAllKeys["SAT"] = schema.addField<afw::table::Flag>(
+            name + "_flag_saturatedCenterAll",
+            "All pixels in the 3x3 region around the centroid are saturated.");
+    _centerAllKeys["CR"] = schema.addField<afw::table::Flag>(
+            name + "_flag_crCenterAll",
+            "All pixels in the 3x3 region around the centroid have the cosmic ray mask bit.");
+    _centerAllKeys["BAD"] = schema.addField<afw::table::Flag>(
+            name + "_flag_badCenterAll", "All pixels in the 3x3 region around the centroid are bad.");
+    _centerAllKeys["SUSPECT"] = schema.addField<afw::table::Flag>(
+            name + "_flag_suspectCenterAll", "All pixels in the 3x3 region around the centroid are suspect.");
+
     // Read in the flags passed from the configuration, and add them to the schema
     for (auto const& i : _ctrl.masksFpCenter) {
         std::string maskName(i);
         std::transform(maskName.begin(), maskName.end(), maskName.begin(), ::tolower);
         _centerKeys[i] = schema.addField<afw::table::Flag>(
                 name + "_flag_" + maskName + "Center", "3x3 region around the centroid has " + i + " pixels");
+    }
+    for (auto const& i : _ctrl.masksFpCenter) {
+        std::string maskName(i);
+        std::transform(maskName.begin(), maskName.end(), maskName.begin(), ::tolower);
+        _centerAllKeys[i] = schema.addField<afw::table::Flag>(
+                name + "_flag_" + maskName + "CenterAll",
+                "All pixels in the 3x3 region around the source centroid are " + i + " pixels");
     }
 
     for (auto const& i : _ctrl.masksFpAnywhere) {
@@ -176,7 +220,7 @@ void PixelFlagsAlgorithm::measure(afw::table::SourceRecord& measRecord,
 
     // Set the EDGE flag if the bitmask has NO_DATA set
     try {
-        if (func.getBits() & MaskedImageF::Mask::getPlaneBitMask("NO_DATA")) {
+        if (func.getAnyBits() & MaskedImageF::Mask::getPlaneBitMask("NO_DATA")) {
             measRecord.set(_anyKeys.at("EDGE"), true);
         }
     } catch (pex::exceptions::InvalidParameterError& err) {
@@ -197,6 +241,7 @@ void PixelFlagsAlgorithm::measure(afw::table::SourceRecord& measRecord,
 
     // Update the flags which have to do with the center of the footprint
     updateFlags(_centerKeys, func, measRecord);
+    updateFlagsAll(_centerAllKeys, func, measRecord);
 }
 
 void PixelFlagsAlgorithm::fail(afw::table::SourceRecord& measRecord, MeasurementError* error) const {
