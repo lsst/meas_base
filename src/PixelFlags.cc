@@ -59,6 +59,7 @@ private:
 
 typedef afw::image::MaskedImage<float> MaskedImageF;
 
+// Set flags when any pixel in func has the mask bit set.
 void updateFlags(PixelFlagsAlgorithm::KeyMap const& maskFlagToPixelFlag,
                  const FootprintBits<MaskedImageF>& func, afw::table::SourceRecord& measRecord) {
     for (auto const& i : maskFlagToPixelFlag) {
@@ -94,22 +95,22 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(Control const& ctrl, std::string const&
             schema.addField<afw::table::Flag>(name + "_flag_bad", "Bad pixel in the Source footprint");
     _anyKeys["SUSPECT"] = schema.addField<afw::table::Flag>(name + "_flag_suspect",
                                                             "Source's footprint includes suspect pixels");
-    // Flags that correspond to mask bits which occur in the center of the object
-    _centerKeys["INTRP"] = schema.addField<afw::table::Flag>(name + "_flag_interpolatedCenter",
-                                                             "Interpolated pixel in the Source center");
-    _centerKeys["SAT"] = schema.addField<afw::table::Flag>(name + "_flag_saturatedCenter",
-                                                           "Saturated pixel in the Source center");
-    _centerKeys["CR"] =
-            schema.addField<afw::table::Flag>(name + "_flag_crCenter", "Cosmic ray in the Source center");
-    _centerKeys["SUSPECT"] = schema.addField<afw::table::Flag>(name + "_flag_suspectCenter",
-                                                               "Source's center is close to suspect pixels");
+    // Flags that correspond to mask bits which are set anywhere in the 3x3 central region of the object.
+    _centerKeys["INTRP"] = schema.addField<afw::table::Flag>(
+            name + "_flag_interpolatedCenter", "Interpolated pixel in the 3x3 region around the centroid.");
+    _centerKeys["SAT"] = schema.addField<afw::table::Flag>(
+            name + "_flag_saturatedCenter", "Saturated pixel in the 3x3 region around the centroid.");
+    _centerKeys["CR"] = schema.addField<afw::table::Flag>(
+            name + "_flag_crCenter", "Cosmic ray in the 3x3 region around the centroid.");
+    _centerKeys["SUSPECT"] = schema.addField<afw::table::Flag>(
+            name + "_flag_suspectCenter", "Suspect pixel in the 3x3 region around the centroid.");
 
     // Read in the flags passed from the configuration, and add them to the schema
     for (auto const& i : _ctrl.masksFpCenter) {
         std::string maskName(i);
         std::transform(maskName.begin(), maskName.end(), maskName.begin(), ::tolower);
-        _centerKeys[i] = schema.addField<afw::table::Flag>(name + "_flag_" + maskName + "Center",
-                                                           "Source center is close to " + i + " pixels");
+        _centerKeys[i] = schema.addField<afw::table::Flag>(
+                name + "_flag_" + maskName + "Center", "3x3 region around the centroid has " + i + " pixels");
     }
 
     for (auto const& i : _ctrl.masksFpAnywhere) {
