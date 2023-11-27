@@ -49,11 +49,43 @@ class PixelFlagsTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.test
         self.assertFalse(record.get("base_PixelFlags_flag_edge"))
         self.assertFalse(record.get("base_PixelFlags_flag_interpolated"))
         self.assertFalse(record.get("base_PixelFlags_flag_interpolatedCenter"))
+        self.assertFalse(record.get("base_PixelFlags_flag_interpolatedCenterAll"))
         self.assertFalse(record.get("base_PixelFlags_flag_saturated"))
         self.assertFalse(record.get("base_PixelFlags_flag_saturatedCenter"))
+        self.assertFalse(record.get("base_PixelFlags_flag_saturatedCenterAll"))
         self.assertFalse(record.get("base_PixelFlags_flag_cr"))
         self.assertFalse(record.get("base_PixelFlags_flag_crCenter"))
+        self.assertFalse(record.get("base_PixelFlags_flag_crCenterAll"))
         self.assertFalse(record.get("base_PixelFlags_flag_bad"))
+        self.assertFalse(record.get("base_PixelFlags_flag_badCenter"))
+        self.assertFalse(record.get("base_PixelFlags_flag_badCenterAll"))
+
+    def testSomeFlags(self):
+        task = self.makeSingleFrameMeasurementTask("base_PixelFlags")
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
+        # one cr pixel outside the center
+        cosmicray = exposure.mask.getPlaneBitMask("CR")
+        x = round(self.center.x)
+        y = round(self.center.y)
+        exposure.mask[x+3, y+4] |= cosmicray
+        # one interpolated pixel near the center
+        interpolated = exposure.mask.getPlaneBitMask("INTRP")
+        exposure.mask[self.center] |= interpolated
+        # all pixels in the center are bad
+        bad = exposure.mask.getPlaneBitMask("BAD")
+        exposure.mask[x-1:x+2, y-1:y+2] |= bad
+        task.run(catalog, exposure)
+        record = catalog[0]
+
+        self.assertTrue(record.get("base_PixelFlags_flag_cr"))
+        self.assertFalse(record.get("base_PixelFlags_flag_crCenter"))
+        self.assertFalse(record.get("base_PixelFlags_flag_crCenterAll"))
+        self.assertTrue(record.get("base_PixelFlags_flag_interpolated"))
+        self.assertTrue(record.get("base_PixelFlags_flag_interpolatedCenter"))
+        self.assertFalse(record.get("base_PixelFlags_flag_interpolatedCenterAll"))
+        self.assertTrue(record.get("base_PixelFlags_flag_bad"))
+        self.assertTrue(record.get("base_PixelFlags_flag_badCenter"))
+        self.assertTrue(record.get("base_PixelFlags_flag_badCenterAll"))
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):

@@ -79,6 +79,7 @@ public:
 private:
     Control _ctrl;
     KeyMap _centerKeys;
+    KeyMap _centerAllKeys;
     KeyMap _anyKeys;
     afw::table::Key<afw::table::Flag> _generalFailureKey;
     afw::table::Key<afw::table::Flag> _offImageKey;
