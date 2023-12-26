@@ -202,8 +202,10 @@ void PixelFlagsAlgorithm::measure(afw::table::SourceRecord& measRecord,
         }
     }
 
-    //  Catch centroids off the image
-    if (!mimage.getBBox().contains(geom::Point2I(center))) {
+    // Flag centroids off the image.
+    // Float bbox to properly handle non-finite centroids (casting Point2D->Point2I breaks NaN/inf).
+    geom::Box2D bbox(mimage.getBBox());
+    if (!bbox.contains(center)) {
         measRecord.set(_offImageKey, true);
         measRecord.set(_anyKeys.at("EDGE"), true);
     }
