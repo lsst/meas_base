@@ -211,11 +211,14 @@ void PixelFlagsAlgorithm::measure(afw::table::SourceRecord& measRecord,
     // Check for bits set in the source's Footprint
     auto footprint = measRecord.getFootprint();
     if (!footprint) {
-        throw LSST_EXCEPT(pex::exceptions::RuntimeError, "No footprint present.");
+        throw LSST_EXCEPT(pex::exceptions::RuntimeError,
+                          (boost::format("Source id %d has no footprint.") % measRecord.getId()).str());
     }
     auto fullSpans = footprint->getSpans();
     if (!fullSpans) {
-        throw LSST_EXCEPT(pex::exceptions::RuntimeError, "No spans in footprint.");
+        throw LSST_EXCEPT(
+                pex::exceptions::RuntimeError,
+                (boost::format("Source id %d has no spans in footprint.") % measRecord.getId()).str());
     }
     fullSpans->clippedTo(mimage.getBBox())->applyFunctor(func, *(mimage.getMask()));
 
