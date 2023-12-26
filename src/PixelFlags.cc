@@ -106,7 +106,8 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(Control const& ctrl, std::string const&
             schema.addField<afw::table::Flag>(name + "_flag" + "_offimage", "Source center is off image");
     // Set all the flags that correspond to mask planes anywhere in the footprint
     _anyKeys["EDGE"] = schema.addField<afw::table::Flag>(
-            name + "_flag_edge", "Source is outside usable exposure region (masked EDGE or NO_DATA)");
+            name + "_flag_edge",
+            "Source is outside usable exposure region (masked EDGE or NO_DATA, or centroid off image)");
     _anyKeys["INTRP"] = schema.addField<afw::table::Flag>(name + "_flag_interpolated",
                                                           "Interpolated pixel in the Source footprint");
     _anyKeys["SAT"] = schema.addField<afw::table::Flag>(name + "_flag_saturated",
