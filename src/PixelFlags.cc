@@ -177,11 +177,6 @@ void PixelFlagsAlgorithm::measure(afw::table::SourceRecord& measRecord,
     geom::Point2D center;
     if (measRecord.getTable()->getCentroidSlot().getMeasKey().isValid()) {
         center = measRecord.getCentroid();
-        //  Catch NAN in centroid estimate
-        if (std::isnan(center.getX()) || std::isnan(center.getY())) {
-            throw LSST_EXCEPT(pex::exceptions::RuntimeError,
-                              "Center point passed to PixelFlagsAlgorithm is NaN");
-        }
     } else {
         // Set the general failure flag because using the Peak might affect
         // the current measurement
@@ -236,18 +231,27 @@ void PixelFlagsAlgorithm::measure(afw::table::SourceRecord& measRecord,
     // update the source record for the any keys
     updateFlags(_anyKeys, func, measRecord);
 
-    // Check for bits set in the 3x3 box around the center
-    geom::Point2I llc(afw::image::positionToIndex(center.getX()) - 1,
-                      afw::image::positionToIndex(center.getY()) - 1);
+    if (!(std::isfinite(center.getX()) && std::isfinite(center.getY()))) {
+        auto msg =
+                (boost::format("Centroid of source id %d passed to PixelFlags is non-finite; "
+                               "footprint-based flags have been set, but centroid-based flags will not be.") %
+                 measRecord.getId())
+                        .str();
+        throw LSST_EXCEPT(pex::exceptions::RuntimeError, msg);
+    } else {
+        // Check for bits set in the 3x3 box around the center
+        geom::Point2I llc(afw::image::positionToIndex(center.getX()) - 1,
+                          afw::image::positionToIndex(center.getY()) - 1);
 
-    func.reset();
-    auto spans = std::make_shared<afw::geom::SpanSet>(geom::Box2I(llc, geom::ExtentI(3)));
-    afw::detection::Footprint const middle(spans);  // central 3x3
-    middle.getSpans()->clippedTo(mimage.getBBox())->applyFunctor(func, *(mimage.getMask()));
+        func.reset();
+        auto spans = std::make_shared<afw::geom::SpanSet>(geom::Box2I(llc, geom::ExtentI(3)));
+        afw::detection::Footprint const middle(spans);  // central 3x3
+        middle.getSpans()->clippedTo(mimage.getBBox())->applyFunctor(func, *(mimage.getMask()));
 
-    // Update the flags which have to do with the center of the footprint
-    updateFlags(_centerKeys, func, measRecord);
-    updateFlagsAll(_centerAllKeys, func, measRecord);
+        // Update the flags which have to do with the center of the footprint
+        updateFlags(_centerKeys, func, measRecord);
+        updateFlagsAll(_centerAllKeys, func, measRecord);
+    }
 }
 
 void PixelFlagsAlgorithm::fail(afw::table::SourceRecord& measRecord, MeasurementError* error) const {
