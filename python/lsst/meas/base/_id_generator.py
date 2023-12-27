@@ -36,7 +36,6 @@ from typing import Any, Callable
 import numpy as np
 from lsst.afw.table import IdFactory, Schema, SourceCatalog, SourceTable
 from lsst.daf.butler import DataCoordinate, DimensionPacker
-from lsst.obs.base import ExposureIdInfo
 from lsst.pex.config import Config, ConfigField, Field
 from lsst.pipe.base import Instrument
 from lsst.skymap.packers import SkyMapDimensionPacker
@@ -281,21 +280,6 @@ class IdGenerator:
     :ref:`lsst.meas.base-generating-source-and-object-ids`
     """
 
-    # TODO: remove this method on DM-38687.
-    # No deprecation decorator here because the type this method accepts is
-    # itself deprecated, so it's only going to be called by code paths that
-    # will go away when the deprecation turns into a removal, and which already
-    # warn.
-    @staticmethod
-    def _from_exposure_id_info(exposure_id_info: ExposureIdInfo) -> IdGenerator:
-        """Construct a new ID generator from the object this class supersedes.
-
-        This method is deprecated along with the type it accepts; it's provided
-        only as a temporary helper to aid in the transition from
-        `lsst.obs.base.ExposureIdInfo` to `IdGenerator`.
-        """
-        return _ExposureIdInfoIdGenerator(exposure_id_info)
-
     @property
     def catalog_id(self) -> int:
         """The integer identifier for the full catalog with this data ID, not
@@ -535,35 +519,3 @@ class _IdGeneratorBits:
         upper_bits = (self.n_releases - 1).bit_length() + self.packer.maxBits
         self.counter_bits = IdFactory.computeReservedFromMaxBits(upper_bits)
         self.n_counters = 1 << self.counter_bits
-
-
-# TODO: remove this method on DM-38687.
-# No deprecation decorator here because the type this class holds is itself
-# deprecated, so it's only going to be called by code paths that will go away
-# when the deprecation turns into a removal, and which already warn.
-class _ExposureIdInfoIdGenerator(IdGenerator):
-    """A `IdGenerator` implementation to aid in the transition from
-    `lsst.obs.base.ExposureIdInfo`.
-    """
-
-    def __init__(self, exposure_id_info: ExposureIdInfo):
-        self._exposure_id_info = exposure_id_info
-
-    @property
-    def catalog_id(self) -> int:
-        # Docstring inherited.
-        return self._exposure_id_info.expId
-
-    def __str__(self) -> str:
-        return str(self.catalog_id)
-
-    def make_table_id_factory(self) -> IdFactory:
-        # Docstring inherited.
-        return self._exposure_id_info.makeSourceIdFactory()
-
-    def arange(self, *args, **kwargs) -> np.ndarray:
-        # Docstring inherited.
-        raise NotImplementedError(
-            "This IdGenerator implementation does not support arange; "
-            "please update to IdGenerator.from_config for a full-featured implementation."
-        )
