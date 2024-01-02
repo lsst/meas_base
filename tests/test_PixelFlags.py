@@ -37,11 +37,6 @@ class PixelFlagsTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.test
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(100000.0, self.center)
 
-    def tearDown(self):
-        del self.center
-        del self.bbox
-        del self.dataset
-
     def testNoFlags(self):
         task = self.makeSingleFrameMeasurementTask("base_PixelFlags")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
