@@ -21,6 +21,8 @@
 
 import unittest
 
+import numpy as np
+
 import lsst.geom
 import lsst.utils.tests
 import lsst.meas.base.tests
@@ -34,11 +36,6 @@ class PixelFlagsTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.test
                                     lsst.geom.Extent2I(140, 160))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(100000.0, self.center)
-
-    def tearDown(self):
-        del self.center
-        del self.bbox
-        del self.dataset
 
     def testNoFlags(self):
         task = self.makeSingleFrameMeasurementTask("base_PixelFlags")
@@ -86,6 +83,48 @@ class PixelFlagsTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.test
         self.assertTrue(record.get("base_PixelFlags_flag_bad"))
         self.assertTrue(record.get("base_PixelFlags_flag_badCenter"))
         self.assertTrue(record.get("base_PixelFlags_flag_badCenterAll"))
+
+    def testOffimageNonfinite(self):
+        """Test that flag_offimage and flag_edge are set correctly for
+        nonfinite sources.
+        """
+        # These three will be explicitly set to have a non-finite centroid; we
+        # cannot add sources off the image in TestDataset.
+        self.dataset.addSource(100000, lsst.geom.Point2D(20, 20))
+        self.dataset.addSource(100000, lsst.geom.Point2D(20, 100))
+        self.dataset.addSource(100000, lsst.geom.Point2D(100, 30))
+        task = self.makeSingleFrameMeasurementTask("base_PixelFlags")
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
+        catalog[1]["slot_Centroid_x"] = np.inf
+        catalog[2]["slot_Centroid_x"] = -np.inf
+        catalog[3]["slot_Centroid_y"] = np.nan
+        task.run(catalog, exposure)
+        np.testing.assert_array_equal(catalog["base_PixelFlags_flag_offimage"],
+                                      np.array([False, True, True, True]))
+        np.testing.assert_array_equal(catalog["base_PixelFlags_flag_edge"],
+                                      np.array([False, True, True, True]))
+
+    def testOffimage(self):
+        """Test that sources at the boundary of the image get flag_offimage
+        and flag_edge set appropriately.
+        """
+        # These four will be explicitly set to values at the boundary; we
+        # cannot add sources off the image in TestDataset.
+        self.dataset.addSource(100000, lsst.geom.Point2D(20, 20))
+        self.dataset.addSource(100000, lsst.geom.Point2D(20, 100))
+        self.dataset.addSource(100000, lsst.geom.Point2D(80, 100))
+        self.dataset.addSource(100000, lsst.geom.Point2D(80, 30))
+        task = self.makeSingleFrameMeasurementTask("base_PixelFlags")
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
+        catalog[1]["slot_Centroid_x"] = -20.5  # on image
+        catalog[2]["slot_Centroid_x"] = -20.51  # off image
+        catalog[3]["slot_Centroid_y"] = 129.4  # on image
+        catalog[4]["slot_Centroid_y"] = 129.50  # off image
+        task.run(catalog, exposure)
+        np.testing.assert_array_equal(catalog["base_PixelFlags_flag_offimage"],
+                                      np.array([False, False, True, False, True]))
+        np.testing.assert_array_equal(catalog["base_PixelFlags_flag_edge"],
+                                      np.array([False, False, True, False, True]))
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
