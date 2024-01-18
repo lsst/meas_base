@@ -42,7 +42,8 @@ from lsst.meas.base import (
     LinearFitDiaPsfFlux, LinearFitDiaPsfFluxConfig,
     StetsonJDiaPsfFlux, StetsonJDiaPsfFluxConfig,
     WeightedMeanDiaTotFlux, WeightedMeanDiaTotFluxConfig,
-    SigmaDiaTotFlux, SigmaDiaTotFluxConfig)
+    SigmaDiaTotFlux, SigmaDiaTotFluxConfig, 
+    LombScarglePeriodogram, LombScarglePeriodogramConfig)
 import lsst.utils.tests
 
 
@@ -871,6 +872,48 @@ class TestWeightedMeanDiaTotFlux(unittest.TestCase):
         self.assertAlmostEqual(diaObjects.at[objId, "r_scienceFluxMeanErr"],
                                np.sqrt(1 / (n_sources - 1)))
 
+
+class TestLombScarglePeriodogram(unittest.TestCase):
+
+    def testCalculate(self):
+        """Test Lomb Scargle Periodogram."""
+        n_sources = 10
+        objId = 0 
+
+        # Test on periodic scienceFlux.
+        times = np.linspace(0, 2*np.pi, n_sources)
+        fluxes = np.sin(0.3 * times)
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = pd.DataFrame(
+        data={"diaObjectId": n_sources * [objId],
+                "band": n_sources * ["u"],
+                "diaSourceId": np.arange(n_sources, dtype=int),
+                "midpointMjdTai": times,
+                "psfFlux": fluxes,
+                "psfFluxErr": np.zeros(n_sources)})
+        
+        plug = LombScarglePeriodogram(LombScarglePeriodogramConfig(), 
+                                    "ap_lombScarglePeriodogram",
+                                    None)
+
+        run_multi_plugin(diaObjects, diaSources, "u", plug)
+        self.assertAlmostEqual(diaObjects.at[objId, "u_period"],
+                                31.41592653589793) # empirical calculation need to confirm
+
+        # Test test scatter on scienceFlux takes input nans.
+        fluxes[4] = np.nan
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = pd.DataFrame(
+            data={"diaObjectId": n_sources * [objId],
+                  "band": n_sources * ["r"],
+                  "diaSourceId": np.arange(n_sources, dtype=int),
+                  "midpointMjdTai": times,
+                  "psfFlux": fluxes,
+                  "psfFluxErr": np.ones(n_sources)})
+        run_multi_plugin(diaObjects, diaSources, "r", plug)
+        self.assertAlmostEqual(diaObjects.at[objId, "r_period"],
+                                0.01887976354320789)
+        
 
 class TestSigmaDiaTotFlux(unittest.TestCase):
 
