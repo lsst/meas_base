@@ -118,8 +118,6 @@ class SingleFrameFPPositionConfig(SingleFramePluginConfig):
     """Configuration for the focal plane position measurment algorithm.
     """
 
-    pass
-
 
 @register("base_FPPosition")
 class SingleFrameFPPositionPlugin(SingleFramePlugin):
@@ -324,7 +322,6 @@ ForcedVariancePlugin = VariancePlugin.makeForcedPlugin("base_Variance")
 class InputCountConfig(BaseMeasurementPluginConfig):
     """Configuration for the input image counting plugin.
     """
-    pass
 
 
 class InputCountPlugin(GenericPlugin):
@@ -408,7 +405,6 @@ ForcedInputCountPlugin = InputCountPlugin.makeForcedPlugin("base_InputCount")
 class EvaluateLocalPhotoCalibPluginConfig(BaseMeasurementPluginConfig):
     """Configuration for the variance calculation plugin.
     """
-    pass
 
 
 class EvaluateLocalPhotoCalibPlugin(GenericPlugin):
@@ -460,7 +456,6 @@ ForcedEvaluateLocalPhotoCalibPlugin = EvaluateLocalPhotoCalibPlugin.makeForcedPl
 class EvaluateLocalWcsPluginConfig(BaseMeasurementPluginConfig):
     """Configuration for the variance calculation plugin.
     """
-    pass
 
 
 class EvaluateLocalWcsPlugin(GenericPlugin):
@@ -551,7 +546,6 @@ ForcedEvaluateLocalWcsPlugin = EvaluateLocalWcsPlugin.makeForcedPlugin("base_Loc
 class SingleFramePeakCentroidConfig(SingleFramePluginConfig):
     """Configuration for the single frame peak centroiding algorithm.
     """
-    pass
 
 
 @register("base_PeakCentroid")
@@ -602,7 +596,6 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
 class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
     """Configuration for the sky coordinates algorithm.
     """
-    pass
 
 
 @register("base_SkyCoord")
@@ -650,7 +643,6 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
 class ForcedPeakCentroidConfig(ForcedPluginConfig):
     """Configuration for the forced peak centroid algorithm.
     """
-    pass
 
 
 @register("base_PeakCentroid")
@@ -705,7 +697,6 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
 class ForcedTransformedCentroidConfig(ForcedPluginConfig):
     """Configuration for the forced transformed centroid algorithm.
     """
-    pass
 
 
 @register("base_TransformedCentroid")
@@ -772,7 +763,6 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
 class ForcedTransformedCentroidFromCoordConfig(ForcedTransformedCentroidConfig):
     """Configuration for the forced transformed coord algorithm.
     """
-    pass
 
 
 @register("base_TransformedCentroidFromCoord")
@@ -816,7 +806,6 @@ class ForcedTransformedCentroidFromCoordPlugin(ForcedTransformedCentroidPlugin):
 class ForcedTransformedShapeConfig(ForcedPluginConfig):
     """Configuration for the forced transformed shape algorithm.
     """
-    pass
 
 
 @register("base_TransformedShape")
