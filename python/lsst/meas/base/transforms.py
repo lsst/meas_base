@@ -26,7 +26,7 @@ as pixel positions. A transformation may be run as a post-processing step to
 convert those outputs to calibrated quantities, such as celestial coordinates.
 
 At construction, the transformation is passed the configuration and name of
-the plugin whose outputs it will be transformaing (all fields in the input
+the plugin whose outputs it will be transforming (all fields in the input
 table produced by that plugin will have their field names prefixed by the
 plugin name) and a `~lsst.afw.table.SchemaMapper` which holds the schemata for
 the input and output catalogs and which may be used to directly map fields
