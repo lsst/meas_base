@@ -347,6 +347,21 @@ class FlagHandlerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertTrue(source.get(self.algName + "_flag"))
         self.assertEqual(source.get("test_PythonPlugin_instFlux"), instFlux)
 
+    def testEmptyDefinitionList(self):
+        """Check that accessing a non-existent index in a flag definition list
+        raises instead of segfaulting.
+        """
+        definitions = FlagDefinitionList()
+        with self.assertRaisesRegex(IndexError, "Cannot access index 0 of length=0 flag definition list."):
+            definitions.getDefinition(0)
+
+        # Adding and accessing a flag still works
+        definitions.addFailureFlag()
+        self.assertEqual(definitions.getDefinition(0).name, "flag")
+
+        with self.assertRaisesRegex(IndexError, "Cannot access index 1 of length=1 flag definition list."):
+            definitions.getDefinition(1)
+
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
     pass

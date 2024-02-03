@@ -30,6 +30,16 @@ namespace base {
 // so pybind11 can get the address of number_undefined
 constexpr std::size_t FlagDefinition::number_undefined;
 
+FlagDefinition FlagDefinitionList::getDefinition(std::size_t index) const {
+    if (index >= _vector.size()) {
+        throw std::out_of_range((boost::format("Cannot access index %d of length=%d flag definition list.") %
+                                 index % _vector.size())
+                                        .str());
+    } else {
+        return _vector[index];
+    }
+}
+
 FlagDefinition FlagDefinitionList::addFailureFlag(std::string const& doc) {
     return add(FlagHandler::getFailureFlagName(), doc);
 }

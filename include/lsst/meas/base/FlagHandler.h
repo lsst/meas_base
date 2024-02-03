@@ -77,10 +77,11 @@ public:
         static FlagDefinitionList list;
         return list;
     }
+
     /**
      *  @brief get a reference to the FlagDefinition with specified index.
      */
-    FlagDefinition getDefinition(std::size_t index) const { return _vector[index]; }
+    FlagDefinition getDefinition(std::size_t index) const;
     /**
      *  @brief get a reference to the FlagDefinition with specified name.
      */
