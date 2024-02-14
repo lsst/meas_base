@@ -36,7 +36,7 @@ from scipy.optimize import lsq_linear
 import lsst.geom as geom
 import lsst.pex.config as pexConfig
 import lsst.sphgeom as sphgeom
-from astropy.timeseries import LombScargle # local build
+from astropy.timeseries import LombScargle
 from scipy.special import gamma
 import statistics
 
@@ -44,7 +44,7 @@ from .diaCalculation import (
     DiaObjectCalculationPluginConfig,
     DiaObjectCalculationPlugin)
 from .pluginRegistry import register
-from .lombscargleMultiband import LombScargleMultiband as lspm
+from astropy.timeseries import LombScargleMultiband as lspm
 
 
 __all__ = ("MeanDiaPositionConfig", "MeanDiaPosition",
@@ -94,10 +94,6 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
     Compute the single-band period of a DiaObject given a set of DiaSources. 
     """
     ConfigClass = LombScarglePeriodogramConfig
-
-    # TODO: change power with SNR or FAP (Baleuv)...
-    # TODO: implement Baluev False alarm
-    # TODO: Talk to Doug about Multiband LSP for Fourier components
 
     plugType = 'multi'
     outputCols = ["period", "power"]
@@ -188,9 +184,7 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
                               powerCol: np.max(power)})
 
         diaObjects.loc[:, [periodCol, powerCol]] = filterDiaSources.apply(_calculate_period)
-        
-        #import ipdb 
-        #ipdb.set_trace()
+
 
 class LombScarglePeriodogramMultiConfig(DiaObjectCalculationPluginConfig):
     pass
@@ -203,7 +197,7 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
     ConfigClass = LombScarglePeriodogramMultiConfig
 
     plugType = 'multi'
-    outputCols = ["multi_period", "multi_power", "multi_fap"]
+    outputCols = ["multi_period", "multi_power", "multi_fap", "multi_amp", "multi_phase"]
     needsFilter = True
 
     @classmethod
@@ -231,6 +225,8 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
         periodCol = "multi_period"
         powerCol = "multi_power"
         fapCol = "multi_fap"
+        ampCol = "Amplitude_{}".format(band)
+        phaseCol = "Phase_{}".format(band)
 
         # Check and initialize output columns in diaObjects
         if periodCol not in diaObjects.columns:
@@ -239,6 +235,10 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             diaObjects[powerCol] = np.nan
         if fapCol not in diaObjects.columns:
             diaObjects[fapCol] = np.nan
+        if ampCol not in diaObjects.columns:
+            diaObjects[ampCol] = np.nan
+        if phaseCol not in diaObjects.columns:
+            diaObjects[phaseCol] = np.nan
 
         def compute_optimized_periodogram_grid(x0, oversampling_factor=5, nyquist_factor=100):
             """
@@ -270,9 +270,7 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             return frequencies
         
         def calculate_baluev_fap(time, N, period_max_grid ,zmax):
-            """Calculate the False-Alarm Probability Baluev Approximation. Method implemented from: 
-
-                #TODO: docstring needs completion.
+            """ Calculate the False-Alarm probability Baluev approximation using Süveges et al. 2015 (see eqn. 3)
             
                 Parameters
                 ----------
@@ -280,43 +278,88 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                 N: number of detections
                 period_max_grid: period ax maximum power
                 zmax: maximum power
+
+                Returns
+                -------
+                float: False-Alarm probability Baluev approximation
             """
             gam_ratio = (gamma((N-1)/2))/(gamma((N-2)/2))
             fu = 1/period_max_grid
-    
             return gam_ratio * np.sqrt(4*np.pi*statistics.variance(time)) * fu * (1-zmax)**((N-4)/2) * np.sqrt(zmax)
 
-
-        def _calculate_period_multi(df, min_detections=30, oversampling_factor=5, nyquist_factor=100):
+        def _calculate_period_multi(df, min_detections=130, oversampling_factor=5, nyquist_factor=100):
             """Compute multi-band Lomb-Scargle periodogram.
                Followed example from: https://github.com/AndyTza/PeriodicLSSTScaps/blob/main/tutorials/%5BTutorial%203.0%20-%2023%5D%20-%20Single%20Band%20Astropy%20LombScargle%20Implementation.ipynb
             """
-
             tmpDf = df[~np.logical_or(np.isnan(df["psfFlux"]),
                                       np.isnan(df["midpointMjdTai"]))]
-
+            
             if (len(tmpDf)) < min_detections:
-                return pd.Series({periodCol: np.nan, powerCol: np.nan, fapCol: np.nan})
+                return pd.Series({periodCol: np.nan, 
+                                  powerCol: np.nan,
+                                fapCol: np.nan, 
+                                ampCol: np.nan,
+                                phaseCol: np.nan})
 
             time = tmpDf["midpointMjdTai"].to_numpy()
             flux = tmpDf["psfFlux"].to_numpy()
             flux_err = tmpDf['psfFluxErr'].to_numpy()
             bands = tmpDf['band'].to_numpy()
-            #print (bands)
-            #print (lspm)
-            
+
+            print (f"Numbers: {len(time)}, {np.unique(bands)}")
+
+            # TODO: currently assuming 1-1 base-band model.
             lsp = lspm(time, flux, bands, dy=flux_err, nterms_base=1, nterms_band=1)
 
             f_grid = compute_optimized_periodogram_grid(time, oversampling_factor=oversampling_factor, nyquist_factor=nyquist_factor)
             period = 1/f_grid
             power = lsp.power(f_grid) # compute power
 
-            # Calculate the False-Alarm Probability Baluev Approximation
+            # Calculate the False-Alarm probability Baluev approximation
             fap_estimate = calculate_baluev_fap(time, len(time), period[np.argmax(power)], np.max(power))
 
-            return pd.Series({periodCol: period[np.argmax(power)],
+            def generate_lsp_params(lsp_model, fbest, bands):
+                """
+                Return a pandas dataframe with the lombscargle periodogram model parameters.
+                """ 
+
+                # Calculate based on the best period the parameters
+                best_params = lsp_model.model_parameters(fbest, units=True)
+
+                name_params = [f'theta_base_{i}' for i in range(3)] 
+                name_params +=  [f'theta_band_{band}_{index}' for band in np.unique(bands) for index in range(3)]
+
+                df_params = pd.DataFrame([best_params], columns=name_params)   
+
+                # compute amplitude and phase
+                Amplitude_band = [np.sqrt(df_params[f'theta_band_{band}_1']**2 + df_params[f'theta_band_{band}_2']**2) for band in np.unique(bands)]
+                Phase_bands = [np.arctan2(df_params[f'theta_band_{band}_2'], df_params[f'theta_band_{band}_1']) for band in np.unique(bands)]
+
+                Amp, Ph = [], []
+                for a in Amplitude_band:
+                    Amp.append(a[0])
+                for p in Phase_bands:
+                    Ph.append(p[0])
+                
+                Amp, Ph = np.array(Amp), np.array(Ph)
+
+                data_dict = {}
+                for band, amp, ph in zip(np.unique(bands), Amp, Ph):
+                    data_dict[f'Amplitude_{band}'] = amp
+                    data_dict[f'Phase_{band}'] = ph
+                
+                # Create a DataFrame from the dictionary
+                df = pd.Series(data_dict, index=[0])
+
+                return df
+
+            params_table_new = generate_lsp_params(lsp, f_grid[np.argmax(power)], bands)
+
+            pd_tab = pd.Series({periodCol: period[np.argmax(power)],
                               powerCol: np.max(power), 
                               fapCol: fap_estimate})
+            
+            return pd.concat([pd_tab, params_table_new]) # appending the parameters to the periodogram
 
         diaObjects.loc[:, [periodCol, powerCol, fapCol]] = diaSources.apply(_calculate_period_multi)
 
