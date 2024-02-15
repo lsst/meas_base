@@ -108,6 +108,7 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(Control const& ctrl, std::string const&
     _anyKeys["EDGE"] = schema.addField<afw::table::Flag>(
             name + "_flag_edge",
             "Source is outside usable exposure region (masked EDGE or NO_DATA, or centroid off image)");
+    _anyKeys["NO_DATA"] = _anyKeys.at("EDGE");  // Also set edge flag for NO_DATA.
     _anyKeys["INTRP"] = schema.addField<afw::table::Flag>(name + "_flag_interpolated",
                                                           "Interpolated pixel in the Source footprint");
     _anyKeys["SAT"] = schema.addField<afw::table::Flag>(name + "_flag_saturated",
@@ -218,15 +219,6 @@ void PixelFlagsAlgorithm::measure(afw::table::SourceRecord& measRecord,
                 (boost::format("Source id %d has no spans in footprint.") % measRecord.getId()).str());
     }
     fullSpans->clippedTo(mimage.getBBox())->applyFunctor(func, *(mimage.getMask()));
-
-    // Set the EDGE flag if the bitmask has NO_DATA set
-    try {
-        if (func.getAnyBits() & MaskedImageF::Mask::getPlaneBitMask("NO_DATA")) {
-            measRecord.set(_anyKeys.at("EDGE"), true);
-        }
-    } catch (pex::exceptions::InvalidParameterError& err) {
-        throw LSST_EXCEPT(FatalAlgorithmError, err.what());
-    }
 
     // update the source record for the any keys
     updateFlags(_anyKeys, func, measRecord);
