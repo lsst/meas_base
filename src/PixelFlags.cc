@@ -107,7 +107,7 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(Control const& ctrl, std::string const&
     // Set all the flags that correspond to mask planes anywhere in the footprint
     _anyKeys["EDGE"] = schema.addField<afw::table::Flag>(
             name + "_flag_edge",
-            "Source is outside usable exposure region (masked EDGE or NO_DATA, or centroid off image)");
+            "Source is outside usable exposure region (masked EDGE or NO_DATA, or centroid off image).");
     _anyKeys["NO_DATA"] = _anyKeys.at("EDGE");  // Also set edge flag for NO_DATA.
     _anyKeys["INTRP"] = schema.addField<afw::table::Flag>(name + "_flag_interpolated",
                                                           "Interpolated pixel in the Source footprint");
@@ -120,6 +120,9 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(Control const& ctrl, std::string const&
     _anyKeys["SUSPECT"] = schema.addField<afw::table::Flag>(name + "_flag_suspect",
                                                             "Source's footprint includes suspect pixels");
     // Flags that correspond to mask bits which are set anywhere in the 3x3 central region of the object.
+    _centerKeys["EDGE"] = schema.addField<afw::table::Flag>(
+            name + "_flag_edgeCenter", "EDGE or NO_DATA Pixel in the 3x3 region around the centroid.");
+    _centerKeys["NO_DATA"] = _centerKeys.at("EDGE");  // Also set edge flag for NO_DATA.
     _centerKeys["INTRP"] = schema.addField<afw::table::Flag>(
             name + "_flag_interpolatedCenter", "Interpolated pixel in the 3x3 region around the centroid.");
     _centerKeys["SAT"] = schema.addField<afw::table::Flag>(
@@ -132,6 +135,10 @@ PixelFlagsAlgorithm::PixelFlagsAlgorithm(Control const& ctrl, std::string const&
             name + "_flag_suspectCenter", "Suspect pixel in the 3x3 region around the centroid.");
 
     // Flags that correspond to mask bits which are set on all of the 3x3 central pixels of the object.
+    _centerAllKeys["EDGE"] = schema.addField<afw::table::Flag>(
+            name + "_flag_edgeCenterAll",
+            "All pixels in the 3x3 region around the centroid are marked EDGE or NO_DATA.");
+    _centerAllKeys["NO_DATA"] = _centerAllKeys.at("EDGE");  // Also set edge flag for NO_DATA.
     _centerAllKeys["INTRP"] = schema.addField<afw::table::Flag>(
             name + "_flag_interpolatedCenterAll",
             "All pixels in the 3x3 region around the centroid are interpolated.");
@@ -204,6 +211,8 @@ void PixelFlagsAlgorithm::measure(afw::table::SourceRecord& measRecord,
     if (!bbox.contains(center)) {
         measRecord.set(_offImageKey, true);
         measRecord.set(_anyKeys.at("EDGE"), true);
+        measRecord.set(_centerKeys.at("EDGE"), true);
+        measRecord.set(_centerAllKeys.at("EDGE"), true);
     }
 
     // Check for bits set in the source's Footprint
