@@ -35,15 +35,17 @@ class PixelFlagsTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.test
         self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30),
                                     lsst.geom.Extent2I(140, 160))
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
-        self.dataset.addSource(100000.0, self.center)
 
     def testNoFlags(self):
+        self.dataset.addSource(100000.0, self.center)
         task = self.makeSingleFrameMeasurementTask("base_PixelFlags")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         task.run(catalog, exposure)
         record = catalog[0]
         self.assertFalse(record.get("base_PixelFlags_flag"))
         self.assertFalse(record.get("base_PixelFlags_flag_edge"))
+        self.assertFalse(record.get("base_PixelFlags_flag_edgeCenter"))
+        self.assertFalse(record.get("base_PixelFlags_flag_edgeCenterAll"))
         self.assertFalse(record.get("base_PixelFlags_flag_interpolated"))
         self.assertFalse(record.get("base_PixelFlags_flag_interpolatedCenter"))
         self.assertFalse(record.get("base_PixelFlags_flag_interpolatedCenterAll"))
@@ -58,6 +60,7 @@ class PixelFlagsTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.test
         self.assertFalse(record.get("base_PixelFlags_flag_badCenterAll"))
 
     def testSomeFlags(self):
+        self.dataset.addSource(100000.0, self.center)
         task = self.makeSingleFrameMeasurementTask("base_PixelFlags")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         # one cr pixel outside the center
@@ -74,6 +77,9 @@ class PixelFlagsTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.test
         task.run(catalog, exposure)
         record = catalog[0]
 
+        self.assertFalse(record.get("base_PixelFlags_flag_edge"))
+        self.assertFalse(record.get("base_PixelFlags_flag_edgeCenter"))
+        self.assertFalse(record.get("base_PixelFlags_flag_edgeCenterAll"))
         self.assertTrue(record.get("base_PixelFlags_flag_cr"))
         self.assertFalse(record.get("base_PixelFlags_flag_crCenter"))
         self.assertFalse(record.get("base_PixelFlags_flag_crCenterAll"))
@@ -95,36 +101,90 @@ class PixelFlagsTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.test
         self.dataset.addSource(100000, lsst.geom.Point2D(100, 30))
         task = self.makeSingleFrameMeasurementTask("base_PixelFlags")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
-        catalog[1]["slot_Centroid_x"] = np.inf
-        catalog[2]["slot_Centroid_x"] = -np.inf
-        catalog[3]["slot_Centroid_y"] = np.nan
+        catalog[0]["slot_Centroid_x"] = np.inf
+        catalog[1]["slot_Centroid_x"] = -np.inf
+        catalog[2]["slot_Centroid_y"] = np.nan
         task.run(catalog, exposure)
         np.testing.assert_array_equal(catalog["base_PixelFlags_flag_offimage"],
-                                      np.array([False, True, True, True]))
+                                      np.array([True, True, True]))
         np.testing.assert_array_equal(catalog["base_PixelFlags_flag_edge"],
-                                      np.array([False, True, True, True]))
+                                      np.array([True, True, True]))
+        np.testing.assert_array_equal(catalog["base_PixelFlags_flag_edgeCenter"],
+                                      np.array([True, True, True]))
+        np.testing.assert_array_equal(catalog["base_PixelFlags_flag_edgeCenterAll"],
+                                      np.array([True, True, True]))
 
     def testOffimage(self):
         """Test that sources at the boundary of the image get flag_offimage
-        and flag_edge set appropriately.
+        and flag_edge[Center[All]] set appropriately.
         """
         # These four will be explicitly set to values at the boundary; we
         # cannot add sources off the image in TestDataset.
         self.dataset.addSource(100000, lsst.geom.Point2D(20, 20))
         self.dataset.addSource(100000, lsst.geom.Point2D(20, 100))
-        self.dataset.addSource(100000, lsst.geom.Point2D(80, 100))
+        self.dataset.addSource(100000, lsst.geom.Point2D(40, 100))
         self.dataset.addSource(100000, lsst.geom.Point2D(80, 30))
+
         task = self.makeSingleFrameMeasurementTask("base_PixelFlags")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
-        catalog[1]["slot_Centroid_x"] = -20.5  # on image
-        catalog[2]["slot_Centroid_x"] = -20.51  # off image
-        catalog[3]["slot_Centroid_y"] = 129.4  # on image
-        catalog[4]["slot_Centroid_y"] = 129.50  # off image
+
+        # Mask 4 pixels at the x-edges
+        edgeBit = exposure.mask.getPlaneBitMask("EDGE")
+        exposure.mask.array[:4, :] |= edgeBit
+        exposure.mask.array[-4:, ] |= edgeBit
+        # Mask 4 pixels at the y-edges
+        nodataBit = exposure.mask.getPlaneBitMask("NO_DATA")
+        exposure.mask.array[:, :4] |= nodataBit
+        exposure.mask.array[:, -4:] |= nodataBit
+
+        # All of these should get edgeCenter and edgeCenterAll.
+        catalog[0]["slot_Centroid_x"] = -20.5  # on image
+        catalog[1]["slot_Centroid_x"] = -20.51  # off image
+        catalog[2]["slot_Centroid_y"] = 129.4  # on image
+        catalog[3]["slot_Centroid_y"] = 129.50  # off image
+
         task.run(catalog, exposure)
+
         np.testing.assert_array_equal(catalog["base_PixelFlags_flag_offimage"],
-                                      np.array([False, False, True, False, True]))
+                                      np.array([False, True, False, True]))
         np.testing.assert_array_equal(catalog["base_PixelFlags_flag_edge"],
-                                      np.array([False, False, True, False, True]))
+                                      np.array([False, True, False, True]))
+        np.testing.assert_array_equal(catalog["base_PixelFlags_flag_edgeCenter"],
+                                      np.array([True, True, True, True]))
+        np.testing.assert_array_equal(catalog["base_PixelFlags_flag_edgeCenterAll"],
+                                      np.array([True, True, True, True]))
+
+    def testEdgeFlags(self):
+        """Test that edge/edgeCenter/edgeCenterAll are set appropriately.
+        """
+        # Half of the Central 3x3 pixels are on the masked EDGE; no offimage or
+        # edgeCenterAll, but edge and edgeCenter.
+        self.dataset.addSource(100000, lsst.geom.Point2D(115, 30))
+        # Central 3x3 pixels all masked EDGE; no offimage but all edge flags.
+        self.dataset.addSource(100000, lsst.geom.Point2D(10, 127))
+
+        task = self.makeSingleFrameMeasurementTask("base_PixelFlags")
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
+
+        # Mask 4 pixels at the x-edges
+        edgeBit = exposure.mask.getPlaneBitMask("EDGE")
+        exposure.mask.array[:4, :] |= edgeBit
+        exposure.mask.array[-4:, ] |= edgeBit
+        # Mask 4 pixels at the y-edges
+        nodataBit = exposure.mask.getPlaneBitMask("NO_DATA")
+        exposure.mask.array[:, :4] |= nodataBit
+        exposure.mask.array[:, -4:] |= nodataBit
+
+        task.run(catalog, exposure)
+
+        np.testing.assert_array_equal(catalog["base_PixelFlags_flag_offimage"],
+                                      np.array([False, False]))
+        np.testing.assert_array_equal(catalog["base_PixelFlags_flag_edge"],
+                                      np.array([True, True]))
+        np.testing.assert_array_equal(catalog["base_PixelFlags_flag_edgeCenter"],
+                                      np.array([True, True]))
+        np.testing.assert_array_equal(catalog["base_PixelFlags_flag_edgeCenterAll"],
+                                      np.array([False, True]))
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
