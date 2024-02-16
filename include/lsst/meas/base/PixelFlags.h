@@ -78,9 +78,10 @@ public:
 
 private:
     Control _ctrl;
-    KeyMap _centerKeys;
-    KeyMap _centerAllKeys;
-    KeyMap _anyKeys;
+    // Maps of mask plane name->afw table Key for the various fields we add to the schema on construction.
+    KeyMap _centerKeys;     // Keys for bits set anywhere within the 3x3 region around the centroid.
+    KeyMap _centerAllKeys;  // Keys for bits set on the entire 3x3 region around the centroid.
+    KeyMap _anyKeys;        // Keys for bits set anywhere in the footprint.
     afw::table::Key<afw::table::Flag> _generalFailureKey;
     afw::table::Key<afw::table::Flag> _offImageKey;
 };
