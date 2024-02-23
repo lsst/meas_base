@@ -35,15 +35,6 @@ try:
 except NameError:
     verbose = 0
 
-lsst.meas.base.wrapSimpleAlgorithm(
-    testLib.SillyCentroidAlgorithm,
-    # algorithm name is specified manually here because testLib isn't in a
-    # normal Python package; normally this is unnecessary
-    name="testLib_SillyCentroid",
-    Control=testLib.SillyCentroidControl,
-    executionOrder=lsst.meas.base.BasePlugin.CENTROID_ORDER,
-)
-
 
 class CentroidTestCase(lsst.utils.tests.TestCase):
     """A test case for centroiding.

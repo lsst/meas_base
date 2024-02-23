@@ -39,6 +39,8 @@ namespace base {
 
 namespace {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated"
 using PyCentroidAlgorithm =
         py::class_<NaiveCentroidAlgorithm, std::shared_ptr<NaiveCentroidAlgorithm>, SimpleAlgorithm>;
 using PyCentroidControl = py::class_<NaiveCentroidControl>;
@@ -89,6 +91,8 @@ void wrapNaiveCentroid(lsst::cpputils::python::WrapperCollection &wrappers) {
     python::declareAlgorithm<NaiveCentroidAlgorithm, NaiveCentroidControl, NaiveCentroidTransform>(
             clsCentroidAlgorithm, clsCentroidControl, clsCentroidTransform);
 }
+
+#pragma GCC diagnostic pop
 
 }  // namespace base
 }  // namespace meas
