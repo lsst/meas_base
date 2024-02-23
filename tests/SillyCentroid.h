@@ -48,10 +48,10 @@ public:
 
 /**
  *  @brief A class that calculates a centroid as a simple unweighted first moment
- *         of the 3x3 region around a pixel.
+ *         of the 3x3 region around a pixel; this should only be used in tests.
  *
  *   A fixed background (set via config) may optionally be subtracted.
- *   This algorithm does not currently report an error, but it probably should.
+ *   This algorithm does not report an error.
  */
 
 class SillyCentroidAlgorithm : public lsst::meas::base::SimpleAlgorithm {

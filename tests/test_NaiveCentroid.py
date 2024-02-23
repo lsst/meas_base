@@ -38,11 +38,6 @@ class NaiveCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(100000.0, self.center)
 
-    def tearDown(self):
-        del self.center
-        del self.bbox
-        del self.dataset
-
     def testSingleFramePlugin(self):
         # import os; print(os.getpid()); import ipdb; ipdb.set_trace();
         with self.assertWarnsRegex(FutureWarning, "Plugin 'NaiveCentroid' is deprecated"):

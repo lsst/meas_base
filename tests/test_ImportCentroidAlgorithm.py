@@ -40,12 +40,6 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
     """A test case for centroiding.
     """
 
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
     def testApplyCentroid(self):
         """Test that we can instantiate and play with SillyMeasureCentroid.
         """
