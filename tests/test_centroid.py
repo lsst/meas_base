@@ -30,31 +30,14 @@ import lsst.meas.base as measBase
 import lsst.utils.tests as utilsTests
 import lsst.afw.detection as afwDetection
 
-try:
-    type(verbose)
-except NameError:
-    display = False
-    verbose = 0
-
 
 class CentroidTestCase(utilsTests.TestCase):
     """A test case for centroiding.
     """
 
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
-    def testCleanup(self):
-        """Test that tearDown does"""
-        pass
-
     def do_testAstrometry(self, alg, bkgd, control):
         """Test that we can instantiate and play with a centroiding algorithm.
         """
-
         schema = afwTable.SourceTable.makeMinimalSchema()
         schema.getAliasMap().set("slot_Centroid", "test")
         centroider = alg(control, "test", schema)
@@ -153,9 +136,6 @@ class SingleFrameMeasurementTaskTestCase(utilsTests.TestCase):
             for j in (-1, 0, 1):
                 im[int(self.xcen) + i, int(self.ycen) + j, afwImage.LOCAL] = \
                     self.I0*(1 - 0.5*math.hypot(i - 0.5, j))
-
-    def tearDown(self):
-        del self.exp
 
     def testCentroider(self):
         """Measure the centroid.
