@@ -39,8 +39,7 @@ from ._measBaseLib import (ApertureFluxControl, ApertureFluxTransform,
                            GaussianFluxAlgorithm, GaussianFluxControl,
                            GaussianFluxTransform, LocalBackgroundAlgorithm,
                            LocalBackgroundControl, LocalBackgroundTransform,
-                           MeasurementError, NaiveCentroidAlgorithm,
-                           NaiveCentroidControl, NaiveCentroidTransform,
+                           MeasurementError,
                            PeakLikelihoodFluxAlgorithm,
                            PeakLikelihoodFluxControl,
                            PeakLikelihoodFluxTransform, PixelFlagsAlgorithm,
@@ -51,6 +50,10 @@ from ._measBaseLib import (ApertureFluxControl, ApertureFluxTransform,
                            SdssCentroidControl, SdssCentroidTransform,
                            SdssShapeAlgorithm, SdssShapeControl,
                            SdssShapeTransform)
+
+# Remove these three on DM-41701
+from .naiveCentroidContinued import NaiveCentroidAlgorithm, NaiveCentroidControl, NaiveCentroidTransform
+
 from .baseMeasurement import BaseMeasurementPluginConfig
 from .forcedMeasurement import ForcedPlugin, ForcedPluginConfig
 from .pluginRegistry import register
@@ -85,6 +88,7 @@ wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxContr
 wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl,
                     TransformClass=GaussianFluxTransform, executionOrder=BasePlugin.FLUX_ORDER,
                     shouldApCorr=True)
+# Remove this line on DM-41701
 wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl,
                     TransformClass=NaiveCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
 wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl,
@@ -107,6 +111,7 @@ wrapSimpleAlgorithm(LocalBackgroundAlgorithm, Control=LocalBackgroundControl,
 wrapTransform(PsfFluxTransform)
 wrapTransform(PeakLikelihoodFluxTransform)
 wrapTransform(GaussianFluxTransform)
+# Remove this on DM-41701
 wrapTransform(NaiveCentroidTransform)
 wrapTransform(SdssCentroidTransform)
 wrapTransform(SdssShapeTransform)

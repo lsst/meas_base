@@ -27,6 +27,8 @@ from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
 import lsst.utils.tests
 
 
+# Remove this file on DM-41701
+
 class NaiveCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):

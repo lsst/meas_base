@@ -102,18 +102,6 @@ class CentroidTestCase(utilsTests.TestCase):
             self.assertFloatsAlmostEqual(y, source.getY(), rtol=.00001)
             self.assertFalse(source.get("test_flag"))
 
-    def testNaiveMeasureCentroid(self):
-        """Test that we can instantiate and play with naive centroids.
-        """
-        bkgd = 10.0
-        afwTable.SourceTable.makeMinimalSchema()
-        control = measBase.NaiveCentroidControl()
-        control.background = bkgd
-        control.doFootprintCheck = False
-        # Test fails even with the default of 5
-        control.maxDistToPeak = -1.0
-        self.do_testAstrometry(measBase.NaiveCentroidAlgorithm, bkgd, control)
-
     def testSdssMeasureCentroid(self):
         """Test that we can instantiate and play with SDSS centroids"""
         control = measBase.SdssCentroidControl()
