@@ -873,6 +873,31 @@ class TestWeightedMeanDiaTotFlux(unittest.TestCase):
                                np.sqrt(1 / (n_sources - 1)))
 
 
+class TestMultiLombScarglePeriodogram(unittest.TestCase):
+
+    def testCalculate(self):
+        """Test Mulitband Lomb Scargle Periodogram."""
+        n_sources = 10 
+        objId = 0
+
+        # Create synthetic multi-band data
+        times = np.linspace(0, 2*np.pi, n_sources)
+        fluxes = np.sin(0.3 * times)
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = pd.DataFrame(
+            data={"diaObjectId": n_sources * [objId],
+                  "band": ['u', 'g', 'g', 'r', 'r', 'i', 'i', 'z', 'z', 'y'],
+                  "diaSourceId": np.arange(n_sources, dtype=int),
+                  "midpointMjdTai": times,
+                  "psfFlux": fluxes,
+                  "psfFluxErr": np.zeros(n_sources)})
+        plug = MultiLombScarglePeriodogram(MultiLombScarglePeriodogramConfig(),
+                                            "ap_lombScarglePeriodogramMulti",
+                                            None)
+        run_multi_plugin(diaObjects, diaSources, plug)
+        self.assertAlmostEqual(diaObjects.at[objId, "multi_period"],
+                                31.41592653589793)
+
 class TestLombScarglePeriodogram(unittest.TestCase):
 
     def testCalculate(self):
@@ -898,7 +923,7 @@ class TestLombScarglePeriodogram(unittest.TestCase):
 
         run_multi_plugin(diaObjects, diaSources, "u", plug)
         self.assertAlmostEqual(diaObjects.at[objId, "u_period"],
-                                31.41592653589793) # empirical calculation need to confirm
+                                31.41592653589793)
 
         # Test test scatter on scienceFlux takes input nans.
         fluxes[4] = np.nan
