@@ -393,7 +393,7 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
                 plugin.name, measRecord.getId(), error)
             plugin.fail(measRecord, error)
         except Exception as error:
-            self.log.getChild(plugin.name).debug(
+            self.log.getChild(plugin.name).warning(
                 "Exception in %s.measure on record %s: %s",
                 plugin.name, measRecord.getId(), error)
             plugin.fail(measRecord)
@@ -482,6 +482,6 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         except Exception as error:
             for measRecord in measCat:
                 plugin.fail(measRecord)
-                self.log.getChild(plugin.name).debug(
+                self.log.getChild(plugin.name).warning(
                     "Exception in %s.measureN on records %s-%s: %s",
                     plugin.name, measCat[0].getId(), measCat[-1].getId(), error)
