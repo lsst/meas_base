@@ -157,8 +157,10 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
             frequency_resolution = 1. / baseline / oversampling_factor
 
             # Calculate the number of frequencies and the frequency grid
-            num_frequencies = int(0.5 * oversampling_factor * nyquist_factor * num_points)
-            frequencies = frequency_resolution + frequency_resolution * np.arange(num_frequencies)
+            num_frequencies = int(
+                0.5 * oversampling_factor * nyquist_factor * num_points)
+            frequencies = frequency_resolution + \
+                frequency_resolution * np.arange(num_frequencies)
 
             return frequencies
 
@@ -186,7 +188,8 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
             return pd.Series({periodCol: period[np.argmax(power)],
                               powerCol: np.max(power)})
 
-        diaObjects.loc[:, [periodCol, powerCol]] = filterDiaSources.apply(_calculate_period)
+        diaObjects.loc[:, [periodCol, powerCol]
+                       ] = filterDiaSources.apply(_calculate_period)
 
 
 class LombScarglePeriodogramMultiConfig(DiaObjectCalculationPluginConfig):
@@ -201,7 +204,8 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
     ConfigClass = LombScarglePeriodogramMultiConfig
 
     plugType = 'multi'
-    outputCols = ["multi_period", "multi_power", "multi_fap", "multi_amp", "multi_phase"]
+    outputCols = ["multi_period", "multi_power",
+                  "multi_fap", "multi_amp", "multi_phase"]
     needsFilter = True
 
     @classmethod
@@ -279,8 +283,10 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             frequency_resolution = 1. / baseline / oversampling_factor
 
             # Calculate the number of frequencies and the frequency grid
-            num_frequencies = int(0.5 * oversampling_factor * nyquist_factor * num_points)
-            frequencies = frequency_resolution + frequency_resolution * np.arange(num_frequencies)
+            num_frequencies = int(
+                0.5 * oversampling_factor * nyquist_factor * num_points)
+            frequencies = frequency_resolution + \
+                frequency_resolution * np.arange(num_frequencies)
 
             return frequencies
 
@@ -347,7 +353,8 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             bands = tmpDf['band'].to_numpy()
 
             # TODO: currently assuming 1-1 base-band model.
-            lsp = lspm(time, flux, bands, dy=flux_err, nterms_base=1, nterms_band=1)
+            lsp = lspm(time, flux, bands, dy=flux_err,
+                       nterms_base=1, nterms_band=1)
 
             f_grid = compute_optimized_periodogram_grid(
                 time, oversampling_factor=oversampling_factor, nyquist_factor=nyquist_factor)
@@ -355,7 +362,8 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             power = lsp.power(f_grid)  # compute power
 
             # Calculate the False-Alarm probability Baluev approximation
-            fap_estimate = calculate_baluev_fap(time, len(time), period[np.argmax(power)], np.max(power))
+            fap_estimate = calculate_baluev_fap(
+                time, len(time), period[np.argmax(power)], np.max(power))
 
             def generate_lsp_params(lsp_model, fbest, bands):
                 """Generate the Lomb-Scargle parameters.
@@ -401,7 +409,8 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
 
                 return Amp, Ph
 
-            params_table_new = generate_lsp_params(lsp, f_grid[np.argmax(power)], bands)
+            params_table_new = generate_lsp_params(
+                lsp, f_grid[np.argmax(power)], bands)
 
             pd_tab = pd.Series({periodCol: period[np.argmax(power)],
                                 powerCol: np.max(power),
@@ -742,7 +751,8 @@ class PercentileDiaPsfFlux(DiaObjectCalculationPlugin):
                 dict((tileName, pTile)
                      for tileName, pTile in zip(pTileNames, pTiles)))
 
-        diaObjects.loc[:, pTileNames] = filterDiaSources.apply(_fluxPercentiles)
+        diaObjects.loc[:, pTileNames] = filterDiaSources.apply(
+            _fluxPercentiles)
 
 
 class SigmaDiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
