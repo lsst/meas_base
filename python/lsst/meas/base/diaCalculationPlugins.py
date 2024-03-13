@@ -63,8 +63,8 @@ __all__ = ("MeanDiaPositionConfig", "MeanDiaPosition",
            "LinearFitDiaPsfFlux", "LinearFitDiaPsfFluxConfig",
            "StetsonJDiaPsfFlux", "StetsonJDiaPsfFluxConfig",
            "WeightedMeanDiaTotFlux", "WeightedMeanDiaTotFluxConfig",
-           "SigmaDiaTotFlux", "SigmaDiaTotFluxConfig", 
-           "LombScarglePeriodogram", "LombScarglePeriodogramConfig", 
+           "SigmaDiaTotFlux", "SigmaDiaTotFluxConfig",
+           "LombScarglePeriodogram", "LombScarglePeriodogramConfig",
            "LombScarglePeriodogramMulti", "LombScarglePeriodogramMultiConfig")
 
 
@@ -85,8 +85,10 @@ def catchWarnings(_func=None, *, warns=[]):
     else:
         return decoratorCatchWarnings(_func)
 
+
 class LombScarglePeriodogramConfig(DiaObjectCalculationPluginConfig):
     pass
+
 
 @register("ap_lombScarglePeriodogram")
 class LombScarglePeriodogram(DiaObjectCalculationPlugin):
@@ -134,7 +136,7 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
         def compute_optimized_periodogram_grid(x0, oversampling_factor=5, nyquist_factor=100):
             """
             Computes an optimized periodogram frequency grid for a given time series. 
-            
+
             Implemented in https://github.com/astroML/gatspy/blob/71384b8d15531bc01a6b85250a35cd675edccf44/gatspy/periodic/modeler.py#L94
 
             Parameters:
@@ -159,8 +161,8 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
             frequencies = frequency_resolution + frequency_resolution * np.arange(num_frequencies)
 
             return frequencies
-        
-        def _calculate_period(df, min_detections=5,  nterms=1, oversampling_factor=5, nyquist_factor=100):
+
+        def _calculate_period(df, min_detections=5, nterms=1, oversampling_factor=5, nyquist_factor=100):
             """Compute Lomb-Scargle periodogram.
                Followed example from: https://github.com/AndyTza/PeriodicLSSTScaps/blob/main/tutorials/%5BTutorial%203.0%20-%2023%5D%20-%20Single%20Band%20Astropy%20LombScargle%20Implementation.ipynb
             """
@@ -176,9 +178,10 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
             flux_err = tmpDf['psfFluxErr'].to_numpy()
 
             lsp = LombScargle(time, flux, dy=flux_err, nterms=nterms)
-            f_grid = compute_optimized_periodogram_grid(time, oversampling_factor=oversampling_factor, nyquist_factor=nyquist_factor)
+            f_grid = compute_optimized_periodogram_grid(
+                time, oversampling_factor=oversampling_factor, nyquist_factor=nyquist_factor)
             period = 1/f_grid
-            power = lsp.power(f_grid) # compute power
+            power = lsp.power(f_grid)  # compute power
 
             return pd.Series({periodCol: period[np.argmax(power)],
                               powerCol: np.max(power)})
@@ -188,6 +191,7 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
 
 class LombScarglePeriodogramMultiConfig(DiaObjectCalculationPluginConfig):
     pass
+
 
 @register("ap_lombScarglePeriodogramMulti")
 class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
@@ -203,12 +207,12 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
     @classmethod
     def getExecutionOrder(cls):
         return cls.DEFAULT_CATALOGCALCULATION
-    
+
     @catchWarnings(warns=["All-NaN slice encountered"])
     def calculate(self,
                   diaObjects,
                   diaSources,
-                  filterDiaSources, 
+                  filterDiaSources,
                   band):
         """Compute the multi-band LombScargle periodogram of a DiaObject given a set of DiaSources.
 
@@ -255,7 +259,7 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                 The oversampling factor for frequency grid. Default is 5.
             nyquist_factor : `int`, optional
                 The Nyquist factor for frequency grid. Default is 100.
-            
+
             Returns:
             -------
             frequencies : `array`
@@ -279,8 +283,8 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             frequencies = frequency_resolution + frequency_resolution * np.arange(num_frequencies)
 
             return frequencies
-        
-        def calculate_baluev_fap(time, N, period_max_grid ,zmax):
+
+        def calculate_baluev_fap(time, N, period_max_grid, zmax):
             """Calculate the False-Alarm probability using the Baluev approximation. 
 
             Parameters:
@@ -293,12 +297,12 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                 The maximum period in the grid.
             zmax : `float`
                 The maximum power in the grid.
-            
+
             Returns:
             -------
             fap_estimate : `float`
                 The False-Alarm probability Baluev approximation.
-            
+
             References:
             ----------
             .. [1] Baluev, R. V. 2008, MNRAS, 385, 1279
@@ -308,7 +312,7 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             fu = 1/period_max_grid
             return gam_ratio * np.sqrt(4*np.pi*statistics.variance(time)) * fu * (1-zmax)**((N-4)/2) * np.sqrt(zmax)
 
-        def _calculate_period_multi(df, min_detections=130, oversampling_factor=5, nyquist_factor=100):
+        def _calculate_period_multi(df, min_detections=9, oversampling_factor=5, nyquist_factor=100):
             """ Calculate the multi-band Lomb-Scargle periodogram.
 
             Parameters:
@@ -321,7 +325,7 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                 The oversampling factor for frequency grid. Default is 5.
             nyquist_factor : `int`, optional
                 The Nyquist factor for frequency grid. Default is 100.
-            
+
             Returns:
             -------
             pd_tab : `pandas.Series`
@@ -329,13 +333,13 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             """
             tmpDf = df[~np.logical_or(np.isnan(df["psfFlux"]),
                                       np.isnan(df["midpointMjdTai"]))]
-            
+
             if (len(tmpDf)) < min_detections:
-                return pd.Series({periodCol: np.nan, 
+                return pd.Series({periodCol: np.nan,
                                   powerCol: np.nan,
-                                fapCol: np.nan, 
-                                ampCol: np.nan,
-                                phaseCol: np.nan})
+                                  fapCol: np.nan,
+                                  ampCol: np.nan,
+                                  phaseCol: np.nan})
 
             time = tmpDf["midpointMjdTai"].to_numpy()
             flux = tmpDf["psfFlux"].to_numpy()
@@ -345,9 +349,10 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             # TODO: currently assuming 1-1 base-band model.
             lsp = lspm(time, flux, bands, dy=flux_err, nterms_base=1, nterms_band=1)
 
-            f_grid = compute_optimized_periodogram_grid(time, oversampling_factor=oversampling_factor, nyquist_factor=nyquist_factor)
+            f_grid = compute_optimized_periodogram_grid(
+                time, oversampling_factor=oversampling_factor, nyquist_factor=nyquist_factor)
             period = 1/f_grid
-            power = lsp.power(f_grid) # compute power
+            power = lsp.power(f_grid)  # compute power
 
             # Calculate the False-Alarm probability Baluev approximation
             fap_estimate = calculate_baluev_fap(time, len(time), period[np.argmax(power)], np.max(power))
@@ -375,39 +380,45 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                     ----------
                     .. [1] VanderPlas, J. T., & Ivezic, Z. 2015, ApJ, 812, 18
                     .. [2] Working example at https://github.com/AndyTza/PeriodicLSSTScaps/blob/main/tutorials/%5BTutorial%203.0%20-%2023%5D%20-%20Single%20Band%20Astropy%20LombScargle%20Implementation.ipynb
-                """ 
+                """
                 # Calculate based on the best period the parameters
                 best_params = lsp_model.model_parameters(fbest, units=True)
 
-                name_params = [f'theta_base_{i}' for i in range(3)] 
-                name_params +=  [f'theta_band_{band}_{index}' for band in np.unique(bands) for index in range(3)]
+                name_params = [f'theta_base_{i}' for i in range(3)]
+                name_params += [f'theta_band_{band}_{index}' for band in np.unique(
+                    bands) for index in range(3)]
 
-                df_params = pd.DataFrame([best_params], columns=name_params)   
+                df_params = pd.DataFrame([best_params], columns=name_params)
 
                 # compute amplitude and phase
-                Amplitude_band = [np.sqrt(df_params[f'theta_band_{band}_1']**2 + df_params[f'theta_band_{band}_2']**2) for band in np.unique(bands)]
-                Phase_bands = [np.arctan2(df_params[f'theta_band_{band}_2'], df_params[f'theta_band_{band}_1']) for band in np.unique(bands)]
+                Amplitude_band = [np.sqrt(
+                    df_params[f'theta_band_{band}_1']**2 + df_params[f'theta_band_{band}_2']**2) for band in np.unique(bands)]
+                Phase_bands = [np.arctan2(
+                    df_params[f'theta_band_{band}_2'], df_params[f'theta_band_{band}_1']) for band in np.unique(bands)]
 
                 Amp = [a[0] for a in Amplitude_band]
                 Ph = [p[0] for p in Phase_bands]
-            
+
                 return Amp, Ph
 
             params_table_new = generate_lsp_params(lsp, f_grid[np.argmax(power)], bands)
 
             pd_tab = pd.Series({periodCol: period[np.argmax(power)],
-                              powerCol: np.max(power), 
-                              fapCol: fap_estimate,
-                              ampCol: params_table_new[0],
-                              phaseCol: params_table_new[1]
-                              })
+                                powerCol: np.max(power),
+                                fapCol: fap_estimate,
+                                ampCol: params_table_new[0],
+                                phaseCol: params_table_new[1]
+                                })
 
             return pd_tab
-        
-        diaObjects.loc[:, [periodCol, powerCol, fapCol, ampCol, phaseCol]] = diaSources.apply(_calculate_period_multi)
+
+        diaObjects.loc[:, [periodCol, powerCol, fapCol, ampCol, phaseCol]
+                       ] = diaSources.apply(_calculate_period_multi)
+
 
 class MeanDiaPositionConfig(DiaObjectCalculationPluginConfig):
     pass
+
 
 @register("ap_meanPosition")
 class MeanDiaPosition(DiaObjectCalculationPlugin):
