@@ -396,9 +396,9 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                 df_params = pd.DataFrame([best_params], columns=name_params)
 
                 # compute amplitude and phase
-                Amplitude_band = [np.sqrt(
-                    df_params[f'theta_band_{band}_1']**2
-                        + df_params[f'theta_band_{band}_2']**2) for band in np.unique(bands)]
+                Amplitude_band = [np.sqrt(df_params[f'theta_band_{band}_1']**2
+                                          + df_params[f'theta_band_{band}_2']**2)
+                                  for band in np.unique(bands)]
                 Phase_bands = [np.arctan2(df_params[f'theta_band_{band}_2'],
                                           df_params[f'theta_band_{band}_1']) for band in np.unique(bands)]
 
