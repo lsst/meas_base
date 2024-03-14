@@ -93,7 +93,7 @@ class LombScarglePeriodogramConfig(DiaObjectCalculationPluginConfig):
 @register("ap_lombScarglePeriodogram")
 class LombScarglePeriodogram(DiaObjectCalculationPlugin):
     """
-    Compute the single-band period of a DiaObject given a set of DiaSources. 
+    Compute the single-band period of a DiaObject given a set of DiaSources.
     """
     ConfigClass = LombScarglePeriodogramConfig
 
@@ -135,9 +135,7 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
 
         def compute_optimized_periodogram_grid(x0, oversampling_factor=5, nyquist_factor=100):
             """
-            Computes an optimized periodogram frequency grid for a given time series. 
-
-            Implemented in https://github.com/astroML/gatspy/blob/71384b8d15531bc01a6b85250a35cd675edccf44/gatspy/periodic/modeler.py#L94
+            Computes an optimized periodogram frequency grid for a given time series.
 
             Parameters:
             - x0 (array-like): The input time axis.
@@ -166,7 +164,6 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
 
         def _calculate_period(df, min_detections=5, nterms=1, oversampling_factor=5, nyquist_factor=100):
             """Compute Lomb-Scargle periodogram.
-               Followed example from: https://github.com/AndyTza/PeriodicLSSTScaps/blob/main/tutorials/%5BTutorial%203.0%20-%2023%5D%20-%20Single%20Band%20Astropy%20LombScargle%20Implementation.ipynb
             """
 
             tmpDf = df[~np.logical_or(np.isnan(df["psfFlux"]),
@@ -271,7 +268,7 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
 
             References:
             ----------
-            .. [1] Originally implemented in https://github.com/astroML/gatspy/blob/71384b8d15531bc01a6b85250a35cd675edccf44/gatspy/periodic/modeler.py#L94
+            .. [1] Originally implemented in https://github.com/astroML/gatspy/
             """
             # number of detections
             num_points = len(x0)
@@ -291,7 +288,7 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             return frequencies
 
         def calculate_baluev_fap(time, N, period_max_grid, zmax):
-            """Calculate the False-Alarm probability using the Baluev approximation. 
+            """Calculate the False-Alarm probability using the Baluev approximation.
 
             Parameters:
             ----------
@@ -316,7 +313,8 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             """
             gam_ratio = (gamma((N-1)/2))/(gamma((N-2)/2))
             fu = 1/period_max_grid
-            return gam_ratio * np.sqrt(4*np.pi*statistics.variance(time)) * fu * (1-zmax)**((N-4)/2) * np.sqrt(zmax)
+            return gam_ratio * np.sqrt(4*np.pi*statistics.variance(time)
+                                       ) * fu * (1-zmax)**((N-4)/2) * np.sqrt(zmax)
 
         def _calculate_period_multi(df, min_detections=9, oversampling_factor=5, nyquist_factor=100):
             """ Calculate the multi-band Lomb-Scargle periodogram.
@@ -387,7 +385,6 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                     References:
                     ----------
                     .. [1] VanderPlas, J. T., & Ivezic, Z. 2015, ApJ, 812, 18
-                    .. [2] Working example at https://github.com/AndyTza/PeriodicLSSTScaps/blob/main/tutorials/%5BTutorial%203.0%20-%2023%5D%20-%20Single%20Band%20Astropy%20LombScargle%20Implementation.ipynb
                 """
                 # Calculate based on the best period the parameters
                 best_params = lsp_model.model_parameters(fbest, units=True)
@@ -400,9 +397,11 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
 
                 # compute amplitude and phase
                 Amplitude_band = [np.sqrt(
-                    df_params[f'theta_band_{band}_1']**2 + df_params[f'theta_band_{band}_2']**2) for band in np.unique(bands)]
+                    df_params[f'theta_band_{band}_1']**2 + 
+                    df_params[f'theta_band_{band}_2']**2) for band in np.unique(bands)]
                 Phase_bands = [np.arctan2(
-                    df_params[f'theta_band_{band}_2'], df_params[f'theta_band_{band}_1']) for band in np.unique(bands)]
+                    df_params[f'theta_band_{band}_2'],
+                      df_params[f'theta_band_{band}_1']) for band in np.unique(bands)]
 
                 Amp = [a[0] for a in Amplitude_band]
                 Ph = [p[0] for p in Phase_bands]
