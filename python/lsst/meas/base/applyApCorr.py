@@ -244,7 +244,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
         # Wrap the task logger to a periodic logger.
         periodicLog = PeriodicLogger(self.log)
 
-        for apCorrInfo in self.apCorrInfoDict.values():
+        for apCorrIndex, apCorrInfo in enumerate(self.apCorrInfoDict.values()):
             apCorrModel = apCorrMap.get(apCorrInfo.modelName)
             apCorrErrModel = apCorrMap.get(apCorrInfo.modelSigmaName)
             if None in (apCorrModel, apCorrErrModel):
@@ -300,6 +300,10 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                 fluxFlags = catalog[apCorrInfo.fluxFlagKey].copy()
                 fluxFlags[good] = oldFluxFlagState[good]
                 catalog[apCorrInfo.fluxFlagKey] = fluxFlags
+
+            # Log a message if it has been a while since the last log.
+            periodicLog.log("Aperture corrections applied to %d fields out of %d",
+                            apCorrIndex + 1, len(self.apCorrInfoDict))
 
             if self.log.isEnabledFor(self.log.DEBUG):
                 # log statistics on the effects of aperture correction
