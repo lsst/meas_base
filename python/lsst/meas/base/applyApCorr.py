@@ -19,7 +19,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import math
 import numpy as np
 
 import lsst.afw.image
@@ -257,47 +256,50 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                     source.set(apCorrInfo.apCorrFlagKey, True)
                 continue
 
-            for sourceIndex, source in enumerate(catalog):
-                center = source.getCentroid()
-                # say we've failed when we start; we'll unset these flags when we succeed
-                source.set(apCorrInfo.apCorrFlagKey, True)
-                oldFluxFlagState = False
-                if self.config.doFlagApCorrFailures:
-                    oldFluxFlagState = source.get(apCorrInfo.fluxFlagKey)
-                    source.set(apCorrInfo.fluxFlagKey, True)
+            # Say we've failed before we start; we'll unset these flags on success.
+            catalog[apCorrInfo.apCorrFlagKey] = True
+            oldFluxFlagState = np.zeros(len(catalog), dtype=np.bool_)
+            if self.config.doFlagApCorrFailures:
+                oldFluxFlagState = catalog[apCorrInfo.fluxFlagKey]
+                catalog[apCorrInfo.fluxFlagKey] = True
 
-                apCorr = 1.0
-                apCorrErr = 0.0
-                try:
-                    apCorr = apCorrModel.evaluate(center)
-                    if not UseNaiveFluxErr:
-                        apCorrErr = apCorrErrModel.evaluate(center)
-                except lsst.pex.exceptions.DomainError:
-                    continue
+            apCorr = apCorrModel.evaluate(catalog["slot_Centroid_x"], catalog["slot_Centroid_y"])
+            if not UseNaiveFluxErr:
+                apCorrErr = apCorrErrModel.evaluate(
+                    catalog["slot_Centroid_x"],
+                    catalog["slot_Centroid_y"],
+                )
+            else:
+                apCorrErr = np.zeros(len(catalog))
 
-                if apCorrInfo.doApCorrColumn:
-                    source.set(apCorrInfo.apCorrKey, apCorr)
-                    source.set(apCorrInfo.apCorrErrKey, apCorrErr)
+            if apCorrInfo.doApCorrColumn:
+                catalog[apCorrInfo.apCorrKey] = apCorr
+                catalog[apCorrInfo.apCorrErrKey] = apCorrErr
 
-                if apCorr <= 0.0 or apCorrErr < 0.0:
-                    continue
+            # Check bad values that are not finite (possible for coadds).
+            good = np.isfinite(apCorr) & (apCorr > 0.0) & (apCorrErr >= 0.0)
 
-                instFlux = source.get(apCorrInfo.instFluxKey)
-                instFluxErr = source.get(apCorrInfo.instFluxErrKey)
-                source.set(apCorrInfo.instFluxKey, instFlux*apCorr)
-                if UseNaiveFluxErr:
-                    source.set(apCorrInfo.instFluxErrKey, instFluxErr*apCorr)
-                else:
-                    a = instFluxErr/instFlux
-                    b = apCorrErr/apCorr
-                    source.set(apCorrInfo.instFluxErrKey, abs(instFlux*apCorr)*math.sqrt(a*a + b*b))
-                source.set(apCorrInfo.apCorrFlagKey, False)
-                if self.config.doFlagApCorrFailures:
-                    source.set(apCorrInfo.fluxFlagKey, oldFluxFlagState)
+            if good.sum() == 0:
+                continue
 
-                # Log a message if it has been a while since the last log.
-                periodicLog.log("Aperture corrections applied to %d sources out of %d",
-                                sourceIndex + 1, len(catalog))
+            instFlux = catalog[apCorrInfo.instFluxKey]
+            instFluxErr = catalog[apCorrInfo.instFluxErrKey]
+            catalog[apCorrInfo.instFluxKey][good] = instFlux[good]*apCorr[good]
+            if UseNaiveFluxErr:
+                catalog[apCorrInfo.instFluxErrKey][good] = instFluxErr[good]*apCorr[good]
+            else:
+                a = instFluxErr[good]/instFlux[good]
+                b = apCorrErr[good]/apCorr[good]
+                err = np.abs(instFlux[good]*apCorr[good])*np.sqrt(a*a + b*b)
+                catalog[apCorrInfo.instFluxErrKey][good] = err
+
+            flags = catalog[apCorrInfo.apCorrFlagKey].copy()
+            flags[good] = False
+            catalog[apCorrInfo.apCorrFlagKey] = flags
+            if self.config.doFlagApCorrFailures:
+                fluxFlags = catalog[apCorrInfo.fluxFlagKey].copy()
+                fluxFlags[good] = oldFluxFlagState[good]
+                catalog[apCorrInfo.fluxFlagKey] = fluxFlags
 
             if self.log.isEnabledFor(self.log.DEBUG):
                 # log statistics on the effects of aperture correction
