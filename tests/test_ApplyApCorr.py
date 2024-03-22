@@ -156,7 +156,7 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         apCorrMap[instFluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
         self.ap_corr_task.run(sourceCat, apCorrMap)
 
-        self.assertAlmostEqual(sourceCat[instFluxKey], source_test_instFlux / 2)
+        self.assertFloatsAlmostEqual(sourceCat[instFluxKey], source_test_instFlux / 2)
 
     def testCatFluxErr(self):
         """Test catalog flux errors.
@@ -188,7 +188,7 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         apCorrMap[instFluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
         self.ap_corr_task.run(sourceCat, apCorrMap)
 
-        self.assertAlmostEqual(sourceCat[instFluxErrKey], source_test_sigma)
+        self.assertFloatsAlmostEqual(sourceCat[instFluxErrKey], source_test_sigma)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):

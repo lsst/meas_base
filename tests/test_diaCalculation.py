@@ -74,9 +74,9 @@ class DiaPlugin(DiaObjectCalculationPlugin):
         """
         """
         diaObjects.loc[:, "%sMeanFlux" % band] = \
-            filterDiaSources.psfFlux.agg(np.nanmean)
+            filterDiaSources.psfFlux.agg("mean")
         diaObjects.loc[:, "%sStdFlux" % band] = \
-            filterDiaSources.psfFlux.agg(np.nanstd)
+            filterDiaSources.psfFlux.agg("std")
 
 
 @register("testDependentDiaPlugin")
