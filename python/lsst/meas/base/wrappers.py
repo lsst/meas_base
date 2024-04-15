@@ -19,6 +19,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import warnings
+
 import lsst.pex.config
 from .pluginsBase import BasePlugin
 from .pluginRegistry import generateAlgorithmName, register
@@ -216,7 +218,7 @@ def wrapAlgorithm(Base, AlgClass, factory, executionOrder, name=None, Control=No
 
 
 def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False, hasMeasureN=False,
-                             hasLogName=False, **kwds):
+                             hasLogName=False, deprecated=None, **kwds):
     """Expose a C++ ``SingleFrameAlgorithm`` class as a measurement plugin.
 
     Parameters
@@ -243,6 +245,9 @@ def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=
     hasLogName : `bool`, optional
         `True` if the C++ algorithm supports ``logName`` as a constructor
         argument.
+    deprecated : `str`, optional
+        If specified, emit as a deprecation warning when the plugin is
+        constructed.
     **kwds
         Additional keyword arguments are passed to the lower-level
         `wrapAlgorithm` and `wrapAlgorithmControl` classes.
@@ -270,16 +275,24 @@ def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=
     if hasMeasureN:
         if needsMetadata:
             def factory(config, name, schema, metadata, **kwargs):
+                if deprecated:
+                    warnings.warn(deprecated, category=FutureWarning)
                 return AlgClass(config.makeControl(), name, schema, metadata, config.doMeasureN, **kwargs)
         else:
             def factory(config, name, schema, metadata, **kwargs):
+                if deprecated:
+                    warnings.warn(deprecated, category=FutureWarning)
                 return AlgClass(config.makeControl(), name, schema, config.doMeasureN, **kwargs)
     else:
         if needsMetadata:
             def factory(config, name, schema, metadata, **kwargs):
+                if deprecated:
+                    warnings.warn(deprecated, category=FutureWarning)
                 return AlgClass(config.makeControl(), name, schema, metadata, **kwargs)
         else:
             def factory(config, name, schema, metadata, **kwargs):
+                if deprecated:
+                    warnings.warn(deprecated, category=FutureWarning)
                 return AlgClass(config.makeControl(), name, schema, **kwargs)
 
     return wrapAlgorithm(WrappedSingleFramePlugin, AlgClass, executionOrder=executionOrder, name=name,
@@ -287,7 +300,8 @@ def wrapSingleFrameAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=
 
 
 def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False,
-                        hasMeasureN=False, needsSchemaOnly=False, hasLogName=False, **kwds):
+                        hasMeasureN=False, needsSchemaOnly=False, hasLogName=False,
+                        deprecated=None, **kwds):
     """Expose a C++ ``ForcedAlgorithm`` class as a measurement plugin.
 
     Parameters
@@ -319,6 +333,9 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
         (representing the output `~lsst.afw.table.Schema`) rather than the
         full `~lsst.afw.table.SchemaMapper` (which provides access to both the
         reference schema and the output schema).
+    deprecated : `str`, optional
+        If specified, emit as a deprecation warning when the plugin is
+        constructed.
     **kwds
         Additional keyword arguments are passed to the lower-level
         `wrapAlgorithm` and `wrapAlgorithmControl` classes.
@@ -357,19 +374,27 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
     if hasMeasureN:
         if needsMetadata:
             def factory(config, name, schemaMapper, metadata, **kwargs):
+                if deprecated:
+                    warnings.warn(deprecated, category=FutureWarning)
                 return AlgClass(config.makeControl(), name, extractSchemaArg(schemaMapper),
                                 metadata, config.doMeasureN, **kwargs)
         else:
             def factory(config, name, schemaMapper, metadata, **kwargs):
+                if deprecated:
+                    warnings.warn(deprecated, category=FutureWarning)
                 return AlgClass(config.makeControl(), name, extractSchemaArg(schemaMapper),
                                 config.doMeasureN, **kwargs)
     else:
         if needsMetadata:
             def factory(config, name, schemaMapper, metadata, **kwargs):
+                if deprecated:
+                    warnings.warn(deprecated, category=FutureWarning)
                 return AlgClass(config.makeControl(), name, extractSchemaArg(schemaMapper),
                                 metadata, **kwargs)
         else:
             def factory(config, name, schemaMapper, metadata, **kwargs):
+                if deprecated:
+                    warnings.warn(deprecated, category=FutureWarning)
                 return AlgClass(config.makeControl(), name, extractSchemaArg(schemaMapper), **kwargs)
 
     return wrapAlgorithm(WrappedForcedPlugin, AlgClass, executionOrder=executionOrder, name=name,
@@ -377,7 +402,7 @@ def wrapForcedAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
 
 
 def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False, hasMeasureN=False,
-                        hasLogName=False, **kwds):
+                        hasLogName=False, deprecated=None, **kwds):
     r"""Expose a C++ ``SimpleAlgorithm`` class as a measurement plugin.
 
     ``SimpleAlgorithm``\ s are made available as both `SingleFramePlugin`\ s
@@ -407,6 +432,9 @@ def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
     hasLogName : `bool`, optional
         `True` if the C++ algorithm supports ``logName`` as a constructor
         argument.
+    deprecated : `str`, optional
+        If specified, emit as a deprecation warning when the plugin is
+        constructed.
     **kwds
         Additional keyword arguments are passed to the lower-level
         `wrapAlgorithm` and `wrapAlgorithmControl` classes.
@@ -435,7 +463,8 @@ def wrapSimpleAlgorithm(AlgClass, executionOrder, name=None, needsMetadata=False
     three.
     """
     return (wrapSingleFrameAlgorithm(AlgClass, executionOrder=executionOrder, name=name,
-                                     needsMetadata=needsMetadata, hasLogName=hasLogName, **kwds),
+                                     needsMetadata=needsMetadata, hasLogName=hasLogName,
+                                     deprecated=deprecated, **kwds),
             wrapForcedAlgorithm(AlgClass, executionOrder=executionOrder, name=name,
                                 needsMetadata=needsMetadata, hasLogName=hasLogName,
                                 needsSchemaOnly=True, **kwds))

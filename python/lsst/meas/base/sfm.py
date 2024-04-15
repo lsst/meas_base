@@ -137,7 +137,6 @@ class SingleFrameMeasurementConfig(BaseMeasurementConfig):
         multi=True,
         default=["base_PixelFlags",
                  "base_SdssCentroid",
-                 "base_NaiveCentroid",
                  "base_SdssShape",
                  "base_GaussianFlux",
                  "base_PsfFlux",

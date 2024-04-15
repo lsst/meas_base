@@ -27,6 +27,8 @@ from lsst.meas.base.tests import (AlgorithmTestCase, CentroidTransformTestCase,
 import lsst.utils.tests
 
 
+# Remove this file on DM-41701
+
 class NaiveCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
 
     def setUp(self):
@@ -36,13 +38,10 @@ class NaiveCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(100000.0, self.center)
 
-    def tearDown(self):
-        del self.center
-        del self.bbox
-        del self.dataset
-
     def testSingleFramePlugin(self):
-        task = self.makeSingleFrameMeasurementTask("base_NaiveCentroid")
+        # import os; print(os.getpid()); import ipdb; ipdb.set_trace();
+        with self.assertWarnsRegex(FutureWarning, "Plugin 'NaiveCentroid' is deprecated"):
+            task = self.makeSingleFrameMeasurementTask("base_NaiveCentroid")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         task.run(catalog, exposure)
         record = catalog[0]

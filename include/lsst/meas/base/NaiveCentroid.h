@@ -41,7 +41,9 @@ namespace base {
 /**
  *  @brief A C++ control class to handle NaiveCentroidAlgorithm's configuration
  */
-class NaiveCentroidControl {
+class [[deprecated(
+        "This algorithm and its control class are deprecated and will be removed after "
+        "v27.")]] NaiveCentroidControl {
 public:
     LSST_CONTROL_FIELD(background, double, "Value to subtract from the image pixel values");
     LSST_CONTROL_FIELD(doFootprintCheck, bool, "Do check that the centroid is contained in footprint.");
@@ -66,7 +68,9 @@ public:
  *   This algorithm does not currently report an error, but it probably should.
  */
 
-class NaiveCentroidAlgorithm : public SimpleAlgorithm {
+class [[deprecated(
+        "This algorithm and its control class are deprecated and will be removed after "
+        "v27.")]] NaiveCentroidAlgorithm : public SimpleAlgorithm {
 public:
     // Structures and routines to manage flaghandler
     static FlagDefinitionList const& getFlagDefinitions();
@@ -91,7 +95,9 @@ private:
     CentroidChecker _centroidChecker;
 };
 
-class NaiveCentroidTransform : public CentroidTransform {
+class [[deprecated(
+        "This algorithm and its control class are deprecated and will be removed after "
+        "v27.")]] NaiveCentroidTransform : public CentroidTransform {
 public:
     typedef NaiveCentroidControl Control;
 

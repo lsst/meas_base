@@ -25,6 +25,7 @@ import lsst.afw.geom
 import lsst.meas.base.tests
 import lsst.pex.exceptions
 import lsst.utils.tests
+import testLib  # noqa: F401 need this for SillyCentroid
 
 
 class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.TestCase):
@@ -56,16 +57,16 @@ class InputUtilitiesTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.
     def testCentroidFlagAliases(self):
         """Test aliases are correct when using multiple centroid algorithms.
         """
-        config = self.makeSingleFrameMeasurementConfig("base_NaiveCentroid", ["base_SdssCentroid"])
+        config = self.makeSingleFrameMeasurementConfig("testLib_SillyCentroid", ["base_SdssCentroid"])
         config.slots.centroid = "base_SdssCentroid"
         config.slots.shape = None
         config.slots.psfShape = None
         task = self.makeSingleFrameMeasurementTask(config=config)
         # Test that the alias resolves to the correct field.
-        self.assertEqual(task.schema.find("base_NaiveCentroid_flag_badInitialCentroid").key,
+        self.assertEqual(task.schema.find("testLib_SillyCentroid_flag_badInitialCentroid").key,
                          task.schema.find("base_SdssCentroid_flag").key)
         # Test that the alias is a direct links (i.e. it do not require recursive expansion).
-        self.assertEqual(task.schema.getAliasMap().get("base_NaiveCentroid_flag_badInitialCentroid"),
+        self.assertEqual(task.schema.getAliasMap().get("testLib_SillyCentroid_flag_badInitialCentroid"),
                          "base_SdssCentroid_flag")
         # Test that there is no circular alias for the slot centroider itself.
         self.assertRaises(LookupError, task.schema.find, "base_SdssCentroid_flag_badInitialCentroid")

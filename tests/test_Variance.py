@@ -30,6 +30,7 @@ import lsst.afw.image as afwImage
 import lsst.afw.detection as afwDetection
 import lsst.meas.base as measBase
 import lsst.utils.tests
+import testLib  # noqa: F401 need this for SillyCentroid
 
 try:
     display
@@ -93,8 +94,8 @@ class VarianceTest(lsst.utils.tests.TestCase):
             afwDisplay.getDisplay(3).mtv(var)
 
         config = measBase.SingleFrameMeasurementConfig()
-        config.plugins.names = ["base_NaiveCentroid", "base_SdssShape", "base_Variance"]
-        config.slots.centroid = "base_NaiveCentroid"
+        config.plugins.names = ["testLib_SillyCentroid", "base_SdssShape", "base_Variance"]
+        config.slots.centroid = "testLib_SillyCentroid"
         config.slots.psfFlux = None
         config.slots.apFlux = None
         config.slots.modelFlux = None

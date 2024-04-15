@@ -39,8 +39,9 @@ from ._measBaseLib import (ApertureFluxControl, ApertureFluxTransform,
                            GaussianFluxAlgorithm, GaussianFluxControl,
                            GaussianFluxTransform, LocalBackgroundAlgorithm,
                            LocalBackgroundControl, LocalBackgroundTransform,
-                           MeasurementError, NaiveCentroidAlgorithm,
-                           NaiveCentroidControl, NaiveCentroidTransform,
+                           MeasurementError,
+                           # Remove these three on DM-41701
+                           NaiveCentroidAlgorithm, NaiveCentroidControl, NaiveCentroidTransform,
                            PeakLikelihoodFluxAlgorithm,
                            PeakLikelihoodFluxControl,
                            PeakLikelihoodFluxTransform, PixelFlagsAlgorithm,
@@ -51,6 +52,7 @@ from ._measBaseLib import (ApertureFluxControl, ApertureFluxTransform,
                            SdssCentroidControl, SdssCentroidTransform,
                            SdssShapeAlgorithm, SdssShapeControl,
                            SdssShapeTransform)
+
 from .baseMeasurement import BaseMeasurementPluginConfig
 from .forcedMeasurement import ForcedPlugin, ForcedPluginConfig
 from .pluginRegistry import register
@@ -85,8 +87,10 @@ wrapSimpleAlgorithm(PeakLikelihoodFluxAlgorithm, Control=PeakLikelihoodFluxContr
 wrapSimpleAlgorithm(GaussianFluxAlgorithm, Control=GaussianFluxControl,
                     TransformClass=GaussianFluxTransform, executionOrder=BasePlugin.FLUX_ORDER,
                     shouldApCorr=True)
+# Remove this line on DM-41701
 wrapSimpleAlgorithm(NaiveCentroidAlgorithm, Control=NaiveCentroidControl,
-                    TransformClass=NaiveCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
+                    TransformClass=NaiveCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER,
+                    deprecated="Plugin 'NaiveCentroid' is deprecated and will be removed after v27.")
 wrapSimpleAlgorithm(SdssCentroidAlgorithm, Control=SdssCentroidControl,
                     TransformClass=SdssCentroidTransform, executionOrder=BasePlugin.CENTROID_ORDER)
 wrapSimpleAlgorithm(PixelFlagsAlgorithm, Control=PixelFlagsControl,
@@ -107,6 +111,7 @@ wrapSimpleAlgorithm(LocalBackgroundAlgorithm, Control=LocalBackgroundControl,
 wrapTransform(PsfFluxTransform)
 wrapTransform(PeakLikelihoodFluxTransform)
 wrapTransform(GaussianFluxTransform)
+# Remove this on DM-41701
 wrapTransform(NaiveCentroidTransform)
 wrapTransform(SdssCentroidTransform)
 wrapTransform(SdssShapeTransform)
