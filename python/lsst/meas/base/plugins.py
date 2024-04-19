@@ -36,6 +36,7 @@ import lsst.afw.geom
 from ._measBaseLib import (ApertureFluxControl, ApertureFluxTransform,
                            BaseTransform, BlendednessAlgorithm,
                            BlendednessControl, CircularApertureFluxAlgorithm,
+                           FatalAlgorithmError,
                            GaussianFluxAlgorithm, GaussianFluxControl,
                            GaussianFluxTransform, LocalBackgroundAlgorithm,
                            LocalBackgroundControl, LocalBackgroundTransform,
@@ -677,6 +678,11 @@ class SingleFrameMomentsClassifierPlugin(SingleFramePlugin):
     metadata : `~lsst.daf.base.PropertySet`
         Plugin metadata that will be attached to the output catalog.
 
+    Raises
+    ------
+    FatalAlgorithmError
+        Raised if either of `slot_Shape` or `slot_PsfShape` is unavailable.
+
     Notes
     -----
     The ``measure`` method of the plugin requires a value for the ``exposure``
@@ -695,6 +701,16 @@ class SingleFrameMomentsClassifierPlugin(SingleFramePlugin):
 
     def __init__(self, config, name, schema, metadata):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
+
+        # Check that the required columns are already in the schema.
+        if not all(("slot_Shape" in schema.getAliasMap().keys(),
+                    "slot_PsfShape" in schema.getAliasMap().keys(),
+                    )
+                   ):
+            raise FatalAlgorithmError(
+                "Both 'slot_Shape' and 'slot_psfShape' must be available for " + name + "algorithm.",
+            )
+
         self.key = schema.addField(name + "_value",
                                    type="D",
                                    doc="Measure of being a galaxy based on trace of second order moments",
