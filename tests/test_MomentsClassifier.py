@@ -72,6 +72,17 @@ class MomentsClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst
                 with self.assertRaisesRegex(measBase.MeasurementError, "Shape flag is set"):
                     plugin.measure(record, exposure)
 
+    def testFatalFailure(self):
+        """Test that FatalAlgorithmError is raised if PSF shape is unavailable.
+        """
+        config = measBase.SingleFrameMeasurementConfig()
+
+        # Remove slot_psfShape to trigger a failure.
+        delattr(config.slots, "psfShape")
+
+        with self.assertRaises(measBase.FatalAlgorithmError):
+            self.makeSingleFrameMeasurementTask(config=config)
+
     @lsst.utils.tests.methodParameters(noise=(0.001, 0.01))
     def testMonteCarlo(self, noise: float, n_trials: int = 100):
         """Test an ideal simulation, with no noise.
