@@ -56,6 +56,22 @@ class MomentsClassificationTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst
         for ii in range(self.n_stars, self.n_stars + self.n_gals):
             self.assertGreater(catalog[ii].get("base_ClassificationSizeExtendedness_value"), 0.02)
 
+    def testFailure(self):
+        """Test that MeasurementError is raised properly if shape flag is set.
+        """
+        config = measBase.SingleFrameMeasurementConfig()
+        task = self.makeSingleFrameMeasurementTask(config=config)
+        exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=5)
+        plugin = task.plugins["base_ClassificationSizeExtendedness"]
+        plugin_order = plugin.getExecutionOrder()
+        task.run(catalog, exposure, endOrder=plugin_order)
+        # Set the shape flags by hand to trigger a failure.
+        catalog["slot_Shape_flag"] = 1
+        for record in catalog:
+            with self.subTest(id=record["id"]):
+                with self.assertRaisesRegex(measBase.MeasurementError, "Shape flag is set"):
+                    plugin.measure(record, exposure)
+
     @lsst.utils.tests.methodParameters(noise=(0.001, 0.01))
     def testMonteCarlo(self, noise: float, n_trials: int = 100):
         """Test an ideal simulation, with no noise.

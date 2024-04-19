@@ -685,6 +685,10 @@ class SingleFrameMomentsClassifierPlugin(SingleFramePlugin):
 
     ConfigClass = SingleFrameMomentsClassifierConfig
 
+    FAILURE_BAD_SHAPE = 1
+    """Denotes failures due to bad shape (`int`).
+    """
+
     @classmethod
     def getExecutionOrder(cls):
         return cls.FLUX_ORDER
@@ -701,7 +705,10 @@ class SingleFrameMomentsClassifierPlugin(SingleFramePlugin):
         # Docstring inherited.
 
         if measRecord.getShapeFlag():
-            raise MeasurementError("Shape flag is set.  Required for " + self.name + " algorithm")
+            raise MeasurementError(
+                "Shape flag is set.  Required for " + self.name + " algorithm",
+                self.FAILURE_BAD_SHAPE,
+            )
 
         shape = measRecord.getShape()
         psf_shape = measRecord.getPsfShape()
