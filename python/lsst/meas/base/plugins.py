@@ -703,10 +703,9 @@ class SingleFrameMomentsClassifierPlugin(SingleFramePlugin):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
 
         # Check that the required columns are already in the schema.
-        if not all(("slot_Shape" in schema.getAliasMap().keys(),
-                    "slot_PsfShape" in schema.getAliasMap().keys(),
-                    )
-                   ):
+        if not ("slot_Shape" in schema.getAliasMap().keys()
+                and "slot_PsfShape" in schema.getAliasMap().keys(),
+                ):
             raise FatalAlgorithmError(
                 "Both 'slot_Shape' and 'slot_psfShape' must be available for " + name + "algorithm.",
             )
