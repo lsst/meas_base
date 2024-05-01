@@ -319,11 +319,11 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             df : `pandas.DataFrame`
                 The input DataFrame.
             min_detections : `int`, optional
-                The minimum number of detections. If there are fewer detections than this points in the input data, all values will be NaN.
+                The minimum number of detections.
             oversampling_factor : `int`, optional
-                The oversampling factor for frequency grid. Default is 5.
+                The oversampling factor for frequency grid.
             nyquist_factor : `int`, optional
-                The Nyquist factor for frequency grid. Default is 100.
+                The Nyquist factor for frequency grid.
 
             Returns
             -------
@@ -601,7 +601,8 @@ class WeightedMeanDiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
 
 @register("ap_meanFlux")
 class WeightedMeanDiaPsfFlux(DiaObjectCalculationPlugin):
-    """Compute the weighted mean and mean error on the point source fluxes of the DiaSource measured on the difference image.
+    """Compute the weighted mean and mean error on the point source fluxes
+        of the DiaSource measured on the difference image.
     """
 
     ConfigClass = WeightedMeanDiaPsfFluxConfig
