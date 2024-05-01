@@ -956,15 +956,40 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
 
 
 class TestLombScarglePeriodogram(unittest.TestCase):
+    
+    def GeneratePeriodicData(self, n=10, period=10):
+        """Generate periodic data for testing Lomb Scargle Periodogram.
+
+        Parameters
+        ----------
+        n : int
+            Number of data points.
+        period : float
+            Period of the periodic signal.
+        
+        Returns
+        -------
+        t : np.ndarray
+            Time values.
+        y_obs : np.ndarray
+            Observed flux values.
+        """
+        np.random.seed(42)
+
+        t = np.random.randint(100, size=n) + 0.3 + 0.4 * np.random.random(n)
+        y = 10 + np.sin(2 * np.pi * t / period)
+        dy = 0.001 + 0.001 * np.random.random(n)
+        y_obs = np.random.normal(y, dy)
+
+        return t, y_obs
 
     def testCalculate(self):
         """Test Lomb Scargle Periodogram."""
         n_sources = 10
         objId = 0
 
-        # Test on periodic scienceFlux.
-        times = np.linspace(0, 2*np.pi, n_sources)
-        fluxes = np.sin(0.3 * times)
+        # Test period calculation.
+        times, fluxes = self.GeneratePeriodicData(n_sources, period=10)
         diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
@@ -972,7 +997,7 @@ class TestLombScarglePeriodogram(unittest.TestCase):
                   "diaSourceId": np.arange(n_sources, dtype=int),
                   "midpointMjdTai": times,
                   "psfFlux": fluxes,
-                  "psfFluxErr": np.zeros(n_sources)})
+                  "psfFluxErr": 1e-3+np.zeros(n_sources)})
 
         plug = LombScarglePeriodogram(LombScarglePeriodogramConfig(),
                                       "ap_lombScarglePeriodogram",
@@ -980,7 +1005,7 @@ class TestLombScarglePeriodogram(unittest.TestCase):
 
         run_multi_plugin(diaObjects, diaSources, "u", plug)
         self.assertAlmostEqual(diaObjects.at[objId, "u_period"],
-                               31.41592653589793)
+                               9.994515)
 
         # Test scatter on scienceFlux takes input nans.
         fluxes[4] = np.nan
@@ -994,7 +1019,7 @@ class TestLombScarglePeriodogram(unittest.TestCase):
                   "psfFluxErr": np.ones(n_sources)})
         run_multi_plugin(diaObjects, diaSources, "r", plug)
         self.assertAlmostEqual(diaObjects.at[objId, "r_period"],
-                               0.01887976354320789)
+                               9.994515)
 
 
 class TestSigmaDiaTotFlux(unittest.TestCase):
