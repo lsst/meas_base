@@ -891,7 +891,7 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
             Number of data points.
         period : float
             Period of the periodic signal.
-        
+
         Returns
         -------
         t : np.ndarray
@@ -914,7 +914,7 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
         objId = 0
 
         # Create synthetic multi-band data
-        times, fluxes =  self.GeneratePeriodicData(n_sources, period=10)
+        times, fluxes = self.GeneratePeriodicData(n_sources, period=10)
         diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
@@ -933,10 +933,10 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
                                9.994515)
         self.assertAlmostEqual(diaObjects.at[objId, "multi_fap"],
                                0.0)
-        
+
         # Test multi-band data with 2 sources.
         n_sources = 2
-        times, fluxes =  self.GeneratePeriodicData(n_sources, period=10)
+        times, fluxes = self.GeneratePeriodicData(n_sources, period=10)
         diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
@@ -956,7 +956,7 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
 
 
 class TestLombScarglePeriodogram(unittest.TestCase):
-    
+
     def GeneratePeriodicData(self, n=10, period=10):
         """Generate periodic data for testing Lomb Scargle Periodogram.
 
@@ -966,7 +966,7 @@ class TestLombScarglePeriodogram(unittest.TestCase):
             Number of data points.
         period : float
             Period of the periodic signal.
-        
+
         Returns
         -------
         t : np.ndarray

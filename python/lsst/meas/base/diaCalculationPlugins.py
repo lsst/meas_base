@@ -303,9 +303,9 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             .. [1] Baluev, R. V. 2008, MNRAS, 385, 1279
             .. [2] Süveges, M., Guy, L.P., Eyer, L., et al. 2015, MNRAS, 450, 2052
             """
-            if n<=2:
+            if n <= 2:
                 return np.nan
-            
+
             gam_ratio = math.factorial(int((n - 1)/2)) / math.factorial(int((n - 2)/2))
             fu = 1/maxPeriod
             return gam_ratio * np.sqrt(4*np.pi*statistics.variance(time)
@@ -346,7 +346,7 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             bands = tmpDf["band"].to_numpy()
 
             lsp = LombScargleMultiband(time, flux, bands, dy=flux_err,
-                       nterms_base=1, nterms_band=1)
+                                       nterms_base=1, nterms_band=1)
 
             f_grid = compute_optimized_periodogram_grid(
                 time, oversampling_factor=oversampling_factor, nyquist_factor=nyquist_factor)
