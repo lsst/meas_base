@@ -200,8 +200,8 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
     ConfigClass = LombScarglePeriodogramMultiConfig
 
     plugType = "multi"
-    outputCols = ["multi_period", "multi_power",
-                  "multi_fap", "multi_amp", "multi_phase"]
+    outputCols = ["multiPeriod", "multiPower",
+                  "multiFap", "multiAmp", "multiPhase"]
     needsFilter = True
 
     @classmethod
@@ -228,11 +228,11 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
         band : `str`
             Simple, string name of the filter for the flux being calculated.
         """
-        periodCol = "multi_period"
-        powerCol = "multi_power"
-        fapCol = "multi_fap"
-        ampCol = "multi_amp"
-        phaseCol = "multi_phase"
+        periodCol = "multiPeriod"
+        powerCol = "multiPower"
+        fapCol = "multiFap"
+        ampCol = "multiAmp"
+        phaseCol = "multiPhase"
 
         # Check and initialize output columns in diaObjects.
         if periodCol not in diaObjects.columns:
