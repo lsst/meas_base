@@ -36,11 +36,7 @@ from lsst.geom import Point2I
 from ..sfm import SingleFramePlugin, SingleFramePluginConfig
 from ..pluginRegistry import register
 
-from .._measBaseLib import _compensatedGaussianFiltInnerProduct
-
-
-class OutOfBoundsError(Exception):
-    pass
+from .._measBaseLib import _compensatedGaussianFiltInnerProduct, FlagHandler, FlagDefinitionList
 
 
 class SingleFrameCompensatedGaussianFluxConfig(SingleFramePluginConfig):
@@ -77,17 +73,7 @@ class SingleFrameCompensatedGaussianFluxPlugin(SingleFramePlugin):
     ):
         super().__init__(config, name, schema, metadata, logName, **kwds)
 
-        # create generic failure key
-        self.fatalFailKey = schema.addField(
-            f"{name}_flag", type="Flag", doc="Set to 1 for any fatal failure."
-        )
-
-        # Out of bounds failure key
-        self.ooBoundsKey = schema.addField(
-            f"{name}_bounds_flag",
-            type="Flag",
-            doc="Flag set to 1 if not all filters fit within exposure.",
-        )
+        flagDefs = FlagDefinitionList()
 
         self.width_keys = {}
         self._rads = {}
@@ -119,22 +105,31 @@ class SingleFrameCompensatedGaussianFluxPlugin(SingleFramePlugin):
             mask_str = f"{base_key}_mask_bits"
             mask_key = schema.addField(mask_str, type=np.int32, doc="Mask bits set within aperture.")
 
-            self.width_keys[width] = (flux_key, err_key, mask_key)
+            # failure flags
+            failure_flag = flagDefs.add(f"{width}_flag", "Compensated Gaussian measurement failed")
+            oob_flag = flagDefs.add(f"{width}_flag_bounds", "Compensated Gaussian out-of-bounds")
+
+            self.width_keys[width] = (flux_key, err_key, mask_key, failure_flag, oob_flag)
             self._rads[width] = math.ceil(sps.norm.ppf((0.995,), scale=width * config.t)[0])
 
+        self.flagHandler = FlagHandler.addFields(schema, name, flagDefs)
         self._max_rad = max(self._rads)
 
     def fail(self, measRecord, error=None):
-        if isinstance(error, OutOfBoundsError):
-            measRecord.set(self.ooBoundsKey, True)
-        measRecord.set(self.fatalFailKey, True)
+        """Record failure
+
+        See also
+        --------
+        lsst.meas.base.SingleFramePlugin.fail
+        """
+        if error is None:
+            self.flagHandler.handleFailure(measRecord)
+        else:
+            self.flagHandler.handleFailure(measRecord, error.cpp)
 
     def measure(self, measRecord, exposure):
         center = measRecord.getCentroid()
         bbox = exposure.getBBox()
-
-        if Point2I(center) not in exposure.getBBox().erodedBy(self._max_rad):
-            raise OutOfBoundsError("Not all the kernels for this source fit inside the exposure.")
 
         y = center.getY() - bbox.beginY
         x = center.getX() - bbox.beginX
@@ -142,21 +137,36 @@ class SingleFrameCompensatedGaussianFluxPlugin(SingleFramePlugin):
         y_floor = math.floor(y)
         x_floor = math.floor(x)
 
-        for width, (flux_key, err_key, mask_key) in self.width_keys.items():
+        for width, (flux_key, err_key, mask_key, failure_flag, oob_flag) in self.width_keys.items():
             rad = self._rads[width]
+
+            if Point2I(center) not in exposure.getBBox().erodedBy(rad):
+                self.flagHandler.setValue(measRecord, failure_flag.number, True)
+                self.flagHandler.setValue(measRecord, oob_flag.number, True)
+                continue
+
             y_slice = slice(y_floor - rad, y_floor + rad + 1, 1)
             x_slice = slice(x_floor - rad, x_floor + rad + 1, 1)
             y_mean = y - y_floor + rad
             x_mean = x - x_floor + rad
 
+            sub_im = exposure.image.array[y_slice, x_slice]
+            sub_var = exposure.variance.array[y_slice, x_slice]
+
+            if sub_im.size == 0 or sub_im.shape[0] != sub_im.shape[1] or (sub_im.shape[0] % 2) == 0:
+                self.flagHandler.setValue(measRecord, failure_flag.number, True)
+                self.flagHandler.setValue(measRecord, oob_flag.number, True)
+                continue
+
             flux, var = _compensatedGaussianFiltInnerProduct(
-                exposure.image.array[y_slice, x_slice],
-                exposure.variance.array[y_slice, x_slice],
+                sub_im,
+                sub_var,
                 x_mean,
                 y_mean,
                 width,
                 self._t,
             )
+
             measRecord.set(flux_key, flux)
             measRecord.set(err_key, np.sqrt(var))
             measRecord.set(mask_key, np.bitwise_or.reduce(exposure.mask.array[y_slice, x_slice], axis=None))
