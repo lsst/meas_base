@@ -100,10 +100,10 @@ class PsfFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         badMask = exposure.mask.getPlaneBitMask("BAD")
         imageArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] = np.inf
         maskArray[badPoint.getY() - exposure.getY0(), badPoint.getX() - exposure.getX0()] |= badMask
-        # Should get an infinite value exception, because we didn't mask that
-        # one pixel
-        with self.assertRaises(lsst.meas.base.PixelValueError):
-            algorithm.measure(record, exposure)
+        # Should get a flag here.
+        algorithm.measure(record, exposure)
+        self.assertTrue(record["base_PsfFlux_flag"])
+        self.assertTrue(record["base_PsfFlux_flag_badpix"])
         # If we do mask it, we should get a reasonable result
         ctrl = lsst.meas.base.PsfFluxControl()
         ctrl.badMaskPlanes = ["BAD"]
