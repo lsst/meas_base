@@ -45,6 +45,8 @@ FlagDefinition const PsfFluxAlgorithm::NO_GOOD_PIXELS =
         flagDefinitions.add("flag_noGoodPixels", "not enough non-rejected pixels in data to attempt the fit");
 FlagDefinition const PsfFluxAlgorithm::EDGE = flagDefinitions.add(
         "flag_edge", "object was too close to the edge of the image to use the full PSF model");
+FlagDefinition const PsfFluxAlgorithm::BADPIX = flagDefinitions.add(
+        "flag_badpix", "bad (infinite) pixel detected in object footprint");
 
 FlagDefinitionList const& PsfFluxAlgorithm::getFlagDefinitions() { return flagDefinitions; }
 
@@ -117,7 +119,9 @@ void PsfFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
     measRecord.set(_areaKey, model.sum() / alpha);
     measRecord.set(_npixelsKey, fitRegion.getSpans()->getArea());
     if (!std::isfinite(result.instFlux) || !std::isfinite(result.instFluxErr)) {
-        throw LSST_EXCEPT(PixelValueError, "Invalid pixel value detected in image.");
+        _flagHandler.setValue(measRecord, BADPIX.number, true);
+        _flagHandler.setValue(measRecord, FAILURE.number, true);
+        return;
     }
     measRecord.set(_instFluxResultKey, result);
     auto chi2 = ((data.cast<PsfPixel>() - result.instFlux * model).array().square() /

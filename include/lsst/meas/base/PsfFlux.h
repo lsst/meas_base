@@ -73,6 +73,7 @@ public:
     static FlagDefinition const FAILURE;
     static FlagDefinition const NO_GOOD_PIXELS;
     static FlagDefinition const EDGE;
+    static FlagDefinition const BADPIX;
 
     /// A typedef to the Control object for this algorithm, defined above.
     /// The control object contains the configuration parameters for this algorithm.
