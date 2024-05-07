@@ -318,11 +318,15 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         else:
             schema = kwds["schema"]
 
-        self.keyInvalidPsf = schema.addField(
-            "base_InvalidPsf_flag",
-            type="Flag",
-            doc="Invalid PSF at this location.",
-        )
+        invalidPsfName = "base_InvalidPsf_flag"
+        if invalidPsfName in schema:
+            self.keyInvalidPsf = schema.find(invalidPsfName).key
+        else:
+            self.keyInvalidPsf = schema.addField(
+                invalidPsfName,
+                type="Flag",
+                doc="Invalid PSF at this location.",
+            )
 
     def callMeasure(self, measRecord, *args, **kwds):
         """Call ``measure`` on all plugins and consistently handle exceptions.
