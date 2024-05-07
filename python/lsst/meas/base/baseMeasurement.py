@@ -485,3 +485,21 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
                 self.log.getChild(plugin.name).warning(
                     "Exception in %s.measureN on records %s-%s: %s",
                     plugin.name, measCat[0].getId(), measCat[-1].getId(), error)
+
+    @staticmethod
+    def getFootprintsFromCatalog(catalog):
+        """Get a set of footprints from a catalog, keyed by id.
+
+        Parameters
+        ----------
+        catalog : `lsst.afw.table.SourceCatalog`
+            Catalog with `lsst.afw.detection.Footprint`s attached.
+
+        Returns
+        -------
+        footprints : `dict` [`int`: (`int`, `lsst.afw.detection.Footprint`)]
+            Dictionary of footprint, keyed by id number, with a tuple of
+            the parent id and footprint.
+        """
+        return {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
+                for measRecord in catalog}
