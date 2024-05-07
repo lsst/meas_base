@@ -29,6 +29,7 @@ import lsst.pex.config
 
 from .pluginRegistry import PluginMap
 from ._measBaseLib import FatalAlgorithmError, MeasurementError
+from lsst.afw.detection import InvalidPsfError
 from .pluginsBase import BasePluginConfig, BasePlugin
 from .noiseReplacer import NoiseReplacerConfig
 
@@ -312,6 +313,17 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
                 self.undeblendedPlugins[name] = PluginClass(config, undeblendedName,
                                                             metadata=self.algMetadata, **kwds)
 
+        if "schemaMapper" in kwds:
+            schema = kwds["schemaMapper"].editOutputSchema()
+        else:
+            schema = kwds["schema"]
+
+        self.keyInvalidPsf = schema.addField(
+            "base_InvalidPsf_flag",
+            type="Flag",
+            doc="Invalid PSF at this location.",
+        )
+
     def callMeasure(self, measRecord, *args, **kwds):
         """Call ``measure`` on all plugins and consistently handle exceptions.
 
@@ -392,6 +404,12 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
                 "MeasurementError in %s.measure on record %s: %s",
                 plugin.name, measRecord.getId(), error)
             plugin.fail(measRecord, error)
+        except InvalidPsfError as error:
+            self.log.getChild(plugin.name).debug(
+                "InvalidPsfError in %s.measure on record %s: %s",
+                plugin.name, measRecord.getId(), error)
+            measRecord.set(self.keyInvalidPsf, True)
+            plugin.fail(measRecord)
         except Exception as error:
             self.log.getChild(plugin.name).warning(
                 "Exception in %s.measure on record %s: %s",
@@ -474,17 +492,24 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
             raise
 
         except MeasurementError as error:
+            self.log.getChild(plugin.name).debug(
+                "MeasurementError in %s.measureN on records %s-%s: %s",
+                plugin.name, measCat[0].getId(), measCat[-1].getId(), error)
             for measRecord in measCat:
-                self.log.getChild(plugin.name).debug(
-                    "MeasurementError in %s.measureN on records %s-%s: %s",
-                    plugin.name, measCat[0].getId(), measCat[-1].getId(), error)
+                plugin.fail(measRecord, error)
+        except InvalidPsfError as error:
+            self.log.getChild(plugin.name).debug(
+                "InvalidPsfError in %s.measureN on records %s-%s: %s",
+                plugin.name, measCat[0].getId(), measCat[-1].getId(), error)
+            for measRecord in measCat:
+                measRecord.set(self.keyInvalidPsf, True)
                 plugin.fail(measRecord, error)
         except Exception as error:
+            self.log.getChild(plugin.name).warning(
+                "Exception in %s.measureN on records %s-%s: %s",
+                plugin.name, measCat[0].getId(), measCat[-1].getId(), error)
             for measRecord in measCat:
                 plugin.fail(measRecord)
-                self.log.getChild(plugin.name).warning(
-                    "Exception in %s.measureN on records %s-%s: %s",
-                    plugin.name, measCat[0].getId(), measCat[-1].getId(), error)
 
     @staticmethod
     def getFootprintsFromCatalog(catalog):
