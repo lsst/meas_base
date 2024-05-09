@@ -36,7 +36,7 @@ import lsst.afw.geom
 from ..sfm import SingleFramePlugin, SingleFramePluginConfig
 from ..pluginRegistry import register
 
-from .._measBaseLib import ApertureFluxAlgorithm
+from .._measBaseLib import ApertureFluxAlgorithm, FlagHandler, FlagDefinitionList
 
 
 class OutOfBoundsError(Exception):
@@ -89,17 +89,7 @@ class SingleFrameCompensatedTophatFluxPlugin(SingleFramePlugin):
     ):
         super().__init__(config, name, schema, metadata, logName, **kwds)
 
-        # create generic failure key
-        self.fatalFailKey = schema.addField(
-            f"{name}_flag", type="Flag", doc="Set to 1 for any fatal failure."
-        )
-
-        # Out of bounds failure key
-        self.ooBoundsKey = schema.addField(
-            f"{name}_bounds_flag",
-            type="Flag",
-            doc="Flag set to 1 if not all filters fit within exposure.",
-        )
+        flagDefs = FlagDefinitionList()
 
         self.aperture_keys = {}
         self._rads = {}
@@ -130,31 +120,31 @@ class SingleFrameCompensatedTophatFluxPlugin(SingleFramePlugin):
             mask_str = f"{base_key}_mask_bits"
             mask_key = schema.addField(mask_str, type=np.int32, doc="Mask bits set within aperture.")
 
-            # individual failure flags
-            flag_str = f"{base_key}_flag"
-            flag_key = schema.addField(
-                flag_str,
-                type="Flag",
-                doc="Failure flag for Compensated Gaussian flux.",
-            )
+            # failure flags
+            failure_flag = flagDefs.add(f"{aperture}_flag", "Compensated Tophat measurement failed")
+            oob_flag = flagDefs.add(f"{aperture}_flag_bounds", "Compensated Tophat out-of-bounds")
 
-            self.aperture_keys[aperture] = (flux_key, err_key, mask_key, flag_key)
-
+            self.aperture_keys[aperture] = (flux_key, err_key, mask_key, failure_flag, oob_flag)
             self._rads[aperture] = int(math.ceil(self._outer_scale*aperture))
 
+        self.flagHandler = FlagHandler.addFields(schema, name, flagDefs)
         self._max_rad = max(self._rads)
 
     def fail(self, measRecord, error=None):
-        if isinstance(error, OutOfBoundsError):
-            measRecord.set(self.ooBoundsKey, True)
-        measRecord.set(self.fatalFailKey, True)
+        """Record failure
+
+        See also
+        --------
+        lsst.meas.base.SingleFramePlugin.fail
+        """
+        if error is None:
+            self.flagHandler.handleFailure(measRecord)
+        else:
+            self.flagHandler.handleFailure(measRecord, error.cpp)
 
     def measure(self, measRecord, exposure):
         center = measRecord.getCentroid()
         bbox = exposure.getBBox()
-
-        if Point2I(center) not in exposure.getBBox().erodedBy(self._max_rad):
-            raise OutOfBoundsError("Not all the kernels for this source fit inside the exposure.")
 
         y = center.getY() - bbox.beginY
         x = center.getX() - bbox.beginX
@@ -164,10 +154,25 @@ class SingleFrameCompensatedTophatFluxPlugin(SingleFramePlugin):
 
         ctrl = ApertureFluxAlgorithm.Control()
 
-        for aperture, (flux_key, err_key, mask_key, flag_key) in self.aperture_keys.items():
+        for aperture, (flux_key, err_key, mask_key, failure_flag, oob_flag) in self.aperture_keys.items():
             rad = self._rads[aperture]
+
+            if Point2I(center) not in exposure.getBBox().erodedBy(rad):
+                self.flagHandler.setValue(measRecord, failure_flag.number, True)
+                self.flagHandler.setValue(measRecord, oob_flag.number, True)
+                continue
+
             y_slice = slice(y_floor - rad, y_floor + rad + 1, 1)
             x_slice = slice(x_floor - rad, x_floor + rad + 1, 1)
+
+            # We will need the mask below, we can use this to test bounds as
+            # well.
+            sub_mask = exposure.mask.array[y_slice, x_slice]
+
+            if sub_mask.size == 0 or sub_mask.shape[0] != sub_mask.shape[1] or (sub_mask.shape[0] % 2) == 0:
+                self.flagHandler.setValue(measRecord, failure_flag.number, True)
+                self.flagHandler.setValue(measRecord, oob_flag.number, True)
+                continue
 
             # Compute three aperture fluxes.
             ellipse = lsst.afw.geom.Ellipse(lsst.afw.geom.ellipses.Axes(float(aperture),
@@ -213,5 +218,4 @@ class SingleFrameCompensatedTophatFluxPlugin(SingleFramePlugin):
 
             measRecord.set(flux_key, flux)
             measRecord.set(err_key, err)
-            measRecord.set(mask_key, np.bitwise_or.reduce(exposure.mask.array[y_slice, x_slice], axis=None))
-            measRecord.set(flag_key, False)
+            measRecord.set(mask_key, np.bitwise_or.reduce(sub_mask, axis=None))

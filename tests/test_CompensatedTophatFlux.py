@@ -121,6 +121,24 @@ class CompensatedTophatFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase
                     ratio = filter_flux / truth_flux
                     self.assertLess(np.std(ratio), 0.04)
 
+    def testCompensatedTophatPluginFailure(self):
+        """Test that the correct flag is set on failures."""
+        config = self.makeSingleFrameMeasurementConfig("base_CompensatedTophatFlux")
+        config.algorithms["base_CompensatedTophatFlux"].apertures = [5, 15]
+
+        task = self.makeSingleFrameMeasurementTask(config=config)
+        exposure, catalog = self.dataset.realize(40.0, task.schema, randomSeed=0)
+        # Modify two objects to trigger the 2 failure conditions.
+        catalog[0]["slot_Centroid_x"] = -20.0
+        catalog[1]["slot_Centroid_x"] = -10.5
+        task.run(catalog, exposure)
+        self.assertTrue(catalog["base_CompensatedTophatFlux_5_flag"][0])
+        self.assertTrue(catalog["base_CompensatedTophatFlux_5_flag_bounds"][0])
+        self.assertTrue(catalog["base_CompensatedTophatFlux_15_flag"][0])
+        self.assertTrue(catalog["base_CompensatedTophatFlux_15_flag_bounds"][0])
+        self.assertTrue(catalog["base_CompensatedTophatFlux_5_flag"][1])
+        self.assertTrue(catalog["base_CompensatedTophatFlux_5_flag_bounds"][1])
+
     def testMonteCarlo(self):
         """Test an ideal simulation, with no noise.
 
