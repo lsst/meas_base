@@ -125,6 +125,8 @@ class CompensatedTophatFluxTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase
         """Test that the correct flag is set on failures."""
         config = self.makeSingleFrameMeasurementConfig("base_CompensatedTophatFlux")
         config.algorithms["base_CompensatedTophatFlux"].apertures = [5, 15]
+        config.algorithms["base_CompensatedTophatFlux"].inner_scale = 1.5
+        config.algorithms["base_CompensatedTophatFlux"].outer_scale = 2.0
 
         task = self.makeSingleFrameMeasurementTask(config=config)
         exposure, catalog = self.dataset.realize(40.0, task.schema, randomSeed=0)

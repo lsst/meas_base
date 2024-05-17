@@ -53,13 +53,13 @@ class SingleFrameCompensatedTophatFluxConfig(SingleFramePluginConfig):
     inner_scale = RangeField(
         doc="Inner background annulus scale (relative to aperture).",
         dtype=float,
-        default=1.5,
+        default=1.0,
         min=1.0,
     )
     outer_scale = RangeField(
         doc="Outer background annulus scale (relative to aperture).",
         dtype=float,
-        default=2.0,
+        default=1.7,
         min=1.0,
     )
 
