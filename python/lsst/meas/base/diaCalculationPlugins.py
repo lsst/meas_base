@@ -117,6 +117,7 @@ def compute_optimized_periodogram_grid(x0, oversampling_factor=5, nyquist_factor
 
     return frequencies
 
+
 class LombScarglePeriodogramConfig(DiaObjectCalculationPluginConfig):
     pass
 
@@ -180,7 +181,7 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
             Returns
             -------
             pd_tab : `pandas.Series`
-                The output DataFrame with the Lomb-Scargle parameters. Returns NaN if there are not enough detections.
+                The output DataFrame with the Lomb-Scargle parameters.
             """
             tmpDf = df[~np.logical_or(np.isnan(df["psfFlux"]),
                                       np.isnan(df["midpointMjdTai"]))]
