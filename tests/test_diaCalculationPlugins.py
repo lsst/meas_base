@@ -929,9 +929,9 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
                                            None)
 
         run_multi_plugin(diaObjects, diaSources, "u", plug)
-        self.assertAlmostEqual(diaObjects.at[objId, "multi_period"],
+        self.assertAlmostEqual(diaObjects.at[objId, "multiPeriod"],
                                9.994515)
-        self.assertAlmostEqual(diaObjects.at[objId, "multi_fap"],
+        self.assertAlmostEqual(diaObjects.at[objId, "multiFap"],
                                0.0)
 
         # Test multi-band data with 2 sources.
@@ -951,8 +951,8 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
                                            None)
 
         run_multi_plugin(diaObjects, diaSources, "u", plug)
-        self.assertTrue(np.isnan(diaObjects.at[objId, "multi_period"]))
-        self.assertTrue(np.isnan(diaObjects.at[objId, "multi_fap"]))
+        self.assertTrue(np.isnan(diaObjects.at[objId, "multiPeriod"]))
+        self.assertTrue(np.isnan(diaObjects.at[objId, "multiFap"]))
 
 
 class TestLombScarglePeriodogram(unittest.TestCase):

@@ -85,6 +85,37 @@ def catchWarnings(_func=None, *, warns=[]):
     else:
         return decoratorCatchWarnings(_func)
 
+def compute_optimized_periodogram_grid(x0, oversampling_factor=5, nyquist_factor=100):
+    """
+    Computes an optimized periodogram frequency grid for a given time series.
+
+    Parameters
+    ----------
+    x0 : `array`
+        The input time axis.
+    oversampling_factor : `int`, optional
+        The oversampling factor for frequency grid.
+    nyquist_factor : `int`, optional
+        The Nyquist factor for frequency grid.
+
+    Returns
+    -------
+    frequencies : `array`
+        The computed optimized periodogram frequency grid.
+    """
+
+    num_points = len(x0)
+    baseline = np.max(x0) - np.min(x0)
+
+    # Calculate the frequency resolution based on oversampling factor and baseline
+    frequency_resolution = 1. / baseline / oversampling_factor
+
+    num_frequencies = int(
+        0.5 * oversampling_factor * nyquist_factor * num_points)
+    frequencies = frequency_resolution + \
+        frequency_resolution * np.arange(num_frequencies)
+
+    return frequencies
 
 class LombScarglePeriodogramConfig(DiaObjectCalculationPluginConfig):
     pass
@@ -130,14 +161,17 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
         if powerCol not in diaObjects.columns:
             diaObjects[powerCol] = np.nan
 
-        def compute_optimized_periodogram_grid(x0, oversampling_factor=5, nyquist_factor=100):
-            """
-            Computes an optimized periodogram frequency grid for a given time series.
+        def _calculate_period(df, min_detections=5, nterms=1, oversampling_factor=5, nyquist_factor=100):
+            """Compute the Lomb-Scargle periodogram given a set of DiaSources.
 
             Parameters
             ----------
-            x0 : `array`
-                The input time axis.
+            df : `pandas.DataFrame`
+                The input DataFrame.
+            min_detections : `int`, optional
+                The minimum number of detections.
+            nterms : `int`, optional
+                The number of terms in the Lomb-Scargle model.
             oversampling_factor : `int`, optional
                 The oversampling factor for frequency grid.
             nyquist_factor : `int`, optional
@@ -145,25 +179,8 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
 
             Returns
             -------
-            frequencies : `array`
-                The computed optimized periodogram frequency grid.
-            """
-
-            num_points = len(x0)
-            baseline = np.max(x0) - np.min(x0)
-
-            # Calculate the frequency resolution based on oversampling factor and baseline
-            frequency_resolution = 1. / baseline / oversampling_factor
-
-            num_frequencies = int(
-                0.5 * oversampling_factor * nyquist_factor * num_points)
-            frequencies = frequency_resolution + \
-                frequency_resolution * np.arange(num_frequencies)
-
-            return frequencies
-
-        def _calculate_period(df, min_detections=5, nterms=1, oversampling_factor=5, nyquist_factor=100):
-            """Compute Lomb-Scargle periodogram.
+            pd_tab : `pandas.Series`
+                The output DataFrame with the Lomb-Scargle parameters. Returns NaN if there are not enough detections.
             """
             tmpDf = df[~np.logical_or(np.isnan(df["psfFlux"]),
                                       np.isnan(df["midpointMjdTai"]))]
@@ -246,43 +263,10 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
         if phaseCol not in diaObjects.columns:
             diaObjects[phaseCol] = np.nan
 
-        def compute_optimized_periodogram_grid(x0, oversampling_factor=5, nyquist_factor=100):
-            """Compute the optimized periodogram based on the oversampling and a nyquist factor.
-
-            Parameters:
-            ----------
-            x0 : `array`
-                The input time axis.
-            oversampling_factor : `int`, optional
-                The oversampling factor for frequency grid.
-            nyquist_factor : `int`, optional
-                The Nyquist factor for frequency grid.
-
-            Returns:
-            -------
-            frequencies : `array`
-                The computed optimized periodogram frequency grid.
-
-            References:
-            ----------
-            .. [1] Originally implemented in https://github.com/astroML/gatspy/
-            """
-
-            baseline = np.max(x0) - np.min(x0)
-
-            frequency_resolution = 1. / baseline / oversampling_factor
-
-            num_frequencies = int(
-                0.5 * oversampling_factor * nyquist_factor * len(x0))
-            frequencies = frequency_resolution + \
-                frequency_resolution * np.arange(num_frequencies)
-
-            return frequencies
-
         def calculate_baluev_fap(time, n, maxPeriod, zmax):
             """Calculate the False-Alarm probability using the Baluev approximation.
 
-            Parameters:
+            Parameters
             ----------
             time : `array`
                 The input time axis.
@@ -293,12 +277,12 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             zmax : `float`
                 The maximum power in the grid.
 
-            Returns:
+            Returns
             -------
             fap_estimate : `float`
                 The False-Alarm probability Baluev approximation.
 
-            References:
+            References
             ----------
             .. [1] Baluev, R. V. 2008, MNRAS, 385, 1279
             .. [2] Süveges, M., Guy, L.P., Eyer, L., et al. 2015, MNRAS, 450, 2052
@@ -359,7 +343,7 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             def generate_lsp_params(lsp_model, fbest, bands):
                 """Generate the Lomb-Scargle parameters.
 
-                    Parameters:
+                    Parameters
                     ----------
                     lsp_model : `astropy.timeseries.LombScargleMultiband`
                         The Lomb-Scargle model.
@@ -368,22 +352,21 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                     bands : `array`
                         The bands of the time series.
 
-                    Returns:
+                    Returns
                     -------
                     Amp : `array`
                         The amplitude of the time series.
                     Ph : `array`
                         The phase of the time series.
 
-                    References:
+                    References
                     ----------
                     .. [1] VanderPlas, J. T., & Ivezic, Z. 2015, ApJ, 812, 18
                 """
                 best_params = lsp_model.model_parameters(fbest, units=True)
 
                 name_params = [f"theta_base_{i}" for i in range(3)]
-                name_params += [f"theta_band_{band}_{index}" for band in np.unique(
-                    bands) for index in range(3)]
+                name_params += [f"theta_band_{band}_{index}" for band in np.unique(bands) for index in range(3)]
 
                 df_params = pd.DataFrame([best_params], columns=name_params)
 
@@ -400,8 +383,7 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
 
                 return Amp, Ph
 
-            params_table_new = generate_lsp_params(
-                lsp, f_grid[np.argmax(power)], bands)
+            params_table_new = generate_lsp_params(lsp, f_grid[np.argmax(power)], bands)
 
             pd_tab = pd.Series({periodCol: period[np.argmax(power)],
                                 powerCol: np.max(power),
