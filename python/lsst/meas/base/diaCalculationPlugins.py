@@ -85,6 +85,7 @@ def catchWarnings(_func=None, *, warns=[]):
     else:
         return decoratorCatchWarnings(_func)
 
+
 def compute_optimized_periodogram_grid(x0, oversampling_factor=5, nyquist_factor=100):
     """
     Computes an optimized periodogram frequency grid for a given time series.
@@ -367,7 +368,7 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                 best_params = lsp_model.model_parameters(fbest, units=True)
 
                 name_params = [f"theta_base_{i}" for i in range(3)]
-                name_params += [f"theta_band_{band}_{index}" for band in np.unique(bands) for index in range(3)]
+                name_params += [f"theta_band_{band}_{i}" for band in np.unique(bands) for i in range(3)]
 
                 df_params = pd.DataFrame([best_params], columns=name_params)
 
