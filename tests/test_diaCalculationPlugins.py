@@ -119,6 +119,34 @@ def run_multi_plugin(diaObjectCat, diaSourceCat, band, plugin):
                      band=band)
 
 
+def make_diaObject_table(objId, plugin, default_value=None, band=None):
+    """Create a minimal diaObject table with columns required for the plugin
+
+    Parameters
+    ----------
+    objId : `int`
+        The diaObjectId
+    plugin : `lsst.ap.association.DiaCalculationPlugin`
+        The plugin that will be run.
+    default_value : None, optional
+        Value to set new columns to.
+    band : `str`, optional
+        Band designation to append to the plugin columns.
+
+    Returns
+    -------
+    diaObjects : `pandas.DataFrame`
+        Output catalog with the required columns for the plugin.
+    """
+    diaObjects = {"diaObjectId": [objId]}
+    for col in plugin.outputCols:
+        if band is not None:
+            diaObjects[f"{band}_{col}"] = default_value
+        else:
+            diaObjects[col] = default_value
+    return pd.DataFrame(diaObjects)
+
+
 class TestMeanPosition(unittest.TestCase):
 
     def testCalculate(self):
@@ -245,7 +273,6 @@ class TestNDiaSourcesDiaPlugin(unittest.TestCase):
         for n_sources in [1, 8, 10]:
             # Test expected number of sources per object.
             objId = 0
-            diaObjects = pd.DataFrame({"diaObjectId": [objId]})
             diaSources = pd.DataFrame(
                 data={"diaObjectId": n_sources * [objId],
                       "band": n_sources * ["g"],
@@ -253,6 +280,7 @@ class TestNDiaSourcesDiaPlugin(unittest.TestCase):
             plug = NumDiaSourcesDiaPlugin(NumDiaSourcesDiaPluginConfig(),
                                           "ap_nDiaSources",
                                           None)
+            diaObjects = make_diaObject_table(objId, plug, default_value=int(-1))
             run_multi_plugin(diaObjects, diaSources, "g", plug)
 
             self.assertEqual(n_sources, diaObjects.at[objId, "nDiaSources"])
@@ -267,7 +295,6 @@ class TestSimpleSourceFlagDiaPlugin(unittest.TestCase):
         n_sources = 10
 
         # Test expected flags, no flags set.
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
                   "band": n_sources * ["g"],
@@ -276,31 +303,33 @@ class TestSimpleSourceFlagDiaPlugin(unittest.TestCase):
         plug = SimpleSourceFlagDiaPlugin(SimpleSourceFlagDiaPluginConfig(),
                                          "ap_diaObjectFlag",
                                          None)
+
+        diaObjects = make_diaObject_table(objId, plug, default_value=np.uint64)
         run_multi_plugin(diaObjects, diaSources, "g", plug)
         self.assertEqual(diaObjects.at[objId, "flags"], 0)
 
         # Test expected flags, all flags set.
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
                   "band": n_sources * ["g"],
                   "diaSourceId": np.arange(n_sources, dtype=int),
                   "flags": np.ones(n_sources, dtype=np.uint64)})
+        diaObjects = make_diaObject_table(objId, plug, default_value=np.uint64)
         run_multi_plugin(diaObjects, diaSources, "g", plug)
         self.assertEqual(diaObjects.at[objId, "flags"], 1)
 
         # Test expected flags, random flags.
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
                   "band": n_sources * ["g"],
                   "diaSourceId": np.arange(n_sources, dtype=int),
                   "flags": np.random.randint(0, 2 ** 16, size=n_sources)})
+
+        diaObjects = make_diaObject_table(objId, plug, default_value=np.uint64)
         run_multi_plugin(diaObjects, diaSources, "g", plug)
         self.assertEqual(diaObjects.at[objId, "flags"], 1)
 
         # Test expected flags, one flag set.
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         flag_array = np.zeros(n_sources, dtype=np.uint64)
         flag_array[4] = 256
         diaSources = pd.DataFrame(
@@ -308,6 +337,7 @@ class TestSimpleSourceFlagDiaPlugin(unittest.TestCase):
                   "band": n_sources * ["g"],
                   "diaSourceId": np.arange(n_sources, dtype=int),
                   "flags": flag_array})
+        diaObjects = make_diaObject_table(objId, plug, default_value=np.uint64)
         run_multi_plugin(diaObjects, diaSources, "g", plug)
         self.assertEqual(diaObjects.at[objId, "flags"], 1)
 
@@ -417,7 +447,6 @@ class TestSigmaDiaPsfFlux(unittest.TestCase):
 
         # Test expected sigma scatter of fluxes.
         fluxes = np.linspace(-1, 1, n_sources)
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
                   "band": n_sources * ["u"],
@@ -428,30 +457,33 @@ class TestSigmaDiaPsfFlux(unittest.TestCase):
         plug = SigmaDiaPsfFlux(SigmaDiaPsfFluxConfig(),
                                "ap_sigmaFlux",
                                None)
+        diaObjects = make_diaObject_table(objId, plug, band='u')
         run_multi_plugin(diaObjects, diaSources, "u", plug)
         self.assertAlmostEqual(diaObjects.at[objId, "u_psfFluxSigma"],
                                np.nanstd(fluxes, ddof=1))
 
         # test one input, returns nan.
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": 1 * [objId],
                   "band": 1 * ["g"],
                   "diaSourceId": [0],
                   "psfFlux": [fluxes[0]],
                   "psfFluxErr": [1.]})
+
+        diaObjects = make_diaObject_table(objId, plug, band='g')
         run_multi_plugin(diaObjects, diaSources, "g", plug)
         self.assertTrue(np.isnan(diaObjects.at[objId, "g_psfFluxSigma"]))
 
         # Test expected sigma scatter of fluxes with a nan value.
         fluxes[4] = np.nan
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
                   "band": n_sources * ["r"],
                   "diaSourceId": np.arange(n_sources, dtype=int),
                   "psfFlux": fluxes,
                   "psfFluxErr": np.ones(n_sources)})
+
+        diaObjects = make_diaObject_table(objId, plug, band='r')
         run_multi_plugin(diaObjects, diaSources, "r", plug)
         self.assertAlmostEqual(diaObjects.at[objId, "r_psfFluxSigma"],
                                np.nanstd(fluxes, ddof=1))
@@ -637,7 +669,6 @@ class TestMaxSlopeDiaPsfFlux(unittest.TestCase):
         # Test max slope value.
         fluxes = np.linspace(-1, 1, n_sources)
         times = np.concatenate([np.linspace(0, 1, n_sources)[:-1], [1 - 1/90]])
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
                   "band": n_sources * ["u"],
@@ -649,11 +680,11 @@ class TestMaxSlopeDiaPsfFlux(unittest.TestCase):
         plug = MaxSlopeDiaPsfFlux(MaxSlopeDiaPsfFluxConfig(),
                                   "ap_maxSlopeFlux",
                                   None)
+        diaObjects = make_diaObject_table(objId, plug, band='u')
         run_multi_plugin(diaObjects, diaSources, "u", plug)
         self.assertAlmostEqual(diaObjects.at[objId, "u_psfFluxMaxSlope"], 2 + 2/9)
 
         # Test max slope value returns nan on 1 input.
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": 1 * [objId],
                   "band": 1 * ["g"],
@@ -661,13 +692,13 @@ class TestMaxSlopeDiaPsfFlux(unittest.TestCase):
                   "psfFlux": fluxes[0],
                   "psfFluxErr": np.ones(1),
                   "midpointMjdTai": times[0]})
+        diaObjects = make_diaObject_table(objId, plug, band='g')
         run_multi_plugin(diaObjects, diaSources, "g", plug)
         self.assertTrue(np.isnan(diaObjects.at[objId, "g_psfFluxMaxSlope"]))
 
         # Test max slope value inputing nan values.
         fluxes[4] = np.nan
         times[7] = np.nan
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
                   "band": n_sources * ["r"],
@@ -675,6 +706,7 @@ class TestMaxSlopeDiaPsfFlux(unittest.TestCase):
                   "psfFlux": fluxes,
                   "psfFluxErr": np.ones(n_sources),
                   "midpointMjdTai": times})
+        diaObjects = make_diaObject_table(objId, plug, band='r')
         run_multi_plugin(diaObjects, diaSources, "r", plug)
         self.assertAlmostEqual(diaObjects.at[objId, "r_psfFluxMaxSlope"], 2 + 2 / 9)
 
@@ -882,7 +914,6 @@ class TestSigmaDiaTotFlux(unittest.TestCase):
 
         # Test test scatter on scienceFlux.
         fluxes = np.linspace(-1, 1, n_sources)
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
                   "band": n_sources * ["u"],
@@ -893,30 +924,31 @@ class TestSigmaDiaTotFlux(unittest.TestCase):
         plug = SigmaDiaTotFlux(SigmaDiaTotFluxConfig(),
                                "ap_sigmaTotFlux",
                                None)
+        diaObjects = make_diaObject_table(objId, plug, band='u')
         run_multi_plugin(diaObjects, diaSources, "u", plug)
         self.assertAlmostEqual(diaObjects.at[objId, "u_scienceFluxSigma"],
                                np.nanstd(fluxes, ddof=1))
 
         # Test test scatter on scienceFlux returns nan on 1 input.
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": 1 * [objId],
                   "band": 1 * ["g"],
                   "diaSourceId": np.arange(1, dtype=int),
                   "scienceFlux": fluxes[0],
                   "scienceFluxErr": np.ones(1)})
+        diaObjects = make_diaObject_table(objId, plug, band='g')
         run_multi_plugin(diaObjects, diaSources, "g", plug)
         self.assertTrue(np.isnan(diaObjects.at[objId, "g_scienceFluxSigma"]))
 
         # Test test scatter on scienceFlux takes input nans.
         fluxes[4] = np.nan
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
                   "band": n_sources * ["r"],
                   "diaSourceId": np.arange(n_sources, dtype=int),
                   "scienceFlux": fluxes,
                   "scienceFluxErr": np.ones(n_sources)})
+        diaObjects = make_diaObject_table(objId, plug, band='r')
         run_multi_plugin(diaObjects, diaSources, "r", plug)
         self.assertAlmostEqual(diaObjects.at[objId, "r_scienceFluxSigma"],
                                np.nanstd(fluxes, ddof=1))
