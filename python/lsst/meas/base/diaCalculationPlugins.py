@@ -252,8 +252,9 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
 
         gam_ratio = math.factorial(int((n - 1)/2)) / math.factorial(int((n - 2)/2))
         fu = 1/maxPeriod
-        return gam_ratio * np.sqrt(4*np.pi*statistics.variance(time)) * \
-                                    fu * (1-zmax)**((n-4)/2) * np.sqrt(zmax)
+        return gam_ratio * np.sqrt(
+                4*np.pi*statistics.variance(time)
+                ) * fu * (1-zmax)**((n-4)/2) * np.sqrt(zmax)
 
     @staticmethod
     def generate_lsp_params(lsp_model, fbest, bands):
