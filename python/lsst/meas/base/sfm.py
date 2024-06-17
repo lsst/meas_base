@@ -206,7 +206,16 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
             self.doBlendedness = False
 
     @timeMethod
-    def run(self, measCat, exposure, noiseImage=None, exposureId=None, beginOrder=None, endOrder=None):
+    def run(
+        self,
+        measCat,
+        exposure,
+        noiseImage=None,
+        exposureId=None,
+        beginOrder=None,
+        endOrder=None,
+        footprints=None,
+    ):
         r"""Run single frame measurement over an exposure and source catalog.
 
         Parameters
@@ -233,10 +242,13 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
             Final execution order (exclusive): measurements with
             ``executionOrder >= endOrder`` are not executed. `None` for no
             limit.
+        footprints : `dict` {`int`: `lsst.afw.detection.Footprint`}, optional
+            List of footprints to use for noise replacement. If this is not
+            supplied then the footprints from the measCat are used.
         """
         assert measCat.getSchema().contains(self.schema)
-        footprints = {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
-                      for measRecord in measCat}
+        if footprints is None:
+            footprints = self.getFootprintsFromCatalog(measCat)
 
         # noiseReplacer is used to fill the footprints with noise and save
         # heavy footprints of the source pixels so that they can be restored

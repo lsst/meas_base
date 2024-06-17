@@ -473,6 +473,12 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
         storageClass="ExposureCatalog",
         dimensions=("instrument", "visit"),
     )
+    skyMap = cT.Input(
+        doc="SkyMap dataset that defines the coordinate system of the reference catalog.",
+        name=BaseSkyMap.SKYMAP_DATASET_TYPE_NAME,
+        storageClass="SkyMap",
+        dimensions=["skymap"],
+    )
     measCat = cT.Output(
         doc="Output forced photometry catalog.",
         name="forced_src_diaObject",
@@ -550,8 +556,9 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
 
-        # When run with dataframes, we do not need a reference wcs.
-        inputs['refWcs'] = None
+        tract = butlerQC.quantum.dataId["tract"]
+        skyMap = inputs.pop("skyMap")
+        inputs["refWcs"] = skyMap[tract].getWcs()
 
         # Connections only exist if they are configured to be used.
         skyCorr = inputs.pop('skyCorr', None)

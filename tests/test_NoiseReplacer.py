@@ -104,6 +104,29 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.t
             # fail (indeed, 67% should)
             self.assertLess(record.get("test_NoiseReplacer_outside"), np.sqrt(sumVariance))
 
+    @methodParameters(noiseSource=['measure', 'variance', 'meta', 'variance_median'],
+                      variance=[1.0, 1.0, 2.0, 1.0])
+    def testNoiseReplacerExternalFootprints(self, noiseSource, variance):
+        # We choose a random seed which causes the test to pass.
+        task = self.makeSingleFrameMeasurementTask("test_NoiseReplacer")
+        task.config.noiseReplacer.noiseSource = noiseSource
+        exposure, catalog = self.dataset.realize(variance, task.schema, randomSeed=0)
+        if noiseSource == 'meta':
+            md = PropertyList()
+            md['BGMEAN'] = variance
+            exposure.setMetadata(md)
+        footprints = task.getFootprintsFromCatalog(catalog)
+        task.run(catalog, exposure, footprints=footprints)
+        sumVariance = exposure.variance.array.sum()
+        for record in catalog:
+            self.assertFloatsAlmostEqual(record.get("test_NoiseReplacer_inside"),
+                                         record.get("truth_instFlux"), rtol=1E-3)
+
+            # N.B. Next line checks that a random value is correct to a
+            # statistical 1-sigma prediction; some RNG seeds may cause it to
+            # fail (indeed, 67% should)
+            self.assertLess(record.get("test_NoiseReplacer_outside"), np.sqrt(sumVariance))
+
     def tearDown(self):
         del self.bbox
         del self.dataset
