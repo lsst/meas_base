@@ -925,8 +925,8 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
                   "psfFluxErr": 1e-3+np.zeros(n_sources)})
 
         plugin = LombScarglePeriodogramMulti(LombScarglePeriodogramMultiConfig(),
-                                           "ap_lombScarglePeriodogramMulti",
-                                           None)
+                                             "ap_lombScarglePeriodogramMulti",
+                                             None)
 
         run_multi_plugin(diaObjects, diaSources, "u", plugin)
         self.assertAlmostEqual(diaObjects.at[objId, "multiPeriod"],
@@ -949,8 +949,8 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
                   "psfFluxErr": 1e-3+np.zeros(n_sources)})
 
         plugin = LombScarglePeriodogramMulti(LombScarglePeriodogramMultiConfig(),
-                                           "ap_lombScarglePeriodogramMulti",
-                                           None)
+                                             "ap_lombScarglePeriodogramMulti",
+                                             None)
 
         run_multi_plugin(diaObjects, diaSources, "u",
                          plugin)
@@ -1004,8 +1004,8 @@ class TestLombScarglePeriodogram(unittest.TestCase):
                   "psfFluxErr": 1e-3+np.zeros(n_sources)})
 
         plugin = LombScarglePeriodogram(LombScarglePeriodogramConfig(),
-                                      "ap_lombScarglePeriodogram",
-                                      None)
+                                        "ap_lombScarglePeriodogram",
+                                        None)
 
         run_multi_plugin(diaObjects, diaSources, "u", plugin)
         self.assertAlmostEqual(diaObjects.at[objId, "u_period"],

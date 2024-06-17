@@ -253,8 +253,8 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
         gam_ratio = math.factorial(int((n - 1)/2)) / math.factorial(int((n - 2)/2))
         fu = 1/maxPeriod
         return gam_ratio * np.sqrt(
-                4*np.pi*statistics.variance(time)
-                ) * fu * (1-zmax)**((n-4)/2) * np.sqrt(zmax)
+            4*np.pi*statistics.variance(time)
+        ) * fu * (1-zmax)**((n-4)/2) * np.sqrt(zmax)
 
     @staticmethod
     def generate_lsp_params(lsp_model, fbest, bands):
@@ -289,10 +289,10 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
         unique_bands = np.unique(bands)
 
         Amplitude_band = [np.sqrt(df_params[f"theta_band_{band}_1"]**2
-                                    + df_params[f"theta_band_{band}_2"]**2)
-                                    for band in unique_bands]
+                                  + df_params[f"theta_band_{band}_2"]**2)
+                          for band in unique_bands]
         Phase_bands = [np.arctan2(df_params[f"theta_band_{band}_2"],
-                                    df_params[f"theta_band_{band}_1"]) for band in unique_bands]
+                                  df_params[f"theta_band_{band}_1"]) for band in unique_bands]
 
         Amp = [a[0] for a in Amplitude_band]
         Ph = [p[0] for p in Phase_bands]
