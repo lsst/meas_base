@@ -159,7 +159,6 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
         if (powerCol := f"{band}_power") not in diaObjects.columns:
             diaObjects[powerCol] = np.nan
 
-
         def _calculate_period(df, min_detections=5, nterms=1, oversampling_factor=5, nyquist_factor=100):
             """Compute the Lomb-Scargle periodogram given a set of DiaSources.
 
@@ -253,8 +252,8 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
 
         gam_ratio = math.factorial(int((n - 1)/2)) / math.factorial(int((n - 2)/2))
         fu = 1/maxPeriod
-        return gam_ratio * np.sqrt(4*np.pi*statistics.variance(time)
-                                    ) * fu * (1-zmax)**((n-4)/2) * np.sqrt(zmax)
+        return gam_ratio * np.sqrt(4*np.pi*statistics.variance(time)) * \
+                                    fu * (1-zmax)**((n-4)/2) * np.sqrt(zmax)
 
     @staticmethod
     def generate_lsp_params(lsp_model, fbest, bands):
@@ -290,7 +289,7 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
 
         Amplitude_band = [np.sqrt(df_params[f"theta_band_{band}_1"]**2
                                     + df_params[f"theta_band_{band}_2"]**2)
-                            for band in unique_bands]
+                                    for band in unique_bands]
         Phase_bands = [np.arctan2(df_params[f"theta_band_{band}_2"],
                                     df_params[f"theta_band_{band}_1"]) for band in unique_bands]
 

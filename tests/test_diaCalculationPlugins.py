@@ -952,7 +952,8 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
                                            "ap_lombScarglePeriodogramMulti",
                                            None)
 
-        run_multi_plugin(diaObjects, diaSources, "u", plugin)
+        run_multi_plugin(diaObjects, diaSources, "u",
+                         plugin)
         self.assertTrue(np.isnan(diaObjects.at[objId, "multiPeriod"]))
         self.assertTrue(np.isnan(diaObjects.at[objId, "multiPower"]))
         self.assertTrue(np.isnan(diaObjects.at[objId, "multiFap"]))
