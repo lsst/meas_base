@@ -924,13 +924,15 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
                   "psfFlux": fluxes,
                   "psfFluxErr": 1e-3+np.zeros(n_sources)})
 
-        plug = LombScarglePeriodogramMulti(LombScarglePeriodogramMultiConfig(),
+        plugin = LombScarglePeriodogramMulti(LombScarglePeriodogramMultiConfig(),
                                            "ap_lombScarglePeriodogramMulti",
                                            None)
 
-        run_multi_plugin(diaObjects, diaSources, "u", plug)
+        run_multi_plugin(diaObjects, diaSources, "u", plugin)
         self.assertAlmostEqual(diaObjects.at[objId, "multiPeriod"],
                                9.994515)
+        self.assertAlmostEqual(diaObjects.at[objId, "multiPower"],
+                               0.99982974)
         self.assertAlmostEqual(diaObjects.at[objId, "multiFap"],
                                0.0)
 
@@ -946,12 +948,13 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
                   "psfFlux": fluxes,
                   "psfFluxErr": 1e-3+np.zeros(n_sources)})
 
-        plug = LombScarglePeriodogramMulti(LombScarglePeriodogramMultiConfig(),
+        plugin = LombScarglePeriodogramMulti(LombScarglePeriodogramMultiConfig(),
                                            "ap_lombScarglePeriodogramMulti",
                                            None)
 
-        run_multi_plugin(diaObjects, diaSources, "u", plug)
+        run_multi_plugin(diaObjects, diaSources, "u", plugin)
         self.assertTrue(np.isnan(diaObjects.at[objId, "multiPeriod"]))
+        self.assertTrue(np.isnan(diaObjects.at[objId, "multiPower"]))
         self.assertTrue(np.isnan(diaObjects.at[objId, "multiFap"]))
 
 
@@ -999,11 +1002,11 @@ class TestLombScarglePeriodogram(unittest.TestCase):
                   "psfFlux": fluxes,
                   "psfFluxErr": 1e-3+np.zeros(n_sources)})
 
-        plug = LombScarglePeriodogram(LombScarglePeriodogramConfig(),
+        plugin = LombScarglePeriodogram(LombScarglePeriodogramConfig(),
                                       "ap_lombScarglePeriodogram",
                                       None)
 
-        run_multi_plugin(diaObjects, diaSources, "u", plug)
+        run_multi_plugin(diaObjects, diaSources, "u", plugin)
         self.assertAlmostEqual(diaObjects.at[objId, "u_period"],
                                9.994515)
 
@@ -1017,7 +1020,7 @@ class TestLombScarglePeriodogram(unittest.TestCase):
                   "midpointMjdTai": times,
                   "psfFlux": fluxes,
                   "psfFluxErr": np.ones(n_sources)})
-        run_multi_plugin(diaObjects, diaSources, "r", plug)
+        run_multi_plugin(diaObjects, diaSources, "r", plugin)
         self.assertAlmostEqual(diaObjects.at[objId, "r_period"],
                                9.994515)
 

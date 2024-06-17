@@ -153,15 +153,12 @@ class LombScarglePeriodogram(DiaObjectCalculationPlugin):
             Catalog of DiaSources summarized by this DiaObject.
         """
 
-        # Define output column names
-        periodCol = f"{band}_period"
-        powerCol = f"{band}_power"
-
         # Check and initialize output columns in diaObjects.
-        if periodCol not in diaObjects.columns:
+        if (periodCol := f"{band}_period") not in diaObjects.columns:
             diaObjects[periodCol] = np.nan
-        if powerCol not in diaObjects.columns:
+        if (powerCol := f"{band}_power") not in diaObjects.columns:
             diaObjects[powerCol] = np.nan
+
 
         def _calculate_period(df, min_detections=5, nterms=1, oversampling_factor=5, nyquist_factor=100):
             """Compute the Lomb-Scargle periodogram given a set of DiaSources.
@@ -214,7 +211,6 @@ class LombScarglePeriodogramMultiConfig(DiaObjectCalculationPluginConfig):
 @register("ap_lombScarglePeriodogramMulti")
 class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
     """Compute the multi-band LombScargle periodogram of a DiaObject given a set of DiaSources.
-    of the DiaSource measured on the difference image.
     """
     ConfigClass = LombScarglePeriodogramMultiConfig
 
@@ -226,6 +222,82 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
     @classmethod
     def getExecutionOrder(cls):
         return cls.DEFAULT_CATALOGCALCULATION
+
+    @staticmethod
+    def calculate_baluev_fap(time, n, maxPeriod, zmax):
+        """Calculate the False-Alarm probability using the Baluev approximation.
+
+        Parameters
+        ----------
+        time : `array`
+            The input time axis.
+        n : `int`
+            The number of detections.
+        maxPeriod : `float`
+            The maximum period in the grid.
+        zmax : `float`
+            The maximum power in the grid.
+
+        Returns
+        -------
+        fap_estimate : `float`
+            The False-Alarm probability Baluev approximation.
+
+        Notes
+        ----------
+        .. [1] Baluev, R. V. 2008, MNRAS, 385, 1279
+        .. [2] Süveges, M., Guy, L.P., Eyer, L., et al. 2015, MNRAS, 450, 2052
+        """
+        if n <= 2:
+            return np.nan
+
+        gam_ratio = math.factorial(int((n - 1)/2)) / math.factorial(int((n - 2)/2))
+        fu = 1/maxPeriod
+        return gam_ratio * np.sqrt(4*np.pi*statistics.variance(time)
+                                    ) * fu * (1-zmax)**((n-4)/2) * np.sqrt(zmax)
+
+    @staticmethod
+    def generate_lsp_params(lsp_model, fbest, bands):
+        """Generate the Lomb-Scargle parameters.
+        Parameters
+        ----------
+        lsp_model : `astropy.timeseries.LombScargleMultiband`
+            The Lomb-Scargle model.
+        fbest : `float`
+            The best period.
+        bands : `array`
+            The bands of the time series.
+
+        Returns
+        -------
+        Amp : `array`
+            The amplitude of the time series.
+        Ph : `array`
+            The phase of the time series.
+
+        Notes
+        ----------
+        .. [1] VanderPlas, J. T., & Ivezic, Z. 2015, ApJ, 812, 18
+        """
+        best_params = lsp_model.model_parameters(fbest, units=True)
+
+        name_params = [f"theta_base_{i}" for i in range(3)]
+        name_params += [f"theta_band_{band}_{i}" for band in np.unique(bands) for i in range(3)]
+
+        df_params = pd.DataFrame([best_params], columns=name_params)
+
+        unique_bands = np.unique(bands)
+
+        Amplitude_band = [np.sqrt(df_params[f"theta_band_{band}_1"]**2
+                                    + df_params[f"theta_band_{band}_2"]**2)
+                            for band in unique_bands]
+        Phase_bands = [np.arctan2(df_params[f"theta_band_{band}_2"],
+                                    df_params[f"theta_band_{band}_1"]) for band in unique_bands]
+
+        Amp = [a[0] for a in Amplitude_band]
+        Ph = [p[0] for p in Phase_bands]
+
+        return Amp, Ph
 
     @catchWarnings(warns=["All-NaN slice encountered"])
     def calculate(self,
@@ -245,57 +317,20 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             DataFrame representing diaSources associated with this
             diaObject that are observed in the band pass ``band``.
         band : `str`
-            Simple, string name of the filter for the flux being calculated.
+            Filter band for the flux being calculated.
         """
-        periodCol = "multiPeriod"
-        powerCol = "multiPower"
-        fapCol = "multiFap"
-        ampCol = "multiAmp"
-        phaseCol = "multiPhase"
 
         # Check and initialize output columns in diaObjects.
-        if periodCol not in diaObjects.columns:
+        if (periodCol := "multiPeriod") not in diaObjects.columns:
             diaObjects[periodCol] = np.nan
-        if powerCol not in diaObjects.columns:
+        if (powerCol := "multiPower") not in diaObjects.columns:
             diaObjects[powerCol] = np.nan
-        if fapCol not in diaObjects.columns:
+        if (fapCol := "multiFap") not in diaObjects.columns:
             diaObjects[fapCol] = np.nan
-        if ampCol not in diaObjects.columns:
+        if (ampCol := "multiAmp") not in diaObjects.columns:
             diaObjects[ampCol] = np.nan
-        if phaseCol not in diaObjects.columns:
+        if (phaseCol := "multiPhase") not in diaObjects.columns:
             diaObjects[phaseCol] = np.nan
-
-        def calculate_baluev_fap(time, n, maxPeriod, zmax):
-            """Calculate the False-Alarm probability using the Baluev approximation.
-
-            Parameters
-            ----------
-            time : `array`
-                The input time axis.
-            n : `int`
-                The number of detections.
-            maxPeriod : `float`
-                The maximum period in the grid.
-            zmax : `float`
-                The maximum power in the grid.
-
-            Returns
-            -------
-            fap_estimate : `float`
-                The False-Alarm probability Baluev approximation.
-
-            References
-            ----------
-            .. [1] Baluev, R. V. 2008, MNRAS, 385, 1279
-            .. [2] Süveges, M., Guy, L.P., Eyer, L., et al. 2015, MNRAS, 450, 2052
-            """
-            if n <= 2:
-                return np.nan
-
-            gam_ratio = math.factorial(int((n - 1)/2)) / math.factorial(int((n - 2)/2))
-            fu = 1/maxPeriod
-            return gam_ratio * np.sqrt(4*np.pi*statistics.variance(time)
-                                       ) * fu * (1-zmax)**((n-4)/2) * np.sqrt(zmax)
 
         def _calculate_period_multi(df, min_detections=9, oversampling_factor=5, nyquist_factor=100):
             """ Calculate the multi-band Lomb-Scargle periodogram.
@@ -339,53 +374,10 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             period = 1/f_grid
             power = lsp.power(f_grid)
 
-            fap_estimate = calculate_baluev_fap(
+            fap_estimate = self.calculate_baluev_fap(
                 time, len(time), period[np.argmax(power)], np.max(power))
 
-            def generate_lsp_params(lsp_model, fbest, bands):
-                """Generate the Lomb-Scargle parameters.
-
-                    Parameters
-                    ----------
-                    lsp_model : `astropy.timeseries.LombScargleMultiband`
-                        The Lomb-Scargle model.
-                    fbest : `float`
-                        The best period.
-                    bands : `array`
-                        The bands of the time series.
-
-                    Returns
-                    -------
-                    Amp : `array`
-                        The amplitude of the time series.
-                    Ph : `array`
-                        The phase of the time series.
-
-                    References
-                    ----------
-                    .. [1] VanderPlas, J. T., & Ivezic, Z. 2015, ApJ, 812, 18
-                """
-                best_params = lsp_model.model_parameters(fbest, units=True)
-
-                name_params = [f"theta_base_{i}" for i in range(3)]
-                name_params += [f"theta_band_{band}_{i}" for band in np.unique(bands) for i in range(3)]
-
-                df_params = pd.DataFrame([best_params], columns=name_params)
-
-                unique_bands = np.unique(bands)
-
-                Amplitude_band = [np.sqrt(df_params[f"theta_band_{band}_1"]**2
-                                          + df_params[f"theta_band_{band}_2"]**2)
-                                  for band in unique_bands]
-                Phase_bands = [np.arctan2(df_params[f"theta_band_{band}_2"],
-                                          df_params[f"theta_band_{band}_1"]) for band in unique_bands]
-
-                Amp = [a[0] for a in Amplitude_band]
-                Ph = [p[0] for p in Phase_bands]
-
-                return Amp, Ph
-
-            params_table_new = generate_lsp_params(lsp, f_grid[np.argmax(power)], bands)
+            params_table_new = self.generate_lsp_params(lsp, f_grid[np.argmax(power)], bands)
 
             pd_tab = pd.Series({periodCol: period[np.argmax(power)],
                                 powerCol: np.max(power),
@@ -726,8 +718,7 @@ class PercentileDiaPsfFlux(DiaObjectCalculationPlugin):
                 dict((tileName, pTile)
                      for tileName, pTile in zip(pTileNames, pTiles)))
 
-        diaObjects.loc[:, pTileNames] = filterDiaSources.apply(
-            _fluxPercentiles)
+        diaObjects.loc[:, pTileNames] = filterDiaSources.apply(_fluxPercentiles)
 
 
 class SigmaDiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
