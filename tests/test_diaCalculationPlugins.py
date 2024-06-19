@@ -42,7 +42,9 @@ from lsst.meas.base import (
     LinearFitDiaPsfFlux, LinearFitDiaPsfFluxConfig,
     StetsonJDiaPsfFlux, StetsonJDiaPsfFluxConfig,
     WeightedMeanDiaTotFlux, WeightedMeanDiaTotFluxConfig,
-    SigmaDiaTotFlux, SigmaDiaTotFluxConfig)
+    SigmaDiaTotFlux, SigmaDiaTotFluxConfig,
+    LombScarglePeriodogram, LombScarglePeriodogramConfig,
+    LombScarglePeriodogramMulti, LombScarglePeriodogramMultiConfig)
 import lsst.utils.tests
 
 
@@ -385,7 +387,8 @@ class TestWeightedMeanDiaPsfFlux(unittest.TestCase):
                                np.nanmean(fluxes))
         self.assertAlmostEqual(diaObjects.at[objId, "r_psfFluxMeanErr"],
                                np.sqrt(1 / (n_sources - 1)))
-        self.assertEqual(diaObjects.loc[objId, "r_psfFluxNdata"], n_sources - 1)
+        self.assertEqual(
+            diaObjects.loc[objId, "r_psfFluxNdata"], n_sources - 1)
 
 
 class TestPercentileDiaPsfFlux(unittest.TestCase):
@@ -415,7 +418,8 @@ class TestPercentileDiaPsfFlux(unittest.TestCase):
                                       fluxes,
                                       plug.config.percentiles)):
             self.assertAlmostEqual(
-                diaObjects.at[objId, "u_psfFluxPercentile{:02d}".format(pTile)],
+                diaObjects.at[objId,
+                              "u_psfFluxPercentile{:02d}".format(pTile)],
                 testVal)
 
         # Test expected percentile values with a nan value.
@@ -433,7 +437,8 @@ class TestPercentileDiaPsfFlux(unittest.TestCase):
                                       fluxes,
                                       plug.config.percentiles)):
             self.assertAlmostEqual(
-                diaObjects.at[objId, "r_psfFluxPercentile{:02d}".format(pTile)],
+                diaObjects.at[objId,
+                              "r_psfFluxPercentile{:02d}".format(pTile)],
                 testVal)
 
 
@@ -682,7 +687,8 @@ class TestMaxSlopeDiaPsfFlux(unittest.TestCase):
                                   None)
         diaObjects = make_diaObject_table(objId, plug, band='u')
         run_multi_plugin(diaObjects, diaSources, "u", plug)
-        self.assertAlmostEqual(diaObjects.at[objId, "u_psfFluxMaxSlope"], 2 + 2/9)
+        self.assertAlmostEqual(
+            diaObjects.at[objId, "u_psfFluxMaxSlope"], 2 + 2/9)
 
         # Test max slope value returns nan on 1 input.
         diaSources = pd.DataFrame(
@@ -708,7 +714,8 @@ class TestMaxSlopeDiaPsfFlux(unittest.TestCase):
                   "midpointMjdTai": times})
         diaObjects = make_diaObject_table(objId, plug, band='r')
         run_multi_plugin(diaObjects, diaSources, "r", plug)
-        self.assertAlmostEqual(diaObjects.at[objId, "r_psfFluxMaxSlope"], 2 + 2 / 9)
+        self.assertAlmostEqual(
+            diaObjects.at[objId, "r_psfFluxMaxSlope"], 2 + 2 / 9)
 
 
 class TestErrMeanDiaPsfFlux(unittest.TestCase):
@@ -794,7 +801,8 @@ class TestLinearFitDiaPsfFlux(unittest.TestCase):
                   "psfFluxErr": errors,
                   "midpointMjdTai": times})
         run_multi_plugin(diaObjects, diaSources, "r", plug)
-        self.assertAlmostEqual(diaObjects.loc[objId, "r_psfFluxLinearSlope"], 2.)
+        self.assertAlmostEqual(
+            diaObjects.loc[objId, "r_psfFluxLinearSlope"], 2.)
         self.assertAlmostEqual(diaObjects.loc[objId, "r_psfFluxLinearIntercept"],
                                -1.)
 
@@ -902,6 +910,152 @@ class TestWeightedMeanDiaTotFlux(unittest.TestCase):
                                np.nanmean(fluxes))
         self.assertAlmostEqual(diaObjects.at[objId, "r_scienceFluxMeanErr"],
                                np.sqrt(1 / (n_sources - 1)))
+
+
+class TestMultiLombScarglePeriodogram(unittest.TestCase):
+
+    def GeneratePeriodicData(self, n=10, period=10):
+        """Generate periodic data for testing Lomb Scargle Periodogram.
+
+        Parameters
+        ----------
+        n : int
+            Number of data points.
+        period : float
+            Period of the periodic signal.
+
+        Returns
+        -------
+        t : np.ndarray
+            Time values.
+        y_obs : np.ndarray
+            Observed flux values.
+        """
+        np.random.seed(42)
+
+        t = np.random.randint(100, size=n) + 0.3 + 0.4 * np.random.random(n)
+        y = 10 + np.sin(2 * np.pi * t / period)
+        dy = 0.001 + 0.001 * np.random.random(n)
+        y_obs = np.random.normal(y, dy)
+
+        return t, y_obs
+
+    def testCalculate(self):
+        """Test Mulitband Lomb Scargle Periodogram."""
+        n_sources = 10
+        objId = 0
+
+        # Create synthetic multi-band data
+        times, fluxes = self.GeneratePeriodicData(n_sources, period=10)
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = pd.DataFrame(
+            data={"diaObjectId": n_sources * [objId],
+                  "band": n_sources * ["u"],
+                  "diaSourceId": np.arange(n_sources, dtype=int),
+                  "midpointMjdTai": times,
+                  "psfFlux": fluxes,
+                  "psfFluxErr": 1e-3+np.zeros(n_sources)})
+
+        plugin = LombScarglePeriodogramMulti(LombScarglePeriodogramMultiConfig(),
+                                             "ap_lombScarglePeriodogramMulti",
+                                             None)
+
+        run_multi_plugin(diaObjects, diaSources, "u", plugin)
+        self.assertAlmostEqual(diaObjects.at[objId, "multiPeriod"],
+                               9.994515)
+        self.assertAlmostEqual(diaObjects.at[objId, "multiPower"],
+                               0.99982974)
+        self.assertAlmostEqual(diaObjects.at[objId, "multiFap"],
+                               0.0)
+
+        # Test multi-band data with 2 sources.
+        n_sources = 2
+        times, fluxes = self.GeneratePeriodicData(n_sources, period=10)
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = pd.DataFrame(
+            data={"diaObjectId": n_sources * [objId],
+                  "band": n_sources * ["u"],
+                  "diaSourceId": np.arange(n_sources, dtype=int),
+                  "midpointMjdTai": times,
+                  "psfFlux": fluxes,
+                  "psfFluxErr": 1e-3+np.zeros(n_sources)})
+
+        plugin = LombScarglePeriodogramMulti(LombScarglePeriodogramMultiConfig(),
+                                             "ap_lombScarglePeriodogramMulti",
+                                             None)
+
+        run_multi_plugin(diaObjects, diaSources, "u",
+                         plugin)
+        self.assertTrue(np.isnan(diaObjects.at[objId, "multiPeriod"]))
+        self.assertTrue(np.isnan(diaObjects.at[objId, "multiPower"]))
+        self.assertTrue(np.isnan(diaObjects.at[objId, "multiFap"]))
+
+
+class TestLombScarglePeriodogram(unittest.TestCase):
+
+    def GeneratePeriodicData(self, n=10, period=10):
+        """Generate periodic data for testing Lomb Scargle Periodogram.
+
+        Parameters
+        ----------
+        n : int
+            Number of data points.
+        period : float
+            Period of the periodic signal.
+
+        Returns
+        -------
+        t : np.ndarray
+            Time values.
+        y_obs : np.ndarray
+            Observed flux values.
+        """
+        np.random.seed(42)
+
+        t = np.random.randint(100, size=n) + 0.3 + 0.4 * np.random.random(n)
+        y = 10 + np.sin(2 * np.pi * t / period)
+        dy = 0.001 + 0.001 * np.random.random(n)
+        y_obs = np.random.normal(y, dy)
+
+        return t, y_obs
+
+    def testCalculate(self):
+        """Test Lomb Scargle Periodogram."""
+        n_sources = 10
+        objId = 0
+
+        # Test period calculation.
+        times, fluxes = self.GeneratePeriodicData(n_sources, period=10)
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = pd.DataFrame(
+            data={"diaObjectId": n_sources * [objId],
+                  "band": n_sources * ["u"],
+                  "diaSourceId": np.arange(n_sources, dtype=int),
+                  "midpointMjdTai": times,
+                  "psfFlux": fluxes,
+                  "psfFluxErr": 1e-3+np.zeros(n_sources)})
+
+        plugin = LombScarglePeriodogram(LombScarglePeriodogramConfig(),
+                                        "ap_lombScarglePeriodogram",
+                                        None)
+
+        run_multi_plugin(diaObjects, diaSources, "u", plugin)
+        self.assertAlmostEqual(diaObjects.at[objId, "u_period"],
+                               9.994515)
+
+        # Test scatter on scienceFlux takes input nans.
+        fluxes[4] = np.nan
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = pd.DataFrame(
+            data={"diaObjectId": n_sources * [objId],
+                  "band": n_sources * ["r"],
+                  "diaSourceId": np.arange(n_sources, dtype=int),
+                  "midpointMjdTai": times,
+                  "psfFlux": fluxes,
+                  "psfFluxErr": np.ones(n_sources)})
+        run_multi_plugin(diaObjects, diaSources, "r", plugin)
+        self.assertAlmostEqual(diaObjects.at[objId, "r_period"],
+                               9.994515)
 
 
 class TestSigmaDiaTotFlux(unittest.TestCase):
