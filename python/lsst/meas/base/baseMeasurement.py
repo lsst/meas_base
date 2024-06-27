@@ -201,9 +201,17 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
         if self._ignoreSlotPluginChecks:
             return
         if self.slots.centroid is not None and self.slots.centroid not in self.plugins.names:
-            raise ValueError("source centroid slot algorithm is not being run.")
+            raise lsst.pex.config.FieldValidationError(
+                self.__class__.slots,
+                self,
+                "source centroid slot algorithm is not being run."
+            )
         if self.slots.shape is not None and self.slots.shape not in self.plugins.names:
-            raise ValueError("source shape slot algorithm '%s' is not being run." % self.slots.shape)
+            raise lsst.pex.config.FieldValidationError(
+                self.__class__.slots,
+                self,
+                "source shape slot algorithm '%s' is not being run." % self.slots.shape
+            )
         for slot in (self.slots.psfFlux, self.slots.apFlux, self.slots.modelFlux,
                      self.slots.gaussianFlux, self.slots.calibFlux):
             if slot is not None:
@@ -211,7 +219,12 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
                     if len(name) <= len(slot) and name == slot[:len(name)]:
                         break
                 else:
-                    raise ValueError("source instFlux slot algorithm '%s' is not being run." % slot)
+                    raise lsst.pex.config.FieldValidationError(
+                        self.__class__.slots,
+                        self,
+                        f"Source instFlux algorithm '{slot}' is not being run, required from "
+                        f"non-None slots in: {self.slots}."
+                    )
 
 
 class BaseMeasurementTask(lsst.pipe.base.Task):
