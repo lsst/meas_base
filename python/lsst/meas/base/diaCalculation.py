@@ -448,6 +448,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                                 "DiaObjectId={updatedDiaObjectId} has no "
                                 "DiaSources for filter=%s. "
                                 "Continuing...", band)
+                            continue
                         with CCContext(plug, updatedDiaObjectId, self.log):
                             # We feed the catalog we need to update and the id
                             # so as to get a few into the catalog and not a copy.
