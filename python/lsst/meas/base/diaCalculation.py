@@ -449,10 +449,12 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
         else:
             filterDiaSourcesGB = None
 
+        log_band = "band " + band if band else "no band"
         for runlevel in sorted(self.executionDict):
             for plug in self.executionDict[runlevel].single:
                 if plug.needsFilter ^ bool(band):
                     continue
+                self.log.verbose("Running plugin %s on %s.", plug.name, log_band)
 
                 for updatedDiaObjectId in updatedDiaObjectIds:
                     # Sub-select diaSources associated with this diaObject.
@@ -482,6 +484,7 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
             for plug in self.executionDict[runlevel].multi:
                 if plug.needsFilter ^ bool(band):
                     continue
+                self.log.verbose("Running plugin %s on %s.", plug.name, log_band)
                 with CCContext(plug, diaObjectsToUpdate, self.log):
                     plug.calculate(diaObjects=diaObjectsToUpdate,
                                    diaSources=diaSourcesGB,
