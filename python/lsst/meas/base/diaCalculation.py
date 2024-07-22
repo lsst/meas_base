@@ -284,8 +284,8 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
 
         Run method both updates the values in the diaObjectCat and appends
         newly created DiaObjects to the catalog. For catalog column names
-        see the lsst.cat schema definitions for the DiaObject and DiaSource
-        tables (http://github.com/lsst/cat).
+        see the SDM schema definitions for the DiaObject and DiaSource
+        tables (http://github.com/lsst/sdm_schemas/).
 
         Parameters
         ----------
@@ -350,8 +350,8 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                     filterNames):
         """Run each of the plugins on the catalog.
 
-        For catalog column names see the lsst.cat schema definitions for the
-        DiaObject and DiaSource tables (http://github.com/lsst/cat).
+        For catalog column names see the SDM schema definitions for the
+        DiaObject and DiaSource tables (http://github.com/lsst/sdm_schemas/).
 
         Parameters
         ----------
