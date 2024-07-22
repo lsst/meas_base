@@ -291,11 +291,11 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
         ----------
         diaObjectCat : `pandas.DataFrame`
             DiaObjects to update values of and append new objects to. DataFrame
-            should be indexed on "diaObjectId"
+            should be indexed on "diaObjectId".
         diaSourceCat : `pandas.DataFrame`
             DiaSources associated with the DiaObjects in diaObjectCat.
             DataFrame should be indexed on
-            `["diaObjectId", "band", "diaSourceId"]`
+            ["diaObjectId", "band", "diaSourceId"].
         updatedDiaObjectIds : `numpy.ndarray`
             Integer ids of the DiaObjects to update and create.
         filterNames : `list` of `str`
@@ -357,11 +357,11 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
         ----------
         diaObjectCat : `pandas.DataFrame`
             DiaObjects to update values of and append new objects to. DataFrame
-            should be indexed on "diaObjectId"
+            should be indexed on "diaObjectId".
         diaSourceCat : `pandas.DataFrame`
             DiaSources associated with the DiaObjects in diaObjectCat.
             DataFrame must be indexed on
-            ["diaObjectId", "band", "diaSourceId"]`
+            ["diaObjectId", "band", "diaSourceId"].
         updatedDiaObjectIds : `numpy.ndarray`
             Integer ids of the DiaObjects to update and create.
         filterNames : `list` of `str`
