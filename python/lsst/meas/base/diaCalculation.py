@@ -284,18 +284,18 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
 
         Run method both updates the values in the diaObjectCat and appends
         newly created DiaObjects to the catalog. For catalog column names
-        see the lsst.cat schema definitions for the DiaObject and DiaSource
-        tables (http://github.com/lsst/cat).
+        see the SDM schema definitions for the DiaObject and DiaSource
+        tables (http://github.com/lsst/sdm_schemas/).
 
         Parameters
         ----------
         diaObjectCat : `pandas.DataFrame`
             DiaObjects to update values of and append new objects to. DataFrame
-            should be indexed on "diaObjectId"
+            should be indexed on "diaObjectId".
         diaSourceCat : `pandas.DataFrame`
             DiaSources associated with the DiaObjects in diaObjectCat.
             DataFrame should be indexed on
-            `["diaObjectId", "band", "diaSourceId"]`
+            ["diaObjectId", "band", "diaSourceId"].
         updatedDiaObjectIds : `numpy.ndarray`
             Integer ids of the DiaObjects to update and create.
         filterNames : `list` of `str`
@@ -350,18 +350,18 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
                     filterNames):
         """Run each of the plugins on the catalog.
 
-        For catalog column names see the lsst.cat schema definitions for the
-        DiaObject and DiaSource tables (http://github.com/lsst/cat).
+        For catalog column names see the SDM schema definitions for the
+        DiaObject and DiaSource tables (http://github.com/lsst/sdm_schemas/).
 
         Parameters
         ----------
         diaObjectCat : `pandas.DataFrame`
             DiaObjects to update values of and append new objects to. DataFrame
-            should be indexed on "diaObjectId"
+            should be indexed on "diaObjectId".
         diaSourceCat : `pandas.DataFrame`
             DiaSources associated with the DiaObjects in diaObjectCat.
             DataFrame must be indexed on
-            ["diaObjectId", "band", "diaSourceId"]`
+            ["diaObjectId", "band", "diaSourceId"].
         updatedDiaObjectIds : `numpy.ndarray`
             Integer ids of the DiaObjects to update and create.
         filterNames : `list` of `str`
@@ -391,80 +391,17 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
 
         updatingDiaSources = diaSourceCat.loc[updatedDiaObjectIds, :]
         diaSourcesGB = updatingDiaSources.groupby(level=0)
-        for runlevel in sorted(self.executionDict):
-            for plug in self.executionDict[runlevel].single:
-                if plug.needsFilter:
-                    continue
-                for updatedDiaObjectId in updatedDiaObjectIds:
-
-                    # Sub-select diaSources associated with this diaObject.
-                    objDiaSources = updatingDiaSources.loc[updatedDiaObjectId]
-
-                    # Sub-select on diaSources observed in the current filter.
-                    with CCContext(plug, updatedDiaObjectId, self.log):
-                        # We feed the catalog we need to update and the id
-                        # so as to get a few into the catalog and not a copy.
-                        # This updates the values in the catalog.
-                        plug.calculate(diaObjects=diaObjectsToUpdate,
-                                       diaObjectId=updatedDiaObjectId,
-                                       diaSources=objDiaSources,
-                                       filterDiaSources=None,
-                                       band=None)
-            for plug in self.executionDict[runlevel].multi:
-                if plug.needsFilter:
-                    continue
-                with CCContext(plug, diaObjectsToUpdate, self.log):
-                    plug.calculate(diaObjects=diaObjectsToUpdate,
-                                   diaSources=diaSourcesGB,
-                                   filterDiaSources=None,
-                                   band=None)
-
+        self._run_all_plugins(updatedDiaObjectIds,
+                              diaObjectsToUpdate,
+                              updatingDiaSources,
+                              diaSourcesGB,
+                              None)
         for band in filterNames:
-            try:
-                updatingFilterDiaSources = updatingDiaSources.loc[
-                    (slice(None), band), :
-                ]
-            except KeyError:
-                self.log.warning("No DiaSource data with fitler=%s. "
-                                 "Continuing...", band)
-                continue
-            # Level=0 here groups by diaObjectId.
-            filterDiaSourcesGB = updatingFilterDiaSources.groupby(level=0)
-
-            for runlevel in sorted(self.executionDict):
-                for plug in self.executionDict[runlevel].single:
-                    if not plug.needsFilter:
-                        continue
-                    for updatedDiaObjectId in updatedDiaObjectIds:
-
-                        # Sub-select diaSources associated with this diaObject.
-                        objDiaSources = updatingDiaSources.loc[updatedDiaObjectId]
-
-                        # Sub-select on diaSources observed in the current filter.
-                        try:
-                            filterObjDiaSources = objDiaSources.loc[band]
-                        except KeyError:
-                            self.log.warning(
-                                "DiaObjectId={updatedDiaObjectId} has no "
-                                "DiaSources for filter=%s. "
-                                "Continuing...", band)
-                        with CCContext(plug, updatedDiaObjectId, self.log):
-                            # We feed the catalog we need to update and the id
-                            # so as to get a few into the catalog and not a copy.
-                            # This updates the values in the catalog.
-                            plug.calculate(diaObjects=diaObjectsToUpdate,
-                                           diaObjectId=updatedDiaObjectId,
-                                           diaSources=objDiaSources,
-                                           filterDiaSources=filterObjDiaSources,
-                                           band=band)
-                for plug in self.executionDict[runlevel].multi:
-                    if not plug.needsFilter:
-                        continue
-                    with CCContext(plug, diaObjectsToUpdate, self.log):
-                        plug.calculate(diaObjects=diaObjectsToUpdate,
-                                       diaSources=diaSourcesGB,
-                                       filterDiaSources=filterDiaSourcesGB,
-                                       band=band)
+            self._run_all_plugins(updatedDiaObjectIds,
+                                  diaObjectsToUpdate,
+                                  updatingDiaSources,
+                                  diaSourcesGB,
+                                  band)
         # Need to store the newly updated diaObjects directly as the editing
         # a view into diaObjectsToUpdate does not update the values of
         # diaObjectCat.
@@ -472,6 +409,87 @@ class DiaObjectCalculationTask(CatalogCalculationTask):
         return lsst.pipe.base.Struct(
             diaObjectCat=diaObjectCat,
             updatedDiaObjects=diaObjectsToUpdate)
+
+    def _run_all_plugins(self,
+                         updatedDiaObjectIds,
+                         diaObjectsToUpdate,
+                         updatingDiaSources,
+                         diaSourcesGB,
+                         band):
+        """Run each of the plugins on specific data and band.
+
+        All catalogs are modified in-place.
+
+        Parameters
+        ----------
+        updatedDiaObjectIds : `numpy.ndarray`
+            Integer ids of the DiaObjects to update and create.
+        diaObjectsToUpdate : indexer for a `pandas.DataFrame`
+            A modifiable subset of DiaObjects to update values of and append
+            new objects to. Should be indexed on "diaObjectId".
+        updatingDiaSources : indexer for a `pandas.DataFrame`
+            A modifiable subset of DiaSources associated with the DiaObjects in
+            diaObjectCat. Must be indexed on ["diaObjectId", "band", "diaSourceId"].
+        diaSourcesGB :
+            A copy of ``updatingDiaSources`` grouped by diaObjectId.
+        band : `str` or `None`
+            The filter to process, or `None` to run filter-agnostic plugins.
+        """
+        if band:
+            try:
+                updatingFilterDiaSources = updatingDiaSources.loc[
+                    (slice(None), band), :
+                ]
+            except KeyError:
+                self.log.warning("No DiaSource data with fitler=%s. "
+                                 "Continuing...", band)
+                return
+            # Level=0 here groups by diaObjectId.
+            filterDiaSourcesGB = updatingFilterDiaSources.groupby(level=0)
+        else:
+            filterDiaSourcesGB = None
+
+        log_band = "band " + band if band else "no band"
+        for runlevel in sorted(self.executionDict):
+            for plug in self.executionDict[runlevel].single:
+                if plug.needsFilter ^ bool(band):
+                    continue
+                self.log.verbose("Running plugin %s on %s.", plug.name, log_band)
+
+                for updatedDiaObjectId in updatedDiaObjectIds:
+                    # Sub-select diaSources associated with this diaObject.
+                    objDiaSources = updatingDiaSources.loc[updatedDiaObjectId]
+
+                    # Sub-select on diaSources observed in the current filter.
+                    if band:
+                        try:
+                            filterObjDiaSources = objDiaSources.loc[band]
+                        except KeyError:
+                            self.log.warning(
+                                "DiaObjectId={updatedDiaObjectId} has no "
+                                "DiaSources for filter=%s. "
+                                "Continuing...", band)
+                            continue
+                    else:
+                        filterObjDiaSources = None
+                    with CCContext(plug, updatedDiaObjectId, self.log):
+                        # We feed the catalog we need to update and the id
+                        # so as to get a few into the catalog and not a copy.
+                        # This updates the values in the catalog.
+                        plug.calculate(diaObjects=diaObjectsToUpdate,
+                                       diaObjectId=updatedDiaObjectId,
+                                       diaSources=objDiaSources,
+                                       filterDiaSources=filterObjDiaSources,
+                                       band=band)
+            for plug in self.executionDict[runlevel].multi:
+                if plug.needsFilter ^ bool(band):
+                    continue
+                self.log.verbose("Running plugin %s on %s.", plug.name, log_band)
+                with CCContext(plug, diaObjectsToUpdate, self.log):
+                    plug.calculate(diaObjects=diaObjectsToUpdate,
+                                   diaSources=diaSourcesGB,
+                                   filterDiaSources=filterDiaSourcesGB,
+                                   band=band)
 
     def _initialize_dia_object(self, objId):
         """Create a new DiaObject with values required to be initialized by the
