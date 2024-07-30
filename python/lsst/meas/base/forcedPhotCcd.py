@@ -50,7 +50,7 @@ __all__ = ("ForcedPhotCcdConfig", "ForcedPhotCcdTask",
 class ForcedPhotCcdConnections(PipelineTaskConnections,
                                dimensions=("instrument", "visit", "detector", "skymap", "tract"),
                                defaultTemplates={"inputCoaddName": "deep",
-                                                 "inputName": "calexp"}):
+                                                 "inputName": "initial_pvi"}):
     inputSchema = cT.InitInput(
         doc="Schema for the input measurement catalogs.",
         name="{inputCoaddName}Coadd_ref_schema",
@@ -82,7 +82,7 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
         dimensions=["skymap"],
     )
     skyCorr = cT.Input(
-        doc="Input Sky Correction to be subtracted from the calexp if doApplySkyCorr=True",
+        doc="Input Sky Correction to be subtracted from the exposure if doApplySkyCorr=True",
         name="skyCorr",
         storageClass="Background",
         dimensions=("instrument", "visit", "detector"),
@@ -445,7 +445,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
 class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
                                             dimensions=("instrument", "visit", "detector", "skymap", "tract"),
                                             defaultTemplates={"inputCoaddName": "goodSeeing",
-                                                              "inputName": "calexp",
+                                                              "inputName": "initial_pvi",
                                                               }):
     refCat = cT.Input(
         doc="Catalog of positions at which to force photometry.",
@@ -462,7 +462,7 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
         dimensions=["instrument", "visit", "detector"],
     )
     skyCorr = cT.Input(
-        doc="Input Sky Correction to be subtracted from the calexp if doApplySkyCorr=True",
+        doc="Input Sky Correction to be subtracted from the exposure if doApplySkyCorr=True",
         name="skyCorr",
         storageClass="Background",
         dimensions=("instrument", "visit", "detector"),
