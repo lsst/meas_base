@@ -31,7 +31,7 @@ namespace lsst {
 namespace meas {
 namespace base {
 
-using utils::python::WrapperCollection;
+using cpputils::python::WrapperCollection;
 
 void wrapFluxUtilities(WrapperCollection&);
 void wrapAlgorithm(WrapperCollection&);

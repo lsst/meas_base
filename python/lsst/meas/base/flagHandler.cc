@@ -61,7 +61,7 @@ void declareFlagDefinitionList(lsst::cpputils::python::WrapperCollection &wrappe
 
         cls.def("__getitem__", [](FlagDefinitionList const &self, int i) {
             try {
-                auto cind = utils::python::cppIndex(self.size(), i);
+                auto cind = cpputils::python::cppIndex(self.size(), i);
                 return self[cind];
             } catch (pex::exceptions::OutOfRangeError &err) {
                 // Python needs exception to be IndexError to generate __iter__; see DM-9715
