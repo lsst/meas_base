@@ -133,6 +133,7 @@ class CCContext:
         A logger. Generally, this should be the logger of the object in which
         the context manager is being used.
     """
+
     def __init__(self, plugin, cat, log):
         self.plugin = plugin
         self.cat = cat
