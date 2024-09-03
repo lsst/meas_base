@@ -145,7 +145,7 @@ class CCContext:
         if exc_type is None:
             return True
         if exc_type in FATAL_EXCEPTIONS:
-            raise exc_value
+            return False
         elif exc_type is MeasurementError:
             self.plugin.fail(self.cat, exc_value)
         elif issubclass(exc_type, Exception):
