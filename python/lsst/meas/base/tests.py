@@ -27,6 +27,7 @@ import lsst.geom
 import lsst.afw.table
 import lsst.afw.image
 import lsst.afw.detection
+import lsst.afw.cameraGeom.testUtils
 import lsst.afw.geom
 import lsst.afw.coord
 import lsst.daf.base
@@ -324,7 +325,7 @@ class TestDataset:
 
     @staticmethod
     def makeEmptyExposure(bbox, wcs=None, crval=None, cdelt=None, psfSigma=2.0, psfDim=17, calibration=4,
-                          visitId=1234, mjd=60000.0):
+                          visitId=1234, mjd=60000.0, detector=1):
         """Create an Exposure, with a PhotoCalib, Wcs, and Psf, but no pixel values.
 
         Parameters
@@ -349,6 +350,8 @@ class TestDataset:
             Visit id to store in VisitInfo.
         mjd : `float`, optional
             Modified Julian Date of this exposure to store in VisitInfo.
+        detector: `int`, optional
+            Detector id to assign to the attached Detector object.
 
         Returns
         -------
@@ -377,6 +380,7 @@ class TestDataset:
         exposure.setPsf(psf)
         exposure.setPhotoCalib(photoCalib)
         exposure.info.setVisitInfo(visitInfo)
+        exposure.info.setDetector(lsst.afw.cameraGeom.testUtils.DetectorWrapper(id=detector).detector)
         return exposure
 
     @staticmethod
