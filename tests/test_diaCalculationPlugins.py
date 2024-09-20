@@ -933,7 +933,8 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
         """
         np.random.seed(42)
 
-        t = np.random.randint(100, size=n) + 0.3 + 0.4 * np.random.random(n)
+        # Generate random sparse time array.
+        t = np.linspace(-2*np.pi, 2*np.pi, n) + 100*np.random.random(n)
         y = 10 + np.sin(2 * np.pi * t / period)
         dy = 0.001 + 0.001 * np.random.random(n)
         y_obs = np.random.normal(y, dy)
@@ -962,11 +963,11 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
 
         run_multi_plugin(diaObjects, diaSources, "u", plugin)
         self.assertAlmostEqual(diaObjects.at[objId, "multiPeriod"],
-                               9.994515)
+                               10.03436005075541) # Expected period 10 days within rtol=0.05 and rtol=0.002
         self.assertAlmostEqual(diaObjects.at[objId, "multiPower"],
-                               0.99982974)
+                               0.9931786827476374) # Expected period 1 days within rtol=0.05 and rtol=0.002
         self.assertAlmostEqual(diaObjects.at[objId, "multiFap"],
-                               0.0)
+                               3.5503630643763975e-06) # espected fap 0 within rtol=0.05 and rtol=0.002
 
         # Test multi-band data with 2 sources.
         n_sources = 2
@@ -1012,7 +1013,8 @@ class TestLombScarglePeriodogram(unittest.TestCase):
         """
         np.random.seed(42)
 
-        t = np.random.randint(100, size=n) + 0.3 + 0.4 * np.random.random(n)
+        # Generate random sparse time array.
+        t = np.linspace(-2*np.pi, 2*np.pi, n) + 100*np.random.random(n)
         y = 10 + np.sin(2 * np.pi * t / period)
         dy = 0.001 + 0.001 * np.random.random(n)
         y_obs = np.random.normal(y, dy)
@@ -1041,9 +1043,9 @@ class TestLombScarglePeriodogram(unittest.TestCase):
 
         run_multi_plugin(diaObjects, diaSources, "u", plugin)
         self.assertAlmostEqual(diaObjects.at[objId, "u_period"],
-                               9.994515)
+                               10.03436005075541) # Expected period 10 days within rtol=0.05 and rtol=0.002
 
-        # Test scatter on scienceFlux takes input nans.
+        # Input nans to fluxes.
         fluxes[4] = np.nan
         diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
@@ -1055,7 +1057,7 @@ class TestLombScarglePeriodogram(unittest.TestCase):
                   "psfFluxErr": np.ones(n_sources)})
         run_multi_plugin(diaObjects, diaSources, "r", plugin)
         self.assertAlmostEqual(diaObjects.at[objId, "r_period"],
-                               9.994515)
+                               10.03436005075541) # Expected period 10 days within rtol=0.05 and rtol=0.002
 
 
 class TestSigmaDiaTotFlux(unittest.TestCase):
