@@ -962,12 +962,15 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
                                              None)
 
         run_multi_plugin(diaObjects, diaSources, "u", plugin)
+        # Period 10 days within rtol=0.05 atol=0.002
         self.assertAlmostEqual(diaObjects.at[objId, "multiPeriod"],
-                               10.03436005075541) # Expected period 10 days within rtol=0.05 and rtol=0.002
+                               10.03436005075541)
+        # Period 1 days within rtol=0.05 atol=0.002
         self.assertAlmostEqual(diaObjects.at[objId, "multiPower"],
-                               0.9931786827476374) # Expected period 1 days within rtol=0.05 and rtol=0.002
+                               0.9931786827476374)
+        # Fap 0 within rtol=0.05 atol=0.002
         self.assertAlmostEqual(diaObjects.at[objId, "multiFap"],
-                               3.5503630643763975e-06) # espected fap 0 within rtol=0.05 and rtol=0.002
+                               3.5503630643763975e-06)
 
         # Test multi-band data with 2 sources.
         n_sources = 2
@@ -1042,8 +1045,9 @@ class TestLombScarglePeriodogram(unittest.TestCase):
                                         None)
 
         run_multi_plugin(diaObjects, diaSources, "u", plugin)
+        # Period 10 days within rtol=0.05 atol=0.002
         self.assertAlmostEqual(diaObjects.at[objId, "u_period"],
-                               10.03436005075541) # Expected period 10 days within rtol=0.05 and rtol=0.002
+                               10.03436005075541)
 
         # Input nans to fluxes.
         fluxes[4] = np.nan
@@ -1056,8 +1060,9 @@ class TestLombScarglePeriodogram(unittest.TestCase):
                   "psfFlux": fluxes,
                   "psfFluxErr": np.ones(n_sources)})
         run_multi_plugin(diaObjects, diaSources, "r", plugin)
+        # Period 10 days within rtol=0.05 and atol=0.002
         self.assertAlmostEqual(diaObjects.at[objId, "r_period"],
-                               10.03436005075541) # Expected period 10 days within rtol=0.05 and rtol=0.002
+                               10.03436005075541)
 
 
 class TestSigmaDiaTotFlux(unittest.TestCase):
