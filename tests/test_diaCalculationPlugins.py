@@ -972,24 +972,28 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
         self.assertAlmostEqual(diaObjects.at[objId, "multiFap"],
                                3.5503630643763975e-06)
 
-        # Test multi-band data with 2 sources.
+    def testCalculateTwoSources(self):
+        """Test Mulitband Lomb Scargle Periodogram with 2 sources
+        that will result in NaN output."""
+
+        objId = 0
         n_sources = 2
         times, fluxes = self.GeneratePeriodicData(n_sources, period=10)
         diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
-                  "band": n_sources * ["u"],
-                  "diaSourceId": np.arange(n_sources, dtype=int),
-                  "midpointMjdTai": times,
-                  "psfFlux": fluxes,
-                  "psfFluxErr": 1e-3+np.zeros(n_sources)})
+                "band": n_sources * ["u"],
+                "diaSourceId": np.arange(n_sources, dtype=int),
+                "midpointMjdTai": times,
+                "psfFlux": fluxes,
+                "psfFluxErr": 1e-3+np.zeros(n_sources)})
 
         plugin = LombScarglePeriodogramMulti(LombScarglePeriodogramMultiConfig(),
-                                             "ap_lombScarglePeriodogramMulti",
-                                             None)
+                                            "ap_lombScarglePeriodogramMulti",
+                                            None)
 
         run_multi_plugin(diaObjects, diaSources, "u",
-                         plugin)
+                        plugin)
         self.assertTrue(np.isnan(diaObjects.at[objId, "multiPeriod"]))
         self.assertTrue(np.isnan(diaObjects.at[objId, "multiPower"]))
         self.assertTrue(np.isnan(diaObjects.at[objId, "multiFap"]))
