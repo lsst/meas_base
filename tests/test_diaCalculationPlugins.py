@@ -981,7 +981,7 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
         times, fluxes = self.GeneratePeriodicData(n_sources, period=10)
         diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
-            data={"diaObjectId": n_sources * [objId],
+                data={"diaObjectId": n_sources * [objId],
                 "band": n_sources * ["u"],
                 "diaSourceId": np.arange(n_sources, dtype=int),
                 "midpointMjdTai": times,
