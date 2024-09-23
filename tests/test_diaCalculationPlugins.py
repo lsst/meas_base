@@ -982,15 +982,15 @@ class TestMultiLombScarglePeriodogram(unittest.TestCase):
         diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
-            "band": n_sources * ["u"],
-            "diaSourceId": np.arange(n_sources, dtype=int),
-            "midpointMjdTai": times,
-            "psfFlux": fluxes,
-            "psfFluxErr": 1e-3+np.zeros(n_sources)})
+                  "band": n_sources * ["u"],
+                  "diaSourceId": np.arange(n_sources, dtype=int),
+                  "midpointMjdTai": times,
+                  "psfFlux": fluxes,
+                  "psfFluxErr": 1e-3+np.zeros(n_sources)})
 
         plugin = LombScarglePeriodogramMulti(LombScarglePeriodogramMultiConfig(),
-                                            "ap_lombScarglePeriodogramMulti",
-                                            None)
+                                             "ap_lombScarglePeriodogramMulti",
+                                             None)
 
         run_multi_plugin(diaObjects, diaSources, "u", plugin)
         self.assertTrue(np.isnan(diaObjects.at[objId, "multiPeriod"]))
