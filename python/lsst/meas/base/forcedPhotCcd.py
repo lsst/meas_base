@@ -54,7 +54,7 @@ __all__ = (
 class ForcedPhotCcdConnections(
     PipelineTaskConnections,
     dimensions=("instrument", "visit", "detector", "skymap", "tract"),
-    defaultTemplates={"inputCoaddName": "deep", "inputName": "initial_pvi"},
+    defaultTemplates={"inputCoaddName": "deep", "inputName": "pvi"},
 ):
     inputSchema = cT.InitInput(
         doc="Schema for the input measurement catalogs.",
@@ -140,7 +140,7 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig, pipelineConnections=Force
     )
     useVisitSummary = lsst.pex.config.Field(
         dtype=bool,
-        default=True,
+        default=False,
         doc=(
             "Use updated WCS, PhotoCalib, ApCorr, and PSF from visit summary? "
             "This should be False if and only if the input image already has the best-available calibration "
@@ -465,7 +465,7 @@ class ForcedPhotCcdFromDataFrameConnections(
     dimensions=("instrument", "visit", "detector", "skymap", "tract"),
     defaultTemplates={
         "inputCoaddName": "goodSeeing",
-        "inputName": "initial_pvi",
+        "inputName": "pvi",
     },
 ):
     refCat = cT.Input(
