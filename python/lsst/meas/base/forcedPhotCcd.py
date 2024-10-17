@@ -103,7 +103,9 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
     def __init__(self, *, config=None):
         super().__init__(config=config)
         if not config.doApplySkyCorr:
-            self.inputs.remove("skyCorr")
+            del self.skyCorr
+        if not config.useVisitSummary:
+            del self.visitSummary
 
 
 class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
@@ -135,6 +137,15 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
         dtype=bool,
         default=False,
         doc="Apply sky correction?",
+    )
+    useVisitSummary = lsst.pex.config.Field(
+        dtype=bool,
+        default=True,
+        doc=(
+            "Use updated WCS, PhotoCalib, ApCorr, and PSF from visit summary? "
+            "This should be False if and only if the input image already has the best-available calibration "
+            "objects attached."
+        ),
     )
     includePhotoCalibVar = lsst.pex.config.Field(
         dtype=bool,
@@ -175,9 +186,6 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
                                           "base_LocalWcs",
                                           ]
         self.measurement.slots.shape = None
-        # Keep track of which footprints contain streaks
-        self.measurement.plugins['base_PixelFlags'].masksFpAnywhere = ['STREAK']
-        self.measurement.plugins['base_PixelFlags'].masksFpCenter = ['STREAK']
         # Make catalogCalculation a no-op by default as no modelFlux is setup
         # by default in ForcedMeasurementTask.
         self.catalogCalculation.plugins.names = []
@@ -234,7 +242,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         inputs['exposure'] = self.prepareCalibratedExposure(
             inputs['exposure'],
             skyCorr=skyCorr,
-            visitSummary=inputs.pop("visitSummary"),
+            visitSummary=inputs.pop("visitSummary", None),
         )
 
         inputs['refCat'] = self.mergeAndFilterReferences(inputs['exposure'], inputs['refCat'],
@@ -494,7 +502,9 @@ class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
     def __init__(self, *, config=None):
         super().__init__(config=config)
         if not config.doApplySkyCorr:
-            self.inputs.remove("skyCorr")
+            del self.skyCorr
+        if not config.useVisitSummary:
+            del self.visitSummary
 
 
 class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
@@ -513,9 +523,6 @@ class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
                                           "base_LocalWcs",
                                           ]
         self.measurement.slots.shape = None
-        # Keep track of which footprints contain streaks
-        self.measurement.plugins['base_PixelFlags'].masksFpAnywhere = ['STREAK']
-        self.measurement.plugins['base_PixelFlags'].masksFpCenter = ['STREAK']
         # Make catalogCalculation a no-op by default as no modelFlux is setup
         # by default in ForcedMeasurementTask.
         self.catalogCalculation.plugins.names = []
@@ -566,7 +573,7 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
         inputs['exposure'] = self.prepareCalibratedExposure(
             inputs['exposure'],
             skyCorr=skyCorr,
-            visitSummary=inputs.pop("visitSummary"),
+            visitSummary=inputs.pop("visitSummary", None),
         )
 
         self.log.info("Filtering ref cats: %s", ','.join([str(i.dataId) for i in inputs['refCat']]))
