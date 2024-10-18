@@ -175,9 +175,6 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
                                           "base_LocalWcs",
                                           ]
         self.measurement.slots.shape = None
-        # Keep track of which footprints contain streaks
-        self.measurement.plugins['base_PixelFlags'].masksFpAnywhere = ['STREAK']
-        self.measurement.plugins['base_PixelFlags'].masksFpCenter = ['STREAK']
         # Make catalogCalculation a no-op by default as no modelFlux is setup
         # by default in ForcedMeasurementTask.
         self.catalogCalculation.plugins.names = []
@@ -513,9 +510,6 @@ class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
                                           "base_LocalWcs",
                                           ]
         self.measurement.slots.shape = None
-        # Keep track of which footprints contain streaks
-        self.measurement.plugins['base_PixelFlags'].masksFpAnywhere = ['STREAK']
-        self.measurement.plugins['base_PixelFlags'].masksFpCenter = ['STREAK']
         # Make catalogCalculation a no-op by default as no modelFlux is setup
         # by default in ForcedMeasurementTask.
         self.catalogCalculation.plugins.names = []
