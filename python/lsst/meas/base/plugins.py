@@ -26,6 +26,7 @@ which have trivial implementations. It also wraps measurement algorithms
 defined in C++ to expose them to the measurement framework.
 """
 
+import logging
 import numpy as np
 
 import lsst.pex.exceptions
@@ -118,6 +119,8 @@ wrapTransform(SdssShapeTransform)
 wrapTransform(ScaledApertureFluxTransform)
 wrapTransform(ApertureFluxTransform)
 wrapTransform(LocalBackgroundTransform)
+
+log = logging.getLogger(__name__)
 
 
 class SingleFrameFPPositionConfig(SingleFramePluginConfig):
@@ -439,12 +442,20 @@ class EvaluateLocalPhotoCalibPlugin(GenericPlugin):
                 "calibration factor at the location of the src.")
 
     def measure(self, measRecord, exposure, center):
-
         photoCalib = exposure.getPhotoCalib()
-        calib = photoCalib.getLocalCalibration(center)
+        if photoCalib is None:
+            log.debug(
+                "%s: photoCalib is None.  Setting localPhotoCalib to NaN for record %d",
+                self.name,
+                measRecord.getId(),
+            )
+            calib = np.nan
+            calibErr = np.nan
+            measRecord.set(self._failKey, True)
+        else:
+            calib = photoCalib.getLocalCalibration(center)
+            calibErr = photoCalib.getCalibrationErr()
         measRecord.set(self.photoKey, calib)
-
-        calibErr = photoCalib.getCalibrationErr()
         measRecord.set(self.photoErrKey, calibErr)
 
 
@@ -502,7 +513,16 @@ class EvaluateLocalWcsPlugin(GenericPlugin):
 
     def measure(self, measRecord, exposure, center):
         wcs = exposure.getWcs()
-        localMatrix = self.makeLocalTransformMatrix(wcs, center)
+        if wcs is None:
+            log.debug(
+                "%s: WCS is None.  Setting localWcs matrix values to NaN for record %d",
+                self.name,
+                measRecord.getId(),
+            )
+            localMatrix = np.array([[np.nan, np.nan], [np.nan, np.nan]])
+            measRecord.set(self._failKey, True)
+        else:
+            localMatrix = self.makeLocalTransformMatrix(wcs, center)
         measRecord.set(self.cdMatrix11Key, localMatrix[0, 0])
         measRecord.set(self.cdMatrix12Key, localMatrix[0, 1])
         measRecord.set(self.cdMatrix21Key, localMatrix[1, 0])
