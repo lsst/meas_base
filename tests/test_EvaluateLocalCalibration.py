@@ -19,6 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import numpy as np
 import unittest
 
@@ -31,6 +32,7 @@ class TestLocalPhotoCalibration(lsst.meas.base.tests.AlgorithmTestCase,
                                 lsst.utils.tests.TestCase):
 
     def setUp(self):
+        self.pluginName = "base_LocalPhotoCalib"
         self.center = lsst.geom.Point2D(50.1, 49.8)
         self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30),
                                     lsst.geom.Extent2I(140, 160))
@@ -43,21 +45,34 @@ class TestLocalPhotoCalibration(lsst.meas.base.tests.AlgorithmTestCase,
         del self.dataset
 
     def testPhotoCalib(self):
-        task = self.makeSingleFrameMeasurementTask("base_LocalPhotoCalib")
+        task = self.makeSingleFrameMeasurementTask(self.pluginName)
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
         task.run(catalog, exposure)
         record = catalog[0]
 
         calib = exposure.getPhotoCalib().getLocalCalibration(self.center)
         calibErr = exposure.getPhotoCalib().getCalibrationErr()
-        self.assertEqual(record.get("base_LocalPhotoCalib"), calib)
-        self.assertEqual(record.get("base_LocalPhotoCalibErr"), calibErr)
+        self.assertEqual(record.get(self.pluginName), calib)
+        self.assertEqual(record.get(self.pluginName + "Err"), calibErr)
+
+    def testPhotoCalibIsNone(self):
+        with self.assertNoLogs(level=logging.WARNING) and self.assertLogs(level=logging.DEBUG):
+            task = self.makeSingleFrameMeasurementTask(self.pluginName)
+            exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
+            exposure.setPhotoCalib(None)
+            task.run(catalog, exposure)
+            record = catalog[0]
+
+            self.assertTrue(np.isnan(record.get(self.pluginName)))
+            self.assertTrue(np.isnan(record.get(self.pluginName + "Err")))
+            self.assertTrue(record.get(self.pluginName + "_flag"))
 
 
 class TestLocalWcs(lsst.meas.base.tests.AlgorithmTestCase,
                    lsst.utils.tests.TestCase):
 
     def setUp(self):
+        self.pluginName = "base_LocalWcs"
         self.center = lsst.geom.Point2D(50.1, 49.8)
         self.bbox = lsst.geom.Box2I(lsst.geom.Point2I(-20, -30),
                                     lsst.geom.Extent2I(140, 160))
@@ -70,7 +85,7 @@ class TestLocalWcs(lsst.meas.base.tests.AlgorithmTestCase,
         del self.dataset
 
     def testMatrix(self):
-        task = self.makeSingleFrameMeasurementTask("base_LocalWcs")
+        task = self.makeSingleFrameMeasurementTask(self.pluginName)
         exposure, catalog = self.dataset.realize(10.0,
                                                  task.schema,
                                                  randomSeed=0)
@@ -79,20 +94,34 @@ class TestLocalWcs(lsst.meas.base.tests.AlgorithmTestCase,
 
         # Get CdMatrix from afw. Convert from degrees to radians.
         trueCdMatrix = np.radians(exposure.getWcs().getCdMatrix())
-        self.assertAlmostEqual(record.get("base_LocalWcs_CDMatrix_1_1"),
+        self.assertAlmostEqual(record.get(self.pluginName + "_CDMatrix_1_1"),
                                trueCdMatrix[0, 0])
-        self.assertAlmostEqual(record.get("base_LocalWcs_CDMatrix_2_1"),
+        self.assertAlmostEqual(record.get(self.pluginName + "_CDMatrix_2_1"),
                                trueCdMatrix[1, 0])
-        self.assertAlmostEqual(record.get("base_LocalWcs_CDMatrix_1_2"),
+        self.assertAlmostEqual(record.get(self.pluginName + "_CDMatrix_1_2"),
                                trueCdMatrix[0, 1])
-        self.assertAlmostEqual(record.get("base_LocalWcs_CDMatrix_2_2"),
+        self.assertAlmostEqual(record.get(self.pluginName + "_CDMatrix_2_2"),
                                trueCdMatrix[1, 1])
         self.assertAlmostEqual(
             exposure.getWcs().getPixelScale(record.getCentroid()).asRadians(),
-            np.sqrt(np.fabs(record.get("base_LocalWcs_CDMatrix_1_1")
-                            * record.get("base_LocalWcs_CDMatrix_2_2")
-                            - record.get("base_LocalWcs_CDMatrix_2_1")
-                            * record.get("base_LocalWcs_CDMatrix_1_2"))))
+            np.sqrt(np.fabs(record.get(self.pluginName + "_CDMatrix_1_1")
+                            * record.get(self.pluginName + "_CDMatrix_2_2")
+                            - record.get(self.pluginName + "_CDMatrix_2_1")
+                            * record.get(self.pluginName + "_CDMatrix_1_2"))))
+
+    def testWcsIsNone(self):
+        with self.assertNoLogs(level=logging.WARNING) and self.assertLogs(level=logging.DEBUG):
+            task = self.makeSingleFrameMeasurementTask(self.pluginName)
+            exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
+            exposure.setWcs(None)
+            task.run(catalog, exposure)
+            record = catalog[0]
+
+            self.assertTrue(np.isnan(record.get(self.pluginName + "_CDMatrix_1_1")))
+            self.assertTrue(np.isnan(record.get(self.pluginName + "_CDMatrix_2_1")))
+            self.assertTrue(np.isnan(record.get(self.pluginName + "_CDMatrix_1_2")))
+            self.assertTrue(np.isnan(record.get(self.pluginName + "_CDMatrix_2_2")))
+            self.assertTrue(record.get(self.pluginName + "_flag"))
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

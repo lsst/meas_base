@@ -26,6 +26,7 @@ which have trivial implementations. It also wraps measurement algorithms
 defined in C++ to expose them to the measurement framework.
 """
 
+import logging
 import numpy as np
 
 import lsst.pex.exceptions
@@ -119,6 +120,8 @@ wrapTransform(ScaledApertureFluxTransform)
 wrapTransform(ApertureFluxTransform)
 wrapTransform(LocalBackgroundTransform)
 
+log = logging.getLogger(__name__)
+
 
 class SingleFrameFPPositionConfig(SingleFramePluginConfig):
     """Configuration for the focal plane position measurment algorithm.
@@ -206,7 +209,8 @@ class SingleFrameJacobianPlugin(SingleFramePlugin):
         SingleFramePlugin.__init__(self, config, name, schema, metadata)
         self.jacValue = schema.addField(name + '_value', type="D", doc="Jacobian correction")
         self.jacFlag = schema.addField(name + '_flag', type="Flag", doc="Set to 1 for any fatal failure")
-        # Calculate one over the area of a nominal reference pixel, where area is in arcsec^2
+        # Calculate one over the area of a nominal reference pixel, where area
+        # is in arcsec^2.
         self.scale = pow(self.config.pixelScale, -2)
 
     def measure(self, measRecord, exposure):
@@ -272,7 +276,7 @@ class VariancePlugin(GenericPlugin):
                                                   doc="Set to True when the footprint has no usable pixels")
 
         # Alias the badCentroid flag to that which is defined for the target
-        # of the centroid slot.  We do not simply rely on the alias because
+        # of the centroid slot. We do not simply rely on the alias because
         # that could be changed post-measurement.
         schema.getAliasMap().set(name + '_flag_badCentroid', schema.getAliasMap().apply("slot_Centroid_flag"))
 
@@ -377,8 +381,9 @@ class InputCountPlugin(GenericPlugin):
                                              "clipping")
         self.noInputsFlag = schema.addField(name + '_flag_noInputs', type="Flag",
                                             doc="No coadd inputs available")
-        # Alias the badCentroid flag to that which is defined for the target of the centroid slot.
-        # We do not simply rely on the alias because that could be changed post-measurement.
+        # Alias the badCentroid flag to that which is defined for the target of
+        # the centroid slot. We do not simply rely on the alias because that
+        # could be changed post-measurement.
         schema.getAliasMap().set(name + '_flag_badCentroid', schema.getAliasMap().apply("slot_Centroid_flag"))
 
     def measure(self, measRecord, exposure, center):
@@ -439,12 +444,20 @@ class EvaluateLocalPhotoCalibPlugin(GenericPlugin):
                 "calibration factor at the location of the src.")
 
     def measure(self, measRecord, exposure, center):
-
         photoCalib = exposure.getPhotoCalib()
-        calib = photoCalib.getLocalCalibration(center)
+        if photoCalib is None:
+            log.debug(
+                "%s: photoCalib is None.  Setting localPhotoCalib to NaN for record %d",
+                self.name,
+                measRecord.getId(),
+            )
+            calib = np.nan
+            calibErr = np.nan
+            measRecord.set(self._failKey, True)
+        else:
+            calib = photoCalib.getLocalCalibration(center)
+            calibErr = photoCalib.getCalibrationErr()
         measRecord.set(self.photoKey, calib)
-
-        calibErr = photoCalib.getCalibrationErr()
         measRecord.set(self.photoErrKey, calibErr)
 
 
@@ -502,7 +515,16 @@ class EvaluateLocalWcsPlugin(GenericPlugin):
 
     def measure(self, measRecord, exposure, center):
         wcs = exposure.getWcs()
-        localMatrix = self.makeLocalTransformMatrix(wcs, center)
+        if wcs is None:
+            log.debug(
+                "%s: WCS is None.  Setting localWcs matrix values to NaN for record %d",
+                self.name,
+                measRecord.getId(),
+            )
+            localMatrix = np.array([[np.nan, np.nan], [np.nan, np.nan]])
+            measRecord.set(self._failKey, True)
+        else:
+            localMatrix = self.makeLocalTransformMatrix(wcs, center)
         measRecord.set(self.cdMatrix11Key, localMatrix[0, 0])
         measRecord.set(self.cdMatrix12Key, localMatrix[0, 1])
         measRecord.set(self.cdMatrix21Key, localMatrix[1, 0])
@@ -825,15 +847,16 @@ class ForcedTransformedCentroidPlugin(ForcedPlugin):
     def __init__(self, config, name, schemaMapper, metadata):
         ForcedPlugin.__init__(self, config, name, schemaMapper, metadata)
         schema = schemaMapper.editOutputSchema()
-        # Allocate x and y fields, join these into a single FunctorKey for ease-of-use.
+        # Allocate x and y fields, join these into a single FunctorKey for
+        # ease-of-use.
         xKey = schema.addField(name + "_x", type="D", doc="transformed reference centroid column",
                                units="pixel")
         yKey = schema.addField(name + "_y", type="D", doc="transformed reference centroid row",
                                units="pixel")
         self.centroidKey = lsst.afw.table.Point2DKey(xKey, yKey)
-        # Because we're taking the reference position as given, we don't bother transforming its
-        # uncertainty and reporting that here, so there are no sigma or cov fields.  We do propagate
-        # the flag field, if it exists.
+        # Because we're taking the reference position as given, we don't bother
+        # transforming its uncertainty and reporting that here, so there are no
+        # sigma or cov fields. We do propagate the flag field, if it exists.
         if "slot_Centroid_flag" in schemaMapper.getInputSchema():
             self.flagKey = schema.addField(name + "_flag", type="Flag",
                                            doc="whether the reference centroid is marked as bad")
@@ -934,7 +957,8 @@ class ForcedTransformedShapePlugin(ForcedPlugin):
     def __init__(self, config, name, schemaMapper, metadata):
         ForcedPlugin.__init__(self, config, name, schemaMapper, metadata)
         schema = schemaMapper.editOutputSchema()
-        # Allocate xx, yy, xy fields, join these into a single FunctorKey for ease-of-use.
+        # Allocate xx, yy, xy fields, join these into a single FunctorKey for
+        # ease-of-use.
         xxKey = schema.addField(name + "_xx", type="D", doc="transformed reference shape x^2 moment",
                                 units="pixel^2")
         yyKey = schema.addField(name + "_yy", type="D", doc="transformed reference shape y^2 moment",
@@ -942,9 +966,9 @@ class ForcedTransformedShapePlugin(ForcedPlugin):
         xyKey = schema.addField(name + "_xy", type="D", doc="transformed reference shape xy moment",
                                 units="pixel^2")
         self.shapeKey = lsst.afw.table.QuadrupoleKey(xxKey, yyKey, xyKey)
-        # Because we're taking the reference position as given, we don't bother transforming its
-        # uncertainty and reporting that here, so there are no sigma or cov fields.  We do propagate
-        # the flag field, if it exists.
+        # Because we're taking the reference position as given, we don't bother
+        # transforming its uncertainty and reporting that here, so there are no
+        # sigma or cov fields. We do propagate the flag field, if it exists.
         if "slot_Shape_flag" in schemaMapper.getInputSchema():
             self.flagKey = schema.addField(name + "_flag", type="Flag",
                                            doc="whether the reference shape is marked as bad")
