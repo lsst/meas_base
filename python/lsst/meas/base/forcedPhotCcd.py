@@ -19,6 +19,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import dataclasses
+
+import astropy.table
 import pandas as pd
 import numpy as np
 
@@ -32,7 +35,7 @@ import lsst.afw.image
 import lsst.afw.table
 import lsst.sphgeom
 
-from lsst.pipe.base import PipelineTaskConnections
+from lsst.pipe.base import PipelineTaskConnections, NoWorkFound
 import lsst.pipe.base.connectionTypes as cT
 
 import lsst.pipe.base as pipeBase
@@ -106,6 +109,11 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
             del self.skyCorr
         if not config.useVisitSummary:
             del self.visitSummary
+        if config.refCatStorageClass != "SourceCatalog":
+            del self.inputSchema
+            # Connections are immutable, so we have to replace them entirely
+            # rather than edit them in-place.
+            self.refCat = dataclasses.replace(self.refCat, storageClass=config.refCatStorageClass)
 
 
 class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
@@ -147,6 +155,46 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
             "objects attached."
         ),
     )
+    refCatStorageClass = lsst.pex.config.ChoiceField(
+        dtype=str,
+        allowed={
+            "SourceCatalog": "Read an lsst.afw.table.SourceCatalog.",
+            "DataFrame": "Read a pandas.DataFrame.",
+        },
+        default="SourceCatalog",
+        doc=(
+            "The butler storage class for the refCat connection. "
+            "If set to something other than 'SourceCatalog', the "
+            "'inputSchema'  connection will be ignored."
+        )
+    )
+    refCatIdColumn = lsst.pex.config.Field(
+        dtype=str,
+        default="diaObjectId",
+        doc=(
+            "Name of the column that provides the object ID from the refCat connection. "
+            "measurement.copyColumns['id'] must be set to this value as well."
+            "Ignored if refCatStorageClass='SourceCatalog'."
+        )
+    )
+    refCatRaColumn = lsst.pex.config.Field(
+        dtype=str,
+        default="ra",
+        doc=(
+            "Name of the column that provides the right ascension (in floating-point degrees) from the "
+            "refCat connection. "
+            "Ignored if refCatStorageClass='SourceCatalog'."
+        )
+    )
+    refCatDecColumn = lsst.pex.config.Field(
+        dtype=str,
+        default="dec",
+        doc=(
+            "Name of the column that provides the declination (in floating-point degrees) from the "
+            "refCat connection. "
+            "Ignored if refCatStorageClass='SourceCatalog'."
+        )
+    )
     includePhotoCalibVar = lsst.pex.config.Field(
         dtype=bool,
         default=False,
@@ -185,10 +233,23 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
                                           "base_LocalPhotoCalib",
                                           "base_LocalWcs",
                                           ]
+        self.measurement.slots.psfFlux = "base_PsfFlux"
         self.measurement.slots.shape = None
         # Make catalogCalculation a no-op by default as no modelFlux is setup
         # by default in ForcedMeasurementTask.
         self.catalogCalculation.plugins.names = []
+
+    def validate(self):
+        super().validate()
+        if self.refCatStorageClass != "SourceCatalog":
+            if self.footprintSource == "transformed":
+                raise ValueError("Cannot transform footprints from reference catalog, because "
+                                 f"{self.config.refCatStorageClass} datasets can't hold footprints.")
+            if self.measurement.copyColumns["id"] != self.refCatIdColumn:
+                raise ValueError(
+                    f"measurement.copyColumns['id'] should be set to {self.refCatIdColumn} "
+                    f"(refCatIdColumn) when refCatStorageClass={self.refCatStorageClass}."
+                )
 
 
 class ForcedPhotCcdTask(pipeBase.PipelineTask):
@@ -214,11 +275,11 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
     def __init__(self, refSchema=None, initInputs=None, **kwargs):
         super().__init__(**kwargs)
 
-        if initInputs is not None:
+        if initInputs:
             refSchema = initInputs['inputSchema'].schema
 
         if refSchema is None:
-            raise ValueError("No reference schema provided.")
+            refSchema = lsst.afw.table.SourceTable.makeMinimalSchema()
 
         self.makeSubtask("measurement", refSchema=refSchema)
         # It is necessary to get the schema internal to the forced measurement
@@ -245,19 +306,32 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
             visitSummary=inputs.pop("visitSummary", None),
         )
 
-        inputs['refCat'] = self.mergeAndFilterReferences(inputs['exposure'], inputs['refCat'],
-                                                         inputs['refWcs'])
+        if inputs["exposure"].getWcs() is None:
+            raise NoWorkFound("Exposure has no WCS.")
 
-        if inputs['refCat'] is None:
-            self.log.info("No WCS for exposure %s.  No %s catalog will be written.",
-                          butlerQC.quantum.dataId, outputRefs.measCat.datasetType.name)
-        else:
-            inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(inputRefs.exposure.dataId,
-                                                                           inputs['exposure'],
-                                                                           inputs['refCat'], inputs['refWcs'])
-            self.attachFootprints(inputs['measCat'], inputs['refCat'], inputs['exposure'], inputs['refWcs'])
-            outputs = self.run(**inputs)
-            butlerQC.put(outputs, outputRefs)
+        match self.config.refCatStorageClass:
+            case "SourceCatalog":
+                prepFunc = self._prepSourceCatalogRefCat
+            case "DataFrame":
+                prepFunc = self._prepDataFrameRefCat
+            case _:
+                raise AssertionError("Configuration should not have passed validation.")
+        self.log.info("Filtering ref cats: %s", ','.join([str(i.dataId) for i in inputs['refCat']]))
+        inputs['refCat'] = prepFunc(
+            inputs['refCat'],
+            inputs['exposure'].getBBox(),
+            inputs['exposure'].getWcs(),
+        )
+        # generateMeasCat does not actually use the refWcs; parameter is
+        # passed for signature backwards compatibility.
+        inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(
+            inputRefs.exposure.dataId, inputs['exposure'], inputs['refCat'], inputs['refWcs']
+        )
+        # attachFootprints only uses refWcs in ``transformed`` mode, which is
+        # not supported unless refCatStorageClass='SourceCatalog'.
+        self.attachFootprints(inputs["measCat"], inputs["refCat"], inputs["exposure"], inputs["refWcs"])
+        outputs = self.run(**inputs)
+        butlerQC.put(outputs, outputRefs)
 
     def prepareCalibratedExposure(self, exposure, skyCorr=None, visitSummary=None):
         """Prepare a calibrated exposure and apply external calibrations
@@ -298,67 +372,6 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
             exposure.maskedImage -= skyCorr.getImage()
 
         return exposure
-
-    def mergeAndFilterReferences(self, exposure, refCats, refWcs):
-        """Filter reference catalog so that all sources are within the
-        boundaries of the exposure.
-
-        Parameters
-        ----------
-        exposure : `lsst.afw.image.exposure.Exposure`
-            Exposure to generate the catalog for.
-        refCats : sequence of `lsst.daf.butler.DeferredDatasetHandle`
-            Handles for catalogs of shapes and positions at which to force
-            photometry.
-        refWcs : `lsst.afw.image.SkyWcs`
-            Reference world coordinate system.
-
-        Returns
-        -------
-        refSources : `lsst.afw.table.SourceCatalog`
-            Filtered catalog of forced sources to measure.
-
-        Notes
-        -----
-        The majority of this code is based on the methods of
-        lsst.meas.algorithms.loadReferenceObjects.ReferenceObjectLoader
-
-        """
-        mergedRefCat = None
-
-        # Step 1: Determine bounds of the exposure photometry will
-        # be performed on.
-        expWcs = exposure.getWcs()
-        if expWcs is None:
-            self.log.info("Exposure has no WCS.  Returning None for mergedRefCat.")
-        else:
-            expRegion = exposure.getBBox(lsst.afw.image.PARENT)
-            expBBox = lsst.geom.Box2D(expRegion)
-            expBoxCorners = expBBox.getCorners()
-            expSkyCorners = [expWcs.pixelToSky(corner).getVector() for
-                             corner in expBoxCorners]
-            expPolygon = lsst.sphgeom.ConvexPolygon(expSkyCorners)
-
-            # Step 2: Filter out reference catalog sources that are
-            # not contained within the exposure boundaries, or whose
-            # parents are not within the exposure boundaries.  Note
-            # that within a single input refCat, the parents always
-            # appear before the children.
-            for refCat in refCats:
-                refCat = refCat.get()
-                if mergedRefCat is None:
-                    mergedRefCat = lsst.afw.table.SourceCatalog(refCat.table)
-                    containedIds = {0}  # zero as a parent ID means "this is a parent"
-                for record in refCat:
-                    if (expPolygon.contains(record.getCoord().getVector()) and record.getParent()
-                            in containedIds):
-                        record.setFootprint(record.getFootprint())
-                        mergedRefCat.append(record)
-                        containedIds.add(record.getId())
-            if mergedRefCat is None:
-                raise RuntimeError("No reference objects for forced photometry.")
-            mergedRefCat.sort(lsst.afw.table.SourceTable.getParentKey())
-        return mergedRefCat
 
     def generateMeasCat(self, dataId, exposure, refCat, refWcs):
         """Generate a measurement catalog.
@@ -449,93 +462,153 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
             return self.measurement.attachPsfShapeFootprints(sources, exposure,
                                                              scaling=self.config.psfFootprintScaling)
 
+    def _prepSourceCatalogRefCat(self, refCatHandles, exposureBBox, exposureWcs):
+        """Prepare a merged, filtered reference catalog from SourceCatalog
+        inputs.
 
-class ForcedPhotCcdFromDataFrameConnections(PipelineTaskConnections,
+        Parameters
+        ----------
+        refCatHandles : sequence of `lsst.daf.butler.DeferredDatasetHandle`
+            Handles for catalogs of shapes and positions at which to force
+            photometry.
+        exposureBBox :   `lsst.geom.Box2I`
+            Bounding box on which to select rows that overlap
+        exposureWcs : `lsst.afw.geom.SkyWcs`
+            World coordinate system to convert sky coords in ref cat to
+            pixel coords with which to compare with exposureBBox
+
+        Returns
+        -------
+        refSources : `lsst.afw.table.SourceCatalog`
+            Filtered catalog of forced sources to measure.
+
+        Notes
+        -----
+        The majority of this code is based on the methods of
+        lsst.meas.algorithms.loadReferenceObjects.ReferenceObjectLoader
+
+        """
+        mergedRefCat = None
+
+        # Step 1: Determine bounds of the exposure photometry will
+        # be performed on.
+        expBBox = lsst.geom.Box2D(exposureBBox)
+        expBoxCorners = expBBox.getCorners()
+        expSkyCorners = [exposureWcs.pixelToSky(corner).getVector() for corner in expBoxCorners]
+        expPolygon = lsst.sphgeom.ConvexPolygon(expSkyCorners)
+
+        # Step 2: Filter out reference catalog sources that are
+        # not contained within the exposure boundaries, or whose
+        # parents are not within the exposure boundaries.  Note
+        # that within a single input refCat, the parents always
+        # appear before the children.
+        for refCat in refCatHandles:
+            refCat = refCat.get()
+            if mergedRefCat is None:
+                mergedRefCat = lsst.afw.table.SourceCatalog(refCat.table)
+                containedIds = {0}  # zero as a parent ID means "this is a parent"
+            for record in refCat:
+                if (
+                    expPolygon.contains(record.getCoord().getVector()) and record.getParent()
+                    in containedIds
+                ):
+                    record.setFootprint(record.getFootprint())
+                    mergedRefCat.append(record)
+                    containedIds.add(record.getId())
+        if mergedRefCat is None:
+            raise RuntimeError("No reference objects for forced photometry.")
+        mergedRefCat.sort(lsst.afw.table.SourceTable.getParentKey())
+        return mergedRefCat
+
+    def _prepDataFrameRefCat(self, refCatHandles, exposureBBox, exposureWcs):
+        """Prepare a merged, filtered reference catalog from DataFrame
+        inputs.
+
+        Parameters
+        ----------
+        refCatHandles : sequence of `lsst.daf.butler.DeferredDatasetHandle`
+            Handles for catalogs of shapes and positions at which to force
+            photometry.
+        exposureBBox :   `lsst.geom.Box2I`
+            Bounding box on which to select rows that overlap
+        exposureWcs : `lsst.afw.geom.SkyWcs`
+            World coordinate system to convert sky coords in ref cat to
+            pixel coords with which to compare with exposureBBox
+
+        Returns
+        -------
+        refCat : `lsst.afw.table.SourceTable`
+            Source Catalog with minimal schema that overlaps exposureBBox
+        """
+        dfList = [
+            i.get(
+                parameters={
+                    "columns": [
+                        self.config.refCatIdColumn,
+                        self.config.refCatRaColumn,
+                        self.config.refCatDecColumn,
+                    ]
+                }
+            )
+            for i in refCatHandles
+        ]
+        df = pd.concat(dfList)
+        # translate ra/dec coords in dataframe to detector pixel coords
+        # to down select rows that overlap the detector bbox
+        mapping = exposureWcs.getTransform().getMapping()
+        x, y = mapping.applyInverse(
+            np.array(df[[self.config.refCatRaColumn, self.config.refCatDecColumn]].values*2*np.pi/360).T
+        )
+        inBBox = lsst.geom.Box2D(exposureBBox).contains(x, y)
+        refCat = self._makeMinimalSourceCatalogFromDataFrame(df[inBBox])
+        return refCat
+
+    def _makeMinimalSourceCatalogFromDataFrame(self, df):
+        """Create minimal schema SourceCatalog from a pandas DataFrame.
+
+        The forced measurement subtask expects this as input.
+
+        Parameters
+        ----------
+        df : `pandas.DataFrame`
+            Table with locations and ids.
+
+        Returns
+        -------
+        outputCatalog : `lsst.afw.table.SourceTable`
+            Output catalog with minimal schema.
+        """
+        schema = lsst.afw.table.SourceTable.makeMinimalSchema()
+        outputCatalog = lsst.afw.table.SourceCatalog(schema)
+        outputCatalog.reserve(len(df))
+
+        for objectId, ra, dec in df[['ra', 'dec']].itertuples():
+            outputRecord = outputCatalog.addNew()
+            outputRecord.setId(objectId)
+            outputRecord.setCoord(lsst.geom.SpherePoint(ra, dec, lsst.geom.degrees))
+        return outputCatalog
+
+
+class ForcedPhotCcdFromDataFrameConnections(ForcedPhotCcdConnections,
                                             dimensions=("instrument", "visit", "detector", "skymap", "tract"),
                                             defaultTemplates={"inputCoaddName": "goodSeeing",
                                                               "inputName": "calexp",
                                                               }):
-    refCat = cT.Input(
-        doc="Catalog of positions at which to force photometry.",
-        name="{inputCoaddName}Diff_fullDiaObjTable",
-        storageClass="DataFrame",
-        dimensions=["skymap", "tract", "patch"],
-        multiple=True,
-        deferLoad=True,
-    )
-    exposure = cT.Input(
-        doc="Input exposure to perform photometry on.",
-        name="{inputName}",
-        storageClass="ExposureF",
-        dimensions=["instrument", "visit", "detector"],
-    )
-    skyCorr = cT.Input(
-        doc="Input Sky Correction to be subtracted from the calexp if doApplySkyCorr=True",
-        name="skyCorr",
-        storageClass="Background",
-        dimensions=("instrument", "visit", "detector"),
-    )
-    visitSummary = cT.Input(
-        doc="Input visit-summary catalog with updated calibration objects.",
-        name="finalVisitSummary",
-        storageClass="ExposureCatalog",
-        dimensions=("instrument", "visit"),
-    )
-    skyMap = cT.Input(
-        doc="SkyMap dataset that defines the coordinate system of the reference catalog.",
-        name=BaseSkyMap.SKYMAP_DATASET_TYPE_NAME,
-        storageClass="SkyMap",
-        dimensions=["skymap"],
-    )
-    measCat = cT.Output(
-        doc="Output forced photometry catalog.",
-        name="forced_src_diaObject",
-        storageClass="SourceCatalog",
-        dimensions=["instrument", "visit", "detector", "skymap", "tract"],
-    )
-    outputSchema = cT.InitOutput(
-        doc="Schema for the output forced measurement catalogs.",
-        name="forced_src_diaObject_schema",
-        storageClass="SourceCatalog",
-    )
-
-    def __init__(self, *, config=None):
-        super().__init__(config=config)
-        if not config.doApplySkyCorr:
-            del self.skyCorr
-        if not config.useVisitSummary:
-            del self.visitSummary
+    pass
 
 
 class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
                                        pipelineConnections=ForcedPhotCcdFromDataFrameConnections):
     def setDefaults(self):
         super().setDefaults()
+        self.refCatStorageClass = "DataFrame"
         self.footprintSource = "psf"
         self.measurement.doReplaceWithNoise = False
-        # Only run a minimal set of plugins, as these measurements are only
-        # needed for PSF-like sources.
-        self.measurement.plugins.names = ["base_PixelFlags",
-                                          "base_TransformedCentroidFromCoord",
-                                          "base_PsfFlux",
-                                          "base_LocalBackground",
-                                          "base_LocalPhotoCalib",
-                                          "base_LocalWcs",
-                                          ]
-        self.measurement.slots.shape = None
-        # Make catalogCalculation a no-op by default as no modelFlux is setup
-        # by default in ForcedMeasurementTask.
-        self.catalogCalculation.plugins.names = []
-
-        self.measurement.copyColumns = {'id': 'diaObjectId', 'coord_ra': 'coord_ra', 'coord_dec': 'coord_dec'}
+        self.measurement.plugins.names -= {"base_TransformedCentroid"}
+        self.measurement.plugins.names |= {"base_TransformedCentroidFromCoord"}
+        self.measurement.copyColumns["id"] = self.refCatIdColumn
+        self.measurement.copyColumns.pop("deblend_nChild", None)
         self.measurement.slots.centroid = "base_TransformedCentroidFromCoord"
-        self.measurement.slots.psfFlux = "base_PsfFlux"
-
-    def validate(self):
-        super().validate()
-        if self.footprintSource == "transformed":
-            raise ValueError("Cannot transform footprints from reference catalog, "
-                             "because DataFrames can't hold footprints.")
 
 
 class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
@@ -548,106 +621,3 @@ class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
     """
     _DefaultName = "forcedPhotCcdFromDataFrame"
     ConfigClass = ForcedPhotCcdFromDataFrameConfig
-
-    def __init__(self, refSchema=None, initInputs=None, **kwargs):
-        # Parent's init assumes that we have a reference schema; Cannot reuse
-        pipeBase.PipelineTask.__init__(self, **kwargs)
-
-        self.makeSubtask("measurement", refSchema=lsst.afw.table.SourceTable.makeMinimalSchema())
-
-        if self.config.doApCorr:
-            self.makeSubtask("applyApCorr", schema=self.measurement.schema)
-        self.makeSubtask('catalogCalculation', schema=self.measurement.schema)
-        self.outputSchema = lsst.afw.table.SourceCatalog(self.measurement.schema)
-
-    def runQuantum(self, butlerQC, inputRefs, outputRefs):
-        inputs = butlerQC.get(inputRefs)
-
-        tract = butlerQC.quantum.dataId["tract"]
-        skyMap = inputs.pop("skyMap")
-        inputs["refWcs"] = skyMap[tract].getWcs()
-
-        # Connections only exist if they are configured to be used.
-        skyCorr = inputs.pop('skyCorr', None)
-
-        inputs['exposure'] = self.prepareCalibratedExposure(
-            inputs['exposure'],
-            skyCorr=skyCorr,
-            visitSummary=inputs.pop("visitSummary", None),
-        )
-
-        self.log.info("Filtering ref cats: %s", ','.join([str(i.dataId) for i in inputs['refCat']]))
-        if inputs["exposure"].getWcs() is not None:
-            refCat = self.df2RefCat([i.get(parameters={"columns": ['diaObjectId', 'ra', 'dec']})
-                                     for i in inputs['refCat']],
-                                    inputs['exposure'].getBBox(), inputs['exposure'].getWcs())
-            inputs['refCat'] = refCat
-            # generateMeasCat does not use the refWcs.
-            inputs['measCat'], inputs['exposureId'] = self.generateMeasCat(
-                inputRefs.exposure.dataId, inputs['exposure'], inputs['refCat'], inputs['refWcs']
-            )
-            # attachFootprints only uses refWcs in ``transformed`` mode, which is not
-            # supported in the DataFrame-backed task.
-            self.attachFootprints(inputs["measCat"], inputs["refCat"], inputs["exposure"], inputs["refWcs"])
-            outputs = self.run(**inputs)
-
-            butlerQC.put(outputs, outputRefs)
-        else:
-            self.log.info("No WCS for %s.  Skipping and no %s catalog will be written.",
-                          butlerQC.quantum.dataId, outputRefs.measCat.datasetType.name)
-
-    def df2RefCat(self, dfList, exposureBBox, exposureWcs):
-        """Convert list of DataFrames to reference catalog
-
-        Concatenate list of DataFrames presumably from multiple patches and
-        downselect rows that overlap the exposureBBox using the exposureWcs.
-
-        Parameters
-        ----------
-        dfList : `list` of `pandas.DataFrame`
-            Each element containst diaObjects with ra/dec position in degrees
-            Columns 'diaObjectId', 'ra', 'dec' are expected
-        exposureBBox :   `lsst.geom.Box2I`
-            Bounding box on which to select rows that overlap
-        exposureWcs : `lsst.afw.geom.SkyWcs`
-            World coordinate system to convert sky coords in ref cat to
-            pixel coords with which to compare with exposureBBox
-
-        Returns
-        -------
-        refCat : `lsst.afw.table.SourceTable`
-            Source Catalog with minimal schema that overlaps exposureBBox
-        """
-        df = pd.concat(dfList)
-        # translate ra/dec coords in dataframe to detector pixel coords
-        # to down select rows that overlap the detector bbox
-        mapping = exposureWcs.getTransform().getMapping()
-        x, y = mapping.applyInverse(np.array(df[['ra', 'dec']].values*2*np.pi/360).T)
-        inBBox = lsst.geom.Box2D(exposureBBox).contains(x, y)
-        refCat = self.df2SourceCat(df[inBBox])
-        return refCat
-
-    def df2SourceCat(self, df):
-        """Create minimal schema SourceCatalog from a pandas DataFrame.
-
-        The forced measurement subtask expects this as input.
-
-        Parameters
-        ----------
-        df : `pandas.DataFrame`
-            DiaObjects with locations and ids.
-
-        Returns
-        -------
-        outputCatalog : `lsst.afw.table.SourceTable`
-            Output catalog with minimal schema.
-        """
-        schema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        outputCatalog = lsst.afw.table.SourceCatalog(schema)
-        outputCatalog.reserve(len(df))
-
-        for diaObjectId, ra, dec in df[['ra', 'dec']].itertuples():
-            outputRecord = outputCatalog.addNew()
-            outputRecord.setId(diaObjectId)
-            outputRecord.setCoord(lsst.geom.SpherePoint(ra, dec, lsst.geom.degrees))
-        return outputCatalog
