@@ -34,6 +34,7 @@ import lsst.geom
 import lsst.afw.detection
 import lsst.afw.geom
 
+from deprecated.sphinx import deprecated
 from ._measBaseLib import (ApertureFluxControl, ApertureFluxTransform,
                            BaseTransform, BlendednessAlgorithm,
                            BlendednessControl, CircularApertureFluxAlgorithm,
@@ -69,6 +70,7 @@ __all__ = (
     "InputCountConfig", "SingleFrameInputCountPlugin", "ForcedInputCountPlugin",
     "SingleFramePeakCentroidConfig", "SingleFramePeakCentroidPlugin",
     "SingleFrameSkyCoordConfig", "SingleFrameSkyCoordPlugin",
+    "SingleFrameMomentsClassifierConfig", "SingleFrameMomentsClassifierPlugin",  # TODO: Remove in DM-47494.
     "SingleFrameClassificationSizeExtendednessConfig",
     "SingleFrameClassificationSizeExtendednessPlugin",
     "ForcedPeakCentroidConfig", "ForcedPeakCentroidPlugin",
@@ -752,6 +754,18 @@ class SingleFrameClassificationSizeExtendednessPlugin(SingleFramePlugin):
         # Docstring inherited.
         measRecord.set(self.key, np.nan)
         measRecord.set(self.flag, True)
+
+
+@deprecated(reason="Use SingleFrameClassificationSizeExtendednessConfig instead", version="v29.0.0",
+            category=FutureWarning)
+class SingleFrameMomentsClassifierConfig(SingleFrameClassificationSizeExtendednessConfig):
+    pass
+
+
+@deprecated(reason="Use SingleFrameClassificationSizeExtendednessPlugin instead", version="v29.0.0",
+            category=FutureWarning)
+class SingleFrameMomentsClassifierPlugin(SingleFrameClassificationSizeExtendednessPlugin):
+    ConfigClass = SingleFrameMomentsClassifierConfig
 
 
 class ForcedPeakCentroidConfig(ForcedPluginConfig):
