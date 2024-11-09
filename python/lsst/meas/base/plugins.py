@@ -69,7 +69,8 @@ __all__ = (
     "InputCountConfig", "SingleFrameInputCountPlugin", "ForcedInputCountPlugin",
     "SingleFramePeakCentroidConfig", "SingleFramePeakCentroidPlugin",
     "SingleFrameSkyCoordConfig", "SingleFrameSkyCoordPlugin",
-    "SingleFrameMomentsClassifierConfig", "SingleFrameMomentsClassifierPlugin",
+    "SingleFrameClassificationSizeExtendednessConfig",
+    "SingleFrameClassificationSizeExtendednessPlugin",
     "ForcedPeakCentroidConfig", "ForcedPeakCentroidPlugin",
     "ForcedTransformedCentroidConfig", "ForcedTransformedCentroidPlugin",
     "ForcedTransformedCentroidFromCoordConfig",
@@ -668,7 +669,7 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
         pass
 
 
-class SingleFrameMomentsClassifierConfig(SingleFramePluginConfig):
+class SingleFrameClassificationSizeExtendednessConfig(SingleFramePluginConfig):
     """Configuration for moments-based star-galaxy classifier."""
 
     exponent = lsst.pex.config.Field[float](
@@ -679,7 +680,7 @@ class SingleFrameMomentsClassifierConfig(SingleFramePluginConfig):
 
 
 @register("base_ClassificationSizeExtendedness")
-class SingleFrameMomentsClassifierPlugin(SingleFramePlugin):
+class SingleFrameClassificationSizeExtendednessPlugin(SingleFramePlugin):
     """Classify objects by comparing their moments-based trace radius to PSF's.
 
     The plugin computes chi^2 as ((T_obj - T_psf)/T_psf^exponent)^2, where
@@ -689,7 +690,7 @@ class SingleFrameMomentsClassifierPlugin(SingleFramePlugin):
 
     Parameters
     ----------
-    config : `MomentsClassifierConfig`
+    config : `SingleFrameClassificationSizeExtendednessConfig`
         Plugin configuration.
     name : `str`
         Plugin name.
@@ -705,7 +706,7 @@ class SingleFrameMomentsClassifierPlugin(SingleFramePlugin):
     argument to maintain consistent API, but it is not used in the measurement.
     """
 
-    ConfigClass = SingleFrameMomentsClassifierConfig
+    ConfigClass = SingleFrameClassificationSizeExtendednessConfig
 
     FAILURE_BAD_SHAPE = 1
     """Denotes failures due to bad shape (`int`).
