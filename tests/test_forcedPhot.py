@@ -30,6 +30,7 @@ import dataclasses
 import unittest
 
 import numpy as np
+import pandas as pd
 
 import lsst.afw.image
 from lsst.afw.geom import SkyWcs
@@ -200,6 +201,56 @@ class ForcedPhotCcdFromDataFrameTaskTestCase(ForcedPhotometryTests, lsst.utils.t
 
         task.run(measCat, self.exposure, self.refCat, self.offsetWcs)
 
+        # Check that something was measured.
+        self.assertTrue(np.isfinite(measCat["base_TransformedCentroidFromCoord_x"]).all())
+        self.assertTrue(np.isfinite(measCat["base_TransformedCentroidFromCoord_y"]).all())
+        self.assertTrue(np.isfinite(measCat["base_PsfFlux_instFlux"]).all())
+        # We use an offset WCS, so the transformed centroids should not exactly
+        # match the original positions.
+        self.assertFloatsNotEqual(measCat["base_TransformedCentroidFromCoord_x"], self.refCat['truth_x'])
+        self.assertFloatsNotEqual(measCat["base_TransformedCentroidFromCoord_y"], self.refCat['truth_y'])
+
+    def testRunQuantum(self):
+        config = ForcedPhotCcdFromDataFrameTask.ConfigClass()
+        config.useVisitSummary = False
+        config.doApplySkyCorr = False
+        config.idGenerator.packer.name = "observation"
+        config.idGenerator.packer["observation"].n_detectors = 5
+        config.idGenerator.packer["observation"].n_observations = 10
+        pipeline_graph = PipelineGraph(universe=self.universe)
+        pipeline_graph.add_task("forcedPhotCcd", ForcedPhotCcdFromDataFrameTask, config)
+        pipeline_graph.resolve(dimensions=self.universe)
+        init_outputs = []
+        (task,) = pipeline_graph.instantiate_tasks(
+            get_init_input=None,
+            init_outputs=init_outputs,
+        )
+        ((output_schema_cat, _),) = init_outputs
+        ref_cat = pd.DataFrame(
+            {
+                "diaObjectId": self.refCat["id"],
+                "ra": self.refCat["coord_ra"]*180/np.pi,
+                "dec": self.refCat["coord_dec"]*180/np.pi
+            }
+        )
+        self.inputs["refCat"] = [InMemoryDatasetHandle(ref_cat)]
+        exposure_dataset_type = pipeline_graph.dataset_types["calexp"].dataset_type
+        input_refs = _MockRefsStruct(
+            self.inputs,
+            {
+                # This particular runQuantum mostly just gets all inputs at
+                # once, but it does need one DatasetRef with a proper data ID.
+                "exposure": DatasetRef(
+                    exposure_dataset_type,
+                    self.quantum_context.quantum.dataId.subset(exposure_dataset_type.dimensions),
+                    run="arbitrary",
+                )
+            }
+        )
+        output_refs = _MockRefsStruct({}, {})
+        task.runQuantum(self.quantum_context, input_refs, output_refs)
+        measCat = output_refs._datasets["measCat"]
+        self.assertEqual(output_schema_cat.schema, measCat.schema)
         # Check that something was measured.
         self.assertTrue(np.isfinite(measCat["base_TransformedCentroidFromCoord_x"]).all())
         self.assertTrue(np.isfinite(measCat["base_TransformedCentroidFromCoord_y"]).all())
