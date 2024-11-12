@@ -110,7 +110,6 @@ class ForcedPhotometryTests:
         apCorrMap["base_PsfFlux_instFlux"] = ChebyshevBoundedField(bbox, np.array([[2.0]]))
         apCorrMap["base_PsfFlux_instFluxErr"] = ChebyshevBoundedField(bbox, np.array([[3.0]]))
         self.exposure.info.setApCorrMap(apCorrMap)
-        self.exposure.mask.addMaskPlane("STREAK")  # add empty streak mask plane in lieu of maskStreaksTask
 
         # Offset WCS so that the forced coordinates don't match the truth.
         self.offsetWcs = dataset.makePerturbedWcs(self.exposure.wcs)
