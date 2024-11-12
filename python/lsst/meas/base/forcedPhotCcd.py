@@ -160,6 +160,7 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
         allowed={
             "SourceCatalog": "Read an lsst.afw.table.SourceCatalog.",
             "DataFrame": "Read a pandas.DataFrame.",
+            "ArrowAstropy": "Read an astropy.table.Table saved to Parquet.",
         },
         default="SourceCatalog",
         doc=(
@@ -251,6 +252,19 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
                     f"(refCatIdColumn) when refCatStorageClass={self.refCatStorageClass}."
                 )
 
+    def configureParquetRefCat(self, refCatStorageClass: str = "ArrowAstropy"):
+        """Set the refCatStorageClass option to a Parquet-based type, and
+        reconfigure the measurement subtask and footprintSources accordingly.
+        """
+        self.refCatStorageClass = refCatStorageClass
+        self.footprintSource = "psf"
+        self.measurement.doReplaceWithNoise = False
+        self.measurement.plugins.names -= {"base_TransformedCentroid"}
+        self.measurement.plugins.names |= {"base_TransformedCentroidFromCoord"}
+        self.measurement.copyColumns["id"] = self.refCatIdColumn
+        self.measurement.copyColumns.pop("deblend_nChild", None)
+        self.measurement.slots.centroid = "base_TransformedCentroidFromCoord"
+
 
 class ForcedPhotCcdTask(pipeBase.PipelineTask):
     """A pipeline task for performing forced measurement on CCD images.
@@ -314,6 +328,8 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
                 prepFunc = self._prepSourceCatalogRefCat
             case "DataFrame":
                 prepFunc = self._prepDataFrameRefCat
+            case "ArrowAstropy":
+                prepFunc = self._prepArrowAstropyRefCat
             case _:
                 raise AssertionError("Configuration should not have passed validation.")
         self.log.info("Filtering ref cats: %s", ','.join([str(i.dataId) for i in inputs['refCat']]))
@@ -563,6 +579,51 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         refCat = self._makeMinimalSourceCatalogFromDataFrame(df[inBBox])
         return refCat
 
+    def _prepArrowAstropyRefCat(self, refCatHandles, exposureBBox, exposureWcs):
+        """Prepare a merged, filtered reference catalog from ArrowAstropy
+        inputs.
+
+        Parameters
+        ----------
+        refCatHandles : sequence of `lsst.daf.butler.DeferredDatasetHandle`
+            Handles for catalogs of shapes and positions at which to force
+            photometry.
+        exposureBBox :   `lsst.geom.Box2I`
+            Bounding box on which to select rows that overlap
+        exposureWcs : `lsst.afw.geom.SkyWcs`
+            World coordinate system to convert sky coords in ref cat to
+            pixel coords with which to compare with exposureBBox
+
+        Returns
+        -------
+        refCat : `lsst.afw.table.SourceTable`
+            Source Catalog with minimal schema that overlaps exposureBBox
+        """
+        table_list = [
+            i.get(
+                parameters={
+                    "columns": [
+                        self.config.refCatIdColumn,
+                        self.config.refCatRaColumn,
+                        self.config.refCatDecColumn,
+                    ]
+                }
+            )
+            for i in refCatHandles
+        ]
+        full_table = astropy.table.vstack(table_list)
+        # translate ra/dec coords in table to detector pixel coords
+        # to down-select rows that overlap the detector bbox
+        mapping = exposureWcs.getTransform().getMapping()
+        ra_dec_rad = np.zeros((2, len(full_table)), dtype=float)
+        ra_dec_rad[0, :] = full_table[self.config.refCatRaColumn]
+        ra_dec_rad[1, :] = full_table[self.config.refCatDecColumn]
+        ra_dec_rad *= np.pi/180.0
+        x, y = mapping.applyInverse(ra_dec_rad)
+        inBBox = lsst.geom.Box2D(exposureBBox).contains(x, y)
+        refCat = self._makeMinimalSourceCatalogFromAstropy(full_table[inBBox])
+        return refCat
+
     def _makeMinimalSourceCatalogFromDataFrame(self, df):
         """Create minimal schema SourceCatalog from a pandas DataFrame.
 
@@ -588,6 +649,31 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
             outputRecord.setCoord(lsst.geom.SpherePoint(ra, dec, lsst.geom.degrees))
         return outputCatalog
 
+    def _makeMinimalSourceCatalogFromAstropy(self, table):
+        """Create minimal schema SourceCatalog from an Astropy Table.
+
+        The forced measurement subtask expects this as input.
+
+        Parameters
+        ----------
+        table : `astropy.table.Table`
+            Table with locations and ids.
+
+        Returns
+        -------
+        outputCatalog : `lsst.afw.table.SourceTable`
+            Output catalog with minimal schema.
+        """
+        schema = lsst.afw.table.SourceTable.makeMinimalSchema()
+        outputCatalog = lsst.afw.table.SourceCatalog(schema)
+        outputCatalog.reserve(len(table))
+
+        for objectId, ra, dec in table.iterrows():
+            outputRecord = outputCatalog.addNew()
+            outputRecord.setId(objectId)
+            outputRecord.setCoord(lsst.geom.SpherePoint(ra, dec, lsst.geom.degrees))
+        return outputCatalog
+
 
 class ForcedPhotCcdFromDataFrameConnections(ForcedPhotCcdConnections,
                                             dimensions=("instrument", "visit", "detector", "skymap", "tract"),
@@ -601,14 +687,7 @@ class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
                                        pipelineConnections=ForcedPhotCcdFromDataFrameConnections):
     def setDefaults(self):
         super().setDefaults()
-        self.refCatStorageClass = "DataFrame"
-        self.footprintSource = "psf"
-        self.measurement.doReplaceWithNoise = False
-        self.measurement.plugins.names -= {"base_TransformedCentroid"}
-        self.measurement.plugins.names |= {"base_TransformedCentroidFromCoord"}
-        self.measurement.copyColumns["id"] = self.refCatIdColumn
-        self.measurement.copyColumns.pop("deblend_nChild", None)
-        self.measurement.slots.centroid = "base_TransformedCentroidFromCoord"
+        self.configureParquetRefCat("DataFrame")
 
 
 class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
