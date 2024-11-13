@@ -688,6 +688,9 @@ class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
     def setDefaults(self):
         super().setDefaults()
         self.configureParquetRefCat("DataFrame")
+        self.connections.refCat = "{inputCoaddName}Diff_fullDiaObjTable"
+        self.connections.outputSchema = "forced_src_diaObject_schema"
+        self.connections.measCat = "forced_src_diaObject"
 
 
 class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
