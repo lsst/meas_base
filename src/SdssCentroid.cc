@@ -237,15 +237,15 @@ int doMeasureCentroidImpl(double *xCenter,                 // output; x-position
 }
 
 template <typename MaskedImageXy_locatorT>
-int doMeasureCentroidImpl(double *xCenter,                 // output; x-position of object
-                          double *dxc,                     // output; error in xCenter
-                          double *yCenter,                 // output; y-position of object
-                          double *dyc,                     // output; error in yCenter
-                          double *sizeX2, double *sizeY2,  // output; object widths^2 in x and y directions
-                          double *peakVal,                 // output; peak of object
-                          MaskedImageXy_locatorT mim,      // Locator for the pixel values
-                          double smoothingSigma,  // Gaussian sigma of already-applied smoothing filter
-                          bool negative, FlagHandler flagHandler) {
+std::size_t doMeasureCentroidImpl(double *xCenter,                 // output; x-position of object
+                                  double *dxc,                     // output; error in xCenter
+                                  double *yCenter,                 // output; y-position of object
+                                  double *dyc,                     // output; error in yCenter
+                                  double *sizeX2, double *sizeY2,  // output; object widths^2 in x and y directions
+                                  double *peakVal,                 // output; peak of object
+                                  MaskedImageXy_locatorT mim,      // Locator for the pixel values
+                                  double smoothingSigma,  // Gaussian sigma of already-applied smoothing filter
+                                  bool negative) {
     /*
      * find a first quadratic estimate
      */
@@ -346,9 +346,15 @@ int doMeasureCentroidImpl(double *xCenter,                 // output; x-position
 }
 
 template <typename MaskedImageT>
-std::tuple<MaskedImageT, double, int> smoothAndBinImage(std::shared_ptr<afw::detection::Psf const> psf, int const x,
-                                                        const int y, MaskedImageT const &mimage, int binX, int binY,
-                                                        FlagHandler _flagHandler) {
+std::tuple<MaskedImageT, double, std::size_t> smoothAndBinImage(
+    std::shared_ptr<afw::detection::Psf const> psf,
+    int const x,
+    int const y,
+    MaskedImageT const &mimage,
+    int binX,
+    int binY,
+    FlagHandler _flagHandler
+) {
     geom::Point2D const center(x + mimage.getX0(), y + mimage.getY0());
     afw::geom::ellipses::Quadrupole const &shape = psf->computeShape(center);
     double const smoothingSigma = shape.getDeterminantRadius();
@@ -397,6 +403,8 @@ SdssCentroidAlgorithm::SdssCentroidAlgorithm(Control const &ctrl, std::string co
           _flagHandler(FlagHandler::addFields(schema, name, getFlagDefinitions())),
           _centroidExtractor(schema, name, true),
           _centroidChecker(schema, name, ctrl.doFootprintCheck, ctrl.maxDistToPeak) {}
+
+
 void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
                                     afw::image::Exposure<float> const &exposure) const {
     // get our current best guess about the centroid: either a centroider measurement or peak.
@@ -439,10 +447,9 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
     double xc = 0., yc = 0., dxc = 0., dyc = 0.;  // estimated centre and error therein
     bool stopBinning = false;
     for (int binsize = 1; binsize <= _ctrl.binmax; binsize *= 2) {
-        std::tuple<MaskedImageT, double, int> smoothResult =
-            smoothAndBinImage(psf, x, y, mimage, binX, binY, _flagHandler);
-        int errorFlag = std::get<2>(smoothResult);
-        if (errorFlag == static_cast<int>(EDGE.number)) {
+        auto smoothResult = smoothAndBinImage(psf, x, y, mimage, binX, binY, _flagHandler);
+        std::size_t errorFlag = std::get<2>(smoothResult);
+        if (errorFlag == EDGE.number) {
             psf = std::make_shared<afw::detection::GaussianPsf>(5, 5, 0.5);
             smoothResult = smoothAndBinImage(psf, x, y, mimage, binX, binY, _flagHandler);
             stopBinning = true;
@@ -455,7 +462,7 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
             _flagHandler.setValue(measRecord, errorFlag, true);
             _flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
             // if NEAR_EDGE is not a fatal error we continue otherwise return
-            if (errorFlag != static_cast<int>(NEAR_EDGE.number)) {
+            if (errorFlag != NEAR_EDGE.number) {
                 return;
             }
         }
@@ -468,8 +475,8 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
         double sizeX2, sizeY2;  // object widths^2 in x and y directions
         double peakVal;         // peak intensity in image
 
-        errorFlag = doMeasureCentroidImpl(&xc, &dxc, &yc, &dyc, &sizeX2, &sizeY2, &peakVal, mim, smoothingSigma, negative,
-                                          _flagHandler);
+        errorFlag = doMeasureCentroidImpl(&xc, &dxc, &yc, &dyc, &sizeX2, &sizeY2, &peakVal, mim,
+                                          smoothingSigma, negative);
         if (errorFlag > 0) {
             _flagHandler.setValue(measRecord, errorFlag, true);
             _flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
