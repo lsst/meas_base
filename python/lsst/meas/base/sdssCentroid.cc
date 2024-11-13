@@ -52,6 +52,7 @@ PyCentroidControl declareCentroidControl(lsst::cpputils::python::WrapperCollecti
         LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, wfac);
         LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, doFootprintCheck);
         LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, maxDistToPeak);
+        LSST_DECLARE_CONTROL_FIELD(cls, SdssCentroidControl, binIfNotAtMaximum);
 
         cls.def(py::init<>());
     });

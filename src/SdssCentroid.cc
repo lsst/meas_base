@@ -446,6 +446,7 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
     int binY = 1;
     double xc = 0., yc = 0., dxc = 0., dyc = 0.;  // estimated centre and error therein
     bool stopBinning = false;
+    bool suppressedNotAtMaximum = false;
     for (int binsize = 1; binsize <= _ctrl.binmax; binsize *= 2) {
         auto smoothResult = smoothAndBinImage(psf, x, y, mimage, binX, binY, _flagHandler);
         std::size_t errorFlag = std::get<2>(smoothResult);
@@ -463,6 +464,10 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
             _flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
             // if NEAR_EDGE is not a fatal error we continue otherwise return
             if (errorFlag != NEAR_EDGE.number) {
+                if (suppressedNotAtMaximum) {
+                    _flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
+                    _flagHandler.setValue(measRecord, SdssCentroidAlgorithm::NOT_AT_MAXIMUM.number, true);
+                }
                 return;
             }
         }
@@ -477,7 +482,21 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
 
         errorFlag = doMeasureCentroidImpl(&xc, &dxc, &yc, &dyc, &sizeX2, &sizeY2, &peakVal, mim,
                                           smoothingSigma, negative);
+        if (errorFlag == NOT_AT_MAXIMUM.number) {
+            if (_ctrl.binIfNotAtMaximum && !stopBinning) {
+                suppressedNotAtMaximum = true;
+                errorFlag = 0;
+                binX *= 2;
+                binY *= 2;
+                continue;
+            }
+        } else {
+            suppressedNotAtMaximum = false;
+        }
         if (errorFlag > 0) {
+            if (suppressedNotAtMaximum) {
+                _flagHandler.setValue(measRecord, SdssCentroidAlgorithm::NOT_AT_MAXIMUM.number, true);
+            }
             _flagHandler.setValue(measRecord, errorFlag, true);
             _flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
             return;
@@ -517,6 +536,10 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
         if (sizeY2 >= facY2 || ::pow(yc - y, 2) >= facY2) {
             binY *= 2;
         }
+    }
+    if (suppressedNotAtMaximum) {
+        _flagHandler.setValue(measRecord, SdssCentroidAlgorithm::FAILURE.number, true);
+        _flagHandler.setValue(measRecord, SdssCentroidAlgorithm::NOT_AT_MAXIMUM.number, true);
     }
     result.x = afw::image::indexToPosition(xc + image.getX0());
     result.y = afw::image::indexToPosition(yc + image.getY0());

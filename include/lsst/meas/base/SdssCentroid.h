@@ -55,6 +55,12 @@ public:
             maxDistToPeak, double,
             "If >0; maximum distance in pixels between the footprint peak and centroid allowed before "
             "resetToPeak flag is set.");
+    LSST_CONTROL_FIELD(
+            binIfNotAtMaximum, bool,
+            "If a local minimum (rather than a maximum) is detected, bin and "
+            "smooth (as would normally happen for extended sources) before "
+            "giving up."
+    );
     /**
      *  @brief Default constructor
      *
@@ -62,7 +68,8 @@ public:
      */
 
     SdssCentroidControl()
-            : binmax(16), peakMin(-1.0), wfac(1.5), doFootprintCheck(true), maxDistToPeak(1.) {}
+            : binmax(16), peakMin(-1.0), wfac(1.5), doFootprintCheck(true), maxDistToPeak(1.),
+              binIfNotAtMaximum(false) {}
 };
 
 /**
