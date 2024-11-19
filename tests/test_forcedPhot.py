@@ -131,6 +131,7 @@ class ForcedPhotometryTests:
 
 class ForcedPhotCcdTaskTestCase(ForcedPhotometryTests, lsst.utils.tests.TestCase):
     def testRun(self):
+        """Test ForcedPhotCcdTask.run."""
         config = ForcedPhotCcdTask.ConfigClass()
         task = ForcedPhotCcdTask(refSchema=self.refCat.schema, config=config)
         measCat = task.measurement.generateMeasCat(self.exposure, self.refCat, self.exposure.wcs)
@@ -147,65 +148,21 @@ class ForcedPhotCcdTaskTestCase(ForcedPhotometryTests, lsst.utils.tests.TestCase
         self.assertFloatsNotEqual(measCat["base_TransformedCentroid_y"], self.refCat['truth_y'])
 
     def testRunQuantum(self):
+        """Test ForcedPhotCcdTask.runQuantum."""
         config = ForcedPhotCcdTask.ConfigClass()
-        config.useVisitSummary = False
-        config.doApplySkyCorr = False
-        config.idGenerator.packer.name = "observation"
-        config.idGenerator.packer["observation"].n_detectors = 5
-        config.idGenerator.packer["observation"].n_observations = 10
-        pipeline_graph = PipelineGraph(universe=self.universe)
-        pipeline_graph.add_task("forcedPhotCcd", ForcedPhotCcdTask, config)
-        pipeline_graph.resolve(dimensions=self.universe)
-        init_outputs = []
-        (task,) = pipeline_graph.instantiate_tasks(
-            get_init_input=lambda _: SourceCatalog(self.refCat.schema),
-            init_outputs=init_outputs,
+        self.checkRunQuantum(
+            config,
+            lambda _: SourceCatalog(self.refCat.schema),
+            InMemoryDatasetHandle(self.refCat),
+            "base_TransformedCentroid"
         )
-        ((output_schema_cat, _),) = init_outputs
-        self.inputs["refCat"] = [InMemoryDatasetHandle(self.refCat)]
-        exposure_dataset_type = pipeline_graph.dataset_types["calexp"].dataset_type
-        input_refs = _MockRefsStruct(
-            self.inputs,
-            {
-                # This particular runQuantum mostly just gets all inputs at
-                # once, but it does need one DatasetRef with a proper data ID.
-                "exposure": DatasetRef(
-                    exposure_dataset_type,
-                    self.quantum_context.quantum.dataId.subset(exposure_dataset_type.dimensions),
-                    run="arbitrary",
-                )
-            }
-        )
-        output_refs = _MockRefsStruct({}, {})
-        task.runQuantum(self.quantum_context, input_refs, output_refs)
-        measCat = output_refs._datasets["measCat"]
-        self.assertEqual(output_schema_cat.schema, measCat.schema)
-        # Check that something was measured.
-        self.assertTrue(np.isfinite(measCat["base_TransformedCentroid_x"]).all())
-        self.assertTrue(np.isfinite(measCat["base_TransformedCentroid_y"]).all())
-        self.assertTrue(np.isfinite(measCat["base_PsfFlux_instFlux"]).all())
-        # We use an offset WCS, so the transformed centroids should not exactly
-        # match the original positions.
-        self.assertFloatsNotEqual(measCat["base_TransformedCentroid_x"], self.refCat['truth_x'])
-        self.assertFloatsNotEqual(measCat["base_TransformedCentroid_y"], self.refCat['truth_y'])
 
     def testRunQuantumArrowAstropy(self):
+        """Test ForcedPhotCcdTask.runQuantum, with input reconfigured to
+        ArrowAstropy.
+        """
         config = ForcedPhotCcdTask.ConfigClass()
         config.configureParquetRefCat()
-        config.useVisitSummary = False
-        config.doApplySkyCorr = False
-        config.idGenerator.packer.name = "observation"
-        config.idGenerator.packer["observation"].n_detectors = 5
-        config.idGenerator.packer["observation"].n_observations = 10
-        pipeline_graph = PipelineGraph(universe=self.universe)
-        pipeline_graph.add_task("forcedPhotCcd", ForcedPhotCcdTask, config)
-        pipeline_graph.resolve(dimensions=self.universe)
-        init_outputs = []
-        (task,) = pipeline_graph.instantiate_tasks(
-            get_init_input=None,
-            init_outputs=init_outputs,
-        )
-        ((output_schema_cat, _),) = init_outputs
         ref_cat = astropy.table.Table(
             {
                 "diaObjectId": self.refCat["id"],
@@ -213,40 +170,18 @@ class ForcedPhotCcdTaskTestCase(ForcedPhotometryTests, lsst.utils.tests.TestCase
                 "dec": self.refCat["coord_dec"]*180/np.pi
             }
         )
-        self.inputs["refCat"] = [InMemoryDatasetHandle(ref_cat, storageClass="ArrowAstropy")]
-        exposure_dataset_type = pipeline_graph.dataset_types["calexp"].dataset_type
-        input_refs = _MockRefsStruct(
-            self.inputs,
-            {
-                # This particular runQuantum mostly just gets all inputs at
-                # once, but it does need one DatasetRef with a proper data ID.
-                "exposure": DatasetRef(
-                    exposure_dataset_type,
-                    self.quantum_context.quantum.dataId.subset(exposure_dataset_type.dimensions),
-                    run="arbitrary",
-                )
-            }
+        self.checkRunQuantum(
+            config,
+            get_init_input=None,
+            ref_cat_input=InMemoryDatasetHandle(ref_cat, storageClass="ArrowAstropy"),
+            centroid_name="base_TransformedCentroidFromCoord"
         )
-        output_refs = _MockRefsStruct({}, {})
-        task.runQuantum(self.quantum_context, input_refs, output_refs)
-        measCat = output_refs._datasets["measCat"]
-        self.assertEqual(output_schema_cat.schema, measCat.schema)
-        # Check that something was measured.
-        self.assertTrue(np.isfinite(measCat["base_TransformedCentroidFromCoord_x"]).all())
-        self.assertTrue(np.isfinite(measCat["base_TransformedCentroidFromCoord_y"]).all())
-        self.assertTrue(np.isfinite(measCat["base_PsfFlux_instFlux"]).all())
-        # We use an offset WCS, so the transformed centroids should not exactly
-        # match the original positions.
-        self.assertFloatsNotEqual(measCat["base_TransformedCentroidFromCoord_x"], self.refCat['truth_x'])
-        self.assertFloatsNotEqual(measCat["base_TransformedCentroidFromCoord_y"], self.refCat['truth_y'])
 
-
-class ForcedPhotCcdFromDataFrameTaskTestCase(ForcedPhotometryTests, lsst.utils.tests.TestCase):
-    def testRun(self):
-        """Testing run() for this task ignores the dataframe->SourceCatalog
-        conversion that happens in runQuantum, but that should be tested
-        separately.
-        """
+    def testFromDataFrameRun(self):
+        """Test ForcedPhotCcdFromDataFrameTask.run."""
+        # Testing run() for this task ignores the dataframe->SourceCatalog
+        # conversion that happens in runQuantum, but that should be tested
+        # separately.
         config = ForcedPhotCcdFromDataFrameTask.ConfigClass()
         task = ForcedPhotCcdFromDataFrameTask(refSchema=self.refCat.schema, config=config)
         measCat = task.measurement.generateMeasCat(self.exposure, self.refCat, self.exposure.wcs)
@@ -262,22 +197,9 @@ class ForcedPhotCcdFromDataFrameTaskTestCase(ForcedPhotometryTests, lsst.utils.t
         self.assertFloatsNotEqual(measCat["base_TransformedCentroidFromCoord_x"], self.refCat['truth_x'])
         self.assertFloatsNotEqual(measCat["base_TransformedCentroidFromCoord_y"], self.refCat['truth_y'])
 
-    def testRunQuantum(self):
+    def testFromDataFrameRunQuantum(self):
+        """Test ForcedPhotCcdFromDataFrameTask.runQuantum."""
         config = ForcedPhotCcdFromDataFrameTask.ConfigClass()
-        config.useVisitSummary = False
-        config.doApplySkyCorr = False
-        config.idGenerator.packer.name = "observation"
-        config.idGenerator.packer["observation"].n_detectors = 5
-        config.idGenerator.packer["observation"].n_observations = 10
-        pipeline_graph = PipelineGraph(universe=self.universe)
-        pipeline_graph.add_task("forcedPhotCcd", ForcedPhotCcdFromDataFrameTask, config)
-        pipeline_graph.resolve(dimensions=self.universe)
-        init_outputs = []
-        (task,) = pipeline_graph.instantiate_tasks(
-            get_init_input=None,
-            init_outputs=init_outputs,
-        )
-        ((output_schema_cat, _),) = init_outputs
         ref_cat = pd.DataFrame(
             {
                 "diaObjectId": self.refCat["id"],
@@ -285,7 +207,43 @@ class ForcedPhotCcdFromDataFrameTaskTestCase(ForcedPhotometryTests, lsst.utils.t
                 "dec": self.refCat["coord_dec"]*180/np.pi
             }
         )
-        self.inputs["refCat"] = [InMemoryDatasetHandle(ref_cat)]
+        self.checkRunQuantum(
+            config,
+            get_init_input=None,
+            ref_cat_input=InMemoryDatasetHandle(ref_cat, storageClass="DataFrame"),
+            centroid_name="base_TransformedCentroidFromCoord",
+        )
+
+    def checkRunQuantum(self, config, get_init_input, ref_cat_input, centroid_name,
+                        task_class=ForcedPhotCcdTask):
+        """Run tests on a runQuantum method.
+
+        Parameters
+        ----------
+        config : `lsst.meas.base.ForcedPhotCcdConfig`
+            Configuration for the task.
+        get_init_input : callable or `None`
+            Callable that takes a single ignored argument and returns the
+            init-input object expected by the task at construction.
+        ref_cat_input : `lsst.pipe.base.InMemoryDatasetHandle`
+            Handle holding the input reference catalog.
+        centroid_name : `str`
+            Base name of the centroid plugin.
+        task_class : `type`, optional
+            Subclass of `ForcedPhotCcdTask` to use.
+        """
+        config.useVisitSummary = False
+        config.doApplySkyCorr = False
+        config.idGenerator.packer.name = "observation"
+        config.idGenerator.packer["observation"].n_detectors = 5
+        config.idGenerator.packer["observation"].n_observations = 10
+        pipeline_graph = PipelineGraph(universe=self.universe)
+        pipeline_graph.add_task("forcedPhotCcd", task_class, config)
+        pipeline_graph.resolve(dimensions=self.universe)
+        init_outputs = []
+        (task,) = pipeline_graph.instantiate_tasks(get_init_input=get_init_input, init_outputs=init_outputs)
+        ((output_schema_cat, _),) = init_outputs
+        self.inputs["refCat"] = [ref_cat_input]
         exposure_dataset_type = pipeline_graph.dataset_types["calexp"].dataset_type
         input_refs = _MockRefsStruct(
             self.inputs,
@@ -304,13 +262,13 @@ class ForcedPhotCcdFromDataFrameTaskTestCase(ForcedPhotometryTests, lsst.utils.t
         measCat = output_refs._datasets["measCat"]
         self.assertEqual(output_schema_cat.schema, measCat.schema)
         # Check that something was measured.
-        self.assertTrue(np.isfinite(measCat["base_TransformedCentroidFromCoord_x"]).all())
-        self.assertTrue(np.isfinite(measCat["base_TransformedCentroidFromCoord_y"]).all())
+        self.assertTrue(np.isfinite(measCat[f"{centroid_name}_x"]).all())
+        self.assertTrue(np.isfinite(measCat[f"{centroid_name}_y"]).all())
         self.assertTrue(np.isfinite(measCat["base_PsfFlux_instFlux"]).all())
         # We use an offset WCS, so the transformed centroids should not exactly
         # match the original positions.
-        self.assertFloatsNotEqual(measCat["base_TransformedCentroidFromCoord_x"], self.refCat['truth_x'])
-        self.assertFloatsNotEqual(measCat["base_TransformedCentroidFromCoord_y"], self.refCat['truth_y'])
+        self.assertFloatsNotEqual(measCat[f"{centroid_name}_x"], self.refCat['truth_x'])
+        self.assertFloatsNotEqual(measCat[f"{centroid_name}_y"], self.refCat['truth_y'])
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
