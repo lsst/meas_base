@@ -25,17 +25,71 @@ These tests primarily confirm that their respective Tasks can be configured and
 run without errors, but do not check anything about their algorithmic quality.
 """
 
+
+import dataclasses
 import unittest
 
+import astropy.table
 import numpy as np
+import pandas as pd
 
 import lsst.afw.image
+from lsst.afw.geom import SkyWcs
 from lsst.afw.math import ChebyshevBoundedField
+from lsst.afw.table import SourceCatalog
+from lsst.daf.butler import DataCoordinate, DatasetRef, DimensionUniverse
 from lsst.meas.base import ForcedPhotCcdTask, ForcedPhotCcdFromDataFrameTask
+from lsst.pipe.base import InMemoryDatasetHandle, PipelineGraph, Struct
 import lsst.meas.base.tests
 import lsst.utils.tests
 
 skyCenter = lsst.geom.SpherePoint(245.0, -45.0, lsst.geom.degrees)
+
+
+@dataclasses.dataclass
+class _MockQuantum:
+    dataId: DataCoordinate
+
+
+class _MockRefsStruct:
+
+    def __init__(self, datasets: dict[str, object], refs: dict[str, DatasetRef | list[DatasetRef]]):
+        self._datasets = datasets
+        self._refs = refs
+
+    def __getattr__(self, name):
+        return self._refs[name]
+
+
+@dataclasses.dataclass
+class _MockQuantumContext:
+
+    quantum: _MockQuantum
+    outputs: dict
+
+    def get(self, inputs: _MockRefsStruct) -> object:
+        return inputs._datasets
+
+    def put(self, datasets: Struct, outputs: _MockRefsStruct) -> None:
+        outputs._datasets = datasets.__dict__.copy()
+
+
+@dataclasses.dataclass
+class _MockTractInfo:
+
+    wcs: SkyWcs
+
+    def getWcs(self):
+        return self.wcs
+
+
+@dataclasses.dataclass
+class _MockSkyMap:
+
+    wcs: SkyWcs
+
+    def __getitem__(self, tract):
+        return _MockTractInfo(self.wcs)
 
 
 class ForcedPhotometryTests:
@@ -61,9 +115,23 @@ class ForcedPhotometryTests:
         # Offset WCS so that the forced coordinates don't match the truth.
         self.offsetWcs = dataset.makePerturbedWcs(self.exposure.wcs)
 
+        self.universe = DimensionUniverse()
+        self.data_id = DataCoordinate.standardize(
+            instrument="cam", skymap="map", tract=0, visit=1, detector=2, universe=self.universe,
+        )
+        self.quantum_context = _MockQuantumContext(
+            quantum=_MockQuantum(dataId=self.data_id),
+            outputs={},
+        )
+        self.inputs = {
+            "exposure": self.exposure,
+            "skyMap": _MockSkyMap(self.offsetWcs),
+        }
+
 
 class ForcedPhotCcdTaskTestCase(ForcedPhotometryTests, lsst.utils.tests.TestCase):
     def testRun(self):
+        """Test ForcedPhotCcdTask.run."""
         config = ForcedPhotCcdTask.ConfigClass()
         task = ForcedPhotCcdTask(refSchema=self.refCat.schema, config=config)
         measCat = task.measurement.generateMeasCat(self.exposure, self.refCat, self.exposure.wcs)
@@ -79,13 +147,41 @@ class ForcedPhotCcdTaskTestCase(ForcedPhotometryTests, lsst.utils.tests.TestCase
         self.assertFloatsNotEqual(measCat["base_TransformedCentroid_x"], self.refCat['truth_x'])
         self.assertFloatsNotEqual(measCat["base_TransformedCentroid_y"], self.refCat['truth_y'])
 
+    def testRunQuantum(self):
+        """Test ForcedPhotCcdTask.runQuantum."""
+        config = ForcedPhotCcdTask.ConfigClass()
+        self.checkRunQuantum(
+            config,
+            lambda _: SourceCatalog(self.refCat.schema),
+            InMemoryDatasetHandle(self.refCat),
+            "base_TransformedCentroid"
+        )
 
-class ForcedPhotCcdFromDataFrameTaskTestCase(ForcedPhotometryTests, lsst.utils.tests.TestCase):
-    def testRun(self):
-        """Testing run() for this task ignores the dataframe->SourceCatalog
-        conversion that happens in runQuantum, but that should be tested
-        separately.
+    def testRunQuantumArrowAstropy(self):
+        """Test ForcedPhotCcdTask.runQuantum, with input reconfigured to
+        ArrowAstropy.
         """
+        config = ForcedPhotCcdTask.ConfigClass()
+        config.configureParquetRefCat()
+        ref_cat = astropy.table.Table(
+            {
+                "diaObjectId": self.refCat["id"],
+                "ra": self.refCat["coord_ra"]*180/np.pi,
+                "dec": self.refCat["coord_dec"]*180/np.pi
+            }
+        )
+        self.checkRunQuantum(
+            config,
+            get_init_input=None,
+            ref_cat_input=InMemoryDatasetHandle(ref_cat, storageClass="ArrowAstropy"),
+            centroid_name="base_TransformedCentroidFromCoord"
+        )
+
+    def testFromDataFrameRun(self):
+        """Test ForcedPhotCcdFromDataFrameTask.run."""
+        # Testing run() for this task ignores the dataframe->SourceCatalog
+        # conversion that happens in runQuantum, but that should be tested
+        # separately.
         config = ForcedPhotCcdFromDataFrameTask.ConfigClass()
         task = ForcedPhotCcdFromDataFrameTask(refSchema=self.refCat.schema, config=config)
         measCat = task.measurement.generateMeasCat(self.exposure, self.refCat, self.exposure.wcs)
@@ -100,6 +196,79 @@ class ForcedPhotCcdFromDataFrameTaskTestCase(ForcedPhotometryTests, lsst.utils.t
         # match the original positions.
         self.assertFloatsNotEqual(measCat["base_TransformedCentroidFromCoord_x"], self.refCat['truth_x'])
         self.assertFloatsNotEqual(measCat["base_TransformedCentroidFromCoord_y"], self.refCat['truth_y'])
+
+    def testFromDataFrameRunQuantum(self):
+        """Test ForcedPhotCcdFromDataFrameTask.runQuantum."""
+        config = ForcedPhotCcdFromDataFrameTask.ConfigClass()
+        ref_cat = pd.DataFrame(
+            {
+                "diaObjectId": self.refCat["id"],
+                "ra": self.refCat["coord_ra"]*180/np.pi,
+                "dec": self.refCat["coord_dec"]*180/np.pi
+            }
+        )
+        self.checkRunQuantum(
+            config,
+            get_init_input=None,
+            ref_cat_input=InMemoryDatasetHandle(ref_cat, storageClass="DataFrame"),
+            centroid_name="base_TransformedCentroidFromCoord",
+        )
+
+    def checkRunQuantum(self, config, get_init_input, ref_cat_input, centroid_name,
+                        task_class=ForcedPhotCcdTask):
+        """Run tests on a runQuantum method.
+
+        Parameters
+        ----------
+        config : `lsst.meas.base.ForcedPhotCcdConfig`
+            Configuration for the task.
+        get_init_input : callable or `None`
+            Callable that takes a single ignored argument and returns the
+            init-input object expected by the task at construction.
+        ref_cat_input : `lsst.pipe.base.InMemoryDatasetHandle`
+            Handle holding the input reference catalog.
+        centroid_name : `str`
+            Base name of the centroid plugin.
+        task_class : `type`, optional
+            Subclass of `ForcedPhotCcdTask` to use.
+        """
+        config.useVisitSummary = False
+        config.doApplySkyCorr = False
+        config.idGenerator.packer.name = "observation"
+        config.idGenerator.packer["observation"].n_detectors = 5
+        config.idGenerator.packer["observation"].n_observations = 10
+        pipeline_graph = PipelineGraph(universe=self.universe)
+        pipeline_graph.add_task("forcedPhotCcd", task_class, config)
+        pipeline_graph.resolve(dimensions=self.universe)
+        init_outputs = []
+        (task,) = pipeline_graph.instantiate_tasks(get_init_input=get_init_input, init_outputs=init_outputs)
+        ((output_schema_cat, _),) = init_outputs
+        self.inputs["refCat"] = [ref_cat_input]
+        exposure_dataset_type = pipeline_graph.dataset_types["calexp"].dataset_type
+        input_refs = _MockRefsStruct(
+            self.inputs,
+            {
+                # This particular runQuantum mostly just gets all inputs at
+                # once, but it does need one DatasetRef with a proper data ID.
+                "exposure": DatasetRef(
+                    exposure_dataset_type,
+                    self.quantum_context.quantum.dataId.subset(exposure_dataset_type.dimensions),
+                    run="arbitrary",
+                )
+            }
+        )
+        output_refs = _MockRefsStruct({}, {})
+        task.runQuantum(self.quantum_context, input_refs, output_refs)
+        measCat = output_refs._datasets["measCat"]
+        self.assertEqual(output_schema_cat.schema, measCat.schema)
+        # Check that something was measured.
+        self.assertTrue(np.isfinite(measCat[f"{centroid_name}_x"]).all())
+        self.assertTrue(np.isfinite(measCat[f"{centroid_name}_y"]).all())
+        self.assertTrue(np.isfinite(measCat["base_PsfFlux_instFlux"]).all())
+        # We use an offset WCS, so the transformed centroids should not exactly
+        # match the original positions.
+        self.assertFloatsNotEqual(measCat[f"{centroid_name}_x"], self.refCat['truth_x'])
+        self.assertFloatsNotEqual(measCat[f"{centroid_name}_y"], self.refCat['truth_y'])
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
