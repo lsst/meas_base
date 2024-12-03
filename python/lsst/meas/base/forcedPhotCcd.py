@@ -575,7 +575,7 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         x, y = mapping.applyInverse(
             np.array(df[[self.config.refCatRaColumn, self.config.refCatDecColumn]].values*2*np.pi/360).T
         )
-        inBBox = lsst.geom.Box2D(exposureBBox).contains(x, y)
+        inBBox = np.atleast_1d(lsst.geom.Box2D(exposureBBox).contains(x, y))
         refCat = self._makeMinimalSourceCatalogFromDataFrame(df[inBBox])
         return refCat
 
