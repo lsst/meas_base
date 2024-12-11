@@ -125,7 +125,7 @@ We then might plot the results (e.g. if you set ``--doDisplay`` on the command l
         with disp.Buffering():
             for s in sources:
                 xy = s.getCentroid()
-                disp.dot('+', *xy, ctype=afwDisplay.CYAN if s.get("flags_negative") else afwDisplay.GREEN)
+                disp.dot('+', *xy, ctype=afwDisplay.CYAN if s.get("is_negative") else afwDisplay.GREEN)
                 disp.dot(s.getShape(), *xy, ctype=afwDisplay.RED)
 
 and end up with something like
