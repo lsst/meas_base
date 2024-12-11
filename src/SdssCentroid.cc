@@ -411,7 +411,7 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
     typedef MaskedImageT::Variance VarianceT;
     bool negative = false;
     try {
-        negative = measRecord.get(measRecord.getSchema().find<afw::table::Flag>("flags_negative").key);
+        negative = measRecord.get(measRecord.getSchema().find<afw::table::Flag>("is_negative").key);
     } catch (pexExcept::Exception &e) {
     }
 

@@ -883,7 +883,7 @@ void SdssShapeAlgorithm::measure(afw::table::SourceRecord &measRecord,
     bool negative = false;
 
     try {
-        negative = measRecord.get(measRecord.getSchema().find<afw::table::Flag>("flags_negative").key);
+        negative = measRecord.get(measRecord.getSchema().find<afw::table::Flag>("is_negative").key);
     } catch (pexExcept::Exception &e) {
     }
     SdssShapeResult result = computeAdaptiveMoments(
