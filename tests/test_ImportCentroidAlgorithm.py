@@ -79,7 +79,7 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
         exp = afwImage.makeExposure(im)
 
         schema = afwTable.SourceTable.makeMinimalSchema()
-        schema.addField("flags_negative", type="Flag",
+        schema.addField("is_negative", type="Flag",
                         doc="set if source was detected as significantly negative")
         sfm_config = lsst.meas.base.sfm.SingleFrameMeasurementConfig()
         sfm_config.plugins = ["testLib_SillyCentroid"]
@@ -100,7 +100,7 @@ class CentroidTestCase(lsst.utils.tests.TestCase):
         source.set("testLib_SillyCentroid_x", x)
         source.set("testLib_SillyCentroid_y", y)
         source.set("parent", 0)
-        source.set("flags_negative", False)
+        source.set("is_negative", False)
 
         # now run the SFM task with the test plugin
         task.run(measCat, exp)
