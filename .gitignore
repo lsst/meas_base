@@ -25,3 +25,4 @@ tests/*.log
 ups/*.cfgc
 bin/forcedPhotCcd.py
 bin/forcedPhotCoadd.py
+python/*.dist-info/
