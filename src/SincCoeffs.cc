@@ -39,7 +39,15 @@ namespace base {
 namespace {
 
 // Convenient wrapper for a Bessel function
-inline double J1(double const x) { return boost::math::cyl_bessel_j(1, x); }
+inline double J1(double const x) {
+    // Some versions of boost assert that x >= 0
+    // which fails for NaN. Retain previous behavior
+    // and return NaN for NaN.
+    if (std::isnan(x)) {
+        return x;
+    }
+    return boost::math::cyl_bessel_j(1, x);
+}
 
 // sinc function
 template <typename T>
