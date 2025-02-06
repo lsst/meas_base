@@ -297,7 +297,12 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         """
         # First, create a catalog of all parentless sources. Loop through all
         # the parent sources, first processing the children, then the parent.
-        measParentCat = measCat.getChildren(0)
+        if 'deblend_nChild' in measCat.schema:
+            # Scarlet can create hierarcical blends, so we need a different
+            # check to ensure that we include all of the parents
+            measParentCat = measCat[(measCat['parent'] == 0) | (measCat['deblend_nChild'] > 0)]
+        else:
+            measParentCat = measCat.getChildren(0)
 
         nMeasCat = len(measCat)
         nMeasParentCat = len(measParentCat)
