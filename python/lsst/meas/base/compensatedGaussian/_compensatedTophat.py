@@ -44,7 +44,7 @@ class SingleFrameCompensatedTophatFluxConfig(SingleFramePluginConfig):
         doc="The aperture radii (in pixels) to measure the top-hats.",
         dtype=int,
         minLength=1,
-        default=[12,],
+        default=[12, ],
     )
     inner_scale = RangeField(
         doc="Inner background annulus scale (relative to aperture).",

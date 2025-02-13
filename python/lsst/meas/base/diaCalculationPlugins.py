@@ -316,7 +316,10 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
         **kwargs : `dict`
             Unused kwargs that are always passed to a plugin.
         """
-        n_bands = len(diaSources["band"].unique())
+        # n_bands = len(diaSources["band"].unique())
+        bands_list = ['u', 'g', 'r', 'i', 'z', 'y']
+        bands_arr = diaSources['band'].unique().values
+        unique_bands = np.unique(np.concatenate(bands_arr))
         # Check and initialize output columns in diaObjects.
         if (periodCol := "multiPeriod") not in diaObjects.columns:
             diaObjects[periodCol] = np.nan
@@ -324,12 +327,28 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             diaObjects[powerCol] = np.nan
         if (fapCol := "multiFap") not in diaObjects.columns:
             diaObjects[fapCol] = np.nan
-        if (ampCol := "multiAmp") not in diaObjects.columns:
-            diaObjects[ampCol] = pd.Series([np.nan]*n_bands, dtype="object")
-        if (phaseCol := "multiPhase") not in diaObjects.columns:
-            diaObjects[phaseCol] = pd.Series([np.nan]*n_bands, dtype="object")
+        # import pdb; pdb.set_trace()
+        ampCol = "multiAmp"
+        phaseCol = "multiPhase"
+        # unique_bands = diaSources["band"].unique()
+        # unique_bands = np.unique(bands_list)
+        for i in range(len(unique_bands)):
+            ampCol_band = f"{unique_bands[i]}_{ampCol}"
+            # if (ampCol := ampCol_band) not in diaObjects.columns:
+            if ampCol_band not in diaObjects.columns:
+                diaObjects[ampCol_band] = np.nan
+            phaseCol_band = f"{unique_bands[i]}_{phaseCol}"
+            # if (phaseCol := phaseColb_band) not in diaObjects.columns:
+            if phaseCol_band not in diaObjects.columns:
+                diaObjects[phaseCol_band] = np.nan
 
-        def _calculate_period_multi(df, min_detections=9, oversampling_factor=5, nyquist_factor=100):
+        # if (ampCol := "multiAmp") not in diaObjects.columns:
+        #     diaObjects[ampCol] = pd.Series([np.nan]*n_bands, dtype="object")
+        # if (phaseCol := "multiPhase") not in diaObjects.columns:
+        #     diaObjects[phaseCol] = pd.Series([np.nan]*n_bands, dtype="object")
+
+        def _calculate_period_multi(df, all_unique_bands,
+                                    min_detections=9, oversampling_factor=5, nyquist_factor=100):
             """Calculate the multi-band Lomb-Scargle periodogram.
 
             Parameters
@@ -352,11 +371,14 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                                       np.isnan(df["midpointMjdTai"]))]
 
             if (len(tmpDf)) < min_detections:
-                return pd.Series({periodCol: np.nan,
-                                  powerCol: np.nan,
-                                  fapCol: np.nan,
-                                  ampCol: pd.Series([np.nan]*n_bands, dtype="object"),
-                                  phaseCol: pd.Series([np.nan]*n_bands, dtype="object")})
+                pd_tab_nodet = pd.Series({periodCol: np.nan,
+                                          powerCol: np.nan,
+                                          fapCol: np.nan})
+                for band in all_unique_bands:
+                    pd_tab_nodet[f"{band}_{ampCol}"] = np.nan
+                    pd_tab_nodet[f"{band}_{phaseCol}"] = np.nan
+                
+                return pd_tab_nodet
 
             time = tmpDf["midpointMjdTai"].to_numpy()
             flux = tmpDf["psfFlux"].to_numpy()
@@ -378,15 +400,40 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
 
             pd_tab = pd.Series({periodCol: period[np.argmax(power)],
                                 powerCol: np.max(power),
-                                fapCol: fap_estimate,
-                                ampCol: params_table_new[0],
-                                phaseCol: params_table_new[1]
+                                fapCol: fap_estimate
                                 })
+
+            # Initialize the per-band amplitude/phase columns as NaNs
+            # all_unique_bands = unique_bands
+            for band in all_unique_bands:
+                pd_tab[f"{band}_{ampCol}"] = np.nan
+                pd_tab[f"{band}_{phaseCol}"] = np.nan
+
+            # Populate the values of only the bands that have data for this diaSource
+            unique_bands = np.unique(bands)
+            for i in range(len(unique_bands)):
+                pd_tab[f"{unique_bands[i]}_{ampCol}"] = params_table_new[0][i]
+                pd_tab[f"{unique_bands[i]}_{phaseCol}"] = params_table_new[1][i]
+
+            # pd_tab = pd.Series({periodCol: period[np.argmax(power)],
+            #                     powerCol: np.max(power),
+            #                     fapCol: fap_estimate,
+            #                     ampCol: params_table_new[0],
+            #                     phaseCol: params_table_new[1]
+            #                     })
 
             return pd_tab
 
-        diaObjects.loc[:, [periodCol, powerCol, fapCol, ampCol, phaseCol]
-                       ] = diaSources.apply(_calculate_period_multi)
+        columns_list = [periodCol, powerCol, fapCol]
+        for i in range(len(unique_bands)):
+            columns_list.append(f"{unique_bands[i]}_{ampCol}")
+            columns_list.append(f"{unique_bands[i]}_{phaseCol}")
+
+        # import pdb; pdb.set_trace()
+
+        # diaObjects.loc[:, [periodCol, powerCol, fapCol, ampCol, phaseCol]
+        diaObjects.loc[:, columns_list
+                       ] = diaSources.apply(_calculate_period_multi, unique_bands)
 
 
 class MeanDiaPositionConfig(DiaObjectCalculationPluginConfig):
