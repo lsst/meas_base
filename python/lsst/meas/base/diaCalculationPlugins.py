@@ -368,7 +368,7 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                 for band in all_unique_bands:
                     pd_tab_nodet[f"{band}_{ampCol}"] = np.nan
                     pd_tab_nodet[f"{band}_{phaseCol}"] = np.nan
-                
+
                 return pd_tab_nodet
 
             time = tmpDf["midpointMjdTai"].to_numpy()
