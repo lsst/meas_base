@@ -355,7 +355,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         # Create parent cat which slices both the refCat and measCat (sources)
         # first, get the reference and source records which have no parent
         if 'deblend_nChild' in measCat.schema:
-            # Scarlet can create hierarcical blends, so we need a different
+            # Scarlet can create hierarchical blends, so we need a different
             # check to ensure that we include all of the parents
             indices = (refCat["deblend_nChild"] > 0) | (refCat["parent"] == 0)
             refParentCat = refCat[indices]
