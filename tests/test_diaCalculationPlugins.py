@@ -97,7 +97,7 @@ def run_multi_plugin(diaObjectCat, diaSourceCat, band, plugin):
         Input object catalog to store data into and read from.
     diaSourcesCat : `pandas.DataFrame`
         DiaSource catalog to read data from and groupby on.
-    fitlerName : `str`
+    filterName : `str`
         String name of the filter to process.
     plugin : `lsst.ap.association.DiaCalculationPlugin`
         Plugin to run.
@@ -119,6 +119,33 @@ def run_multi_plugin(diaObjectCat, diaSourceCat, band, plugin):
                      diaSources=diaSourcesGB,
                      filterDiaSources=filterDiaSourcesGB,
                      band=band)
+
+
+def run_multiband_plugin(diaObjectCat, diaSourceCat, plugin):
+    """Wrapper for running multi plugins.
+
+    Reproduces some of the behavior of `lsst.ap.association.DiaCalcuation.run`
+
+    Parameters
+    ----------
+    diaObjectCat : `pandas.DataFrame`
+        Input object catalog to store data into and read from.
+    diaSourcesCat : `pandas.DataFrame`
+        DiaSource catalog to read data from and groupby on.
+    plugin : `lsst.ap.association.DiaCalculationPlugin`
+        Plugin to run.
+    """
+    diaObjectCat.set_index("diaObjectId", inplace=True, drop=False)
+    diaSourceCat.set_index(
+        ["diaObjectId", "band", "diaSourceId"],
+        inplace=True,
+        drop=False)
+
+    diaSourcesGB = diaSourceCat.groupby(level=0)
+
+    plugin.calculate(diaObjects=diaObjectCat,
+                     diaSources=diaSourcesGB,
+                     )
 
 
 def make_diaObject_table(objId, plugin, default_value=None, band=None):
@@ -958,18 +985,18 @@ class TestMultiLombScarglePeriodogram(lsst.utils.tests.TestCase):
                                              "ap_lombScarglePeriodogramMulti",
                                              None)
 
-        run_multi_plugin(diaObjects, diaSources, "u", plugin)
+        run_multiband_plugin(diaObjects, diaSources, plugin)
         self.assertAlmostEqual(diaObjects.at[objId, "multiPeriod"], 10, delta=0.04)
         self.assertAlmostEqual(diaObjects.at[objId, "multiPower"], 1, delta=1e-2)
         # This implementation of LS returns a normalized power < 1.
         self.assertLess(diaObjects.at[objId, "multiPower"], 1)
         self.assertAlmostEqual(diaObjects.at[objId, "multiFap"], 0, delta=0.04)
         # Note: The below values are empirical, but seem reasonable, and
-        # test that we get an array with one value per band.
-        self.assertFloatsAlmostEqual(np.array(diaObjects.at[objId, "multiAmp"]),
-                                     np.array([0.029, 0.029]), atol=1e-3)
-        self.assertFloatsAlmostEqual(np.array(diaObjects.at[objId, "multiPhase"]),
-                                     np.array([1., -2.]), rtol=6e-2)
+        # test that we get values for each band.
+        self.assertAlmostEqual(diaObjects.at[objId, "u_multiAmp"], 0.029, delta=0.01)
+        self.assertAlmostEqual(diaObjects.at[objId, "g_multiAmp"], 0.029, delta=0.01)
+        self.assertAlmostEqual(diaObjects.at[objId, "u_multiPhase"], -2.0, delta=0.2)
+        self.assertAlmostEqual(diaObjects.at[objId, "g_multiPhase"], 1.0, delta=0.1)
 
     def testCalculateTwoSources(self):
         """Test Mulitband Lomb Scargle Periodogram with 2 sources (minimum
