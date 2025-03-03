@@ -320,12 +320,24 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
         bands_arr = diaSources['band'].unique().values
         unique_bands = np.unique(np.concatenate(bands_arr))
         # Check and initialize output columns in diaObjects.
-        if (periodCol := "multiPeriod") not in diaObjects.columns:
-            diaObjects[periodCol] = np.nan
-        if (powerCol := "multiPower") not in diaObjects.columns:
-            diaObjects[powerCol] = np.nan
-        if (fapCol := "multiFap") not in diaObjects.columns:
-            diaObjects[fapCol] = np.nan
+        if (periodCol1 := "multiPeriod1") not in diaObjects.columns:
+            diaObjects[periodCol1] = np.nan
+        if (periodCol2 := "multiPeriod2") not in diaObjects.columns:
+            diaObjects[periodCol2] = np.nan
+        if (periodCol3 := "multiPeriod3") not in diaObjects.columns:
+            diaObjects[periodCol3] = np.nan
+        if (powerCol1 := "multiPower1") not in diaObjects.columns:
+            diaObjects[powerCol1] = np.nan
+        if (powerCol2 := "multiPower2") not in diaObjects.columns:
+            diaObjects[powerCol2] = np.nan
+        if (powerCol3 := "multiPower3") not in diaObjects.columns:
+            diaObjects[powerCol3] = np.nan
+        if (fapCol1 := "multiFap1") not in diaObjects.columns:
+            diaObjects[fapCol1] = np.nan
+        if (fapCol2 := "multiFap2") not in diaObjects.columns:
+            diaObjects[fapCol2] = np.nan
+        if (fapCol3 := "multiFap3") not in diaObjects.columns:
+            diaObjects[fapCol3] = np.nan
         ampCol = "multiAmp"
         phaseCol = "multiPhase"
         for i in range(len(unique_bands)):
@@ -362,9 +374,15 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                                       np.isnan(df["midpointMjdTai"]))]
 
             if (len(tmpDf)) < min_detections:
-                pd_tab_nodet = pd.Series({periodCol: np.nan,
-                                          powerCol: np.nan,
-                                          fapCol: np.nan})
+                pd_tab_nodet = pd.Series({periodCol1: np.nan,
+                                          periodCol2: np.nan,
+                                          periodCol3: np.nan,
+                                          powerCol1: np.nan,
+                                          powerCol2: np.nan,
+                                          powerCol3: np.nan,
+                                          fapCol1: np.nan,
+                                          fapCol2: np.nan,
+                                          fapCol3: np.nan})
                 for band in all_unique_bands:
                     pd_tab_nodet[f"{band}_{ampCol}"] = np.nan
                     pd_tab_nodet[f"{band}_{phaseCol}"] = np.nan
@@ -384,15 +402,29 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             period = 1/f_grid
             power = lsp.power(f_grid)
 
-            fap_estimate = self.calculate_baluev_fap(
-                time, len(time), period[np.argmax(power)], np.max(power))
+            # Select the top 3 L-S peaks
+            ind = np.argpartition(power, -3)[-3:]
+            sorted_ind = ind[np.argsort(power[ind])[::-1]]
+            top3_periods = period[sorted_ind]
+            top3_power = power[sorted_ind]
+
+            fap_estimates = {}
+            period_cols = {}
+            power_cols = {}
+            for i in range(3):
+                fap_estimate = self.calculate_baluev_fap(
+                    time, len(time), top3_periods[i], top3_power[i])
+                fap_estimates[f"fapCol{i}": fap_estimate]
+                period_cols[f"periodCol{i}": top3_periods[i]]
+                fap_estimates[f"powerCol{i}": top3_power[i]]
 
             params_table_new = self.generate_lsp_params(lsp, f_grid[np.argmax(power)], bands)
 
-            pd_tab = pd.Series({periodCol: period[np.argmax(power)],
-                                powerCol: np.max(power),
-                                fapCol: fap_estimate
-                                })
+            pd_tab = pd.Series(period_cols, power_cols, fap_estimates)
+            # pd_tab = pd.Series({periodCol: period[np.argmax(power)],
+            #                     powerCol: np.max(power),
+            #                     fapCol: fap_estimate
+            #                     })
 
             # Initialize the per-band amplitude/phase columns as NaNs
             for band in all_unique_bands:
@@ -407,7 +439,9 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
 
             return pd_tab
 
-        columns_list = [periodCol, powerCol, fapCol]
+        columns_list = [periodCol1, periodCol2, periodCol3,
+                        powerCol1, powerCol2, powerCol3,
+                        fapCol1, fapCol2, fapCol3]
         for i in range(len(unique_bands)):
             columns_list.append(f"{unique_bands[i]}_{ampCol}")
             columns_list.append(f"{unique_bands[i]}_{phaseCol}")
