@@ -198,7 +198,7 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         task.run(catalog, exposure)
         record = catalog[0]
         print(record)
-        # import os; print(os.getpid()); import ipdb; ipdb.set_trace();
+        import os; print(os.getpid()); import ipdb; ipdb.set_trace();
         self.assertFalse(record.get("base_SdssCentroid_flag"))
         self.assertFalse(record.get("base_SdssCentroid_flag_edge"))
         self.assertFalse(record.get("base_SdssCentroid_flag_notAtMaximum"))

@@ -394,6 +394,8 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                                 fapCol: fap_estimate
                                 })
 
+            import os; print(os.getpid()); import ipdb; ipdb.set_trace();
+
             # Initialize the per-band amplitude/phase columns as NaNs
             for band in all_unique_bands:
                 pd_tab[f"{band}_{ampCol}"] = np.nan
