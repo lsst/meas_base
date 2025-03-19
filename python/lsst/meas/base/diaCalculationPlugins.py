@@ -406,11 +406,15 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             power = lsp.power(f_grid)
 
             # Select the top 3 L-S peaks
-            # ind = np.argpartition(power, -3)[-3:]
             npeaks = 3
             # argpartition sorts nans at the high end, so need to skip those:
             nnans = np.isnan(power).sum()
-            ind = np.argpartition(power, -npeaks-nnans)[-npeaks-nnans:-nnans]
+
+            if nnans > 0:
+                ind = np.argpartition(power, -npeaks-nnans)[-npeaks-nnans:-nnans]
+                sorted_ind = ind[np.argsort(power[ind])[::-1]]
+            else:
+                ind = np.argpartition(power, -npeaks)[-npeaks:]
             sorted_ind = ind[np.argsort(power[ind])[::-1]]
             top3_periods = period[sorted_ind]
             top3_power = power[sorted_ind]
@@ -421,9 +425,9 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
             for i in range(3):
                 fap_estimate = self.calculate_baluev_fap(
                     time, len(time), top3_periods[i], top3_power[i])
-                fap_estimates[f"fapCol{i+1}": fap_estimate]
-                period_cols[f"periodCol{i+1}": top3_periods[i]]
-                power_cols[f"powerCol{i+1}": top3_power[i]]
+                fap_estimates[f"fapCol{i+1}"] = fap_estimate
+                period_cols[f"periodCol{i+1}"] = top3_periods[i]
+                power_cols[f"powerCol{i+1}"] = top3_power[i]
 
             params_table_new = self.generate_lsp_params(lsp, f_grid[np.argmax(power)], bands)
 
@@ -436,11 +440,6 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                                 fapCol1: fap_estimates['fapCol1'],
                                 fapCol2: fap_estimates['fapCol2'],
                                 fapCol3: fap_estimates['fapCol3']})
-            # pd_tab = pd.Series(period_cols, power_cols, fap_estimates)
-            # pd_tab = pd.Series({periodCol: period[np.argmax(power)],
-            #                     powerCol: np.max(power),
-            #                     fapCol: fap_estimate
-            #                     })
 
             # Initialize the per-band amplitude/phase columns as NaNs
             for band in all_unique_bands:
