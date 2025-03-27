@@ -160,15 +160,17 @@ class RegisteredPluginsTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         task.log.setLevel(task.log.ERROR)
         task.run(measCat, exposure, refCat, refWcs)
         for pluginName in dependencies:
-            plugin = task.plugins[pluginName]
-            if hasattr(plugin, "hasLogName") and plugin.hasLogName:
-                child_log = task.log.getChild(pluginName)
-                self.assertEqual(plugin.getLogName(), child_log.name)
-                # if the plugin is cpp, check the cpp Algorithm as well
-                if hasattr(plugin, "cpp"):
-                    self.assertEqual(plugin.cpp.getLogName(), child_log.name)
-            else:
-                self.assertIsNone(plugin.getLogName())
+            # Exclude PixelFlags and Centroid plugins because they run before all the others
+            if (pluginName != "base_PixelFlags") and (pluginName != "base_TransformedCentroid"):
+                plugin = task.plugins[pluginName]
+                if hasattr(plugin, "hasLogName") and plugin.hasLogName:
+                    child_log = task.log.getChild(pluginName)
+                    self.assertEqual(plugin.getLogName(), child_log.name)
+                    # if the plugin is cpp, check the cpp Algorithm as well
+                    if hasattr(plugin, "cpp"):
+                        self.assertEqual(plugin.cpp.getLogName(), child_log.name)
+                else:
+                    self.assertIsNone(plugin.getLogName())
 
 
 class LoggingPythonTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
