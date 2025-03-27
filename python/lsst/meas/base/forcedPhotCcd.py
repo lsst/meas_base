@@ -196,10 +196,12 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
             "Ignored if refCatStorageClass='SourceCatalog'."
         )
     )
+    # TODO[DM-49400]: remove this config option; it already does nothing.
     includePhotoCalibVar = lsst.pex.config.Field(
         dtype=bool,
         default=False,
         doc="Add photometric calibration variance to warp variance plane?",
+        deprecated="Deprecated and unused; will be removed after v29.",
     )
     footprintSource = lsst.pex.config.ChoiceField(
         dtype=str,
