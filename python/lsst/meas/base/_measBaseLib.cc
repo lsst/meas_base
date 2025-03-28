@@ -44,7 +44,6 @@ void wrapFlagHandler(WrapperCollection&);
 void wrapGaussianFlux(WrapperCollection &);
 void wrapInputUtilities(WrapperCollection&);
 void wrapLocalBackground(WrapperCollection&);
-void wrapNaiveCentroid(WrapperCollection&);
 void wrapPeakLikelihoodFlux(WrapperCollection&);
 void wrapPixelFLags(WrapperCollection&);
 void wrapPsfFlux(WrapperCollection&);
@@ -78,7 +77,6 @@ PYBIND11_MODULE(_measBaseLib, mod) {
     wrapGaussianFlux(wrappers);
     wrapInputUtilities(wrappers);
     wrapLocalBackground(wrappers);
-    wrapNaiveCentroid(wrappers);
     wrapPeakLikelihoodFlux(wrappers);
     wrapPixelFLags(wrappers);
     wrapPsfFlux(wrappers);

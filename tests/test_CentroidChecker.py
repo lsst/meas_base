@@ -196,22 +196,6 @@ class CentroidCheckerTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertTrue(source.get("test_Centroider_flag_resetToPeak"))
         self.assertEqual(source.getFootprint().getPeaks()[0].getFx(), source.get("test_Centroider_x"))
 
-    # Remove this test on DM-41701
-    def testNaiveCentroid(self):
-        """Test the `NaiveCentroid` works with the ``maxDistance`` check.
-        """
-        schema = self.dataset.makeMinimalSchema()
-        self.algName = "base_NaiveCentroid"
-        config = self.makeSingleFrameMeasurementConfig(plugin=self.algName)
-        config.plugins[self.algName].maxDistToPeak = .0001
-        with self.assertWarnsRegex(FutureWarning, "Plugin 'NaiveCentroid' is deprecated"):
-            task = lsst.meas.base.SingleFrameMeasurementTask(schema=schema, config=config)
-        exposure, cat = self.dataset.realize(noise=100.0, schema=schema, randomSeed=3)
-        source = cat[0]
-        task.run(cat, exposure)
-        self.assertTrue(source.get("base_NaiveCentroid_flag"))
-        self.assertTrue(source.get("base_NaiveCentroid_flag_resetToPeak"))
-
     def testSdssCentroid(self):
         """Test the `SdssCentroid` works with the ``maxDistance`` check.
         """

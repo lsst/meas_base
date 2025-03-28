@@ -105,7 +105,7 @@ included in the idList, effectively turning them into parents. The
     )
     measTask.runPlugins(rebuildNoiseReplacer(exposure, srcCat), newSrcCatalog, exposure)
     # None of these objects have centroids
-    print(len(newSrcCatalog), np.sum(np.isnan(newSrcCatalog["base_NaiveCentroid_x"])))
+    print(len(newSrcCatalog), np.sum(np.isnan(newSrcCatalog["slot_Centroid_x"])))
 
     # resetParents=True (default) resets parents and takes a few seconds longer
     newSrcCatalog = makeRerunCatalog(
@@ -113,7 +113,7 @@ included in the idList, effectively turning them into parents. The
     )
     measTask.runPlugins(rebuildNoiseReplacer(exposure, srcCat), newSrcCatalog, exposure)
     # Now none of the objects have nan centroids
-    print(len(newSrcCatalog), np.sum(np.isnan(newSrcCatalog["base_NaiveCentroid_x"])))
+    print(len(newSrcCatalog), np.sum(np.isnan(newSrcCatalog["slot_Centroid_x"])))
 
     # Setting addParents=True adds all parents and takes a little longer still
     newSrcCatalog = makeRerunCatalog(
@@ -121,4 +121,4 @@ included in the idList, effectively turning them into parents. The
     )
     measTask.runPlugins(rebuildNoiseReplacer(exposure, srcCat), newSrcCatalog, exposure)
     # None of the objects have nan centroids and the catalog is larger than above
-    print(len(newSrcCatalog), np.sum(np.isnan(newSrcCatalog["base_NaiveCentroid_x"])))
+    print(len(newSrcCatalog), np.sum(np.isnan(newSrcCatalog["slot_Centroid_x"])))
