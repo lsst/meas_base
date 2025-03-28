@@ -36,7 +36,6 @@
 #include "lsst/meas/base/SdssShape.h"
 #include "lsst/meas/base/PixelFlags.h"
 #include "lsst/meas/base/GaussianFlux.h"
-#include "lsst/meas/base/NaiveCentroid.h"
 #include "lsst/meas/base/PeakLikelihoodFlux.h"
 #include "lsst/meas/base/ApertureFlux.h"
 #include "lsst/meas/base/ScaledApertureFlux.h"
