@@ -365,6 +365,8 @@ void SdssCentroidAlgorithm::measure(afw::table::SourceRecord &measRecord,
         double sizeX2, sizeY2;  // object widths^2 in x and y directions
         double peakVal;         // peak intensity in image
 
+        std::cout << errorFlag << " " << negative << " " << xc << " " << yc << " " << dxc << " " << dyc
+                  << std::endl;
         errorFlag = doMeasureCentroidImpl(&xc, &dxc, &yc, &dyc, &sizeX2, &sizeY2, &peakVal, mim,
                                           smoothingSigma, negative, _flagHandler);
         std::cout << errorFlag << " " << negative << " " << xc << " " << yc << " " << dxc << " " << dyc
