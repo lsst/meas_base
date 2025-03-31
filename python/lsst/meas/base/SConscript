@@ -13,7 +13,6 @@ scripts.BasicSConscript.python(['_measBaseLib'], [
     'gaussianFlux.cc',
     'inputUtilities.cc',
     'localBackground.cc',
-    'naiveCentroid.cc',
     'peakLikelihoodFlux.cc',
     'pixelFlags.cc',
     'psfFlux.cc',
