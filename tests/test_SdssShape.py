@@ -175,6 +175,43 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
                 self.assertFloatsAlmostEqual(shapeErrMean, shapeInterval68, rtol=0.03)
                 self.assertLess(abs(shapeMean - record.get("truth_"+suffix)), 2.0*shapeErrMean/nSamples**0.5)
 
+    def testNegative(self):
+        """Test of shape measurement on negative sources.
+        """
+        config = self.makeSingleFrameMeasurementConfig("base_SdssShape", ["base_SdssCentroid"])
+        config.slots.centroid = "base_SdssCentroid"
+        task = self.makeSingleFrameMeasurementTask("base_SdssShape", dependencies=["base_SdssCentroid"])
+        # Ensure we're testing with the correct slots.
+        task.schema.getAliasMap().set("slot_Centroid", "base_SdssCentroid")
+        task.schema.getAliasMap().set("slot_Shape", "base_SdssShape")
+
+        dataset = lsst.meas.base.tests.TestDataset(self.bbox)
+        dataset.addSource(-10000.0, lsst.geom.Point2D(50., 50.), negative=True)
+        dataset.addSource(-100000.0, lsst.geom.Point2D(149.9, 50.3),
+                          lsst.afw.geom.Quadrupole(8, 9, 3),
+                          negative=True)
+
+        exposure, catalog = dataset.realize(10.0, task.schema, randomSeed=4)
+
+        task.run(catalog, exposure)
+
+        # both the point and elliptical source should have valid measurements
+        for record in catalog:
+            self.assertFalse(record.get("base_SdssShape_flag"))
+            self.assertFalse(record.get("base_SdssShape_flag_maxIter"))
+            self.assertFalse(record.get("base_SdssShape_flag_psf"))
+            self.assertFalse(record.get("base_SdssShape_flag_unweighted"))
+            self.assertFalse(record.get("base_SdssShape_flag_unweightedBad"))
+            self.assertFloatsAlmostEqual(record.get("base_SdssShape_xx"), record.get("truth_xx"), rtol=0.03)
+            self.assertFloatsAlmostEqual(record.get("base_SdssShape_yy"), record.get("truth_yy"), rtol=0.03)
+            # correct value == 0, so need atol instead of rtol
+            self.assertFloatsAlmostEqual(record.get("base_SdssShape_xy"), record.get("truth_xy"),
+                                         atol=0.04, rtol=None)
+            # There should be valid errors; we're not checking the exact uncertainty calculation here.
+            self.assertFloatsAlmostEqual(record.get("base_SdssShape_xxErr"), 0.05, rtol=0.5)
+            self.assertFloatsAlmostEqual(record.get("base_SdssShape_yyErr"), 0.05, rtol=0.5)
+            self.assertFloatsAlmostEqual(record.get("base_SdssShape_xyErr"), 0.05, rtol=0.5)
+
 
 class SdssShapeTransformTestCase(lsst.meas.base.tests.FluxTransformTestCase,
                                  lsst.meas.base.tests.CentroidTransformTestCase,
