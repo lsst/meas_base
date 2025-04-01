@@ -203,6 +203,8 @@ class SdssCentroidTestCase(AlgorithmTestCase, lsst.utils.tests.TestCase):
         self.assertFalse(record.get("base_SdssCentroid_flag_badError"))
         self.assertFloatsAlmostEqual(record.get("base_SdssCentroid_x"), record.get("truth_x"), rtol=0.005)
         self.assertFloatsAlmostEqual(record.get("base_SdssCentroid_y"), record.get("truth_y"), rtol=0.005)
+        self.assertFloatsAlmostEqual(record.get("base_SdssCentroid_xErr"), 0.024, rtol=0.02)
+        self.assertFloatsAlmostEqual(record.get("base_SdssCentroid_yErr"), 0.024, rtol=0.02)
 
 
 class SdssCentroidTransformTestCase(CentroidTransformTestCase,
