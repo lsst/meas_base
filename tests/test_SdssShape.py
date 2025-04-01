@@ -44,11 +44,6 @@ class SdssShapeTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests
                                lsst.afw.geom.Quadrupole(8, 9, 3))
         self.config = self.makeSingleFrameMeasurementConfig("base_SdssShape")
 
-    def tearDown(self):
-        del self.bbox
-        del self.dataset
-        del self.config
-
     def makeAlgorithm(self, ctrl=None):
         """Construct an algorithm and return both it and its schema.
         """
