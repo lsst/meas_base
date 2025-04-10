@@ -47,7 +47,7 @@ This can be changed globally to avoid having to override individual task
 configs to set the release ID.
 """
 
-DEFAULT_N_RELEASES = 1  # 1 means don't reserve space for releases.
+DEFAULT_N_RELEASES = 64
 """Default number of releases to reserve space for in catalog IDs."""
 
 
