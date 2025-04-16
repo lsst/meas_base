@@ -440,7 +440,8 @@ class TestDataset:
         if len(fpSet.getFootprints()) > 1:
             raise RuntimeError("Threshold value results in multiple Footprints for a single object")
         if len(fpSet.getFootprints()) == 0:
-            raise RuntimeError("Threshold value results in zero Footprints for object")
+            raise RuntimeError("Threshold value results in zero Footprints for object; "
+                               "did you forget to set negative=True for a negative source?")
         record.setFootprint(fpSet.getFootprints()[0])
 
     def addSource(self, instFlux, centroid, shape=None, setPeakSignificance=True,
