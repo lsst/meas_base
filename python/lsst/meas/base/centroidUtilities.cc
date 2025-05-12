@@ -65,6 +65,8 @@ void declareCentroidResult(lsst::cpputils::python::WrapperCollection &wrappers) 
         cls.def("setCentroidErr",
                 (void (CentroidResult::*)(ErrElement, ErrElement)) &CentroidResult::setCentroidErr, "xErr"_a,
                 "yErr"_a);
+        cpputils::python::addOutputOp(cls, "__str__");
+        cpputils::python::addOutputOp(cls, "__repr__");
     });
 }
 

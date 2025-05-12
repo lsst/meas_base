@@ -79,6 +79,8 @@ struct CentroidResult {
     void setCentroidErr(ErrElement _xErr, ErrElement _yErr);
 };
 
+std::ostream& operator<<(std::ostream& os, CentroidResult const& result);
+
 /**
  *  @brief A FunctorKey for CentroidResult
  *

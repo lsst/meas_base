@@ -50,6 +50,8 @@ struct FluxResult {
             : instFlux(instFlux_), instFluxErr(instFluxErr_) {}
 };
 
+std::ostream& operator<<(std::ostream& os, FluxResult const& result);
+
 /**
  *  @brief A FunctorKey for FluxResult
  *

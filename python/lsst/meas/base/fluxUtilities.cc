@@ -43,6 +43,8 @@ void declareFluxResult(lsst::cpputils::python::WrapperCollection &wrappers) {
     wrappers.wrapType(PyFluxResult(wrappers.module, "FluxResult"), [](auto &mod, auto &cls) {
         cls.def_readwrite("instFlux", &FluxResult::instFlux);
         cls.def_readwrite("instFluxErr", &FluxResult::instFluxErr);
+        cpputils::python::addOutputOp(cls, "__str__");
+        cpputils::python::addOutputOp(cls, "__repr__");
     });
 }
 

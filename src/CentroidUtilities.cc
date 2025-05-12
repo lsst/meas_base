@@ -63,6 +63,11 @@ void CentroidResult::setCentroidErr(ErrElement _xErr, ErrElement _yErr) {
     x_y_Cov = 0.0;
 }
 
+std::ostream &operator<<(std::ostream &os, CentroidResult const &result) {
+    os << "x=" << result.x << ", y=" << result.y << ", xErr=" << result.xErr << ", yErr=" << result.yErr;
+    return os;
+}
+
 CentroidResultKey CentroidResultKey::addFields(afw::table::Schema &schema, std::string const &name,
                                                std::string const &doc, UncertaintyEnum uncertainty) {
     CentroidResultKey r;
