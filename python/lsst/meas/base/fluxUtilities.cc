@@ -55,7 +55,7 @@ void declareFluxResultKey(lsst::cpputils::python::WrapperCollection &wrappers) {
     wrappers.wrapType(PyFluxResultKey(wrappers.module, "FluxResultKey"), [](auto &mod, auto &cls) {
         cls.def(py::init<>());
         cls.def(py::init<afw::table::Key<meas::base::Flux> const &,
-                        afw::table::Key<meas::base::FluxErrElement> const &>(),
+                         afw::table::Key<meas::base::FluxErrElement> const &>(),
                 "instFlux"_a, "instFluxErr"_a);
         cls.def(py::init<afw::table::SubSchema const &>());
 
@@ -84,10 +84,11 @@ void declareMagResultKey(lsst::cpputils::python::WrapperCollection &wrappers) {
         cls.def(py::init<afw::table::SubSchema const &>());
 
         cls.def("get", &MagResultKey::get);
+        cls.def("set", (void(MagResultKey::*)(afw::table::BaseRecord &, MagResult const &) const) &
+                               MagResultKey::set);
         cls.def("set",
-                (void (MagResultKey::*)(afw::table::BaseRecord &, MagResult const &) const) &MagResultKey::set);
-        cls.def("set", (void (MagResultKey::*)(afw::table::BaseRecord &, afw::image::Measurement const &) const) &
-                MagResultKey::set);
+                (void(MagResultKey::*)(afw::table::BaseRecord &, afw::image::Measurement const &) const) &
+                        MagResultKey::set);
         cls.def_static("addFields", &MagResultKey::addFields, "schema"_a, "name"_a);
     });
 }

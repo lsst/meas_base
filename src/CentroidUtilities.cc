@@ -189,10 +189,12 @@ CentroidChecker::CentroidChecker(afw::table::Schema &schema, std::string const &
     // algorithms provide them.
     try {
         _xErrKey = schema.find<ErrElement>(schema.join(name, "xErr")).key;
-    } catch (pex::exceptions::NotFoundError &err) {}
+    } catch (pex::exceptions::NotFoundError &err) {
+    }
     try {
         _yErrKey = schema.find<ErrElement>(schema.join(name, "yErr")).key;
-    } catch (pex::exceptions::NotFoundError &err) {}
+    } catch (pex::exceptions::NotFoundError &err) {
+    }
     if (_xErrKey.isValid() || _yErrKey.isValid()) {
         _badErrorKey = schema.addField<afw::table::Flag>(schema.join(name, "flag_badError"),
                                                          "Error on x and/or y position is NaN");
