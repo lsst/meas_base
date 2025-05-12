@@ -41,6 +41,9 @@ using PyMagResultKey = py::class_<MagResultKey, std::shared_ptr<MagResultKey>>;
 
 void declareFluxResult(lsst::cpputils::python::WrapperCollection &wrappers) {
     wrappers.wrapType(PyFluxResult(wrappers.module, "FluxResult"), [](auto &mod, auto &cls) {
+        cls.def(py::init<>());
+        cls.def(py::init<meas::base::Flux const &, meas::base::FluxErrElement const &>(), "instFlux"_a,
+                "instFluxErr"_a);
         cls.def_readwrite("instFlux", &FluxResult::instFlux);
         cls.def_readwrite("instFluxErr", &FluxResult::instFluxErr);
         cpputils::python::addOutputOp(cls, "__str__");
