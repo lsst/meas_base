@@ -54,6 +54,11 @@ void FluxResultKey::set(afw::table::BaseRecord& record, FluxResult const& value)
     record.set(_instFluxErr, value.instFluxErr);
 }
 
+std::ostream& operator<<(std::ostream& os, FluxResult const& result) {
+    os << "instFlux=" << result.instFlux << ", instFluxErr=" << result.instFluxErr;
+    return os;
+}
+
 MagResultKey MagResultKey::addFields(afw::table::Schema& schema, std::string const& name) {
     MagResultKey result;
     result._magKey = schema.addField<Mag>(schema.join(name, "mag"), "Magnitude");

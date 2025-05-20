@@ -63,6 +63,11 @@ void CentroidResult::setCentroidErr(ErrElement _xErr, ErrElement _yErr) {
     x_y_Cov = 0.0;
 }
 
+std::ostream &operator<<(std::ostream &os, CentroidResult const &result) {
+    os << "x=" << result.x << ", y=" << result.y << ", xErr=" << result.xErr << ", yErr=" << result.yErr;
+    return os;
+}
+
 CentroidResultKey CentroidResultKey::addFields(afw::table::Schema &schema, std::string const &name,
                                                std::string const &doc, UncertaintyEnum uncertainty) {
     CentroidResultKey r;
@@ -184,10 +189,12 @@ CentroidChecker::CentroidChecker(afw::table::Schema &schema, std::string const &
     // algorithms provide them.
     try {
         _xErrKey = schema.find<ErrElement>(schema.join(name, "xErr")).key;
-    } catch (pex::exceptions::NotFoundError &err) {}
+    } catch (pex::exceptions::NotFoundError &err) {
+    }
     try {
         _yErrKey = schema.find<ErrElement>(schema.join(name, "yErr")).key;
-    } catch (pex::exceptions::NotFoundError &err) {}
+    } catch (pex::exceptions::NotFoundError &err) {
+    }
     if (_xErrKey.isValid() || _yErrKey.isValid()) {
         _badErrorKey = schema.addField<afw::table::Flag>(schema.join(name, "flag_badError"),
                                                          "Error on x and/or y position is NaN");

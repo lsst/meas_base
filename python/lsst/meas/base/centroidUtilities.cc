@@ -26,7 +26,6 @@
 
 #include <memory>
 
-
 #include "lsst/meas/base/CentroidUtilities.h"
 
 namespace py = pybind11;
@@ -61,10 +60,12 @@ void declareCentroidResult(lsst::cpputils::python::WrapperCollection &wrappers) 
         cls.def("getPoint", &CentroidResult::getPoint);
         cls.def("getCentroidErr", &CentroidResult::getCentroidErr);
         cls.def("setCentroidErr",
-                (void (CentroidResult::*)(CentroidCov const &)) &CentroidResult::setCentroidErr, "matrix"_a);
+                (void(CentroidResult::*)(CentroidCov const &)) & CentroidResult::setCentroidErr, "matrix"_a);
         cls.def("setCentroidErr",
-                (void (CentroidResult::*)(ErrElement, ErrElement)) &CentroidResult::setCentroidErr, "xErr"_a,
+                (void(CentroidResult::*)(ErrElement, ErrElement)) & CentroidResult::setCentroidErr, "xErr"_a,
                 "yErr"_a);
+        cpputils::python::addOutputOp(cls, "__str__");
+        cpputils::python::addOutputOp(cls, "__repr__");
     });
 }
 
@@ -72,11 +73,12 @@ void declareCentroidResultKey(lsst::cpputils::python::WrapperCollection &wrapper
     wrappers.wrapType(PyCentroidResultKey(wrappers.module, "CentroidResultKey"), [](auto &mod, auto &cls) {
         cls.def(py::init<>());
         cls.def(py::init<afw::table::PointKey<CentroidElement> const &,
-                        afw::table::CovarianceMatrixKey<ErrElement, 2> const &>(),
+                         afw::table::CovarianceMatrixKey<ErrElement, 2> const &>(),
                 "centroid"_a, "uncertainty"_a);
         cls.def(py::init<afw::table::SubSchema const &>(), "subSchema"_a);
 
-        cls.def_static("addFields", &CentroidResultKey::addFields, "schema"_a, "name"_a, "doc"_a, "uncertainty"_a);
+        cls.def_static("addFields", &CentroidResultKey::addFields, "schema"_a, "name"_a, "doc"_a,
+                       "uncertainty"_a);
 
         cls.def("__eq__", &CentroidResultKey::operator==, py::is_operator());
         cls.def("__nq__", &CentroidResultKey::operator!=, py::is_operator());
@@ -110,11 +112,12 @@ void declareCentroidChecker(lsst::cpputils::python::WrapperCollection &wrappers)
 }
 
 void declareUncertaintyEnum(lsst::cpputils::python::WrapperCollection &wrappers) {
-    wrappers.wrapType(py::enum_<UncertaintyEnum>(wrappers.module, "UncertaintyEnum"), [](auto &mod, auto &enm) {
-        enm.value("NO_UNCERTAINTY", UncertaintyEnum::NO_UNCERTAINTY);
-        enm.value("SIGMA_ONLY", UncertaintyEnum::SIGMA_ONLY);
-        enm.value("FULL_COVARIANCE", UncertaintyEnum::FULL_COVARIANCE);
-    });
+    wrappers.wrapType(py::enum_<UncertaintyEnum>(wrappers.module, "UncertaintyEnum"),
+                      [](auto &mod, auto &enm) {
+                          enm.value("NO_UNCERTAINTY", UncertaintyEnum::NO_UNCERTAINTY);
+                          enm.value("SIGMA_ONLY", UncertaintyEnum::SIGMA_ONLY);
+                          enm.value("FULL_COVARIANCE", UncertaintyEnum::FULL_COVARIANCE);
+                      });
 }
 
 }  // namespace
