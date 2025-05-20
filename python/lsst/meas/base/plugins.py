@@ -623,9 +623,10 @@ class SingleFrameSkyCoordConfig(SingleFramePluginConfig):
 
 @register("base_SkyCoord")
 class SingleFrameSkyCoordPlugin(SingleFramePlugin):
-    """Record the sky position of an object based on its centroid slot and WCS.
+    """Record the sky position and uncertainties of an object based on its
+    centroid slot and WCS.
 
-    The position is record in the ``coord`` field, which is part of the
+    The position is recorded in the ``coord`` field, which is part of the
     `~lsst.afw.table.SourceCatalog` minimal schema.
 
     Parameters
