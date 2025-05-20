@@ -648,6 +648,11 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
     def getExecutionOrder(cls):
         return cls.SHAPE_ORDER
 
+    def __init__(self, config, name, schema, metadata):
+        SingleFramePlugin.__init__(self, config, name, schema, metadata)
+        if "coord_raErr" not in schema:
+            lsst.afw.table.CoordKey.addErrorFields(schema)
+
     def measure(self, measRecord, exposure):
         # There should be a base class method for handling this exception. Put
         # this on a later ticket. Also, there should be a python Exception of
