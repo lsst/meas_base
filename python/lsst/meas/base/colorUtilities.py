@@ -19,32 +19,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .version import *
-# Needed for pybind11-generated docstrings
-from lsst.afw.image import PhotoCalib
-from lsst.afw.geom import SkyWcs
+"""Color Utilities such as extracting color information.
+"""
 
-from ._id_generator import *
-from ._measBaseLib import *
+import numpy as np
+from lsst.afw.image import Color
 
-from .apCorrRegistry import *
-from .applyApCorr import *
-from .baseMeasurement import *
-from .baseMeasurement import *
-from .catalogCalculation import *
-from .classification import *
-from .colorUtilities import *
-from .compensatedGaussian import *
-from .diaCalculation import *
-from .diaCalculationPlugins import *
-from .footprintArea import *
-from .forcedMeasurement import *
-from .forcedPhotCcd import *
-from .noiseReplacer import *
-from .pluginRegistry import *
-from .plugins import *
-from .pluginsBase import *
-from .sfm import *
-from .transforms import *
-from .wrappers import *
+__all__ = (
+    "colorExtractor",
+)
 
+
+def colorExtractor(record, columnNameValue="psf_color_value", columnNameType="psf_color_type"):
+    try:
+        c = record[columnNameValue]
+        ct = record[columnNameType]
+        if np.isfinite(c):
+            color = Color(colorValue=c, colorType=ct)
+        else:
+            color = Color()
+    except Exception:
+        color = Color()
+    return color
