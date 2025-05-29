@@ -35,11 +35,6 @@ class SkyCoordTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tests.
         self.dataset = lsst.meas.base.tests.TestDataset(self.bbox)
         self.dataset.addSource(100000.0, self.center)
 
-    def tearDown(self):
-        del self.center
-        del self.bbox
-        del self.dataset
-
     def testSingleFramePlugin(self):
         task = self.makeSingleFrameMeasurementTask("base_SkyCoord")
         exposure, catalog = self.dataset.realize(10.0, task.schema, randomSeed=0)
