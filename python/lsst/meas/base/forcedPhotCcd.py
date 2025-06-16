@@ -524,15 +524,17 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
             refCat = refCat.get()
             if mergedRefCat is None:
                 mergedRefCat = lsst.afw.table.SourceCatalog(refCat.table)
-                containedIds = {0}  # zero as a parent ID means "this is a parent"
-            for record in refCat:
-                if (
-                    expPolygon.contains(record.getCoord().getVector()) and record.getParent()
-                    in containedIds
-                ):
-                    record.setFootprint(record.getFootprint())
-                    mergedRefCat.append(record)
-                    containedIds.add(record.getId())
+                # zero as a parent ID means "this is a parent"
+                containedIds = np.array([0])
+
+            coordKey = refCat.getCoordKey()
+            inside = expPolygon.contains(lon=refCat[coordKey.getRa()], lat=refCat[coordKey.getDec()])
+            parentIds = refCat[refCat.getParentKey()]
+            inside &= np.isin(parentIds, containedIds)
+
+            mergedRefCat.extend(refCat[inside])
+            containedIds = np.union1d(containedIds, refCat[refCat.getIdKey()][inside])
+
         if mergedRefCat is None:
             raise RuntimeError("No reference objects for forced photometry.")
         mergedRefCat.sort(lsst.afw.table.SourceTable.getParentKey())
