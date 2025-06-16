@@ -575,9 +575,10 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         df = pd.concat(dfList)
         # translate ra/dec coords in dataframe to detector pixel coords
         # to down select rows that overlap the detector bbox
-        mapping = exposureWcs.getTransform().getMapping()
-        x, y = mapping.applyInverse(
-            np.array(df[[self.config.refCatRaColumn, self.config.refCatDecColumn]].values*2*np.pi/360).T
+        x, y = exposureWcs.skyToPixelArray(
+            df[self.config.refCatRaColumn].values,
+            df[self.config.refCatDecColumn].values,
+            degrees=True,
         )
         inBBox = np.atleast_1d(lsst.geom.Box2D(exposureBBox).contains(x, y))
         refCat = self._makeMinimalSourceCatalogFromDataFrame(df[inBBox])
@@ -618,12 +619,11 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         full_table = astropy.table.vstack(table_list)
         # translate ra/dec coords in table to detector pixel coords
         # to down-select rows that overlap the detector bbox
-        mapping = exposureWcs.getTransform().getMapping()
-        ra_dec_rad = np.zeros((2, len(full_table)), dtype=float)
-        ra_dec_rad[0, :] = full_table[self.config.refCatRaColumn]
-        ra_dec_rad[1, :] = full_table[self.config.refCatDecColumn]
-        ra_dec_rad *= np.pi/180.0
-        x, y = mapping.applyInverse(ra_dec_rad)
+        x, y = exposureWcs.skyToPixelArray(
+            full_table[self.config.refCatRaColumn],
+            full_table[self.config.refCatDecColumn],
+            degrees=True,
+        )
         inBBox = lsst.geom.Box2D(exposureBBox).contains(x, y)
         refCat = self._makeMinimalSourceCatalogFromAstropy(full_table[inBBox])
         return refCat
