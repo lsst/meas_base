@@ -36,11 +36,11 @@ namespace foo {
 namespace bar {
 
 PYBIND11_MODULE(_sillyCentroid, mod) {
-    py::class_<SillyCentroidAlgorithm,
+    py::classh<SillyCentroidAlgorithm,
                lsst::meas::base::SimpleAlgorithm>
             clsSillyCentroidAlgorithm(mod, "SillyCentroidAlgorithm");
-    py::class_<SillyCentroidControl> clsSillyCentroidControl(mod, "SillyCentroidControl");
-    py::class_<SillyTransform> clsSillyTransform(mod, "SillyTransform");
+    py::classh<SillyCentroidControl> clsSillyCentroidControl(mod, "SillyCentroidControl");
+    py::classh<SillyTransform> clsSillyTransform(mod, "SillyTransform");
 
     lsst::meas::base::python::declareAlgorithm<SillyCentroidAlgorithm, SillyCentroidControl, SillyTransform>(
             clsSillyCentroidAlgorithm, clsSillyCentroidControl, clsSillyTransform);
