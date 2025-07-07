@@ -35,9 +35,9 @@ namespace base {
 
 namespace {
 
-using PyBaseAlgorithm = py::class_<BaseAlgorithm>;
-using PySingleFrameAlgorithm = py::class_<SingleFrameAlgorithm, BaseAlgorithm>;
-using PySimpleAlgorithm = py::class_<SimpleAlgorithm, SingleFrameAlgorithm>;
+using PyBaseAlgorithm = py::classh<BaseAlgorithm>;
+using PySingleFrameAlgorithm = py::classh<SingleFrameAlgorithm, BaseAlgorithm>;
+using PySimpleAlgorithm = py::classh<SimpleAlgorithm, SingleFrameAlgorithm>;
 
 void declareBaseAlgorithm(lsst::cpputils::python::WrapperCollection &wrappers) {
     wrappers.wrapType(PyBaseAlgorithm(wrappers.module, "BaseAlgorithm"), [](auto &mod, auto &cls) {

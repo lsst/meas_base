@@ -39,11 +39,11 @@ namespace base {
 
 namespace {
 
-using PyFluxAlgorithm = py::class_<ScaledApertureFluxAlgorithm,
+using PyFluxAlgorithm = py::classh<ScaledApertureFluxAlgorithm,
                                    SimpleAlgorithm>;
 using PyFluxControl = py::class_<ScaledApertureFluxControl>;
 using PyFluxTransform =
-        py::class_<ScaledApertureFluxTransform, BaseTransform>;
+        py::classh<ScaledApertureFluxTransform, BaseTransform>;
 
 PyFluxControl declareFluxControl(lsst::cpputils::python::WrapperCollection &wrappers) {
     return wrappers.wrapType(PyFluxControl(wrappers.module, "ScaledApertureFluxControl"), [](auto &mod, auto &cls) {

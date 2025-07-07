@@ -41,9 +41,9 @@ namespace base {
 
 namespace {
 
-using PyFluxAlgorithm = py::class_<PsfFluxAlgorithm, SimpleAlgorithm>;
+using PyFluxAlgorithm = py::classh<PsfFluxAlgorithm, SimpleAlgorithm>;
 using PyFluxControl = py::class_<PsfFluxControl>;
-using PyFluxTransform = py::class_<PsfFluxTransform, BaseTransform>;
+using PyFluxTransform = py::classh<PsfFluxTransform, BaseTransform>;
 
 PyFluxControl declareFluxControl(lsst::cpputils::python::WrapperCollection &wrappers) {
      return wrappers.wrapType(PyFluxControl(wrappers.module, "PsfFluxControl"), [](auto &mod, auto &cls) {
