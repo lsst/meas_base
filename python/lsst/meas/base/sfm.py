@@ -197,6 +197,7 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         self.schema = schema
         self.config.slots.setupSchema(self.schema)
         self.initializePlugins(schema=self.schema)
+        self.addInvalidPsfFlag(self.schema)
 
         # Check to see if blendedness is one of the plugins
         if 'base_Blendedness' in self.plugins:

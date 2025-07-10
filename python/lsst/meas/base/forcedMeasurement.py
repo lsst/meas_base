@@ -255,6 +255,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
             self.mapper.addMapping(refItem.key, targetName)
         self.config.slots.setupSchema(self.mapper.editOutputSchema())
         self.initializePlugins(schemaMapper=self.mapper)
+        self.addInvalidPsfFlag(self.mapper.editOutputSchema())
         self.schema = self.mapper.getOutputSchema()
         self.schema.checkUnits(parse_strict=self.config.checkUnitsParseStrict)
 
