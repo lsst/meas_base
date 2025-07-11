@@ -138,6 +138,7 @@ class SourceSlotConfig(lsst.pex.config.Config):
 
 
 class SimpleBaseMeasurementConfig(lsst.pex.config.Config):
+    """Base configuration for all measurement driver tasks."""
     slots = lsst.pex.config.ConfigField(
         dtype=SourceSlotConfig,
         doc="Mapping from algorithms to special column aliases."
@@ -173,7 +174,8 @@ class SimpleBaseMeasurementConfig(lsst.pex.config.Config):
 
 
 class BaseMeasurementConfig(SimpleBaseMeasurementConfig):
-    """Base configuration for all measurement driver tasks.
+    """Base configuration for all measurement driver tasks except
+    SimpleForcedMeasurementTask.
 
     Parameters
     ----------
@@ -246,9 +248,11 @@ class SimpleBaseMeasurementTask(lsst.pipe.base.Task):
 
     Notes
     -----
-    This base class for `SingleFrameMeasurementTask` and
-    `ForcedMeasurementTask` mostly exists to share code between the two, and
-    generally should not be used directly.
+    This base class was created after `BaseMeasurementTask` already existed
+    to add a common base class for `SimpleForcedMeasurementTask`,
+    `SingleFrameMeasurementTask`, and `ForcedMeasurementTask` without
+    breaking downstream code. It is not intended to be used directly,
+    but rather to be subclassed by those tasks.
     """
 
     ConfigClass = SimpleBaseMeasurementConfig
@@ -424,7 +428,8 @@ class SimpleBaseMeasurementTask(lsst.pipe.base.Task):
 
 
 class BaseMeasurementTask(SimpleBaseMeasurementTask):
-    """Ultimate base class for all measurement tasks.
+    """Ultimate base class for all measurement tasks
+    other than SimpleForcedMeasurementTask.
 
     Parameters
     ----------
@@ -445,7 +450,7 @@ class BaseMeasurementTask(SimpleBaseMeasurementTask):
     ConfigClass = BaseMeasurementConfig
 
     def __init__(self, algMetadata=None, **kwds):
-        super().__init__(**kwds)
+        super().__init__(algMetadata=algMetadata, **kwds)
         self.undeblendedPlugins = PluginMap()
 
     def initializePlugins(self, **kwds):

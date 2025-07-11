@@ -21,58 +21,45 @@
 
 __all__ = ("SimpleForcedMeasurementConfig", "SimpleForcedMeasurementTask")
 
+import numpy as np
+
+import lsst.afw.geom
+import lsst.afw.image
+import lsst.afw.table
+import lsst.daf.base
+import lsst.geom
 import lsst.pex.config
 import lsst.pipe.base
 from lsst.utils.logging import PeriodicLogger
-
-import astropy.table
 
 from .baseMeasurement import SimpleBaseMeasurementConfig, SimpleBaseMeasurementTask
 from .forcedMeasurement import ForcedPlugin
 
 
-
 class SimpleForcedMeasurementConfig(SimpleBaseMeasurementConfig):
-
+    """Config class for SimpleForcedMeasurementTask."""
     plugins = ForcedPlugin.registry.makeField(
         multi=True,
         default=["base_PixelFlags",
-                 "base_TransformedCentroidFromCoord"
+                 "base_TransformedCentroidFromCoord",
                  "base_PsfFlux",
                  ],
         doc="Plugins to be run and their configuration"
-    )
-    refCatIdColumn = lsst.pex.config.Field(
-        dtype=str,
-        default="diaObjectId",
-        doc=(
-            "Name of the column that provides the object ID from the refCat connection. "
-            "measurement.copyColumns['id'] must be set to this value as well."
-            "Ignored if refCatStorageClass='SourceCatalog'."
-        )
-    )
-    refCatRaColumn = lsst.pex.config.Field(
-        dtype=str,
-        default="ra",
-        doc=(
-            "Name of the column that provides the right ascension (in floating-point degrees) from the "
-            "refCat connection. "
-            "Ignored if refCatStorageClass='SourceCatalog'."
-        )
-    )
-    refCatDecColumn = lsst.pex.config.Field(
-        dtype=str,
-        default="dec",
-        doc=(
-            "Name of the column that provides the declination (in floating-point degrees) from the "
-            "refCat connection. "
-            "Ignored if refCatStorageClass='SourceCatalog'."
-        )
     )
     psfFootprintScaling = lsst.pex.config.Field(
         dtype=float,
         doc="Scaling factor to apply to the PSF shape when footprintSource='psf' (ignored otherwise).",
         default=3.0,
+    )
+    copyColumns = lsst.pex.config.DictField(
+        keytype=str, itemtype=str, doc="Mapping of reference columns to source columns",
+        default={"id": "objectId", "parent": "parentObjectId",
+                 "coord_ra": "coord_ra", "coord_dec": "coord_dec"}
+    )
+    checkUnitsParseStrict = lsst.pex.config.Field(
+        doc="Strictness of Astropy unit compatibility check, can be 'raise', 'warn' or 'silent'",
+        dtype=str,
+        default="raise",
     )
 
     def setDefaults(self):
@@ -83,34 +70,79 @@ class SimpleForcedMeasurementConfig(SimpleBaseMeasurementConfig):
         self.slots.psfFlux = "base_PsfFlux"
         self.slots.gaussianFlux = None
         self.slots.calibFlux = None
-        self.doReplaceWithNoise = False
 
 
 class SimpleForcedMeasurementTask(SimpleBaseMeasurementTask):
+    """Measure sources on an image using a simple forced measurement algorithm.
 
+    This differes from ForcedMeasurmentTask in that it uses a PSF-based
+    footprint for every source so it does not need to transform footprints.
+
+    Parameters
+    ----------
+    algMetadata : `lsst.daf.base.PropertyList` or `None`
+        Will be updated in place to to record information about each
+        algorithm. An empty `~lsst.daf.base.PropertyList` will be created if
+        `None`.
+    **kwds
+        Keyword arguments are passed to the supertask constructor.
+    """
     ConfigClass = SimpleForcedMeasurementConfig
 
-    def __init__(self, algMetadata=None, **kwds):
+    def __init__(self, refSchema, algMetadata: lsst.daf.base.PropertyList = None, **kwds):
         super().__init__(algMetadata=algMetadata, **kwds)
-        self.mapper = lsst.afw.table.SchemaMapper(lsst.afw.table.SourceTable.makeMinimalSchema())
-        self.mapper.addMinimalSchema(lsst.afw.table.SourceTable.makeMinimalSchema(), True)
+        self.mapper = lsst.afw.table.SchemaMapper(refSchema)
+        self.mapper.addMinimalSchema(lsst.afw.table.SourceTable.makeMinimalSchema(), False)
+        self.config.slots.setupSchema(self.mapper.editOutputSchema())
+        for refName, targetName in self.config.copyColumns.items():
+            refItem = refSchema.find(refName)
+            self.mapper.addMapping(refItem.key, targetName)
         self.config.slots.setupSchema(self.mapper.editOutputSchema())
         self.initializePlugins(schemaMapper=self.mapper)
         self.addInvalidPsfFlag(self.mapper.editOutputSchema())
         self.schema = self.mapper.getOutputSchema()
-        self.schema.checkUnits(parse_strict=True)
+        self.schema.checkUnits(parse_strict=self.config.checkUnitsParseStrict)
 
-    def run(self, table, exposure, refWcs, beginOrder=None, endOrder=None):
-        refCat = self.makeMinimalSourceCatalogFromAstropy(table)
-        measCat = lsst.afw.table.SourceCatalog(self.schema)
-        measCat.extend(refCat, mapper=self.mapper)
-        measCat.setMetadata(self.algMetadata)
-        self.attachPsfShapeFootprints(measCat, exposure, scaling=self.config.psfFootprintScaling)
-        self.log.info("Performing forced measurement on %d source%s", len(table),
-                      "" if len(table) == 1 else "s")
+    def run(
+        self,
+        refCat: lsst.afw.table.SourceCatalog,
+        measCat: lsst.afw.table.SourceCatalog,
+        exposure: lsst.afw.image.Exposure,
+        refWcs: lsst.afw.geom.SkyWcs,
+        beginOrder: int | None = None,
+        endOrder: int | None = None,
+    ) -> None:
+        """Perform forced measurement.
+
+        Parameters
+        ----------
+        refCat : `lsst.afw.table.SourceCatalog`
+            Catalog with locations and ids of sources to measure.
+        measCat : `lsst.afw.table.SourceCatalog`
+            Catalog that measurements are made on.
+        exposure : `lsst.afw.image.exposureF`
+            Image to be measured. Must have at least a `lsst.afw.geom.SkyWcs`
+            attached.
+        refWcs : `lsst.afw.geom.SkyWcs`
+            Defines the X,Y coordinate system of ``refCat``.
+        beginOrder : `int`, optional
+            Beginning execution order (inclusive). Algorithms with
+            ``executionOrder`` < ``beginOrder`` are not executed. `None` for no limit.
+        endOrder : `int`, optional
+            Ending execution order (exclusive). Algorithms with
+            ``executionOrder`` >= ``endOrder`` are not executed. `None` for no limit.
+        idFactory : `lsst.afw.table.IdFactory`, optional
+            Factory for creating IDs for sources.
+        """
+        self._attachPsfShapeFootprints(measCat, exposure, scaling=self.config.psfFootprintScaling)
+        self.log.info("Performing forced measurement on %d source%s", len(refCat),
+                      "" if len(refCat) == 1 else "s")
         # Wrap the task logger into a periodic logger.
         periodicLog = PeriodicLogger(self.log)
-        for index, (measRecord, refRecord) in enumerate(*zip(measCat, refCat)):
+
+        for index in range(len(refCat)):
+            measRecord = measCat[index]
+            refRecord = refCat[index]
             if measRecord.getFootprint() is None:
                 self.log.warning("Skipping object with ID %s that is off the image.", measRecord.getId())
             self.callMeasure(measRecord, exposure, refRecord, refWcs,
@@ -118,44 +150,8 @@ class SimpleForcedMeasurementTask(SimpleBaseMeasurementTask):
             # Log a message if it has been a while since the last log.
             periodicLog.log("Forced measurement complete for %d parents (and their children) out of %d",
                             index + 1, len(refCat))
-        return lsst.pipe.base.Struct(
-            table=self.finishOutputTable(table, measCat),
-            catalog=measCat,
-        )
 
-    def finishOutputTable(self, table, measCat):
-        measTable = measCat.asAstropy()
-        del measTable["id"]
-        del measTable["coord_ra"]
-        del measTable["coord_dec"]
-        return astropy.table.hstack([table, measTable], join_type="exact"),
-
-    def makeMinimalSourceCatalogFromAstropy(self, table):
-        """Create minimal schema SourceCatalog from an Astropy Table.
-
-        The forced measurement subtask expects this as input.
-
-        Parameters
-        ----------
-        table : `astropy.table.Table`
-            Table with locations and ids.
-
-        Returns
-        -------
-        outputCatalog : `lsst.afw.table.SourceTable`
-            Output catalog with minimal schema.
-        """
-        schema = lsst.afw.table.SourceTable.makeMinimalSchema()
-        outputCatalog = lsst.afw.table.SourceCatalog(schema)
-        outputCatalog.reserve(len(table))
-        # We should make the columns we grab here configurable.
-        for objectId, ra, dec in table.iterrows():
-            outputRecord = outputCatalog.addNew()
-            outputRecord.setId(objectId)
-            outputRecord.setCoord(lsst.geom.SpherePoint(ra, dec, lsst.geom.degrees))
-        return outputCatalog
-
-    def attachPsfShapeFootprints(self, sources, exposure, scaling=3):
+    def _attachPsfShapeFootprints(self, sources, exposure, scaling=3):
         """Attach Footprints to blank sources prior to measurement, by
         creating elliptical Footprints from the PSF moments.
 
@@ -176,11 +172,14 @@ class SimpleForcedMeasurementTask(SimpleBaseMeasurementTask):
             raise RuntimeError("Cannot construct Footprints from PSF shape without a PSF.")
         bbox = exposure.getBBox()
         wcs = exposure.getWcs()
-        for record in sources:
-            # TODO: vectorize this WCS call
-            localPoint = wcs.skyToPixel(record.getCoord())
+        # This will always be coord_ra, coord_dec since we converted the
+        # astropy table into a schema and schema is always coord_ra, coord_dec.
+        x, y = wcs.skyToPixelArray(sources["coord_ra"], sources["coord_dec"], degrees=False)
+        inBBox = np.atleast_1d(lsst.geom.Box2D(bbox).contains(x, y))
+        for idx, record in enumerate(sources):
+            localPoint = lsst.geom.Point2D(x[idx], y[idx])
             localIntPoint = lsst.geom.Point2I(localPoint)
-            if not bbox.contains(localIntPoint):
+            if not inBBox[idx]:
                 record.setFootprint(None)
                 continue
             ellipse = lsst.afw.geom.ellipses.Ellipse(psf.computeShape(localPoint), localPoint)
