@@ -21,6 +21,8 @@
 
 __all__ = ("SimpleForcedMeasurementConfig", "SimpleForcedMeasurementTask")
 
+import lsst.afw.table
+import lsst.geom
 import lsst.pex.config
 import lsst.pipe.base
 from lsst.utils.logging import PeriodicLogger
@@ -29,7 +31,6 @@ import astropy.table
 
 from .baseMeasurement import SimpleBaseMeasurementConfig, SimpleBaseMeasurementTask
 from .forcedMeasurement import ForcedPlugin
-
 
 
 class SimpleForcedMeasurementConfig(SimpleBaseMeasurementConfig):
@@ -120,7 +121,6 @@ class SimpleForcedMeasurementTask(SimpleBaseMeasurementTask):
                             index + 1, len(refCat))
         return lsst.pipe.base.Struct(
             table=self.finishOutputTable(table, measCat),
-            catalog=measCat,
         )
 
     def finishOutputTable(self, table, measCat):
