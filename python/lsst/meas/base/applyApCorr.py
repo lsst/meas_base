@@ -120,6 +120,10 @@ class ApCorrInfo:
                     doc="standard deviation of aperture correction applied to %s" % (name,),
                     type=np.float64,
                 )
+            else:
+                aliases = schema.getAliasMap()
+                aliases.set(name + "_apCorr", model + "_apCorr")
+                aliases.set(name + "_apCorrErr", model + "_apCorrErr")
 
             if name + "_flag_apCorr" not in schema:
                 schema.addField(
