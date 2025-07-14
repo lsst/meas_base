@@ -445,7 +445,7 @@ class BaseMeasurementTask(SimpleBaseMeasurementTask):
     ConfigClass = BaseMeasurementConfig
 
     def __init__(self, algMetadata=None, **kwds):
-        super().__init__(**kwds)
+        super().__init__(algMetadata=algMetadata, **kwds)
         self.undeblendedPlugins = PluginMap()
 
     def initializePlugins(self, **kwds):
