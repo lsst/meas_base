@@ -38,7 +38,7 @@ class SimpleForcedMeasurementConfig(SimpleBaseMeasurementConfig):
     plugins = ForcedPlugin.registry.makeField(
         multi=True,
         default=["base_PixelFlags",
-                 "base_TransformedCentroidFromCoord"
+                 "base_TransformedCentroidFromCoord",
                  "base_PsfFlux",
                  ],
         doc="Plugins to be run and their configuration"
@@ -84,7 +84,6 @@ class SimpleForcedMeasurementConfig(SimpleBaseMeasurementConfig):
         self.slots.psfFlux = "base_PsfFlux"
         self.slots.gaussianFlux = None
         self.slots.calibFlux = None
-        self.doReplaceWithNoise = False
 
 
 class SimpleForcedMeasurementTask(SimpleBaseMeasurementTask):
@@ -111,7 +110,10 @@ class SimpleForcedMeasurementTask(SimpleBaseMeasurementTask):
                       "" if len(table) == 1 else "s")
         # Wrap the task logger into a periodic logger.
         periodicLog = PeriodicLogger(self.log)
-        for index, (measRecord, refRecord) in enumerate(*zip(measCat, refCat)):
+
+        for index in range(len(refCat)):
+            measRecord = measCat[index]
+            refRecord = refCat[index]
             if measRecord.getFootprint() is None:
                 self.log.warning("Skipping object with ID %s that is off the image.", measRecord.getId())
             self.callMeasure(measRecord, exposure, refRecord, refWcs,
@@ -120,15 +122,24 @@ class SimpleForcedMeasurementTask(SimpleBaseMeasurementTask):
             periodicLog.log("Forced measurement complete for %d parents (and their children) out of %d",
                             index + 1, len(refCat))
         return lsst.pipe.base.Struct(
-            table=self.finishOutputTable(table, measCat),
+            measTable=self.finishOutputTable(table, measCat, exposure),
         )
 
-    def finishOutputTable(self, table, measCat):
+    def finishOutputTable(self, table, measCat, exposure):
         measTable = measCat.asAstropy()
         del measTable["id"]
         del measTable["coord_ra"]
         del measTable["coord_dec"]
-        return astropy.table.hstack([table, measTable], join_type="exact"),
+
+        measTable = astropy.table.hstack([table, measTable], join_type="exact")
+
+        measTable["x"], measTable["y"] = exposure.wcs.skyToPixelArray(
+            measTable[self.config.refCatRaColumn],
+            measTable[self.config.refCatDecColumn],
+            degrees=True,
+        )
+
+        return measTable
 
     def makeMinimalSourceCatalogFromAstropy(self, table):
         """Create minimal schema SourceCatalog from an Astropy Table.
@@ -149,7 +160,10 @@ class SimpleForcedMeasurementTask(SimpleBaseMeasurementTask):
         outputCatalog = lsst.afw.table.SourceCatalog(schema)
         outputCatalog.reserve(len(table))
         # We should make the columns we grab here configurable.
-        for objectId, ra, dec in table.iterrows():
+        for row in table:
+            objectId = row[self.config.refCatIdColumn]
+            ra = row[self.config.refCatRaColumn]
+            dec = row[self.config.refCatDecColumn]
             outputRecord = outputCatalog.addNew()
             outputRecord.setId(objectId)
             outputRecord.setCoord(lsst.geom.SpherePoint(ra, dec, lsst.geom.degrees))
