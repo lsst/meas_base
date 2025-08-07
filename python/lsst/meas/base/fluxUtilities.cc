@@ -34,10 +34,10 @@ namespace base {
 
 namespace {
 
-using PyFluxResult = py::class_<FluxResult, std::shared_ptr<FluxResult>>;
-using PyFluxResultKey = py::class_<FluxResultKey, std::shared_ptr<FluxResultKey>>;
-using PyMagResult = py::class_<MagResult, std::shared_ptr<MagResult>>;
-using PyMagResultKey = py::class_<MagResultKey, std::shared_ptr<MagResultKey>>;
+using PyFluxResult = py::classh<FluxResult>;
+using PyFluxResultKey = py::classh<FluxResultKey>;
+using PyMagResult = py::classh<MagResult>;
+using PyMagResultKey = py::classh<MagResultKey>;
 
 void declareFluxResult(lsst::cpputils::python::WrapperCollection &wrappers) {
     wrappers.wrapType(PyFluxResult(wrappers.module, "FluxResult"), [](auto &mod, auto &cls) {
