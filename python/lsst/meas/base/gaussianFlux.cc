@@ -40,10 +40,10 @@ namespace base {
 namespace {
 
 using PyFluxAlgorithm =
-        py::class_<GaussianFluxAlgorithm, std::shared_ptr<GaussianFluxAlgorithm>, SimpleAlgorithm>;
+        py::classh<GaussianFluxAlgorithm, SimpleAlgorithm>;
 using PyFluxControl = py::class_<GaussianFluxControl>;
 using PyFluxTransform =
-        py::class_<GaussianFluxTransform, std::shared_ptr<GaussianFluxTransform>, BaseTransform>;
+        py::classh<GaussianFluxTransform, BaseTransform>;
 
 PyFluxControl declareFluxControl(lsst::cpputils::python::WrapperCollection &wrappers) {
     return wrappers.wrapType(PyFluxControl(wrappers.module, "GaussianFluxControl"), [](auto &mod, auto &cls) {
