@@ -48,7 +48,7 @@ class SimpleForcedMeasurementConfig(SimpleBaseMeasurementConfig):
     )
     refCatIdColumn = lsst.pex.config.Field(
         dtype=str,
-        default="diaObjectId",
+        default="objectId",
         doc=(
             "Name of the column that provides the object ID from the refCat connection. "
             "measurement.copyColumns['id'] must be set to this value as well."
