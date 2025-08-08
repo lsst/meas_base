@@ -291,8 +291,8 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
 
             if self.log.isEnabledFor(self.log.DEBUG):
                 # log statistics on the effects of aperture correction
-                apCorrArr = np.array([s.get(apCorrInfo.apCorrKey) for s in catalog])
-                apCorrErrArr = np.array([s.get(apCorrInfo.apCorrErrKey) for s in catalog])
+                apCorrArr = np.array([s[apCorrInfo.instFluxName] for s in catalog])
+                apCorrErrArr = np.array([s[apCorrInfo.instFluxErrName] for s in catalog])
                 self.log.debug("For instFlux field %r: mean apCorr=%s, stdDev apCorr=%s, "
                                "mean apCorrErr=%s, stdDev apCorrErr=%s for %s sources",
                                apCorrInfo.name, apCorrArr.mean(), apCorrArr.std(),
