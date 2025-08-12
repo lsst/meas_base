@@ -236,9 +236,11 @@ class SimpleForcedMeasurementTask(SimpleBaseMeasurementTask):
             raise RuntimeError("Cannot construct Footprints from PSF shape without a PSF.")
         bbox = exposure.getBBox()
         wcs = exposure.getWcs()
-        for record in sources:
-            # TODO: vectorize this WCS call
-            localPoint = wcs.skyToPixel(record.getCoord())
+        # This will always be coord_ra, coord_dec since we converted the
+        # astropy table into a schema and schema is always coord_ra, coord_dec.
+        localPoints = wcs.skyToPixelArray(sources["coord_ra"], sources["coord_dec"], degrees=False)
+        for idx, record in enumerate(sources):
+            localPoint = lsst.geom.Point2D(localPoints[idx])
             localIntPoint = lsst.geom.Point2I(localPoint)
             if not bbox.contains(localIntPoint):
                 record.setFootprint(None)
