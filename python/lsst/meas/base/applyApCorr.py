@@ -236,8 +236,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                                 for i, model in enumerate((apCorrModel, apCorrErrModel)) if model is None]
                 self.log.warning("Cannot aperture correct %s because could not find %s in apCorrMap",
                                  apCorrInfo.name, " or ".join(missingNames))
-                for source in catalog:
-                    source[apCorrInfo.apCorrFlagName] = True
+                catalog[apCorrInfo.apCorrFlagName] = np.ones(len(catalog), dtype=np.bool_)
                 continue
 
             # Say we've failed before we start; we'll unset these flags on success.
