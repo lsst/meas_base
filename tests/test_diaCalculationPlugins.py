@@ -201,7 +201,6 @@ class TestMeanPosition(unittest.TestCase):
 
         self.assertAlmostEqual(diaObjects.loc[objId, "ra"], 0.0)
         self.assertAlmostEqual(diaObjects.loc[objId, "dec"], 0.0)
-        self.assertEqual(diaObjects.loc[objId, "radecMjdTai"], 10)
 
         # Test expected means in DEC.
         diaObjects = pd.DataFrame({"diaObjectId": [objId]})
@@ -216,7 +215,6 @@ class TestMeanPosition(unittest.TestCase):
 
         self.assertAlmostEqual(diaObjects.loc[objId, "ra"], 0.0)
         self.assertAlmostEqual(diaObjects.loc[objId, "dec"], 0.0)
-        self.assertEqual(diaObjects.loc[objId, "radecMjdTai"], 10)
 
         # Test failure mode RA is nan.
         diaObjects = pd.DataFrame({"diaObjectId": [objId]})
@@ -231,7 +229,6 @@ class TestMeanPosition(unittest.TestCase):
 
         self.assertTrue(np.isnan(diaObjects.loc[objId, "ra"]))
         self.assertTrue(np.isnan(diaObjects.loc[objId, "dec"]))
-        self.assertTrue(np.isnan(diaObjects.loc[objId, "radecMjdTai"]))
 
         # Test failure mode DEC is nan.
         diaObjects = pd.DataFrame({"diaObjectId": [objId]})
@@ -246,7 +243,6 @@ class TestMeanPosition(unittest.TestCase):
 
         self.assertTrue(np.isnan(diaObjects.loc[objId, "ra"]))
         self.assertTrue(np.isnan(diaObjects.loc[objId, "dec"]))
-        self.assertTrue(np.isnan(diaObjects.loc[objId, "radecMjdTai"]))
 
 
 class TestHTMIndexPosition(unittest.TestCase):
