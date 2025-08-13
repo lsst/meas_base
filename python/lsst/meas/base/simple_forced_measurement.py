@@ -240,7 +240,7 @@ class SimpleForcedMeasurementTask(SimpleBaseMeasurementTask):
         # astropy table into a schema and schema is always coord_ra, coord_dec.
         localPoints = wcs.skyToPixelArray(sources["coord_ra"], sources["coord_dec"], degrees=False)
         for idx, record in enumerate(sources):
-            localPoint = lsst.geom.Point2D(localPoints[idx])
+            localPoint = lsst.geom.Point2D(localPoints[0][idx], localPoints[1][idx])
             localIntPoint = lsst.geom.Point2I(localPoint)
             if not bbox.contains(localIntPoint):
                 record.setFootprint(None)
