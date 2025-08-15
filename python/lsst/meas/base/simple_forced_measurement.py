@@ -57,7 +57,7 @@ class SimpleForcedMeasurementConfig(SimpleBaseMeasurementConfig):
     )
     refCatRaColumn = lsst.pex.config.Field(
         dtype=str,
-        default="ra",
+        default="coord_ra",
         doc=(
             "Name of the column that provides the right ascension (in floating-point degrees) from the "
             "refCat connection. "
@@ -66,7 +66,7 @@ class SimpleForcedMeasurementConfig(SimpleBaseMeasurementConfig):
     )
     refCatDecColumn = lsst.pex.config.Field(
         dtype=str,
-        default="dec",
+        default="coord_dec",
         doc=(
             "Name of the column that provides the declination (in floating-point degrees) from the "
             "refCat connection. "
@@ -166,25 +166,15 @@ class SimpleForcedMeasurementTask(SimpleBaseMeasurementTask):
             periodicLog.log("Forced measurement complete for %d parents (and their children) out of %d",
                             index + 1, len(refCat))
         return lsst.pipe.base.Struct(
-            measTable=self._finishOutputTable(table, measCat, exposure),
+            measTable=self._finishOutputTable(measCat, exposure),
         )
 
-    def _finishOutputTable(self, table, measCat, exposure):
+    def _finishOutputTable(self, measCat, exposure):
         """Finish the output table by adding the measurement results."""
-        measTable = measCat.asAstropy()
-        del measTable["id"]
-        del measTable["coord_ra"]
-        del measTable["coord_dec"]
-
-        measTable = astropy.table.hstack([table, measTable], join_type="exact")
-
-        # Add the X and Y pixel coordinates to the table.
-        measTable["x"], measTable["y"] = exposure.wcs.skyToPixelArray(
-            measTable[self.config.refCatRaColumn],
-            measTable[self.config.refCatDecColumn],
-            degrees=True,
-        )
-
+        measTable = measCat.asAstropy(copy=True)
+        measTable[self.config.refCatIdColumn] = measTable["id"]
+        measTable.rename_column("coord_ra", self.config.refCatRaColumn)
+        measTable.rename_column("coord_dec", self.config.refCatDecColumn)
         return measTable
 
     def _makeMinimalSourceCatalogFromAstropy(self, table):
@@ -205,7 +195,6 @@ class SimpleForcedMeasurementTask(SimpleBaseMeasurementTask):
         schema = lsst.afw.table.SourceTable.makeMinimalSchema()
         outputCatalog = lsst.afw.table.SourceCatalog(schema)
         outputCatalog.reserve(len(table))
-        # We should make the columns we grab here configurable.
         for row in table:
             objectId = row[self.config.refCatIdColumn]
             ra = row[self.config.refCatRaColumn]

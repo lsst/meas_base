@@ -157,6 +157,16 @@ class ApplyApCorrConfig(lsst.pex.config.Config):
         itemtype=str,
         default={},
     )
+    xColumn = lsst.pex.config.Field(
+        doc="name of the x coordinate column in the catalog",
+        dtype=str,
+        default="slot_Centroid_x",
+    )
+    yColumn = lsst.pex.config.Field(
+        doc="name of the y coordinate column in the catalog",
+        dtype=str,
+        default="slot_Centroid_y",
+    )
 
 
 class ApplyApCorrTask(lsst.pipe.base.Task):
@@ -222,11 +232,8 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
         if isinstance(catalog, astropy.table.Table):
             # Prepare the astropy table for use with this task.
             self._prepAstropyTable(catalog)
-            xColumn = "x"
-            yColumn = "y"
-        else:
-            xColumn = "slot_Centroid_x"
-            yColumn = "slot_Centroid_y"
+        xColumn = self.config.xColumn
+        yColumn = self.config.yColumn
 
         for apCorrIndex, apCorrInfo in enumerate(self.apCorrInfoDict.values()):
             apCorrModel = apCorrMap.get(apCorrInfo.modelName)
