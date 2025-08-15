@@ -137,8 +137,45 @@ class SourceSlotConfig(lsst.pex.config.Config):
             aliases.set("slot_CalibFlux", self.calibFlux)
 
 
-class BaseMeasurementConfig(lsst.pex.config.Config):
-    """Base configuration for all measurement driver tasks.
+class SimpleBaseMeasurementConfig(lsst.pex.config.Config):
+    """Base configuration for all measurement driver tasks."""
+    slots = lsst.pex.config.ConfigField(
+        dtype=SourceSlotConfig,
+        doc="Mapping from algorithms to special column aliases."
+    )
+
+    def validate(self):
+        super().validate()
+        if self.slots.centroid is not None and self.slots.centroid not in self.plugins.names:
+            raise lsst.pex.config.FieldValidationError(
+                self.__class__.slots,
+                self,
+                "source centroid slot algorithm is not being run."
+            )
+        if self.slots.shape is not None and self.slots.shape not in self.plugins.names:
+            raise lsst.pex.config.FieldValidationError(
+                self.__class__.slots,
+                self,
+                "source shape slot algorithm '%s' is not being run." % self.slots.shape
+            )
+        for slot in (self.slots.psfFlux, self.slots.apFlux, self.slots.modelFlux,
+                     self.slots.gaussianFlux, self.slots.calibFlux):
+            if slot is not None:
+                for name in self.plugins.names:
+                    if len(name) <= len(slot) and name == slot[:len(name)]:
+                        break
+                else:
+                    raise lsst.pex.config.FieldValidationError(
+                        self.__class__.slots,
+                        self,
+                        f"Source instFlux algorithm '{slot}' is not being run, required from "
+                        f"non-None slots in: {self.slots}."
+                    )
+
+
+class BaseMeasurementConfig(SimpleBaseMeasurementConfig):
+    """Base configuration for all measurement driver tasks except
+    SimpleForcedMeasurementTask.
 
     Parameters
     ----------
@@ -178,11 +215,6 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
         object.__setattr__(instance, "_ignoreSlotPluginChecks", ignoreSlotPluginChecks)
         return instance
 
-    slots = lsst.pex.config.ConfigField(
-        dtype=SourceSlotConfig,
-        doc="Mapping from algorithms to special aliases in Source."
-    )
-
     doReplaceWithNoise = lsst.pex.config.Field(
         dtype=bool, default=True, optional=False,
         doc='When measuring, replace other detected footprints with noise?')
@@ -197,37 +229,12 @@ class BaseMeasurementConfig(lsst.pex.config.Config):
     )
 
     def validate(self):
-        super().validate()
         if self._ignoreSlotPluginChecks:
             return
-        if self.slots.centroid is not None and self.slots.centroid not in self.plugins.names:
-            raise lsst.pex.config.FieldValidationError(
-                self.__class__.slots,
-                self,
-                "source centroid slot algorithm is not being run."
-            )
-        if self.slots.shape is not None and self.slots.shape not in self.plugins.names:
-            raise lsst.pex.config.FieldValidationError(
-                self.__class__.slots,
-                self,
-                "source shape slot algorithm '%s' is not being run." % self.slots.shape
-            )
-        for slot in (self.slots.psfFlux, self.slots.apFlux, self.slots.modelFlux,
-                     self.slots.gaussianFlux, self.slots.calibFlux):
-            if slot is not None:
-                for name in self.plugins.names:
-                    if len(name) <= len(slot) and name == slot[:len(name)]:
-                        break
-                else:
-                    raise lsst.pex.config.FieldValidationError(
-                        self.__class__.slots,
-                        self,
-                        f"Source instFlux algorithm '{slot}' is not being run, required from "
-                        f"non-None slots in: {self.slots}."
-                    )
+        super().validate()
 
 
-class BaseMeasurementTask(lsst.pipe.base.Task):
+class SimpleBaseMeasurementTask(lsst.pipe.base.Task):
     """Ultimate base class for all measurement tasks.
 
     Parameters
@@ -241,12 +248,14 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
 
     Notes
     -----
-    This base class for `SingleFrameMeasurementTask` and
-    `ForcedMeasurementTask` mostly exists to share code between the two, and
-    generally should not be used directly.
+    This base class was created after `BaseMeasurementTask` already existed
+    to add a common base class for `SimpleForcedMeasurementTask`,
+    `SingleFrameMeasurementTask`, and `ForcedMeasurementTask` without
+    breaking downstream code. It is not intended to be used directly,
+    but rather to be subclassed by those tasks.
     """
 
-    ConfigClass = BaseMeasurementConfig
+    ConfigClass = SimpleBaseMeasurementConfig
     _DefaultName = "measurement"
 
     plugins = None
@@ -264,9 +273,8 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
     """
 
     def __init__(self, algMetadata=None, **kwds):
-        super(BaseMeasurementTask, self).__init__(**kwds)
+        super().__init__(**kwds)
         self.plugins = PluginMap()
-        self.undeblendedPlugins = PluginMap()
         if algMetadata is None:
             algMetadata = lsst.daf.base.PropertyList()
         self.algMetadata = algMetadata
@@ -314,23 +322,8 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
         # don't want to the plugins map, and we should remove it.
         if self.config.slots.centroid is not None and self.plugins[self.config.slots.centroid] is None:
             del self.plugins[self.config.slots.centroid]
-        # Initialize the plugins to run on the undeblended image
-        for executionOrder, name, config, PluginClass in sorted(self.config.undeblended.apply()):
-            undeblendedName = self.config.undeblendedPrefix + name
-            if getattr(PluginClass, "hasLogName", False):
-                self.undeblendedPlugins[name] = PluginClass(config, undeblendedName,
-                                                            metadata=self.algMetadata,
-                                                            logName=self.log.getChild(undeblendedName).name,
-                                                            **kwds)
-            else:
-                self.undeblendedPlugins[name] = PluginClass(config, undeblendedName,
-                                                            metadata=self.algMetadata, **kwds)
 
-        if "schemaMapper" in kwds:
-            schema = kwds["schemaMapper"].editOutputSchema()
-        else:
-            schema = kwds["schema"]
-
+    def addInvalidPsfFlag(self, schema):
         invalidPsfName = "base_InvalidPsf_flag"
         if invalidPsfName in schema:
             self.keyInvalidPsf = schema.find(invalidPsfName).key
@@ -432,6 +425,47 @@ class BaseMeasurementTask(lsst.pipe.base.Task):
                 "Exception in %s.measure on record %s: %s",
                 plugin.name, measRecord.getId(), error)
             plugin.fail(measRecord)
+
+
+class BaseMeasurementTask(SimpleBaseMeasurementTask):
+    """Ultimate base class for all measurement tasks
+    other than SimpleForcedMeasurementTask.
+
+    Parameters
+    ----------
+    algMetadata : `lsst.daf.base.PropertyList` or `None`
+        Will be modified in-place to contain metadata about the plugins being
+        run. If `None`, an empty `~lsst.daf.base.PropertyList` will be
+        created.
+    **kwds
+        Additional arguments passed to `lsst.pipe.base.Task.__init__`.
+
+    Notes
+    -----
+    This base class for `SingleFrameMeasurementTask` and
+    `ForcedMeasurementTask` mostly exists to share code between the two, and
+    generally should not be used directly.
+    """
+
+    ConfigClass = BaseMeasurementConfig
+
+    def __init__(self, algMetadata=None, **kwds):
+        super().__init__(algMetadata=algMetadata, **kwds)
+        self.undeblendedPlugins = PluginMap()
+
+    def initializePlugins(self, **kwds):
+        # Docstring inherited.
+        super().initializePlugins(**kwds)
+        for executionOrder, name, config, PluginClass in sorted(self.config.undeblended.apply()):
+            undeblendedName = self.config.undeblendedPrefix + name
+            if getattr(PluginClass, "hasLogName", False):
+                self.undeblendedPlugins[name] = PluginClass(config, undeblendedName,
+                                                            metadata=self.algMetadata,
+                                                            logName=self.log.getChild(undeblendedName).name,
+                                                            **kwds)
+            else:
+                self.undeblendedPlugins[name] = PluginClass(config, undeblendedName,
+                                                            metadata=self.algMetadata, **kwds)
 
     def callMeasureN(self, measCat, *args, **kwds):
         """Call ``measureN`` on all plugins and consistently handle exceptions.

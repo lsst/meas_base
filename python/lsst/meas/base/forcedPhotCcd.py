@@ -20,6 +20,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import dataclasses
+from deprecated.sphinx import deprecated
 
 import astropy.table
 import pandas as pd
@@ -50,6 +51,9 @@ __all__ = ("ForcedPhotCcdConfig", "ForcedPhotCcdTask",
            "ForcedPhotCcdFromDataFrameTask", "ForcedPhotCcdFromDataFrameConfig")
 
 
+@deprecated(reason="This task is replaced by lsst.pipe.tasks.ForcedPhotCcdTask. "
+                   "This task will be removed after v30.",
+            version="v29.0", category=FutureWarning)
 class ForcedPhotCcdConnections(PipelineTaskConnections,
                                dimensions=("instrument", "visit", "detector", "skymap", "tract"),
                                defaultTemplates={"inputCoaddName": "deep",
@@ -116,6 +120,9 @@ class ForcedPhotCcdConnections(PipelineTaskConnections,
             self.refCat = dataclasses.replace(self.refCat, storageClass=config.refCatStorageClass)
 
 
+@deprecated(reason="This task is replaced by lsst.pipe.tasks.ForcedPhotCcdTask. "
+                   "This task will be removed after v30.",
+            version="v29.0", category=FutureWarning)
 class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
                           pipelineConnections=ForcedPhotCcdConnections):
     """Config class for forced measurement driver task."""
@@ -268,6 +275,9 @@ class ForcedPhotCcdConfig(pipeBase.PipelineTaskConfig,
         self.measurement.slots.centroid = "base_TransformedCentroidFromCoord"
 
 
+@deprecated(reason="This task is replaced by lsst.pipe.tasks.ForcedPhotCcdTask. "
+                   "This task will be removed after v30.",
+            version="v29.0", category=FutureWarning)
 class ForcedPhotCcdTask(pipeBase.PipelineTask):
     """A pipeline task for performing forced measurement on CCD images.
 
@@ -679,6 +689,9 @@ class ForcedPhotCcdTask(pipeBase.PipelineTask):
         return outputCatalog
 
 
+@deprecated(reason="This task is replaced by lsst.pipe.tasks.ForcedPhotCcdTask. "
+                   "This task will be removed after v30.",
+            version="v29.0", category=FutureWarning)
 class ForcedPhotCcdFromDataFrameConnections(ForcedPhotCcdConnections,
                                             dimensions=("instrument", "visit", "detector", "skymap", "tract"),
                                             defaultTemplates={"inputCoaddName": "goodSeeing",
@@ -687,6 +700,9 @@ class ForcedPhotCcdFromDataFrameConnections(ForcedPhotCcdConnections,
     pass
 
 
+@deprecated(reason="This task is replaced by lsst.pipe.tasks.ForcedPhotCcdTask. "
+                   "This task will be removed after v30.",
+            version="v29.0", category=FutureWarning)
 class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
                                        pipelineConnections=ForcedPhotCcdFromDataFrameConnections):
     def setDefaults(self):
@@ -697,6 +713,9 @@ class ForcedPhotCcdFromDataFrameConfig(ForcedPhotCcdConfig,
         self.connections.measCat = "forced_src_diaObject"
 
 
+@deprecated(reason="This task is replaced by lsst.pipe.tasks.ForcedPhotCcdTask. "
+                   "This task will be removed after v30.",
+            version="v29.0", category=FutureWarning)
 class ForcedPhotCcdFromDataFrameTask(ForcedPhotCcdTask):
     """Force Photometry on a per-detector exposure with coords from a DataFrame
 
