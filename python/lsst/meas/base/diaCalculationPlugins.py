@@ -429,7 +429,7 @@ class MeanDiaPosition(DiaObjectCalculationPlugin):
 
     plugType = 'multi'
 
-    outputCols = ["ra", "dec", "radecMjdTai"]
+    outputCols = ["ra", "dec"]
     needsFilter = False
 
     @classmethod
@@ -457,19 +457,12 @@ class MeanDiaPosition(DiaObjectCalculationPlugin):
             aveCoord = geom.averageSpherePoint(
                 list(geom.SpherePoint(src["ra"], src["dec"], geom.degrees)
                      for idx, src in df.iterrows()))
-            ra = aveCoord.getRa().asDegrees()
-            dec = aveCoord.getDec().asDegrees()
-            if np.isnan(ra) or np.isnan(dec):
-                radecMjdTai = np.nan
-            else:
-                radecMjdTai = df["midpointMjdTai"].max()
 
             return pd.Series({"ra": aveCoord.getRa().asDegrees(),
-                              "dec": aveCoord.getDec().asDegrees(),
-                              "radecMjdTai": radecMjdTai})
+                              "dec": aveCoord.getDec().asDegrees()})
 
         ans = diaSources.apply(_computeMeanPos)
-        diaObjects.loc[:, ["ra", "dec", "radecMjdTai"]] = ans
+        diaObjects.loc[:, ["ra", "dec"]] = ans
 
 
 class HTMIndexDiaPositionConfig(DiaObjectCalculationPluginConfig):
