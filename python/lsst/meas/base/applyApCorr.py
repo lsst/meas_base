@@ -19,6 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import astropy.table
 import numpy as np
 
 import lsst.afw.image
@@ -67,59 +68,33 @@ class ApCorrInfo:
     the aperture correction values; in the second case (using a proxy),
     we will add an alias to the proxy's aperture correction values. In
     all cases, we add a flag.
+
+    Attributes
+    ----------
+    name : str
+        Field name prefix for flux needing aperture correction.
+    modelName : str
+        Field name for aperture correction model for flux.
+    modelSigmaName : str
+        Field name for aperture correction model for fluxErr.
+    doApCorrColumn : bool
+        Should we write the aperture correction values?
+        They should not be written if they're already being written by a proxy.
+    instFluxName : str
+        Name of ``instFlux`` field.
+    instFluxErrName : str
+        Name of ``instFlux`` sigma field.
     """
 
     name = None
-    """Field name prefix for flux needing aperture correction (`str`).
-    """
-
     modelName = None
-    """Field name for aperture correction model for flux (`str`).
-    """
-
     modelSigmaName = None
-    """Field name for aperture correction model for fluxErr (`str`).
-    """
-
     doApCorrColumn = None
-    """Should we write the aperture correction values (`bool`)?
-
-    They should not be written if they're already being written by a proxy.
-    """
-
     instFluxName = None
-    """Name of ``instFlux`` field (`str`).
-    """
-
     instFluxErrName = None
-    """Name of ``instFlux`` sigma field (`str`).
-    """
+    apCorrName = None
 
-    instFluxKey = None
-    """Key to ``instFlux`` field (`lsst.afw.table.schema.Key`).
-    """
-
-    instFluxErrKey = None
-    """Key to ``instFlux`` sigma field (`lsst.afw.table.schema.Key`).
-    """
-
-    fluxFlagKey = None
-    """Key to the flux flag field (`lsst.afw.table.schema.Key`).
-    """
-
-    apCorrKey = None
-    """Key to new aperture correction field (`lsst.afw.table.schema.Key`).
-    """
-
-    apCorrErrKey = None
-    """Key to new aperture correction sigma field (`lsst.afw.table.schema.Key`).
-    """
-
-    apCorrFlagKey = None
-    """Key to new aperture correction flag field (`lsst.afw.table.schema.Key`).
-    """
-
-    def __init__(self, schema, model, name=None):
+    def __init__(self, model, schema=None, name=None):
         if name is None:
             name = model
         self.name = name
@@ -127,35 +102,35 @@ class ApCorrInfo:
         self.modelSigmaName = model + "_instFluxErr"
         self.instFluxName = name + "_instFlux"
         self.instFluxErrName = name + "_instFluxErr"
-        self.instFluxKey = schema.find(self.instFluxName).key
-        self.instFluxErrKey = schema.find(self.instFluxErrName).key
-        self.fluxFlagKey = schema.find(name + "_flag").key
+        self.fluxFlagName = name + "_flag"
+        self.apCorrName = name + "_apCorr"
+        self.apCorrErrName = name + "_apCorrErr"
+        self.apCorrFlagName = name + "_flag_apCorr"
 
         # No need to write the same aperture corrections multiple times
-        self.doApCorrColumn = (name == model or model + "_apCorr" not in schema)
-        if self.doApCorrColumn:
-            self.apCorrKey = schema.addField(
-                name + "_apCorr",
-                doc="aperture correction applied to %s" % (name,),
-                type=np.float64,
-            )
-            self.apCorrErrKey = schema.addField(
-                name + "_apCorrErr",
-                doc="standard deviation of aperture correction applied to %s" % (name,),
-                type=np.float64,
-            )
-        else:
-            aliases = schema.getAliasMap()
-            aliases.set(name + "_apCorr", model + "_apCorr")
-            aliases.set(name + "_apCorrErr", model + "_apCorrErr")
-            self.apCorrKey = schema.find(name + "_apCorr").key
-            self.apCorrErrKey = schema.find(name + "_apCorrErr").key
+        if schema is not None:
+            if name == model or model + "_apCorr" not in schema:
+                schema.addField(
+                    name + "_apCorr",
+                    doc="aperture correction applied to %s" % (name,),
+                    type=np.float64,
+                )
+                schema.addField(
+                    name + "_apCorrErr",
+                    doc="standard deviation of aperture correction applied to %s" % (name,),
+                    type=np.float64,
+                )
+            else:
+                aliases = schema.getAliasMap()
+                aliases.set(name + "_apCorr", model + "_apCorr")
+                aliases.set(name + "_apCorrErr", model + "_apCorrErr")
 
-        self.apCorrFlagKey = schema.addField(
-            name + "_flag_apCorr",
-            doc="set if unable to aperture correct %s" % (name,),
-            type="Flag",
-        )
+            if name + "_flag_apCorr" not in schema:
+                schema.addField(
+                    name + "_flag_apCorr",
+                    doc="set if unable to aperture correct %s" % (name,),
+                    type="Flag",
+                )
 
 
 class ApplyApCorrConfig(lsst.pex.config.Config):
@@ -182,6 +157,16 @@ class ApplyApCorrConfig(lsst.pex.config.Config):
         itemtype=str,
         default={},
     )
+    xColumn = lsst.pex.config.Field(
+        doc="name of the x coordinate column in the catalog",
+        dtype=str,
+        default="slot_Centroid_x",
+    )
+    yColumn = lsst.pex.config.Field(
+        doc="name of the y coordinate column in the catalog",
+        dtype=str,
+        default="slot_Centroid_y",
+    )
 
 
 class ApplyApCorrTask(lsst.pipe.base.Task):
@@ -194,7 +179,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
     ConfigClass = ApplyApCorrConfig
     _DefaultName = "applyApCorr"
 
-    def __init__(self, schema, **kwds):
+    def __init__(self, schema=None, **kwds):
         lsst.pipe.base.Task.__init__(self, **kwds)
 
         self.apCorrInfoDict = dict()
@@ -205,7 +190,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
             self.log.warning("Fields in ignoreList that are not in fluxCorrectList: %s",
                              sorted(missingNameSet))
         for name in sorted(apCorrNameSet - ignoreSet):
-            if name + "_instFlux" not in schema:
+            if schema is not None and name + "_instFlux" not in schema:
                 # if a field in the registry is missing from the schema, silently ignore it.
                 continue
             self.apCorrInfoDict[name] = ApCorrInfo(schema=schema, model=name)
@@ -214,7 +199,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
             if name in apCorrNameSet:
                 # Already done or ignored
                 continue
-            if name + "_instFlux" not in schema:
+            if schema is not None and name + "_instFlux" not in schema:
                 # Silently ignore
                 continue
             self.apCorrInfoDict[name] = ApCorrInfo(schema=schema, model=model, name=name)
@@ -224,7 +209,7 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
 
         Parameters
         ----------
-        catalog : `lsst.afw.table.SourceCatalog`
+        catalog : `lsst.afw.table.SourceCatalog` or `astropy.table.Table`
             Catalog of sources. Will be updated in place.
         apCorrMap : `lsst.afw.image.ApCorrMap`
             Aperture correction map
@@ -244,6 +229,12 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
         # Wrap the task logger to a periodic logger.
         periodicLog = PeriodicLogger(self.log)
 
+        if isinstance(catalog, astropy.table.Table):
+            # Prepare the astropy table for use with this task.
+            self._prepAstropyTable(catalog)
+        xColumn = self.config.xColumn
+        yColumn = self.config.yColumn
+
         for apCorrIndex, apCorrInfo in enumerate(self.apCorrInfoDict.values()):
             apCorrModel = apCorrMap.get(apCorrInfo.modelName)
             apCorrErrModel = apCorrMap.get(apCorrInfo.modelSigmaName)
@@ -252,29 +243,28 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
                                 for i, model in enumerate((apCorrModel, apCorrErrModel)) if model is None]
                 self.log.warning("Cannot aperture correct %s because could not find %s in apCorrMap",
                                  apCorrInfo.name, " or ".join(missingNames))
-                for source in catalog:
-                    source.set(apCorrInfo.apCorrFlagKey, True)
+                catalog[apCorrInfo.apCorrFlagName] = np.ones(len(catalog), dtype=np.bool_)
                 continue
 
             # Say we've failed before we start; we'll unset these flags on success.
-            catalog[apCorrInfo.apCorrFlagKey] = True
+            catalog[apCorrInfo.apCorrFlagName] = True
             oldFluxFlagState = np.zeros(len(catalog), dtype=np.bool_)
             if self.config.doFlagApCorrFailures:
-                oldFluxFlagState = catalog[apCorrInfo.fluxFlagKey]
-                catalog[apCorrInfo.fluxFlagKey] = True
+                oldFluxFlagState = catalog[apCorrInfo.fluxFlagName]
+                catalog[apCorrInfo.fluxFlagName] = True
 
-            apCorr = apCorrModel.evaluate(catalog["slot_Centroid_x"], catalog["slot_Centroid_y"])
+            apCorr = apCorrModel.evaluate(catalog[xColumn], catalog[yColumn])
             if not UseNaiveFluxErr:
                 apCorrErr = apCorrErrModel.evaluate(
-                    catalog["slot_Centroid_x"],
-                    catalog["slot_Centroid_y"],
+                    catalog[xColumn],
+                    catalog[yColumn],
                 )
             else:
                 apCorrErr = np.zeros(len(catalog))
 
             if apCorrInfo.doApCorrColumn:
-                catalog[apCorrInfo.apCorrKey] = apCorr
-                catalog[apCorrInfo.apCorrErrKey] = apCorrErr
+                catalog[apCorrInfo.apCorrName] = apCorr
+                catalog[apCorrInfo.apCorrErrName] = apCorrErr
 
             # Check bad values that are not finite (possible for coadds).
             good = np.isfinite(apCorr) & (apCorr > 0.0) & (apCorrErr >= 0.0)
@@ -282,24 +272,24 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
             if good.sum() == 0:
                 continue
 
-            instFlux = catalog[apCorrInfo.instFluxKey]
-            instFluxErr = catalog[apCorrInfo.instFluxErrKey]
-            catalog[apCorrInfo.instFluxKey][good] = instFlux[good]*apCorr[good]
+            instFlux = catalog[apCorrInfo.instFluxName]
+            instFluxErr = catalog[apCorrInfo.instFluxErrName]
+            catalog[apCorrInfo.instFluxName][good] = instFlux[good]*apCorr[good]
             if UseNaiveFluxErr:
-                catalog[apCorrInfo.instFluxErrKey][good] = instFluxErr[good]*apCorr[good]
+                catalog[apCorrInfo.instFluxErrName][good] = instFluxErr[good]*apCorr[good]
             else:
                 a = instFluxErr[good]/instFlux[good]
                 b = apCorrErr[good]/apCorr[good]
                 err = np.abs(instFlux[good]*apCorr[good])*np.sqrt(a*a + b*b)
-                catalog[apCorrInfo.instFluxErrKey][good] = err
+                catalog[apCorrInfo.instFluxErrName][good] = err
 
-            flags = catalog[apCorrInfo.apCorrFlagKey].copy()
+            flags = catalog[apCorrInfo.apCorrFlagName].copy()
             flags[good] = False
-            catalog[apCorrInfo.apCorrFlagKey] = flags
+            catalog[apCorrInfo.apCorrFlagName] = flags
             if self.config.doFlagApCorrFailures:
-                fluxFlags = catalog[apCorrInfo.fluxFlagKey].copy()
+                fluxFlags = catalog[apCorrInfo.fluxFlagName].copy()
                 fluxFlags[good] = oldFluxFlagState[good]
-                catalog[apCorrInfo.fluxFlagKey] = fluxFlags
+                catalog[apCorrInfo.fluxFlagName] = fluxFlags
 
             # Log a message if it has been a while since the last log.
             periodicLog.log("Aperture corrections applied to %d fields out of %d",
@@ -307,9 +297,32 @@ class ApplyApCorrTask(lsst.pipe.base.Task):
 
             if self.log.isEnabledFor(self.log.DEBUG):
                 # log statistics on the effects of aperture correction
-                apCorrArr = np.array([s.get(apCorrInfo.apCorrKey) for s in catalog])
-                apCorrErrArr = np.array([s.get(apCorrInfo.apCorrErrKey) for s in catalog])
+                apCorrArr = np.asarray([s[apCorrInfo.instFluxName] for s in catalog])
+                apCorrErrArr = np.asarray([s[apCorrInfo.instFluxErrName] for s in catalog])
                 self.log.debug("For instFlux field %r: mean apCorr=%s, stdDev apCorr=%s, "
                                "mean apCorrErr=%s, stdDev apCorrErr=%s for %s sources",
                                apCorrInfo.name, apCorrArr.mean(), apCorrArr.std(),
                                apCorrErrArr.mean(), apCorrErrArr.std(), len(catalog))
+
+    def _prepAstropyTable(self, table):
+        """Prepare an astropy table for use with this task.
+
+        Parameters
+        ----------
+        table : `astropy.table.Table`
+            Table to prepare.
+
+        Returns
+        -------
+        `astropy.table.Table`
+            Prepared table.
+        """
+        for apCorrInfo in self.apCorrInfoDict.values():
+            if apCorrInfo.apCorrName not in table.colnames:
+                table[apCorrInfo.apCorrName] = np.zeros(len(table), dtype=np.float64)
+            if apCorrInfo.apCorrErrName not in table.colnames:
+                table[apCorrInfo.apCorrErrName] = np.zeros(len(table), dtype=np.float64)
+            if apCorrInfo.apCorrFlagName not in table.colnames:
+                table[apCorrInfo.apCorrFlagName] = np.zeros(len(table), dtype=bool)
+            if apCorrInfo.fluxFlagName not in table.colnames:
+                table[apCorrInfo.fluxFlagName] = np.zeros(len(table), dtype=bool)
