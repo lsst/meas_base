@@ -21,6 +21,7 @@
 
 import unittest
 
+import astropy.table
 import numpy as np
 
 import lsst.utils.tests
@@ -75,6 +76,14 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         self.assertLess(self.schema.find("test_apCorr").key.getOffset(),
                         self.schema.find("test2_apCorr").key.getOffset())
 
+    def _catalogToAstropy(self, catalog):
+        # Convert a SourceCatalog to an Astropy Table
+        sourceTable = catalog.asAstropy(copy=True)
+        # Add the x and y object table columns for the centroid
+        sourceTable["slot_Centroid_x"] = sourceTable["slot_Centroid_x"]
+        sourceTable["slot_Centroid_y"] = sourceTable["slot_Centroid_y"]
+        return sourceTable
+
     def testSuccessUnflagged(self):
         # Check that the aperture correction flag is set to False if aperture
         # correction was successfully run
@@ -93,8 +102,12 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         coefficients_sigma = np.zeros((1, 1), dtype=np.float64)
         apCorrMap[instFluxName] = ChebyshevBoundedField(bbox, coefficients)
         apCorrMap[instFluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
+
+        sourceTable = self._catalogToAstropy(sourceCat)
         self.ap_corr_task.run(sourceCat, apCorrMap)
         self.assertFalse(sourceCat[flagKey])
+        self.ap_corr_task.run(sourceTable, apCorrMap)
+        self.assertFalse(sourceTable[flagName])
 
     def testFailureFlagged(self):
         # Check that aperture correction flag is set to True if aperture
@@ -114,8 +127,11 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         coefficients_sigma = np.zeros((1, 1), dtype=np.float64)
         apCorrMap[instFluxName] = ChebyshevBoundedField(bbox, coefficients)
         apCorrMap[instFluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
+        sourceTable = self._catalogToAstropy(sourceCat)
         self.ap_corr_task.run(sourceCat, apCorrMap)
         self.assertTrue(sourceCat[flagKey])
+        self.ap_corr_task.run(sourceTable, apCorrMap)
+        self.assertTrue(sourceTable[flagName])
 
     def testCatFluxUnchanged(self):
         # Pick arbitrary but unique values for the test case
@@ -133,9 +149,12 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         coefficients_sigma = np.zeros((1, 1), dtype=np.float64)
         apCorrMap[instFluxName] = ChebyshevBoundedField(bbox, coefficients)
         apCorrMap[instFluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
-        self.ap_corr_task.run(sourceCat, apCorrMap)
 
+        sourceTable = self._catalogToAstropy(sourceCat)
+        self.ap_corr_task.run(sourceCat, apCorrMap)
         self.assertEqual(sourceCat[instFluxKey], source_test_instFlux)
+        self.ap_corr_task.run(sourceTable, apCorrMap)
+        self.assertEqual(sourceTable[instFluxName], source_test_instFlux)
 
     def testCatFluxHalf(self):
         # Pick arbitrary but unique values for the test case
@@ -154,9 +173,12 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         coefficients_sigma = np.zeros((1, 1), dtype=np.float64)
         apCorrMap[instFluxName] = ChebyshevBoundedField(bbox, coefficients)
         apCorrMap[instFluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
-        self.ap_corr_task.run(sourceCat, apCorrMap)
 
+        sourceTable = self._catalogToAstropy(sourceCat)
+        self.ap_corr_task.run(sourceCat, apCorrMap)
         self.assertFloatsAlmostEqual(sourceCat[instFluxKey], source_test_instFlux / 2)
+        self.ap_corr_task.run(sourceTable, apCorrMap)
+        self.assertFloatsAlmostEqual(sourceTable[instFluxName], source_test_instFlux / 2)
 
     def testCatFluxErr(self):
         """Test catalog flux errors.
@@ -186,9 +208,41 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         coefficients_sigma = np.ones((1, 1), dtype=np.float64)
         apCorrMap[instFluxName] = ChebyshevBoundedField(bbox, coefficients)
         apCorrMap[instFluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
-        self.ap_corr_task.run(sourceCat, apCorrMap)
 
+        sourceTable = self._catalogToAstropy(sourceCat)
+        self.ap_corr_task.run(sourceCat, apCorrMap)
         self.assertFloatsAlmostEqual(sourceCat[instFluxErrKey], source_test_sigma)
+        self.ap_corr_task.run(sourceTable, apCorrMap)
+        self.assertFloatsAlmostEqual(sourceTable[instFluxErrName], source_test_sigma)
+
+    def testSourceTable(self):
+        """Test that the task can handle a SourceTable without columns."""
+        # Create an empty SourceTable
+        source_test_instFlux = 5.3
+        source_test_centroid = lsst.geom.Point2D(5, 7.1)
+        instFluxName = self.name + "_instFlux"
+        instFluxErrName = self.name + "_instFluxErr"
+
+        sourceTable = astropy.table.Table(
+            {
+                "id": [1],
+                "slot_Centroid_x": [source_test_centroid.x],
+                "slot_Centroid_y": [source_test_centroid.y],
+                instFluxName: [source_test_instFlux],
+                instFluxErrName: [0.0],
+            }
+        )
+
+        apCorrMap = afwImage.ApCorrMap()
+        bbox = lsst.geom.Box2I(lsst.geom.Point2I(0, 0), lsst.geom.ExtentI(10, 10))
+        coefficients = np.ones((1, 1), dtype=np.float64)
+        coefficients /= 2.
+        coefficients_sigma = np.zeros((1, 1), dtype=np.float64)
+        apCorrMap[instFluxName] = ChebyshevBoundedField(bbox, coefficients)
+        apCorrMap[instFluxErrName] = ChebyshevBoundedField(bbox, coefficients_sigma)
+
+        self.ap_corr_task.run(sourceTable, apCorrMap)
+        self.assertFloatsAlmostEqual(sourceTable[instFluxName], source_test_instFlux / 2)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
