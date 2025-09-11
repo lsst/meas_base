@@ -44,7 +44,6 @@ def addApCorrName(name):
     ``base_PsfFlux`` will select the fields ``base_PsfFlux_instFlux``,
     ``base_PsfFlux_instFluxErr`` and ``base_PsfFlux_flag``.
     """
-    global _ApCorrNameSet
     _ApCorrNameSet.add(str(name))
 
 
@@ -61,5 +60,4 @@ def getApCorrNameSet():
     For example, the returned set may include ``base_PsfFlux`` and
     ``base_GaussianFlux``.
     """
-    global _ApCorrNameSet
     return _ApCorrNameSet.copy()
