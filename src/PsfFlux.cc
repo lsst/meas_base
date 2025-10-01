@@ -114,7 +114,7 @@ void PsfFluxAlgorithm::measure(afw::table::SourceRecord& measRecord,
     // If we're not using per-pixel weights to compute the instFlux, we'll still want to compute the
     // variance as if we had, so we'll apply the weights to the model now, and update alpha.
     result.instFluxErr = std::sqrt(model.array().square().matrix().dot(variance.cast<PsfPixel>())) / alpha;
-    measRecord.set(_areaKey, model.sum() / alpha);
+    measRecord.set(_areaKey, std::pow(model.sum(), 2) / alpha);
     measRecord.set(_npixelsKey, fitRegion.getSpans()->getArea());
     if (!std::isfinite(result.instFlux) || !std::isfinite(result.instFluxErr)) {
         throw LSST_EXCEPT(PixelValueError, "Invalid pixel value detected in image.");
