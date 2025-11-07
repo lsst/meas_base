@@ -794,7 +794,8 @@ class SigmaDiaPsfFlux(DiaObjectCalculationPlugin):
             dtype = diaObjects[column].dtype
             diaObjects.loc[:, column] = filterDiaSources.psfFlux.std().astype(dtype)
         else:
-            diaObjects.loc[:, column] = filterDiaSources.psfFlux.std()
+            # std() is inconsistent about what type it returns; force to double.
+            diaObjects.loc[:, column] = filterDiaSources.psfFlux.std().astype(np.float64)
 
 
 class Chi2DiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
