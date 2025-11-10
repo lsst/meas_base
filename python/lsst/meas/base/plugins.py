@@ -382,13 +382,13 @@ class InputCountPlugin(GenericPlugin):
         schema.getAliasMap().set(name + '_flag_badCentroid', schema.getAliasMap().apply("slot_Centroid_flag"))
 
     def measure(self, measRecord, exposure, center):
-        if not exposure.getInfo().getCoaddInputs():
+        if not (coaddInputs := exposure.getInfo().getCoaddInputs()):
             raise MeasurementError("No coadd inputs defined.", self.FAILURE_NO_INPUTS)
         if not np.all(np.isfinite(center)):
             raise MeasurementError("Source has a bad centroid.", self.FAILURE_BAD_CENTROID)
 
-        ccds = exposure.getInfo().getCoaddInputs().ccds
-        measRecord.set(self.numberKey, len(ccds.subsetContaining(center, exposure.getWcs())))
+        count = len(coaddInputs.subset_containing_ccds(center, exposure.wcs))
+        measRecord.set(self.numberKey, count)
 
     def fail(self, measRecord, error=None):
         if error is not None:
