@@ -107,7 +107,8 @@ def ccdVennDiagram(exp, showImage=True, legendLocation='best'):
 
 class InputCountTest(lsst.utils.tests.TestCase):
 
-    def testInputCounts(self):
+    @lsst.utils.tests.methodParameters(cellCoaddLike=[False, True])
+    def testInputCounts(self, cellCoaddLike):
         # Generate a simulated coadd of four overlapping-but-offset CCDs.
         # Populate it with three sources.
         # Demonstrate that we can correctly recover the number of images which
@@ -150,11 +151,19 @@ class InputCountTest(lsst.utils.tests.TestCase):
         # Set the fake CCDs that "went into" making this coadd, using the
         # differing wcs objects created above.
         ccds = exp.getInfo().getCoaddInputs().ccds
-        for pos in ccdPositions:
-            record = ccds.addNew()
-            record.setWcs(afwGeom.makeSkyWcs(crpix=pos, crval=crval, cdMatrix=cdMatrix))
-            record.setBBox(imageBox)
-            record.setValidPolygon(afwGeom.Polygon(lsst.geom.Box2D(imageBox)))
+        if cellCoaddLike:
+            for pos in ccdPositions:
+                record = ccds.addNew()
+                wcs = afwGeom.makeSkyWcs(crpix=pos, crval=crval, cdMatrix=cdMatrix)
+                corners = lsst.geom.Box2D(imageBox).getCorners()
+                polygon = afwGeom.Polygon([wcsRef.skyToPixel(wcs.pixelToSky(corner)) for corner in corners])
+                record.validPolygon = polygon
+        else:
+            for pos in ccdPositions:
+                record = ccds.addNew()
+                record.setWcs(afwGeom.makeSkyWcs(crpix=pos, crval=crval, cdMatrix=cdMatrix))
+                record.setBBox(imageBox)
+                record.setValidPolygon(afwGeom.Polygon(lsst.geom.Box2D(imageBox)))
 
         # Configure a SingleFrameMeasurementTask to run InputCounts.
         measureSourcesConfig = measBase.SingleFrameMeasurementConfig()
