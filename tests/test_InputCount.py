@@ -107,7 +107,7 @@ def ccdVennDiagram(exp, showImage=True, legendLocation='best'):
 
 class InputCountTest(lsst.utils.tests.TestCase):
 
-    def testInputCounts(self, showPlot=False):
+    def testInputCounts(self):
         # Generate a simulated coadd of four overlapping-but-offset CCDs.
         # Populate it with three sources.
         # Demonstrate that we can correctly recover the number of images which
