@@ -384,6 +384,7 @@ class TestWeightedMeanDiaPsfFlux(unittest.TestCase):
         objId = 0
 
         # Test expected mean.
+        # In the first test, we have only one object.
         diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
@@ -401,9 +402,12 @@ class TestWeightedMeanDiaPsfFlux(unittest.TestCase):
         self.assertAlmostEqual(diaObjects.loc[objId, "u_psfFluxMeanErr"],
                                np.sqrt(1 / n_sources))
         self.assertEqual(diaObjects.loc[objId, "u_psfFluxNdata"], n_sources)
+        # We expect this to be converted to float.
+        self.assertEqual(diaObjects["u_psfFluxNdata"].dtype, np.float64)
 
         # Test expected mean with a nan value.
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        # In the second test, we have two objects (one empty).
+        diaObjects = pd.DataFrame({"diaObjectId": [objId, objId + 1]})
         fluxes = np.linspace(-1, 1, n_sources)
         fluxes[4] = np.nan
         diaSources = pd.DataFrame(
@@ -419,7 +423,8 @@ class TestWeightedMeanDiaPsfFlux(unittest.TestCase):
         self.assertAlmostEqual(diaObjects.at[objId, "r_psfFluxMeanErr"],
                                np.sqrt(1 / (n_sources - 1)))
         self.assertEqual(diaObjects.loc[objId, "r_psfFluxNdata"], n_sources - 1)
-        self.assertEqual(diaObjects["r_psfFluxNdata"].dtype, np.int64)
+        # We expect this to be converted to float.
+        self.assertEqual(diaObjects["r_psfFluxNdata"].dtype, np.float64)
 
 
 class TestPercentileDiaPsfFlux(unittest.TestCase):

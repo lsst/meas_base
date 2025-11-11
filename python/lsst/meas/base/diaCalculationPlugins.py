@@ -86,7 +86,14 @@ def catchWarnings(_func=None, *, warns=[]):
         return decoratorCatchWarnings(_func)
 
 
-def typeSafePandasAssignment(target, source, columns, default_dtype=np.float64, int_fill_value=0):
+def typeSafePandasAssignment(
+    target,
+    source,
+    columns,
+    default_dtype=np.float64,
+    int_fill_value=0,
+    force_int_to_float=False,
+):
     """
     Assign from a source dataframe to a target dataframe in a type safe way.
 
@@ -105,6 +112,10 @@ def typeSafePandasAssignment(target, source, columns, default_dtype=np.float64, 
     int_fill_value : `int`, optional
         Fill value for integer columns to avoid pandas insisting
         that everything should be float-ified as nans.
+    force_int_to_float : `bool`, optional
+        Force integer columns to float columns? Use this option
+        for backwards compatibility for old pandas misfeatures which
+        are expected by some downstream processes.
     """
     is_series = isinstance(source, pd.Series)
     for col in columns:
@@ -120,7 +131,7 @@ def typeSafePandasAssignment(target, source, columns, default_dtype=np.float64, 
         else:
             target_dtype = default_dtype
 
-        if matched_length or pd.api.types.is_float_dtype(target_dtype):
+        if (matched_length or pd.api.types.is_float_dtype(target_dtype)) and not force_int_to_float:
             # If we have a matched length or float, we can do a
             # straight assignment here.
             target.loc[:, col] = source_col
@@ -132,8 +143,9 @@ def typeSafePandasAssignment(target, source, columns, default_dtype=np.float64, 
             target[col] = target[col].astype(np.float64)
             # Set the column, casting to float.
             target.loc[:, col] = source_col.astype(np.float64)
-            # Convert back to integer
-            target[col] = target[col].fillna(int_fill_value).astype(target_dtype)
+            if not force_int_to_float:
+                # Convert back to integer
+                target[col] = target[col].fillna(int_fill_value).astype(target_dtype)
 
 
 def compute_optimized_periodogram_grid(x0, oversampling_factor=5, nyquist_factor=100):
@@ -710,7 +722,7 @@ class WeightedMeanDiaPsfFlux(DiaObjectCalculationPlugin):
                               nDataName: nFluxData},
                              dtype="object")
         df = filterDiaSources.apply(_weightedMean).astype(diaObjects.dtypes[[meanName, errName, nDataName]])
-        typeSafePandasAssignment(diaObjects, df, [meanName, errName, nDataName])
+        typeSafePandasAssignment(diaObjects, df, [meanName, errName, nDataName], force_int_to_float=True)
 
 
 class PercentileDiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
