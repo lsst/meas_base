@@ -1202,6 +1202,8 @@ class ErrMeanDiaPsfFlux(DiaObjectCalculationPlugin):
             diaObjects,
             filterDiaSources.psfFluxErr.mean(),
             [column],
+            # Note that the schemas expect this to be single-precision.
+            default_dtype=np.float32,
         )
 
 

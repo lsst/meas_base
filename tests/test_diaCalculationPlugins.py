@@ -774,7 +774,7 @@ class TestErrMeanDiaPsfFlux(unittest.TestCase):
                                  None)
         run_multi_plugin(diaObjects, diaSources, "u", plug)
         self.assertAlmostEqual(diaObjects.at[objId, "u_psfFluxErrMean"],
-                               np.nanmean(errors))
+                               np.nanmean(errors).astype(np.float32))
 
         # Test mean of the errors with input nan value.
         errors[4] = np.nan
@@ -787,7 +787,7 @@ class TestErrMeanDiaPsfFlux(unittest.TestCase):
                   "psfFluxErr": errors})
         run_multi_plugin(diaObjects, diaSources, "r", plug)
         self.assertAlmostEqual(diaObjects.at[objId, "r_psfFluxErrMean"],
-                               np.nanmean(errors))
+                               np.nanmean(errors).astype(np.float32))
 
 
 class TestLinearFitDiaPsfFlux(unittest.TestCase):
