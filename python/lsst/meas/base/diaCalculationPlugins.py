@@ -134,7 +134,7 @@ def typeSafePandasAssignment(
         if (matched_length or pd.api.types.is_float_dtype(target_dtype)) and not force_int_to_float:
             # If we have a matched length or float, we can do a
             # straight assignment here.
-            target.loc[:, col] = source_col
+            target.loc[:, col] = source_col.astype(target_dtype)
         else:
             # With mis-matched integers, we must do this dance to preserve types.
             # Note that this may lose precision with very large numbers.
