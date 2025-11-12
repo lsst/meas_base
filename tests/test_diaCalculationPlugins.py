@@ -403,6 +403,8 @@ class TestWeightedMeanDiaPsfFlux(unittest.TestCase):
                                np.sqrt(1 / n_sources))
         self.assertEqual(diaObjects.loc[objId, "u_psfFluxNdata"], n_sources)
         # We expect this to be converted to float.
+        # TODO DM-53254: This should be an integer (and should be checked
+        # to be an integer).
         self.assertEqual(diaObjects["u_psfFluxNdata"].dtype, np.float64)
 
         # Test expected mean with a nan value.
@@ -424,6 +426,8 @@ class TestWeightedMeanDiaPsfFlux(unittest.TestCase):
                                np.sqrt(1 / (n_sources - 1)))
         self.assertEqual(diaObjects.loc[objId, "r_psfFluxNdata"], n_sources - 1)
         # We expect this to be converted to float.
+        # TODO DM-53254: This should be an integer (and should be checked
+        # to be an integer).
         self.assertEqual(diaObjects["r_psfFluxNdata"].dtype, np.float64)
 
 

@@ -92,12 +92,11 @@ def typeSafePandasAssignment(
     columns,
     default_dtype=np.float64,
     int_fill_value=0,
+    # TODO DM-53254: Remove the force_int_to_float hack.
     force_int_to_float=False,
 ):
     """
     Assign from a source dataframe to a target dataframe in a type safe way.
-
-    This is necessary because pandas is a steaming pile.
 
     Parameters
     ----------
@@ -722,6 +721,7 @@ class WeightedMeanDiaPsfFlux(DiaObjectCalculationPlugin):
                               nDataName: nFluxData},
                              dtype="object")
         df = filterDiaSources.apply(_weightedMean).astype(diaObjects.dtypes[[meanName, errName, nDataName]])
+        # TODO DM-53254: Remove the force_int_to_float hack.
         typeSafePandasAssignment(diaObjects, df, [meanName, errName, nDataName], force_int_to_float=True)
 
 
