@@ -201,6 +201,11 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
         dtype=str,
         default="raise",
     )
+    badPixelFlags = lsst.pex.config.ListField(
+        dtype=str,
+        default=['base_PixelFlags_flag_nodataCenter',],
+        doc="If a source has a pixel flag in this list, it will NOT be measured.",
+    )
 
     def setDefaults(self):
         self.slots.centroid = "base_TransformedCentroid"
@@ -244,6 +249,7 @@ class ForcedMeasurementTask(BaseMeasurementTask):
     """
 
     ConfigClass = ForcedMeasurementConfig
+    _DefaultName = "forcedMeasurement"
 
     def __init__(self, refSchema, algMetadata=None, **kwds):
         super(ForcedMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
@@ -258,6 +264,17 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.addInvalidPsfFlag(self.mapper.editOutputSchema())
         self.schema = self.mapper.getOutputSchema()
         self.schema.checkUnits(parse_strict=self.config.checkUnitsParseStrict)
+
+        # Enforce a specific plugin order so that we can skip measurement on
+        # sources that have bad pixel flags. Centroid has to go first.
+        self.plugins_pre = self.plugins.copy()
+        self.plugins_post = self.plugins.copy()
+        self.plugins_pre.clear()
+        self.plugins_pre[self.config.slots.centroid] = self.plugins[self.config.slots.centroid]
+        self.plugins_pre["base_PixelFlags"] = self.plugins["base_PixelFlags"]
+        self.plugins_post.pop(self.config.slots.centroid)
+        self.plugins_post.pop("base_PixelFlags")
+        del self.plugins
 
     def run(self, measCat, exposure, refCat, refWcs, exposureId=None, beginOrder=None, endOrder=None):
         r"""Perform forced measurement.
@@ -353,10 +370,16 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         else:
             noiseReplacer = DummyNoiseReplacer()
 
+        # Split running measurements into two parts: pre-measure and measure.
+        # The former runs only the Centroid and PixelFlagas plugins so we can
+        # skip measuring sources that have obviously bad pixel flags.
+        self._pre_measure(refCat, measCat, exposure, refWcs, beginOrder, endOrder)
+
         # Create parent cat which slices both the refCat and measCat (sources)
         # first, get the reference and source records which have no parent
         refParentCat, measParentCat = refCat.getChildren(0, measCat)
         childrenIter = refCat.getChildren((refParentRecord.getId() for refParentRecord in refCat), measCat)
+
         for parentIdx, records in enumerate(zip(refParentCat, measParentCat, childrenIter)):
             # Unpack records
             refParentRecord, measParentRecord, (refChildCat, measChildCat) = records
@@ -391,6 +414,31 @@ class ForcedMeasurementTask(BaseMeasurementTask):
                     self.doMeasurement(plugin, measRecord, exposure, refRecord, refWcs)
                     periodicLog.log("Undeblended forced measurement complete for %d sources out of %d",
                                     recordIndex + 1, len(refCat))
+
+    def _pre_measure(self, refCat, measCat, exposure, refWcs, beginOrder, endOrder):
+        """Run plugins in a specific order so we can skip measuring
+        sources that have obviously bad pixel flags.
+
+        The Parameters are identical to those in the run method.
+        """
+        # First, run just the Centroid plugin (it has to go first) and
+        # the base_PixelFlags plugin on the full catalog.
+        # We don't care about differentiating children from parents yet.
+        self.plugins = self.plugins_pre
+        for refRecord, measRecord in zip(refCat, measCat):
+            self.callMeasure(measRecord, exposure, refRecord, refWcs,
+                             beginOrder=beginOrder, endOrder=endOrder)
+
+        # Second, filter out the sources we don't want to measure,
+        # and ensure the measCat is contiguous
+        for badPixelFlag in self.config.badPixelFlags:
+            measCat = measCat[~measCat[badPixelFlag]]
+        if not measCat.isContiguous():
+            measCat = measCat.copy(deep=True)
+
+        # Finally, reset self.plugins so the Task can continue running all the
+        # rest of the measurement plugins.
+        self.plugins = self.plugins_post
 
     def generateMeasCat(self, exposure, refCat, refWcs, idFactory=None):
         r"""Initialize an output catalog from the reference catalog.

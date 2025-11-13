@@ -721,7 +721,8 @@ class AlgorithmTestCase:
         arguments, the `TransformedCentroid` and `TransformedShape` plugins
         will be run and used as the centroid and shape slots; these simply
         transform the reference catalog centroid and shape to the measurement
-        coordinate system.
+        coordinate system. Also run the pixelFlags plugin, since it is
+        expected to run prior to all the other non-centroid plugins.
 
         Parameters
         ----------
@@ -745,6 +746,7 @@ class AlgorithmTestCase:
         config.slots.gaussianFlux = None
         config.plugins.names = (plugin,) + tuple(dependencies) + ("base_TransformedCentroid",
                                                                   "base_TransformedShape")
+        config.plugins.names |= ["base_PixelFlags"]
         return config
 
     def makeForcedMeasurementTask(self, plugin=None, dependencies=(), config=None, refSchema=None,
