@@ -203,6 +203,7 @@ class ForcedMeasurementConfig(BaseMeasurementConfig):
     )
 
     def setDefaults(self):
+        super().setDefaults()
         self.slots.centroid = "base_TransformedCentroid"
         self.slots.shape = "base_TransformedShape"
         self.slots.apFlux = None
