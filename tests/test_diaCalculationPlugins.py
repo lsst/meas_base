@@ -148,7 +148,7 @@ def run_multiband_plugin(diaObjectCat, diaSourceCat, plugin):
                      )
 
 
-def make_diaObject_table(objId, plugin, default_value=None, band=None):
+def make_diaObject_table(objId, plugin, default_value=np.nan, band=None):
     """Create a minimal diaObject table with columns required for the plugin
 
     Parameters
@@ -157,7 +157,7 @@ def make_diaObject_table(objId, plugin, default_value=None, band=None):
         The diaObjectId
     plugin : `lsst.ap.association.DiaCalculationPlugin`
         The plugin that will be run.
-    default_value : None, optional
+    default_value : `float` or `int`, optional
         Value to set new columns to.
     band : `str`, optional
         Band designation to append to the plugin columns.
@@ -167,7 +167,10 @@ def make_diaObject_table(objId, plugin, default_value=None, band=None):
     diaObjects : `pandas.DataFrame`
         Output catalog with the required columns for the plugin.
     """
-    diaObjects = {"diaObjectId": [objId]}
+    # Add an extra empty diaObject here. This ensures that
+    # we properly test the source/object matching implicit
+    # in the plugin calculations.
+    diaObjects = {"diaObjectId": [objId, objId + 1]}
     for col in plugin.outputCols:
         if band is not None:
             diaObjects[f"{band}_{col}"] = default_value
@@ -309,6 +312,7 @@ class TestNDiaSourcesDiaPlugin(unittest.TestCase):
             run_multi_plugin(diaObjects, diaSources, "g", plug)
 
             self.assertEqual(n_sources, diaObjects.at[objId, "nDiaSources"])
+            self.assertEqual(diaObjects["nDiaSources"].dtype, np.int64)
 
 
 class TestSimpleSourceFlagDiaPlugin(unittest.TestCase):
@@ -329,9 +333,10 @@ class TestSimpleSourceFlagDiaPlugin(unittest.TestCase):
                                          "ap_diaObjectFlag",
                                          None)
 
-        diaObjects = make_diaObject_table(objId, plug, default_value=np.uint64)
+        diaObjects = make_diaObject_table(objId, plug, default_value=np.uint64(0))
         run_multi_plugin(diaObjects, diaSources, "g", plug)
         self.assertEqual(diaObjects.at[objId, "flags"], 0)
+        self.assertEqual(diaObjects["flags"].dtype, np.uint64)
 
         # Test expected flags, all flags set.
         diaSources = pd.DataFrame(
@@ -339,9 +344,10 @@ class TestSimpleSourceFlagDiaPlugin(unittest.TestCase):
                   "band": n_sources * ["g"],
                   "diaSourceId": np.arange(n_sources, dtype=int),
                   "flags": np.ones(n_sources, dtype=np.uint64)})
-        diaObjects = make_diaObject_table(objId, plug, default_value=np.uint64)
+        diaObjects = make_diaObject_table(objId, plug, default_value=np.uint64(0))
         run_multi_plugin(diaObjects, diaSources, "g", plug)
         self.assertEqual(diaObjects.at[objId, "flags"], 1)
+        self.assertEqual(diaObjects["flags"].dtype, np.uint64)
 
         # Test expected flags, random flags.
         diaSources = pd.DataFrame(
@@ -350,9 +356,10 @@ class TestSimpleSourceFlagDiaPlugin(unittest.TestCase):
                   "diaSourceId": np.arange(n_sources, dtype=int),
                   "flags": np.random.randint(0, 2 ** 16, size=n_sources)})
 
-        diaObjects = make_diaObject_table(objId, plug, default_value=np.uint64)
+        diaObjects = make_diaObject_table(objId, plug, default_value=np.uint64(0))
         run_multi_plugin(diaObjects, diaSources, "g", plug)
         self.assertEqual(diaObjects.at[objId, "flags"], 1)
+        self.assertEqual(diaObjects["flags"].dtype, np.uint64)
 
         # Test expected flags, one flag set.
         flag_array = np.zeros(n_sources, dtype=np.uint64)
@@ -362,9 +369,10 @@ class TestSimpleSourceFlagDiaPlugin(unittest.TestCase):
                   "band": n_sources * ["g"],
                   "diaSourceId": np.arange(n_sources, dtype=int),
                   "flags": flag_array})
-        diaObjects = make_diaObject_table(objId, plug, default_value=np.uint64)
+        diaObjects = make_diaObject_table(objId, plug, default_value=np.uint64(0))
         run_multi_plugin(diaObjects, diaSources, "g", plug)
         self.assertEqual(diaObjects.at[objId, "flags"], 1)
+        self.assertEqual(diaObjects["flags"].dtype, np.uint64)
 
 
 class TestWeightedMeanDiaPsfFlux(unittest.TestCase):
@@ -376,6 +384,7 @@ class TestWeightedMeanDiaPsfFlux(unittest.TestCase):
         objId = 0
 
         # Test expected mean.
+        # In the first test, we have only one object.
         diaObjects = pd.DataFrame({"diaObjectId": [objId]})
         diaSources = pd.DataFrame(
             data={"diaObjectId": n_sources * [objId],
@@ -393,9 +402,14 @@ class TestWeightedMeanDiaPsfFlux(unittest.TestCase):
         self.assertAlmostEqual(diaObjects.loc[objId, "u_psfFluxMeanErr"],
                                np.sqrt(1 / n_sources))
         self.assertEqual(diaObjects.loc[objId, "u_psfFluxNdata"], n_sources)
+        # We expect this to be converted to float.
+        # TODO DM-53254: This should be an integer (and should be checked
+        # to be an integer).
+        self.assertEqual(diaObjects["u_psfFluxNdata"].dtype, np.float64)
 
         # Test expected mean with a nan value.
-        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        # In the second test, we have two objects (one empty).
+        diaObjects = pd.DataFrame({"diaObjectId": [objId, objId + 1]})
         fluxes = np.linspace(-1, 1, n_sources)
         fluxes[4] = np.nan
         diaSources = pd.DataFrame(
@@ -411,6 +425,10 @@ class TestWeightedMeanDiaPsfFlux(unittest.TestCase):
         self.assertAlmostEqual(diaObjects.at[objId, "r_psfFluxMeanErr"],
                                np.sqrt(1 / (n_sources - 1)))
         self.assertEqual(diaObjects.loc[objId, "r_psfFluxNdata"], n_sources - 1)
+        # We expect this to be converted to float.
+        # TODO DM-53254: This should be an integer (and should be checked
+        # to be an integer).
+        self.assertEqual(diaObjects["r_psfFluxNdata"].dtype, np.float64)
 
 
 class TestPercentileDiaPsfFlux(unittest.TestCase):
@@ -760,7 +778,7 @@ class TestErrMeanDiaPsfFlux(unittest.TestCase):
                                  None)
         run_multi_plugin(diaObjects, diaSources, "u", plug)
         self.assertAlmostEqual(diaObjects.at[objId, "u_psfFluxErrMean"],
-                               np.nanmean(errors))
+                               np.nanmean(errors).astype(np.float32))
 
         # Test mean of the errors with input nan value.
         errors[4] = np.nan
@@ -773,7 +791,7 @@ class TestErrMeanDiaPsfFlux(unittest.TestCase):
                   "psfFluxErr": errors})
         run_multi_plugin(diaObjects, diaSources, "r", plug)
         self.assertAlmostEqual(diaObjects.at[objId, "r_psfFluxErrMean"],
-                               np.nanmean(errors))
+                               np.nanmean(errors).astype(np.float32))
 
 
 class TestLinearFitDiaPsfFlux(unittest.TestCase):

@@ -86,6 +86,67 @@ def catchWarnings(_func=None, *, warns=[]):
         return decoratorCatchWarnings(_func)
 
 
+def typeSafePandasAssignment(
+    target,
+    source,
+    columns,
+    default_dtype=np.float64,
+    int_fill_value=0,
+    # TODO DM-53254: Remove the force_int_to_float hack.
+    force_int_to_float=False,
+):
+    """
+    Assign from a source dataframe to a target dataframe in a type safe way.
+
+    Parameters
+    ----------
+    target : `pd.DataFrame`
+        Target pandas dataframe.
+    source : `pd.DataFrame` or `pd.Series`
+        Grouped source dataframe.
+    columns : `list` [`str`]
+        List of columns to transfer.
+    default_dtype : `np.dtype`, optional
+        Default datatype (if not in target).
+    int_fill_value : `int`, optional
+        Fill value for integer columns to avoid pandas insisting
+        that everything should be float-ified as nans.
+    force_int_to_float : `bool`, optional
+        Force integer columns to float columns? Use this option
+        for backwards compatibility for old pandas misfeatures which
+        are expected by some downstream processes.
+    """
+    is_series = isinstance(source, pd.Series)
+    for col in columns:
+        if is_series:
+            source_col = source
+        else:
+            source_col = source[col]
+
+        matched_length = False
+        if col in target.columns:
+            target_dtype = target[col].dtype
+            matched_length = len(target) == len(source)
+        else:
+            target_dtype = default_dtype
+
+        if (matched_length or pd.api.types.is_float_dtype(target_dtype)) and not force_int_to_float:
+            # If we have a matched length or float, we can do a
+            # straight assignment here.
+            target.loc[:, col] = source_col.astype(target_dtype)
+        else:
+            # With mis-matched integers, we must do this dance to preserve types.
+            # Note that this may lose precision with very large numbers.
+
+            # Convert to float
+            target[col] = target[col].astype(np.float64)
+            # Set the column, casting to float.
+            target.loc[:, col] = source_col.astype(np.float64)
+            if not force_int_to_float:
+                # Convert back to integer
+                target[col] = target[col].fillna(int_fill_value).astype(target_dtype)
+
+
 def compute_optimized_periodogram_grid(x0, oversampling_factor=5, nyquist_factor=100):
     """
     Computes an optimized periodogram frequency grid for a given time series.
@@ -462,7 +523,7 @@ class MeanDiaPosition(DiaObjectCalculationPlugin):
                               "dec": aveCoord.getDec().asDegrees()})
 
         ans = diaSources.apply(_computeMeanPos)
-        diaObjects.loc[:, ["ra", "dec"]] = ans
+        typeSafePandasAssignment(diaObjects, ans, ["ra", "dec"])
 
 
 class HTMIndexDiaPositionConfig(DiaObjectCalculationPluginConfig):
@@ -548,8 +609,7 @@ class NumDiaSourcesDiaPlugin(DiaObjectCalculationPlugin):
         **kwargs
             Any additional keyword arguments that may be passed to the plugin.
         """
-        dtype = diaObjects["nDiaSources"].dtype
-        diaObjects.loc[:, "nDiaSources"] = diaSources.diaObjectId.count().astype(dtype)
+        typeSafePandasAssignment(diaObjects, diaSources.diaObjectId.count(), ["nDiaSources"])
 
 
 class SimpleSourceFlagDiaPluginConfig(DiaObjectCalculationPluginConfig):
@@ -584,8 +644,7 @@ class SimpleSourceFlagDiaPlugin(DiaObjectCalculationPlugin):
         **kwargs
             Any additional keyword arguments that may be passed to the plugin.
         """
-        dtype = diaObjects["flags"].dtype
-        diaObjects.loc[:, "flags"] = diaSources.flags.any().astype(dtype)
+        typeSafePandasAssignment(diaObjects, diaSources.flags.any(), ["flags"], default_dtype=np.uint64)
 
 
 class WeightedMeanDiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
@@ -662,8 +721,8 @@ class WeightedMeanDiaPsfFlux(DiaObjectCalculationPlugin):
                               nDataName: nFluxData},
                              dtype="object")
         df = filterDiaSources.apply(_weightedMean).astype(diaObjects.dtypes[[meanName, errName, nDataName]])
-
-        diaObjects.loc[:, [meanName, errName, nDataName]] = df
+        # TODO DM-53254: Remove the force_int_to_float hack.
+        typeSafePandasAssignment(diaObjects, df, [meanName, errName, nDataName], force_int_to_float=True)
 
 
 class PercentileDiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
@@ -724,25 +783,24 @@ class PercentileDiaPsfFlux(DiaObjectCalculationPlugin):
             Any additional keyword arguments that may be passed to the plugin.
         """
         pTileNames = []
-        dtype = None
         for tilePercent in self.config.percentiles:
             pTileName = "{}_psfFluxPercentile{:02d}".format(band,
                                                             tilePercent)
             pTileNames.append(pTileName)
             if pTileName not in diaObjects.columns:
                 diaObjects[pTileName] = np.nan
-            elif dtype is None:
-                dtype = diaObjects[pTileName].dtype
 
         def _fluxPercentiles(df):
             pTiles = np.nanpercentile(df["psfFlux"], self.config.percentiles)
             return pd.Series(
                 dict((tileName, pTile)
                      for tileName, pTile in zip(pTileNames, pTiles)))
-        if dtype is None:
-            diaObjects.loc[:, pTileNames] = filterDiaSources.apply(_fluxPercentiles)
-        else:
-            diaObjects.loc[:, pTileNames] = filterDiaSources.apply(_fluxPercentiles).astype(dtype)
+
+        typeSafePandasAssignment(
+            diaObjects,
+            filterDiaSources.apply(_fluxPercentiles),
+            pTileNames,
+        )
 
 
 class SigmaDiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
@@ -790,12 +848,12 @@ class SigmaDiaPsfFlux(DiaObjectCalculationPlugin):
         # Set "delta degrees of freedom (ddf)" to 1 to calculate the unbiased
         # estimator of scatter (i.e. 'N - 1' instead of 'N').
         column = "{}_psfFluxSigma".format(band)
-        if column in diaObjects:
-            dtype = diaObjects[column].dtype
-            diaObjects.loc[:, column] = filterDiaSources.psfFlux.std().astype(dtype)
-        else:
-            # std() is inconsistent about what type it returns; force to double.
-            diaObjects.loc[:, column] = filterDiaSources.psfFlux.std().astype(np.float64)
+
+        typeSafePandasAssignment(
+            diaObjects,
+            filterDiaSources.psfFlux.std(),
+            [column],
+        )
 
 
 class Chi2DiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
@@ -852,11 +910,11 @@ class Chi2DiaPsfFlux(DiaObjectCalculationPlugin):
                      - diaObjects.at[df.diaObjectId.iat[0], meanName])
             return np.nansum((delta / df["psfFluxErr"]) ** 2)
 
-        if column in diaObjects:
-            dtype = diaObjects[column].dtype
-            diaObjects.loc[:, column] = filterDiaSources.apply(_chi2).astype(dtype)
-        else:
-            diaObjects.loc[:, column] = filterDiaSources.apply(_chi2)
+        typeSafePandasAssignment(
+            diaObjects,
+            filterDiaSources.apply(_chi2),
+            [column],
+        )
 
 
 class MadDiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
@@ -905,15 +963,12 @@ class MadDiaPsfFlux(DiaObjectCalculationPlugin):
             Any additional keyword arguments that may be passed to the plugin.
         """
         column = "{}_psfFluxMAD".format(band)
-        if column in diaObjects:
-            dtype = diaObjects[column].dtype
-            diaObjects.loc[:, column] = \
-                filterDiaSources.psfFlux.apply(median_absolute_deviation,
-                                               ignore_nan=True).astype(dtype)
-        else:
-            diaObjects.loc[:, column] = \
-                filterDiaSources.psfFlux.apply(median_absolute_deviation,
-                                               ignore_nan=True)
+
+        typeSafePandasAssignment(
+            diaObjects,
+            filterDiaSources.psfFlux.apply(median_absolute_deviation, ignore_nan=True),
+            [column],
+        )
 
 
 class SkewDiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
@@ -961,11 +1016,12 @@ class SkewDiaPsfFlux(DiaObjectCalculationPlugin):
             Any additional keyword arguments that may be passed to the plugin.
         """
         column = "{}_psfFluxSkew".format(band)
-        if column in diaObjects:
-            dtype = diaObjects[column].dtype
-            diaObjects.loc[:, column] = filterDiaSources.psfFlux.skew().astype(dtype)
-        else:
-            diaObjects.loc[:, column] = filterDiaSources.psfFlux.skew()
+
+        typeSafePandasAssignment(
+            diaObjects,
+            filterDiaSources.psfFlux.skew(),
+            [column],
+        )
 
 
 class MinMaxDiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
@@ -1019,9 +1075,16 @@ class MinMaxDiaPsfFlux(DiaObjectCalculationPlugin):
         if maxName not in diaObjects.columns:
             diaObjects[maxName] = np.nan
 
-        dtype = diaObjects[minName].dtype
-        diaObjects.loc[:, minName] = filterDiaSources.psfFlux.min().astype(dtype)
-        diaObjects.loc[:, maxName] = filterDiaSources.psfFlux.max().astype(dtype)
+        typeSafePandasAssignment(
+            diaObjects,
+            filterDiaSources.psfFlux.min(),
+            [minName],
+        )
+        typeSafePandasAssignment(
+            diaObjects,
+            filterDiaSources.psfFlux.max(),
+            [maxName],
+        )
 
 
 class MaxSlopeDiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
@@ -1081,11 +1144,12 @@ class MaxSlopeDiaPsfFlux(DiaObjectCalculationPlugin):
             return (np.diff(fluxes) / np.diff(times)).max()
 
         column = "{}_psfFluxMaxSlope".format(band)
-        if column in diaObjects:
-            dtype = diaObjects[column].dtype
-            diaObjects.loc[:, column] = filterDiaSources.apply(_maxSlope).astype(dtype)
-        else:
-            diaObjects.loc[:, column] = filterDiaSources.apply(_maxSlope)
+
+        typeSafePandasAssignment(
+            diaObjects,
+            filterDiaSources.apply(_maxSlope),
+            [column],
+        )
 
 
 class ErrMeanDiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
@@ -1133,11 +1197,14 @@ class ErrMeanDiaPsfFlux(DiaObjectCalculationPlugin):
             Any additional keyword arguments that may be passed to the plugin.
         """
         column = "{}_psfFluxErrMean".format(band)
-        if column in diaObjects:
-            dtype = diaObjects[column].dtype
-            diaObjects.loc[:, column] = filterDiaSources.psfFluxErr.mean().astype(dtype)
-        else:
-            diaObjects.loc[:, column] = filterDiaSources.psfFluxErr.mean()
+
+        typeSafePandasAssignment(
+            diaObjects,
+            filterDiaSources.psfFluxErr.mean(),
+            [column],
+            # Note that the schemas expect this to be single-precision.
+            default_dtype=np.float32,
+        )
 
 
 class LinearFitDiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
@@ -1207,7 +1274,11 @@ class LinearFitDiaPsfFlux(DiaObjectCalculationPlugin):
             m, b = lsq_linear(A, fluxes / errors).x
             return pd.Series({mName: m, bName: b}, dtype=dtype)
 
-        diaObjects.loc[:, [mName, bName]] = filterDiaSources.apply(_linearFit)
+        typeSafePandasAssignment(
+            diaObjects,
+            filterDiaSources.apply(_linearFit),
+            [mName, bName],
+        )
 
 
 class StetsonJDiaPsfFluxConfig(DiaObjectCalculationPluginConfig):
@@ -1271,11 +1342,11 @@ class StetsonJDiaPsfFlux(DiaObjectCalculationPlugin):
                 diaObjects.at[tmpDf.diaObjectId.iat[0], meanName])
 
         column = "{}_psfFluxStetsonJ".format(band)
-        if column in diaObjects:
-            dtype = diaObjects[column].dtype
-            diaObjects.loc[:, column] = filterDiaSources.apply(_stetsonJ).astype(dtype)
-        else:
-            diaObjects.loc[:, column] = filterDiaSources.apply(_stetsonJ)
+        typeSafePandasAssignment(
+            diaObjects,
+            filterDiaSources.apply(_stetsonJ),
+            [column],
+        )
 
     def _stetson_J(self, fluxes, errors, mean=None):
         """Compute the single band stetsonJ statistic.
@@ -1436,7 +1507,7 @@ class WeightedMeanDiaTotFlux(DiaObjectCalculationPlugin):
                               totErrName: fluxMeanErr})
 
         df = filterDiaSources.apply(_meanFlux).astype(diaObjects.dtypes[[totMeanName, totErrName]])
-        diaObjects.loc[:, [totMeanName, totErrName]] = df
+        typeSafePandasAssignment(diaObjects, df, [totMeanName, totErrName])
 
 
 class SigmaDiaTotFluxConfig(DiaObjectCalculationPluginConfig):
@@ -1485,9 +1556,4 @@ class SigmaDiaTotFlux(DiaObjectCalculationPlugin):
         # Set "delta degrees of freedom (ddf)" to 1 to calculate the unbiased
         # estimator of scatter (i.e. 'N - 1' instead of 'N').
         column = "{}_scienceFluxSigma".format(band)
-        if column in diaObjects:
-            dtype = diaObjects[column].dtype
-            diaObjects.loc[:, column] = filterDiaSources.scienceFlux.std().astype(dtype)
-        else:
-
-            diaObjects.loc[:, column] = filterDiaSources.scienceFlux.std()
+        typeSafePandasAssignment(diaObjects, filterDiaSources.scienceFlux.std(), [column])
