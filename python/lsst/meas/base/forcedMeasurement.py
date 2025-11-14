@@ -61,7 +61,6 @@ from lsst.utils.logging import PeriodicLogger
 from .pluginRegistry import PluginRegistry
 from .baseMeasurement import (BaseMeasurementPluginConfig, BaseMeasurementPlugin,
                               BaseMeasurementConfig, BaseMeasurementTask)
-from .noiseReplacer import NoiseReplacer, DummyNoiseReplacer
 
 __all__ = ("ForcedPluginConfig", "ForcedPlugin",
            "ForcedMeasurementConfig", "ForcedMeasurementTask")
@@ -259,7 +258,16 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         self.schema = self.mapper.getOutputSchema()
         self.schema.checkUnits(parse_strict=self.config.checkUnitsParseStrict)
 
-    def run(self, measCat, exposure, refCat, refWcs, exposureId=None, beginOrder=None, endOrder=None):
+    def run(
+        self,
+        measCat,
+        exposure,
+        refCat,
+        refWcs,
+        exposureId=None,
+        beginOrder=None,
+        endOrder=None,
+    ):
         r"""Perform forced measurement.
 
         Parameters
@@ -340,48 +348,19 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         # Wrap the task logger into a periodic logger.
         periodicLog = PeriodicLogger(self.log)
 
-        if self.config.doReplaceWithNoise:
-            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure,
-                                          footprints, log=self.log, exposureId=exposureId)
-            algMetadata = measCat.getTable().getMetadata()
-            if algMetadata is not None:
-                algMetadata.addInt("NOISE_SEED_MULTIPLIER", self.config.noiseReplacer.noiseSeedMultiplier)
-                algMetadata.addString("NOISE_SOURCE", self.config.noiseReplacer.noiseSource)
-                algMetadata.addDouble("NOISE_OFFSET", self.config.noiseReplacer.noiseOffset)
-                if exposureId is not None:
-                    algMetadata.addLong("NOISE_EXPOSURE_ID", exposureId)
-        else:
-            noiseReplacer = DummyNoiseReplacer()
+        # Initialize the noise replacer
+        noiseReplacer = self.initNoiseReplacer(exposure, measCat, footprints, exposureId)
 
-        # Create parent cat which slices both the refCat and measCat (sources)
-        # first, get the reference and source records which have no parent
-        refParentCat, measParentCat = refCat.getChildren(0, measCat)
-        childrenIter = refCat.getChildren((refParentRecord.getId() for refParentRecord in refCat), measCat)
-        for parentIdx, records in enumerate(zip(refParentCat, measParentCat, childrenIter)):
-            # Unpack records
-            refParentRecord, measParentRecord, (refChildCat, measChildCat) = records
-            # First process the records which have the current parent as children
-            # TODO: skip this loop if there are no plugins configured for single-object mode
-            for refChildRecord, measChildRecord in zip(refChildCat, measChildCat):
-                noiseReplacer.insertSource(refChildRecord.getId())
-                self.callMeasure(measChildRecord, exposure, refChildRecord, refWcs,
-                                 beginOrder=beginOrder, endOrder=endOrder)
-                noiseReplacer.removeSource(refChildRecord.getId())
-
-            # Then process the parent record
-            noiseReplacer.insertSource(refParentRecord.getId())
-            self.callMeasure(measParentRecord, exposure, refParentRecord, refWcs,
+        for recordIndex, (measRecord, refRecord) in enumerate(zip(measCat, refCat)):
+            # Insert source into noise replacer
+            noiseReplacer.insertSource(refRecord.getId())
+            self.callMeasure(measRecord, exposure, refRecord, refWcs,
                              beginOrder=beginOrder, endOrder=endOrder)
-            self.callMeasureN(measParentCat[parentIdx:parentIdx+1], exposure,
-                              refParentCat[parentIdx:parentIdx+1],
-                              beginOrder=beginOrder, endOrder=endOrder)
-            # Measure all the children simultaneously
-            self.callMeasureN(measChildCat, exposure, refChildCat,
-                              beginOrder=beginOrder, endOrder=endOrder)
-            noiseReplacer.removeSource(refParentRecord.getId())
-            # Log a message if it has been a while since the last log.
-            periodicLog.log("Forced measurement complete for %d parents (and their children) out of %d",
-                            parentIdx + 1, len(refParentCat))
+            noiseReplacer.removeSource(refRecord.getId())
+            periodicLog.log("Forced measurement complete for %d sources out of %d",
+                            recordIndex + 1, len(refCat))
+
+        # When done, restore the exposure to its original state
         noiseReplacer.end()
 
         # Undeblended plugins only fire if we're running everything
