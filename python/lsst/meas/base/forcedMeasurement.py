@@ -316,26 +316,6 @@ class ForcedMeasurementTask(BaseMeasurementTask):
           heavy footprints from deblending run in the same band just before
           non-forced is run measurement in that band.
         """
-        # First check that the reference catalog does not contain any children
-        # for which any member of their parent chain is not within the list.
-        # This can occur at boundaries when the parent is outside and one of
-        # the children is within.  Currently, the parent chain is always only
-        # one deep, but just in case, this code checks for any case where when
-        # the parent chain to a child's topmost parent is broken and raises an
-        # exception if it occurs.
-        #
-        # I.e. this code checks that this precondition is satisfied by
-        # whatever reference catalog provider is being paired with it.
-        refCatIdDict = {ref.getId(): ref.getParent() for ref in refCat}
-        for ref in refCat:
-            refId = ref.getId()
-            topId = refId
-            while topId > 0:
-                if topId not in refCatIdDict:
-                    raise RuntimeError("Reference catalog contains a child for which at least "
-                                       "one parent in its parent chain is not in the catalog.")
-                topId = refCatIdDict[topId]
-
         # Construct a footprints dict which looks like
         # {ref.getId(): (ref.getParent(), source.getFootprint())}
         # (i.e. getting the footprint from the transformed source footprint)
