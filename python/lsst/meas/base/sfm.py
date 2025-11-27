@@ -37,7 +37,6 @@ from lsst.utils.timer import timeMethod
 from .pluginRegistry import PluginRegistry
 from .baseMeasurement import (BaseMeasurementPluginConfig, BaseMeasurementPlugin,
                               BaseMeasurementConfig, BaseMeasurementTask)
-from .noiseReplacer import NoiseReplacer, DummyNoiseReplacer
 
 __all__ = ("SingleFramePluginConfig", "SingleFramePlugin",
            "SingleFrameMeasurementConfig", "SingleFrameMeasurementTask")
@@ -101,33 +100,6 @@ class SingleFramePlugin(BaseMeasurementPlugin):
         """
         raise NotImplementedError()
 
-    def measureN(self, measCat, exposure):
-        """Measure the properties of blended sources on a single image.
-
-        This operates on all members of a blend family at once. The image may
-        be from a single epoch, or it may be a coadd.
-
-        Parameters
-        ----------
-        measCat : `lsst.afw.table.SourceCatalog`
-            Catalog describing the objects (and only those objects) being
-            measured. Previously-measured quantities will be retrieved from
-            here, and it will be updated in-place with the outputs of this
-            plugin.
-        exposure : `lsst.afw.image.ExposureF`
-            The pixel data to be measured, together with the associated PSF,
-            WCS, etc. All other sources in the image should have been replaced
-            by noise according to deblender outputs.
-
-        Notes
-        -----
-        Derived classes that do not implement ``measureN`` should just inherit
-        this disabled version.  Derived classes that do implement ``measureN``
-        should additionally add a bool doMeasureN config field to their config
-        class to signal that measureN-mode is available.
-        """
-        raise NotImplementedError()
-
 
 class SingleFrameMeasurementConfig(BaseMeasurementConfig):
     """Config class for single frame measurement driver task.
@@ -175,22 +147,6 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
     """
 
     ConfigClass = SingleFrameMeasurementConfig
-
-    NOISE_SEED_MULTIPLIER = "NOISE_SEED_MULTIPLIER"
-    """Name by which the noise seed multiplier is recorded in metadata ('str').
-    """
-
-    NOISE_SOURCE = "NOISE_SOURCE"
-    """Name by which the noise source is recorded in metadata ('str').
-    """
-
-    NOISE_OFFSET = "NOISE_OFFSET"
-    """Name by which the noise offset is recorded in metadata ('str').
-    """
-
-    NOISE_EXPOSURE_ID = "NOISE_EXPOSURE_ID"
-    """Name by which the noise exposire ID is recorded in metadata ('str').
-    """
 
     def __init__(self, schema, algMetadata=None, **kwds):
         super(SingleFrameMeasurementTask, self).__init__(algMetadata=algMetadata, **kwds)
@@ -257,22 +213,19 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         # constructed, all pixels in the exposure.getMaskedImage() which
         # belong to objects in measCat will be replaced with noise
 
-        if self.config.doReplaceWithNoise:
-            noiseReplacer = NoiseReplacer(self.config.noiseReplacer, exposure, footprints,
-                                          noiseImage=noiseImage, log=self.log, exposureId=exposureId)
-            algMetadata = measCat.getMetadata()
-            if algMetadata is not None:
-                algMetadata.addInt(self.NOISE_SEED_MULTIPLIER, self.config.noiseReplacer.noiseSeedMultiplier)
-                algMetadata.addString(self.NOISE_SOURCE, self.config.noiseReplacer.noiseSource)
-                algMetadata.addDouble(self.NOISE_OFFSET, self.config.noiseReplacer.noiseOffset)
-                if exposureId is not None:
-                    algMetadata.addLong(self.NOISE_EXPOSURE_ID, exposureId)
-        else:
-            noiseReplacer = DummyNoiseReplacer()
+        # Initialize the noise replacer
+        noiseReplacer = self.initNoiseReplacer(exposure, measCat, footprints, exposureId, noiseImage)
 
         self.runPlugins(noiseReplacer, measCat, exposure, beginOrder, endOrder)
 
-    def runPlugins(self, noiseReplacer, measCat, exposure, beginOrder=None, endOrder=None):
+    def runPlugins(
+        self,
+        noiseReplacer,
+        measCat,
+        exposure,
+        beginOrder=None,
+        endOrder=None,
+    ):
         r"""Call the configured measument plugins on an image.
 
         Parameters
@@ -296,50 +249,22 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
             ``executionOrder >= endOrder`` are not executed. `None` for no
             limit.
         """
-        # First, create a catalog of all parentless sources. Loop through all
-        # the parent sources, first processing the children, then the parent.
-        measParentCat = measCat.getChildren(0)
-
         nMeasCat = len(measCat)
-        nMeasParentCat = len(measParentCat)
-        self.log.info("Measuring %d source%s (%d parent%s, %d child%s) ",
-                      nMeasCat, ("" if nMeasCat == 1 else "s"),
-                      nMeasParentCat, ("" if nMeasParentCat == 1 else "s"),
-                      nMeasCat - nMeasParentCat, ("" if nMeasCat - nMeasParentCat == 1 else "ren"))
+        self.log.info("Measuring %d source%s", nMeasCat, ("" if nMeasCat == 1 else "s"))
 
         # Wrap the task logger into a period logger
         periodicLog = PeriodicLogger(self.log)
 
-        childrenIter = measCat.getChildren([measParentRecord.getId() for measParentRecord in measParentCat])
-        for parentIdx, (measParentRecord, measChildCat) in enumerate(zip(measParentCat, childrenIter)):
-            # first get all the children of this parent, insert footprint in
-            # turn, and measure
-            # TODO: skip this loop if there are no plugins configured for
-            # single-object mode
-            for measChildRecord in measChildCat:
-                noiseReplacer.insertSource(measChildRecord.getId())
-                self.callMeasure(measChildRecord, exposure, beginOrder=beginOrder, endOrder=endOrder)
-
-                if self.doBlendedness:
-                    self.blendPlugin.cpp.measureChildPixels(exposure.getMaskedImage(), measChildRecord)
-
-                noiseReplacer.removeSource(measChildRecord.getId())
-
-            # Then insert the parent footprint, and measure that
-            noiseReplacer.insertSource(measParentRecord.getId())
-            self.callMeasure(measParentRecord, exposure, beginOrder=beginOrder, endOrder=endOrder)
+        for recordIndex, measRecord in enumerate(measCat):
+            noiseReplacer.insertSource(measRecord.getId())
+            self.callMeasure(measRecord, exposure, beginOrder=beginOrder, endOrder=endOrder)
 
             if self.doBlendedness:
-                self.blendPlugin.cpp.measureChildPixels(exposure.getMaskedImage(), measParentRecord)
+                self.blendPlugin.cpp.measureChildPixels(exposure.getMaskedImage(), measRecord)
 
-            # Finally, process both parent and child set through measureN
-            self.callMeasureN(measParentCat[parentIdx:parentIdx+1], exposure,
-                              beginOrder=beginOrder, endOrder=endOrder)
-            self.callMeasureN(measChildCat, exposure, beginOrder=beginOrder, endOrder=endOrder)
-            noiseReplacer.removeSource(measParentRecord.getId())
+            noiseReplacer.removeSource(measRecord.getId())
             # Log a message if it has been a while since the last log.
-            periodicLog.log("Measurement complete for %d parents (and their children) out of %d",
-                            parentIdx + 1, nMeasParentCat)
+            periodicLog.log("Measurement complete for %d sources out of %d", recordIndex + 1, nMeasCat)
 
         # When done, restore the exposure to its original state
         noiseReplacer.end()

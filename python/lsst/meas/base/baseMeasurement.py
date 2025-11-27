@@ -31,7 +31,7 @@ from .pluginRegistry import PluginMap
 from ._measBaseLib import FatalAlgorithmError, MeasurementError
 from lsst.afw.detection import InvalidPsfError
 from .pluginsBase import BasePluginConfig, BasePlugin
-from .noiseReplacer import NoiseReplacerConfig
+from .noiseReplacer import NoiseReplacerConfig, NoiseReplacer, DummyNoiseReplacer
 
 __all__ = ("BaseMeasurementPluginConfig", "BaseMeasurementPlugin",
            "BaseMeasurementConfig", "BaseMeasurementTask")
@@ -449,6 +449,22 @@ class BaseMeasurementTask(SimpleBaseMeasurementTask):
 
     ConfigClass = BaseMeasurementConfig
 
+    NOISE_SEED_MULTIPLIER = "NOISE_SEED_MULTIPLIER"
+    """Name by which the noise seed multiplier is recorded in metadata ('str').
+    """
+
+    NOISE_SOURCE = "NOISE_SOURCE"
+    """Name by which the noise source is recorded in metadata ('str').
+    """
+
+    NOISE_OFFSET = "NOISE_OFFSET"
+    """Name by which the noise offset is recorded in metadata ('str').
+    """
+
+    NOISE_EXPOSURE_ID = "NOISE_EXPOSURE_ID"
+    """Name by which the noise exposire ID is recorded in metadata ('str').
+    """
+
     def __init__(self, algMetadata=None, **kwds):
         super().__init__(algMetadata=algMetadata, **kwds)
         self.undeblendedPlugins = PluginMap()
@@ -467,101 +483,6 @@ class BaseMeasurementTask(SimpleBaseMeasurementTask):
                 self.undeblendedPlugins[name] = PluginClass(config, undeblendedName,
                                                             metadata=self.algMetadata, **kwds)
 
-    def callMeasureN(self, measCat, *args, **kwds):
-        """Call ``measureN`` on all plugins and consistently handle exceptions.
-
-        Parameters
-        ----------
-        measCat : `lsst.afw.table.SourceCatalog`
-            Catalog containing only the records for the source family to be
-            measured, and where outputs should be written.
-        *args
-            Positional arguments forwarded to ``plugin.measure()``
-        **kwds
-            Keyword arguments. Two are handled locally:
-
-            beginOrder:
-                Beginning execution order (inclusive): Measurements with
-                ``executionOrder`` < ``beginOrder`` are not executed. `None`
-                for no limit.
-            endOrder:
-                Ending execution order (exclusive): measurements with
-                ``executionOrder`` >= ``endOrder`` are not executed. `None` for
-                no ``limit``.
-
-            Others are are forwarded to ``plugin.measure()``.
-
-        Notes
-        -----
-        This method can be used with plugins that have different signatures;
-        the only requirement is that ``measRecord`` be the first argument.
-        Subsequent positional arguments and keyword arguments are forwarded
-        directly to the plugin.
-
-        This method should be considered "protected": it is intended for use by
-        derived classes, not users.
-        """
-        beginOrder = kwds.pop("beginOrder", None)
-        endOrder = kwds.pop("endOrder", None)
-        for plugin in self.plugins.iterN():
-            if beginOrder is not None and plugin.getExecutionOrder() < beginOrder:
-                continue
-            if endOrder is not None and plugin.getExecutionOrder() >= endOrder:
-                break
-            self.doMeasurementN(plugin, measCat, *args, **kwds)
-
-    def doMeasurementN(self, plugin, measCat, *args, **kwds):
-        """Call ``measureN`` on the specified plugin.
-
-        Exceptions are handled in a consistent way.
-
-        Parameters
-        ----------
-        plugin : subclass of `BasePlugin`
-            Plugin that will be executed.
-        measCat : `lsst.afw.table.SourceCatalog`
-            Catalog containing only the records for the source family to be
-            measured, and where outputs should be written.
-        *args
-            Positional arguments forwarded to ``plugin.measureN()``.
-        **kwds
-            Keyword arguments forwarded to ``plugin.measureN()``.
-
-        Notes
-        -----
-        This method can be used with plugins that have different signatures;
-        the only requirement is that the ``plugin`` and ``measCat`` be the
-        first two arguments. Subsequent positional arguments and keyword
-        arguments are forwarded directly to the plugin.
-
-        This method should be considered "protected": it is intended for use by
-        derived classes, not users.
-        """
-        try:
-            plugin.measureN(measCat, *args, **kwds)
-        except FATAL_EXCEPTIONS:
-            raise
-
-        except MeasurementError as error:
-            self.log.getChild(plugin.name).debug(
-                "MeasurementError in %s.measureN on records %s-%s: %s",
-                plugin.name, measCat[0].getId(), measCat[-1].getId(), error)
-            for measRecord in measCat:
-                plugin.fail(measRecord, error)
-        except InvalidPsfError as error:
-            self.log.getChild(plugin.name).debug(
-                "InvalidPsfError in %s.measureN on records %s-%s: %s",
-                plugin.name, measCat[0].getId(), measCat[-1].getId(), error)
-            for measRecord in measCat:
-                measRecord.set(self.keyInvalidPsf, True)
-                plugin.fail(measRecord, error)
-        except Exception as error:
-            self.log.getChild(plugin.name).warning(
-                "Exception in %s.measureN on records %s-%s: %s",
-                plugin.name, measCat[0].getId(), measCat[-1].getId(), error)
-            for measRecord in measCat:
-                plugin.fail(measRecord)
-
     @staticmethod
     def getFootprintsFromCatalog(catalog):
         """Get a set of footprints from a catalog, keyed by id.
@@ -579,3 +500,42 @@ class BaseMeasurementTask(SimpleBaseMeasurementTask):
         """
         return {measRecord.getId(): (measRecord.getParent(), measRecord.getFootprint())
                 for measRecord in catalog}
+
+    def initNoiseReplacer(self, exposure, measCat, footprints, exposureId=None, noiseImage=None):
+        """Replace all pixels in the exposure covered by the footprint of
+        ``measRecord`` with noise.
+
+        Parameters
+        ----------
+        exposure : `lsst.afw.image.Exposure`
+            Exposure in which to replace pixels.
+        measCat : `lsst.afw.table.SourceCatalog`
+            Catalog that will be measured.t
+        footprints : `dict` [`int`: (`int`, `lsst.afw.detection.Footprint`)]
+            Dictionary of footprints, keyed by id number, with a tuple of
+            the parent id and footprint.
+        exposureId : `int`, optional
+            Unique identifier for the exposure.
+        noiseImage : `lsst.afw.image.Image` or `None`, optional
+            Image from which to draw noise pixels.  If `None`, noise will be
+            drawn from the input exposure.
+        """
+        if self.config.doReplaceWithNoise:
+            noiseReplacer = NoiseReplacer(
+                self.config.noiseReplacer,
+                exposure,
+                footprints,
+                log=self.log,
+                exposureId=exposureId,
+                noiseImage=noiseImage,
+            )
+            algMetadata = measCat.getTable().getMetadata()
+            if algMetadata is not None:
+                algMetadata.addInt(self.NOISE_SEED_MULTIPLIER, self.config.noiseReplacer.noiseSeedMultiplier)
+                algMetadata.addString(self.NOISE_SOURCE, self.config.noiseReplacer.noiseSource)
+                algMetadata.addDouble(self.NOISE_OFFSET, self.config.noiseReplacer.noiseOffset)
+                if exposureId is not None:
+                    algMetadata.addLong(self.NOISE_EXPOSURE_ID, exposureId)
+        else:
+            noiseReplacer = DummyNoiseReplacer()
+        return noiseReplacer
