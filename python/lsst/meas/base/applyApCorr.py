@@ -107,9 +107,10 @@ class ApCorrInfo:
         self.apCorrErrName = name + "_apCorrErr"
         self.apCorrFlagName = name + "_flag_apCorr"
 
-        # No need to write the same aperture corrections multiple times
         if schema is not None:
-            if name == model or model + "_apCorr" not in schema:
+            # No need to write the same aperture corrections multiple times
+            self.doApCorrColumn = (name == model or model + "_apCorr" not in schema)
+            if self.doApCorrColumn:
                 schema.addField(
                     name + "_apCorr",
                     doc="aperture correction applied to %s" % (name,),
@@ -131,6 +132,9 @@ class ApCorrInfo:
                     doc="set if unable to aperture correct %s" % (name,),
                     type="Flag",
                 )
+        else:
+            # Always write the aperture corrections for astropy/arrow tables.
+            self.doApCorrColumn = True
 
 
 class ApplyApCorrConfig(lsst.pex.config.Config):

@@ -179,6 +179,7 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
         self.assertFloatsAlmostEqual(sourceCat[instFluxKey], source_test_instFlux / 2)
         self.ap_corr_task.run(sourceTable, apCorrMap)
         self.assertFloatsAlmostEqual(sourceTable[instFluxName], source_test_instFlux / 2)
+        self.assertFloatsEqual(sourceTable[self.name+"_apCorr"], 0.5)
 
     def testCatFluxErr(self):
         """Test catalog flux errors.
@@ -217,6 +218,9 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
 
     def testSourceTable(self):
         """Test that the task can handle a SourceTable without columns."""
+        # For a source table there is no schema
+        # so we initialize the task without one.
+        self.ap_corr_task = applyApCorr.ApplyApCorrTask()
         # Create an empty SourceTable
         source_test_instFlux = 5.3
         source_test_centroid = lsst.geom.Point2D(5, 7.1)
@@ -243,6 +247,7 @@ class ApplyApCorrTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.tes
 
         self.ap_corr_task.run(sourceTable, apCorrMap)
         self.assertFloatsAlmostEqual(sourceTable[instFluxName], source_test_instFlux / 2)
+        self.assertFloatsEqual(sourceTable[self.name+"_apCorr"], 0.5)
 
 
 class TestMemory(lsst.utils.tests.MemoryTestCase):
