@@ -91,7 +91,7 @@ public:
      *  over single-precision pixels, and relies on a number of calls to exp and erfc, which are
      *  much faster in single precision.
      */
-    static float computeAbsExpectation(float data, float variance);
+    static double computeAbsExpectation(double data, double variance);
 
     /**
      *  Compute the bias induced by using the absolute value of a pixel instead of its value.
@@ -109,7 +109,7 @@ public:
      *  is its variance.
      *  See section 4.9.11 of Bosch, J. et al. 2018, PASJ, 70, S5 for further details.
      */
-    static float computeAbsBias(float mu, float variance);
+    static double computeAbsBias(double mu, double variance);
 
     void measureChildPixels(afw::image::MaskedImage<float> const& image,
                             afw::table::SourceRecord& child) const;

@@ -99,7 +99,7 @@ class FluxAccumulator {
 public:
     FluxAccumulator() : _w(0.0), _ww(0.0), _wd(0.0) {}
 
-    void operator()(double, double, float weight, float data) {
+    void operator()(double, double, double weight, double data) {
         _w += weight;
         _ww += weight * weight;
         _wd += weight * data;
@@ -117,7 +117,7 @@ class ShapeAccumulator : public FluxAccumulator {
 public:
     ShapeAccumulator() : FluxAccumulator(), _wdxx(0.0), _wdyy(0.0), _wdxy(0.0) {}
 
-    void operator()(double x, double y, float weight, float data) {
+    void operator()(double x, double y, double weight, double data) {
         FluxAccumulator::operator()(x, y, weight, data);
         _wdxx += x * x * weight * data;
         _wdyy += y * y * weight * data;
@@ -179,12 +179,12 @@ void computeMoments(afw::image::MaskedImage<float> const& image, geom::Point2D c
             geom::Extent2D d = geom::Point2D(*pointIter) - centroid;
             geom::Extent2D td = transform(d);
             // use single precision for faster exp, erf
-            float weight = std::exp(static_cast<float>(-0.5 * td.computeSquaredNorm()));
-            float data = pixelIter.image();
+            double weight = std::exp(static_cast<double>(-0.5 * td.computeSquaredNorm()));
+            double data = static_cast<double>(pixelIter.image());
             accumulatorRaw(d.getX(), d.getY(), weight, data);
-            float variance = pixelIter.variance();
-            float mu = BlendednessAlgorithm::computeAbsExpectation(data, variance);
-            float bias = BlendednessAlgorithm::computeAbsBias(mu, variance);
+            double variance = static_cast<double>(pixelIter.variance());
+            double mu = BlendednessAlgorithm::computeAbsExpectation(data, variance);
+            double bias = BlendednessAlgorithm::computeAbsBias(mu, variance);
             accumulatorAbs(d.getX(), d.getY(), weight, std::abs(data) - bias);
         }
     }
@@ -257,18 +257,18 @@ BlendednessAlgorithm::BlendednessAlgorithm(Control const& ctrl, std::string cons
     }
 }
 
-float BlendednessAlgorithm::computeAbsExpectation(float data, float variance) {
-    float normalization = 0.5f * std::erfc(-data / std::sqrt(2.0f * variance));
+double BlendednessAlgorithm::computeAbsExpectation(double data, double variance) {
+    double normalization = 0.5f * std::erfc(-data / std::sqrt(2.0f * variance));
     if (!(normalization > 0)) {
         // avoid division by zero; we know the limit at data << -sigma -> 0.
         return 0.0;
     }
-    return data + (std::sqrt(0.5f * variance / boost::math::constants::pi<float>()) *
+    return data + (std::sqrt(0.5f * variance / boost::math::constants::pi<double>()) *
                    std::exp(-0.5f * (data * data) / variance) / normalization);
 }
 
-float BlendednessAlgorithm::computeAbsBias(float mu, float variance) {
-    return (std::sqrt(2.0f * variance / boost::math::constants::pi<float>()) *
+double BlendednessAlgorithm::computeAbsBias(double mu, double variance) {
+    return (std::sqrt(2.0f * variance / boost::math::constants::pi<double>()) *
             std::exp(-0.5f * (mu * mu) / variance)) -
            mu * std::erfc(mu / std::sqrt(2.0f * variance));
 }
