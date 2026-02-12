@@ -35,6 +35,7 @@ from scipy.optimize import lsq_linear
 
 import lsst.geom as geom
 import lsst.pex.config as pexConfig
+import lsst.pipe.base as pipeBase
 import lsst.sphgeom as sphgeom
 from astropy.timeseries import LombScargle
 from astropy.timeseries import LombScargleMultiband
@@ -65,7 +66,8 @@ __all__ = ("MeanDiaPositionConfig", "MeanDiaPosition",
            "WeightedMeanDiaTotFlux", "WeightedMeanDiaTotFluxConfig",
            "SigmaDiaTotFlux", "SigmaDiaTotFluxConfig",
            "LombScarglePeriodogram", "LombScarglePeriodogramConfig",
-           "LombScarglePeriodogramMulti", "LombScarglePeriodogramMultiConfig")
+           "LombScarglePeriodogramMulti", "LombScarglePeriodogramMultiConfig",
+           "UnphysicalDiaSourceSeparation")
 
 
 def catchWarnings(_func=None, *, warns=[]):
@@ -477,8 +479,38 @@ class LombScarglePeriodogramMulti(DiaObjectCalculationPlugin):
                        ] = diaSources.apply(_calculate_period_multi, unique_bands)
 
 
+class UnphysicalDiaSourceSeparation(pipeBase.AlgorithmError):
+    """Raised if associated DiaSources are unphysically separated.
+
+    Parameters
+    ----------
+    separation : `float`
+        Observed separation in arseconds.
+    max_allowed_separation : `float`
+        Configured maximum separation in arcseconds.
+    """
+
+    def __init__(self, separation, max_allowed_separation) -> None:
+        self._separation = separation
+        self._max_allowed_separation = max_allowed_separation
+        super().__init__(f"Observed DiaSource separation {separation} exceeds allowed value of "
+                         f"{max_allowed_separation}")
+
+    @property
+    def metadata(self) -> dict:
+        return {
+            "separation": self._separation,
+            "max_allowed_separation": self._max_allowed_separation,
+        }
+
+
 class MeanDiaPositionConfig(DiaObjectCalculationPluginConfig):
-    pass
+    MaxAllowedDiaSourceSeparation = pexConfig.Field(
+        dtype=float,
+        default=3.0,
+        doc="Max allowed separation of associated DiaSources in arcsec. "
+            "Raises if unphysical separation is found. "
+    )
 
 
 @register("ap_meanPosition")
@@ -515,9 +547,16 @@ class MeanDiaPosition(DiaObjectCalculationPlugin):
                 diaObjects[outCol] = np.nan
 
         def _computeMeanPos(df):
-            aveCoord = geom.averageSpherePoint(
-                list(geom.SpherePoint(src["ra"], src["dec"], geom.degrees)
-                     for idx, src in df.iterrows()))
+            coords = list(geom.SpherePoint(src["ra"], src["dec"], geom.degrees)
+                          for idx, src in df.iterrows())
+            aveCoord = geom.averageSpherePoint(coords)
+
+            # We don't want the DIAObject position to move due to misassociated sources
+            maxSep = max(aveCoord.separation(coord).asArcseconds() for coord in coords)
+
+            if maxSep > self.config.MaxAllowedDiaSourceSeparation:
+                raise UnphysicalDiaSourceSeparation(maxSep,
+                                                    self.config.MaxAllowedDiaSourceSeparation)
 
             return pd.Series({"ra": aveCoord.getRa().asDegrees(),
                               "dec": aveCoord.getDec().asDegrees()})

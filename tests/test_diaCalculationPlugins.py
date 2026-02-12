@@ -44,7 +44,8 @@ from lsst.meas.base import (
     WeightedMeanDiaTotFlux, WeightedMeanDiaTotFluxConfig,
     SigmaDiaTotFlux, SigmaDiaTotFluxConfig,
     LombScarglePeriodogram, LombScarglePeriodogramConfig,
-    LombScarglePeriodogramMulti, LombScarglePeriodogramMultiConfig)
+    LombScarglePeriodogramMulti, LombScarglePeriodogramMultiConfig,
+    UnphysicalDiaSourceSeparation)
 import lsst.utils.tests
 
 
@@ -187,7 +188,8 @@ class TestMeanPosition(unittest.TestCase):
         n_sources = 10
         objId = 0
 
-        plug = MeanDiaPosition(MeanDiaPositionConfig(),
+        # configure a 2 degree max separation
+        plug = MeanDiaPosition(MeanDiaPositionConfig(MaxAllowedDiaSourceSeparation=7200.0),
                                "ap_meanPosition",
                                None)
 
@@ -246,6 +248,34 @@ class TestMeanPosition(unittest.TestCase):
 
         self.assertTrue(np.isnan(diaObjects.loc[objId, "ra"]))
         self.assertTrue(np.isnan(diaObjects.loc[objId, "dec"]))
+
+        # configure the default 3 arcsecond separation
+        plug = MeanDiaPosition(MeanDiaPositionConfig(MaxAllowedDiaSourceSeparation=3.0),
+                               "ap_meanPosition",
+                               None)
+
+        # These 1 degree separations should raise
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = pd.DataFrame(data={"ra": np.linspace(-1, 1, n_sources),
+                                        "dec": np.zeros(n_sources),
+                                        "midpointMjdTai": np.linspace(0, n_sources, n_sources),
+                                        "diaObjectId": n_sources * [objId],
+                                        "band": n_sources * ["g"],
+                                        "diaSourceId": np.arange(n_sources,
+                                                                 dtype=int)})
+        with self.assertRaises(UnphysicalDiaSourceSeparation):
+            run_multi_plugin(diaObjects, diaSources, "g", plug)
+
+        # 1 arcsecond separations should not raise
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = pd.DataFrame(data={"ra": np.linspace(-1/3600., 1/3600., n_sources),
+                                        "dec": np.zeros(n_sources),
+                                        "midpointMjdTai": np.linspace(0, n_sources, n_sources),
+                                        "diaObjectId": n_sources * [objId],
+                                        "band": n_sources * ["g"],
+                                        "diaSourceId": np.arange(n_sources,
+                                                                 dtype=int)})
+        run_multi_plugin(diaObjects, diaSources, "g", plug)
 
 
 class TestHTMIndexPosition(unittest.TestCase):
