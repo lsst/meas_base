@@ -117,7 +117,7 @@ log = logging.getLogger(__name__)
 
 
 class SingleFrameFPPositionConfig(SingleFramePluginConfig):
-    """Configuration for the focal plane position measurment algorithm.
+    """Configuration for the focal plane position measurement algorithm.
     """
 
 
@@ -128,7 +128,7 @@ class SingleFrameFPPositionPlugin(SingleFramePlugin):
     Parameters
     ----------
     config : `SingleFrameFPPositionConfig`
-        Plugin configuraion.
+        Plugin configuration.
     name : `str`
         Plugin name.
     schema : `lsst.afw.table.Schema`
@@ -182,7 +182,7 @@ class SingleFrameJacobianPlugin(SingleFramePlugin):
     Parameters
     ----------
     config : `SingleFrameJacobianConfig`
-        Plugin configuraion.
+        Plugin configuration.
     name : `str`
         Plugin name.
     schema : `lsst.afw.table.Schema`
@@ -238,7 +238,7 @@ class VariancePlugin(GenericPlugin):
     Parameters
     ----------
     config : `VarianceConfig`
-        Plugin configuraion.
+        Plugin configuration.
     name : `str`
         Plugin name.
     schema : `lsst.afw.table.Schema`
@@ -579,7 +579,7 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
     Parameters
     ----------
     config : `SingleFramePeakCentroidConfig`
-        Plugin configuraion.
+        Plugin configuration.
     name : `str`
         Plugin name.
     schema : `lsst.afw.table.Schema`
@@ -630,7 +630,7 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
     Parameters
     ----------
     config : `SingleFrameSkyCoordConfig`
-        Plugin configuraion.
+        Plugin configuration.
     name : `str`
         Plugin name.
     schema : `lsst.afw.table.Schema`
@@ -771,7 +771,7 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
     Parameters
     ----------
     config : `ForcedPeakCentroidConfig`
-        Plugin configuraion.
+        Plugin configuration.
     name : `str`
         Plugin name.
     schemaMapper : `lsst.afw.table.SchemaMapper`
