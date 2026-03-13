@@ -34,7 +34,6 @@ import lsst.geom
 import lsst.afw.detection
 import lsst.afw.geom
 
-from deprecated.sphinx import deprecated
 from ._measBaseLib import (ApertureFluxControl, ApertureFluxTransform,
                            BaseTransform, BlendednessAlgorithm,
                            BlendednessControl, CircularApertureFluxAlgorithm,
@@ -68,7 +67,6 @@ __all__ = (
     "InputCountConfig", "SingleFrameInputCountPlugin", "ForcedInputCountPlugin",
     "SingleFramePeakCentroidConfig", "SingleFramePeakCentroidPlugin",
     "SingleFrameSkyCoordConfig", "SingleFrameSkyCoordPlugin",
-    "SingleFrameMomentsClassifierConfig", "SingleFrameMomentsClassifierPlugin",  # TODO: Remove in DM-47494.
     "SingleFrameClassificationSizeExtendednessConfig",
     "SingleFrameClassificationSizeExtendednessPlugin",
     "ForcedPeakCentroidConfig", "ForcedPeakCentroidPlugin",
@@ -119,7 +117,7 @@ log = logging.getLogger(__name__)
 
 
 class SingleFrameFPPositionConfig(SingleFramePluginConfig):
-    """Configuration for the focal plane position measurment algorithm.
+    """Configuration for the focal plane position measurement algorithm.
     """
 
 
@@ -130,7 +128,7 @@ class SingleFrameFPPositionPlugin(SingleFramePlugin):
     Parameters
     ----------
     config : `SingleFrameFPPositionConfig`
-        Plugin configuraion.
+        Plugin configuration.
     name : `str`
         Plugin name.
     schema : `lsst.afw.table.Schema`
@@ -184,7 +182,7 @@ class SingleFrameJacobianPlugin(SingleFramePlugin):
     Parameters
     ----------
     config : `SingleFrameJacobianConfig`
-        Plugin configuraion.
+        Plugin configuration.
     name : `str`
         Plugin name.
     schema : `lsst.afw.table.Schema`
@@ -240,7 +238,7 @@ class VariancePlugin(GenericPlugin):
     Parameters
     ----------
     config : `VarianceConfig`
-        Plugin configuraion.
+        Plugin configuration.
     name : `str`
         Plugin name.
     schema : `lsst.afw.table.Schema`
@@ -581,7 +579,7 @@ class SingleFramePeakCentroidPlugin(SingleFramePlugin):
     Parameters
     ----------
     config : `SingleFramePeakCentroidConfig`
-        Plugin configuraion.
+        Plugin configuration.
     name : `str`
         Plugin name.
     schema : `lsst.afw.table.Schema`
@@ -632,7 +630,7 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
     Parameters
     ----------
     config : `SingleFrameSkyCoordConfig`
-        Plugin configuraion.
+        Plugin configuration.
     name : `str`
         Plugin name.
     schema : `lsst.afw.table.Schema`
@@ -754,18 +752,6 @@ class SingleFrameClassificationSizeExtendednessPlugin(SingleFramePlugin):
         measRecord.set(self.flag, True)
 
 
-@deprecated(reason="Use SingleFrameClassificationSizeExtendednessConfig instead", version="v29.0.0",
-            category=FutureWarning)
-class SingleFrameMomentsClassifierConfig(SingleFrameClassificationSizeExtendednessConfig):
-    pass
-
-
-@deprecated(reason="Use SingleFrameClassificationSizeExtendednessPlugin instead", version="v29.0.0",
-            category=FutureWarning)
-class SingleFrameMomentsClassifierPlugin(SingleFrameClassificationSizeExtendednessPlugin):
-    ConfigClass = SingleFrameMomentsClassifierConfig
-
-
 class ForcedPeakCentroidConfig(ForcedPluginConfig):
     """Configuration for the forced peak centroid algorithm.
     """
@@ -785,7 +771,7 @@ class ForcedPeakCentroidPlugin(ForcedPlugin):
     Parameters
     ----------
     config : `ForcedPeakCentroidConfig`
-        Plugin configuraion.
+        Plugin configuration.
     name : `str`
         Plugin name.
     schemaMapper : `lsst.afw.table.SchemaMapper`
