@@ -29,6 +29,7 @@ import unittest
 
 from lsst.meas.base import (
     MeanDiaPosition, MeanDiaPositionConfig,
+    FirstLastDiaSourceTime, FirstLastDiaSourceTimeConfig,
     HTMIndexDiaPosition, HTMIndexDiaPositionConfig,
     NumDiaSourcesDiaPlugin, NumDiaSourcesDiaPluginConfig,
     SimpleSourceFlagDiaPlugin, SimpleSourceFlagDiaPluginConfig,
@@ -568,6 +569,119 @@ class TestMeanPosition(unittest.TestCase):
         self.assertAlmostEqual(outRa, expectedRa)
         self.assertLess(abs(outRa - (-d)), 0.01*d)
         self.assertAlmostEqual(diaObjects.loc[objId, "dec"], 0.0)
+
+
+class TestFirstLastDiaSourceTime(unittest.TestCase):
+
+    def _makeSources(self, objId, times):
+        n = len(times)
+        return pd.DataFrame(
+            data={"diaObjectId": n * [objId],
+                  "band": n * ["g"],
+                  "diaSourceId": np.arange(n, dtype=int),
+                  "midpointMjdTai": np.asarray(times, dtype=float)})
+
+    def testNewObject(self):
+        """First/last times are the min/max source times for a new object.
+        """
+        objId = 0
+        times = [60010.0, 60005.5, 60020.25]
+        plug = FirstLastDiaSourceTime(FirstLastDiaSourceTimeConfig(),
+                                      "ap_firstLastDiaSourceTime",
+                                      None)
+        diaObjects = make_diaObject_table(objId, plug)
+        # Include an extra object with no DiaSources
+        diaObjects.loc[1, "firstDiaSourceMjdTai"] = 59000.0
+        diaObjects.loc[1, "lastDiaSourceMjdTai"] = 59100.0
+        diaSources = self._makeSources(objId, times)
+        run_multiband_plugin(diaObjects, diaSources, plug)
+
+        self.assertEqual(diaObjects.loc[objId, "firstDiaSourceMjdTai"], 60005.5)
+        self.assertEqual(diaObjects.loc[objId, "lastDiaSourceMjdTai"], 60020.25)
+        # The object with no sources must be left untouched.
+        self.assertEqual(diaObjects.loc[objId + 1, "firstDiaSourceMjdTai"], 59000.0)
+        self.assertEqual(diaObjects.loc[objId + 1, "lastDiaSourceMjdTai"], 59100.0)
+
+    def testStoredValuesOutsideRangeAreKept(self):
+        """Stored first/last times outside the loaded range are retained.
+        """
+        objId = 0
+        times = [60010.0, 60005.5, 60020.25]
+        plug = FirstLastDiaSourceTime(FirstLastDiaSourceTimeConfig(),
+                                      "ap_firstLastDiaSourceTime",
+                                      None)
+        diaObjects = make_diaObject_table(objId, plug)
+        diaObjects.loc[0, "firstDiaSourceMjdTai"] = 59000.0
+        diaObjects.loc[0, "lastDiaSourceMjdTai"] = 61000.0
+        diaSources = self._makeSources(objId, times)
+        run_multiband_plugin(diaObjects, diaSources, plug)
+
+        self.assertEqual(diaObjects.loc[objId, "firstDiaSourceMjdTai"], 59000.0)
+        self.assertEqual(diaObjects.loc[objId, "lastDiaSourceMjdTai"], 61000.0)
+
+    def testStoredValuesInsideRangeAreExtended(self):
+        """Stored first/last times inside the loaded range are extended.
+        """
+        objId = 0
+        times = [60010.0, 60005.5, 60020.25]
+        plug = FirstLastDiaSourceTime(FirstLastDiaSourceTimeConfig(),
+                                      "ap_firstLastDiaSourceTime",
+                                      None)
+        diaObjects = make_diaObject_table(objId, plug)
+        diaObjects.loc[0, "firstDiaSourceMjdTai"] = 60008.0
+        diaObjects.loc[0, "lastDiaSourceMjdTai"] = 60012.0
+        diaSources = self._makeSources(objId, times)
+        run_multiband_plugin(diaObjects, diaSources, plug)
+
+        self.assertEqual(diaObjects.loc[objId, "firstDiaSourceMjdTai"], 60005.5)
+        self.assertEqual(diaObjects.loc[objId, "lastDiaSourceMjdTai"], 60020.25)
+
+    def testOnlyOneStoredValue(self):
+        """A stored first time and an unset last time are handled
+        independently.
+        """
+        objId = 0
+        times = [60010.0, 60005.5, 60020.25]
+        plug = FirstLastDiaSourceTime(FirstLastDiaSourceTimeConfig(),
+                                      "ap_firstLastDiaSourceTime",
+                                      None)
+        diaObjects = make_diaObject_table(objId, plug)
+        diaObjects.loc[0, "firstDiaSourceMjdTai"] = 59000.0
+        diaSources = self._makeSources(objId, times)
+        run_multiband_plugin(diaObjects, diaSources, plug)
+
+        self.assertEqual(diaObjects.loc[objId, "firstDiaSourceMjdTai"], 59000.0)
+        self.assertEqual(diaObjects.loc[objId, "lastDiaSourceMjdTai"], 60020.25)
+
+    def testNanSourceTimesIgnored(self):
+        """DiaSources with NaN midpointMjdTai do not affect the result.
+        """
+        objId = 0
+        times = [60010.0, np.nan, 60020.25]
+        plug = FirstLastDiaSourceTime(FirstLastDiaSourceTimeConfig(),
+                                      "ap_firstLastDiaSourceTime",
+                                      None)
+        diaObjects = make_diaObject_table(objId, plug)
+        diaSources = self._makeSources(objId, times)
+        run_multiband_plugin(diaObjects, diaSources, plug)
+
+        self.assertEqual(diaObjects.loc[objId, "firstDiaSourceMjdTai"], 60010.0)
+        self.assertEqual(diaObjects.loc[objId, "lastDiaSourceMjdTai"], 60020.25)
+
+    def testMissingOutputColumns(self):
+        """Output columns are created when absent from the DiaObject table.
+        """
+        objId = 0
+        times = [60010.0, 60005.5]
+        plug = FirstLastDiaSourceTime(FirstLastDiaSourceTimeConfig(),
+                                      "ap_firstLastDiaSourceTime",
+                                      None)
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = self._makeSources(objId, times)
+        run_multiband_plugin(diaObjects, diaSources, plug)
+
+        self.assertEqual(diaObjects.loc[objId, "firstDiaSourceMjdTai"], 60005.5)
+        self.assertEqual(diaObjects.loc[objId, "lastDiaSourceMjdTai"], 60010.0)
 
 
 class TestHTMIndexPosition(unittest.TestCase):

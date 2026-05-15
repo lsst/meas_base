@@ -49,6 +49,7 @@ from .pluginRegistry import register
 
 
 __all__ = ("MeanDiaPositionConfig", "MeanDiaPosition",
+           "FirstLastDiaSourceTimeConfig", "FirstLastDiaSourceTime",
            "HTMIndexDiaPosition", "HTMIndexDiaPositionConfig",
            "NumDiaSourcesDiaPlugin", "NumDiaSourcesDiaPluginConfig",
            "SimpleSourceFlagDiaPlugin", "SimpleSourceFlagDiaPluginConfig",
@@ -700,6 +701,69 @@ class MeanDiaPosition(DiaObjectCalculationPlugin):
 
         ans = diaSources.apply(_computeMeanPos)
         typeSafePandasAssignment(diaObjects, ans, ["ra", "dec", "raErr", "decErr", "ra_dec_Cov"])
+
+
+class FirstLastDiaSourceTimeConfig(DiaObjectCalculationPluginConfig):
+    pass
+
+
+@register("ap_firstLastDiaSourceTime")
+class FirstLastDiaSourceTime(DiaObjectCalculationPlugin):
+    """Determine the min and max time DiaSources have been observed.
+    """
+
+    ConfigClass = FirstLastDiaSourceTimeConfig
+
+    plugType = 'multi'
+
+    outputCols = ["firstDiaSourceMjdTai", "lastDiaSourceMjdTai"]
+    needsFilter = False
+
+    @classmethod
+    def getExecutionOrder(cls):
+        return cls.DEFAULT_CATALOGCALCULATION
+
+    def calculate(self, diaObjects, diaSources, **kwargs):
+        """Store the first and last DiaSource times per DiaObject.
+
+        Stores the smaller of the stored value of ``firstDiaSourceMjdTai``
+        and the minimum ``midpointMjdTai`` in the provided DiaSources, and
+        the larger of the stored value of ``lastDiaSourceMjdTai`` and the
+        maximum ``midpointMjdTai`` in the provided DiaSources. This allows
+        the stored values to persist even when only a shorter history of
+        DiaSources is loaded from the APDB. DiaSources with NaN
+        ``midpointMjdTai`` are ignored.
+
+        Parameters
+        ----------
+        diaObjects : `pandas.DataFrame`
+            Summary objects to store values in, which may include prior
+            values of ``firstDiaSourceMjdTai`` and ``lastDiaSourceMjdTai``
+            for some objects.
+        diaSources : `pandas.DataFrame` or `pandas.DataFrameGroupBy`
+            Catalog of DiaSources summarized by these DiaObjects.
+        **kwargs
+            Any additional keyword arguments that may be passed to the plugin.
+        """
+        for outCol in self.outputCols:
+            if outCol not in diaObjects.columns:
+                diaObjects[outCol] = np.nan
+
+        times = diaSources["midpointMjdTai"]
+        # groupby min/max skips NaN values by default.
+        firstTime = times.min()
+        lastTime = times.max()
+
+        # Combine with any previously stored values; fmin/fmax ignore NaN
+        # unless both inputs are NaN.
+        storedFirst = diaObjects.loc[firstTime.index, "firstDiaSourceMjdTai"].to_numpy(dtype=np.float64)
+        storedLast = diaObjects.loc[lastTime.index, "lastDiaSourceMjdTai"].to_numpy(dtype=np.float64)
+        # Update only objects with DiaSources, and keep the stored values of
+        # all others.
+        diaObjects.loc[firstTime.index, "firstDiaSourceMjdTai"] = np.fmin(
+            storedFirst, firstTime.to_numpy(dtype=np.float64))
+        diaObjects.loc[lastTime.index, "lastDiaSourceMjdTai"] = np.fmax(
+            storedLast, lastTime.to_numpy(dtype=np.float64))
 
 
 class HTMIndexDiaPositionConfig(DiaObjectCalculationPluginConfig):
