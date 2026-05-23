@@ -625,7 +625,9 @@ class SingleFrameSkyCoordPlugin(SingleFramePlugin):
     centroid slot and WCS.
 
     The position is recorded in the ``coord`` field, which is part of the
-    `~lsst.afw.table.SourceCatalog` minimal schema.
+    `~lsst.afw.table.SourceCatalog` minimal schema.  The associated
+    uncertainty fields propagate the centroid covariance through a Jacobian
+    taken in a local tangent (gnomonic) plane centered on the source.
 
     Parameters
     ----------
