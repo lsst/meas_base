@@ -135,13 +135,25 @@ CentroidTransform::CentroidTransform(std::string const &name, afw::table::Schema
     // If the centroid has an error key we also include one on the celestial
     // coordinates; otherwise, it isn't necessary. Note that if we provide for
     // errors in celestial coordinates, we always need the full covariance.
+    //
+    // Note that the covariance is computed using a Jacobian on a local
+    // tangent plane centered on the source.
     if (CentroidResultKey(mapper.getInputSchema()[name]).getCentroidErr().isValid()) {
         std::vector<afw::table::Key<ErrElement> > sigma(2);
         std::vector<afw::table::Key<ErrElement> > cov(1);
-        sigma[0] = s.addField<ErrElement>(s.join(name, "raErr"), "1-sigma uncertainty on RA", "rad");
-        sigma[1] = s.addField<ErrElement>(s.join(name, "decErr"), "1-sigma uncertainty on dec", "rad");
-        cov[0] = s.addField<ErrElement>(s.join(name, "ra_dec_Cov"), "Uncertainty covariance in RA and dec",
-                                        "rad^2");
+        sigma[0] = s.addField<ErrElement>(
+            s.join(name, "raErr"),
+            "1-sigma uncertainty on the local tangent-plane longitude offset"
+            " xi = RA*cos(Dec).",
+            "rad");
+        sigma[1] = s.addField<ErrElement>(
+            s.join(name, "decErr"),
+            "1-sigma uncertainty on Dec.",
+            "rad");
+        cov[0] = s.addField<ErrElement>(
+            s.join(name, "ra_dec_Cov"),
+            "Tangent-plane covariance Cov(xi, eta) = Cov(RA*cos(Dec), Dec).",
+            "rad^2");
         _coordErrKey = afw::table::CovarianceMatrixKey<ErrElement, 2>(sigma, cov);
     }
 }
