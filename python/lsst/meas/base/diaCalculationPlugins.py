@@ -515,14 +515,35 @@ class MeanDiaPositionConfig(DiaObjectCalculationPluginConfig):
 
 @register("ap_meanPosition")
 class MeanDiaPosition(DiaObjectCalculationPlugin):
-    """Compute the mean position of a DiaObject given a set of DiaSources.
+    """Compute the mean position and position uncertainty of a DiaObject
+    from its associated DiaSources.
+
+    The reported (ra, dec) is the inverse-variance weighted spherical
+    mean of the per-source positions, using only the DiaSources whose
+    per-source coordinate errors are finite.  The reported covariance
+    is the covariance of that weighted-mean estimator,
+
+        C_formal = (sum_i inv(C_i))^-1,
+
+    where ``C_i`` is the per-source 2x2 covariance, multiplied by a
+    *chi-squared scale factor* that inflates the result when the
+    empirical scatter is larger than the per-source errors predict:
+
+        chi2  = sum_i r_i^T inv(C_i) r_i      (r_i = tangent-plane
+                                               residual from the mean)
+        dof   = 2 * (N - 1)
+        C_obj = max(1, chi2 / dof) * C_formal
+
+    When the data agree with the per-source errors (chi2 ~ dof) the
+    scale factor is unity and ``C_obj == C_formal``.  When the residuals
+    exceed what the errors predict, the covariance is inflated.
     """
 
     ConfigClass = MeanDiaPositionConfig
 
     plugType = 'multi'
 
-    outputCols = ["ra", "dec"]
+    outputCols = ["ra", "dec", "raErr", "decErr", "ra_dec_Cov"]
     needsFilter = False
 
     @classmethod
@@ -530,8 +551,8 @@ class MeanDiaPosition(DiaObjectCalculationPlugin):
         return cls.DEFAULT_CATALOGCALCULATION
 
     def calculate(self, diaObjects, diaSources, **kwargs):
-        """Compute the mean ra/dec position of the diaObject given the
-        diaSource locations.
+        """Compute the mean ra/dec position and its uncertainty for each
+        DiaObject.
 
         Parameters
         ----------
@@ -546,23 +567,139 @@ class MeanDiaPosition(DiaObjectCalculationPlugin):
             if outCol not in diaObjects.columns:
                 diaObjects[outCol] = np.nan
 
+        maxAllowedSep = self.config.MaxAllowedDiaSourceSeparation
+
+        def _column(df, name):
+            """Read a column as float64, or return all-NaN if absent."""
+            if name in df.columns:
+                return df[name].to_numpy(dtype=np.float64)
+            return np.full(len(df), np.nan)
+
         def _computeMeanPos(df):
             coords = list(geom.SpherePoint(src["ra"], src["dec"], geom.degrees)
                           for idx, src in df.iterrows())
-            aveCoord = geom.averageSpherePoint(coords)
+            # Quick check of the unweighted mean to catch unphysical objects
+            # and as a fallback.
+            unweightedAvg = geom.averageSpherePoint(coords)
+            maxSep = max(unweightedAvg.separation(coord).asArcseconds() for coord in coords)
+            if maxSep > maxAllowedSep:
+                raise UnphysicalDiaSourceSeparation(maxSep, maxAllowedSep)
 
-            # We don't want the DIAObject position to move due to misassociated sources
-            maxSep = max(aveCoord.separation(coord).asArcseconds() for coord in coords)
+            nSrc = len(coords)
+            raErr = _column(df, "raErr")
+            decErr = _column(df, "decErr")
+            raDecCov = _column(df, "ra_dec_Cov")
+            finiteDiag = (np.isfinite(raErr) & (raErr > 0)) & (np.isfinite(decErr) & (decErr > 0))
+            nDiag = int(finiteDiag.sum())
 
-            if maxSep > self.config.MaxAllowedDiaSourceSeparation:
-                raise UnphysicalDiaSourceSeparation(maxSep,
-                                                    self.config.MaxAllowedDiaSourceSeparation)
+            # Tangent-plane offsets from the unweighted mean reference,
+            # in degrees (arc-length east, north).
+            offsets = np.array(
+                [[off.asDegrees() for off in unweightedAvg.getTangentPlaneOffset(coord)] for coord in coords]
+            ) if nSrc >= 1 else np.zeros((0, 2))
+
+            aveCoord = unweightedAvg
+            varRa = np.nan
+            varDec = np.nan
+            raDecCovObj = np.nan
+
+            if nDiag >= 1:
+                # Weighted-mean path: include only sources with finite
+                # per-source coordinate errors.
+                idx = np.where(finiteDiag)[0]
+                sigmaRaSq = raErr[idx]**2
+                sigmaDecSq = decErr[idx]**2
+                # Use full 2x2 weights only when every included source
+                # has a finite ra_dec_Cov; otherwise use diagonal weights
+                # for all of them and emit NaN for the output covariance.
+                haveFullCov = bool(np.isfinite(raDecCov[idx]).all())
+
+                C = np.zeros((nDiag, 2, 2), dtype=np.float64)
+                C[:, 0, 0] = sigmaRaSq
+                C[:, 1, 1] = sigmaDecSq
+                if haveFullCov:
+                    C[:, 0, 1] = raDecCov[idx]
+                    C[:, 1, 0] = raDecCov[idx]
+                try:
+                    W = np.linalg.inv(C)
+                except np.linalg.LinAlgError:
+                    # Singular per-source covariance: drop off-diagonal
+                    # and retry with diagonal weights only.
+                    haveFullCov = False
+                    C[:, 0, 1] = 0.0
+                    C[:, 1, 0] = 0.0
+                    W = np.linalg.inv(C)
+
+                W_sum = W.sum(axis=0)
+                C_formal = np.linalg.inv(W_sum)
+
+                # Weighted-mean tangent-plane offset from the unweighted
+                # reference: mu_offset = (sum W_i)^-1 (sum W_i r_i).  Then
+                # apply that offset to the unweighted mean to get the
+                # weighted spherical mean.  SpherePoint.offset takes a
+                # bearing measured counter-clockwise from east (bearing 0
+                # is due east, bearing pi/2 is due north).
+                mu_offset = C_formal @ np.einsum('nij,nj->i', W, offsets[idx])
+                east, north = float(mu_offset[0]), float(mu_offset[1])
+                sep_deg = float(np.hypot(east, north))
+                if sep_deg > 0.0:
+                    bearing = geom.Angle(float(np.arctan2(north, east)), geom.radians)
+                    aveCoord = unweightedAvg.offset(bearing, sep_deg*geom.degrees)
+
+                varRaFormal = float(C_formal[0, 0])
+                varDecFormal = float(C_formal[1, 1])
+                covFormal = float(C_formal[0, 1]) if haveFullCov else np.nan
+
+                if nDiag == 1:
+                    # Single included source: pass its own 2x2 covariance through.
+                    varRa = varRaFormal
+                    varDec = varDecFormal
+                    raDecCovObj = covFormal
+                else:
+                    # Inflate the variance if the reduced chi**2 fit of the
+                    # diaSource coordinates is greater than 1, to account for
+                    # scatter.
+                    residuals = offsets[idx] - mu_offset
+                    if haveFullCov:
+                        # Vectorized Σₙ rₙᵀ Wₙ rₙ (r = residuals).
+                        chi2 = float(np.einsum('ni,nij,nj->', residuals, W, residuals))
+                    else:
+                        chi2 = float(np.sum(residuals[:, 0]**2/sigmaRaSq + residuals[:, 1]**2/sigmaDecSq))
+                    dof = 2*(nDiag - 1)
+                    scale = max(1.0, chi2/dof)
+                    varRa = varRaFormal*scale
+                    varDec = varDecFormal*scale
+                    raDecCovObj = (covFormal*scale if np.isfinite(covFormal) else np.nan)
+            else:
+                # No source has finite per-source coordinate errors.  Fall
+                # back to the unweighted mean position plus the empirical
+                # SEM (when N >= 2), and warn that the per-source errors
+                # were not usable.
+                warnings.warn(
+                    "No DiaSources with finite coordinate errors; falling "
+                    "back to the unweighted mean position with scatter-only "
+                    "uncertainty.",
+                    stacklevel=2,
+                )
+                if nSrc >= 2:
+                    sampleCov = np.cov(offsets, rowvar=False, ddof=1)
+                    semCov = sampleCov/nSrc
+                    varRa = float(semCov[0, 0])
+                    varDec = float(semCov[1, 1])
+                    raDecCovObj = float(semCov[0, 1])
+                # else: nSrc == 1 with no error -- outputs stay NaN.
+
+            raErrObj = float(np.sqrt(varRa)) if np.isfinite(varRa) else np.nan
+            decErrObj = float(np.sqrt(varDec)) if np.isfinite(varDec) else np.nan
 
             return pd.Series({"ra": aveCoord.getRa().asDegrees(),
-                              "dec": aveCoord.getDec().asDegrees()})
+                              "dec": aveCoord.getDec().asDegrees(),
+                              "raErr": raErrObj,
+                              "decErr": decErrObj,
+                              "ra_dec_Cov": raDecCovObj})
 
         ans = diaSources.apply(_computeMeanPos)
-        typeSafePandasAssignment(diaObjects, ans, ["ra", "dec"])
+        typeSafePandasAssignment(diaObjects, ans, ["ra", "dec", "raErr", "decErr", "ra_dec_Cov"])
 
 
 class HTMIndexDiaPositionConfig(DiaObjectCalculationPluginConfig):
