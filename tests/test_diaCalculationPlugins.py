@@ -19,6 +19,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import warnings
+
 from astropy.stats import median_absolute_deviation
 import numpy as np
 import pandas as pd
@@ -184,6 +186,11 @@ class TestMeanPosition(unittest.TestCase):
 
     def testCalculate(self):
         """Test mean position calculation.
+
+        DiaSources here are constructed without per-source coordinate
+        errors, so each ``run_multi_plugin`` call legitimately triggers
+        the no-errors warning from the plugin.  Suppress it here so the
+        signal of an unexpected warning elsewhere is not drowned out.
         """
         n_sources = 10
         objId = 0
@@ -192,6 +199,11 @@ class TestMeanPosition(unittest.TestCase):
         plug = MeanDiaPosition(MeanDiaPositionConfig(MaxAllowedDiaSourceSeparation=7200.0),
                                "ap_meanPosition",
                                None)
+
+        warnings.filterwarnings("ignore",
+                                message="No DiaSources with finite coordinate errors",
+                                category=UserWarning)
+        self.addCleanup(warnings.resetwarnings)
 
         # Test expected means in RA.
         diaObjects = pd.DataFrame({"diaObjectId": [objId]})
@@ -276,6 +288,286 @@ class TestMeanPosition(unittest.TestCase):
                                         "diaSourceId": np.arange(n_sources,
                                                                  dtype=int)})
         run_multi_plugin(diaObjects, diaSources, "g", plug)
+
+    def _makeDiaSourcesWithUncertainties(self, raErr, decErr, ra_dec_Cov, ra=None, dec=None, objId=0):
+        """Build a tiny DiaSource DataFrame with per-source uncertainties.
+        """
+        n = len(raErr)
+        if ra is None:
+            ra = np.zeros(n)
+        if dec is None:
+            dec = np.zeros(n)
+        return pd.DataFrame(data={
+            "ra": ra,
+            "dec": dec,
+            "raErr": raErr,
+            "decErr": decErr,
+            "ra_dec_Cov": ra_dec_Cov,
+            "midpointMjdTai": np.arange(n, dtype=float),
+            "diaObjectId": n * [objId],
+            "band": n * ["g"],
+            "diaSourceId": np.arange(n, dtype=int),
+        })
+
+    def testUncertaintyDiagonalOnly(self):
+        """Two coincident sources, no off-diagonal: chi^2 = 0, scale
+        factor is 1, so the output is the diagonal inverse-variance
+        weighted-mean covariance.
+        """
+        plug = MeanDiaPosition(MeanDiaPositionConfig(), "ap_meanPosition", None)
+        objId = 0
+        raErr = np.array([1e-6, 2e-6])
+        decErr = np.array([1e-6, 2e-6])
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = self._makeDiaSourcesWithUncertainties(
+            raErr=raErr,
+            decErr=decErr,
+            ra_dec_Cov=np.array([np.nan, np.nan]),
+        )
+        run_multi_plugin(diaObjects, diaSources, "g", plug)
+
+        # Var(weighted mean) = 1 / sum(1/sigma^2) per axis.
+        expectedRaErr = 1.0/np.sqrt(np.sum(1.0/raErr**2))
+        expectedDecErr = 1.0/np.sqrt(np.sum(1.0/decErr**2))
+        self.assertAlmostEqual(diaObjects.loc[objId, "raErr"], expectedRaErr)
+        self.assertAlmostEqual(diaObjects.loc[objId, "decErr"], expectedDecErr)
+        # No per-source ra_dec_Cov, so output ra_dec_Cov is NaN.
+        self.assertTrue(np.isnan(diaObjects.loc[objId, "ra_dec_Cov"]))
+
+    def testUncertaintyFullCovariance(self):
+        """Two coincident sources with off-diagonal covariance: chi^2 = 0,
+        so the output is C_formal = (sum_i inv(C_i))^-1.
+        """
+        plug = MeanDiaPosition(MeanDiaPositionConfig(), "ap_meanPosition", None)
+        objId = 0
+        raErr = np.array([1e-6, 2e-6])
+        decErr = np.array([1.5e-6, 1.0e-6])
+        rho = np.array([0.3, -0.2])  # correlation coefficient
+        raDecCov = rho * raErr * decErr
+
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = self._makeDiaSourcesWithUncertainties(
+            raErr=raErr, decErr=decErr, ra_dec_Cov=raDecCov)
+        run_multi_plugin(diaObjects, diaSources, "g", plug)
+
+        n = len(raErr)
+        cov = np.zeros((n, 2, 2))
+        cov[:, 0, 0] = raErr**2
+        cov[:, 1, 1] = decErr**2
+        cov[:, 0, 1] = raDecCov
+        cov[:, 1, 0] = raDecCov
+        covObj = np.linalg.inv(np.linalg.inv(cov).sum(axis=0))
+
+        self.assertAlmostEqual(diaObjects.loc[objId, "raErr"], np.sqrt(covObj[0, 0]))
+        self.assertAlmostEqual(diaObjects.loc[objId, "decErr"], np.sqrt(covObj[1, 1]))
+        self.assertAlmostEqual(diaObjects.loc[objId, "ra_dec_Cov"], covObj[0, 1])
+
+    def testUncertaintySingleSourceCopiesThrough(self):
+        """A single-source group: outputs equal the source's uncertainties.
+        """
+        plug = MeanDiaPosition(MeanDiaPositionConfig(), "ap_meanPosition", None)
+        objId = 0
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = self._makeDiaSourcesWithUncertainties(
+            raErr=np.array([1.5e-6]),
+            decErr=np.array([0.8e-6]),
+            ra_dec_Cov=np.array([2e-13]),
+        )
+        run_multi_plugin(diaObjects, diaSources, "g", plug)
+
+        self.assertAlmostEqual(diaObjects.loc[objId, "raErr"], 1.5e-6)
+        self.assertAlmostEqual(diaObjects.loc[objId, "decErr"], 0.8e-6)
+        self.assertAlmostEqual(diaObjects.loc[objId, "ra_dec_Cov"], 2e-13)
+
+    def testUncertaintyMissingColumnsFallsBackToScatter(self):
+        """No raErr/decErr columns + N>=2 spread-out sources -> the
+        weighted-mean path is unusable, so the DiaObject falls back to
+        the unweighted mean position with the scatter-only SEM, and a
+        warning is emitted.
+        """
+        plug = MeanDiaPosition(MeanDiaPositionConfig(), "ap_meanPosition", None)
+        objId = 0
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        n = 3
+        ra = np.linspace(-1e-4, 1e-4, n)
+        dec = np.zeros(n)
+        diaSources = pd.DataFrame(data={
+            "ra": ra,
+            "dec": dec,
+            "midpointMjdTai": np.arange(n, dtype=float),
+            "diaObjectId": n * [objId],
+            "band": n * ["g"],
+            "diaSourceId": np.arange(n, dtype=int),
+        })
+        with self.assertWarnsRegex(UserWarning, "No DiaSources with finite coordinate errors"):
+            run_multi_plugin(diaObjects, diaSources, "g", plug)
+
+        self.assertAlmostEqual(diaObjects.loc[objId, "ra"], 0.0)
+        self.assertAlmostEqual(diaObjects.loc[objId, "dec"], 0.0)
+
+        # Expected scatter term: at dec=0, the tangent-plane east offsets
+        # equal the RA deltas (in degrees) to high precision, so the
+        # standard error of the mean in RA is sample_std(ra, ddof=1) /
+        # sqrt(N).  Dec is identically zero so its scatter is zero.
+        expectedRaErr = np.std(ra, ddof=1)/np.sqrt(n)
+        self.assertAlmostEqual(diaObjects.loc[objId, "raErr"], expectedRaErr)
+        self.assertAlmostEqual(diaObjects.loc[objId, "decErr"], 0.0)
+        self.assertAlmostEqual(diaObjects.loc[objId, "ra_dec_Cov"], 0.0)
+
+    def testUncertaintyMissingColumnsSingleSourceEmitsNaN(self):
+        """With a single source and no raErr/decErr the uncertainty is
+        undefined but the mean position is still computed; a warning is
+        emitted that the per-source errors are unusable.
+        """
+        plug = MeanDiaPosition(MeanDiaPositionConfig(), "ap_meanPosition", None)
+        objId = 0
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = pd.DataFrame(data={
+            "ra": [0.0],
+            "dec": [0.0],
+            "midpointMjdTai": [0.0],
+            "diaObjectId": [objId],
+            "band": ["g"],
+            "diaSourceId": [0],
+        })
+        with self.assertWarnsRegex(UserWarning, "No DiaSources with finite coordinate errors"):
+            run_multi_plugin(diaObjects, diaSources, "g", plug)
+
+        self.assertAlmostEqual(diaObjects.loc[objId, "ra"], 0.0)
+        self.assertAlmostEqual(diaObjects.loc[objId, "dec"], 0.0)
+        self.assertTrue(np.isnan(diaObjects.loc[objId, "raErr"]))
+        self.assertTrue(np.isnan(diaObjects.loc[objId, "decErr"]))
+        self.assertTrue(np.isnan(diaObjects.loc[objId, "ra_dec_Cov"]))
+
+    def testUncertaintyPartialCovarianceFallsBackToDiagonal(self):
+        """Some sources have NaN ra_dec_Cov but valid raErr/decErr.
+
+        When at least one included source lacks a finite ra_dec_Cov,
+        diagonal weights are used for all included sources, the off-
+        diagonal output is NaN, and the chi-squared falls back to its
+        diagonal form.  Sources are coincident here, so chi^2 = 0 and
+        there is no rescaling.
+        """
+        plug = MeanDiaPosition(MeanDiaPositionConfig(), "ap_meanPosition", None)
+        objId = 0
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        raErr = np.array([1e-6, 2e-6, 3e-6])
+        decErr = np.array([1e-6, 2e-6, 3e-6])
+        # Only one source has a finite covariance
+        raDecCov = np.array([1e-13, np.nan, np.nan])
+        diaSources = self._makeDiaSourcesWithUncertainties(raErr=raErr, decErr=decErr, ra_dec_Cov=raDecCov)
+        run_multi_plugin(diaObjects, diaSources, "g", plug)
+
+        # Diagonal inverse-variance weighted mean covariance.
+        expectedRaErr = 1.0/np.sqrt(np.sum(1.0/raErr**2))
+        expectedDecErr = 1.0/np.sqrt(np.sum(1.0/decErr**2))
+        self.assertAlmostEqual(diaObjects.loc[objId, "raErr"], expectedRaErr)
+        self.assertAlmostEqual(diaObjects.loc[objId, "decErr"], expectedDecErr)
+        self.assertTrue(np.isnan(diaObjects.loc[objId, "ra_dec_Cov"]))
+
+    def testUncertaintyScaleFactorInflatesWhenScatterExceedsErrors(self):
+        """Two sources whose positional separation is much larger than
+        their per-source errors: chi^2 >> dof, so the chi-squared scale
+        factor inflates the formal covariance by chi^2 / dof.
+        """
+        plug = MeanDiaPosition(MeanDiaPositionConfig(), "ap_meanPosition", None)
+        objId = 0
+        # Two sources symmetric around RA = 0, Dec = 0.  Spread of
+        # 0.36 arcsec on each axis (within MaxAllowedDiaSourceSeparation
+        # of 3 arcsec), still 100x the per-source sigma of 1e-6 deg = 3.6 mas,
+        # so chi^2 / dof ~ 4e4 / 2 ~ 2e4.
+        delta = 1e-4  # degrees
+        ra = np.array([-delta, delta])
+        dec = np.array([-delta, delta])
+        raErr = np.array([1e-6, 1e-6])
+        decErr = np.array([1e-6, 1e-6])
+        raDecCov = np.array([np.nan, np.nan])
+
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = self._makeDiaSourcesWithUncertainties(
+            raErr=raErr, decErr=decErr, ra_dec_Cov=raDecCov, ra=ra, dec=dec)
+        run_multi_plugin(diaObjects, diaSources, "g", plug)
+
+        # With equal per-source errors the weighted mean equals the
+        # unweighted mean = (0, 0), so the tangent-plane residuals are
+        # essentially (ra, dec).
+        # chi^2 = sum_i (r_east^2/sigma_ra^2 + r_north^2/sigma_dec^2)
+        # dof = 2 * (N - 1) = 2.
+        chi2 = np.sum(ra**2/raErr**2 + dec**2/decErr**2)
+        dof = 2*(len(raErr) - 1)
+        scale = max(1.0, chi2/dof)
+        # Diagonal weighted-mean variance: 1/sum(1/sigma^2) per axis.
+        varRaFormal = 1.0/np.sum(1.0/raErr**2)
+        varDecFormal = 1.0/np.sum(1.0/decErr**2)
+        expectedRaErr = np.sqrt(scale*varRaFormal)
+        expectedDecErr = np.sqrt(scale*varDecFormal)
+
+        # The inflation should be large (scale ~ 1e6):
+        self.assertGreater(scale, 1e3)
+
+        self.assertAlmostEqual(diaObjects.loc[objId, "raErr"] / expectedRaErr, 1.0, places=5)
+        self.assertAlmostEqual(diaObjects.loc[objId, "decErr"] / expectedDecErr, 1.0, places=5)
+        self.assertTrue(np.isnan(diaObjects.loc[objId, "ra_dec_Cov"]))
+
+    def testUncertaintyScaleFactorNoInflationWhenConsistent(self):
+        """When per-source positions are coincident, chi^2 = 0 and the
+        chi-squared scale factor is exactly 1: the output equals
+        C_formal = (sum_i inv(C_i))^-1.
+        """
+        plug = MeanDiaPosition(MeanDiaPositionConfig(), "ap_meanPosition", None)
+        objId = 0
+        raErr = np.array([1e-6, 2e-6, 1.5e-6])
+        decErr = np.array([1e-6, 1.5e-6, 2e-6])
+        raDecCov = np.array([2e-13, -1e-13, 3e-14])
+
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = self._makeDiaSourcesWithUncertainties(raErr=raErr, decErr=decErr, ra_dec_Cov=raDecCov)
+        run_multi_plugin(diaObjects, diaSources, "g", plug)
+
+        n = len(raErr)
+        cov = np.zeros((n, 2, 2))
+        cov[:, 0, 0] = raErr**2
+        cov[:, 1, 1] = decErr**2
+        cov[:, 0, 1] = raDecCov
+        cov[:, 1, 0] = raDecCov
+        covObj = np.linalg.inv(np.linalg.inv(cov).sum(axis=0))
+
+        self.assertAlmostEqual(diaObjects.loc[objId, "raErr"], np.sqrt(covObj[0, 0]))
+        self.assertAlmostEqual(diaObjects.loc[objId, "decErr"], np.sqrt(covObj[1, 1]))
+        self.assertAlmostEqual(diaObjects.loc[objId, "ra_dec_Cov"], covObj[0, 1])
+
+    def testWeightedMeanPositionDiffersFromUnweighted(self):
+        """Two sources at asymmetric (ra) positions with very unequal
+        per-source errors: the reported position is the inverse-variance
+        weighted mean, which is much closer to the more-precise source
+        than to the unweighted midpoint.
+        """
+        plug = MeanDiaPosition(MeanDiaPositionConfig(), "ap_meanPosition", None)
+        objId = 0
+        d = 1e-5  # degrees; well inside MaxAllowedDiaSourceSeparation.
+        ra = np.array([-d, d])
+        dec = np.array([0.0, 0.0])
+        # Source 0 is 100x more precise than source 1.
+        raErr = np.array([1e-6, 1e-4])
+        decErr = np.array([1e-6, 1e-4])
+        raDecCov = np.array([np.nan, np.nan])
+
+        diaObjects = pd.DataFrame({"diaObjectId": [objId]})
+        diaSources = self._makeDiaSourcesWithUncertainties(
+            raErr=raErr, decErr=decErr, ra_dec_Cov=raDecCov, ra=ra, dec=dec)
+        run_multi_plugin(diaObjects, diaSources, "g", plug)
+
+        # Diagonal weighted mean of (ra_0, ra_1) with weights w_i = 1/raErr_i^2.
+        w = 1.0/raErr**2
+        expectedRa = np.sum(w*ra)/np.sum(w)
+        # Output RA is wrapped to [0, 360); normalize back to a signed
+        # offset near zero before comparing.
+        outRa = ((diaObjects.loc[objId, "ra"] + 180.0) % 360.0) - 180.0
+        # The unweighted mean would be 0; the weighted mean should be
+        # very close to source 0 at ra = -d.
+        self.assertAlmostEqual(outRa, expectedRa)
+        self.assertLess(abs(outRa - (-d)), 0.01*d)
+        self.assertAlmostEqual(diaObjects.loc[objId, "dec"], 0.0)
 
 
 class TestHTMIndexPosition(unittest.TestCase):
