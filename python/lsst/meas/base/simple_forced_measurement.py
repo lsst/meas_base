@@ -63,6 +63,7 @@ class SimpleForcedMeasurementConfig(SimpleBaseMeasurementConfig):
     )
 
     def setDefaults(self):
+        super().setDefaults()
         self.slots.centroid = "base_TransformedCentroidFromCoord"
         self.slots.shape = None
         self.slots.apFlux = None
