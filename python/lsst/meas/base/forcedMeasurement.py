@@ -331,17 +331,19 @@ class ForcedMeasurementTask(BaseMeasurementTask):
         # Initialize the noise replacer
         noiseReplacer = self.initNoiseReplacer(exposure, measCat, footprints, exposureId)
 
-        for recordIndex, (measRecord, refRecord) in enumerate(zip(measCat, refCat)):
-            # Insert source into noise replacer
-            noiseReplacer.insertSource(refRecord.getId())
-            self.callMeasure(measRecord, exposure, refRecord, refWcs,
-                             beginOrder=beginOrder, endOrder=endOrder)
-            noiseReplacer.removeSource(refRecord.getId())
-            periodicLog.log("Forced measurement complete for %d sources out of %d",
-                            recordIndex + 1, len(refCat))
-
-        # When done, restore the exposure to its original state
-        noiseReplacer.end()
+        try:
+            for recordIndex, (measRecord, refRecord) in enumerate(zip(measCat, refCat)):
+                # Insert source into noise replacer
+                noiseReplacer.insertSource(refRecord.getId())
+                self.callMeasure(measRecord, exposure, refRecord, refWcs,
+                                 beginOrder=beginOrder, endOrder=endOrder)
+                noiseReplacer.removeSource(refRecord.getId())
+                periodicLog.log("Forced measurement complete for %d sources out of %d",
+                                recordIndex + 1, len(refCat))
+        finally:
+            # Restore the exposure to its original state, even on failure,
+            # so the temporary mask planes do not stay registered.
+            noiseReplacer.end()
 
         # Undeblended plugins only fire if we're running everything
         if endOrder is None:

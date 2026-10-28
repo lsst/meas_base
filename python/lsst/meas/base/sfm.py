@@ -255,19 +255,21 @@ class SingleFrameMeasurementTask(BaseMeasurementTask):
         # Wrap the task logger into a period logger
         periodicLog = PeriodicLogger(self.log)
 
-        for recordIndex, measRecord in enumerate(measCat):
-            noiseReplacer.insertSource(measRecord.getId())
-            self.callMeasure(measRecord, exposure, beginOrder=beginOrder, endOrder=endOrder)
+        try:
+            for recordIndex, measRecord in enumerate(measCat):
+                noiseReplacer.insertSource(measRecord.getId())
+                self.callMeasure(measRecord, exposure, beginOrder=beginOrder, endOrder=endOrder)
 
-            if self.doBlendedness:
-                self.blendPlugin.cpp.measureChildPixels(exposure.getMaskedImage(), measRecord)
+                if self.doBlendedness:
+                    self.blendPlugin.cpp.measureChildPixels(exposure.getMaskedImage(), measRecord)
 
-            noiseReplacer.removeSource(measRecord.getId())
-            # Log a message if it has been a while since the last log.
-            periodicLog.log("Measurement complete for %d sources out of %d", recordIndex + 1, nMeasCat)
-
-        # When done, restore the exposure to its original state
-        noiseReplacer.end()
+                noiseReplacer.removeSource(measRecord.getId())
+                # Log a message if it has been a while since the last log.
+                periodicLog.log("Measurement complete for %d sources out of %d", recordIndex + 1, nMeasCat)
+        finally:
+            # Restore the exposure to its original state, even on failure,
+            # so the temporary mask planes do not stay registered.
+            noiseReplacer.end()
 
         # Undeblended plugins only fire if we're running everything
         if endOrder is None:
