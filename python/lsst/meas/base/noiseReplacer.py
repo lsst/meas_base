@@ -284,8 +284,13 @@ class NoiseReplacer:
             if self.footprints[id][0] != 0:
                 continue
             self.heavies[id].insert(im)
-        for maskname in self.removeplanes:
-            mask.removeAndClearMaskPlane(maskname, True)
+        for maskname in ['THISDET', 'OTHERDET']:
+            if maskname in self.removeplanes:
+                mask.removeAndClearMaskPlane(maskname, True)
+            else:
+                # Mask planes are global, so a plane registered elsewhere in
+                # this process must stay defined, but its bits must not.
+                mask.clearMaskPlane(mask.getMaskPlane(maskname))
 
         del self.removeplanes
         del self.thisbitmask

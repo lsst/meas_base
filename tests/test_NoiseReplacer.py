@@ -20,12 +20,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import unittest
+import unittest.mock
 
 import numpy as np
 
 import lsst.geom
 import lsst.afw.geom
 import lsst.afw.detection
+import lsst.afw.image
 import lsst.afw.table
 import lsst.meas.base.tests
 import lsst.utils.tests
@@ -126,6 +128,42 @@ class NoiseReplacerTestCase(lsst.meas.base.tests.AlgorithmTestCase, lsst.utils.t
             # statistical 1-sigma prediction; some RNG seeds may cause it to
             # fail (indeed, 67% should)
             self.assertLess(record.get("test_NoiseReplacer_outside"), np.sqrt(sumVariance))
+
+    def _countBits(self, mask, planeName):
+        """Return the number of pixels with ``planeName`` set, or 0 if the
+        plane is not registered.
+        """
+        if planeName not in mask.getMaskPlaneDict():
+            return 0
+        return np.count_nonzero(mask.array & mask.getPlaneBitMask(planeName))
+
+    def testPreregisteredPlanes(self):
+        """Test that measurement leaves no THISDET or OTHERDET bits set when
+        those planes were registered before it started.
+        """
+        for planeName in ["THISDET", "OTHERDET"]:
+            lsst.afw.image.Mask.addMaskPlane(planeName)
+            self.addCleanup(lsst.afw.image.Mask.removeMaskPlane, planeName)
+        task = self.makeSingleFrameMeasurementTask("test_NoiseReplacer")
+        exposure, catalog = self.dataset.realize(1.0, task.schema, randomSeed=0)
+        task.run(catalog, exposure)
+        for planeName in ["THISDET", "OTHERDET"]:
+            self.assertEqual(self._countBits(exposure.mask, planeName), 0)
+
+    def testPlanesRemovedOnFailure(self):
+        """Test that the temporary mask planes are removed when measurement
+        raises.
+        """
+        task = self.makeSingleFrameMeasurementTask("test_NoiseReplacer")
+        exposure, catalog = self.dataset.realize(1.0, task.schema, randomSeed=0)
+        error = lsst.meas.base.FatalAlgorithmError("Abort measurement.")
+        # A registered failing plugin would break tests that run every plugin.
+        with unittest.mock.patch.object(task, "callMeasure", side_effect=error):
+            with self.assertRaises(lsst.meas.base.FatalAlgorithmError):
+                task.run(catalog, exposure)
+        for planeName in ["THISDET", "OTHERDET"]:
+            self.assertNotIn(planeName, exposure.mask.getMaskPlaneDict())
+            self.assertEqual(self._countBits(exposure.mask, planeName), 0)
 
     def tearDown(self):
         del self.bbox
