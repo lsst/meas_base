@@ -1,0 +1,12 @@
+prefix=${pcfiledir}/../..
+includedir=${prefix}/include
+libdir=${prefix}/lib
+doxygen_tag=${prefix}/doc/meas_base.tag
+lsst_build_requires=pybind11 python3
+
+Name: lsst_meas_base
+Description: LSST Science Pipelines measurement framework
+Version: @VERSION@
+Requires: lsst_geom lsst_afw lsst_cpputils
+Cflags: -I${includedir}
+Libs: -L${libdir} -lmeas_base
